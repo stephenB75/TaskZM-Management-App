@@ -1,0 +1,548 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-size: 16px;
+  
+  /* Pastel color palette - neurodivergent friendly */
+  --pastel-mint: #B8E6D5;
+  --pastel-lavender: #E6D5F0;
+  --pastel-peach: #FFD6BA;
+  --pastel-sky: #C9E4F7;
+  --pastel-lilac: #E1D4F0;
+  --pastel-pink: #FFD6E8;
+  --pastel-yellow: #FFF4CC;
+  --pastel-sage: #D4E8D4;
+  
+  /* Main theme colors */
+  --background: #FAF9FC;
+  --foreground: #4A4A5E;
+  --card: #FFFFFF;
+  --card-foreground: #4A4A5E;
+  --popover: #FFFFFF;
+  --popover-foreground: #4A4A5E;
+  --primary: #9B87E8;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E6D5F0;
+  --secondary-foreground: #5A4A6E;
+  --muted: #F3F0F9;
+  --muted-foreground: #8B8B9E;
+  --accent: #C9E4F7;
+  --accent-foreground: #4A5A6E;
+  --destructive: #C53030;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(155, 135, 232, 0.15);
+  --input: transparent;
+  --input-background: #EDE8F9;
+  --switch-background: #E6D5F0;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #9B87E8;
+  
+  /* Pastel charts */
+  --chart-1: #B8E6D5;
+  --chart-2: #C9E4F7;
+  --chart-3: #E6D5F0;
+  --chart-4: #FFD6BA;
+  --chart-5: #FFD6E8;
+  
+  --radius: 1rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #4A4A5E;
+  --sidebar-primary: #9B87E8;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F3F0F9;
+  --sidebar-accent-foreground: #5A4A6E;
+  --sidebar-border: rgba(155, 135, 232, 0.1);
+  --sidebar-ring: #9B87E8;
+}
+
+.dark {
+  /* Dark mode with muted pastels */
+  --pastel-mint: #5A8A7A;
+  --pastel-lavender: #8A7A9A;
+  --pastel-peach: #AA8A6A;
+  --pastel-sky: #6A8AAA;
+  --pastel-lilac: #9A8AAA;
+  --pastel-pink: #AA7A8A;
+  --pastel-yellow: #AAA07A;
+  --pastel-sage: #7A9A7A;
+  
+  --background: #2A2A3E;
+  --foreground: #E8E6F0;
+  --card: #353549;
+  --card-foreground: #E8E6F0;
+  --popover: #353549;
+  --popover-foreground: #E8E6F0;
+  --primary: #9B87E8;
+  --primary-foreground: #FFFFFF;
+  --secondary: #4A4A5E;
+  --secondary-foreground: #E8E6F0;
+  --muted: #3E3E52;
+  --muted-foreground: #A8A8B8;
+  --accent: #5A5A6E;
+  --accent-foreground: #E8E6F0;
+  --destructive: #E53E3E;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(155, 135, 232, 0.2);
+  --input: #3E3E52;
+  --input-background: #3E3E52;
+  --ring: #9B87E8;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  
+  --chart-1: #5A8A7A;
+  --chart-2: #6A8AAA;
+  --chart-3: #8A7A9A;
+  --chart-4: #AA8A6A;
+  --chart-5: #AA7A8A;
+  
+  --sidebar: #2A2A3E;
+  --sidebar-foreground: #E8E6F0;
+  --sidebar-primary: #9B87E8;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #3E3E52;
+  --sidebar-accent-foreground: #E8E6F0;
+  --sidebar-border: rgba(155, 135, 232, 0.15);
+  --sidebar-ring: #9B87E8;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Typography defaults - Tailwind 3.4 compatible */
+@layer base {
+  h1 {
+    @apply text-2xl font-medium leading-relaxed;
+  }
+
+  h2 {
+    @apply text-xl font-medium leading-relaxed;
+  }
+
+  h3 {
+    @apply text-lg font-medium leading-relaxed;
+  }
+
+  h4 {
+    @apply text-base font-medium leading-relaxed;
+  }
+
+  p {
+    @apply text-base font-normal leading-relaxed;
+  }
+
+  label {
+    @apply text-sm font-medium leading-relaxed;
+  }
+
+  button {
+    @apply text-sm font-medium leading-relaxed;
+  }
+
+  input, textarea {
+    @apply text-sm font-normal leading-relaxed;
+  }
+}
+
+html {
+  font-size: var(--font-size);
+  scroll-behavior: smooth;
+  font-family: 'Inter', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  height: 100%;
+  width: 100%;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevent body scrolling - only content areas should scroll */
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  * {
+    -webkit-touch-callout: none;
+  }
+  
+  /* Ensure touch-friendly tap targets */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Optimize font rendering on mobile */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+/* Safe area support for modern mobile devices (notch, home indicator) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .pb-safe {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Fallback for devices without safe area support */
+@supports not (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-inset-bottom {
+    padding-bottom: 0;
+  }
+  
+  .pb-safe {
+    padding-bottom: 0.75rem;
+  }
+}
+
+/* Better scrollbar styling for mobile */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 135, 232, 0.3) transparent;
+  }
+}
+
+/* Webkit scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(155, 135, 232, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 135, 232, 0.5);
+}
+
+/* Mobile landscape optimizations */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Reduce vertical padding in landscape mode */
+  .mobile-landscape-compact {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+}
+
+/* Custom visual enhancements - Pastel & Neurodivergent-friendly */
+@layer utilities {
+  /* Pastel gradients */
+  .gradient-mint-lavender {
+    background: linear-gradient(135deg, #B8E6D5 0%, #E6D5F0 100%);
+  }
+  
+  .gradient-lavender-peach {
+    background: linear-gradient(135deg, #E6D5F0 0%, #FFD6BA 100%);
+  }
+  
+  .gradient-sky-mint {
+    background: linear-gradient(135deg, #C9E4F7 0%, #B8E6D5 100%);
+  }
+  
+  .gradient-pink-lavender {
+    background: linear-gradient(135deg, #FFD6E8 0%, #E1D4F0 100%);
+  }
+  
+  .gradient-peach-yellow {
+    background: linear-gradient(135deg, #FFD6BA 0%, #FFF4CC 100%);
+  }
+  
+  .gradient-sage-sky {
+    background: linear-gradient(135deg, #D4E8D4 0%, #C9E4F7 100%);
+  }
+  
+  .gradient-calm {
+    background: linear-gradient(135deg, #E6D5F0 20%, #C9E4F7 50%, #B8E6D5 80%);
+  }
+  
+  .gradient-warm {
+    background: linear-gradient(135deg, #FFD6E8 0%, #FFD6BA 50%, #FFF4CC 100%);
+  }
+  
+  /* Legacy gradients kept for compatibility */
+  .gradient-primary {
+    background: linear-gradient(135deg, #9B87E8 0%, #C9E4F7 100%);
+  }
+  
+  .gradient-success {
+    background: linear-gradient(135deg, #B8E6D5 0%, #D4E8D4 100%);
+  }
+  
+  .gradient-warning {
+    background: linear-gradient(135deg, #FFD6BA 0%, #FFD6E8 100%);
+  }
+  
+  .gradient-info {
+    background: linear-gradient(135deg, #C9E4F7 0%, #E6D5F0 100%);
+  }
+  
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .dark .glass-effect {
+    background: rgba(31, 41, 55, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.2) 20%,
+      rgba(255, 255, 255, 0.5) 60%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  /* Neurodivergent-friendly utilities */
+  .focus-highlight {
+    @apply ring-4 ring-primary/30 ring-offset-2 ring-offset-background;
+  }
+  
+  .soft-shadow {
+    box-shadow: 0 4px 24px rgba(155, 135, 232, 0.08), 0 2px 8px rgba(155, 135, 232, 0.04);
+  }
+  
+  .soft-shadow-lg {
+    box-shadow: 0 8px 32px rgba(155, 135, 232, 0.12), 0 4px 16px rgba(155, 135, 232, 0.08);
+  }
+  
+  .card-pastel-mint {
+    @apply bg-gradient-to-br from-[#B8E6D5] to-[#D4E8D4];
+  }
+  
+  .card-pastel-lavender {
+    @apply bg-gradient-to-br from-[#E6D5F0] to-[#E1D4F0];
+  }
+  
+  .card-pastel-peach {
+    @apply bg-gradient-to-br from-[#FFD6BA] to-[#FFF4CC];
+  }
+  
+  .card-pastel-sky {
+    @apply bg-gradient-to-br from-[#C9E4F7] to-[#B8E6D5];
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --border: rgba(0, 0, 0, 0.3);
+    }
+    
+    .dark {
+      --border: rgba(255, 255, 255, 0.3);
+    }
+  }
+  
+  /* Prevent text selection during drag operations */
+  .dragging,
+  .dragging * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+  }
+  
+  /* Smooth drag and scroll behavior */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+  
+  /* Enhanced smooth scrolling with custom easing */
+  .scroll-smooth-enhanced {
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+  }
+  
+  /* Smoother momentum scrolling on touch devices */
+  .scroll-momentum {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  
+  /* GPU-accelerated smooth transforms for drag operations */
+  .smooth-drag-transform {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  /* Optimized transitions for dragging */
+  [data-dnd-kit-dragging='true'] {
+    transition: transform 250ms cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  }
+  
+  /* Custom scrollbar utilities */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background: rgb(209, 213, 219);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb:hover {
+    background: rgb(156, 163, 175);
+  }
+  
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  /* Firefox scrollbar support */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thumb-gray-300 {
+    scrollbar-color: rgb(209, 213, 219) transparent;
+  }
+  
+  /* Hide scrollbar while maintaining scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Mobile Toaster Notifications - Top Position */
+@media (max-width: 767px) {
+  [data-sonner-toaster][data-position="top-center"] {
+    top: 16px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 9999 !important;
+  }
+
+  [data-sonner-toast] {
+    animation: slide-down 0.3s ease-out !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Achievement toasts - ensure they're at the very top on mobile */
+  [data-sonner-toast][data-position="top-center"] {
+    margin-top: 0 !important;
+    margin-bottom: 8px !important;
+  }
+
+  @keyframes slide-down {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}

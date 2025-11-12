@@ -1,0 +1,597 @@
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  Inbox,
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Clock,
+  Tag,
+  Sparkles,
+} from "lucide-react";
+import { useTasks } from "../contexts/TaskContext";
+import { useTeam } from "../contexts/TeamContext";
+import { useAIScheduler } from "../hooks/useAIScheduler";
+import { AppHeader } from "./AppHeader";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Card } from "./ui/card";
+import { Badge } from "./ui/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "./ui/avatar";
+import { ScrollArea } from "./ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { TaskDialog } from "./TaskDialog";
+import { toast } from "sonner";
+import { cn, getInitials, prepareTaskForDialog } from "../lib/utils";
+import { useIsMobile } from "./ui/use-mobile";
+import type { Task } from "../types";
+
+export function InboxView() {
+  const { tasks, addTask } = useTasks();
+  const { getTeamMember } = useTeam();
+  const { scheduleAllTasks } = useAIScheduler();
+  const isMobile = useIsMobile();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterPriority, setFilterPriority] =
+    useState<string>("all");
+  const [filterStatus, setFilterStatus] =
+    useState<string>("all");
+  const [isTaskDialogOpen, setIsTaskDialogOpen] =
+    useState(false);
+  const [selectedTask, setSelectedTask] = useState<
+    Task | undefined
+  >();
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [quickAddTitle, setQuickAddTitle] = useState("");
+
+  // Get unscheduled tasks
+  const unscheduledTasks = tasks.filter(
+    (t) => !t.scheduledDate && t.status !== "done",
+  );
+
+  // Apply filters
+  const filteredTasks = unscheduledTasks.filter((task) => {
+    const matchesSearch =
+      !searchQuery ||
+      task.title
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      false ||
+      task.description
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      false;
+    const matchesPriority =
+      filterPriority === "all" ||
+      task.priority === filterPriority;
+    const matchesStatus =
+      filterStatus === "all" || task.status === filterStatus;
+
+    return matchesSearch && matchesPriority && matchesStatus;
+  });
+
+  // Sort by priority
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const priorityWeight = {
+      urgent: 4,
+      high: 3,
+      medium: 2,
+      low: 1,
+    };
+    const aPriority = priorityWeight[a.priority] || 1;
+    const bPriority = priorityWeight[b.priority] || 1;
+
+    if (aPriority !== bPriority) return bPriority - aPriority;
+
+    // Secondary sort by created date
+    return (
+      new Date(b.createdAt).getTime() -
+      new Date(a.createdAt).getTime()
+    );
+  });
+
+  const handleQuickAdd = () => {
+    if (!quickAddTitle.trim()) return;
+
+    const newTask: Omit<Task, "id"> = {
+      title: quickAddTitle.trim(),
+      description: "",
+      status: "todo",
+      priority: "medium",
+      tags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    addTask(newTask);
+    setQuickAddTitle("");
+    setIsQuickAddOpen(false);
+
+    toast.success("Task added to inbox", {
+      description:
+        "You can schedule it later or let AI handle it",
+    });
+  };
+
+  const handleTaskClick = (task: Task) => {
+    console.log('InboxView: handleTaskClick called with task:', task);
+    try {
+      if (!task || !task.id) {
+        console.error('Invalid task passed to handleTaskClick:', task);
+        toast.error('Invalid task data');
+        return;
+      }
+      
+      const safeTask = prepareTaskForDialog(task);
+      if (!safeTask) {
+        console.error('prepareTaskForDialog returned null for task:', task);
+        toast.error('Invalid task data');
+        return;
+      }
+      
+      console.log('InboxView: Setting selected task and opening dialog:', safeTask);
+      setSelectedTask(safeTask);
+      setIsTaskDialogOpen(true);
+    } catch (error) {
+      console.error('Error opening task:', error, task);
+      toast.error('Failed to open task');
+    }
+  };
+
+  const handleScheduleAll = async () => {
+    if (unscheduledTasks.length === 0) {
+      toast.info("No tasks to schedule", {
+        description: "Your inbox is empty!",
+      });
+      return;
+    }
+
+    const loadingToast = toast.loading(
+      "Scheduling inbox tasks...",
+      {
+        description: `Organizing ${unscheduledTasks.length} task${unscheduledTasks.length === 1 ? "" : "s"}`,
+      },
+    );
+
+    try {
+      await scheduleAllTasks();
+      toast.dismiss(loadingToast);
+      toast.success("Inbox cleared!", {
+        description: "All tasks have been scheduled",
+      });
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Scheduling failed", {
+        description: "Please try again",
+      });
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return "border-l-red-400 bg-red-50/50 dark:bg-red-950/10";
+      case "high":
+        return "border-l-orange-400 bg-orange-50/50 dark:bg-orange-950/10";
+      case "medium":
+        return "border-l-blue-400 bg-blue-50/50 dark:bg-blue-950/10";
+      case "low":
+        return "border-l-gray-400 bg-gray-50/50 dark:bg-gray-950/10";
+      default:
+        return "border-l-gray-400 bg-gray-50/50 dark:bg-gray-950/10";
+    }
+  };
+
+  return (
+    <div
+      className="h-full flex flex-col bg-gradient-to-b from-[#FAF9FC] to-[#F9F7FD] dark:from-gray-950 dark:to-gray-900"
+      data-tour="inbox-panel"
+    >
+      <AppHeader
+        title="Inbox"
+        description={`${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`}
+        actions={
+          <div className="flex items-center gap-1.5">
+            <Button
+              onClick={handleScheduleAll}
+              className="rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] hover:from-[#C9E4F7] hover:to-[#E6D5F0] px-2.5 sm:px-3"
+              size="sm"
+              disabled={unscheduledTasks.length === 0}
+            >
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">
+                Schedule All
+              </span>
+            </Button>
+            <Button
+              onClick={() => {
+                setSelectedTask(undefined);
+                setIsTaskDialogOpen(true);
+              }}
+              className="hidden sm:flex rounded-full px-2.5 sm:px-3"
+              size="sm"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline ml-2">
+                New Task
+              </span>
+            </Button>
+          </div>
+        }
+        hideDesktopLogo
+      />
+      {/* Spacer for fixed header on mobile */}
+      <div className="md:hidden h-[64px]" />
+
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Quick Add and Filters Section */}
+        <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
+          <div className="flex flex-col gap-4">
+            {/* Quick Add */}
+            <AnimatePresence>
+              {isQuickAddOpen ? (
+                <motion.div
+                  key="quick-add-input"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <Card className="p-4 bg-gradient-to-br from-[#C9E4F7]/30 to-[#B8E6D5]/30 border-primary/20">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Quick add task..."
+                        value={quickAddTitle}
+                        onChange={(e) =>
+                          setQuickAddTitle(e.target.value)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter")
+                            handleQuickAdd();
+                          if (e.key === "Escape") {
+                            setIsQuickAddOpen(false);
+                            setQuickAddTitle("");
+                          }
+                        }}
+                        autoFocus
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleQuickAdd}
+                        size="sm"
+                        disabled={!quickAddTitle.trim()}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="quick-add-button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl border-dashed border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                    onClick={() => setIsQuickAddOpen(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Quick add task to inbox
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Filters */}
+            <div className="flex flex-col gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchQuery}
+                  onChange={(e) =>
+                    setSearchQuery(e.target.value)
+                  }
+                  className="pl-9 bg-white dark:bg-gray-900"
+                />
+              </div>
+
+              <Select
+                value={filterPriority}
+                onValueChange={setFilterPriority}
+              >
+                <SelectTrigger className="w-full bg-white dark:bg-gray-900">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    All Priority
+                  </SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={filterStatus}
+                onValueChange={setFilterStatus}
+              >
+                <SelectTrigger className="w-full bg-white dark:bg-gray-900">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    All Status
+                  </SelectItem>
+                  <SelectItem value="todo">To Do</SelectItem>
+                  <SelectItem value="in-progress">
+                    In Progress
+                  </SelectItem>
+                  <SelectItem value="on-hold">
+                    On Hold
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Task List */}
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-4 md:p-8 pb-safe">
+              <div className="space-y-2">
+                <AnimatePresence mode="popLayout">
+                  {sortedTasks.length === 0 ? (
+                    <motion.div
+                      key="empty"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="flex flex-col items-center justify-center py-16 px-4 text-center"
+                    >
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center mb-6 shadow-lg">
+                        <Inbox className="w-12 h-12 text-primary" />
+                      </div>
+                      <h3 className="text-xl mb-2">
+                        Your inbox is clear!
+                      </h3>
+                      <p className="text-muted-foreground max-w-sm mb-6">
+                        {unscheduledTasks.length > 0
+                          ? "No tasks match your current filters."
+                          : "All tasks are scheduled. Add new tasks or adjust your filters."}
+                      </p>
+                      <Button
+                        onClick={() => {
+                          setSelectedTask(undefined);
+                          setIsTaskDialogOpen(true);
+                        }}
+                        className="rounded-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add First Task
+                      </Button>
+                    </motion.div>
+                  ) : (
+                    sortedTasks.map((task, index) => (
+                      <motion.div
+                        key={task.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -100 }}
+                        transition={{ delay: index * 0.03 }}
+                        layout
+                      >
+                        <Card
+                          className={cn(
+                            "p-4 border-l-4 border-gray-300/90 cursor-pointer transition-all",
+                            // Better shadow blending on mobile
+                            "shadow-lg hover:shadow-xl",
+                            "sm:shadow-lg sm:hover:shadow-xl",
+                            getPriorityColor(task.priority),
+                          )}
+                          style={{
+                            // Custom shadow for better mobile blending
+                            boxShadow: isMobile 
+                              ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
+                              : undefined
+                          }}
+                          onClick={() => handleTaskClick(task)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <h4 className="font-medium text-sm leading-tight">
+                                  {task.title}
+                                </h4>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "text-xs",
+                                      task.priority ===
+                                        "urgent" &&
+                                        "border-red-400 text-red-700 bg-red-50",
+                                      task.priority ===
+                                        "high" &&
+                                        "border-orange-400 text-orange-700 bg-orange-50",
+                                      task.priority ===
+                                        "medium" &&
+                                        "border-blue-400 text-blue-700 bg-blue-50",
+                                      task.priority === "low" &&
+                                        "border-gray-400 text-gray-700 bg-gray-50",
+                                    )}
+                                  >
+                                    {task.priority}
+                                  </Badge>
+                                  {task.status ===
+                                    "in-progress" && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs border-green-400 text-green-700 bg-green-50"
+                                    >
+                                      active
+                                    </Badge>
+                                  )}
+                                  {task.status ===
+                                    "on-hold" && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs border-yellow-400 text-yellow-700 bg-yellow-50"
+                                    >
+                                      on hold
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {task.description && (
+                                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                                  {task.description}
+                                </p>
+                              )}
+
+                              {/* Assignee Display */}
+                              {task.assignedTo &&
+                                task.assignedTo.length > 0 && (
+                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                    {task.assignedTo
+                                      .slice(0, 3)
+                                      .map((userId) => {
+                                        const member =
+                                          getTeamMember(userId);
+                                        if (!member)
+                                          return null;
+
+                                        const initials =
+                                          getInitials(
+                                            member.name,
+                                          );
+
+                                        return (
+                                          <div
+                                            key={userId}
+                                            className="flex items-center gap-1.5"
+                                          >
+                                            <Avatar className="w-4 h-4">
+                                              <AvatarImage
+                                                src={
+                                                  member.avatar
+                                                }
+                                                alt={
+                                                  member.name
+                                                }
+                                              />
+                                              <AvatarFallback className="text-[8px] bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700">
+                                                {initials}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-xs text-gray-600 font-semibold">
+                                              {member.name}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                    {task.assignedTo.length >
+                                      3 && (
+                                      <span className="text-xs text-gray-500">
+                                        +
+                                        {task.assignedTo
+                                          .length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                              <div className="flex items-center gap-2 text-xs flex-wrap">
+                                {task.dueDate && (
+                                  <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                                    <Calendar className="w-3 h-3" />
+                                    <span>
+                                      Due{" "}
+                                      {new Date(
+                                        task.dueDate,
+                                      ).toLocaleDateString(
+                                        "en-US",
+                                        {
+                                          month: "short",
+                                          day: "numeric",
+                                        },
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
+                                {task.estimatedTime && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    {task.dueDate && (
+                                      <span>•</span>
+                                    )}
+                                    <Clock className="w-3 h-3" />
+                                    <span>
+                                      {task.estimatedTime} min
+                                    </span>
+                                  </div>
+                                )}
+                                {task.tags &&
+                                  task.tags.length > 0 && (
+                                    <div className="flex items-center gap-1">
+                                      {(task.dueDate ||
+                                        task.estimatedTime) && (
+                                        <span className="text-muted-foreground">
+                                          •
+                                        </span>
+                                      )}
+                                      <Tag className="w-3 h-3 text-muted-foreground" />
+                                      <span className="text-muted-foreground">
+                                        {task.tags
+                                          .slice(0, 2)
+                                          .join(", ")}
+                                        {task.tags.length > 2 &&
+                                          ` +${task.tags.length - 2}`}
+                                      </span>
+                                    </div>
+                                  )}
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    ))
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+
+      {/* Task Dialog */}
+      <TaskDialog
+        open={isTaskDialogOpen}
+        onClose={() => {
+          setIsTaskDialogOpen(false);
+          setSelectedTask(undefined);
+        }}
+        task={selectedTask}
+      />
+    </div>
+  );
+}

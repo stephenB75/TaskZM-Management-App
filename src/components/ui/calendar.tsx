@@ -1,0 +1,77 @@
+"use client";
+
+import * as React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { DayPicker } from "react-day-picker";
+
+import { cn } from "./utils";
+import { buttonVariants } from "./button";
+
+function Calendar({
+  className,
+  classNames,
+  showOutsideDays = true,
+  ...props
+}: React.ComponentProps<typeof DayPicker>) {
+  return (
+    <DayPicker
+      showOutsideDays={showOutsideDays}
+      className={cn("p-3", className)}
+      classNames={{
+        months: "flex flex-col sm:flex-row gap-2",
+        month: "flex flex-col gap-4",
+        caption: "flex justify-center pt-2 pb-3 relative items-center w-full",
+        caption_label: "text-sm font-semibold text-gray-900 dark:text-gray-100",
+        nav: "flex items-center gap-1",
+        nav_button: cn(
+          buttonVariants({ variant: "ghost" }),
+          "size-7 bg-transparent p-0 opacity-70 hover:opacity-100 hover:bg-accent",
+        ),
+        nav_button_previous: "absolute left-1",
+        nav_button_next: "absolute right-1",
+        table: "w-full border-collapse table-fixed",
+        head_row: "grid grid-cols-7 w-full mb-1",
+        head_cell:
+          "text-gray-600 dark:text-gray-400 rounded-md font-normal text-[0.8rem] text-center p-0 h-8",
+        row: "grid grid-cols-7 w-full mt-0.5",
+        cell: cn(
+          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
+          props.mode === "range"
+            ? "[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md"
+            : "",
+        ),
+        day: cn(
+          buttonVariants({ variant: "ghost" }),
+          "size-9 p-0 font-normal aria-selected:opacity-100 w-9 h-9 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center",
+        ),
+        day_range_start:
+          "day-range-start aria-selected:bg-primary aria-selected:text-primary-foreground",
+        day_range_end:
+          "day-range-end aria-selected:bg-primary aria-selected:text-primary-foreground",
+        day_selected:
+          "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-gray-100 focus:bg-gray-200 dark:focus:bg-gray-700 focus:text-gray-900 dark:focus:text-gray-100 focus:outline-none focus:ring-0 font-medium rounded-md",
+        day_today: "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium",
+        day_focus:
+          "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-0 rounded-md",
+        day_outside:
+          "day-outside text-gray-400 dark:text-gray-600 aria-selected:text-gray-400 dark:aria-selected:text-gray-600",
+        day_disabled: "text-muted-foreground opacity-50 cursor-not-allowed",
+        day_range_middle:
+          "aria-selected:bg-accent aria-selected:text-accent-foreground",
+        day_hidden: "invisible",
+        ...classNames,
+      }}
+      components={{
+        IconLeft: ({ className, ...props }) => (
+          <ChevronLeft className={cn("size-4", className)} {...props} />
+        ),
+        IconRight: ({ className, ...props }) => (
+          <ChevronRight className={cn("size-4", className)} {...props} />
+        ),
+      }}
+      {...props}
+    />
+  );
+}
+
+export { Calendar };

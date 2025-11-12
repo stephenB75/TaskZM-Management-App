@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content="TaskZM - Neurodivergent-friendly task management with AI-assisted planning" />
+    <meta name="theme-color" content="#F5F3FF" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TaskZM" />
+    <!-- Icons will be set by DocumentHead.tsx to ensure proper app icon is used -->
+    
+    <!-- Preload splash logo for faster loading -->
+    <link rel="preload" as="image" href="/taskzm-logo.png" />
+
+    <style>
+      body {
+        overflow: hidden;
+      }
+      
+      body.loaded {
+        overflow: auto;
+      }
+
+      /* Hide Capacitor splash overlay completely on web */
+      body > div[id*="splash"],
+      body > div[class*="splash"],
+      body > div[class*="Splash"],
+      body > div[id*="Splash"],
+      .capacitor-splash,
+      #capacitor-splash,
+      [data-capacitor-splash] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      /* Only show HTML splash on web - hidden by default on native */
+      #initial-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        z-index: 99999;
+        transition: opacity 0.5s ease-out;
+        -webkit-transition: opacity 0.5s ease-out;
+        visibility: visible;
+      }
+
+      /* Hide on native platforms */
+      #initial-splash.native-hidden {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+      }
+
+      #initial-splash.hidden {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        visibility: hidden !important;
+      }
+
+      #initial-splash img {
+        width: min(48vw, 220px);
+        max-width: 260px;
+        height: auto;
+        filter: drop-shadow(0 8px 24px rgba(123, 104, 238, 0.25));
+        -webkit-filter: drop-shadow(0 8px 24px rgba(123, 104, 238, 0.25));
+        animation: fadeIn 0.5s ease-in;
+        -webkit-animation: fadeIn 0.5s ease-in;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        background: transparent;
+        background-color: transparent;
+        opacity: 1;
+      }
+      
+      #initial-splash img.splash-logo-fallback {
+        width: min(48vw, 220px);
+        max-width: 260px;
+        height: auto;
+        object-fit: contain;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @-webkit-keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* Mobile optimizations */
+      @media (max-width: 768px) {
+        #initial-splash img {
+          width: min(60vw, 200px);
+          max-width: 200px;
+        }
+      }
+
+      /* Desktop optimizations */
+      @media (min-width: 769px) {
+        #initial-splash img {
+          width: min(30vw, 240px);
+          max-width: 240px;
+        }
+      }
+    </style>
+    
+    <title>TaskZM</title>
+  </head>
+  <body>
+    <!-- Immediately hide Capacitor splash on web to prevent double splash -->
+    <script>
+      (function() {
+        'use strict';
+        // Aggressively hide any Capacitor splash elements immediately
+        function hideCapacitorSplash() {
+          // Hide via CSS selectors
+          const selectors = [
+            'div[id*="splash"]',
+            'div[class*="splash"]',
+            'div[class*="Splash"]',
+            '.capacitor-splash',
+            '#capacitor-splash',
+            '[data-capacitor-splash]'
+          ];
+          selectors.forEach(selector => {
+            try {
+              const elements = document.querySelectorAll(selector);
+              elements.forEach(el => {
+                if (el && el.id !== 'initial-splash') {
+                  el.style.display = 'none';
+                  el.style.visibility = 'hidden';
+                  el.style.opacity = '0';
+                  el.style.pointerEvents = 'none';
+                }
+              });
+            } catch (e) {}
+          });
+          
+          // Hide via Capacitor API
+          if (typeof window !== 'undefined' && window.Capacitor) {
+            try {
+              if (window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen) {
+                window.Capacitor.Plugins.SplashScreen.hide({ fadeOutDuration: 0 }).catch(function() {});
+              }
+              if (window.Capacitor.SplashScreen) {
+                window.Capacitor.SplashScreen.hide({ fadeOutDuration: 0 }).catch(function() {});
+              }
+            } catch (e) {
+              // Ignore errors
+            }
+          }
+        }
+        
+        // Run immediately
+        hideCapacitorSplash();
+        
+        // Also run on DOM ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', hideCapacitorSplash);
+        } else {
+          hideCapacitorSplash();
+        }
+        
+        // Watch for dynamically added splash elements
+        const observer = new MutationObserver(function(mutations) {
+          hideCapacitorSplash();
+        });
+        
+        if (document.body) {
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+        }
+      })();
+    </script>
+    
+    <div id="initial-splash">
+      <img 
+        id="splash-logo"
+        src="/taskzm-logo.png" 
+        alt="TaskZM Logo" 
+        onerror="handleSplashLogoError(this)"
+        loading="eager"
+        style="display: block; margin: 0 auto; width: min(48vw, 220px); max-width: 260px; height: auto; object-fit: contain;"
+      />
+    </div>
+    
+    <script>
+      function handleSplashLogoError(img) {
+        // Silently handle logo errors - don't spam console
+        // Try to reload with fresh timestamp first
+        var retrySrc = '/taskzm-logo.png?v=' + Date.now();
+        var retryImg = new Image();
+        retryImg.onload = function() {
+          img.src = retrySrc;
+          img.style.opacity = '1';
+        };
+        retryImg.onerror = function() {
+          // Final fallback: show text instead of wrong icon
+          var splashEl = document.getElementById('initial-splash');
+          if (splashEl && img.parentNode) {
+            var textFallback = document.createElement('div');
+            textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:#7B68EE;text-align:center;font-family:system-ui,-apple-system,sans-serif;';
+            textFallback.textContent = 'TaskZM';
+            img.parentNode.replaceChild(textFallback, img);
+          }
+        };
+        retryImg.src = retrySrc;
+      }
+      
+      // Ensure logo is visible once loaded (handle both cached and fresh loads)
+      (function() {
+        var logo = document.getElementById('splash-logo');
+        if (logo) {
+          // If already loaded (cached), show immediately
+          if (logo.complete && logo.naturalHeight !== 0) {
+            logo.style.opacity = '1';
+          } else {
+            // Otherwise wait for load
+            logo.onload = function() {
+              this.style.opacity = '1';
+              this.style.transition = 'opacity 0.3s ease-in';
+            };
+            // Set initial opacity after a tiny delay to allow for fade-in
+            setTimeout(function() {
+              if (logo && logo.complete) {
+                logo.style.opacity = '1';
+                logo.style.transition = 'opacity 0.3s ease-in';
+              }
+            }, 50);
+          }
+        }
+      })();
+    </script>
+    <div id="root"></div>
+    
+    <!-- Inline script: Default to web splash, hide only on native platforms -->
+    <script>
+      (function() {
+        'use strict';
+        
+        // Default: Show HTML splash for web
+        // Only hide if we detect a native platform (Capacitor)
+        const isNative = typeof window !== 'undefined' && 
+                      window.Capacitor && 
+                      window.Capacitor.isNativePlatform && 
+                      window.Capacitor.isNativePlatform();
+        
+        if (isNative) {
+          // NATIVE PLATFORM: Hide HTML splash, use Capacitor's native splash
+          const splashEl = document.getElementById('initial-splash');
+          if (splashEl) {
+            splashEl.classList.add('native-hidden');
+            setTimeout(function() {
+              if (splashEl.parentNode) {
+                splashEl.remove();
+              }
+            }, 0);
+          }
+        } else {
+          // WEB PLATFORM (default): Show HTML splash ONLY, completely hide Capacitor splash
+          // Force hide Capacitor splash immediately to prevent double splash
+          function hideAllSplashExceptOurs() {
+            // Hide any splash elements except our own
+            const allDivs = document.querySelectorAll('body > div');
+            allDivs.forEach(div => {
+              if (div && div.id !== 'initial-splash' && div.id !== 'root') {
+                const id = div.id || '';
+                const className = div.className || '';
+                if (id.includes('splash') || className.includes('splash') || 
+                    id.includes('Splash') || className.includes('Splash') ||
+                    id === 'capacitor-splash' || className.includes('capacitor-splash')) {
+                  div.style.display = 'none';
+                  div.style.visibility = 'hidden';
+                  div.style.opacity = '0';
+                  div.style.pointerEvents = 'none';
+                }
+              }
+            });
+            
+            // Hide via Capacitor API
+            if (window.Capacitor) {
+              try {
+                if (window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen) {
+                  window.Capacitor.Plugins.SplashScreen.hide({ fadeOutDuration: 0 }).catch(function() {});
+                }
+                if (window.Capacitor.SplashScreen) {
+                  window.Capacitor.SplashScreen.hide({ fadeOutDuration: 0 }).catch(function() {});
+                }
+              } catch (e) {
+                // Ignore - Capacitor may not be available on web
+              }
+            }
+          }
+          
+          hideAllSplashExceptOurs();
+          
+          // Keep checking for any new splash elements
+          setInterval(hideAllSplashExceptOurs, 100);
+        }
+      })();
+    </script>
+    
+    <script type="module" src="/main.tsx"></script>
+    <!-- Service Worker registration moved to main.tsx for better error handling -->
+  </body>
+</html>

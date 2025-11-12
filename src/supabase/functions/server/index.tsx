@@ -1,0 +1,3125 @@
+import { Hono } from "npm:hono";
+import { cors } from "npm:hono/cors";
+import { logger } from "npm:hono/logger";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import * as kv from "./kv_store.tsx";
+import * as calendarSync from "./calendar-sync.tsx";
+import * as cleanupUtils from "./cleanup-utils.tsx";
+
+const app = new Hono();
+
+// Enable logger
+app.use('*', logger(console.log));
+
+// Enable CORS for all routes and methods
+app.use(
+  "/*",
+  cors({
+    origin: "*",
+    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    exposeHeaders: ["Content-Length"],
+    maxAge: 600,
+  }),
+);
+
+// Create Supabase client helper
+const getSupabaseClient = () => {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  );
+};
+
+// Verify user from access token
+const verifyUser = async (request: Request) => {
+  const accessToken = request.headers.get('Authorization')?.split(' ')[1];
+  if (!accessToken) {
+    return { userId: null, error: 'No access token provided' };
+  }
+
+  const supabase = getSupabaseClient();
+  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+  
+  if (error || !user) {
+    return { userId: null, error: 'Invalid access token' };
+  }
+
+  return { userId: user.id, error: null };
+};
+
+// Verify admin user from access token
+const verifyAdmin = async (request: Request) => {
+  const { userId, error } = await verifyUser(request);
+  
+  if (error || !userId) {
+    return { userId: null, error: error || 'Unauthorized' };
+  }
+
+  // Check if user has admin role in KV store
+  const role = await kv.get(`user_${userId}_role`);
+  
+  if (role !== 'admin') {
+    return { userId: null, error: 'Admin access required' };
+  }
+
+  return { userId, error: null };
+};
+
+// Helper function to get and parse workspace members
+async function getWorkspaceMembers(workspaceId: string): Promise<string[]> {
+  let members = await kv.get(`workspace_${workspaceId}_members`);
+  
+  // Handle both array and JSON string formats
+  if (typeof members === 'string') {
+    try {
+      members = JSON.parse(members);
+    } catch (e) {
+      console.log('Error parsing members, initializing with owner:', e);
+      // If parsing fails, get owner and initialize
+      const owner = await kv.get(`workspace_${workspaceId}_owner`);
+      if (owner) {
+        members = [owner];
+        await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
+      } else {
+        members = [];
+      }
+    }
+  }
+  
+  // Ensure members is an array
+  if (!members || !Array.isArray(members)) {
+    const owner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (owner) {
+      members = [owner];
+      await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
+    } else {
+      members = [];
+    }
+  }
+  
+  return members;
+}
+
+// Health check endpoint
+app.get("/make-server-65e6e67f/health", (c) => {
+  return c.json({ status: "ok" });
+});
+
+// User signup endpoint
+app.post("/make-server-65e6e67f/signup", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { email, password, name, isDemo } = body;
+
+    if (!email || !password || !name) {
+      return c.json({ error: 'Email, password, and name are required' }, 400);
+    }
+
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: { 
+        name,
+        isDemo: isDemo || false, // Mark demo users
+      },
+      // Automatically confirm the user's email since an email server hasn't been configured.
+      email_confirm: true
+    });
+
+    if (error) {
+      console.log('Signup error:', error);
+      return c.json({ error: error.message }, 400);
+    }
+
+    // Create initial workspace for the user
+    const workspaceId = `workspace_${data.user.id}_${Date.now()}`;
+    const membersArray = [data.user.id];
+    await kv.set(`user_${data.user.id}_workspace`, workspaceId);
+    await kv.set(`workspace_${workspaceId}_owner`, data.user.id);
+    await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(membersArray));
+    await kv.set(`workspace_${workspaceId}_name`, `${name}'s Workspace`);
+    
+    console.log(`✅ Workspace created on signup: ${workspaceId} for user ${data.user.id}`);
+    
+    // Mark demo user in KV store for cleanup tracking
+    if (isDemo) {
+      const now = Date.now();
+      await kv.set(`user_${data.user.id}_is_demo`, 'true');
+      await kv.set(`user_${data.user.id}_demo_login_time`, now.toString());
+      await kv.set(`user_${data.user.id}_demo_last_activity`, now.toString());
+    }
+
+    return c.json({ user: data.user, workspaceId });
+  } catch (error) {
+    console.log('Error in signup:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get all tasks for a workspace
+app.get("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Get all tasks for this workspace
+    const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
+    const tasks = tasksData.map(item => item.value);
+
+    return c.json({ tasks });
+  } catch (error) {
+    console.log('Error fetching tasks:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Create or update task
+app.post("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const task = await c.req.json();
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Save task
+    await kv.set(`workspace_${workspaceId}_task_${task.id}`, task);
+
+    // Update activity log
+    const activity = {
+      id: `activity_${Date.now()}`,
+      workspaceId,
+      userId,
+      taskId: task.id,
+      action: task.createdAt === task.updatedAt ? 'created' : 'updated',
+      timestamp: Date.now(),
+      taskTitle: task.title
+    };
+    await kv.set(`workspace_${workspaceId}_activity_${activity.id}`, activity);
+
+    return c.json({ task });
+  } catch (error) {
+    console.log('Error saving task:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Delete task
+app.delete("/make-server-65e6e67f/tasks/:workspaceId/:taskId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const taskId = c.req.param('taskId');
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Delete task
+    await kv.del(`workspace_${workspaceId}_task_${taskId}`);
+
+    // Update activity log
+    const activity = {
+      id: `activity_${Date.now()}`,
+      workspaceId,
+      userId,
+      taskId,
+      action: 'deleted',
+      timestamp: Date.now()
+    };
+    await kv.set(`workspace_${workspaceId}_activity_${activity.id}`, activity);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Error deleting task:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get workspace info
+app.get("/make-server-65e6e67f/workspace/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    const name = await kv.get(`workspace_${workspaceId}_name`) || 'My Workspace';
+    const owner = await kv.get(`workspace_${workspaceId}_owner`);
+
+    return c.json({ workspaceId, name, owner, members });
+  } catch (error) {
+    console.log('Error fetching workspace:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get user's workspaces
+app.get("/make-server-65e6e67f/user/workspaces", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    console.log(`📦 Getting workspace for user: ${userId}`);
+
+    // Get user's primary workspace
+    let primaryWorkspace = await kv.get(`user_${userId}_workspace`);
+    
+    // If no workspace exists, create one automatically
+    if (!primaryWorkspace) {
+      console.log(`⚠️ User ${userId} has no workspace, creating one automatically`);
+      
+      try {
+        // Get user info for workspace name
+        const supabase = getSupabaseClient();
+        let userName = 'User';
+        try {
+          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+          if (userError) {
+            console.warn('Error fetching user data:', userError);
+          } else if (userData?.user?.user_metadata?.name) {
+            userName = userData.user.user_metadata.name;
+          }
+        } catch (userError) {
+          console.warn('Error fetching user metadata, using default name:', userError);
+        }
+        
+        // Create workspace
+        primaryWorkspace = `workspace_${userId}_${Date.now()}`;
+        const membersArray = [userId];
+        
+        // Set all workspace keys atomically
+        try {
+          await Promise.all([
+            kv.set(`user_${userId}_workspace`, primaryWorkspace),
+            kv.set(`workspace_${primaryWorkspace}_owner`, userId),
+            kv.set(`workspace_${primaryWorkspace}_members`, JSON.stringify(membersArray)),
+            kv.set(`workspace_${primaryWorkspace}_name`, `${userName}'s Workspace`),
+          ]);
+          console.log(`✅ Auto-created workspace ${primaryWorkspace} for user ${userId}`);
+        } catch (setError) {
+          console.error('Error setting workspace keys:', setError);
+          throw new Error(`Failed to set workspace keys: ${String(setError)}`);
+        }
+      } catch (createError) {
+        console.error('Error creating workspace:', createError);
+        return c.json({ 
+          error: 'Failed to create workspace',
+          details: String(createError)
+        }, 500);
+      }
+    }
+
+    // Verify workspace exists and has required keys
+    if (!primaryWorkspace) {
+      console.error('Workspace creation failed - primaryWorkspace is still null');
+      return c.json({ error: 'Failed to create workspace' }, 500);
+    }
+
+    // Verify workspace keys exist
+    const owner = await kv.get(`workspace_${primaryWorkspace}_owner`);
+    const name = await kv.get(`workspace_${primaryWorkspace}_name`) || 'My Workspace';
+    
+    if (!owner) {
+      console.error(`Workspace ${primaryWorkspace} exists but owner key is missing`);
+      return c.json({ error: 'Workspace data is incomplete' }, 500);
+    }
+
+    console.log(`✅ Returning workspace ${primaryWorkspace} for user ${userId}`);
+    
+    return c.json({ 
+      workspaces: [{
+        id: primaryWorkspace,
+        name
+      }]
+    });
+  } catch (error) {
+    console.error('Error fetching user workspaces:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ 
+      error: 'Internal server error',
+      details: errorMessage
+    }, 500);
+  }
+});
+
+// Create workspace for user
+app.post("/make-server-65e6e67f/user/workspaces", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Check if user already has a workspace
+    const existingWorkspace = await kv.get(`user_${userId}_workspace`);
+    if (existingWorkspace) {
+      // Return existing workspace
+      const name = await kv.get(`workspace_${existingWorkspace}_name`) || 'My Workspace';
+      return c.json({ 
+        workspaceId: existingWorkspace,
+        workspace: {
+          id: existingWorkspace,
+          name
+        }
+      });
+    }
+
+    // Create new workspace
+    const body = await c.req.json();
+    
+    // Get user info to create workspace name
+    const supabase = getSupabaseClient();
+    const { data: userData } = await supabase.auth.admin.getUserById(userId);
+    const userName = userData?.user?.user_metadata?.name || 'User';
+    const finalName = body.name || `${userName}'s Workspace`;
+    
+    const workspaceId = `workspace_${userId}_${Date.now()}`;
+    
+    // Store members as JSON string to ensure consistency
+    const membersArray = [userId];
+    await kv.set(`user_${userId}_workspace`, workspaceId);
+    await kv.set(`workspace_${workspaceId}_owner`, userId);
+    await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(membersArray));
+    await kv.set(`workspace_${workspaceId}_name`, finalName);
+    
+    console.log(`✅ Workspace created: ${workspaceId} for user ${userId}`);
+    
+    return c.json({ 
+      workspaceId,
+      workspace: {
+        id: workspaceId,
+        name: finalName
+      }
+    });
+  } catch (error) {
+    console.log('Error creating workspace:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get recent activities
+app.get("/make-server-65e6e67f/activities/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Get activities
+    const activitiesData = await kv.getByPrefix(`workspace_${workspaceId}_activity_`);
+    const activities = activitiesData
+      .map(item => item.value)
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 50); // Limit to 50 most recent
+
+    return c.json({ activities });
+  } catch (error) {
+    console.log('Error fetching activities:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Save time tracking session
+app.post("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const session = await c.req.json();
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Save time tracking session
+    await kv.set(`workspace_${workspaceId}_time_${session.id}`, session);
+
+    return c.json({ session });
+  } catch (error) {
+    console.log('Error saving time tracking:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get time tracking sessions
+app.get("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Get time tracking sessions
+    const sessionsData = await kv.getByPrefix(`workspace_${workspaceId}_time_`);
+    const sessions = sessionsData.map(item => item.value);
+
+    return c.json({ sessions });
+  } catch (error) {
+    console.log('Error fetching time tracking:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get all projects for a workspace
+app.get("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Get all projects for this workspace
+    const projectsData = await kv.getByPrefix(`workspace_${workspaceId}_project_`);
+    const projects = projectsData.map(item => item.value);
+
+    return c.json({ projects });
+  } catch (error) {
+    console.log('Error fetching projects:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Create or update project
+app.post("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const project = await c.req.json();
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Save project
+    await kv.set(`workspace_${workspaceId}_project_${project.id}`, project);
+
+    return c.json({ project });
+  } catch (error) {
+    console.log('Error saving project:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Delete project
+app.delete("/make-server-65e6e67f/projects/:workspaceId/:projectId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const projectId = c.req.param('projectId');
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Delete project
+    await kv.del(`workspace_${workspaceId}_project_${projectId}`);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Error deleting project:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get all folders for a workspace
+app.get("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const workspaceId = c.req.param("workspaceId");
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: "Workspace not found" }, 404);
+    }
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: "Access denied" }, 403);
+    }
+
+    const foldersData = await kv.getByPrefix(`workspace_${workspaceId}_folder_`);
+    const folders = foldersData.map((item) => item.value);
+
+    console.log(`✅ Fetched ${folders.length} folders for workspace ${workspaceId} by user ${userId}`);
+    return c.json({ folders });
+  } catch (error) {
+    console.log("Error fetching folders:", error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Create or update folder
+app.post("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const workspaceId = c.req.param("workspaceId");
+    const folder = await c.req.json();
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: "Workspace not found" }, 404);
+    }
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: "Access denied" }, 403);
+    }
+
+    if (!folder || !folder.id) {
+      return c.json({ error: "Folder id is required" }, 400);
+    }
+
+    const now = new Date().toISOString();
+    const folderData = {
+      id: folder.id,
+      name: folder.name || 'New Folder',
+      description: folder.description || '',
+      color: folder.color || '#3b82f6',
+      createdAt: folder.createdAt || now,
+      updatedAt: now,
+    };
+
+    // Store folder with workspace-scoped key
+    await kv.set(`workspace_${workspaceId}_folder_${folderData.id}`, folderData);
+
+    console.log(`✅ Created folder ${folderData.id} in workspace ${workspaceId} by user ${userId}`);
+    return c.json({ folder: folderData });
+  } catch (error) {
+    console.log("Error saving folder:", error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Update folder
+app.put("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const workspaceId = c.req.param("workspaceId");
+    const folderId = c.req.param("folderId");
+    const updates = await c.req.json();
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: "Workspace not found" }, 404);
+    }
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: "Access denied" }, 403);
+    }
+
+    const existingFolder = await kv.get(`workspace_${workspaceId}_folder_${folderId}`);
+    if (!existingFolder) {
+      return c.json({ error: "Folder not found" }, 404);
+    }
+
+    const updatedFolder = {
+      ...existingFolder,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await kv.set(`workspace_${workspaceId}_folder_${folderId}`, updatedFolder);
+
+    console.log(`✅ Updated folder ${folderId} in workspace ${workspaceId} by user ${userId}`);
+    return c.json({ folder: updatedFolder });
+  } catch (error) {
+    console.log("Error updating folder:", error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Delete folder
+app.delete("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const workspaceId = c.req.param("workspaceId");
+    const folderId = c.req.param("folderId");
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: "Workspace not found" }, 404);
+    }
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: "Access denied" }, 403);
+    }
+
+    await kv.del(`workspace_${workspaceId}_folder_${folderId}`);
+
+    console.log(`✅ Deleted folder ${folderId} from workspace ${workspaceId} by user ${userId}`);
+    return c.json({ success: true });
+  } catch (error) {
+    console.log("Error deleting folder:", error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get workspace settings (tags, hours, rollover, view config)
+app.get("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Get all settings - KV store returns objects directly, no parsing needed
+    const availableTags = await kv.get(`workspace_${workspaceId}_settings_tags`);
+    const hoursSettings = await kv.get(`workspace_${workspaceId}_settings_hours`);
+    const rolloverSettings = await kv.get(`workspace_${workspaceId}_settings_rollover`);
+    const viewConfig = await kv.get(`workspace_${workspaceId}_settings_viewconfig`);
+
+    const settings = {
+      availableTags: availableTags || null,
+      hoursSettings: hoursSettings || null,
+      rolloverSettings: rolloverSettings || null,
+      viewConfig: viewConfig || null,
+    };
+
+    return c.json({ settings });
+  } catch (error) {
+    console.log('Error fetching settings:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Update workspace settings
+app.post("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const { availableTags, hoursSettings, rolloverSettings, viewConfig } = await c.req.json();
+
+    // Verify user has access to this workspace
+    const members = await kv.get(`workspace_${workspaceId}_members`);
+    if (!members) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Save settings - KV store handles JSONB directly, no stringify needed
+    if (availableTags !== undefined) {
+      await kv.set(`workspace_${workspaceId}_settings_tags`, availableTags);
+    }
+    if (hoursSettings !== undefined) {
+      await kv.set(`workspace_${workspaceId}_settings_hours`, hoursSettings);
+    }
+    if (rolloverSettings !== undefined) {
+      await kv.set(`workspace_${workspaceId}_settings_rollover`, rolloverSettings);
+    }
+    if (viewConfig !== undefined) {
+      await kv.set(`workspace_${workspaceId}_settings_viewconfig`, viewConfig);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Error saving settings:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get user subscription
+app.get("/make-server-65e6e67f/subscription", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Get subscription data from webhook format (primary source)
+    const tier = await kv.get(`user:${userId}:tier`) || 'free';
+    const status = await kv.get(`user:${userId}:subscription_status`) || 'none';
+    const store = await kv.get(`user:${userId}:subscription_store`);
+    const startDate = await kv.get(`user:${userId}:subscription_start`);
+    const expiresAt = await kv.get(`user:${userId}:subscription_expires_at`);
+    const cancelAtPeriodEnd = status === 'cancelled' && expiresAt && new Date(expiresAt) > new Date();
+
+    // Also check legacy format for backwards compatibility
+    const legacySubscription = await kv.get(`user_${userId}_subscription`);
+    
+    // Build subscription object from webhook data
+    const subscription = {
+      tier: tier !== 'free' ? tier : (legacySubscription?.tier || 'free'),
+      status: status !== 'none' ? status : (legacySubscription?.status || 'active'),
+      startDate: startDate || legacySubscription?.startDate || null,
+      endDate: expiresAt || legacySubscription?.endDate || null,
+      cancelAtPeriodEnd: cancelAtPeriodEnd || legacySubscription?.cancelAtPeriodEnd || false,
+    };
+
+    return c.json({ subscription });
+  } catch (error) {
+    console.log('Error fetching subscription:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Update user subscription
+app.post("/make-server-65e6e67f/subscription", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const subscription = await c.req.json();
+
+    // Save subscription in both formats for compatibility
+    // Legacy format (for existing code)
+    await kv.set(`user_${userId}_subscription`, subscription);
+    
+    // Webhook format (for RevenueCat sync)
+    if (subscription.tier) {
+      await kv.set(`user:${userId}:tier`, subscription.tier);
+    }
+    if (subscription.status) {
+      await kv.set(`user:${userId}:subscription_status`, subscription.status);
+    }
+    if (subscription.startDate) {
+      await kv.set(`user:${userId}:subscription_start`, subscription.startDate);
+    }
+    if (subscription.endDate) {
+      await kv.set(`user:${userId}:subscription_expires_at`, subscription.endDate);
+    }
+
+    return c.json({ subscription });
+  } catch (error) {
+    console.log('Error saving subscription:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// ========================================
+// DEMO USER CLEANUP ENDPOINT
+// ========================================
+
+// Delete demo user and all associated data
+app.delete("/make-server-65e6e67f/cleanup-demo-user", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Check if this is a demo user
+    const isDemoFlag = await kv.get(`user_${userId}_is_demo`);
+    if (!isDemoFlag || isDemoFlag !== 'true') {
+      return c.json({ error: 'Not a demo user - cleanup not allowed' }, 403);
+    }
+
+    console.log(`🧹 Starting cleanup for demo user: ${userId}`);
+
+    const supabase = getSupabaseClient();
+
+    // 1. Get user's workspace
+    const workspaceId = await kv.get(`user_${userId}_workspace`);
+    
+    if (workspaceId) {
+      console.log(`  📦 Deleting workspace: ${workspaceId}`);
+      
+      // Delete all workspace-related data
+      const allKeys = await kv.getByPrefix(`workspace_${workspaceId}_`);
+      console.log(`  🗑️  Found ${allKeys.length} workspace keys to delete`);
+      
+      for (const item of allKeys) {
+        await kv.del(item.key);
+      }
+      
+      // Delete workspace reference
+      await kv.del(`user_${userId}_workspace`);
+    }
+
+    // 2. Delete user-specific data (including login timestamp)
+    console.log(`  👤 Deleting user data for: ${userId}`);
+    const userKeys = await kv.getByPrefix(`user_${userId}_`);
+    console.log(`  🗑️  Found ${userKeys.length} user keys to delete`);
+    
+    for (const item of userKeys) {
+      await kv.del(item.key);
+    }
+    
+    // Explicitly delete login timestamp and activity timestamp if they exist
+    await kv.del(`user_${userId}_demo_login_time`);
+    await kv.del(`user_${userId}_demo_last_activity`);
+
+    // 3. Delete calendar tokens if any
+    try {
+      await kv.del(`calendar_tokens_${userId}_google`);
+      await kv.del(`calendar_tokens_${userId}_outlook`);
+      await kv.del(`calendar_tokens_${userId}_apple`);
+    } catch (e) {
+      console.log('  ℹ️  No calendar tokens to delete');
+    }
+
+    // 4. Delete the user from Supabase Auth
+    console.log(`  🔐 Deleting user from Supabase Auth: ${userId}`);
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+    
+    if (deleteError) {
+      console.error('  ⚠️  Failed to delete user from Auth:', deleteError);
+      // Continue anyway - KV data is already cleaned
+    }
+
+    console.log(`✅ Demo user cleanup completed: ${userId}`);
+
+    return c.json({ 
+      success: true, 
+      message: 'Demo user and all associated data deleted successfully',
+      deletedWorkspace: workspaceId,
+    });
+  } catch (error) {
+    console.error('Error cleaning up demo user:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get demo user statistics (admin endpoint)
+app.get("/make-server-65e6e67f/admin/demo-stats", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyAdmin(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: authError || 'Unauthorized' }, 401);
+    }
+
+    const stats = await cleanupUtils.getDemoUserStats();
+    
+    return c.json({
+      ...stats,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error getting demo stats:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Manual cleanup of all demo users (admin endpoint - use with caution!)
+app.post("/make-server-65e6e67f/admin/cleanup-all-demos", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyAdmin(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: authError || 'Unauthorized' }, 401);
+    }
+
+    console.log(`⚠️  Manual cleanup of all demo users initiated by admin ${userId}`);
+    
+    const result = await cleanupUtils.cleanupAllDemoUsers();
+    const report = cleanupUtils.generateCleanupReport(result);
+    
+    console.log(report);
+    
+    return c.json({
+      ...result,
+      report,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error in manual cleanup:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// ========================================
+// DEMO USER SESSION MANAGEMENT
+// ========================================
+
+// Update demo user login timestamp
+app.post("/make-server-65e6e67f/demo/update-login-time", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Verify this is a demo user
+    const isDemoFlag = await kv.get(`user_${userId}_is_demo`);
+    if (!isDemoFlag || isDemoFlag !== 'true') {
+      return c.json({ error: 'Not a demo user' }, 403);
+    }
+
+    // Update login timestamp and activity timestamp
+    const now = Date.now();
+    await kv.set(`user_${userId}_demo_login_time`, now.toString());
+    await kv.set(`user_${userId}_demo_last_activity`, now.toString());
+    
+    return c.json({ success: true, loginTime: now, lastActivity: now });
+  } catch (error) {
+    console.log('Error updating demo login time:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Update demo user activity timestamp
+app.post("/make-server-65e6e67f/demo/update-activity", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Verify this is a demo user
+    const isDemoFlag = await kv.get(`user_${userId}_is_demo`);
+    if (!isDemoFlag || isDemoFlag !== 'true') {
+      return c.json({ error: 'Not a demo user' }, 403);
+    }
+
+    // Update activity timestamp
+    const now = Date.now();
+    await kv.set(`user_${userId}_demo_last_activity`, now.toString());
+    
+    return c.json({ success: true, lastActivity: now });
+  } catch (error) {
+    console.log('Error updating demo activity:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Cleanup inactive demo users (called by background job or admin)
+// This endpoint checks for demo users with no activity > 1 hour and cleans them up
+app.post("/make-server-65e6e67f/demo/cleanup-inactive", async (c) => {
+  try {
+    // Verify admin access or scheduled job token
+    // For scheduled jobs, you can pass a secret token in the request body
+    const body = await c.req.json().catch(() => ({}));
+    const scheduledJobToken = body.scheduledJobToken;
+    const scheduledJobSecret = Deno.env.get('SCHEDULED_JOB_SECRET');
+    
+    // Allow if it's a valid scheduled job token OR if user is admin
+    if (!scheduledJobToken || scheduledJobToken !== scheduledJobSecret) {
+      const { userId, error: authError } = await verifyAdmin(c.req.raw);
+      if (authError || !userId) {
+        return c.json({ error: authError || 'Unauthorized - Admin access or valid scheduled job token required' }, 401);
+      }
+    }
+    
+    const { maxInactiveMinutes = 60 } = body;
+    
+    console.log(`🧹 Starting cleanup of inactive demo users (inactive > ${maxInactiveMinutes} minutes)`);
+    
+    // Get all demo user IDs
+    const demoUserIds = await cleanupUtils.getAllDemoUserIds();
+    const now = Date.now();
+    const maxInactiveMs = maxInactiveMinutes * 60 * 1000;
+    let cleanedCount = 0;
+    const errors: string[] = [];
+
+    for (const userId of demoUserIds) {
+      try {
+        // Get last activity time
+        const lastActivityStr = await kv.get(`user_${userId}_demo_last_activity`);
+        
+        if (!lastActivityStr) {
+          // No activity recorded, check login time as fallback
+          const loginTimeStr = await kv.get(`user_${userId}_demo_login_time`);
+          if (!loginTimeStr) {
+            // No activity or login time - clean up
+            console.log(`  🗑️  Cleaning up demo user ${userId} (no activity recorded)`);
+            await cleanupDemoUser(userId);
+            cleanedCount++;
+            continue;
+          }
+          
+          // Use login time if no activity recorded
+          const lastActivity = parseInt(loginTimeStr);
+          const inactiveMs = now - lastActivity;
+          
+          if (inactiveMs > maxInactiveMs) {
+            console.log(`  🗑️  Cleaning up inactive demo user ${userId} (${Math.round(inactiveMs / 60000)} minutes inactive)`);
+            await cleanupDemoUser(userId);
+            cleanedCount++;
+          }
+        } else {
+          const lastActivity = parseInt(lastActivityStr);
+          const inactiveMs = now - lastActivity;
+          
+          if (inactiveMs > maxInactiveMs) {
+            console.log(`  🗑️  Cleaning up inactive demo user ${userId} (${Math.round(inactiveMs / 60000)} minutes inactive)`);
+            await cleanupDemoUser(userId);
+            cleanedCount++;
+          }
+        }
+      } catch (error) {
+        const errorMsg = `Failed to cleanup demo user ${userId}: ${error}`;
+        console.error(`  ❌ ${errorMsg}`);
+        errors.push(errorMsg);
+      }
+    }
+
+    console.log(`✅ Cleanup completed: ${cleanedCount} demo users cleaned up`);
+
+    return c.json({
+      success: true,
+      cleanedCount,
+      totalChecked: demoUserIds.length,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    console.error('Error in inactive demo cleanup:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Helper function to cleanup a single demo user
+async function cleanupDemoUser(userId: string) {
+  const supabase = getSupabaseClient();
+  
+  // Get user's workspace
+  const workspaceId = await kv.get(`user_${userId}_workspace`);
+  
+  if (workspaceId) {
+    // Delete all workspace-related data
+    const allKeys = await kv.getByPrefix(`workspace_${workspaceId}_`);
+    for (const item of allKeys) {
+      await kv.del(item.key);
+    }
+    await kv.del(`user_${userId}_workspace`);
+  }
+
+  // Delete user-specific data
+  const userKeys = await kv.getByPrefix(`user_${userId}_`);
+  for (const item of userKeys) {
+    await kv.del(item.key);
+  }
+
+  // Delete calendar tokens
+  try {
+    await kv.del(`calendar_tokens_${userId}_google`);
+    await kv.del(`calendar_tokens_${userId}_outlook`);
+    await kv.del(`calendar_tokens_${userId}_apple`);
+  } catch (e) {
+    // Calendar tokens might not exist
+  }
+
+  // Delete the user from Supabase Auth
+  try {
+    await supabase.auth.admin.deleteUser(userId);
+  } catch (e) {
+    console.warn(`  ⚠️  Failed to delete user from Auth: ${e}`);
+  }
+}
+
+// ========================================
+// CALENDAR INTEGRATION ENDPOINTS
+// ========================================
+
+// Initiate Google Calendar OAuth flow
+app.get("/make-server-65e6e67f/calendar/google/auth", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
+    let redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI');
+
+    // Clean and validate redirect URI
+    if (redirectUri) {
+      // Remove any query parameters or fragments that might have been accidentally included
+      redirectUri = redirectUri.trim().split('?')[0].split('#')[0];
+      
+      // Validate it's a proper HTTPS URL
+      try {
+        const url = new URL(redirectUri);
+        if (url.protocol !== 'https:') {
+          console.error('Invalid redirect URI protocol:', redirectUri);
+          return c.json({ 
+            error: 'GOOGLE_REDIRECT_URI must use https:// protocol',
+          }, 500);
+        }
+      } catch (e) {
+        console.error('Invalid redirect URI format:', redirectUri);
+        return c.json({ 
+          error: 'GOOGLE_REDIRECT_URI is not a valid URL',
+        }, 500);
+      }
+    }
+
+    console.log('Google OAuth config check:', {
+      hasClientId: !!clientId,
+      hasRedirectUri: !!redirectUri,
+      redirectUri,
+    });
+
+    if (!clientId || !redirectUri) {
+      console.log('Google OAuth not configured - missing env vars');
+      return c.json({ 
+        error: 'Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI environment variables.',
+        details: {
+          hasClientId: !!clientId,
+          hasRedirectUri: !!redirectUri,
+        }
+      }, 500);
+    }
+
+    const scopes = [
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/calendar.events',
+    ];
+
+    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    authUrl.searchParams.set('client_id', clientId);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', scopes.join(' '));
+    authUrl.searchParams.set('access_type', 'offline');
+    authUrl.searchParams.set('prompt', 'consent');
+    authUrl.searchParams.set('state', userId); // Pass userId in state
+
+    console.log('Google OAuth URL generated successfully for user:', userId);
+    return c.json({ authUrl: authUrl.toString() });
+  } catch (error) {
+    console.log('Error initiating Google OAuth:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Google Calendar OAuth callback
+app.get("/make-server-65e6e67f/calendar/google/callback", async (c) => {
+  try {
+    const code = c.req.query('code');
+    const userId = c.req.query('state');
+    const error = c.req.query('error');
+
+    console.log('Google OAuth callback received:', { 
+      hasCode: !!code, 
+      hasUserId: !!userId, 
+      error,
+      queryParams: Object.fromEntries(c.req.url.split('?')[1]?.split('&').map(p => p.split('=')) || [])
+    });
+
+    if (error) {
+      // Return HTML page that closes popup and notifies parent of error
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'google',
+        error: '${error.replace(/'/g, "\\'")}'
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
+    }
+  </script>
+  <p>Connection failed: ${error}. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(html);
+    }
+
+    if (!code || !userId) {
+      // Return HTML page that closes popup and notifies parent of error
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'google',
+        error: 'Missing authorization code or user ID'
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
+    }
+  </script>
+  <p>Connection failed: Missing authorization code or user ID. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(html);
+    }
+
+    const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
+    const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
+    let redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI');
+
+    // Clean redirect URI (remove any query parameters or fragments)
+    if (redirectUri) {
+      redirectUri = redirectUri.trim().split('?')[0].split('#')[0];
+    }
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'google',
+        error: 'Google OAuth not configured'
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
+    }
+  </script>
+  <p>Connection failed: Google OAuth not configured. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(html);
+    }
+
+    // Exchange code for tokens
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('Google token exchange failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+      });
+      // Return HTML page that closes popup and notifies parent of error
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'google',
+        error: 'Failed to exchange authorization code'
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
+    }
+  </script>
+  <p>Connection failed: Failed to exchange authorization code. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(html);
+    }
+
+    const data = await response.json();
+
+    console.log('Google token exchange successful for user:', userId);
+
+    // Store tokens
+    const tokens: calendarSync.CalendarTokens = {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresAt: Date.now() + (data.expires_in * 1000),
+      provider: 'google',
+    };
+
+    await calendarSync.storeCalendarTokens(userId, 'google', tokens);
+    console.log('Google Calendar tokens stored successfully for user:', userId);
+
+    // Return HTML page that closes popup and notifies parent
+    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connected</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-success', 
+        provider: 'google' 
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${appUrl}';
+    }
+  </script>
+  <p>Calendar connected successfully! This window will close automatically.</p>
+</body>
+</html>`;
+    
+    return c.html(html);
+  } catch (error) {
+    console.log('Error in Google OAuth callback:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Initiate Outlook Calendar OAuth flow
+app.get("/make-server-65e6e67f/calendar/outlook/auth", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const clientId = Deno.env.get('OUTLOOK_CLIENT_ID');
+    const redirectUri = Deno.env.get('OUTLOOK_REDIRECT_URI');
+
+    if (!clientId || !redirectUri) {
+      return c.json({ error: 'Outlook OAuth not configured' }, 500);
+    }
+
+    const scopes = [
+      'https://graph.microsoft.com/Calendars.ReadWrite',
+      'offline_access',
+    ];
+
+    const authUrl = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
+    authUrl.searchParams.set('client_id', clientId);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', scopes.join(' '));
+    authUrl.searchParams.set('response_mode', 'query');
+    authUrl.searchParams.set('state', userId);
+
+    return c.json({ authUrl: authUrl.toString() });
+  } catch (error) {
+    console.log('Error initiating Outlook OAuth:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Outlook Calendar OAuth callback
+app.get("/make-server-65e6e67f/calendar/outlook/callback", async (c) => {
+  try {
+    const code = c.req.query('code');
+    const userId = c.req.query('state');
+    const error = c.req.query('error');
+
+    if (error) {
+      // Return HTML page that closes popup and notifies parent of error
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'outlook',
+        error: '${error}'
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
+    }
+  </script>
+  <p>Connection failed: ${error}. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(html);
+    }
+
+    if (!code || !userId) {
+      // Return HTML page that closes popup and notifies parent of error
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'outlook',
+        error: 'Missing authorization code or user ID'
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
+    }
+  </script>
+  <p>Connection failed: Missing authorization code or user ID. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(html);
+    }
+
+    const clientId = Deno.env.get('OUTLOOK_CLIENT_ID');
+    const clientSecret = Deno.env.get('OUTLOOK_CLIENT_SECRET');
+    const redirectUri = Deno.env.get('OUTLOOK_REDIRECT_URI');
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'outlook',
+        error: 'Outlook OAuth not configured'
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
+    }
+  </script>
+  <p>Connection failed: Outlook OAuth not configured. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(html);
+    }
+
+    // Exchange code for tokens
+    const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+        scope: 'https://graph.microsoft.com/Calendars.ReadWrite offline_access',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      // Return HTML page that closes popup and notifies parent of error
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'outlook',
+        error: 'Failed to exchange authorization code'
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
+    }
+  </script>
+  <p>Connection failed: Failed to exchange authorization code. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(html);
+    }
+
+    const data = await response.json();
+
+    // Store tokens
+    const tokens: calendarSync.CalendarTokens = {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresAt: Date.now() + (data.expires_in * 1000),
+      provider: 'outlook',
+    };
+
+    await calendarSync.storeCalendarTokens(userId, 'outlook', tokens);
+
+    // Return HTML page that closes popup and notifies parent
+    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connected</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-success', 
+        provider: 'outlook' 
+      }, '*');
+      window.close();
+    } else {
+      window.location.href = '${appUrl}';
+    }
+  </script>
+  <p>Calendar connected successfully! This window will close automatically.</p>
+</body>
+</html>`;
+    
+    return c.html(html);
+  } catch (error) {
+    console.log('Error in Outlook OAuth callback:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Check calendar connection status
+app.get("/make-server-65e6e67f/calendar/status", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      console.log('Calendar status check - unauthorized:', { authError, userId });
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const googleTokens = await calendarSync.getCalendarTokens(userId, 'google');
+    const outlookTokens = await calendarSync.getCalendarTokens(userId, 'outlook');
+    const appleTokens = await calendarSync.getCalendarTokens(userId, 'apple');
+
+    const status = {
+      google: !!googleTokens,
+      outlook: !!outlookTokens,
+      apple: !!appleTokens,
+    };
+
+    console.log('Calendar status for user:', userId, status);
+    return c.json(status);
+  } catch (error) {
+    console.log('Error checking calendar status:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Apple Calendar CalDAV connection setup
+app.post("/make-server-65e6e67f/calendar/apple/setup", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    let caldavUrl: string;
+    let username: string;
+    let appPassword: string;
+
+    try {
+      const body = await c.req.json();
+      caldavUrl = body.caldavUrl;
+      username = body.username;
+      appPassword = body.appPassword;
+    } catch (parseError) {
+      console.log('Error parsing request JSON for Apple Calendar setup:', parseError);
+      return c.json({ error: 'Invalid request body. Please provide caldavUrl, username, and appPassword.' }, 400);
+    }
+
+    if (!caldavUrl || !username || !appPassword) {
+      return c.json({ error: 'Missing CalDAV credentials' }, 400);
+    }
+
+    // Test connection
+    try {
+      const { testCalDAVConnection } = await import('./caldav-client.tsx');
+      const testResult = await testCalDAVConnection(caldavUrl, username, appPassword);
+      
+      if (!testResult.success) {
+        const errorMessage = testResult.error || 'Invalid CalDAV credentials. Please check your iCloud email and app-specific password.';
+        return c.json({ error: errorMessage }, 400);
+      }
+    } catch (testError) {
+      console.log('Error testing CalDAV connection:', testError);
+      return c.json({ 
+        error: 'Failed to test CalDAV connection. Please check your credentials and try again.' 
+      }, 500);
+    }
+
+    // Store credentials securely
+    try {
+      const tokens: calendarSync.CalendarTokens = {
+        accessToken: appPassword, // Store app password as access token
+        provider: 'apple',
+        email: username,
+        caldavUrl,
+        caldavUsername: username,
+        caldavPassword: appPassword,
+      };
+
+      await calendarSync.storeCalendarTokens(userId, 'apple', tokens);
+    } catch (storeError) {
+      console.log('Error storing Apple Calendar tokens:', storeError);
+      return c.json({ 
+        error: 'Failed to store calendar credentials. Please try again.' 
+      }, 500);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Unhandled error setting up Apple Calendar:', error);
+    // Return a safe, user-friendly error message
+    return c.json({ 
+      error: 'An unexpected error occurred while setting up Apple Calendar. Please try again.' 
+    }, 500);
+  }
+});
+
+// Disconnect calendar
+app.delete("/make-server-65e6e67f/calendar/:provider", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const provider = c.req.param('provider') as calendarSync.CalendarProvider;
+    
+    if (!['google', 'outlook', 'apple'].includes(provider)) {
+      return c.json({ error: 'Invalid provider' }, 400);
+    }
+
+    // Remove tokens
+    await kv.del(`user_${userId}_calendar_${provider}_tokens`);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Error disconnecting calendar:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Sync task to calendar
+app.post("/make-server-65e6e67f/calendar/sync-task", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { task, provider } = await c.req.json();
+
+    if (!task || !provider) {
+      return c.json({ error: 'Missing task or provider' }, 400);
+    }
+
+    // Check if task already has an event
+    const existingEventId = await calendarSync.getTaskEventMapping(userId, task.id, provider);
+
+    let event;
+    if (existingEventId) {
+      // Update existing event
+      event = await calendarSync.updateCalendarEvent(userId, provider, existingEventId, task);
+    } else {
+      // Create new event
+      event = await calendarSync.createCalendarEvent(userId, provider, task);
+      if (event) {
+        await calendarSync.storeTaskEventMapping(userId, task.id, provider, event.providerEventId);
+      }
+    }
+
+    return c.json({ event });
+  } catch (error) {
+    console.log('Error syncing task to calendar:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Sync all tasks to calendar
+app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { workspaceId, provider } = await c.req.json();
+
+    if (!workspaceId || !provider) {
+      return c.json({ error: 'Missing workspaceId or provider' }, 400);
+    }
+
+    // Get all tasks with scheduled dates
+    const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
+    const tasks = tasksData
+      .map(item => JSON.parse(item.value))
+      .filter(task => task.scheduledDate && !task.archived);
+
+    const syncResults = [];
+    
+    for (const task of tasks) {
+      try {
+        const existingEventId = await calendarSync.getTaskEventMapping(userId, task.id, provider);
+        
+        let event;
+        if (existingEventId) {
+          event = await calendarSync.updateCalendarEvent(userId, provider, existingEventId, task);
+        } else {
+          event = await calendarSync.createCalendarEvent(userId, provider, task);
+          if (event) {
+            await calendarSync.storeTaskEventMapping(userId, task.id, provider, event.providerEventId);
+          }
+        }
+        
+        syncResults.push({ taskId: task.id, success: true, event });
+      } catch (error) {
+        console.log(`Error syncing task ${task.id}:`, error);
+        syncResults.push({ taskId: task.id, success: false, error: String(error) });
+      }
+    }
+
+    return c.json({ 
+      synced: syncResults.filter(r => r.success).length,
+      failed: syncResults.filter(r => !r.success).length,
+      results: syncResults 
+    });
+  } catch (error) {
+    console.log('Error syncing all tasks:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get calendar events
+app.get("/make-server-65e6e67f/calendar/events/:provider", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const provider = c.req.param('provider') as calendarSync.CalendarProvider;
+    const startDate = c.req.query('startDate') || new Date().toISOString();
+    const endDate = c.req.query('endDate') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const events = await calendarSync.getCalendarEvents(userId, provider, startDate, endDate);
+
+    return c.json({ events });
+  } catch (error) {
+    console.log('Error fetching calendar events:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// ============================================================================
+// REVENUECAT SUBSCRIPTION WEBHOOK
+// ============================================================================
+// Handles subscription events from all platforms (web/Stripe, iOS/Apple, Android/Google Play)
+
+app.post("/make-server-65e6e67f/revenuecat-webhook", async (c) => {
+  try {
+    const event = await c.req.json();
+    
+    console.log('RevenueCat webhook received:', {
+      type: event.event?.type,
+      userId: event.event?.app_user_id,
+      store: event.event?.store
+    });
+
+    // Validate webhook signature (RevenueCat sends this in production)
+    const authHeader = c.req.header('Authorization');
+    const expectedToken = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
+    
+    if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+      console.error('Invalid webhook signature');
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Extract event data
+    const eventType = event.event?.type;
+    const userId = event.event?.app_user_id;
+    const store = event.event?.store; // 'app_store', 'play_store', 'stripe', etc.
+    const productId = event.event?.product_id;
+    const purchaseDate = event.event?.purchased_at_ms;
+    const expirationDate = event.event?.expiration_at_ms;
+
+    if (!userId) {
+      console.error('No user ID in webhook event');
+      return c.json({ error: 'Missing user ID' }, 400);
+    }
+
+    // Process event based on type
+    switch (eventType) {
+      case 'INITIAL_PURCHASE':
+        console.log(`User ${userId} subscribed via ${store}`);
+        const startDateISO = purchaseDate ? new Date(purchaseDate).toISOString() : new Date().toISOString();
+        const expiresAtISO = expirationDate ? new Date(expirationDate).toISOString() : null;
+        
+        // Store in webhook format
+        await kv.set(`user:${userId}:tier`, 'pro');
+        await kv.set(`user:${userId}:subscription_store`, store);
+        await kv.set(`user:${userId}:subscription_product`, productId);
+        await kv.set(`user:${userId}:subscription_start`, startDateISO);
+        await kv.set(`user:${userId}:subscription_status`, 'active');
+        if (expiresAtISO) {
+          await kv.set(`user:${userId}:subscription_expires_at`, expiresAtISO);
+        }
+        
+        // Store Stripe customer ID if this is from Stripe
+        // RevenueCat webhook may have customer_id in different locations:
+        // 1. event.event.customer_id (direct)
+        // 2. event.event.subscriber_attributes.$stripeCustomerId
+        // 3. event.event.transaction_id (we'd need to query Stripe with this)
+        if (store === 'stripe') {
+          let stripeCustomerId = null;
+          
+          // Check direct customer_id field
+          if (event.event?.customer_id) {
+            stripeCustomerId = event.event.customer_id;
+          }
+          // Check subscriber attributes
+          else if (event.event?.subscriber_attributes?.$stripeCustomerId?.value) {
+            stripeCustomerId = event.event.subscriber_attributes.$stripeCustomerId.value;
+          }
+          // Check entitlements for transaction info
+          else if (event.event?.entitlements) {
+            const entitlements = Object.values(event.event.entitlements);
+            for (const entitlement of entitlements) {
+              if (entitlement.latest_transaction?.customer_id) {
+                stripeCustomerId = entitlement.latest_transaction.customer_id;
+                break;
+              }
+            }
+          }
+          
+          if (stripeCustomerId) {
+            await kv.set(`user:${userId}:stripe_customer_id`, stripeCustomerId);
+            console.log(`Stored Stripe customer ID for user ${userId}: ${stripeCustomerId}`);
+          } else {
+            console.warn(`Stripe subscription for user ${userId} but no customer_id found in webhook. Will query RevenueCat API when needed.`);
+            // Log webhook structure for debugging
+            console.log('Webhook event structure:', JSON.stringify(event.event, null, 2));
+          }
+        }
+        
+        // Sync to legacy format for compatibility
+        await kv.set(`user_${userId}_subscription`, {
+          tier: 'pro',
+          status: 'active',
+          startDate: startDateISO,
+          endDate: expiresAtISO,
+          cancelAtPeriodEnd: false,
+        });
+        break;
+
+      case 'RENEWAL':
+        console.log(`User ${userId} subscription renewed via ${store}`);
+        const renewedDateISO = purchaseDate ? new Date(purchaseDate).toISOString() : new Date().toISOString();
+        const renewedExpiresAtISO = expirationDate ? new Date(expirationDate).toISOString() : null;
+        
+        await kv.set(`user:${userId}:tier`, 'pro');
+        await kv.set(`user:${userId}:subscription_status`, 'active');
+        await kv.set(`user:${userId}:subscription_renewed`, renewedDateISO);
+        if (renewedExpiresAtISO) {
+          await kv.set(`user:${userId}:subscription_expires_at`, renewedExpiresAtISO);
+        }
+        
+        // Sync to legacy format
+        const legacySub = await kv.get(`user_${userId}_subscription`) || {};
+        await kv.set(`user_${userId}_subscription`, {
+          ...legacySub,
+          tier: 'pro',
+          status: 'active',
+          endDate: renewedExpiresAtISO || legacySub.endDate,
+          cancelAtPeriodEnd: false,
+        });
+        break;
+
+      case 'CANCELLATION':
+        console.log(`User ${userId} cancelled subscription on ${store}`);
+        // Keep Pro until expiration
+        const cancelledDateISO = new Date().toISOString();
+        const cancelledExpiresAtISO = expirationDate ? new Date(expirationDate).toISOString() : null;
+        
+        await kv.set(`user:${userId}:subscription_status`, 'cancelled');
+        await kv.set(`user:${userId}:subscription_cancelled_at`, cancelledDateISO);
+        if (cancelledExpiresAtISO) {
+          await kv.set(`user:${userId}:subscription_expires_at`, cancelledExpiresAtISO);
+        }
+        
+        // Sync to legacy format
+        const cancelledLegacySub = await kv.get(`user_${userId}_subscription`) || {};
+        await kv.set(`user_${userId}_subscription`, {
+          ...cancelledLegacySub,
+          status: 'active', // Keep status as active until expiration
+          endDate: cancelledExpiresAtISO || cancelledLegacySub.endDate,
+          cancelAtPeriodEnd: true,
+        });
+        break;
+
+      case 'UNCANCELLATION':
+        console.log(`User ${userId} reactivated subscription on ${store}`);
+        await kv.set(`user:${userId}:tier`, 'pro');
+        await kv.set(`user:${userId}:subscription_status`, 'active');
+        await kv.del(`user:${userId}:subscription_cancelled_at`);
+        break;
+
+      case 'EXPIRATION':
+        console.log(`User ${userId} subscription expired on ${store}`);
+        const expiredDateISO = new Date().toISOString();
+        
+        await kv.set(`user:${userId}:tier`, 'free');
+        await kv.set(`user:${userId}:subscription_status`, 'expired');
+        await kv.set(`user:${userId}:subscription_expired_at`, expiredDateISO);
+        
+        // Sync to legacy format
+        await kv.set(`user_${userId}_subscription`, {
+          tier: 'free',
+          status: 'expired',
+          startDate: null,
+          endDate: expiredDateISO,
+          cancelAtPeriodEnd: false,
+        });
+        break;
+
+      case 'BILLING_ISSUE':
+        console.log(`Billing issue for user ${userId} on ${store}`);
+        await kv.set(`user:${userId}:subscription_status`, 'billing_issue');
+        await kv.set(`user:${userId}:billing_issue_at`, new Date().toISOString());
+        // Don't downgrade immediately, give grace period
+        break;
+
+      case 'PRODUCT_CHANGE':
+        console.log(`User ${userId} changed subscription product on ${store}`);
+        await kv.set(`user:${userId}:subscription_product`, productId);
+        break;
+
+      default:
+        console.log(`Unhandled RevenueCat event type: ${eventType}`);
+    }
+
+    return c.json({ received: true });
+  } catch (error) {
+    console.error('RevenueCat webhook error:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get user subscription status (for frontend queries)
+app.get("/make-server-65e6e67f/subscription-status", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Get subscription data from kv store (webhook format)
+    const tier = await kv.get(`user:${userId}:tier`) || 'free';
+    const status = await kv.get(`user:${userId}:subscription_status`) || 'none';
+    const store = await kv.get(`user:${userId}:subscription_store`);
+    const startDate = await kv.get(`user:${userId}:subscription_start`);
+    const expiresAt = await kv.get(`user:${userId}:subscription_expires_at`);
+    const cancelAtPeriodEnd = status === 'cancelled' && expiresAt && new Date(expiresAt) > new Date();
+
+    // Also check legacy format for backwards compatibility
+    const legacySubscription = await kv.get(`user_${userId}_subscription`);
+    
+    // Merge data - prefer webhook format if available
+    const subscriptionData = {
+      tier: tier !== 'free' ? tier : (legacySubscription?.tier || 'free'),
+      status: status !== 'none' ? status : (legacySubscription?.status || 'active'),
+      store: store || legacySubscription?.store,
+      startDate: startDate || legacySubscription?.startDate,
+      endDate: expiresAt || legacySubscription?.endDate,
+      cancelAtPeriodEnd: cancelAtPeriodEnd || legacySubscription?.cancelAtPeriodEnd || false,
+      isPro: tier === 'pro' || legacySubscription?.tier === 'pro'
+    };
+
+    return c.json(subscriptionData);
+  } catch (error) {
+    console.error('Error fetching subscription status:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// ============================================================================
+// STRIPE BILLING PORTAL
+// ============================================================================
+// Create Stripe billing portal session for subscription management
+
+app.post("/make-server-65e6e67f/create-billing-portal", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    
+    if (!stripeSecretKey) {
+      console.error('Stripe not configured - STRIPE_SECRET_KEY missing');
+      return c.json({ error: 'Payment provider not configured' }, 500);
+    }
+
+    // Check subscription store first - only Stripe subscriptions can use billing portal
+    const subscriptionStore = await kv.get(`user:${userId}:subscription_store`);
+    
+    // If subscription is from App Store or Play Store, redirect to appropriate store
+    if (subscriptionStore === 'app_store' || subscriptionStore === 'play_store') {
+      return c.json({ 
+        error: 'This subscription is managed through the App Store or Play Store. Please manage it through your device\'s subscription settings.',
+        store: subscriptionStore 
+      }, 400);
+    }
+    
+    // Get user's Stripe customer ID from KV store
+    let stripeCustomerId = await kv.get(`user:${userId}:stripe_customer_id`);
+    
+    // If customer ID not stored, query RevenueCat API to find active subscription
+    if (!stripeCustomerId) {
+      try {
+        const revenueCatSecretKey = Deno.env.get('REVENUECAT_SECRET_KEY');
+        if (!revenueCatSecretKey) {
+          console.error('RevenueCat secret key not configured');
+          return c.json({ error: 'Payment provider not fully configured' }, 500);
+        }
+        
+        // Get customer info from RevenueCat API - this is the source of truth
+        const rcResponse = await fetch(`https://api.revenuecat.com/v1/subscribers/${userId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${revenueCatSecretKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (rcResponse.ok) {
+          const customerInfo = await rcResponse.json();
+          
+          if (customerInfo.subscriber) {
+            const subscriber = customerInfo.subscriber;
+            
+            // Check if user has active entitlements (active subscription)
+            const entitlements = subscriber.entitlements ? Object.values(subscriber.entitlements) : [];
+            const hasActiveEntitlement = entitlements.some((entitlement: any) => 
+              entitlement.is_active === true || entitlement.will_renew === true
+            );
+            
+            if (!hasActiveEntitlement) {
+              console.log(`User ${userId} has no active entitlements in RevenueCat`);
+              return c.json({ error: 'No active subscription found. Please subscribe to Pro to access billing management.' }, 404);
+            }
+            
+            // Check if subscription is from Stripe store
+            const hasStripeStore = entitlements.some((entitlement: any) => 
+              entitlement.store === 'stripe' || 
+              (entitlement.latest_transaction && entitlement.latest_transaction.store === 'stripe')
+            );
+            
+            if (!hasStripeStore) {
+              // Check all transactions for Stripe
+              let foundStripe = false;
+              for (const entitlement of entitlements) {
+                if (entitlement.all_transactions) {
+                  for (const trans of entitlement.all_transactions) {
+                    if (trans.store === 'stripe') {
+                      foundStripe = true;
+                      break;
+                    }
+                  }
+                }
+                if (foundStripe) break;
+              }
+              
+              if (!foundStripe) {
+                const storeTypes = entitlements.map((e: any) => e.store || e.latest_transaction?.store).filter(Boolean);
+                const uniqueStores = [...new Set(storeTypes)];
+                console.log(`User ${userId} has subscription but not from Stripe. Store types: ${uniqueStores.join(', ')}`);
+                return c.json({ 
+                  error: 'Your subscription is not managed through Stripe. Please manage it through the platform where you purchased it.',
+                  store: uniqueStores[0] || 'unknown'
+                }, 400);
+              }
+            }
+            
+            // Check subscriber attributes for Stripe customer ID
+            // RevenueCat typically stores this as $stripeCustomerId attribute
+            if (subscriber.subscriber_attributes?.$stripeCustomerId?.value) {
+              stripeCustomerId = subscriber.subscriber_attributes.$stripeCustomerId.value;
+            } else {
+              // Check entitlements for Stripe store transactions
+              for (const entitlement of entitlements) {
+                if (entitlement.store === 'stripe' && entitlement.latest_transaction) {
+                  // Check if transaction has customer_id
+                  const transaction = entitlement.latest_transaction;
+                  if (transaction.customer_id) {
+                    stripeCustomerId = transaction.customer_id;
+                    break;
+                  }
+                }
+                // Also check all_transactions for Stripe store
+                if (entitlement.store === 'stripe' && entitlement.all_transactions) {
+                  for (const trans of entitlement.all_transactions) {
+                    if (trans.customer_id) {
+                      stripeCustomerId = trans.customer_id;
+                      break;
+                    }
+                  }
+                  if (stripeCustomerId) break;
+                }
+              }
+            }
+            
+            if (stripeCustomerId) {
+              // Store it for future use (so we don't need to query RevenueCat every time)
+              await kv.set(`user:${userId}:stripe_customer_id`, stripeCustomerId);
+              // Also update subscription store if not set
+              const currentStore = await kv.get(`user:${userId}:subscription_store`);
+              if (!currentStore) {
+                await kv.set(`user:${userId}:subscription_store`, 'stripe');
+              }
+              console.log(`Retrieved and stored Stripe customer ID from RevenueCat for user ${userId}: ${stripeCustomerId}`);
+            } else {
+              console.warn(`RevenueCat customer info found but no Stripe customer ID for user ${userId}`);
+              // Log the structure for debugging
+              console.log('RevenueCat subscriber structure:', JSON.stringify(subscriber, null, 2));
+              return c.json({ error: 'Unable to retrieve Stripe customer information. Your subscription may not be linked to Stripe. Please contact support for assistance.' }, 404);
+            }
+          } else {
+            return c.json({ error: 'No subscription account found. Please subscribe to Pro to access billing management.' }, 404);
+          }
+        } else {
+          const errorText = await rcResponse.text();
+          console.error('RevenueCat API error:', errorText);
+          return c.json({ error: 'Unable to verify subscription. Please try again or contact support.' }, 500);
+        }
+      } catch (rcError) {
+        console.error('Error querying RevenueCat for customer:', rcError);
+        return c.json({ error: 'Unable to verify subscription. Please try again later.' }, 500);
+      }
+    }
+    
+    if (!stripeCustomerId) {
+      return c.json({ error: 'No Stripe subscription found. Please subscribe to Pro to access billing management.' }, 404);
+    }
+
+    // Create billing portal session
+    const response = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${stripeSecretKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        'customer': stripeCustomerId,
+        'return_url': `${Deno.env.get('APP_URL') || 'http://localhost:3000'}/settings`,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Stripe billing portal error:', error);
+      return c.json({ error: 'Failed to create billing portal session' }, 500);
+    }
+
+    const session = await response.json();
+    
+    return c.json({ 
+      url: session.url 
+    });
+  } catch (error) {
+    console.error('Error creating billing portal session:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// ============================================================================
+// ADMIN ENDPOINTS
+// ============================================================================
+// Admin endpoint to set a user as admin and/or pro
+app.post("/make-server-65e6e67f/admin/set-user-access", async (c) => {
+  try {
+    const { userId: adminUserId, error: authError } = await verifyAdmin(c.req.raw);
+    if (authError || !adminUserId) {
+      return c.json({ error: authError || 'Unauthorized' }, 401);
+    }
+    
+    const body = await c.req.json();
+    const { email, role, tier } = body;
+
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400);
+    }
+
+    // Get Supabase client
+    const supabase = getSupabaseClient();
+    
+    // Find user by email
+    const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('Error listing users:', listError);
+      return c.json({ error: 'Failed to find user' }, 500);
+    }
+
+    const user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    
+    if (!user) {
+      return c.json({ error: `User with email ${email} not found` }, 404);
+    }
+
+    const userId = user.id;
+    const updates = [];
+
+    // Update user role if provided
+    if (role) {
+      if (!['admin', 'member', 'viewer'].includes(role)) {
+        return c.json({ error: 'Invalid role. Must be: admin, member, or viewer' }, 400);
+      }
+      
+      await kv.set(`user_${userId}_role`, role);
+      updates.push(`role: ${role}`);
+      console.log(`✅ Set user ${email} role to: ${role}`);
+    }
+
+    // Update subscription tier if provided
+    if (tier) {
+      if (!['free', 'pro'].includes(tier)) {
+        return c.json({ error: 'Invalid tier. Must be: free or pro' }, 400);
+      }
+
+      // Set tier using both formats for compatibility
+      await kv.set(`user:${userId}:tier`, tier);
+      await kv.set(`user_${userId}_tier`, tier);
+      
+      if (tier === 'pro') {
+        // Set subscription status
+        await kv.set(`user:${userId}:subscription_status`, 'active');
+        await kv.set(`user:${userId}:subscription_start`, new Date().toISOString());
+        await kv.set(`user:${userId}:subscription_store`, 'admin_granted');
+        
+        // Also set in the main subscription object format
+        const subscription = {
+          tier: 'pro',
+          status: 'active',
+          startDate: new Date().toISOString(),
+          endDate: null,
+          cancelAtPeriodEnd: false,
+        };
+        await kv.set(`user_${userId}_subscription`, subscription);
+        
+        updates.push(`tier: ${tier} (active)`);
+        console.log(`✅ Set user ${email} to Pro tier`);
+      } else {
+        updates.push(`tier: ${tier}`);
+        console.log(`✅ Set user ${email} to Free tier`);
+      }
+    }
+
+    return c.json({ 
+      success: true,
+      message: `Updated user ${email}`,
+      userId,
+      updates,
+      user: {
+        id: userId,
+        email: user.email,
+        name: user.user_metadata?.name,
+      }
+    });
+  } catch (error) {
+    console.error('Error in admin set-user-access:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Admin endpoint to get user info by email
+app.get("/make-server-65e6e67f/admin/get-user/:email", async (c) => {
+  try {
+    const { userId: adminUserId, error: authError } = await verifyAdmin(c.req.raw);
+    if (authError || !adminUserId) {
+      return c.json({ error: authError || 'Unauthorized' }, 401);
+    }
+
+    const email = c.req.param('email');
+    
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400);
+    }
+
+    // Get Supabase client
+    const supabase = getSupabaseClient();
+    
+    // Find user by email
+    const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('Error listing users:', listError);
+      return c.json({ error: 'Failed to find user' }, 500);
+    }
+
+    const user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    
+    if (!user) {
+      return c.json({ error: `User with email ${email} not found` }, 404);
+    }
+
+    const userId = user.id;
+
+    // Get user data from KV store
+    const role = await kv.get(`user_${userId}_role`);
+    const tier = await kv.get(`user:${userId}:tier`) || await kv.get(`user_${userId}_tier`) || 'free';
+    const subscriptionStatus = await kv.get(`user:${userId}:subscription_status`);
+    const subscription = await kv.get(`user_${userId}_subscription`);
+    const workspaceId = await kv.get(`user_${userId}_workspace`);
+
+    return c.json({
+      user: {
+        id: userId,
+        email: user.email,
+        name: user.user_metadata?.name,
+        role: role || 'member',
+        tier,
+        subscriptionStatus,
+        subscription,
+        workspaceId,
+        createdAt: user.created_at,
+      }
+    });
+  } catch (error) {
+    console.error('Error in admin get-user:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// ============================================================================
+// TEAM/INVITATION ENDPOINTS
+// ============================================================================
+
+// Invite team member
+app.post("/make-server-65e6e67f/team/:workspaceId/invite", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const { email, name, role } = await c.req.json();
+
+    if (!email || !name) {
+      return c.json({ error: 'Email and name are required' }, 400);
+    }
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+
+    // Verify workspace ownership or membership
+    let members = await kv.get(`workspace_${workspaceId}_members`);
+    
+    // Handle both array and JSON string formats
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        console.log('Error parsing members:', e);
+        // If parsing fails, try to initialize with owner
+        members = [workspaceOwner];
+        await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
+      }
+    }
+    
+    // Ensure members is an array
+    if (!members || !Array.isArray(members)) {
+      // Initialize with owner if missing
+      members = [workspaceOwner];
+      await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
+    }
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Unauthorized: Not a workspace member' }, 403);
+    }
+
+    // Generate invitation token
+    const invitationToken = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
+
+    // Store invitation
+    const invitation = {
+      token: invitationToken,
+      workspaceId,
+      email: email.toLowerCase(),
+      name,
+      role: role || 'member',
+      invitedBy: userId,
+      createdAt: new Date().toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      status: 'pending',
+    };
+
+    await kv.set(`invitation_${invitationToken}`, JSON.stringify(invitation));
+    
+    // Track invitations for workspace
+    const existingInvitations = await kv.get(`workspace_${workspaceId}_invitations`);
+    const invitations = existingInvitations ? JSON.parse(existingInvitations) : [];
+    if (!invitations.includes(invitationToken)) {
+      invitations.push(invitationToken);
+      await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(invitations));
+    }
+
+    // TODO: Send email invitation here
+    // For now, we'll return the invitation with the token
+    // In production, send email with invitation link: https://taskzm.com/invite?token=${invitationToken}
+
+    console.log(`📧 Invitation sent to ${email} for workspace ${workspaceId}`);
+
+    return c.json({
+      invitation: {
+        ...invitation,
+        token: invitationToken,
+        expiresAt: invitation.expiresAt,
+      },
+      inviteLink: `https://taskzm.com/invite?token=${invitationToken}`,
+    });
+  } catch (error) {
+    console.log('Error sending invitation:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Get team members
+app.get("/make-server-65e6e67f/team/:workspaceId/members", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+
+    // Verify workspace membership
+    const members = await getWorkspaceMembers(workspaceId);
+    
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Unauthorized: Not a workspace member' }, 403);
+    }
+
+    // Get all member IDs
+    const memberIds = members;
+    const supabase = getSupabaseClient();
+    
+    // Fetch user details for each member
+    const teamMembers = [];
+    for (const memberId of memberIds) {
+      try {
+        const { data: user, error: userError } = await supabase.auth.admin.getUserById(memberId);
+        if (!userError && user?.user) {
+          // Get member role (default to 'member' if not set)
+          let memberRole = await kv.get(`workspace_${workspaceId}_member_${memberId}_role`);
+          if (!memberRole) {
+            // If no role set, owner is admin, others are member
+            const owner = await kv.get(`workspace_${workspaceId}_owner`);
+            memberRole = memberId === owner ? 'admin' : 'member';
+            // Save default role
+            await kv.set(`workspace_${workspaceId}_member_${memberId}_role`, memberRole);
+          }
+          
+          teamMembers.push({
+            id: user.user.id,
+            email: user.user.email || '',
+            name: user.user.user_metadata?.name || user.user.email?.split('@')[0] || 'Unknown',
+            role: memberRole,
+            avatar: user.user.user_metadata?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.user.email || user.user.id}`,
+            inviteStatus: 'accepted', // Existing members are accepted
+          });
+        } else if (userError) {
+          console.log(`Error fetching user ${memberId}:`, userError);
+        }
+      } catch (err) {
+        console.log(`Error fetching user ${memberId}:`, err);
+      }
+    }
+
+    // Get pending invitations
+    const invitationTokensStr = await kv.get(`workspace_${workspaceId}_invitations`);
+    if (invitationTokensStr) {
+      try {
+        const tokens = JSON.parse(invitationTokensStr);
+        for (const token of tokens) {
+          const invitationData = await kv.get(`invitation_${token}`);
+          if (invitationData) {
+            const invitation = JSON.parse(invitationData);
+            if (invitation.status === 'pending') {
+              // Check if invitation is expired
+              if (new Date(invitation.expiresAt) > new Date()) {
+                teamMembers.push({
+                  id: `pending_${token}`,
+                  email: invitation.email,
+                  name: invitation.name,
+                  role: invitation.role,
+                  inviteStatus: 'pending',
+                  invitedAt: invitation.createdAt,
+                  expiresAt: invitation.expiresAt,
+                  invitationToken: token,
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Error parsing invitations:', e);
+      }
+    }
+
+    return c.json({ members: teamMembers });
+  } catch (error) {
+    console.log('Error fetching team members:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Remove team member
+app.delete("/make-server-65e6e67f/team/:workspaceId/members/:memberId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const memberId = c.req.param('memberId');
+
+    // Verify workspace ownership (only owner can remove members)
+    const owner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (owner !== userId) {
+      return c.json({ error: 'Unauthorized: Only workspace owner can remove members' }, 403);
+    }
+
+    // Can't remove yourself
+    if (memberId === userId) {
+      return c.json({ error: 'Cannot remove yourself from workspace' }, 400);
+    }
+
+    // Handle pending invitations (IDs starting with "pending_")
+    if (memberId.startsWith('pending_')) {
+      // Extract token from ID (format: "pending_<token>")
+      const token = memberId.replace('pending_', '');
+      
+      // Remove invitation
+      await kv.del(`invitation_${token}`);
+      
+      // Remove from workspace invitations list
+      const invitationTokensStr = await kv.get(`workspace_${workspaceId}_invitations`);
+      if (invitationTokensStr) {
+        try {
+          const tokens = JSON.parse(invitationTokensStr);
+          const updatedTokens = tokens.filter((t: string) => t !== token);
+          await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(updatedTokens));
+        } catch (e) {
+          console.log('Error updating invitations list:', e);
+        }
+      }
+      
+      return c.json({ success: true });
+    }
+
+    // Remove from members list
+    const members = await getWorkspaceMembers(workspaceId);
+    if (members.includes(memberId)) {
+      const updatedMembers = members.filter((id: string) => id !== memberId);
+      await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(updatedMembers));
+      
+      // Also remove role data
+      await kv.del(`workspace_${workspaceId}_member_${memberId}_role`);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Error removing team member:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Update team member role
+app.put("/make-server-65e6e67f/team/:workspaceId/members/:memberId/role", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const memberId = c.req.param('memberId');
+    const { role } = await c.req.json();
+
+    if (!['admin', 'member', 'viewer'].includes(role)) {
+      return c.json({ error: 'Invalid role' }, 400);
+    }
+
+    // Verify workspace ownership (only owner can change roles)
+    const owner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (owner !== userId) {
+      return c.json({ error: 'Unauthorized: Only workspace owner can change roles' }, 403);
+    }
+
+    // Verify member exists
+    // Handle pending invitations (IDs starting with "pending_")
+    if (memberId.startsWith('pending_')) {
+      // For pending invitations, we can't update role until they accept
+      return c.json({ error: 'Cannot update role for pending invitation. Wait for member to accept.' }, 400);
+    }
+    
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(memberId)) {
+      return c.json({ error: 'Member not found in workspace' }, 404);
+    }
+
+    // Update role
+    await kv.set(`workspace_${workspaceId}_member_${memberId}_role`, role);
+
+    return c.json({ success: true, role });
+  } catch (error) {
+    console.log('Error updating team member role:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Validate invitation token
+app.post("/make-server-65e6e67f/team/invitations/validate", async (c) => {
+  try {
+    const { token } = await c.req.json();
+
+    if (!token) {
+      return c.json({ error: 'Token is required' }, 400);
+    }
+
+    const invitationData = await kv.get(`invitation_${token}`);
+    if (!invitationData) {
+      return c.json({ error: 'Invalid invitation token' }, 404);
+    }
+
+    const invitation = JSON.parse(invitationData);
+
+    // Check if expired
+    if (new Date(invitation.expiresAt) < new Date()) {
+      return c.json({ error: 'Invitation has expired' }, 400);
+    }
+
+    // Check if already accepted
+    if (invitation.status !== 'pending') {
+      return c.json({ error: 'Invitation has already been processed' }, 400);
+    }
+
+    return c.json({
+      valid: true,
+      invitation: {
+        email: invitation.email,
+        name: invitation.name,
+        role: invitation.role,
+        workspaceId: invitation.workspaceId,
+      }
+    });
+  } catch (error) {
+    console.log('Error validating invitation:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Accept invitation
+app.post("/make-server-65e6e67f/team/invitations/accept", async (c) => {
+  try {
+    const { token, password } = await c.req.json();
+
+    if (!token) {
+      return c.json({ error: 'Token is required' }, 400);
+    }
+
+    const invitationData = await kv.get(`invitation_${token}`);
+    if (!invitationData) {
+      return c.json({ error: 'Invalid invitation token' }, 404);
+    }
+
+    const invitation = JSON.parse(invitationData);
+
+    // Check if expired
+    if (new Date(invitation.expiresAt) < new Date()) {
+      return c.json({ error: 'Invitation has expired' }, 400);
+    }
+
+    // Check if already accepted
+    if (invitation.status !== 'pending') {
+      return c.json({ error: 'Invitation has already been processed' }, 400);
+    }
+
+    const supabase = getSupabaseClient();
+
+    // Check if user already exists
+    const { data: users } = await supabase.auth.admin.listUsers();
+    const existingUser = users?.users.find(u => u.email?.toLowerCase() === invitation.email.toLowerCase());
+
+    let userId: string;
+
+    if (existingUser) {
+      // User exists, just add to workspace
+      userId = existingUser.id;
+      
+      // Ensure existing user has their own workspace (in case they don't)
+      let userWorkspace = await kv.get(`user_${userId}_workspace`);
+      if (!userWorkspace) {
+        console.log(`⚠️ Existing user ${userId} has no workspace, creating one during invitation acceptance`);
+        userWorkspace = `workspace_${userId}_${Date.now()}`;
+        const userMembersArray = [userId];
+        await kv.set(`user_${userId}_workspace`, userWorkspace);
+        await kv.set(`workspace_${userWorkspace}_owner`, userId);
+        await kv.set(`workspace_${userWorkspace}_members`, JSON.stringify(userMembersArray));
+        await kv.set(`workspace_${userWorkspace}_name`, `${invitation.name}'s Workspace`);
+        console.log(`✅ Created workspace ${userWorkspace} for existing user ${userId}`);
+      }
+    } else {
+      // Create new user account
+      if (!password) {
+        return c.json({ error: 'Password is required for new accounts' }, 400);
+      }
+
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: invitation.email,
+        password,
+        user_metadata: {
+          name: invitation.name,
+        },
+        email_confirm: true,
+      });
+
+      if (createError || !newUser.user) {
+        return c.json({ error: createError?.message || 'Failed to create user account' }, 400);
+      }
+
+      userId = newUser.user.id;
+
+      // Create workspace for new user
+      const userWorkspaceId = `workspace_${userId}_${Date.now()}`;
+      const userMembersArray = [userId];
+      await kv.set(`user_${userId}_workspace`, userWorkspaceId);
+      await kv.set(`workspace_${userWorkspaceId}_owner`, userId);
+      await kv.set(`workspace_${userWorkspaceId}_members`, JSON.stringify(userMembersArray));
+      await kv.set(`workspace_${userWorkspaceId}_name`, `${invitation.name}'s Workspace`);
+    }
+
+    // Add user to invited workspace
+    const workspaceId = invitation.workspaceId;
+    let members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      members.push(userId);
+      await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
+    }
+
+    // Set member role
+    await kv.set(`workspace_${workspaceId}_member_${userId}_role`, invitation.role);
+
+    // Mark invitation as accepted
+    invitation.status = 'accepted';
+    invitation.acceptedAt = new Date().toISOString();
+    invitation.acceptedBy = userId;
+    await kv.set(`invitation_${token}`, JSON.stringify(invitation));
+
+    return c.json({
+      success: true,
+      userId,
+      workspaceId,
+      message: existingUser ? 'Added to workspace' : 'Account created and added to workspace',
+    });
+  } catch (error) {
+    console.log('Error accepting invitation:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Resend invitation
+app.post("/make-server-65e6e67f/team/:workspaceId/invitations/resend", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const { token } = await c.req.json();
+
+    if (!token) {
+      return c.json({ error: 'Invitation token is required' }, 400);
+    }
+
+    // Verify workspace membership
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Unauthorized: Not a workspace member' }, 403);
+    }
+
+    // Get existing invitation
+    const invitationData = await kv.get(`invitation_${token}`);
+    if (!invitationData) {
+      return c.json({ error: 'Invitation not found' }, 404);
+    }
+
+    const invitation = JSON.parse(invitationData);
+    
+    if (invitation.workspaceId !== workspaceId) {
+      return c.json({ error: 'Invalid invitation for this workspace' }, 400);
+    }
+
+    // Generate new expiration (7 days from now)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Update invitation
+    invitation.expiresAt = expiresAt.toISOString();
+    invitation.createdAt = new Date().toISOString();
+    
+    await kv.set(`invitation_${token}`, JSON.stringify(invitation));
+
+    // TODO: Send email invitation here
+    console.log(`📧 Invitation resent to ${invitation.email} for workspace ${workspaceId}`);
+
+    return c.json({
+      success: true,
+      invitation: {
+        ...invitation,
+        token,
+      },
+      inviteLink: `https://taskzm.com/invite?token=${token}`,
+    });
+  } catch (error) {
+    console.log('Error resending invitation:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// Decline invitation
+app.post("/make-server-65e6e67f/team/:workspaceId/invitations/decline", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const { token } = await c.req.json();
+
+    if (!token) {
+      return c.json({ error: 'Invitation token is required' }, 400);
+    }
+
+    // Verify workspace membership
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Unauthorized: Not a workspace member' }, 403);
+    }
+
+    // Get existing invitation
+    const invitationData = await kv.get(`invitation_${token}`);
+    if (!invitationData) {
+      return c.json({ error: 'Invitation not found' }, 404);
+    }
+
+    const invitation = JSON.parse(invitationData);
+    
+    if (invitation.workspaceId !== workspaceId) {
+      return c.json({ error: 'Invalid invitation for this workspace' }, 400);
+    }
+
+    // Mark as declined
+    invitation.status = 'declined';
+    invitation.declinedAt = new Date().toISOString();
+    await kv.set(`invitation_${token}`, JSON.stringify(invitation));
+
+    // Remove from workspace invitations list
+    const invitationsStr = await kv.get(`workspace_${workspaceId}_invitations`);
+    if (invitationsStr) {
+      try {
+        const invitations = JSON.parse(invitationsStr);
+        const updated = invitations.filter((t: string) => t !== token);
+        await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(updated));
+      } catch (e) {
+        console.log('Error updating invitations list:', e);
+      }
+    }
+
+    return c.json({ success: true, message: 'Invitation declined' });
+  } catch (error) {
+    console.log('Error declining invitation:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+Deno.serve(app.fetch);
+
+

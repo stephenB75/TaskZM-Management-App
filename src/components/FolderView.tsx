@@ -1,0 +1,563 @@
+import React, { useState, useMemo } from "react";
+import {
+  Folder,
+  ArrowLeft,
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Clock,
+  Tag,
+  CheckCircle2,
+  Circle,
+  PlayCircle,
+  Pause,
+} from "lucide-react";
+import { motion } from "motion/react";
+import { useTasks } from "../contexts/TaskContext";
+import { useTeam } from "../contexts/TeamContext";
+import { AppHeader } from "./AppHeader";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Card, CardContent } from "./ui/card";
+import { Badge } from "./ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { TaskDialog } from "./TaskDialog";
+import { ScrollArea } from "./ui/scroll-area";
+import { cn, getInitials } from "../lib/utils";
+import { toast } from "sonner";
+import type { Task, Folder as FolderType } from "../types";
+
+interface FolderViewProps {
+  folder: FolderType;
+  onBack: () => void;
+}
+
+export function FolderView({ folder, onBack }: FolderViewProps) {
+  const { tasks, updateTask, deleteTask, projects } = useTasks();
+  const { getTeamMember } = useTeam();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | undefined>();
+
+  // Get tasks that belong to this folder (by tag - folder name)
+  const folderTasks = useMemo(() => {
+    if (!folder.name) return [];
+    return tasks.filter((task) => 
+      task.tags && 
+      Array.isArray(task.tags) && 
+      task.tags.includes(folder.name)
+    );
+  }, [tasks, folder.name]);
+
+  // Apply filters
+  const filteredTasks = useMemo(() => {
+    return folderTasks.filter((task) => {
+      const matchesSearch =
+        !searchQuery ||
+        task.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPriority =
+        filterPriority === "all" || task.priority === filterPriority;
+      const matchesStatus =
+        filterStatus === "all" || task.status === filterStatus;
+
+      return matchesSearch && matchesPriority && matchesStatus;
+    });
+  }, [folderTasks, searchQuery, filterPriority, filterStatus]);
+
+  // Sort by priority and due date
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      const priorityWeight = {
+        urgent: 4,
+        high: 3,
+        medium: 2,
+        low: 1,
+      };
+      const aPriority = priorityWeight[a.priority] || 1;
+      const bPriority = priorityWeight[b.priority] || 1;
+
+      if (aPriority !== bPriority) return bPriority - aPriority;
+
+      // Secondary sort by due date
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+
+      // Tertiary sort by created date
+      return (
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    });
+  }, [filteredTasks]);
+
+  const handleAddTask = () => {
+    setSelectedTask(undefined);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleEditTask = (task: Task) => {
+    try {
+      // Validate task object before opening dialog
+      if (!task) {
+        console.error('Invalid task: task is null or undefined');
+        toast.error('Invalid task data');
+        return;
+      }
+      
+      if (!task.id) {
+        console.error('Invalid task: missing id', task);
+        toast.error('Task is missing an ID');
+        return;
+      }
+
+      // Create a safe copy of the task with all required fields
+      // Use the original task but ensure all required fields exist
+      const taskToEdit: Task = {
+        ...task,
+        // Ensure required fields have values
+        id: task.id,
+        title: task.title || '',
+        description: task.description || '',
+        status: task.status || 'todo',
+        priority: task.priority || 'medium',
+        createdAt: task.createdAt || new Date().toISOString(),
+        updatedAt: task.updatedAt || new Date().toISOString(),
+        createdBy: task.createdBy || '',
+        projectId: task.projectId || 'default',
+        // Ensure arrays are always arrays
+        tags: Array.isArray(task.tags) ? task.tags : [],
+        subtasks: Array.isArray(task.subtasks) ? task.subtasks : [],
+        dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
+        assignedTo: Array.isArray(task.assignedTo) ? task.assignedTo : [],
+        // Ensure recurrence config is valid
+        recurrence: task.recurrence && typeof task.recurrence === 'object' 
+          ? {
+              type: task.recurrence.type || 'none',
+              interval: task.recurrence.interval || 1,
+              daysOfWeek: Array.isArray(task.recurrence.daysOfWeek) ? task.recurrence.daysOfWeek : undefined,
+              dayOfMonth: task.recurrence.dayOfMonth,
+              endDate: task.recurrence.endDate || null,
+            }
+          : { type: 'none', interval: 1 },
+        // Optional fields with safe defaults
+        notes: task.notes || '',
+      };
+
+      setSelectedTask(taskToEdit);
+      setIsTaskDialogOpen(true);
+    } catch (error) {
+      console.error('Error opening task dialog:', error, task);
+      toast.error('Failed to open task. Please try again.');
+    }
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: Task["status"]) => {
+    try {
+      await updateTask(taskId, { status: newStatus });
+      if (newStatus === "done") {
+        toast.success("Task completed!");
+      }
+    } catch (error) {
+      toast.error("Failed to update task status");
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+      toast.success("Task deleted");
+    } catch (error) {
+      toast.error("Failed to delete task");
+    }
+  };
+
+  const getStatusIcon = (status: Task["status"]) => {
+    switch (status) {
+      case "done":
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case "in-progress":
+        return <PlayCircle className="w-4 h-4 text-blue-500" />;
+      case "on-hold":
+        return <Pause className="w-4 h-4 text-amber-500" />;
+      default:
+        return <Circle className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getPriorityColor = (priority: Task["priority"]) => {
+    switch (priority) {
+      case "urgent":
+        return "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400";
+      case "high":
+        return "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-400";
+      case "medium":
+        return "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400";
+      case "low":
+        return "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-400";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-300";
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDate = new Date(date);
+    taskDate.setHours(0, 0, 0, 0);
+
+    if (taskDate.getTime() === today.getTime()) {
+      return "Today";
+    }
+    if (taskDate.getTime() === today.getTime() + 86400000) {
+      return "Tomorrow";
+    }
+    if (taskDate.getTime() === today.getTime() - 86400000) {
+      return "Yesterday";
+    }
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const stats = useMemo(() => {
+    return {
+      total: folderTasks.length,
+      completed: folderTasks.filter((t) => t.status === "done").length,
+      inProgress: folderTasks.filter((t) => t.status === "in-progress").length,
+      todo: folderTasks.filter((t) => t.status === "todo").length,
+    };
+  }, [folderTasks]);
+
+  return (
+    <div className="h-full flex flex-col bg-gradient-to-b from-[#FAF9FC] to-[#F9F7FD] dark:from-gray-950 dark:to-gray-900">
+      <AppHeader
+        title={
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${folder.color || "#3b82f6"}20` }}
+            >
+              <Folder className="w-5 h-5" style={{ color: folder.color || "#3b82f6" }} />
+            </div>
+            <span>{folder.name || "Unnamed Folder"}</span>
+          </div>
+        }
+        description={
+          folder.description ||
+          `${stats.total} task${stats.total === 1 ? "" : "s"} • ${stats.completed} completed`
+        }
+        actions={
+          <Button
+            onClick={handleAddTask}
+            className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Add Task</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        }
+        onBack={onBack}
+        hideDesktopLogo
+      />
+      {/* Spacer for fixed header on mobile */}
+      <div className="md:hidden h-[64px]" />
+
+      {/* Stats Bar */}
+      <div className="px-4 pt-12 pb-3 mt-4 border-b bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-1.5">
+            <Badge variant="outline" className="text-xs">
+              {stats.total} total
+            </Badge>
+          </div>
+          {stats.completed > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Badge
+                variant="outline"
+                className="text-xs border-green-500/30 text-green-700 dark:text-green-400"
+              >
+                {stats.completed} done
+              </Badge>
+            </div>
+          )}
+          {stats.inProgress > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Badge
+                variant="outline"
+                className="text-xs border-blue-500/30 text-blue-700 dark:text-blue-400"
+              >
+                {stats.inProgress} active
+              </Badge>
+            </div>
+          )}
+          {stats.todo > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Badge
+                variant="outline"
+                className="text-xs border-gray-500/30 text-gray-700 dark:text-gray-400"
+              >
+                {stats.todo} todo
+              </Badge>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="px-4 py-3 border-b bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0 relative z-10">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-2 relative z-20">
+            <Select 
+              value={filterPriority} 
+              onValueChange={setFilterPriority}
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent className="z-[200]">
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select 
+              value={filterStatus} 
+              onValueChange={setFilterStatus}
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="z-[200]">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="todo">To Do</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+                <SelectItem value="on-hold">On Hold</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Tasks List */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3 pb-safe md:pb-4">
+          {sortedTasks.length === 0 ? (
+            <div className="text-center py-12">
+              <Folder className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+              <p className="text-sm text-muted-foreground mb-1">
+                {searchQuery || filterPriority !== "all" || filterStatus !== "all"
+                  ? "No tasks match your filters"
+                  : "No tasks in this folder yet"}
+              </p>
+              {!searchQuery && filterPriority === "all" && filterStatus === "all" && (
+                <Button
+                  onClick={handleAddTask}
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add your first task
+                </Button>
+              )}
+            </div>
+          ) : (
+            sortedTasks.map((task) => {
+              // Safety check - skip invalid tasks
+              if (!task || !task.id) {
+                return null;
+              }
+              
+              const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
+              const assignedMembers = (task.assignedTo || [])
+                .map((id) => getTeamMember(id))
+                .filter(Boolean);
+
+              return (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card
+                    className={cn(
+                      "group hover:shadow-lg hover:scale-[1.01] transition-all cursor-pointer",
+                      "active:scale-[0.99] focus-within:ring-2 focus-within:ring-primary/20",
+                      "border border-transparent hover:border-primary/20"
+                    )}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleEditTask(task);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleEditTask(task);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Edit task: ${task.title || 'Untitled Task'}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            try {
+                              const newStatus: Task["status"] =
+                                (task.status || "todo") === "done" ? "todo" : "done";
+                              handleStatusChange(task.id, newStatus);
+                            } catch (error) {
+                              console.error('Error changing task status:', error);
+                              toast.error('Failed to update task status');
+                            }
+                          }}
+                          className="mt-0.5 flex-shrink-0"
+                        >
+                          {getStatusIcon(task.status || "todo")}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <h3
+                              className={cn(
+                                "font-medium text-sm",
+                                (task.status || "todo") === "done" &&
+                                  "line-through text-muted-foreground",
+                                "group-hover:text-primary transition-colors"
+                              )}
+                            >
+                              {task.title || "Untitled Task"}
+                            </h3>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] px-1.5 py-0.5 flex-shrink-0",
+                                getPriorityColor(task.priority || "medium")
+                              )}
+                            >
+                              {task.priority || "medium"}
+                            </Badge>
+                          </div>
+
+                          {task.description && (
+                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
+                            {task.dueDate && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>{formatDate(task.dueDate)}</span>
+                              </div>
+                            )}
+                            {task.estimatedTime && (
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{task.estimatedTime}m</span>
+                              </div>
+                            )}
+                            {project && (
+                              <div className="flex items-center gap-1">
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: project.color }}
+                                />
+                                <span>{project.name}</span>
+                              </div>
+                            )}
+                            {task.tags && task.tags.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Tag className="w-3 h-3" />
+                                <span>{task.tags.slice(0, 2).join(", ")}</span>
+                                {task.tags.length > 2 && (
+                                  <span>+{task.tags.length - 2}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {assignedMembers.length > 0 && (
+                            <div className="flex items-center gap-1.5 mt-2">
+                              {assignedMembers.slice(0, 3).map((member) => (
+                                <Badge
+                                  key={member.id}
+                                  variant="secondary"
+                                  className="text-[10px] h-5 px-1.5"
+                                >
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[8px] font-medium">
+                                      {getInitials(member.name)}
+                                    </div>
+                                    <span>{member.name}</span>
+                                  </div>
+                                </Badge>
+                              ))}
+                              {assignedMembers.length > 3 && (
+                                <span className="text-xs text-muted-foreground">
+                                  +{assignedMembers.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* Task Dialog */}
+      <TaskDialog
+        open={isTaskDialogOpen}
+        onClose={() => {
+          setIsTaskDialogOpen(false);
+          setSelectedTask(undefined);
+        }}
+        task={selectedTask}
+        initialDate={undefined}
+        // When editing existing task, preserve its folder association
+        // When creating new task, use current folder
+        initialFolderId={selectedTask ? undefined : folder.id}
+      />
+    </div>
+  );
+}
+

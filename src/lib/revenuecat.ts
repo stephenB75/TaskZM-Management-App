@@ -1,0 +1,429 @@
+/**
+ * RevenueCat Integration for Cross-Platform Subscriptions
+ * Handles web (Stripe), iOS (Apple IAP), and Android (Google Play)
+ */
+
+import { getPlatform } from './platform';
+
+// Types
+export interface CustomerInfo {
+  activeSubscriptions: string[];
+  entitlements: {
+    active: Record<string, EntitlementInfo>;
+    all: Record<string, EntitlementInfo>;
+  };
+  originalAppUserId: string;
+  requestDate: string;
+}
+
+export interface EntitlementInfo {
+  identifier: string;
+  isActive: boolean;
+  willRenew: boolean;
+  productIdentifier: string;
+  expirationDate: string | null;
+}
+
+export interface RevenueCatOffering {
+  identifier: string;
+  availablePackages: RevenueCatPackage[];
+}
+
+export interface RevenueCatPackage {
+  identifier: string;
+  product: {
+    identifier: string;
+    price: number;
+    priceString: string;
+    currencyCode: string;
+    title: string;
+    description: string;
+  };
+}
+
+// Configuration state
+let isConfigured = false;
+let currentUserId: string | null = null;
+
+/**
+ * Configure RevenueCat for the current platform
+ * Safe to call multiple times - only configures once per user
+ */
+export async function configureRevenueCat(userId: string): Promise<void> {
+  if (isConfigured && currentUserId === userId) {
+    console.log('RevenueCat already configured for user:', userId);
+    return;
+  }
+
+  const platform = getPlatform();
+  console.log(`Configuring RevenueCat for platform: ${platform.platform}, user: ${userId}`);
+
+  try {
+    if (platform.isWeb) {
+      // Web: Use RevenueCat Purchases JS SDK with Stripe
+      
+      // Get public API key from environment
+      const apiKey = (import.meta as any).env?.VITE_REVENUECAT_WEB_PUBLIC_KEY;
+      
+      // Check if API key is missing or is a placeholder
+      if (!apiKey || apiKey === 'dev_mode_placeholder') {
+        // Running in development mode without RevenueCat - this is fine
+        // App will use legacy payment flow
+        return;
+      }
+      
+      // Try to import and configure RevenueCat
+      try {
+        const Purchases = await import('@revenuecat/purchases-js');
+        
+        // Wrap configuration in try-catch to handle any initialization errors
+        try {
+          await Purchases.configure({
+            apiKey,
+            appUserID: userId
+          });
+          
+          console.log('✅ RevenueCat configured successfully');
+          console.log('   Payment processing: ENABLED');
+          isConfigured = true;
+          currentUserId = userId;
+        } catch (configError: any) {
+          // Handle configuration errors gracefully
+          console.warn('RevenueCat configuration error (non-critical):', configError?.message || configError);
+          console.log('   Payment mode: SIMULATED (no real charges)');
+          // Don't set isConfigured to true if configuration failed
+          return;
+        }
+      } catch (importError) {
+        console.log('ℹ️  RevenueCat SDK not installed (this is OK for development)');
+        console.log('   Payment mode: SIMULATED (no real charges)');
+        console.log('   To enable real payments: npm install @revenuecat/purchases-js');
+        console.log('   Guide: /docs/PAYMENT_SYSTEM_SETUP.md');
+        // Don't throw, just continue without RevenueCat
+        return;
+      }
+    } else {
+      // iOS/Android: Native SDK is auto-configured in native code
+      // Just verify it's available
+      const Capacitor = (window as any).Capacitor;
+      const Purchases = Capacitor?.Plugins?.Purchases;
+      
+      if (!Purchases) {
+        console.warn('RevenueCat native plugin not found, running in web fallback mode');
+        return;
+      }
+      
+      // Set user ID on native SDK
+      await Purchases.logIn({ appUserID: userId });
+      console.log(`✅ RevenueCat configured for ${platform.platform}`);
+      isConfigured = true;
+      currentUserId = userId;
+    }
+  } catch (error) {
+    console.error('Failed to configure RevenueCat:', error);
+    console.warn('App will continue to work with legacy payment flow');
+    // Don't throw - allow app to continue without RevenueCat
+  }
+}
+
+/**
+ * Get current customer subscription status
+ * Returns 'pro' or 'free' based on active entitlements
+ */
+export async function getSubscriptionStatus(): Promise<'pro' | 'free'> {
+  // If RevenueCat not configured, return free
+  if (!isConfigured) {
+    console.warn('RevenueCat not configured, defaulting to free tier');
+    return 'free';
+  }
+
+  try {
+    const platform = getPlatform();
+
+    if (platform.isWeb) {
+      try {
+        const Purchases = await import('@revenuecat/purchases-js');
+        const customerInfo = await Purchases.getCustomerInfo();
+        
+        // Check for active 'pro' entitlement
+        const isProActive = customerInfo.entitlements.active.pro !== undefined;
+        return isProActive ? 'pro' : 'free';
+      } catch (importError) {
+        console.warn('RevenueCat not available, defaulting to free');
+        return 'free';
+      }
+    } else {
+      // Native platforms
+      const Capacitor = (window as any).Capacitor;
+      const Purchases = Capacitor?.Plugins?.Purchases;
+      
+      if (!Purchases) {
+        console.warn('RevenueCat not available, defaulting to free');
+        return 'free';
+      }
+      
+      const { customerInfo } = await Purchases.getCustomerInfo();
+      const isProActive = customerInfo.entitlements.active.pro !== undefined;
+      return isProActive ? 'pro' : 'free';
+    }
+  } catch (error) {
+    console.error('Failed to get subscription status:', error);
+    return 'free'; // Safe fallback
+  }
+}
+
+/**
+ * Purchase Pro subscription
+ * Automatically uses correct payment method based on platform
+ * @param packageType - 'monthly' or 'yearly' subscription package
+ */
+export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' = 'monthly'): Promise<boolean> {
+  // If RevenueCat not configured, throw error to trigger fallback
+  if (!isConfigured) {
+    throw new Error('RevenueCat not configured');
+  }
+
+  try {
+    const platform = getPlatform();
+    console.log(`Initiating ${packageType} purchase on ${platform.platform}`);
+
+    if (platform.isWeb) {
+      // Web: Use Stripe via RevenueCat
+      try {
+        const Purchases = await import('@revenuecat/purchases-js');
+        
+        const offerings = await Purchases.getOfferings();
+        if (!offerings || !offerings.current) {
+          throw new Error('No subscription offerings available');
+        }
+        
+        // Safely access availablePackages with null check
+        const availablePackages = offerings.current.availablePackages || [];
+        if (availablePackages.length === 0) {
+          throw new Error('No subscription packages available');
+        }
+        
+        // Find the requested package
+        const packageIdentifier = packageType === 'yearly' 
+          ? ['$rc_annual', '$rc_yearly', 'annual', 'yearly']
+          : ['$rc_monthly', 'monthly'];
+        
+        const selectedPackage = availablePackages.find(
+          (pkg: any) => pkg && packageIdentifier.includes(pkg.identifier)
+        );
+        
+        if (!selectedPackage) {
+          throw new Error(`${packageType} subscription not found`);
+        }
+        
+        const { customerInfo } = await Purchases.purchasePackage(selectedPackage);
+        
+        // Check if purchase was successful
+        const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
+        console.log(`Web ${packageType} purchase result:`, isProActive ? 'success' : 'failed');
+        return isProActive;
+      } catch (importError) {
+        throw new Error('RevenueCat SDK not available - using fallback payment method');
+      }
+    } else {
+      // Native platforms (iOS/Android)
+      const Capacitor = (window as any).Capacitor;
+      const Purchases = Capacitor?.Plugins?.Purchases;
+      
+      if (!Purchases) {
+        throw new Error('RevenueCat native plugin not available');
+      }
+      
+      const { offerings } = await Purchases.getOfferings();
+      if (!offerings.current) {
+        throw new Error('No subscription offerings available');
+      }
+      
+      // Find the requested package
+      const packageIdentifier = packageType === 'yearly' 
+        ? ['$rc_annual', '$rc_yearly', 'annual', 'yearly']
+        : ['$rc_monthly', 'monthly'];
+      
+      const selectedPackage = offerings.current.availablePackages.find(
+        (pkg: any) => packageIdentifier.includes(pkg.identifier)
+      );
+      
+      if (!selectedPackage) {
+        throw new Error(`${packageType} subscription not found`);
+      }
+      
+      const { customerInfo } = await Purchases.purchasePackage({ 
+        aPackage: selectedPackage 
+      });
+      
+      const isProActive = customerInfo.entitlements.active.pro !== undefined;
+      console.log(`${platform.platform} ${packageType} purchase result:`, isProActive ? 'success' : 'failed');
+      return isProActive;
+    }
+  } catch (error: any) {
+    // Handle user cancellation gracefully
+    if (error.message?.includes('user cancelled') || error.userCancelled) {
+      console.log('User cancelled purchase');
+      return false;
+    }
+    
+    console.error('Purchase failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Restore previous purchases
+ * Required by Apple for subscription apps
+ */
+export async function restorePurchases(): Promise<boolean> {
+  // If RevenueCat not configured, return false
+  if (!isConfigured) {
+    console.warn('RevenueCat not configured, cannot restore purchases');
+    return false;
+  }
+
+  try {
+    const platform = getPlatform();
+    console.log(`Restoring purchases on ${platform.platform}`);
+
+    if (platform.isWeb) {
+      // Web: Just check current status (no restore needed for Stripe)
+      const status = await getSubscriptionStatus();
+      return status === 'pro';
+    } else {
+      // Native platforms
+      const Capacitor = (window as any).Capacitor;
+      const Purchases = Capacitor?.Plugins?.Purchases;
+      
+      if (!Purchases) {
+        throw new Error('RevenueCat native plugin not available');
+      }
+      
+      const { customerInfo } = await Purchases.restorePurchases();
+      const isProActive = customerInfo.entitlements.active.pro !== undefined;
+      console.log('Restore result:', isProActive ? 'restored' : 'no active subscription');
+      return isProActive;
+    }
+  } catch (error) {
+    console.error('Failed to restore purchases:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get available offerings/packages
+ */
+export async function getOfferings(): Promise<RevenueCatOffering | null> {
+  // If RevenueCat not configured, return null
+  if (!isConfigured) {
+    console.warn('RevenueCat not configured, no offerings available');
+    return null;
+  }
+
+  try {
+    const platform = getPlatform();
+
+    if (platform.isWeb) {
+      try {
+        const Purchases = await import('@revenuecat/purchases-js');
+        const offerings = await Purchases.getOfferings();
+        // Safely return offerings with null checks
+        if (!offerings || !offerings.current) {
+          return null;
+        }
+        return offerings.current as any;
+      } catch (importError) {
+        console.warn('RevenueCat not available');
+        return null;
+      }
+    } else {
+      const Capacitor = (window as any).Capacitor;
+      const Purchases = Capacitor?.Plugins?.Purchases;
+      
+      if (!Purchases) return null;
+      
+      const { offerings } = await Purchases.getOfferings();
+      return offerings.current;
+    }
+  } catch (error) {
+    console.error('Failed to get offerings:', error);
+    return null;
+  }
+}
+
+/**
+ * Open customer management portal
+ * For web: Opens Stripe billing portal
+ * For native: Directs to App Store/Play Store
+ * @param accessToken - User's access token for authentication (required for web)
+ */
+export async function openCustomerPortal(accessToken?: string): Promise<void> {
+  const platform = getPlatform();
+
+  if (platform.isWeb) {
+    try {
+      if (!accessToken) {
+        throw new Error('Access token required to open billing portal');
+      }
+
+      // Get billing portal URL from backend
+      const { projectId } = await import('../utils/supabase/info');
+      const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
+      
+      const response = await fetch(`${API_BASE}/create-billing-portal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create billing portal session');
+      }
+
+      const { url } = await response.json();
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        throw new Error('No billing portal URL received');
+      }
+    } catch (error) {
+      console.error('Failed to open billing portal:', error);
+      throw error;
+    }
+  } else if (platform.isIOS) {
+    // iOS: Open App Store subscriptions
+    const url = 'https://apps.apple.com/account/subscriptions';
+    window.open(url, '_system');
+  } else if (platform.isAndroid) {
+    // Android: Open Play Store subscriptions
+    const url = 'https://play.google.com/store/account/subscriptions';
+    window.open(url, '_system');
+  }
+}
+
+/**
+ * Check if RevenueCat is properly configured
+ */
+export function isRevenueCatConfigured(): boolean {
+  return isConfigured;
+}
+
+/**
+ * Get current user ID
+ */
+export function getCurrentUserId(): string | null {
+  return currentUserId;
+}
+
+/**
+ * Reset configuration (for logout)
+ */
+export function resetRevenueCat(): void {
+  isConfigured = false;
+  currentUserId = null;
+  console.log('RevenueCat configuration reset');
+}

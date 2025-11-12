@@ -1,0 +1,251 @@
+import React from "react";
+import {
+  LayoutDashboard,
+  Inbox,
+  Settings,
+  Archive,
+  CalendarDays,
+  BarChart3,
+  Users,
+  Lock,
+  Folder,
+  Bell,
+} from "lucide-react";
+import { motion } from "motion/react";
+import { Button } from "./ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "./ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
+import { Badge } from "./ui/badge";
+import { cn } from "../lib/utils";
+import { useTasks } from "../contexts/TaskContext";
+import { useTeam } from "../contexts/TeamContext";
+import { useSubscription } from "../contexts/SubscriptionContext";
+import { useNotifications } from "../contexts/NotificationContext";
+import taskzmLogo from "../assets/taskzm-logo.png";
+
+interface AppSidebarProps {
+  currentView: string;
+  onViewChange: (view: string) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  unscheduledCount?: number;
+}
+
+export function AppSidebar({
+  currentView,
+  onViewChange,
+  open,
+  onOpenChange,
+  unscheduledCount = 0,
+}: AppSidebarProps) {
+  const { tasks } = useTasks();
+  const { teamMembers } = useTeam();
+  const { hasFeature } = useSubscription();
+  const { badgeCount } = useNotifications();
+  const completedCount = tasks.filter(
+    (t) => t.status === "done",
+  ).length;
+
+  // Count team members with unread notifications (accepted invites that haven't been viewed)
+  const teamNotificationCount = teamMembers.filter(
+    (m) =>
+      m.hasUnreadNotification && m.inviteStatus === "accepted",
+  ).length;
+
+  const menuItems = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      id: "notifications",
+      label: "Notifications",
+      icon: Bell,
+      badge: badgeCount,
+    },
+    { id: "today", label: "Today Agenda", icon: CalendarDays },
+    {
+      id: "inbox",
+      label: "Inbox",
+      icon: Inbox,
+      badge: unscheduledCount,
+    },
+    {
+      id: "folders",
+      label: "Folders",
+      icon: Folder,
+    },
+    {
+      id: "team",
+      label: "Team",
+      icon: Users,
+      badge: teamNotificationCount,
+      pro: !hasFeature("teamFeatures"),
+    },
+    {
+      id: "analytics",
+      label: "Analytics",
+      icon: BarChart3,
+      pro: !hasFeature("analytics"),
+    },
+    { id: "archive", label: "Archive", icon: Archive },
+    { id: "settings", label: "Settings", icon: Settings },
+  ];
+
+  const iconNavContent = (
+    <TooltipProvider delayDuration={0}>
+      <div
+        className="flex flex-col items-center py-4 gap-2"
+        data-tour="sidebar"
+      >
+        {menuItems
+          .map((item) => {
+            const Icon = item.icon;
+            return (
+              <Tooltip key={item.id}>
+                <TooltipTrigger asChild>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "w-12 h-12 rounded-xl transition-all",
+                        currentView === item.id
+                          ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md"
+                          : "hover:bg-primary/10",
+                      )}
+                      onClick={() => onViewChange(item.id)}
+                    >
+                      <Icon className="w-5 h-5" />
+                      {item.pro && (
+                        <Lock className="w-3 h-3 absolute top-1 right-1 text-[#D4C5F9]" />
+                      )}
+                    </Button>
+                    {item.badge !== undefined &&
+                      item.badge > 0 && (
+                        <Badge
+                          variant="destructive"
+                          className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-[10px] rounded-full"
+                        >
+                          {item.badge > 9 ? "9+" : item.badge}
+                        </Badge>
+                      )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>
+                    {item.label}{" "}
+                    {item.badge !== undefined && item.badge > 0
+                      ? `(${item.badge})`
+                      : ""}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+      </div>
+    </TooltipProvider>
+  );
+
+  const mobileSidebarContent = (
+    <div className="p-4 flex flex-col h-full">
+      {/* Header */}
+      <div className="mb-6 flex flex-col items-center gap-1.5">
+        <img
+          src={taskzmLogo}
+          alt="TaskZM Logo"
+          className="w-[140px]"
+        />
+        <p className="text-sm text-muted-foreground text-center">
+          AI-Powered Tasks
+        </p>
+      </div>
+
+      {/* Navigation */}
+      <div className="space-y-2 flex-1">
+        {menuItems
+          .filter((item) => !item.desktopOnly) // Mobile sidebar excludes desktop-only items
+          .map((item) => {
+            const Icon = item.icon;
+            return (
+              <Button
+                key={item.id}
+                variant={
+                  currentView === item.id ? "secondary" : "ghost"
+                }
+                className={cn(
+                  "w-full justify-start rounded-xl transition-all relative",
+                  currentView === item.id &&
+                    "bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-sm",
+                )}
+                onClick={() => {
+                  onViewChange(item.id);
+                  onOpenChange?.(false);
+                }}
+              >
+                <Icon className="w-4 h-4 mr-2" />
+                {item.label}
+                {item.pro && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground text-[10px] px-1.5 py-0"
+                  >
+                    PRO
+                  </Badge>
+                )}
+                {item.badge !== undefined &&
+                  item.badge > 0 &&
+                  !item.pro && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-auto bg-white/50"
+                    >
+                      {item.badge}
+                    </Badge>
+                  )}
+              </Button>
+            );
+          })}
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Icon Navbar - Always visible on desktop */}
+      <div className="hidden md:flex w-16 border-r border-primary/10 bg-gradient-to-b from-white via-[#FAF9FC] to-[#F9F7FD] dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex-col h-full">
+        {iconNavContent}
+      </div>
+
+      {/* Mobile Sidebar - Sheet overlay */}
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="left"
+          className="w-64 p-0 md:hidden"
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigation Menu</SheetTitle>
+            <SheetDescription>
+              Access different views and settings
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-col h-full">
+            {mobileSidebarContent}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}

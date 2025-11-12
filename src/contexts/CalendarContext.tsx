@@ -1,0 +1,442 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from './AuthContext';
+import { useTasks } from './TaskContext';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { CalDAVCredentialsDialog } from '../components/CalDAVCredentialsDialog';
+
+type CalendarProvider = 'google' | 'outlook' | 'apple';
+
+interface CalendarStatus {
+  google: boolean;
+  outlook: boolean;
+  apple: boolean;
+}
+
+interface CalendarContextType {
+  calendarStatus: CalendarStatus;
+  isSyncing: boolean;
+  lastSync: Date | null;
+  connectCalendar: (provider: CalendarProvider) => Promise<void>;
+  disconnectCalendar: (provider: CalendarProvider) => Promise<void>;
+  syncTask: (taskId: string, provider: CalendarProvider) => Promise<void>;
+  syncAllTasks: (provider: CalendarProvider) => Promise<void>;
+  checkCalendarStatus: () => Promise<void>;
+}
+
+const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
+
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
+
+export function CalendarProvider({ children }: { children: ReactNode }) {
+  const { user, accessToken } = useAuth();
+  const { tasks, workspaceId } = useTasks();
+  const [calendarStatus, setCalendarStatus] = useState<CalendarStatus>({
+    google: false,
+    outlook: false,
+    apple: false,
+  });
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [showCalDAVDialog, setShowCalDAVDialog] = useState(false);
+
+  // Load calendar status from localStorage on mount
+  useEffect(() => {
+    if (user?.id) {
+      const stored = localStorage.getItem(`calendar_status_${user.id}`);
+      if (stored) {
+        try {
+          const status = JSON.parse(stored);
+          setCalendarStatus(status);
+        } catch (e) {
+          console.error('Failed to parse calendar status:', e);
+        }
+      }
+      // Also check server status
+      checkCalendarStatus();
+    }
+  }, [user?.id]);
+
+  // Check calendar connection status from server
+  const checkCalendarStatus = useCallback(async () => {
+    if (!user || !accessToken) return;
+
+    try {
+      const response = await fetch(`${BASE_URL}/calendar/status`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCalendarStatus(data);
+        
+        // Also update localStorage
+        if (user.id) {
+          localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(data));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check calendar status:', error);
+    }
+  }, [user, accessToken]);
+
+  // Connect to a calendar provider
+  const connectCalendar = useCallback(async (provider: CalendarProvider) => {
+    if (!user || !accessToken) {
+      toast.error('Please sign in to connect calendar');
+      return;
+    }
+
+    // Apple Calendar requires different flow (CalDAV)
+    if (provider === 'apple') {
+      setShowCalDAVDialog(true);
+      return;
+    }
+
+    try {
+      // Get OAuth URL from server
+      const response = await fetch(`${BASE_URL}/calendar/${provider}/auth`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to initiate OAuth';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // If response isn't JSON, use status text
+          errorMessage = `${errorMessage}: ${response.statusText}`;
+        }
+        toast.error(`Failed to connect ${provider} Calendar`, {
+          description: errorMessage,
+        });
+        return;
+      }
+
+      const data = await response.json();
+      
+      // Validate response contains authUrl
+      if (!data || !data.authUrl) {
+        toast.error(`Failed to connect ${provider} Calendar`, {
+          description: 'Server did not return a valid OAuth URL. Please check your OAuth configuration.',
+        });
+        console.error('Invalid OAuth response:', data);
+        return;
+      }
+      
+      // Open OAuth flow in popup
+      const width = 600;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      
+      const popup = window.open(
+        data.authUrl,
+        'Calendar OAuth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      if (!popup) {
+        toast.error('Please allow popups to connect calendar', {
+          description: 'Your browser blocked the popup window. Please allow popups for this site and try again.',
+        });
+        return;
+      }
+
+      // Listen for messages from popup
+      const messageHandler = (event: MessageEvent) => {
+        try {
+          // Ignore messages from browser extensions and other origins
+          // Only process messages from our own origin or the OAuth popup
+          const allowedOrigins = [
+            window.location.origin,
+            `https://${projectId}.supabase.co`,
+            'https://accounts.google.com',
+            'https://login.microsoftonline.com',
+            'https://appleid.apple.com',
+          ];
+          
+          // Skip if origin is not in allowed list (likely a browser extension)
+          if (event.origin && !allowedOrigins.some(origin => event.origin.startsWith(origin))) {
+            return;
+          }
+          
+          // Verify message is from our OAuth flow
+          if (event.data?.type === 'calendar-oauth-success' && event.data?.provider === provider) {
+            window.removeEventListener('message', messageHandler);
+            clearInterval(checkPopup);
+            popup.close();
+            
+            // Recheck status after successful connection
+            setTimeout(() => {
+              checkCalendarStatus();
+              toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar connected successfully!`);
+            }, 500);
+          } else if (event.data?.type === 'calendar-oauth-error' && event.data?.provider === provider) {
+            window.removeEventListener('message', messageHandler);
+            clearInterval(checkPopup);
+            popup.close();
+            
+            toast.error(`Failed to connect ${provider} Calendar`, {
+              description: event.data.error || 'An error occurred during authorization',
+            });
+          }
+        } catch (error) {
+          // Silently ignore errors from message handling (likely from browser extensions)
+          console.debug('Message handler error (non-critical):', error);
+        }
+      };
+
+      window.addEventListener('message', messageHandler);
+
+      // Fallback: Check if popup is closed (user might have closed it manually)
+      const checkPopup = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkPopup);
+          window.removeEventListener('message', messageHandler);
+          // Only show error if we didn't receive a success/error message
+          // This prevents showing error when user successfully completes OAuth
+          setTimeout(() => {
+            checkCalendarStatus();
+          }, 1000);
+        }
+      }, 500);
+
+      toast.success(`Connecting to ${provider} Calendar...`, {
+        description: 'Complete the authorization in the popup window',
+      });
+    } catch (error) {
+      console.error(`Failed to connect ${provider}:`, error);
+      toast.error(`Failed to connect ${provider} Calendar`, {
+        description: String(error),
+      });
+    }
+  }, [user, accessToken, checkCalendarStatus]);
+
+  // Disconnect from a calendar provider
+  const disconnectCalendar = useCallback(async (provider: CalendarProvider) => {
+    if (!user || !accessToken) return;
+
+    try {
+      const response = await fetch(`${BASE_URL}/calendar/${provider}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to disconnect calendar');
+      }
+
+      // Update status
+      setCalendarStatus(prev => ({
+        ...prev,
+        [provider]: false,
+      }));
+
+      // Update localStorage
+      if (user.id) {
+        const newStatus = { ...calendarStatus, [provider]: false };
+        localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(newStatus));
+      }
+
+      toast.success(`${provider} Calendar disconnected`);
+    } catch (error) {
+      console.error(`Failed to disconnect ${provider}:`, error);
+      toast.error(`Failed to disconnect ${provider} Calendar`);
+    }
+  }, [user, accessToken, calendarStatus]);
+
+  // Sync a single task to calendar
+  const syncTask = useCallback(async (taskId: string, provider: CalendarProvider) => {
+    if (!user || !accessToken) return;
+
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) {
+      toast.error('Task not found');
+      return;
+    }
+
+    if (!task.scheduledDate) {
+      toast.error('Task must have a scheduled date to sync');
+      return;
+    }
+
+    try {
+      setIsSyncing(true);
+
+      const response = await fetch(`${BASE_URL}/calendar/sync-task`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ task, provider }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to sync task');
+      }
+
+      setLastSync(new Date());
+      toast.success(`Task synced to ${provider} Calendar`);
+    } catch (error) {
+      console.error(`Failed to sync task to ${provider}:`, error);
+      toast.error(`Failed to sync task`, {
+        description: String(error),
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [user, accessToken, tasks]);
+
+  // Sync all tasks to calendar
+  const syncAllTasks = useCallback(async (provider: CalendarProvider) => {
+    if (!user || !accessToken || !workspaceId) return;
+
+    try {
+      setIsSyncing(true);
+
+      const loadingToast = toast.loading('Syncing tasks to calendar...', {
+        description: 'This may take a moment',
+      });
+
+      const response = await fetch(`${BASE_URL}/calendar/sync-all`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ workspaceId, provider }),
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to sync tasks');
+      }
+
+      const data = await response.json();
+      
+      setLastSync(new Date());
+      
+      toast.success('Calendar sync complete!', {
+        description: `Synced ${data.synced} task${data.synced === 1 ? '' : 's'}${data.failed > 0 ? `, ${data.failed} failed` : ''}`,
+      });
+    } catch (error) {
+      console.error(`Failed to sync all tasks to ${provider}:`, error);
+      toast.error('Failed to sync tasks', {
+        description: String(error),
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [user, accessToken, workspaceId]);
+
+  const handleCalDAVConfirm = useCallback(async (credentials: { email: string; appPassword: string }) => {
+    if (!user || !accessToken) {
+      toast.error('Please sign in to connect calendar');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BASE_URL}/calendar/apple/setup`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          caldavUrl: 'https://caldav.icloud.com',
+          username: credentials.email,
+          appPassword: credentials.appPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        // Try to parse JSON error response
+        let errorMessage = `Failed to connect Apple Calendar (${response.status})`;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } else {
+            // If response is not JSON, read as text
+            const text = await response.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (parseError) {
+          // If parsing fails, use status text
+          errorMessage = response.statusText || `Server error (${response.status})`;
+        }
+        console.error('Apple Calendar setup error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+        });
+        throw new Error(errorMessage);
+      }
+
+      // Parse success response
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // If JSON parsing fails, still consider it a success if status is OK
+        if (response.ok) {
+          data = { success: true };
+        } else {
+          throw new Error('Invalid response from server');
+        }
+      }
+
+      await checkCalendarStatus();
+      toast.success('Apple Calendar connected successfully');
+      setShowCalDAVDialog(false);
+    } catch (error) {
+      console.error('Apple Calendar connection error:', error);
+      toast.error('Failed to connect Apple Calendar', {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }, [user, accessToken, checkCalendarStatus]);
+
+  return (
+    <CalendarContext.Provider
+      value={{
+        calendarStatus,
+        isSyncing,
+        lastSync,
+        connectCalendar,
+        disconnectCalendar,
+        syncTask,
+        syncAllTasks,
+        checkCalendarStatus,
+      }}
+    >
+      {children}
+      <CalDAVCredentialsDialog
+        open={showCalDAVDialog}
+        onOpenChange={setShowCalDAVDialog}
+        onConfirm={handleCalDAVConfirm}
+      />
+    </CalendarContext.Provider>
+  );
+}
+
+export function useCalendar() {
+  const context = useContext(CalendarContext);
+  if (context === undefined) {
+    throw new Error('useCalendar must be used within a CalendarProvider');
+  }
+  return context;
+}

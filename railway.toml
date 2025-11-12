@@ -1,0 +1,13 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cd src && npm install && npm run build"
+
+[deploy]
+startCommand = "cd src && node server.js"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[env]
+NODE_ENV = "production"
+PORT = "4173"
+
