@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -43,7 +43,7 @@ export function AppHeader({
   const panelWidth = 440;
   
   // Track panel state for smooth transitions
-  const [isTransitioning, setIsTransitioning] = React.useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const prevPanelKeyRef = useRef(panelKey);
   const prevPanelOpenRef = useRef(panelOpen);
   
