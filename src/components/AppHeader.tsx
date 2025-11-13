@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo } from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -42,48 +42,12 @@ export function AppHeader({
   const sidebarWidth = 64; // w-16 = 64px
   const panelWidth = 440;
   
-  // Track panel state for smooth transitions
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const prevPanelKeyRef = useRef(panelKey);
-  const prevPanelOpenRef = useRef(panelOpen);
-  
-  // Detect panel transitions
-  useEffect(() => {
-    // Detect when switching between panels (panelKey changes but panelOpen stays true)
-    if (prevPanelKeyRef.current !== panelKey && 
-        prevPanelKeyRef.current !== undefined && 
-        panelOpen && 
-        prevPanelOpenRef.current) {
-      // Panel switch detected - close header first
-      setIsTransitioning(true);
-      // Wait for panel exit animation (300ms spring) before allowing reopen
-      const timer = setTimeout(() => {
-        setIsTransitioning(false);
-      }, 300); // Match the spring animation duration
-      return () => clearTimeout(timer);
-    } else if (!panelOpen && prevPanelOpenRef.current) {
-      // Panel is closing
-      setIsTransitioning(false);
-    } else if (panelOpen && !prevPanelOpenRef.current) {
-      // Panel is opening (not switching)
-      setIsTransitioning(false);
-    }
-    
-    // Update refs
-    prevPanelKeyRef.current = panelKey;
-    prevPanelOpenRef.current = panelOpen;
-  }, [panelKey, panelOpen]);
-  
   const headerLeft = useMemo(() => {
     if (isSidePanelHeader) {
       return sidebarWidth; // Side panel headers at start of panel
     }
-    // During panel switch transition, close first
-    if (isTransitioning) {
-      return sidebarWidth; // Close during transition
-    }
     return panelOpen ? sidebarWidth + panelWidth : sidebarWidth; // Main header shifts when panel opens
-  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth, isTransitioning]);
+  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth]);
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = useMemo(() => {
@@ -190,6 +154,8 @@ export function AppHeader({
         // Main header - fixed positioning, shifts when panel is open (animated to match week view)
         <motion.div 
           className="hidden md:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
+          key={panelKey || 'header'}
+          layout
           animate={{ 
             left: `${headerLeft}px`,
             width: headerWidth
