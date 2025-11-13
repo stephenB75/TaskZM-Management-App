@@ -130,8 +130,9 @@ export function BottomNav({
                 {item.active && (
                   <motion.div
                     layoutId="bottomNavIndicator"
-                    className="absolute w-10 h-1.5 bg-primary rounded-full z-0"
+                    className="absolute h-1.5 bg-primary rounded-full z-0"
                     style={{
+                      width: '2rem',
                       bottom: 'calc(100% + 0.3rem)',
                       left: '50%',
                       transform: 'translateX(-50%)',
