@@ -301,7 +301,6 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       className="h-8 w-8 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
-                        e.preventDefault();
                       }}
                       onMouseDown={(e) => {
                         e.stopPropagation();

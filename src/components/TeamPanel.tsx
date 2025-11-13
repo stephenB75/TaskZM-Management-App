@@ -464,8 +464,9 @@ export function TeamPanel() {
               member.inviteStatus === "accepted" &&
               "ring-2 ring-primary/30 border-primary/50"
           )}
-          onClick={() => {
-            if (!dropdownOpen) {
+          onClick={(e) => {
+            // Don't trigger card click if clicking on dropdown area or if dropdown is open
+            if (!dropdownOpen && !(e.target as HTMLElement).closest('[data-slot="dropdown-menu-trigger"]')) {
               onCardClick(member);
             }
           }}
@@ -627,7 +628,6 @@ export function TeamPanel() {
                       className="h-8 w-8 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
-                        e.preventDefault();
                       }}
                       onMouseDown={(e) => {
                         e.stopPropagation();
