@@ -121,7 +121,7 @@ export function BottomNav({
               )}
               style={{
                 paddingTop: '0.5rem',
-                paddingBottom: '0.25rem'
+                paddingBottom: '0.1875rem'
               }}
             >
               {/* Active indicator - above icon */}
