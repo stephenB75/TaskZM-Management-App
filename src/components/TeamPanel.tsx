@@ -891,6 +891,8 @@ export function TeamPanel() {
       />
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />
+      {/* Spacer for fixed header on desktop */}
+      <div className="hidden md:block h-[73px]" />
 
       {/* Search Bar */}
       <div className="px-4 py-3 border-b">

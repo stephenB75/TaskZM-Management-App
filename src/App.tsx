@@ -418,7 +418,7 @@ function AppContent() {
                 className="hidden md:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
               >
                 {/* Panel Content */}
-                <div className="h-full w-full overflow-hidden pt-[73px]">
+                <div className="h-full w-full overflow-hidden">
                   {currentView === 'notifications' && <NotificationsPanel />}
                   {currentView === 'today' && <TodayAgendaView />}
                   {currentView === 'inbox' && <InboxView />}

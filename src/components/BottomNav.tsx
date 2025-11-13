@@ -98,7 +98,13 @@ export function BottomNav({
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#B4E4CE] via-[#C9E4F7] to-[#D4C5F9] animate-pulse" />
       )}
 
-      <div className="flex items-center justify-evenly px-3 py-2 safe-area-inset-bottom overflow-visible" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))', paddingTop: '0.5rem' }}>
+      <div 
+        className="flex items-center justify-evenly px-2 overflow-visible" 
+        style={{ 
+          paddingTop: '0.75rem',
+          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))'
+        }}
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -106,15 +112,14 @@ export function BottomNav({
               key={item.id}
               onClick={item.onClick}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 px-3 gap-1 rounded-xl transition-all relative overflow-visible",
+                "flex flex-col items-center justify-center flex-1 px-2 py-1.5 rounded-xl transition-all relative overflow-visible",
                 "active:scale-95 touch-manipulation",
                 item.active && "text-primary",
                 !item.active &&
                   "text-muted-foreground hover:text-foreground",
               )}
-              style={{ maxWidth: '100%' }}
             >
-              {/* Active indicator - positioned at top, centered */}
+              {/* Active indicator - positioned at top */}
               {item.active && (
                 <motion.div
                   layoutId="bottomNavIndicator"
@@ -122,7 +127,7 @@ export function BottomNav({
                   style={{
                     top: '0.5rem',
                     left: '50%',
-                    marginLeft: '-20px',
+                    transform: 'translateX(-50%)',
                   }}
                   transition={{
                     type: "spring",
@@ -132,27 +137,27 @@ export function BottomNav({
                 />
               )}
               
-              <div className="relative flex items-center justify-center w-full">
-                <motion.div
-                  className="relative flex items-center justify-center"
-                  animate={{
-                    scale: item.active ? 1.1 : 1,
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 17,
-                  }}
-                >
-                  <Icon className="w-5 h-5" />
-                  {item.badge !== undefined && item.badge > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                      {item.badge > 9 ? "9+" : item.badge}
-                    </span>
-                  )}
-                </motion.div>
-              </div>
+              {/* Icon */}
+              <motion.div
+                className="relative flex items-center justify-center mb-1"
+                animate={{
+                  scale: item.active ? 1.1 : 1,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 17,
+                }}
+              >
+                <Icon className="w-5 h-5" />
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                    {item.badge > 9 ? "9+" : item.badge}
+                  </span>
+                )}
+              </motion.div>
 
+              {/* Label */}
               <span className="text-[8px] font-medium leading-tight">
                 {item.label}
               </span>
