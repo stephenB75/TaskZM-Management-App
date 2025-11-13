@@ -235,10 +235,8 @@ export function InboxView() {
       />
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />
-      {/* Spacer for fixed header on desktop */}
-      <div className="hidden md:block h-[73px]" />
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 md:pt-[73px]">
         {/* Quick Add and Filters Section */}
         <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex flex-col gap-4">
