@@ -35,10 +35,10 @@ export function AppHeader({
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
   
-  // Calculate left position:
+  // Calculate left position and width:
   // - Side panel headers: positioned at sidebar width (64px) - start of panel
-  // - Main header when panel open: sidebar (64px) + panel (440px) = 504px
-  // - Main header when panel closed: sidebar (64px)
+  // - Main header when panel open: sidebar (64px) + panel (440px) = 504px from left
+  // - Main header when panel closed: sidebar (64px) from left
   const sidebarWidth = 64; // w-16 = 64px
   const panelWidth = 440;
   const headerLeft = useMemo(() => {
@@ -47,6 +47,15 @@ export function AppHeader({
     }
     return panelOpen ? sidebarWidth + panelWidth : sidebarWidth; // Main header shifts when panel opens
   }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth]);
+  
+  // Calculate header width to properly resize during panel transitions
+  const headerWidth = useMemo(() => {
+    if (isSidePanelHeader) {
+      return undefined; // Side panel headers don't need width calculation
+    }
+    // Main header should span from left position to right edge
+    return `calc(100% - ${headerLeft}px)`;
+  }, [isSidePanelHeader, headerLeft]);
 
   return (
     <>
@@ -145,7 +154,10 @@ export function AppHeader({
         <motion.div 
           className="hidden md:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
           key={panelKey || 'header'}
-          animate={{ left: `${headerLeft}px` }}
+          animate={{ 
+            left: `${headerLeft}px`,
+            width: headerWidth
+          }}
           transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           style={{ minHeight: '73px' }}
         >
