@@ -195,7 +195,7 @@ export function InboxView() {
 
   return (
     <div
-      className="h-full flex flex-col bg-gradient-to-b from-[#FAF9FC] to-[#F9F7FD] dark:from-gray-950 dark:to-gray-900"
+      className="h-full flex flex-col bg-gradient-to-b from-[#EDECEF] to-[#ECEAF0] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900"
       data-tour="inbox-panel"
     >
       <AppHeader
@@ -237,7 +237,7 @@ export function InboxView() {
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />
 
-      <div className="flex-1 flex flex-col min-h-0 md:pt-[73px]">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Quick Add and Filters Section */}
         <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex flex-col gap-4">

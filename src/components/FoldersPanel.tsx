@@ -436,7 +436,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-gradient-to-b from-[#EDECEF] to-[#ECEAF0] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
       {/* Header */}
       <AppHeader
         title="Folders"
@@ -466,7 +466,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       <div className="md:hidden h-[64px]" />
 
       {/* Search Bar */}
-      <div className="px-4 py-3 border-b md:pt-[73px]">
+      <div className="px-4 py-3 border-b">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input

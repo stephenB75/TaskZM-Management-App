@@ -435,7 +435,7 @@ export function AnalyticsPanel({
           : `${analytics.timePatterns.peakHour - 12} PM`;
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-[#E6D5F0]/30 via-[#C9E4F7]/30 to-[#B8E6D5]/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+    <div className="h-full flex flex-col bg-gradient-to-br from-[#E6D5F0]/35 via-[#C9E4F7]/35 to-[#B8E6D5]/35 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Header */}
       <AppHeader
         title="Analytics"
@@ -458,7 +458,7 @@ export function AnalyticsPanel({
       <div className="md:hidden h-[64px]" />
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden md:pt-[73px]">
+      <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-4 pb-safe md:pb-4">
             {/* Pomodoro Time Tracking - Hero Section */}

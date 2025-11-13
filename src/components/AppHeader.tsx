@@ -87,58 +87,108 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* Desktop Header - Fixed at top, shifts when panel is open */}
-      <motion.div 
-        className="hidden md:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
-        animate={{ 
-          left: `${headerLeft}px`
-        }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      >
-        <div className="flex items-center justify-between gap-4">
-          {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
-          <div
-            className={cn(
-              "flex items-center min-w-0 flex-1",
-              hideDesktopLogo ? "gap-3" : "gap-4",
-            )}
-          >
-            {onBack && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onBack}
-                className="h-8 w-8 flex-shrink-0 -ml-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            )}
-            {!hideDesktopLogo && (
-              <img
-                src={logoImage}
-                alt="TaskZM Logo"
-                className="h-10 w-auto flex-shrink-0"
-              />
-            )}
-            <div className="min-w-0">
-              <h2 className="font-semibold text-foreground uppercase tracking-wide text-sm">
-                {typeof title === 'string' ? title : title}
-              </h2>
-              {description && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {description}
-                </p>
+      {/* Desktop Header - Side panel headers are relative, main header is fixed */}
+      {isSidePanelHeader ? (
+        // Side panel header - relative positioning, slides with panel
+        <div className="hidden md:block relative z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 flex-shrink-0">
+          <div className="flex items-center justify-between gap-4">
+            {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
+            <div
+              className={cn(
+                "flex items-center min-w-0 flex-1",
+                hideDesktopLogo ? "gap-3" : "gap-4",
               )}
+            >
+              {onBack && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onBack}
+                  className="h-8 w-8 flex-shrink-0 -ml-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+              )}
+              {!hideDesktopLogo && (
+                <img
+                  src={logoImage}
+                  alt="TaskZM Logo"
+                  className="h-10 w-auto flex-shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <h2 className="font-semibold text-foreground uppercase tracking-wide text-sm">
+                  {typeof title === 'string' ? title : title}
+                </h2>
+                {description && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {description}
+                  </p>
+                )}
+              </div>
             </div>
+            {/* Right side: Actions (switch + buttons) */}
+            {actions && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {actions}
+              </div>
+            )}
           </div>
-          {/* Right side: Actions (switch + buttons) */}
-          {actions && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {actions}
-            </div>
-          )}
         </div>
-      </motion.div>
+      ) : (
+        // Main header - fixed positioning, shifts when panel is open
+        <motion.div 
+          className="hidden md:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
+          animate={{ 
+            left: `${headerLeft}px`
+          }}
+          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        >
+          <div className="flex items-center justify-between gap-4">
+            {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
+            <div
+              className={cn(
+                "flex items-center min-w-0 flex-1",
+                hideDesktopLogo ? "gap-3" : "gap-4",
+              )}
+            >
+              {onBack && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onBack}
+                  className="h-8 w-8 flex-shrink-0 -ml-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+              )}
+              {!hideDesktopLogo && (
+                <img
+                  src={logoImage}
+                  alt="TaskZM Logo"
+                  className="h-10 w-auto flex-shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <h2 className="font-semibold text-foreground uppercase tracking-wide text-sm">
+                  {typeof title === 'string' ? title : title}
+                </h2>
+                {description && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {description}
+                  </p>
+                )}
+              </div>
+            </div>
+            {/* Right side: Actions (switch + buttons) */}
+            {actions && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {actions}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
     </>
   );
 }
