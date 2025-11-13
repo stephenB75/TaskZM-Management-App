@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
+import { motion } from "motion/react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
@@ -138,10 +139,12 @@ export function AppHeader({
           </div>
         </div>
       ) : (
-        // Main header - fixed positioning, shifts when panel is open
-        <div 
+        // Main header - fixed positioning, shifts when panel is open (animated to match week view)
+        <motion.div 
           className="hidden md:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
-          style={{ left: `${headerLeft}px`, minHeight: '73px' }}
+          animate={{ left: `${headerLeft}px` }}
+          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          style={{ minHeight: '73px' }}
         >
           <div className="flex items-center justify-between gap-4">
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
@@ -186,7 +189,7 @@ export function AppHeader({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
     </>
   );
