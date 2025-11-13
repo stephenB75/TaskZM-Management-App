@@ -458,7 +458,7 @@ export function AnalyticsPanel({
       <div className="md:hidden h-[64px]" />
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden md:pt-[73px]">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-4 pb-safe md:pb-4">
             {/* Pomodoro Time Tracking - Hero Section */}
