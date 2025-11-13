@@ -415,10 +415,10 @@ function AppContent() {
                 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="hidden md:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden pt-[73px]"
+                className="hidden md:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
               >
                 {/* Panel Content */}
-                <div className="h-full w-full overflow-hidden">
+                <div className="h-full w-full overflow-hidden pt-[73px]">
                   {currentView === 'notifications' && <NotificationsPanel />}
                   {currentView === 'today' && <TodayAgendaView />}
                   {currentView === 'inbox' && <InboxView />}
