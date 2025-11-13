@@ -448,6 +448,7 @@ function AppContent() {
               aiPanelOpen={aiPanelOpen}
               onAiPanelChange={setAiPanelOpen}
               hideAgenda={true}
+              panelOpen={currentView !== 'dashboard'}
             />
           </motion.div>
         </main>
