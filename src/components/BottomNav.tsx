@@ -98,7 +98,7 @@ export function BottomNav({
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#B4E4CE] via-[#C9E4F7] to-[#D4C5F9] animate-pulse" />
       )}
 
-      <div className="flex items-center justify-evenly px-3 pt-2 pb-[6.7px] safe-area-inset-bottom overflow-visible" style={{ paddingBottom: 'calc(6.7px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="flex items-center justify-evenly px-3 py-2 safe-area-inset-bottom overflow-visible" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))', paddingTop: '0.5rem' }}>
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -106,7 +106,7 @@ export function BottomNav({
               key={item.id}
               onClick={item.onClick}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 px-3 py-0.5 gap-0 rounded-xl transition-all relative overflow-visible min-h-[45px]",
+                "flex flex-col items-center justify-center flex-1 px-3 gap-1 rounded-xl transition-all relative overflow-visible",
                 "active:scale-95 touch-manipulation",
                 item.active && "text-primary",
                 !item.active &&
@@ -114,13 +114,13 @@ export function BottomNav({
               )}
               style={{ maxWidth: '100%' }}
             >
-              {/* Active indicator - positioned at top of nav bar, perfectly centered */}
+              {/* Active indicator - positioned at top, centered */}
               {item.active && (
                 <motion.div
                   layoutId="bottomNavIndicator"
                   className="absolute w-10 h-1.5 bg-primary rounded-full"
                   style={{
-                    top: '2px',
+                    top: '0.5rem',
                     left: '50%',
                     marginLeft: '-20px',
                   }}
@@ -153,7 +153,7 @@ export function BottomNav({
                 </motion.div>
               </div>
 
-              <span className="text-[8px] font-medium leading-tight -mt-0.5">
+              <span className="text-[8px] font-medium leading-tight">
                 {item.label}
               </span>
             </button>
