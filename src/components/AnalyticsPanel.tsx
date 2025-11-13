@@ -442,6 +442,16 @@ export function AnalyticsPanel({
         panelOpen={true}
         description="Visual insights & Pomodoro tracking"
         hideDesktopLogo
+        actions={
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        }
       />
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />

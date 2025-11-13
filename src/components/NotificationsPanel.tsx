@@ -235,6 +235,19 @@ export function NotificationsPanel() {
         panelOpen={true}
         description={`${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
         hideDesktopLogo
+        actions={
+          unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markAllAsRead}
+            >
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Mark all read</span>
+              <span className="sm:hidden">Mark read</span>
+            </Button>
+          )
+        }
       />
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />
