@@ -101,8 +101,9 @@ export function BottomNav({
       <div 
         className="flex items-center justify-evenly px-1 overflow-visible" 
         style={{ 
-          paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))',
-          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))'
+          paddingTop: '0.5rem',
+          paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
+          minHeight: '64px'
         }}
       >
         {navItems.map((item) => {
@@ -118,6 +119,10 @@ export function BottomNav({
                 !item.active &&
                   "text-muted-foreground hover:text-foreground",
               )}
+              style={{
+                paddingTop: '0.5rem',
+                paddingBottom: '0.5rem'
+              }}
             >
               {/* Active indicator - positioned at top */}
               {item.active && (
@@ -125,7 +130,7 @@ export function BottomNav({
                   layoutId="bottomNavIndicator"
                   className="absolute w-10 h-1.5 bg-primary rounded-full"
                   style={{
-                    top: '0.5rem',
+                    top: '0.25rem',
                     left: '50%',
                     transform: 'translateX(-50%)',
                   }}
@@ -137,29 +142,15 @@ export function BottomNav({
                 />
               )}
               
-              {/* Icon - with spacing from indicator line */}
-              <motion.div
-                className="relative flex items-center justify-center"
-                style={{ 
-                  marginTop: item.active ? '0.75rem' : '0.5rem',
-                  marginBottom: '0.25rem'
-                }}
-                animate={{
-                  scale: item.active ? 1.1 : 1,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 17,
-                }}
-              >
+              {/* Icon */}
+              <div className="relative flex items-center justify-center mb-1">
                 <Icon className="w-6 h-6" />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-white">
                     {item.badge > 9 ? "9+" : item.badge}
                   </span>
                 )}
-              </motion.div>
+              </div>
 
               {/* Label */}
               <span className="text-[8px] font-medium leading-tight">

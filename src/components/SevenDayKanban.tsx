@@ -354,7 +354,7 @@ export function SevenDayKanban({
       <div className="h-full flex flex-col bg-gradient-to-br from-[#F9F7FD] via-white to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
 
         {/* Mobile Single Column */}
-        <div className="flex-1 overflow-hidden px-4 pt-2 pb-24 sm:px-6 sm:pt-4 sm:pb-6">
+        <div className="flex-1 overflow-hidden px-4 pt-2 pb-20 sm:px-6 sm:pt-4 sm:pb-6">
           <DroppableColumn id={currentColumn.dateString} className="h-full">
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <ScrollArea className="h-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}>

@@ -565,7 +565,7 @@ export function AuthScreen() {
                             setSignInEmail(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
                         />
                       </div>
 
@@ -585,7 +585,7 @@ export function AuthScreen() {
                             setSignInPassword(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
                         />
                       </div>
 
@@ -671,7 +671,7 @@ export function AuthScreen() {
                             setSignUpName(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
                         />
                       </div>
 
@@ -691,7 +691,7 @@ export function AuthScreen() {
                             setSignUpEmail(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
                         />
                       </div>
 
@@ -711,7 +711,7 @@ export function AuthScreen() {
                             setSignUpPassword(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
                         />
                       </div>
 
@@ -733,7 +733,7 @@ export function AuthScreen() {
                             )
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
                         />
                       </div>
 
