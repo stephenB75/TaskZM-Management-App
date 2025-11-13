@@ -491,14 +491,14 @@ export function AnalyticsPanel({
                 
                 <CardContent className="relative z-10 pb-5">
                   {/* Main Stats Grid - Redesigned */}
-                  <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="flex flex-row sm:grid sm:grid-cols-3 gap-2 sm:gap-4 mb-4 overflow-x-auto">
                     {/* Total Time */}
-                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow">
+                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow flex-shrink-0 min-w-[100px] sm:min-w-0">
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-2 shadow-sm">
-                          <Timer className="w-6 h-6 text-white" />
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-2 shadow-sm">
+                          <Timer className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-1">
                           {Math.floor(analytics.totalTimeTracked / 60)}
                           <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
                           {analytics.totalTimeTracked % 60}
@@ -511,12 +511,12 @@ export function AnalyticsPanel({
                     </div>
                     
                     {/* This Week */}
-                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow">
+                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow flex-shrink-0 min-w-[100px] sm:min-w-0">
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-2 shadow-sm">
-                          <Activity className="w-6 h-6 text-white" />
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-2 shadow-sm">
+                          <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-1">
+                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-1">
                           {Math.floor(analytics.weeklyTimeTracked / 60)}
                           <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
                           {analytics.weeklyTimeTracked % 60}
@@ -529,12 +529,12 @@ export function AnalyticsPanel({
                     </div>
                     
                     {/* Avg/Task */}
-                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow">
+                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow flex-shrink-0 min-w-[100px] sm:min-w-0">
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-2 shadow-sm">
-                          <TrendingUp className="w-6 h-6 text-white" />
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-2 shadow-sm">
+                          <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-1">
+                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-1">
                           {Math.floor(analytics.avgTimePerTask / 60)}
                           <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
                           {Math.round(analytics.avgTimePerTask % 60)}

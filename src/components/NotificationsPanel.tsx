@@ -241,11 +241,12 @@ export function NotificationsPanel() {
             variant="outline"
             size="sm"
             onClick={markAllAsRead}
-            className="hidden md:flex"
+            className="flex"
             disabled={unreadCount === 0}
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Mark all read
+            <span className="hidden sm:inline">Mark all read</span>
+            <span className="sm:hidden">Mark read</span>
           </Button>
         }
       />

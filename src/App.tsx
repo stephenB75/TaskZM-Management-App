@@ -375,7 +375,7 @@ function AppContent() {
         />
         <main className="flex-1 overflow-hidden relative flex">
           {/* Mobile: Show different views - Full height container with proper bottom spacing */}
-          <div className="md:hidden h-full flex-1 flex flex-col">
+          <div className="lg:hidden h-full flex-1 flex flex-col">
             <div className="flex-1 overflow-hidden">
               {currentView === 'dashboard' && (
                 <DashboardView 
@@ -415,7 +415,7 @@ function AppContent() {
                 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="hidden md:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
+                className="hidden lg:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
               >
                 {/* Panel Content */}
                 <div className="h-full w-full overflow-hidden">
@@ -438,7 +438,7 @@ function AppContent() {
 
           {/* Desktop: Dashboard - pushed to the right when panel is open */}
           <motion.div 
-            className="hidden md:block h-full flex-1 overflow-hidden pt-[73px]"
+            className="hidden lg:block h-full flex-1 overflow-hidden pt-[73px]"
             layout
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           >

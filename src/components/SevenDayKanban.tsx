@@ -351,7 +351,7 @@ export function SevenDayKanban({
     const taskIds = dayTasks.map(t => t.id);
 
     return (
-      <div className="h-full flex flex-col bg-gradient-to-br from-[#F9F7FD] via-white to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
+      <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] md:from-[#F9F7FD] md:via-white md:to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
 
         {/* Mobile Single Column */}
         <div className="flex-1 overflow-hidden px-4 pt-2 pb-24 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
@@ -450,7 +450,7 @@ export function SevenDayKanban({
 
   // Desktop multi-column view
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-[#F9F7FD] via-white to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800" data-tour="kanban">
+    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] md:from-[#F9F7FD] md:via-white md:to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800" data-tour="kanban">
       
       {/* Month View Placeholder */}
       {viewMode === 'month' ? (

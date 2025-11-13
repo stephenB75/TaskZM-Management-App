@@ -219,11 +219,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         className="flex-1 overflow-y-auto overscroll-y-contain"
         style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
-        <div className="p-4 md:p-6">
-          <div className="max-w-2xl mx-auto space-y-2" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))', paddingTop: '0.5rem' }}>
+        <div className="p-4 sm:p-6 md:p-8">
+          <div className="max-w-2xl mx-auto space-y-4 sm:space-y-3 md:space-y-2" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))', paddingTop: '1rem' }}>
           <Accordion type="single" collapsible className="w-full">
         {/* User Profile */}
-        <AccordionItem value="user-profile" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="user-profile" className="border rounded-lg px-4 py-2 md:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <User className="w-5 h-5 text-primary" />
