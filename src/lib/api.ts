@@ -320,12 +320,24 @@ export async function deleteProject(workspaceId: string, projectId: string): Pro
 // Folder API
 export async function getFolders(workspaceId: string): Promise<Folder[]> {
   try {
+    // Validate workspace ID format
+    if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
+      logger.warn('Invalid workspace ID for getFolders:', workspaceId);
+      return [];
+    }
+
     const response = await fetch(`${API_BASE}/folders/${workspaceId}`, {
       method: 'GET',
       headers: getHeaders(),
     });
 
     if (!response.ok) {
+      // Handle 404 gracefully - workspace might not exist yet or has no folders
+      if (response.status === 404) {
+        logger.debug('Workspace not found or has no folders (404):', workspaceId);
+        return [];
+      }
+
       // Try to parse error as JSON, fallback to text or status text
       let errorMessage = 'Unknown error';
       try {
@@ -340,6 +352,9 @@ export async function getFolders(workspaceId: string): Promise<Folder[]> {
       } catch (parseError) {
         errorMessage = response.statusText || errorMessage;
       }
+      
+      // Only log non-404 errors
+      logger.warn('Failed to fetch folders:', errorMessage);
       throw new Error(errorMessage);
     }
 
@@ -600,36 +615,58 @@ export async function inviteTeamMember(workspaceId: string, email: string, name:
 }
 
 export async function getTeamMembers(workspaceId: string) {
-  const response = await fetch(`${API_BASE}/team/${workspaceId}/members`, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
-
-  if (!response.ok) {
-    // Handle 404 gracefully - workspace might not exist yet or have no members
-    if (response.status === 404) {
-      return [];
-    }
-    
-    // Try to parse error as JSON, fallback to text or status text
-    let errorMessage = 'Failed to fetch team members';
-    try {
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        const error = await response.json();
-        errorMessage = error.error || errorMessage;
-      } else {
-        const text = await response.text();
-        errorMessage = text || response.statusText || errorMessage;
-      }
-    } catch (parseError) {
-      errorMessage = response.statusText || errorMessage;
-    }
-    throw new Error(errorMessage);
+  // Validate workspace ID format
+  if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
+    logger.warn('Invalid workspace ID for getTeamMembers:', workspaceId);
+    return [];
   }
 
-  const data = await response.json();
-  return data.members || [];
+  try {
+    const response = await fetch(`${API_BASE}/team/${workspaceId}/members`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      // Handle 404 gracefully - workspace might not exist yet or have no members
+      if (response.status === 404) {
+        logger.debug('Workspace not found or has no members (404):', workspaceId);
+        return [];
+      }
+      
+      // Try to parse error as JSON, fallback to text or status text
+      let errorMessage = 'Failed to fetch team members';
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } else {
+          const text = await response.text();
+          errorMessage = text || response.statusText || errorMessage;
+        }
+      } catch (parseError) {
+        errorMessage = response.statusText || errorMessage;
+      }
+      
+      // Only log non-404 errors
+      logger.warn('Failed to fetch team members:', errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    return data.members || [];
+  } catch (error) {
+    // Handle 404 gracefully - return empty array
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('404') || errorMessage.includes('Not found')) {
+      logger.debug('Workspace not found, returning empty team members list');
+      return [];
+    }
+    // For other errors, log and return empty array to prevent app crashes
+    logger.warn('Error fetching team members, using empty list:', errorMessage);
+    return [];
+  }
 }
 
 export async function removeTeamMember(workspaceId: string, memberId: string) {
