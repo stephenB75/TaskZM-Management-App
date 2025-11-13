@@ -220,7 +220,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
         <div className="p-4 md:p-6">
-          <div className="max-w-2xl mx-auto space-y-2" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="max-w-2xl mx-auto space-y-2" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))', paddingTop: '0.5rem' }}>
           <Accordion type="single" collapsible className="w-full">
         {/* User Profile */}
         <AccordionItem value="user-profile" className="border rounded-lg px-4 bg-card">

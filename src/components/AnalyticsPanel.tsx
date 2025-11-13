@@ -460,7 +460,7 @@ export function AnalyticsPanel({
       {/* Content */}
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-4 pb-safe md:pb-4">
+          <div className="p-4 space-y-4 pt-6 md:pt-4 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
             {/* Pomodoro Time Tracking - Redesigned Hero Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

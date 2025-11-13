@@ -126,16 +126,16 @@ export function BottomNav({
             >
               {/* Icon - 30% bigger (w-6 h-6 -> w-8 h-8) */}
               <div className="relative flex items-center justify-center" style={{ marginTop: item.active ? '0.75rem' : '0.5rem' }}>
-                {/* Active indicator - above icon and centered */}
+                {/* Active indicator - centered above icon */}
                 {item.active && (
                   <motion.div
                     layoutId="bottomNavIndicator"
                     className="absolute h-1.5 bg-primary rounded-full z-0"
                     style={{
                       width: '2rem',
-                      bottom: 'calc(100% + 0.3rem)',
+                      top: '-0.5rem',
                       left: '50%',
-                      transform: 'translateX(-50%)',
+                      marginLeft: '-1rem',
                     }}
                     transition={{
                       type: "spring",
