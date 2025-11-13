@@ -625,7 +625,7 @@ export function TeamPanel() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 flex-shrink-0"
+                      className="h-8 w-8 flex-shrink-0 hover:bg-transparent hover:text-current"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
