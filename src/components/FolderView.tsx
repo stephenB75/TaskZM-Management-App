@@ -246,6 +246,8 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-[#FAF9FC] to-[#F9F7FD] dark:from-gray-950 dark:to-gray-900">
       <AppHeader
+        panelOpen={true}
+        isSidePanelHeader={true}
         title={
           <div className="flex items-center gap-2">
             <div

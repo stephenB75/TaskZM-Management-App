@@ -305,6 +305,9 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       onMouseDown={(e) => {
                         e.stopPropagation();
                       }}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                      }}
                       aria-label="Folder options"
                     >
                       <MoreVertical className="w-4 h-4" />

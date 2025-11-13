@@ -627,15 +627,12 @@ export function TeamPanel() {
                       size="icon"
                       className="h-8 w-8 flex-shrink-0 hover:bg-transparent hover:text-current"
                       onClick={(e) => {
-                        e.preventDefault();
                         e.stopPropagation();
                       }}
                       onMouseDown={(e) => {
-                        e.preventDefault();
                         e.stopPropagation();
                       }}
                       onPointerDown={(e) => {
-                        e.preventDefault();
                         e.stopPropagation();
                       }}
                       data-slot="dropdown-menu-trigger"

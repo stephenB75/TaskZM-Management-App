@@ -461,66 +461,98 @@ export function AnalyticsPanel({
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-4 pb-safe md:pb-4">
-            {/* Pomodoro Time Tracking - Hero Section */}
+            {/* Pomodoro Time Tracking - Redesigned Hero Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0 }}
             >
-              <Card className="relative overflow-hidden border-[#7B68EE]/30 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#7B68EE]/20 to-purple-500/20 rounded-full -mr-16 -mt-16" />
-                <CardHeader className="pb-2 relative z-10">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Timer className="w-4 h-4 text-[#7B68EE]" />
-                    Pomodoro Time Tracking
-                  </CardTitle>
+              <Card className="relative overflow-hidden border-2 border-[#7B68EE]/40 bg-gradient-to-br from-violet-100/80 via-purple-50/80 to-pink-50/80 dark:from-violet-950/40 dark:via-purple-950/30 dark:to-pink-950/30 shadow-lg">
+                {/* Decorative background elements */}
+                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#7B68EE]/15 to-purple-500/15 rounded-full -mr-20 -mt-20 blur-xl" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-400/10 to-rose-400/10 rounded-full -ml-16 -mb-16 blur-xl" />
+                
+                <CardHeader className="pb-3 pt-5 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2.5 text-lg font-bold">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7B68EE] to-purple-600 flex items-center justify-center shadow-md">
+                        <Timer className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="bg-gradient-to-r from-[#7B68EE] via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        Pomodoro Time Tracking
+                      </span>
+                    </CardTitle>
+                    <Badge variant="outline" className="bg-white/60 dark:bg-gray-900/60 border-[#7B68EE]/30">
+                      <Award className="w-3 h-3 mr-1.5 text-[#7B68EE]" />
+                      {analytics.tasksWithTime} tasks
+                    </Badge>
+                  </div>
                 </CardHeader>
-                <CardContent className="relative z-10">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-white/60 dark:bg-gray-900/40 rounded-xl p-3 text-center">
-                      <div className="text-2xl bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-1">
-                        {Math.floor(
-                          analytics.totalTimeTracked / 60,
-                        )}
-                        h {analytics.totalTimeTracked % 60}m
+                
+                <CardContent className="relative z-10 pb-5">
+                  {/* Main Stats Grid - Redesigned */}
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    {/* Total Time */}
+                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-2 shadow-sm">
+                          <Timer className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                          {Math.floor(analytics.totalTimeTracked / 60)}
+                          <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
+                          {analytics.totalTimeTracked % 60}
+                          <span className="text-lg text-gray-500 dark:text-gray-400">m</span>
+                        </div>
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mt-1">
+                          Total Time
+                        </p>
                       </div>
-                      <p className="text-[9px] text-gray-600 dark:text-gray-400">
-                        Total Time
-                      </p>
                     </div>
-                    <div className="bg-white/60 dark:bg-gray-900/40 rounded-xl p-3 text-center">
-                      <div className="text-2xl bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-1">
-                        {Math.floor(
-                          analytics.weeklyTimeTracked / 60,
-                        )}
-                        h {analytics.weeklyTimeTracked % 60}m
+                    
+                    {/* This Week */}
+                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-2 shadow-sm">
+                          <Activity className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-1">
+                          {Math.floor(analytics.weeklyTimeTracked / 60)}
+                          <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
+                          {analytics.weeklyTimeTracked % 60}
+                          <span className="text-lg text-gray-500 dark:text-gray-400">m</span>
+                        </div>
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mt-1">
+                          This Week
+                        </p>
                       </div>
-                      <p className="text-[9px] text-gray-600 dark:text-gray-400">
-                        This Week
-                      </p>
                     </div>
-                    <div className="bg-white/60 dark:bg-gray-900/40 rounded-xl p-3 text-center">
-                      <div className="text-2xl bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent mb-1">
-                        {Math.floor(
-                          analytics.avgTimePerTask / 60,
-                        )}
-                        h{" "}
-                        {Math.round(
-                          analytics.avgTimePerTask % 60,
-                        )}
-                        m
+                    
+                    {/* Avg/Task */}
+                    <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-2 shadow-sm">
+                          <TrendingUp className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-1">
+                          {Math.floor(analytics.avgTimePerTask / 60)}
+                          <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
+                          {Math.round(analytics.avgTimePerTask % 60)}
+                          <span className="text-lg text-gray-500 dark:text-gray-400">m</span>
+                        </div>
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mt-1">
+                          Avg/Task
+                        </p>
                       </div>
-                      <p className="text-[9px] text-gray-600 dark:text-gray-400">
-                        Avg/Task
-                      </p>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 bg-white/40 dark:bg-gray-900/30 rounded-lg p-2">
-                    <Award className="w-3 h-3 text-[#7B68EE]" />
-                    <span>
-                      Tracked across {analytics.tasksWithTime}{" "}
-                      tasks
-                    </span>
+                  
+                  {/* Summary Footer */}
+                  <div className="flex items-center justify-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm rounded-xl p-3 border border-white/50 dark:border-gray-800/50">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-[#7B68EE] animate-pulse" />
+                      <span>Active tracking across {analytics.tasksWithTime} tasks</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

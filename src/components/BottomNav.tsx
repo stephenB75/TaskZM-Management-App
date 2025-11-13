@@ -124,26 +124,25 @@ export function BottomNav({
                 paddingBottom: '0.1434375rem'
               }}
             >
-              {/* Active indicator - above icon */}
-              {item.active && (
-                <motion.div
-                  layoutId="bottomNavIndicator"
-                  className="absolute w-10 h-1.5 bg-primary rounded-full z-0"
-                  style={{
-                    top: '0.5rem',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 30,
-                  }}
-                />
-              )}
-              
               {/* Icon - 30% bigger (w-6 h-6 -> w-8 h-8) */}
               <div className="relative flex items-center justify-center" style={{ marginTop: item.active ? '0.75rem' : '0.5rem' }}>
+                {/* Active indicator - centered on icon */}
+                {item.active && (
+                  <motion.div
+                    layoutId="bottomNavIndicator"
+                    className="absolute w-10 h-1.5 bg-primary rounded-full z-0"
+                    style={{
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 30,
+                    }}
+                  />
+                )}
                 <Icon className="w-8 h-8 relative z-10" />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-white">
