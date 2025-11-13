@@ -101,8 +101,8 @@ export function BottomNav({
       <div 
         className="flex items-center justify-evenly px-1 overflow-visible" 
         style={{ 
-          paddingTop: '0.5rem',
-          paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))'
+          paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))'
         }}
       >
         {navItems.map((item) => {
@@ -118,15 +118,14 @@ export function BottomNav({
                 !item.active &&
                   "text-muted-foreground hover:text-foreground",
               )}
-              style={{ paddingTop: '0.75rem', paddingBottom: '0.5rem' }}
             >
-              {/* Active indicator - positioned at top of nav bar */}
+              {/* Active indicator - positioned at top */}
               {item.active && (
                 <motion.div
                   layoutId="bottomNavIndicator"
                   className="absolute w-10 h-1.5 bg-primary rounded-full"
                   style={{
-                    top: '0.25rem',
+                    top: '0.5rem',
                     left: '50%',
                     transform: 'translateX(-50%)',
                   }}
@@ -138,9 +137,13 @@ export function BottomNav({
                 />
               )}
               
-              {/* Icon - positioned lower with more space */}
+              {/* Icon - with spacing from indicator line */}
               <motion.div
                 className="relative flex items-center justify-center"
+                style={{ 
+                  marginTop: item.active ? '0.75rem' : '0.5rem',
+                  marginBottom: '0.25rem'
+                }}
                 animate={{
                   scale: item.active ? 1.1 : 1,
                 }}
@@ -159,7 +162,7 @@ export function BottomNav({
               </motion.div>
 
               {/* Label */}
-              <span className="text-[8px] font-medium leading-tight mt-1">
+              <span className="text-[8px] font-medium leading-tight">
                 {item.label}
               </span>
             </button>
