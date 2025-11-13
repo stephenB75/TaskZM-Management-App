@@ -50,6 +50,7 @@ interface DashboardViewProps {
   onAiPanelChange: (open: boolean) => void;
   hideAgenda?: boolean;
   panelOpen?: boolean; // Indicates if a side panel is open (for header adjustment)
+  panelKey?: string | number; // Key to track panel transitions
 }
 
 interface SchedulePlan {
@@ -387,6 +388,7 @@ export function DashboardView({
   onAiPanelChange,
   hideAgenda = false,
   panelOpen = false,
+  panelKey,
 }: DashboardViewProps) {
   const { tasks, updateTask } = useTasks();
   const { rescheduleDay, rescheduleWeek, rescheduleMonth, getScheduledTasksForDay, getScheduledTasksForWeek, getScheduledTasksForMonth } = useAIScheduler();
@@ -778,6 +780,7 @@ export function DashboardView({
       <AppHeader
         title="Dashboard"
         panelOpen={panelOpen}
+        panelKey={panelKey}
         description={viewMode === "week" ? "Week View" : "Month View"}
         actions={
           <div className="flex items-center gap-2">
