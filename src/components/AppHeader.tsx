@@ -72,8 +72,8 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* Desktop Header - Fixed at top */}
-      <div className="hidden md:block fixed top-0 left-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4">
+      {/* Desktop Header - Fixed at top, starts after sidebar (64px = w-16) */}
+      <div className="hidden md:block fixed top-0 left-16 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
           <div

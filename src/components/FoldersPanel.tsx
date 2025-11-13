@@ -235,34 +235,55 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
         <Card 
           data-slot="card"
           className={cn(
-            "shadow-lg transition-shadow duration-200 border border-gray-300/80",
-            isOver && "bg-primary/10",
-            dropdownOpen && "pointer-events-none"
+            "group relative overflow-hidden transition-all duration-300",
+            "hover:shadow-xl hover:scale-[1.02] border-2",
+            "bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800",
+            isOver && "ring-2 ring-primary ring-offset-2 bg-primary/5",
+            dropdownOpen && "pointer-events-none",
+            "border-gray-200/60 dark:border-gray-700/60 hover:border-primary/30"
           )}
         >
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
+          {/* Color accent bar */}
+          <div 
+            className="absolute top-0 left-0 right-0 h-1.5 transition-all duration-300"
+            style={{ 
+              background: `linear-gradient(90deg, ${folder.color || "#3b82f6"}, ${folder.color || "#3b82f6"}88)`,
+            }}
+          />
+          
+          <CardHeader className="pb-3 pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-4 flex-1 min-w-0">
+                {/* Enhanced folder icon */}
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${folder.color || "#3b82f6"}20` }}
+                  className="relative w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-lg"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${folder.color || "#3b82f6"}15, ${folder.color || "#3b82f6"}30)`,
+                  }}
                 >
+                  <div 
+                    className="absolute inset-0 rounded-xl opacity-20 blur-sm"
+                    style={{ backgroundColor: folder.color || "#3b82f6" }}
+                  />
                   <Folder
-                    className="w-5 h-5"
+                    className="w-7 h-7 relative z-10"
                     style={{ color: folder.color || "#3b82f6" }}
                   />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-base mb-1">
+                
+                <div className="flex-1 min-w-0 pt-1">
+                  <CardTitle className="text-lg font-bold mb-1.5 text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors">
                     {folder.name || "Unnamed Folder"}
                   </CardTitle>
                   {folder.description && (
-                    <CardDescription className="text-xs">
+                    <CardDescription className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                       {folder.description}
                     </CardDescription>
                   )}
                 </div>
               </div>
+              
+              {/* Enhanced dropdown menu */}
               <div 
                 className="relative z-10"
                 onClick={(e) => {
@@ -285,7 +306,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 flex-shrink-0 transition-colors duration-150 hover:bg-accent/80"
+                      className="h-9 w-9 flex-shrink-0 rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary"
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
@@ -299,10 +320,9 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
                     align="end"
-                    className="z-[100]"
+                    className="z-[100] w-48"
                     onInteractOutside={(e) => {
                       const target = e.target as HTMLElement;
-                      // Don't close if clicking on the trigger button
                       if (target.closest('button[type="button"]')) {
                         e.preventDefault();
                       }
@@ -318,6 +338,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                           onFolderClick(folder);
                         }, 150);
                       }}
+                      className="cursor-pointer"
                     >
                       <Folder className="w-4 h-4 mr-2" />
                       Open Folder
@@ -329,6 +350,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                           onEditFolder(folder);
                         }, 150);
                       }}
+                      className="cursor-pointer"
                     >
                       <Edit2 className="w-4 h-4 mr-2" />
                       Edit
@@ -340,7 +362,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                           onDeleteFolder(folder);
                         }, 150);
                       }}
-                      className="text-destructive focus:text-destructive"
+                      className="text-destructive focus:text-destructive cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete
@@ -350,25 +372,33 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          
+          <CardContent className="pt-0 pb-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="secondary" className="text-xs">
-                    {taskCount} task{taskCount !== 1 ? "s" : ""}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="secondary" className="text-xs">
-                    {projectCount} project{projectCount !== 1 ? "s" : ""}
-                  </Badge>
-                </div>
+              {/* Enhanced stats badges */}
+              <div className="flex items-center gap-2.5">
+                <Badge 
+                  variant="secondary" 
+                  className="text-xs font-semibold px-3 py-1 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                >
+                  <span className="font-bold mr-1">{taskCount}</span>
+                  {taskCount === 1 ? "task" : "tasks"}
+                </Badge>
+                <Badge 
+                  variant="secondary" 
+                  className="text-xs font-semibold px-3 py-1 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+                >
+                  <span className="font-bold mr-1">{projectCount}</span>
+                  {projectCount === 1 ? "project" : "projects"}
+                </Badge>
               </div>
+              
+              {/* Enhanced open button */}
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 flex-shrink-0 hover:bg-accent/80"
+                className="h-9 w-9 rounded-lg flex-shrink-0 transition-all duration-200 hover:bg-primary hover:text-primary-foreground hover:scale-110 group-hover:translate-x-1"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -376,7 +406,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 }}
                 aria-label="Open folder"
               >
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
           </CardContent>
