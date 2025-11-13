@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -39,9 +39,12 @@ export function AppHeader({
   // - Main header when panel closed: sidebar (64px)
   const sidebarWidth = 64; // w-16 = 64px
   const panelWidth = 440;
-  const headerLeft = isSidePanelHeader 
-    ? sidebarWidth  // Side panel headers at start of panel
-    : (panelOpen ? sidebarWidth + panelWidth : sidebarWidth); // Main header shifts when panel opens
+  const headerLeft = useMemo(() => {
+    if (isSidePanelHeader) {
+      return sidebarWidth; // Side panel headers at start of panel
+    }
+    return panelOpen ? sidebarWidth + panelWidth : sidebarWidth; // Main header shifts when panel opens
+  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth]);
 
   return (
     <>
@@ -139,10 +142,15 @@ export function AppHeader({
         // Main header - fixed positioning, shifts when panel is open
         <motion.div 
           className="hidden md:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
+          layout
           animate={{ 
             left: `${headerLeft}px`
           }}
-          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          transition={{ 
+            type: 'spring', 
+            damping: 30, 
+            stiffness: 300
+          }}
         >
           <div className="flex items-center justify-between gap-4">
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
