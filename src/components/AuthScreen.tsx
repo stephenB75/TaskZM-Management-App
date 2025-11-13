@@ -212,9 +212,9 @@ export function AuthScreen() {
         {/* Gradient overlay for better readability and pastel tones */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#B4E4FF]/90 via-[#E0BBE4]/85 to-[#FFDAB9]/90 dark:from-gray-900/95 dark:via-purple-900/90 dark:to-gray-800/95" />
 
-        {/* Animated accent circles */}
+        {/* Animated accent circles - hidden on mobile */}
         <motion.div
-          className="absolute top-20 left-20 w-96 h-96 bg-[#98D8C8]/30 rounded-full blur-3xl"
+          className="hidden md:block absolute top-20 left-20 w-96 h-96 bg-[#98D8C8]/30 rounded-full blur-3xl"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -226,7 +226,7 @@ export function AuthScreen() {
           }}
         />
         <motion.div
-          className="absolute bottom-20 right-20 w-96 h-96 bg-[#DDA0DD]/30 rounded-full blur-3xl"
+          className="hidden md:block absolute bottom-20 right-20 w-96 h-96 bg-[#DDA0DD]/30 rounded-full blur-3xl"
           animate={{
             scale: [1.2, 1, 1.2],
             opacity: [0.4, 0.6, 0.4],
@@ -241,51 +241,51 @@ export function AuthScreen() {
 
       {/* Main Content */}
       <motion.div
-        className="relative z-10 w-full max-w-7xl mx-auto px-4 py-2 lg:py-3"
+        className="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:py-8"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start lg:items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 items-start lg:items-center">
           {/* Left Side - Branding & Features */}
           <motion.div
-            className="text-center lg:text-left space-y-2"
+            className="text-center lg:text-left space-y-2 sm:space-y-3"
             variants={itemVariants}
           >
             {/* Logo & Tagline */}
             <motion.div
-              className="space-y-1"
+              className="space-y-1 sm:space-y-2"
               variants={logoVariants}
             >
               <motion.div
-                className="inline-flex items-center gap-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-2 py-1 rounded-full shadow-lg border border-white/50"
+                className="inline-flex items-center gap-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-2 py-0.5 sm:py-1 rounded-full shadow-lg border border-white/50"
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.2 }}
               >
-                <Sparkles className="w-3 h-3 text-[#7B68EE]" />
-                <span className="text-[10px] sm:text-xs text-gray-700 dark:text-gray-200">
+                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7B68EE]" />
+                <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-700 dark:text-gray-200">
                   Neurodivergent-Friendly
                 </span>
               </motion.div>
 
-              <div className="flex flex-col items-center lg:items-start gap-1">
+              <div className="flex flex-col items-center lg:items-start gap-0.5 sm:gap-1">
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
-                  className="w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px]"
+                  className="w-[100px] sm:w-[140px] md:w-[160px] lg:w-[200px]"
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.2 }}
                 />
 
-                <p className="text-sm sm:text-base text-gray-700 dark:text-gray-200 text-center lg:text-left">
+                <p className="text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-200 text-center lg:text-left px-2 sm:px-0">
                   Your Calm, Organized Task Companion
                 </p>
               </div>
             </motion.div>
 
-            {/* Feature Highlights - More Compact */}
+            {/* Feature Highlights - More Compact for Mobile */}
             <motion.div
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1.5 max-w-2xl mx-auto lg:mx-0 pt-1"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1 sm:gap-1.5 max-w-2xl mx-auto lg:mx-0 pt-1 sm:pt-2"
               variants={itemVariants}
             >
               <motion.div
@@ -481,10 +481,10 @@ export function AuthScreen() {
                 onValueChange={setActiveTab}
                 className="w-full"
               >
-                <CardHeader className="space-y-2 pb-4">
-                  <CardTitle className="text-center text-lg">
+                <CardHeader className="space-y-2 pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+                  <CardTitle className="text-center text-base sm:text-lg">
                     <motion.div
-                      className="inline-flex items-center gap-2"
+                      className="inline-flex items-center gap-1.5 sm:gap-2"
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ delay: 0.4 }}
@@ -504,7 +504,7 @@ export function AuthScreen() {
                       <span>Welcome to TaskZM!</span>
                     </motion.div>
                   </CardTitle>
-                  <CardDescription className="text-center text-xs">
+                  <CardDescription className="text-center text-[11px] sm:text-xs px-2 sm:px-0">
                     {activeTab === "signin" ? (
                       <motion.span
                         key="signin-desc"
@@ -527,33 +527,33 @@ export function AuthScreen() {
                       </motion.span>
                     )}
                   </CardDescription>
-                  <TabsList className="!flex w-full !h-12 sm:!h-14 !p-1.5 !gap-1.5 bg-gradient-to-r from-[#E8F5F1] to-[#F3E8FF] dark:from-gray-800 dark:to-purple-900/50 !rounded-lg">
+                  <TabsList className="!flex w-full !h-10 sm:!h-12 md:!h-14 !p-1 !gap-1 sm:!gap-1.5 bg-gradient-to-r from-[#E8F5F1] to-[#F3E8FF] dark:from-gray-800 dark:to-purple-900/50 !rounded-lg">
                     <TabsTrigger
                       value="signin"
-                      className="!flex-1 !h-auto !py-2.5 sm:!py-3 !px-3 sm:!px-4 text-xs sm:text-sm"
+                      className="!flex-1 !h-auto !py-2 sm:!py-2.5 md:!py-3 !px-2 sm:!px-3 md:!px-4 text-[11px] sm:text-xs md:text-sm"
                     >
                       Sign In
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="!flex-1 !h-auto !py-2.5 sm:!py-3 !px-3 sm:!px-4 text-xs sm:text-sm"
+                      className="!flex-1 !h-auto !py-2 sm:!py-2.5 md:!py-3 !px-2 sm:!px-3 md:!px-4 text-[11px] sm:text-xs md:text-sm"
                     >
                       Sign Up
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>
 
-                <CardContent className="pb-5 pt-2">
+                <CardContent className="pb-4 sm:pb-5 pt-2 px-4 sm:px-6">
                   <TabsContent value="signin" className="mt-0">
                     <motion.form
                       onSubmit={handleSignIn}
-                      className="space-y-3"
+                      className="space-y-2.5 sm:space-y-3"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <div className="space-y-1.5">
-                        <Label htmlFor="signin-email">
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <Label htmlFor="signin-email" className="text-xs sm:text-sm">
                           Email
                         </Label>
                         <Input
@@ -565,14 +565,14 @@ export function AuthScreen() {
                             setSignInEmail(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
                         />
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 sm:space-y-1.5">
                         <Label
                           htmlFor="signin-password"
-                          className="text-sm"
+                          className="text-xs sm:text-sm"
                         >
                           Password
                         </Label>
@@ -585,18 +585,18 @@ export function AuthScreen() {
                             setSignInPassword(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-10"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
                         />
                       </div>
 
                       <motion.div
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        className="pt-1"
+                        className="pt-0.5 sm:pt-1"
                       >
                         <Button
                           type="submit"
-                          className="w-full h-11 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-sm"
+                          className="w-full h-10 sm:h-11 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-xs sm:text-sm"
                           disabled={isLoading}
                         >
                           {isLoading ? (
@@ -617,11 +617,11 @@ export function AuthScreen() {
                       </motion.div>
 
                       {/* Divider */}
-                      <div className="relative py-2">
+                      <div className="relative py-1.5 sm:py-2">
                         <div className="absolute inset-0 flex items-center">
                           <span className="w-full border-t border-gray-300 dark:border-gray-600" />
                         </div>
-                        <div className="relative flex justify-center text-xs uppercase">
+                        <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
                           <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">
                             Or
                           </span>
@@ -637,10 +637,10 @@ export function AuthScreen() {
                           type="button"
                           onClick={handleDemoSignIn}
                           variant="outline"
-                          className="w-full h-11 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-sm"
+                          className="w-full h-10 sm:h-11 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-xs sm:text-sm"
                           disabled={isLoading}
                         >
-                          <Sparkles className="mr-2 h-4 w-4" />
+                          <Sparkles className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           Try Demo Account
                         </Button>
                       </motion.div>
@@ -650,15 +650,15 @@ export function AuthScreen() {
                   <TabsContent value="signup" className="mt-0">
                     <motion.form
                       onSubmit={handleSignUp}
-                      className="space-y-3"
+                      className="space-y-2.5 sm:space-y-3"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 sm:space-y-1.5">
                         <Label
                           htmlFor="signup-name"
-                          className="text-sm"
+                          className="text-xs sm:text-sm"
                         >
                           Name
                         </Label>
@@ -671,14 +671,14 @@ export function AuthScreen() {
                             setSignUpName(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-10"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
                         />
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 sm:space-y-1.5">
                         <Label
                           htmlFor="signup-email"
-                          className="text-sm"
+                          className="text-xs sm:text-sm"
                         >
                           Email
                         </Label>
@@ -691,14 +691,14 @@ export function AuthScreen() {
                             setSignUpEmail(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-10"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
                         />
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 sm:space-y-1.5">
                         <Label
                           htmlFor="signup-password"
-                          className="text-sm"
+                          className="text-xs sm:text-sm"
                         >
                           Password
                         </Label>
@@ -711,14 +711,14 @@ export function AuthScreen() {
                             setSignUpPassword(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-10"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
                         />
                       </div>
 
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 sm:space-y-1.5">
                         <Label
                           htmlFor="signup-confirm-password"
-                          className="text-sm"
+                          className="text-xs sm:text-sm"
                         >
                           Confirm Password
                         </Label>
@@ -733,18 +733,18 @@ export function AuthScreen() {
                             )
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-10"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm"
                         />
                       </div>
 
                       <motion.div
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        className="pt-1"
+                        className="pt-0.5 sm:pt-1"
                       >
                         <Button
                           type="submit"
-                          className="w-full h-11 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-sm"
+                          className="w-full h-10 sm:h-11 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-xs sm:text-sm"
                           disabled={isLoading}
                         >
                           {isLoading ? (
@@ -765,10 +765,10 @@ export function AuthScreen() {
                       </motion.div>
 
                       {/* Info message */}
-                      <div className="text-center text-sm text-gray-600 dark:text-gray-400 bg-[#E8F5F1] dark:bg-gray-800 rounded-lg p-3">
-                        <span className="inline-flex items-center gap-1">
-                          <Sparkles className="h-4 w-4 text-[#7B68EE]" />
-                          Free forever • Pro features available • No credit card required
+                      <div className="text-center text-[10px] sm:text-xs md:text-sm text-gray-600 dark:text-gray-400 bg-[#E8F5F1] dark:bg-gray-800 rounded-lg p-2 sm:p-3">
+                        <span className="inline-flex items-center gap-1 flex-wrap justify-center">
+                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-[#7B68EE] flex-shrink-0" />
+                          <span>Free forever • Pro features available • No credit card required</span>
                         </span>
                       </div>
                     </motion.form>
