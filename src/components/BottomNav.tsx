@@ -121,30 +121,29 @@ export function BottomNav({
               )}
               style={{
                 paddingTop: '0.5rem',
-                paddingBottom: '0.5rem'
+                paddingBottom: '0.25rem'
               }}
             >
-              {/* Active indicator - positioned at top */}
-              {item.active && (
-                <motion.div
-                  layoutId="bottomNavIndicator"
-                  className="absolute w-10 h-1.5 bg-primary rounded-full"
-                  style={{
-                    top: '0.5rem',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 30,
-                  }}
-                />
-              )}
-              
               {/* Icon - 30% bigger (w-6 h-6 -> w-8 h-8) */}
-              <div className="relative flex items-center justify-center mb-1.5" style={{ marginTop: item.active ? '0.75rem' : '0.5rem' }}>
-                <Icon className="w-8 h-8" />
+              <div className="relative flex items-center justify-center" style={{ marginTop: item.active ? '0.75rem' : '0.5rem' }}>
+                <Icon className="w-8 h-8 relative z-10" />
+                {/* Active indicator - centered on icon */}
+                {item.active && (
+                  <motion.div
+                    layoutId="bottomNavIndicator"
+                    className="absolute w-10 h-1.5 bg-primary rounded-full z-0"
+                    style={{
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 30,
+                    }}
+                  />
+                )}
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-white">
                     {item.badge > 9 ? "9+" : item.badge}
@@ -152,8 +151,8 @@ export function BottomNav({
                 )}
               </div>
 
-              {/* Label */}
-              <span className="text-[8px] font-medium leading-tight">
+              {/* Label - 20% bigger (8px -> 9.6px, using 10px) */}
+              <span className="text-[10px] font-medium leading-tight" style={{ marginTop: '0.25rem', marginBottom: '0.25rem' }}>
                 {item.label}
               </span>
             </button>
