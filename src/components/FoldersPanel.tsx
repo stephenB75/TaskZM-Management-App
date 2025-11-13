@@ -236,8 +236,8 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
           data-slot="card"
           className={cn(
             "relative border transition-colors duration-200",
-            "hover:border-primary/40 hover:shadow-md",
             "bg-card",
+            !dropdownOpen && "hover:border-primary/40 hover:shadow-md",
             isOver && "ring-2 ring-primary/30 bg-primary/5 border-primary/50"
           )}
         >
@@ -387,6 +387,14 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                   e.preventDefault();
                   e.stopPropagation();
                   onFolderClick(folder);
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                 }}
                 aria-label="Open folder"
               >

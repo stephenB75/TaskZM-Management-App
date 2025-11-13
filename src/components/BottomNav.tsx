@@ -101,9 +101,9 @@ export function BottomNav({
       <div 
         className="flex items-center justify-evenly px-1 overflow-visible" 
         style={{ 
-          paddingTop: '0.5rem',
-          paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
-          minHeight: '64px'
+          paddingTop: '0.75rem',
+          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+          minHeight: '72px'
         }}
       >
         {navItems.map((item) => {
@@ -130,7 +130,7 @@ export function BottomNav({
                   layoutId="bottomNavIndicator"
                   className="absolute w-10 h-1.5 bg-primary rounded-full"
                   style={{
-                    top: '0.25rem',
+                    top: '0.5rem',
                     left: '50%',
                     transform: 'translateX(-50%)',
                   }}
@@ -142,9 +142,9 @@ export function BottomNav({
                 />
               )}
               
-              {/* Icon */}
-              <div className="relative flex items-center justify-center mb-1">
-                <Icon className="w-6 h-6" />
+              {/* Icon - 30% bigger (w-6 h-6 -> w-8 h-8) */}
+              <div className="relative flex items-center justify-center mb-1.5" style={{ marginTop: item.active ? '0.75rem' : '0.5rem' }}>
+                <Icon className="w-8 h-8" />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-white">
                     {item.badge > 9 ? "9+" : item.badge}

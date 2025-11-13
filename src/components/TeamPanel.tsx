@@ -458,8 +458,8 @@ export function TeamPanel() {
         <Card
           className={cn(
             "relative border transition-colors duration-200",
-            "hover:border-primary/40 hover:shadow-md",
             "bg-card",
+            !dropdownOpen && "hover:border-primary/40 hover:shadow-md",
             member.hasUnreadNotification &&
               member.inviteStatus === "accepted" &&
               "ring-2 ring-primary/30 border-primary/50"
@@ -627,11 +627,18 @@ export function TeamPanel() {
                       size="icon"
                       className="h-8 w-8 flex-shrink-0"
                       onClick={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                       }}
                       onMouseDown={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                       }}
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      data-slot="dropdown-menu-trigger"
                     >
                       <MoreVertical className="w-4 h-4" />
                     </Button>

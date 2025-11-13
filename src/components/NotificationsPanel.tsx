@@ -237,17 +237,17 @@ export function NotificationsPanel() {
         description={`${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
         hideDesktopLogo
         actions={
-          unreadCount > 0 && (
+          unreadCount > 0 ? (
             <Button
               variant="outline"
               size="sm"
               onClick={markAllAsRead}
+              className="hidden md:flex"
             >
               <CheckCircle2 className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Mark all read</span>
-              <span className="sm:hidden">Mark read</span>
+              Mark all read
             </Button>
-          )
+          ) : null
         }
       />
       {/* Spacer for fixed header on mobile */}
@@ -269,18 +269,6 @@ export function NotificationsPanel() {
                 <SelectItem value="pomodoro-complete">Pomodoro</SelectItem>
               </SelectContent>
             </Select>
-
-            {unreadCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={markAllAsRead}
-                className="ml-auto"
-              >
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Mark all read
-              </Button>
-            )}
           </div>
         </div>
 
