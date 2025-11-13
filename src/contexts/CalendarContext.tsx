@@ -57,9 +57,31 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id]);
 
-  // Check calendar connection status from server
+  // Check calendar connection status from server with caching
   const checkCalendarStatus = useCallback(async () => {
     if (!user || !accessToken) return;
+
+    // Check cache first (5 minute cache)
+    const cacheKey = `calendar_status_cache_${user.id}`;
+    const cacheTimeKey = `calendar_status_cache_time_${user.id}`;
+    const cachedTime = localStorage.getItem(cacheTimeKey);
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    
+    if (cachedTime) {
+      const cacheAge = Date.now() - parseInt(cachedTime, 10);
+      if (cacheAge < CACHE_DURATION) {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          try {
+            const data = JSON.parse(cached);
+            setCalendarStatus(data);
+            return; // Use cached data, skip Edge Function call
+          } catch (e) {
+            // Cache parse error, continue to fetch
+          }
+        }
+      }
+    }
 
     try {
       const response = await fetch(`${BASE_URL}/calendar/status`, {
@@ -72,13 +94,25 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setCalendarStatus(data);
         
-        // Also update localStorage
+        // Update localStorage and cache
         if (user.id) {
           localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(data));
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+          localStorage.setItem(cacheTimeKey, Date.now().toString());
         }
       }
     } catch (error) {
       console.error('Failed to check calendar status:', error);
+      // On error, try to use cached data if available
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          setCalendarStatus(data);
+        } catch (e) {
+          // Ignore cache parse errors
+        }
+      }
     }
   }, [user, accessToken]);
 

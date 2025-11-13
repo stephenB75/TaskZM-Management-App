@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { useDemoActivity } from '../hooks/useDemoActivity';
@@ -89,7 +89,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncInterval, setSyncInterval] = useState(30000); // 30 seconds
+  const [syncInterval, setSyncInterval] = useState(300000); // 5 minutes (reduced from 30s to minimize Edge Function invocations)
 
   // Load from Supabase FIRST when authenticated, localStorage only as offline fallback
   useEffect(() => {
@@ -664,52 +664,63 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(syncTimer);
   }, [autoSyncEnabled, workspaceId, accessToken, syncInterval, syncWithServer]);
 
-  // Sync when page becomes visible (user switches back to tab/device)
+  // Debounce helper to prevent multiple rapid syncs
+  const lastEventSyncRef = useRef<number>(0);
+  const DEBOUNCE_INTERVAL = 60000; // Only sync once per minute from events
+
+  const debouncedSync = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastEventSyncRef.current < DEBOUNCE_INTERVAL) {
+      return; // Skip if synced recently
+    }
+    lastEventSyncRef.current = now;
+    
+    try {
+      await syncWithServer(workspaceId!, true);
+      await syncProjectsFromServer(workspaceId!);
+      await syncSettingsFromServer(workspaceId!);
+    } catch (error) {
+      logger.error('Debounced sync error:', error);
+    }
+  }, [workspaceId, syncWithServer]);
+
+  // Sync when page becomes visible (user switches back to tab/device) - debounced
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Sync immediately when page becomes visible
-        syncWithServer(workspaceId, true);
-        syncProjectsFromServer(workspaceId);
-        syncSettingsFromServer(workspaceId);
+        debouncedSync();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [autoSyncEnabled, workspaceId, accessToken, syncWithServer]);
+  }, [autoSyncEnabled, workspaceId, accessToken, debouncedSync]);
 
-  // Sync when network comes back online
+  // Sync when network comes back online - debounced
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
     const handleOnline = () => {
-      // Sync immediately when network reconnects
-      syncWithServer(workspaceId, true);
-      syncProjectsFromServer(workspaceId);
-      syncSettingsFromServer(workspaceId);
+      debouncedSync();
     };
 
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, [autoSyncEnabled, workspaceId, accessToken, syncWithServer]);
+  }, [autoSyncEnabled, workspaceId, accessToken, debouncedSync]);
 
-  // Sync on window focus (user switches back to window)
+  // Sync on window focus (user switches back to window) - debounced
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
     const handleFocus = () => {
-      // Sync when window regains focus
-      syncWithServer(workspaceId, true);
-      syncProjectsFromServer(workspaceId);
-      syncSettingsFromServer(workspaceId);
+      debouncedSync();
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [autoSyncEnabled, workspaceId, accessToken, syncWithServer]);
+  }, [autoSyncEnabled, workspaceId, accessToken, debouncedSync]);
 
   const addTask = useCallback(async (taskData: Partial<Task>) => {
     updateActivity(); // Track demo user activity

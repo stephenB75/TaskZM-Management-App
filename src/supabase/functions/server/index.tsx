@@ -1915,7 +1915,9 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
       .map(item => JSON.parse(item.value))
       .filter(task => task.scheduledDate && !task.archived);
 
-    const syncResults = [];
+    let syncedCount = 0;
+    let failedCount = 0;
+    const failedTaskIds: string[] = [];
     
     for (const task of tasks) {
       try {
@@ -1931,17 +1933,24 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
           }
         }
         
-        syncResults.push({ taskId: task.id, success: true, event });
+        syncedCount++;
       } catch (error) {
         console.log(`Error syncing task ${task.id}:`, error);
-        syncResults.push({ taskId: task.id, success: false, error: String(error) });
+        failedCount++;
+        // Only store failed task IDs, not full error details to reduce response size
+        if (failedTaskIds.length < 10) { // Limit to first 10 failures
+          failedTaskIds.push(task.id);
+        }
       }
     }
 
+    // Return summary only (not full results) to reduce egress
     return c.json({ 
-      synced: syncResults.filter(r => r.success).length,
-      failed: syncResults.filter(r => !r.success).length,
-      results: syncResults 
+      synced: syncedCount,
+      failed: failedCount,
+      total: tasks.length,
+      // Only include failed task IDs if there are failures (limited to 10)
+      ...(failedTaskIds.length > 0 && { failedTaskIds })
     });
   } catch (error) {
     console.log('Error syncing all tasks:', error);
