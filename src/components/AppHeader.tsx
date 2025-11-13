@@ -17,6 +17,7 @@ interface AppHeaderProps {
   hideDesktopLogo?: boolean;
   onBack?: () => void;
   panelOpen?: boolean; // Indicates if a side panel is open (for desktop layout adjustment)
+  isSidePanelHeader?: boolean; // Indicates if this is a side panel header (positioned at panel start)
 }
 
 export function AppHeader({
@@ -26,15 +27,21 @@ export function AppHeader({
   hideDesktopLogo = false,
   onBack,
   panelOpen = false,
+  isSidePanelHeader = false,
 }: AppHeaderProps) {
   const { isSyncing, lastSync, workspaceId } = useTasks();
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
   
-  // Calculate left position: sidebar (64px) + panel (440px when open)
+  // Calculate left position:
+  // - Side panel headers: positioned at sidebar width (64px) - start of panel
+  // - Main header when panel open: sidebar (64px) + panel (440px) = 504px
+  // - Main header when panel closed: sidebar (64px)
   const sidebarWidth = 64; // w-16 = 64px
   const panelWidth = 440;
-  const headerLeft = panelOpen ? sidebarWidth + panelWidth : sidebarWidth;
+  const headerLeft = isSidePanelHeader 
+    ? sidebarWidth  // Side panel headers at start of panel
+    : (panelOpen ? sidebarWidth + panelWidth : sidebarWidth); // Main header shifts when panel opens
 
   return (
     <>

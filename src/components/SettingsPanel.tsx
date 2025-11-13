@@ -196,6 +196,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       <AppHeader
         title="Settings"
         panelOpen={true}
+        isSidePanelHeader={true}
         description="Customize your task manager"
         hideDesktopLogo
         actions={

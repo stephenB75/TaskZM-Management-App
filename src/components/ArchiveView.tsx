@@ -225,6 +225,7 @@ export function ArchiveView() {
       <AppHeader
         title="Archive"
         panelOpen={true}
+        isSidePanelHeader={true}
         description={`${completedTasks.length} completed ${completedTasks.length === 1 ? "task" : "tasks"}`}
         hideDesktopLogo
       />

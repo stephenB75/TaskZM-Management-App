@@ -201,6 +201,7 @@ export function InboxView() {
       <AppHeader
         title="Inbox"
         panelOpen={true}
+        isSidePanelHeader={true}
         description={`${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`}
         hideDesktopLogo
         actions={

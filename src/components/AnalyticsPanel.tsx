@@ -440,6 +440,7 @@ export function AnalyticsPanel({
       <AppHeader
         title="Analytics"
         panelOpen={true}
+        isSidePanelHeader={true}
         description="Visual insights & Pomodoro tracking"
         hideDesktopLogo
         actions={

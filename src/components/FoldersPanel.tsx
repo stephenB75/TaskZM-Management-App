@@ -441,6 +441,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       <AppHeader
         title="Folders"
         panelOpen={true}
+        isSidePanelHeader={true}
         description={`${filteredFolders.length} of ${folders?.length || 0} folder${(folders?.length || 0) === 1 ? "" : "s"}`}
         actions={
           <Button

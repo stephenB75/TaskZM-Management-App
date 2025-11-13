@@ -180,6 +180,7 @@ export function TodayAgendaView({
           <AppHeader
             title="Today Agenda"
             panelOpen={true}
+            isSidePanelHeader={true}
             description={
               isOver
                 ? "Drop to add to today"

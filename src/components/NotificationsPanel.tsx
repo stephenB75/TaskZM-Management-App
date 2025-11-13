@@ -233,6 +233,7 @@ export function NotificationsPanel() {
       <AppHeader
         title="Notifications"
         panelOpen={true}
+        isSidePanelHeader={true}
         description={`${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
         hideDesktopLogo
         actions={

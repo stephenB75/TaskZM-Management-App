@@ -858,6 +858,7 @@ export function TeamPanel() {
       <AppHeader
         title="Team"
         panelOpen={true}
+        isSidePanelHeader={true}
         description={
           teamMembers.length === 0
             ? "Invite your first team member"
