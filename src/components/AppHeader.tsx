@@ -105,7 +105,7 @@ export function AppHeader({
       {/* Desktop Header - Side panel headers are relative, main header is fixed */}
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel
-        <div className="hidden md:block relative z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 flex-shrink-0" style={{ minHeight: '73px' }}>
+        <div className="hidden md:block relative z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 flex-shrink-0" style={{ minHeight: '73px', height: '73px' }}>
           <div className="flex items-center justify-between gap-4">
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
             <div
@@ -165,7 +165,7 @@ export function AppHeader({
             damping: 30, 
             stiffness: 300
           }}
-          style={{ minHeight: '73px' }}
+          style={{ minHeight: '73px', height: '73px' }}
         >
           <div className="flex items-center justify-between gap-4">
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}

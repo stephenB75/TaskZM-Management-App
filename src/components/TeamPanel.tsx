@@ -612,8 +612,6 @@ export function TeamPanel() {
               <div 
                 className="relative z-50"
                 onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
               >
                 <DropdownMenu
                   open={dropdownOpen}
@@ -627,12 +625,6 @@ export function TeamPanel() {
                       size="icon"
                       className="h-8 w-8 flex-shrink-0 hover:bg-transparent hover:text-current"
                       onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                      }}
-                      onPointerDown={(e) => {
                         e.stopPropagation();
                       }}
                       data-slot="dropdown-menu-trigger"
@@ -857,7 +849,7 @@ export function TeamPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#EDECEF] to-[#ECEAF0] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
       {/* Header */}
       <AppHeader
         title="Team"

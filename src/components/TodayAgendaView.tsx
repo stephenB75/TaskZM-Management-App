@@ -168,7 +168,7 @@ export function TodayAgendaView({
       <div
         ref={setNodeRef}
         className={cn(
-          "h-full flex flex-col transition-all duration-200 bg-gradient-to-b from-[#EDECEF] to-[#ECEAF0] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900",
+          "h-full flex flex-col transition-all duration-200 bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900",
           isOver &&
             "bg-primary/10 border-2 border-primary/30 border-dashed",
         )}

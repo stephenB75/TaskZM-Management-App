@@ -244,7 +244,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
   }, [folderTasks]);
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#FAF9FC] to-[#F9F7FD] dark:from-gray-950 dark:to-gray-900">
+    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:to-gray-900">
       <AppHeader
         panelOpen={true}
         isSidePanelHeader={true}

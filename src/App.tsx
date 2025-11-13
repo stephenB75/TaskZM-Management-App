@@ -365,7 +365,7 @@ function AppContent() {
 
   return (
     <>
-      <div className="h-screen flex bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      <div className="h-screen flex bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
         <AppSidebar 
           currentView={currentView} 
           onViewChange={handleViewChange}

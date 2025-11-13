@@ -192,7 +192,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#EDECEF] to-[#ECEAF0] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
       <AppHeader
         title="Settings"
         panelOpen={true}

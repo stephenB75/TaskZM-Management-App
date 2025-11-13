@@ -152,8 +152,8 @@ export function BottomNav({
                 )}
               </div>
 
-              {/* Label - 20% bigger (8px -> 9.6px, using 10px) */}
-              <span className="text-[10px] font-medium leading-tight" style={{ marginTop: '0.25rem' }}>
+              {/* Label - ~15% bigger (8px -> 11px) */}
+              <span className="text-[11px] font-medium leading-tight" style={{ marginTop: '0.25rem' }}>
                 {item.label}
               </span>
             </button>
