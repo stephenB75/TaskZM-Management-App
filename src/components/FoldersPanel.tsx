@@ -450,6 +450,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       {/* Header */}
       <AppHeader
         title="Folders"
+        panelOpen={true}
         description={`${filteredFolders.length} of ${folders?.length || 0} folder${(folders?.length || 0) === 1 ? "" : "s"}`}
         actions={
           <Button

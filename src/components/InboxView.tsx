@@ -200,6 +200,7 @@ export function InboxView() {
     >
       <AppHeader
         title="Inbox"
+        panelOpen={true}
         description={`${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`}
         actions={
           <div className="flex items-center gap-1.5">

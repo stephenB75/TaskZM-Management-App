@@ -439,6 +439,7 @@ export function AnalyticsPanel({
       {/* Header */}
       <AppHeader
         title="Analytics"
+        panelOpen={true}
         description="Visual insights & Pomodoro tracking"
         hideDesktopLogo
       />

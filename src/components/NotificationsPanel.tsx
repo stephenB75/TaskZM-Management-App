@@ -232,6 +232,7 @@ export function NotificationsPanel() {
     <div className="h-full flex flex-col bg-gradient-to-b from-[#FAF9FC] to-[#F9F7FD] dark:from-gray-950 dark:to-gray-900">
       <AppHeader
         title="Notifications"
+        panelOpen={true}
         description={`${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
         hideDesktopLogo
       />

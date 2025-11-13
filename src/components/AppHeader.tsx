@@ -1,5 +1,6 @@
 import React from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
+import { motion } from "motion/react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
@@ -15,6 +16,7 @@ interface AppHeaderProps {
   actions?: React.ReactNode;
   hideDesktopLogo?: boolean;
   onBack?: () => void;
+  panelOpen?: boolean; // Indicates if a side panel is open (for desktop layout adjustment)
 }
 
 export function AppHeader({
@@ -23,10 +25,16 @@ export function AppHeader({
   actions,
   hideDesktopLogo = false,
   onBack,
+  panelOpen = false,
 }: AppHeaderProps) {
   const { isSyncing, lastSync, workspaceId } = useTasks();
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
+  
+  // Calculate left position: sidebar (64px) + panel (440px when open)
+  const sidebarWidth = 64; // w-16 = 64px
+  const panelWidth = 440;
+  const headerLeft = panelOpen ? sidebarWidth + panelWidth : sidebarWidth;
 
   return (
     <>
@@ -72,8 +80,14 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* Desktop Header - Fixed at top, starts after sidebar (64px = w-16) */}
-      <div className="hidden md:block fixed top-0 left-16 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4">
+      {/* Desktop Header - Fixed at top, shifts when panel is open */}
+      <motion.div 
+        className="hidden md:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
+        animate={{ 
+          left: `${headerLeft}px`
+        }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      >
         <div className="flex items-center justify-between gap-4">
           {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
           <div
