@@ -415,7 +415,9 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                     className={cn(
                       "group hover:shadow-lg hover:scale-[1.01] transition-all cursor-pointer",
                       "active:scale-[0.99] focus-within:ring-2 focus-within:ring-primary/20",
-                      "border border-transparent hover:border-primary/20"
+                      // Responsive borders: thinner on mobile, standard on desktop
+                      "border border-transparent hover:border-primary/20",
+                      "md:border md:border-transparent md:hover:border-primary/20"
                     )}
                     onClick={(e) => {
                       e.preventDefault();
@@ -432,8 +434,8 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                     role="button"
                     aria-label={`Edit task: ${task.title || 'Untitled Task'}`}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
+                    <CardContent className="px-3 py-2.5 md:px-4 md:py-4">
+                      <div className="flex items-start gap-2 md:gap-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

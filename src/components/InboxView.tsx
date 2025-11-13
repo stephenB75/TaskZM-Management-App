@@ -405,7 +405,11 @@ export function InboxView() {
                       >
                         <Card
                           className={cn(
-                            "p-4 border-l-4 border-gray-300/90 cursor-pointer transition-all",
+                            // Responsive padding: smaller on mobile, comfortable on desktop
+                            "px-3 py-2.5 md:px-4 md:py-4",
+                            // Responsive borders: thinner on mobile, standard on desktop
+                            "border-l-2 md:border-l-4 border-gray-300/80 md:border-gray-300/90",
+                            "cursor-pointer transition-all",
                             // Better shadow blending on mobile
                             "shadow-lg hover:shadow-xl",
                             "sm:shadow-lg sm:hover:shadow-xl",
@@ -419,7 +423,7 @@ export function InboxView() {
                           }}
                           onClick={() => handleTaskClick(task)}
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-2 md:gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <h4 className="font-medium text-sm leading-tight">

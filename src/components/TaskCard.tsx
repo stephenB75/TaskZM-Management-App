@@ -104,7 +104,11 @@ export function TaskCard({
     >
       <Card
         className={cn(
-          'p-4 cursor-pointer transition-all shadow-xl hover:shadow-2xl border-2 border-gray-300/90 overflow-hidden relative',
+          // Responsive padding: smaller on mobile, comfortable on desktop
+          'px-3 py-2.5 md:px-4 md:py-4 cursor-pointer transition-all',
+          // Responsive borders: thinner on mobile, standard on desktop
+          'border border-gray-300/80 md:border-2 md:border-gray-300/90',
+          'shadow-lg hover:shadow-xl md:shadow-xl md:hover:shadow-2xl overflow-hidden relative',
           getPriorityBg(),
           isDragging && 'opacity-50 scale-95',
           task.status === 'done' && 'opacity-75'

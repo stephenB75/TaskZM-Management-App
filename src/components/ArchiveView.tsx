@@ -334,8 +334,10 @@ export function ArchiveView() {
                       >
                         <Card
                           className={cn(
-                            "p-3 cursor-pointer transition-all",
-                            "border-l-4 border-gray-300/90",
+                            // Responsive padding: smaller on mobile, comfortable on desktop
+                            "px-2.5 py-2 md:px-3 md:py-3 cursor-pointer transition-all",
+                            // Responsive borders: thinner on mobile, standard on desktop
+                            "border-l-2 md:border-l-4 border-gray-300/80 md:border-gray-300/90",
                             // Better shadow blending on mobile
                             "shadow-lg hover:shadow-xl",
                             "sm:shadow-lg sm:hover:shadow-xl",
@@ -349,7 +351,7 @@ export function ArchiveView() {
                           }}
                           onClick={() => handleTaskClick(task)}
                         >
-                          <div className="flex items-start gap-2.5">
+                          <div className="flex items-start gap-2 md:gap-2.5">
                             {/* Checkmark Icon */}
                             <div className="w-7 h-7 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
                               <Check className="w-4 h-4 text-green-600 dark:text-green-400" />

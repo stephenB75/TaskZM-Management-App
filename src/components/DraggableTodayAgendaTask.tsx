@@ -241,10 +241,13 @@ export function DraggableTodayAgendaTask({
           {/* Compact Card - Match Kanban styling (priority line removed for timeline view) */}
           <div
             className={cn(
-              "rounded-lg px-3 py-2.5 pb-8 space-y-1.5 relative flex-1",
+              "rounded-lg relative flex-1",
+              // Responsive padding: smaller on mobile, comfortable on desktop
+              "px-2 py-1.5 pb-6 space-y-1 md:px-3 md:py-2.5 md:pb-8 md:space-y-1.5",
               // Background: solid on mobile, semi-transparent on desktop
               isMobile ? "bg-white" : "bg-white/60 backdrop-blur-sm",
-              "border-b border-r border-gray-300/80",
+              // Responsive borders: thinner on mobile, standard on desktop
+              "border-b border-r border-gray-300/80 md:border-gray-300/90",
               // Shadows: better blending on mobile
               isMobile 
                 ? "shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)]" 
@@ -252,12 +255,11 @@ export function DraggableTodayAgendaTask({
               "hover:bg-white/80 hover:shadow-xl hover:border-gray-400/90 transition-all duration-200",
               task.status === "done" && "opacity-60",
               isNextUp && "ring-2 ring-primary/20",
-              isMobile && "px-2 py-1.5 pb-6 space-y-1",
               // Compact padding for shorter tasks to fit all elements
-              task.estimatedTime && task.estimatedTime < 45 && !isMobile && "py-2 pb-6 space-y-1",
+              task.estimatedTime && task.estimatedTime < 45 && !isMobile && "md:py-2 md:pb-6 md:space-y-1",
               task.estimatedTime && task.estimatedTime < 45 && isMobile && "py-1 pb-4 space-y-0.5",
               // Enhanced padding for tasks 1 hour or more to accommodate descriptions
-              task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "py-3.5 pb-12 space-y-2.5",
+              task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3.5 md:pb-12 md:space-y-2.5",
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
             )}
             style={{
