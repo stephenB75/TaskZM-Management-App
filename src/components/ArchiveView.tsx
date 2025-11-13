@@ -231,7 +231,7 @@ export function ArchiveView() {
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />
 
-      <div className="flex-1 flex flex-col min-h-0 md:pt-[73px]">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Search and Filter Bar */}
         <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex flex-col gap-3">

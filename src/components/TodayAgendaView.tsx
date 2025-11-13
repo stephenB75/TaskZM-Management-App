@@ -197,7 +197,7 @@ export function TodayAgendaView({
       )}
 
       {/* Timeline */}
-      <div className="flex-1 overflow-hidden w-full md:pt-[73px]">
+      <div className="flex-1 overflow-hidden w-full">
         <ScrollArea className="h-full w-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}>
           <div className="px-5 pt-[27.6px] pb-24 sm:pb-safe md:pt-4 md:pb-4 w-full relative">
             {todayTasks.length === 0 ? (

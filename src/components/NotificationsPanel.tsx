@@ -239,7 +239,7 @@ export function NotificationsPanel() {
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />
 
-      <div className="flex-1 flex flex-col min-h-0 md:pt-[73px]">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Filters */}
         <div className="px-4 md:px-8 py-4 border-b border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-3">

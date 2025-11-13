@@ -215,7 +215,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />
       <div
-        className="flex-1 overflow-y-auto overscroll-y-contain md:pt-[73px]"
+        className="flex-1 overflow-y-auto overscroll-y-contain"
         style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
         <div className="p-4 md:p-6">
