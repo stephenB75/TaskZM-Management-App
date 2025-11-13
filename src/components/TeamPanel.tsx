@@ -463,12 +463,11 @@ export function TeamPanel() {
         <Card
           className={cn(
             "group relative overflow-hidden transition-all duration-300",
-            "hover:shadow-xl hover:scale-[1.02] border-2",
+            "hover:shadow-xl border-2",
             "bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800",
             member.hasUnreadNotification &&
               member.inviteStatus === "accepted" &&
               "ring-2 ring-primary ring-offset-2 bg-primary/5",
-            dropdownOpen && "pointer-events-none",
             "border-gray-200/60 dark:border-gray-700/60 hover:border-primary/30"
           )}
           onClick={() => {
@@ -634,15 +633,15 @@ export function TeamPanel() {
 
               {/* Enhanced Actions Menu */}
               <div 
-                className="relative z-10"
+                className="relative z-50"
                 onClick={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
-                style={{ pointerEvents: 'auto' }}
               >
                 <DropdownMenu
                   open={dropdownOpen}
                   onOpenChange={setDropdownOpen}
+                  modal={false}
                 >
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -652,6 +651,7 @@ export function TeamPanel() {
                       className="h-9 w-9 rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary"
                       onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                       }}
                       onMouseDown={(e) => {
                         e.stopPropagation();
@@ -662,15 +662,9 @@ export function TeamPanel() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
                     align="end"
-                    className="z-[100] w-48"
-                    onInteractOutside={(e) => {
-                      const target = e.target as HTMLElement;
-                      if (target.closest('button[type="button"]')) {
-                        e.preventDefault();
-                      }
-                    }}
-                    onEscapeKeyDown={() => {
-                      setDropdownOpen(false);
+                    className="z-[9999] w-48"
+                    onCloseAutoFocus={(e) => {
+                      e.preventDefault();
                     }}
                   >
                     {member.inviteStatus === "pending" && (
