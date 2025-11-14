@@ -87,22 +87,24 @@ export function AppHeader({
   // - Side panel headers: positioned at sidebar width - start of panel
   // - Main header when panel open: sidebar + panel width
   // - Main header when panel closed: sidebar width only
+  // Include panelKey to ensure recalculation when switching between panels
   const headerLeft = useMemo(() => {
     if (isSidePanelHeader) {
       return SIDEBAR_WIDTH; // Side panel headers at start of panel
     }
-    // Main header shifts when panel opens/closes - matches week view animation
+    // Main header shifts instantly when panel opens/closes - matches week view behavior (no animation)
     return getMainHeaderLeft(panelOpen);
-  }, [isSidePanelHeader, panelOpen]);
+  }, [isSidePanelHeader, panelOpen, panelKey]);
   
   // Calculate header width to properly resize during panel transitions
+  // Include panelKey to ensure recalculation when switching between panels
   const headerWidth = useMemo(() => {
     if (isSidePanelHeader) {
       return undefined; // Side panel headers don't need width calculation
     }
     // Main header should span from left position to right edge
     return getMainHeaderWidth(panelOpen);
-  }, [isSidePanelHeader, panelOpen]);
+  }, [isSidePanelHeader, panelOpen, panelKey]);
 
   return (
     <>
