@@ -184,8 +184,7 @@ export function AppHeader({
           transition={{ 
             type: 'spring', 
             damping: 30, 
-            stiffness: 300,
-            mass: 1
+            stiffness: 300
           }}
           style={{ 
             minHeight: '73px', 

@@ -414,7 +414,7 @@ function AppContent() {
                   opacity: 1 
                 }}
                 exit={{ width: 0, opacity: 0 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 1 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                 className="hidden lg:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
               >
                 {/* Panel Content */}
@@ -441,7 +441,7 @@ function AppContent() {
             className="hidden lg:block h-full flex-1 overflow-hidden pt-[73px]"
             layout
             initial={false}
-            transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 1 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           >
             <DashboardView 
               mobileView={mobileView}
