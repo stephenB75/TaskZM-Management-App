@@ -45,7 +45,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    // Silently handle drag over - no logging needed
+    // Store drop position for time calculation
+    // This will be used in handleDragEnd to calculate time slot
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -74,18 +75,70 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
 
     // Check if dropped on Today Agenda
     if (over.id === 'today-agenda') {
-      // Set task to today, preserving existing time or defaulting to 9 AM
       const today = new Date();
       
-      // Preserve time from old date if it exists, otherwise use 9:00 AM as default
+      // Calculate time from drop position
+      // Get the droppable element (the timeline container)
+      const droppableElement = document.querySelector('[data-droppable-id="today-agenda"]');
       let hours = 9;
       let minutes = 0;
       
-      if (task.scheduledDate) {
-        const oldDate = new Date(task.scheduledDate);
-        if (!isNaN(oldDate.getTime())) {
-          hours = oldDate.getHours();
-          minutes = oldDate.getMinutes();
+      // Try to get drop coordinates from event
+      // Use the over rect to get the drop position relative to the droppable
+      if (event.over && 'rect' in event.over && droppableElement) {
+        const overRect = (event.over as any).rect;
+        const droppableRect = droppableElement.getBoundingClientRect();
+        
+        if (droppableRect && overRect) {
+          // Get the center Y of the drop area
+          const dropY = overRect.top + (overRect.height / 2);
+          const relativeY = dropY - droppableRect.top;
+          
+          // Get scroll position to account for scrolled content
+          const scrollViewport = droppableElement.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+          const scrollTop = scrollViewport?.scrollTop || 0;
+          const adjustedY = relativeY + scrollTop;
+          
+          // Estimate time based on position
+          // Timeline padding: 27.6px on mobile, 16px on desktop
+          const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
+          const contentY = Math.max(0, adjustedY - paddingTop);
+          
+          // Convert pixels to minutes
+          // Rough estimate: 1px ≈ 1 minute, starting from 8 AM (480 minutes from midnight)
+          const minutesFrom8AM = contentY;
+          const totalMinutes = 8 * 60 + minutesFrom8AM;
+          
+          hours = Math.floor(totalMinutes / 60);
+          minutes = totalMinutes % 60;
+          
+          // Round to nearest 15-minute slot
+          minutes = Math.round(minutes / 15) * 15;
+          if (minutes >= 60) {
+            hours += 1;
+            minutes = 0;
+          }
+          
+          // Clamp to valid hours (8 AM to 11 PM)
+          hours = Math.max(8, Math.min(23, hours));
+          if (hours === 23 && minutes > 0) {
+            minutes = 0;
+          }
+        }
+      } else {
+        // Fallback: preserve time from old date if it exists, otherwise use 9:00 AM
+        if (task.scheduledDate) {
+          const oldDate = new Date(task.scheduledDate);
+          if (!isNaN(oldDate.getTime())) {
+            hours = oldDate.getHours();
+            minutes = oldDate.getMinutes();
+            // Round to nearest 15-minute slot
+            minutes = Math.round(minutes / 15) * 15;
+            if (minutes >= 60) {
+              hours += 1;
+              minutes = 0;
+            }
+          }
         }
       }
       

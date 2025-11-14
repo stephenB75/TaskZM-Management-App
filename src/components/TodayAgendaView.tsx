@@ -28,6 +28,7 @@ export function TodayAgendaView({
   );
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timelineContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -37,6 +38,56 @@ export function TodayAgendaView({
       }
     };
   }, []);
+
+  // Auto-scroll to current time on mount and when tasks change
+  useEffect(() => {
+    if (todayTasks.length === 0) return;
+
+    const scrollToCurrentTime = () => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+      // Find the task closest to current time
+      let closestTask = todayTasks[0];
+      let minDiff = Infinity;
+
+      todayTasks.forEach((task) => {
+        if (!task.scheduledDate) return;
+        const taskDate = new Date(task.scheduledDate);
+        const taskTimeInMinutes = taskDate.getHours() * 60 + taskDate.getMinutes();
+        const diff = Math.abs(taskTimeInMinutes - currentTimeInMinutes);
+        
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestTask = task;
+        }
+      });
+
+      // Scroll to the closest task or current time position
+      if (closestTask) {
+        const taskElement = timelineContainerRef.current?.querySelector(`[data-task-id="${closestTask.id}"]`);
+        if (taskElement) {
+          taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          // If no task found, find the scroll viewport and scroll to approximate current time position
+          const scrollViewport = document.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+          if (scrollViewport) {
+            // Estimate: each hour is roughly 60px, start from 8 AM
+            const hoursFrom8AM = Math.max(0, currentHour - 8);
+            const minutesOffset = (currentMinute / 60) * 60;
+            const estimatedScrollTop = Math.max(0, (hoursFrom8AM * 60) + minutesOffset - 200); // 200px offset for header
+            scrollViewport.scrollTop = estimatedScrollTop;
+          }
+        }
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(scrollToCurrentTime, 100);
+    return () => clearTimeout(timer);
+  }, [todayTasks]);
 
   // Make this view a droppable zone for tasks from Kanban
   const { setNodeRef, isOver } = useDroppable({
@@ -170,6 +221,7 @@ export function TodayAgendaView({
       />
       <div
         ref={setNodeRef}
+        data-droppable-id="today-agenda"
         className={cn(
           "h-full flex flex-col transition-all duration-200 bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900",
           isOver &&
@@ -202,8 +254,15 @@ export function TodayAgendaView({
 
       {/* Timeline */}
       <div className="flex-1 overflow-hidden w-full">
-        <ScrollArea className="h-full w-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}>
-          <div className="px-5 pt-[27.6px] pb-24 sm:pb-safe md:pt-4 md:pb-4 w-full relative" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+        <ScrollArea 
+          className="h-full w-full" 
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}
+        >
+          <div 
+            ref={timelineContainerRef}
+            className="px-5 pt-[27.6px] pb-24 sm:pb-safe md:pt-4 md:pb-4 w-full relative" 
+            style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
+          >
             {todayTasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
