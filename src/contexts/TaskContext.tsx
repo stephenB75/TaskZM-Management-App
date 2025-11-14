@@ -15,6 +15,31 @@ import {
   WORKSPACE_NAME_SUFFIX,
   WORKSPACE_SYNC_INTERVAL_MS,
 } from '../lib/layout-constants';
+import {
+  TOAST_DURATION_MEDIUM_MS,
+  TOAST_DURATION_LONG_MS,
+  TOAST_DURATION_EXTRA_LONG_MS,
+} from '../lib/layout-constants';
+import {
+  DEFAULT_PROJECT_ID,
+  DEFAULT_PROJECT_NAME,
+  DEFAULT_PROJECT_DESCRIPTION,
+  DEFAULT_TAGS,
+  PROTECTED_TAGS,
+  DEFAULT_WEEKDAY_WORK_START,
+  DEFAULT_WEEKDAY_WORK_END,
+  DEFAULT_WEEKDAY_PERSONAL_START,
+  DEFAULT_WEEKDAY_PERSONAL_END,
+  DEFAULT_WEEKDAY_PROJECTS_START,
+  DEFAULT_WEEKDAY_PROJECTS_END,
+  DEFAULT_WEEKEND_WORK_START,
+  DEFAULT_WEEKEND_WORK_END,
+  DEFAULT_WEEKEND_PERSONAL_START,
+  DEFAULT_WEEKEND_PERSONAL_END,
+  DEFAULT_WEEKEND_PROJECTS_START,
+  DEFAULT_WEEKEND_PROJECTS_END,
+} from '../lib/business-constants';
+import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
 
 interface TaskContextType {
   tasks: Task[];
@@ -48,10 +73,7 @@ interface TaskContextType {
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
-const DEFAULT_PROJECT_ID = 'default';
-const DEFAULT_TAGS = ['Work', 'Personal', 'Projects', 'Business'];
-// Protected tags that cannot be deleted
-const PROTECTED_TAGS = ['Work', 'Personal', 'Projects', 'Business'];
+// Constants moved to business-constants.ts
 
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
@@ -60,9 +82,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([
     {
       id: DEFAULT_PROJECT_ID,
-      name: 'Personal',
-      color: '#3b82f6',
-      description: 'Personal tasks',
+      name: DEFAULT_PROJECT_NAME,
+      color: COLOR_PROJECT_DEFAULT,
+      description: DEFAULT_PROJECT_DESCRIPTION,
       createdAt: new Date().toISOString(),
       archived: false,
     },
@@ -78,14 +100,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   });
   const [hoursSettings, setHoursSettings] = useState<HoursSettings>({
     weekdayHours: {
-      work: { start: '09:00', end: '17:00', enabled: true },
-      personal: { start: '18:00', end: '22:00', enabled: true },
-      projects: { start: '19:00', end: '23:00', enabled: true },
+      work: { start: DEFAULT_WEEKDAY_WORK_START, end: DEFAULT_WEEKDAY_WORK_END, enabled: true },
+      personal: { start: DEFAULT_WEEKDAY_PERSONAL_START, end: DEFAULT_WEEKDAY_PERSONAL_END, enabled: true },
+      projects: { start: DEFAULT_WEEKDAY_PROJECTS_START, end: DEFAULT_WEEKDAY_PROJECTS_END, enabled: true },
     },
     weekendHours: {
-      work: { start: '10:00', end: '14:00', enabled: false },
-      personal: { start: '09:00', end: '23:00', enabled: true },
-      projects: { start: '14:00', end: '18:00', enabled: true },
+      work: { start: DEFAULT_WEEKEND_WORK_START, end: DEFAULT_WEEKEND_WORK_END, enabled: false },
+      personal: { start: DEFAULT_WEEKEND_PERSONAL_START, end: DEFAULT_WEEKEND_PERSONAL_END, enabled: true },
+      projects: { start: DEFAULT_WEEKEND_PROJECTS_START, end: DEFAULT_WEEKEND_PROJECTS_END, enabled: true },
     },
     respectHours: true,
   });
@@ -1166,7 +1188,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     if (PROTECTED_TAGS.includes(tag)) {
       toast.error('Cannot delete default tags', {
         description: 'Work, Personal, Projects, and Business are required tags and cannot be removed.',
-        duration: 4000,
+        duration: TOAST_DURATION_MEDIUM_MS,
       });
       return;
     }
@@ -1550,7 +1572,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 saveToLocalStorage('lastRolloverCheck', todayString);
               },
             },
-            duration: 10000,
+            duration: TOAST_DURATION_EXTRA_LONG_MS,
           });
         } else {
           // Automatically roll over without asking
@@ -1644,7 +1666,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       
       toast.error('Failed to access workspace', {
         description: detailedMessage,
-        duration: 5000,
+        duration: TOAST_DURATION_LONG_MS,
       });
       return null;
     }

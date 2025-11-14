@@ -3,6 +3,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
+import {
+  TOAST_DURATION_SHORT_MS,
+  TOAST_DURATION_MEDIUM_MS,
+  TOAST_DURATION_LONG_MS,
+  TOAST_DURATION_DEFAULT_MS,
+} from './lib/layout-constants';
 import { Button } from './components/ui/button';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
@@ -165,7 +171,7 @@ function AppContent() {
           }
           toast.info('👋 Welcome! Let us show you around TaskZM', {
             description: 'Take a quick tour to learn the basics',
-            duration: 4000
+            duration: TOAST_DURATION_MEDIUM_MS
           });
         }, 1500); // 1.5 second delay to let the UI settle
         
@@ -271,7 +277,7 @@ function AppContent() {
     if (!aiSettings.autoSchedulingEnabled || !aiSettings.scheduleUnscheduledTasks) {
       toast.error('AI Scheduling is disabled', {
         description: 'Enable AI scheduling in Settings to use this feature.',
-        duration: 4000,
+        duration: TOAST_DURATION_MEDIUM_MS,
       });
       return;
     }
@@ -280,7 +286,7 @@ function AppContent() {
     if (unscheduledCount === 0) {
       toast.info('No tasks to schedule', {
         description: 'All your tasks are already scheduled!',
-        duration: 3000,
+        duration: TOAST_DURATION_SHORT_MS,
       });
       return;
     }
@@ -305,7 +311,7 @@ function AppContent() {
         // Show success toast
         toast.success(`Scheduled ${result.scheduled.length} task${result.scheduled.length === 1 ? '' : 's'}!`, {
           description: 'Tasks distributed across upcoming days',
-          duration: 3000,
+          duration: TOAST_DURATION_SHORT_MS,
         });
       }
       
@@ -315,7 +321,7 @@ function AppContent() {
           `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} need${result.exceedsLimit.length === 1 ? 's' : ''} manual scheduling`,
           {
             description: `These tasks exceed the 5-hour daily limit. Please schedule them manually.`,
-            duration: 6000,
+            duration: TOAST_DURATION_DEFAULT_MS,
           }
         );
       }
@@ -324,7 +330,7 @@ function AppContent() {
       if (result.scheduled.length === 0 && result.exceedsLimit.length > 0) {
         toast.info('No tasks could be automatically scheduled', {
           description: `All tasks exceed the 5-hour daily limit. Please schedule them manually.`,
-          duration: 5000,
+          duration: TOAST_DURATION_LONG_MS,
         });
       }
     } catch (error) {
@@ -334,7 +340,7 @@ function AppContent() {
       // Show error toast
       toast.error('Scheduling failed', {
         description: 'Something went wrong. Please try again.',
-        duration: 4000,
+        duration: TOAST_DURATION_MEDIUM_MS,
       });
       console.error('AI scheduling error:', error);
     }

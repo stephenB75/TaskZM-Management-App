@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { logger } from '../lib/logger';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
+import {
+  POMODORO_WORK_DURATION,
+  POMODORO_SHORT_BREAK_DURATION,
+  POMODORO_LONG_BREAK_DURATION,
+  STORAGE_KEY_POMODORO,
+} from '../lib/business-constants';
 
 type TimerMode = 'work' | 'shortBreak' | 'longBreak';
 
@@ -26,9 +32,9 @@ interface PomodoroContextType {
 const PomodoroContext = createContext<PomodoroContextType | null>(null);
 
 const DURATIONS = {
-  work: 25 * 60, // 25 minutes
-  shortBreak: 5 * 60, // 5 minutes
-  longBreak: 15 * 60, // 15 minutes
+  work: POMODORO_WORK_DURATION,
+  shortBreak: POMODORO_SHORT_BREAK_DURATION,
+  longBreak: POMODORO_LONG_BREAK_DURATION,
 };
 
 const DEFAULT_TIMER_STATE: TimerState = {
@@ -48,7 +54,7 @@ interface PersistedTimerState {
   savedAt?: number;
 }
 
-const STORAGE_KEY = 'pomodoro-timers';
+const STORAGE_KEY = STORAGE_KEY_POMODORO;
 
 export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const [timers, setTimers] = useState<Record<string, TimerState>>({});

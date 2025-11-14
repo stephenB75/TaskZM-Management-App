@@ -3,6 +3,13 @@ import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import { useTasks } from './TaskContext';
 import { useAuth } from './AuthContext';
 import type { Award, UserAward, AwardProgress } from '../types';
+import {
+  COLOR_AWARD_COMMON,
+  COLOR_AWARD_RARE,
+  COLOR_AWARD_EPIC,
+  COLOR_AWARD_LEGENDARY,
+  COLOR_AWARD_STREAK,
+} from '../lib/color-theme';
 
 interface AwardContextType {
   awards: Award[];
@@ -26,7 +33,7 @@ const ALL_AWARDS: Award[] = [
     category: 'completion',
     requirement: 1,
     rarity: 'common',
-    color: '#3b82f6',
+    color: COLOR_AWARD_COMMON,
   },
   {
     id: 'task_master_10',
@@ -36,7 +43,7 @@ const ALL_AWARDS: Award[] = [
     category: 'completion',
     requirement: 10,
     rarity: 'common',
-    color: '#3b82f6',
+    color: COLOR_AWARD_COMMON,
   },
   {
     id: 'task_master_25',
@@ -46,7 +53,7 @@ const ALL_AWARDS: Award[] = [
     category: 'completion',
     requirement: 25,
     rarity: 'rare',
-    color: '#8b5cf6',
+    color: COLOR_AWARD_RARE,
   },
   {
     id: 'task_master_50',
@@ -56,7 +63,7 @@ const ALL_AWARDS: Award[] = [
     category: 'completion',
     requirement: 50,
     rarity: 'rare',
-    color: '#8b5cf6',
+    color: COLOR_AWARD_RARE,
   },
   {
     id: 'task_master_100',
@@ -66,7 +73,7 @@ const ALL_AWARDS: Award[] = [
     category: 'completion',
     requirement: 100,
     rarity: 'epic',
-    color: '#f59e0b',
+    color: COLOR_AWARD_EPIC,
   },
   {
     id: 'task_master_250',
@@ -76,7 +83,7 @@ const ALL_AWARDS: Award[] = [
     category: 'completion',
     requirement: 250,
     rarity: 'epic',
-    color: '#f59e0b',
+    color: COLOR_AWARD_EPIC,
   },
   {
     id: 'task_master_500',
@@ -86,7 +93,7 @@ const ALL_AWARDS: Award[] = [
     category: 'completion',
     requirement: 500,
     rarity: 'legendary',
-    color: '#ef4444',
+    color: COLOR_AWARD_LEGENDARY,
   },
   
   // Streak Awards
@@ -98,7 +105,7 @@ const ALL_AWARDS: Award[] = [
     category: 'streak',
     requirement: 3,
     rarity: 'common',
-    color: '#f97316',
+    color: COLOR_AWARD_STREAK,
   },
   {
     id: 'streak_7',
@@ -108,7 +115,7 @@ const ALL_AWARDS: Award[] = [
     category: 'streak',
     requirement: 7,
     rarity: 'rare',
-    color: '#f97316',
+    color: COLOR_AWARD_STREAK,
   },
   {
     id: 'streak_14',
@@ -118,7 +125,7 @@ const ALL_AWARDS: Award[] = [
     category: 'streak',
     requirement: 14,
     rarity: 'epic',
-    color: '#f97316',
+    color: COLOR_AWARD_STREAK,
   },
   {
     id: 'streak_30',
@@ -128,7 +135,7 @@ const ALL_AWARDS: Award[] = [
     category: 'streak',
     requirement: 30,
     rarity: 'legendary',
-    color: '#f97316',
+    color: COLOR_AWARD_STREAK,
   },
   
   // Focus Awards (Pomodoro-based)
@@ -140,7 +147,7 @@ const ALL_AWARDS: Award[] = [
     category: 'focus',
     requirement: 10,
     rarity: 'common',
-    color: '#ef4444',
+    color: COLOR_AWARD_LEGENDARY,
   },
   {
     id: 'pomodoro_50',

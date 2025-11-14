@@ -76,6 +76,7 @@ import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
+import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
 import type {
   Task,
   TaskPriority,
@@ -2114,7 +2115,7 @@ export function TaskDialog({
                               console.error('Error setting recurrence type:', error);
                               toast.error('Failed to set recurrence type', {
                                 description: error instanceof Error ? error.message : 'Please try again',
-                                duration: 3000,
+                                duration: TOAST_DURATION_SHORT_MS,
                               });
                             }
                           }}
