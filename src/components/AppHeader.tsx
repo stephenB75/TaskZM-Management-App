@@ -48,7 +48,7 @@ export function AppHeader({
     }
     // Main header shifts when panel opens/closes - matches week view animation
     return panelOpen ? sidebarWidth + panelWidth : sidebarWidth;
-  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth]);
+  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth, panelKey]);
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = useMemo(() => {
@@ -155,6 +155,7 @@ export function AppHeader({
       ) : (
         // Main header - fixed positioning, shifts when panel is open (uses layout animation like week view)
         <motion.div 
+          key={panelKey || 'header'} // Force re-animation when panel changes
           className="hidden lg:block fixed top-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 overflow-hidden"
           animate={{
             left: `${headerLeft}px`,
