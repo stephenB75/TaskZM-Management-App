@@ -165,17 +165,25 @@ export const DraggableTaskCard = React.forwardRef<
         // Auto-adjust base height based on components present
         if (isMobile) {
           // Mobile: tracking badge at top, bottom row has assigned users + pomodoro timer
+          // Increase base height to accommodate all components comfortably
           if (hasPomodoro || hasTrackedTime) {
-            baseHeight = 92; // Extra space for tracking badge in top row + bottom row components
+            // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
+            baseHeight = hasAssignedUsers || hasPomodoroTimer ? 105 : 95; // Extra space for all components
+          } else if (hasAssignedUsers && hasPomodoroTimer) {
+            // Both assigned users and pomodoro timer in bottom row
+            baseHeight = 100; // Space for both bottom row components
           } else if (hasAssignedUsers || hasPomodoroTimer) {
-            baseHeight = 88; // Space for bottom row components (assigned users or pomodoro timer)
+            // One of assigned users or pomodoro timer in bottom row
+            baseHeight = 95; // Space for one bottom row component
           } else {
-            baseHeight = 85; // Base space for essential elements only
+            baseHeight = 90; // Base space for essential elements only (increased from 85)
           }
         } else {
           // Desktop: absolute positioning for components
           if (hasPomodoro || hasAssignedUsers) {
-            baseHeight = 90; // Slightly more space on desktop for absolute positioned components
+            baseHeight = 95; // Increased space on desktop for absolute positioned components
+          } else {
+            baseHeight = 85; // Base space for desktop
           }
         }
         
@@ -260,7 +268,8 @@ export const DraggableTaskCard = React.forwardRef<
               // Base bottom padding for all tasks
               !isMobile && "md:pb-8",
               // Mobile tasks < 45 mins with inline bottom row: reduced padding (bottom row handles spacing)
-              isMobile && task.estimatedTime && task.estimatedTime < 45 && "pb-1",
+              // Increase padding to ensure bottom row components fit comfortably
+              isMobile && task.estimatedTime && task.estimatedTime < 45 && "pb-2",
               // Mobile tasks >= 45 mins: standard padding
               isMobile && (!task.estimatedTime || task.estimatedTime >= 45) && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-6",
               // Extra bottom padding on mobile for tasks >= 45 mins when pomodoro/assigned users present
@@ -268,11 +277,11 @@ export const DraggableTaskCard = React.forwardRef<
               // Compact padding for shorter tasks (< 45 mins) - auto-adjusts when pomodoro/assigned users are present
               // Only applies to tasks < 45 mins, but considers pomodoro timer and assigned users for better fit
               (task.estimatedTime && task.estimatedTime < 45) && !isMobile && "md:py-2 md:space-y-1",
-              // On mobile: extra compact when pomodoro/assigned users present, standard compact otherwise
+              // On mobile: adjust padding based on components to ensure all elements fit
               (task.estimatedTime && task.estimatedTime < 45) && isMobile && 
                 ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0))
-                ? "py-0.5 space-y-0.5" // Extra compact for pomodoro/assigned users
-                : "py-1 space-y-0.5", // Standard compact
+                ? "py-1 space-y-1" // More space when components present
+                : "py-1.5 space-y-1", // Standard compact with adequate spacing
               // Enhanced padding for tasks 1 hour or more to accommodate descriptions
               task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3.5 md:pb-12 md:space-y-2.5",
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
@@ -442,7 +451,7 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Bottom Row: For tasks < 45 mins on mobile, show inline layout; otherwise absolute positioning */}
           {task.estimatedTime && task.estimatedTime < 45 && isMobile ? (
             // Inline layout for mobile tasks < 45 mins: assigned users and pomodoro timer in one row (tracking badge moved to top)
-            <div className="flex items-center justify-between gap-1 mt-1.5 pt-1.5 border-t border-gray-200/50">
+            <div className="flex items-center justify-between gap-1.5 mt-2 pt-2 border-t border-gray-200/50">
               {/* Left: Assigned Users */}
               <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
                 {task.assignedTo && task.assignedTo.length > 0 && (

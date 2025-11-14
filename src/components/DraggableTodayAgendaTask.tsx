@@ -264,11 +264,11 @@ export function DraggableTodayAgendaTask({
               // Compact padding for shorter tasks (< 45 mins) - auto-adjusts when pomodoro/assigned users are present
               // Only applies to tasks < 45 mins, but considers pomodoro timer and assigned users for better fit
               (task.estimatedTime && task.estimatedTime < 45) && !isMobile && "md:py-2 md:space-y-1",
-              // On mobile: extra compact when pomodoro/assigned users present, standard compact otherwise
+              // On mobile: adjust padding based on components to ensure all elements fit
               (task.estimatedTime && task.estimatedTime < 45) && isMobile && 
                 ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0))
-                ? "py-0.5 space-y-0.5" // Extra compact for pomodoro/assigned users
-                : "py-1 space-y-0.5", // Standard compact
+                ? "py-1 space-y-1" // More space when components present
+                : "py-1.5 space-y-1", // Standard compact with adequate spacing
               // Enhanced padding for tasks 1 hour or more to accommodate descriptions
               task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3.5 md:pb-12 md:space-y-2.5",
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
@@ -284,7 +284,7 @@ export function DraggableTodayAgendaTask({
               }
             }}
           >
-            {/* Row 1: Priority Badge + Tag + Duration (left) + Checkbox (right) */}
+            {/* Row 1: Priority Badge + Tag + Duration + Tracking Badge (mobile) (left) + Checkbox (right) */}
             <div className={cn("flex items-center justify-between", isMobile ? "gap-1" : "gap-2")}>
               <div className={cn("flex items-center flex-1 min-w-0", isMobile ? "gap-1" : "gap-1.5")}>
                 <Badge
@@ -314,6 +314,26 @@ export function DraggableTodayAgendaTask({
                   <span className={cn("text-gray-500 font-medium flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
                     {formatDuration(task.estimatedTime)}
                   </span>
+                )}
+
+                {/* Tracking Badge - Mobile only, shown at top with other badges */}
+                {isMobile && hasFeature("pomodoroTimer") && timerState.isRunning && (
+                  <div className="flex items-center animate-pulse flex-shrink-0">
+                    <div className="flex items-center rounded-full px-1 py-0.5 bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white gap-0.5 text-[7px]">
+                      <Timer className="w-2 h-2 animate-spin" />
+                      <span className="font-semibold">Tracking...</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tracked Time (mobile only, if exists and not running) - shown at top */}
+                {isMobile && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <Timer className="text-[#7B68EE] w-2 h-2" />
+                    <span className="text-[#7B68EE] font-medium text-[8px]">
+                      {formatTimer(task.actualTime)}
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -458,28 +478,28 @@ export function DraggableTodayAgendaTask({
               </div>
             )}
 
-            {/* Tracking Status - Show when timer is running */}
-            {hasFeature("pomodoroTimer") && timerState.isRunning && (
+            {/* Tracking Status - Desktop only (mobile shows at top) */}
+            {!isMobile && hasFeature("pomodoroTimer") && timerState.isRunning && (
               <div className={cn(
                 "flex items-center pt-0.5 animate-pulse",
-                isMobile ? "gap-0.5" : "gap-1"
+                "gap-1"
               )}>
                 <div className={cn(
                   "flex items-center rounded-full px-1.5 py-0.5",
                   "bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
-                  isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
+                  "gap-1 text-[10px]"
                 )}>
-                  <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
+                  <Timer className={cn("animate-spin", "w-2.5 h-2.5")} />
                   <span className="font-semibold">Tracking...</span>
                 </div>
               </div>
             )}
 
-            {/* Tracked Time (if exists) */}
-            {task.actualTime && task.actualTime > 0 && (
-              <div className={cn("flex items-center pt-0.5", isMobile ? "gap-0.5" : "gap-1")}>
-                <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
-                <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[10px]" : "text-[11px]")}>
+            {/* Tracked Time (desktop only, if exists) - mobile shows at top */}
+            {!isMobile && task.actualTime && task.actualTime > 0 && (
+              <div className={cn("flex items-center pt-0.5", "gap-1")}>
+                <Timer className={cn("text-[#7B68EE]", "w-3 h-3")} />
+                <span className={cn("text-[#7B68EE] font-medium", "text-[11px]")}>
                   {formatTimer(task.actualTime)} tracked
                 </span>
               </div>
