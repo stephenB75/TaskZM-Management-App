@@ -83,73 +83,19 @@ export function AppHeader({
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
   
-  // Track panel state to handle transitions properly
-  // When panelKey changes between panels, we need to close the header first, then reopen it
-  // This matches the AnimatePresence mode="wait" behavior where panels close before opening
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const prevPanelKeyRef = useRef(panelKey);
-  const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Detect panel key changes (switching between panels)
-  useEffect(() => {
-    // Clear any existing timer
-    if (transitionTimerRef.current) {
-      clearTimeout(transitionTimerRef.current);
-      transitionTimerRef.current = null;
-    }
-    
-    // If panelKey changed and we had a panel open before, we're transitioning
-    if (prevPanelKeyRef.current !== panelKey && prevPanelKeyRef.current !== undefined && panelKey !== undefined) {
-      // Both are panel views (not dashboard), so we're switching panels
-      const wasPanel = prevPanelKeyRef.current !== 'dashboard' && prevPanelKeyRef.current !== undefined;
-      const isPanel = panelKey !== 'dashboard' && panelKey !== undefined;
-      
-      if (wasPanel && isPanel) {
-        // Switching from one panel to another - close header immediately
-        setIsTransitioning(true);
-        // After the panel animation completes (spring: damping 30, stiffness 300 ≈ 200-300ms), reopen
-        // Use requestAnimationFrame to ensure we wait for the next frame, then add delay
-        requestAnimationFrame(() => {
-          transitionTimerRef.current = setTimeout(() => {
-            setIsTransitioning(false);
-          }, 250); // Match spring animation timing (damping 30, stiffness 300)
-        });
-      } else {
-        // Not switching between panels, just update normally
-        setIsTransitioning(false);
-      }
-    } else {
-      // No panel key change or initial render
-      setIsTransitioning(false);
-    }
-    
-    prevPanelKeyRef.current = panelKey;
-    
-    // Cleanup on unmount
-    return () => {
-      if (transitionTimerRef.current) {
-        clearTimeout(transitionTimerRef.current);
-      }
-    };
-  }, [panelKey]);
-  
-  // Calculate effective panelOpen state - close during transitions
-  // When transitioning between panels, temporarily close the header to match panel animation
-  const effectivePanelOpen = isTransitioning ? false : panelOpen;
-  
   // Calculate left position and width using layout constants
   // - Side panel headers: positioned at sidebar width - start of panel
   // - Main header when panel open: sidebar + panel width
   // - Main header when panel closed: sidebar width only
-  // Use effectivePanelOpen to handle transitions properly
+  // Header responds directly to panelOpen changes, synced with week view animation
   const headerLeft = isSidePanelHeader 
     ? SIDEBAR_WIDTH // Side panel headers at start of panel
-    : getMainHeaderLeft(effectivePanelOpen); // Main header shifts instantly when panel opens/closes
+    : getMainHeaderLeft(panelOpen); // Main header shifts with panel state
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = isSidePanelHeader 
     ? undefined // Side panel headers don't need width calculation
-    : getMainHeaderWidth(effectivePanelOpen); // Main header should span from left position to right edge
+    : getMainHeaderWidth(panelOpen); // Main header should span from left position to right edge
 
   return (
     <>
@@ -319,12 +265,10 @@ export function AppHeader({
           </motion.div>
         </motion.div>
       ) : (
-        // Main header - fixed positioning, shifts instantly when panel opens/closes (no animation)
-        // Follows week view code sequence - responds to panel push/retract without animation
-        // Use key prop based on effectivePanelOpen and panelKey to force re-render when panel state changes
-        // Include effectivePanelOpen in key to ensure React unmounts/remounts when state changes
-        <div 
-          key={`main-header-${String(effectivePanelOpen)}-${String(panelKey || 'default')}-${isTransitioning ? 'transitioning' : 'stable'}`}
+        // Main header - fixed positioning, animates with spring physics to sync with week view
+        // Uses same spring animation settings as week view (damping: 30, stiffness: 300)
+        // Responds directly to panelOpen changes, matching week view animation timing
+        <motion.div 
           className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
@@ -336,12 +280,16 @@ export function AppHeader({
             paddingBottom: HEADER_PADDING_Y_DESKTOP,
             minHeight: `${HEADER_HEIGHT}px`, 
             height: `${HEADER_HEIGHT}px`,
+            right: 0,
+          }}
+          animate={{
             left: `${headerLeft}px`,
             width: headerWidth,
-            right: 0,
-            // Explicitly disable any CSS transitions to ensure instant updates
-            transition: 'none',
-            willChange: 'left, width', // Hint to browser for better performance
+          }}
+          transition={{
+            type: 'spring',
+            damping: HEADER_ANIMATION_DAMPING,
+            stiffness: HEADER_ANIMATION_STIFFNESS,
           }}
         >
           {/* Static container for logo and title - no animations */}
@@ -405,10 +353,10 @@ export function AppHeader({
               <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_MEDIUM }}>
                 {actions}
               </div>
-            )}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
+                   )}
+                 </div>
+               </motion.div>
+             )}
+           </>
+         );
+       }
