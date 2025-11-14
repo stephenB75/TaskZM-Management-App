@@ -613,7 +613,6 @@ export function SevenDayKanban({
           initialDate={getInitialDateTime()}
         />
       </div>
-      )}
     </div>
   );
 }

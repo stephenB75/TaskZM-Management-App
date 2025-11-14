@@ -232,7 +232,6 @@ export function InboxView() {
             </Button>
           </div>
         }
-        hideDesktopLogo
       />
       {/* Spacer for fixed header on mobile */}
       <div className="md:hidden h-[64px]" />
