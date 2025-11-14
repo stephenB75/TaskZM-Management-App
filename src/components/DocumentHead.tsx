@@ -1,11 +1,15 @@
 import { useEffect } from "react";
 import appIcon from "../assets/app-icon.png";
+import {
+  APP_THEME_COLOR_PRIMARY,
+  APP_TITLE,
+  APP_DESCRIPTION,
+} from "../lib/layout-constants";
 
 export function DocumentHead() {
   useEffect(() => {
     // Set document title
-    document.title =
-      "TaskZM - Neurodivergent-Friendly Task Management";
+    document.title = APP_TITLE;
 
     // Set favicon - remove all existing favicon links first, then add new ones
     const setFavicon = () => {
@@ -67,7 +71,7 @@ export function DocumentHead() {
         meta.name = "theme-color";
         document.head.appendChild(meta);
       }
-      meta.content = "#9B87E8"; // TaskZM purple/lavender
+      meta.content = APP_THEME_COLOR_PRIMARY;
     };
 
     // Set description meta tag
@@ -80,8 +84,7 @@ export function DocumentHead() {
         meta.name = "description";
         document.head.appendChild(meta);
       }
-      meta.content =
-        "TaskZM: A comprehensive neurodivergent-friendly task management application with AI-assisted planning, calendar integration, and analytics.";
+      meta.content = APP_DESCRIPTION;
     };
 
     // Set Open Graph tags for social media
@@ -89,13 +92,11 @@ export function DocumentHead() {
       const ogTags = [
         {
           property: "og:title",
-          content:
-            "TaskZM - Neurodivergent-Friendly Task Management",
+          content: APP_TITLE,
         },
         {
           property: "og:description",
-          content:
-            "A comprehensive neurodivergent-friendly task management application with AI-assisted planning, calendar integration, and analytics.",
+          content: APP_DESCRIPTION,
         },
         { property: "og:type", content: "website" },
         { property: "og:image", content: appIcon },

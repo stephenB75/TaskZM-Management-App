@@ -3,6 +3,7 @@
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, ToasterProps } from "sonner";
 import { useEffect, useState } from "react";
+import { TOAST_DURATION_DEFAULT_MS } from "../../lib/layout-constants";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
@@ -30,7 +31,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      duration={6000}
+      duration={TOAST_DURATION_DEFAULT_MS}
       visibleToasts={3}
       expand={true}
       position={position}

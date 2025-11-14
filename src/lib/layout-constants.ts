@@ -159,3 +159,22 @@ export const SETTINGS_PANEL_PADDING_Y_SMALL = '0.25rem'; // py-1 = 0.25rem
 export const SETTINGS_PANEL_TOAST_DURATION_MS = 5000; // Toast duration in milliseconds (5 seconds)
 export const SETTINGS_PANEL_TIMEOUT_DELAY_MS = 100; // Timeout delay in milliseconds (100ms)
 
+// App Icon and Theme Colors
+export const APP_THEME_COLOR_PRIMARY = '#9B87E8'; // TaskZM purple/lavender (primary theme color)
+export const APP_THEME_COLOR_SECONDARY = '#9D87C3'; // TaskZM purple/lavender (secondary theme color for manifest)
+export const APP_BACKGROUND_COLOR = '#F5F3FF'; // TaskZM light purple background
+export const APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // Text fallback color for loading screen
+
+// Toast Notification Durations (in milliseconds)
+export const TOAST_DURATION_DEFAULT_MS = 6000; // Default toast duration (6 seconds)
+export const TOAST_DURATION_SHORT_MS = 3000; // Short toast duration (3 seconds)
+export const TOAST_DURATION_MEDIUM_MS = 4000; // Medium toast duration (4 seconds)
+export const TOAST_DURATION_LONG_MS = 5000; // Long toast duration (5 seconds)
+export const TOAST_DURATION_EXTRA_LONG_MS = 10000; // Extra long toast duration (10 seconds)
+
+// App Metadata
+export const APP_TITLE = 'TaskZM - Neurodivergent-Friendly Task Management';
+export const APP_DESCRIPTION = 'TaskZM: A comprehensive neurodivergent-friendly task management application with AI-assisted planning, calendar integration, and analytics.';
+export const APP_SHORT_NAME = 'TaskZM';
+export const APP_FULL_NAME = 'TaskZM - Neurodivergent-Friendly Task Manager';
+
