@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -83,19 +83,37 @@ export function AppHeader({
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
   
+  // Use state to force re-render when panelOpen or panelKey changes
+  // This ensures the header position updates immediately
+  const [headerUpdateKey, setHeaderUpdateKey] = useState(0);
+  const [currentPanelOpen, setCurrentPanelOpen] = useState(panelOpen);
+  
+  // Update state immediately when panelOpen changes to force re-render
+  useEffect(() => {
+    if (currentPanelOpen !== panelOpen) {
+      setCurrentPanelOpen(panelOpen);
+      setHeaderUpdateKey(prev => prev + 1);
+    }
+  }, [panelOpen, currentPanelOpen]);
+  
+  // Also update when panelKey changes
+  useEffect(() => {
+    setHeaderUpdateKey(prev => prev + 1);
+  }, [panelKey]);
+  
   // Calculate left position and width using layout constants
   // - Side panel headers: positioned at sidebar width - start of panel
   // - Main header when panel open: sidebar + panel width
   // - Main header when panel closed: sidebar width only
-  // Calculate directly (no useMemo) to ensure immediate updates when panelOpen or panelKey changes
+  // Use currentPanelOpen state to ensure we're using the latest value
   const headerLeft = isSidePanelHeader 
     ? SIDEBAR_WIDTH // Side panel headers at start of panel
-    : getMainHeaderLeft(panelOpen); // Main header shifts instantly when panel opens/closes
+    : getMainHeaderLeft(currentPanelOpen); // Main header shifts instantly when panel opens/closes
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = isSidePanelHeader 
     ? undefined // Side panel headers don't need width calculation
-    : getMainHeaderWidth(panelOpen); // Main header should span from left position to right edge
+    : getMainHeaderWidth(currentPanelOpen); // Main header should span from left position to right edge
 
   return (
     <>
@@ -267,9 +285,10 @@ export function AppHeader({
       ) : (
         // Main header - fixed positioning, shifts instantly when panel opens/closes (no animation)
         // Follows week view code sequence - responds to panel push/retract without animation
-        // Use key prop based on panelOpen state to force re-render when panel state changes
+        // Use key prop based on panelOpen state, panelKey, and updateKey to force re-render when panel state changes
+        // Include panelOpen in key to ensure React unmounts/remounts when state changes
         <div 
-          key={`main-header-${panelOpen ? 'open' : 'closed'}-${panelKey || 'default'}`}
+          key={`main-header-${String(currentPanelOpen)}-${String(panelKey || 'default')}-${headerUpdateKey}`}
           className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
