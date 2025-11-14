@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -87,24 +87,15 @@ export function AppHeader({
   // - Side panel headers: positioned at sidebar width - start of panel
   // - Main header when panel open: sidebar + panel width
   // - Main header when panel closed: sidebar width only
-  // Include panelKey to ensure recalculation when switching between panels
-  const headerLeft = useMemo(() => {
-    if (isSidePanelHeader) {
-      return SIDEBAR_WIDTH; // Side panel headers at start of panel
-    }
-    // Main header shifts instantly when panel opens/closes - matches week view behavior (no animation)
-    return getMainHeaderLeft(panelOpen);
-  }, [isSidePanelHeader, panelOpen, panelKey]);
+  // Calculate directly (no useMemo) to ensure immediate updates when panelOpen or panelKey changes
+  const headerLeft = isSidePanelHeader 
+    ? SIDEBAR_WIDTH // Side panel headers at start of panel
+    : getMainHeaderLeft(panelOpen); // Main header shifts instantly when panel opens/closes
   
   // Calculate header width to properly resize during panel transitions
-  // Include panelKey to ensure recalculation when switching between panels
-  const headerWidth = useMemo(() => {
-    if (isSidePanelHeader) {
-      return undefined; // Side panel headers don't need width calculation
-    }
-    // Main header should span from left position to right edge
-    return getMainHeaderWidth(panelOpen);
-  }, [isSidePanelHeader, panelOpen, panelKey]);
+  const headerWidth = isSidePanelHeader 
+    ? undefined // Side panel headers don't need width calculation
+    : getMainHeaderWidth(panelOpen); // Main header should span from left position to right edge
 
   return (
     <>
@@ -276,7 +267,9 @@ export function AppHeader({
       ) : (
         // Main header - fixed positioning, shifts instantly when panel opens/closes (no animation)
         // Follows week view code sequence - responds to panel push/retract without animation
+        // Use key prop based on panelOpen state to force re-render when panel state changes
         <div 
+          key={`main-header-${panelOpen ? 'open' : 'closed'}-${panelKey || 'default'}`}
           className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
@@ -291,6 +284,9 @@ export function AppHeader({
             left: `${headerLeft}px`,
             width: headerWidth,
             right: 0,
+            // Explicitly disable any CSS transitions to ensure instant updates
+            transition: 'none',
+            willChange: 'left, width', // Hint to browser for better performance
           }}
         >
           {/* Static container for logo and title - no animations */}
