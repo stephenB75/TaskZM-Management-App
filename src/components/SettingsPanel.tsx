@@ -31,6 +31,55 @@ import { AppHeader } from './AppHeader';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import taskzmLogo from '../assets/taskzm-logo.png';
+import {
+  SETTINGS_PANEL_MOBILE_HEADER_SPACER,
+  SETTINGS_PANEL_BOTTOM_PADDING_MOBILE,
+  SETTINGS_PANEL_PADDING_TOP,
+  SETTINGS_PANEL_CONTAINER_PADDING_SMALL,
+  SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
+  SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
+  SETTINGS_PANEL_MAX_WIDTH,
+  SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+  SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+  SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_DESKTOP,
+  SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+  SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_MEDIUM,
+  SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y,
+  SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+  SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+  SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+  SETTINGS_PANEL_ICON_SIZE_SMALL,
+  SETTINGS_PANEL_ICON_SIZE_MEDIUM,
+  SETTINGS_PANEL_ICON_SIZE_LARGE,
+  SETTINGS_PANEL_ICON_SIZE_XLARGE,
+  SETTINGS_PANEL_ICON_SIZE_EXTRA_SMALL,
+  SETTINGS_PANEL_AVATAR_SIZE,
+  SETTINGS_PANEL_INPUT_HEIGHT,
+  SETTINGS_PANEL_BADGE_HEIGHT,
+  SETTINGS_PANEL_GAP_SMALL,
+  SETTINGS_PANEL_GAP_MEDIUM,
+  SETTINGS_PANEL_GAP_LARGE,
+  SETTINGS_PANEL_SPACING_XSMALL,
+  SETTINGS_PANEL_SPACING_SMALL,
+  SETTINGS_PANEL_SPACING_MEDIUM,
+  SETTINGS_PANEL_SPACING_LARGE,
+  SETTINGS_PANEL_TEXT_SIZE_XSMALL,
+  SETTINGS_PANEL_TEXT_SIZE_SMALL,
+  SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+  SETTINGS_PANEL_MARGIN_TOP_XSMALL,
+  SETTINGS_PANEL_MARGIN_TOP_SMALL,
+  SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
+  SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM,
+  SETTINGS_PANEL_MARGIN_RIGHT_SMALL,
+  SETTINGS_PANEL_MARGIN_RIGHT_XSMALL,
+  SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+  SETTINGS_PANEL_PADDING_SMALL,
+  SETTINGS_PANEL_PADDING_MEDIUM,
+  SETTINGS_PANEL_PADDING_LARGE,
+  SETTINGS_PANEL_PADDING_Y_SMALL,
+  SETTINGS_PANEL_TOAST_DURATION_MS,
+  SETTINGS_PANEL_TIMEOUT_DELAY_MS,
+} from '../lib/layout-constants';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -204,59 +253,104 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <Button
               size="sm"
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center"
+              style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
               onClick={handleStartTour}
             >
-              <Compass className="w-4 h-4" />
+              <Compass style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} />
               Start Tour
             </Button>
           ) : null
         }
       />
       {/* Spacer for fixed header on mobile */}
-      <div className="md:hidden h-[64px]" />
+      <div className="md:hidden" style={{ height: SETTINGS_PANEL_MOBILE_HEADER_SPACER }} />
       <div
         className="flex-1 overflow-y-auto overscroll-y-contain"
         style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
-        <div className="p-4 sm:p-6 md:p-8">
-          <div className="max-w-2xl mx-auto" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))', paddingTop: '1rem' }}>
+        <div 
+          className="mx-auto" 
+          style={{ 
+            padding: SETTINGS_PANEL_CONTAINER_PADDING_SMALL,
+            paddingLeft: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
+            paddingRight: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
+            paddingTop: SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
+            paddingBottom: SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
+          }}
+        >
+          <div 
+            className="mx-auto" 
+            style={{ 
+              maxWidth: SETTINGS_PANEL_MAX_WIDTH,
+              paddingBottom: SETTINGS_PANEL_BOTTOM_PADDING_MOBILE, 
+              paddingTop: SETTINGS_PANEL_PADDING_TOP 
+            }}
+          >
           <Accordion type="single" collapsible className="w-full">
         {/* User Profile */}
-        <AccordionItem value="user-profile" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-2">
-          <AccordionTrigger className="hover:no-underline py-4">
-            <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-primary" />
+        <AccordionItem 
+          value="user-profile" 
+          className="border rounded-lg bg-card"
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
+              <User style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE }} className="text-primary" />
               <span>User Profile</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-8 h-8 text-primary" />
+          <AccordionContent 
+            style={{ 
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
+            }}
+          >
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_LARGE }}>
+              <div 
+                className="rounded-full bg-primary/10 flex items-center justify-center"
+                style={{ 
+                  width: SETTINGS_PANEL_AVATAR_SIZE, 
+                  height: SETTINGS_PANEL_AVATAR_SIZE 
+                }}
+              >
+                <User style={{ width: SETTINGS_PANEL_ICON_SIZE_XLARGE, height: SETTINGS_PANEL_ICON_SIZE_XLARGE }} className="text-primary" />
               </div>
-              <div className="flex-1 space-y-1">
-                <div className="text-sm">{user?.name}</div>
-                <div className="text-xs text-muted-foreground">{user?.email}</div>
+              <div className="flex-1" style={{ gap: SETTINGS_PANEL_SPACING_XSMALL }}>
+                <div style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}>{user?.name}</div>
+                <div className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{user?.email}</div>
               </div>
             </div>
             
             <Separator />
             
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-xs">Name</Label>
+            <div style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+              <div style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                <Label htmlFor="name" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>Name</Label>
                 <Input 
                   id="name" 
                   value={profileName} 
                   onChange={(e) => setProfileName(e.target.value)}
                   placeholder="Enter your name"
-                  className="h-9" 
+                  style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs">Email</Label>
-                <Input id="email" value={user?.email || ''} disabled className="h-9" />
+              <div style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                <Label htmlFor="email" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>Email</Label>
+                <Input 
+                  id="email" 
+                  value={user?.email || ''} 
+                  disabled 
+                  style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
+                />
               </div>
             </div>
 
@@ -274,41 +368,58 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <Separator />
 
             <Button variant="destructive" size="sm" onClick={handleSignOut} className="w-full">
-              <LogOut className="w-4 h-4 mr-2" />
+              <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
               Sign Out
             </Button>
           </AccordionContent>
         </AccordionItem>
 
         {/* Subscription */}
-        <AccordionItem value="subscription" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-2">
-          <AccordionTrigger className="hover:no-underline py-4">
-            <div className="flex items-center gap-3">
-              <CreditCard className="w-5 h-5 text-primary" />
+        <AccordionItem 
+          value="subscription" 
+          className="border rounded-lg bg-card"
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
+              <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE }} className="text-primary" />
               <span>Subscription</span>
               {subscription.tier === 'pro' && (
-                <Badge className="bg-[#D4C5F9] text-gray-800 border-[#D4C5F9] ml-2">
-                  <Sparkles className="w-3 h-3 mr-1" />
+                <Badge className="bg-[#D4C5F9] text-gray-800 border-[#D4C5F9]" style={{ marginLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL }}>
+                  <Sparkles style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
                   Pro
                 </Badge>
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
+            }}
+          >
             <div className="space-y-4 sm:space-y-3 md:space-y-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
                     <Label className="text-sm">Current Plan</Label>
                     {isSubscriptionLoading && (
-                      <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin" />
+                      <RefreshCw style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL }} className="text-muted-foreground animate-spin" />
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                     {subscription.tier === 'pro' ? 'TaskZM Pro' : 'Free Plan'}
                   </p>
                   {subscription.tier === 'pro' && subscription.startDate && (
-                    <p className="text-[10px] text-muted-foreground/70 mt-1">
+                    <p className="text-muted-foreground/70" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
                       Started: {new Date(subscription.startDate).toLocaleDateString()}
                     </p>
                   )}
@@ -344,131 +455,131 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <Label className="text-xs text-muted-foreground">Your Features:</Label>
                 <div className="grid gap-2">
                   {/* Unlimited Tasks - Available for all */}
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-[#B5E8D3]" />
-                    <span className="text-xs">Unlimited Tasks</span>
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                    <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                    <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>Unlimited Tasks</span>
                   </div>
 
                   {/* Custom Tags - Available for all */}
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-[#B5E8D3]" />
-                    <span className="text-xs">Custom Tags</span>
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                    <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                    <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>Custom Tags</span>
                   </div>
 
                   {/* AI Scheduler - PRO only */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.aiScheduler ? (
-                      <Check className="w-4 h-4 text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
-                    <span className={`text-xs ${features.aiScheduler ? '' : 'text-muted-foreground/60'}`}>
+                    <span className={features.aiScheduler ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       AI Scheduler
                     </span>
                     {!features.aiScheduler && (
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0">
+                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         PRO
                       </Badge>
                     )}
                   </div>
 
                   {/* Task Hours - PRO only */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.taskHours ? (
-                      <Check className="w-4 h-4 text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
-                    <span className={`text-xs ${features.taskHours ? '' : 'text-muted-foreground/60'}`}>
+                    <span className={features.taskHours ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       Task Hours (Weekday/Weekend)
                     </span>
                     {!features.taskHours && (
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0">
+                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         PRO
                       </Badge>
                     )}
                   </div>
 
                   {/* Analytics - PRO only */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.analytics ? (
-                      <Check className="w-4 h-4 text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
-                    <span className={`text-xs ${features.analytics ? '' : 'text-muted-foreground/60'}`}>
+                    <span className={features.analytics ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       Analytics Dashboard
                     </span>
                     {!features.analytics && (
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0">
+                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         PRO
                       </Badge>
                     )}
                   </div>
 
                   {/* Pomodoro Timer - PRO only */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.pomodoroTimer ? (
-                      <Check className="w-4 h-4 text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
-                    <span className={`text-xs ${features.pomodoroTimer ? '' : 'text-muted-foreground/60'}`}>
+                    <span className={features.pomodoroTimer ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       Pomodoro Timer
                     </span>
                     {!features.pomodoroTimer && (
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0">
+                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         PRO
                       </Badge>
                     )}
                   </div>
 
                   {/* Team Features - PRO only */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.teamFeatures ? (
-                      <Check className="w-4 h-4 text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
-                    <span className={`text-xs ${features.teamFeatures ? '' : 'text-muted-foreground/60'}`}>
+                    <span className={features.teamFeatures ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       Team Collaboration
                     </span>
                     {!features.teamFeatures && (
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0">
+                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         PRO
                       </Badge>
                     )}
                   </div>
 
                   {/* Calendar Sync - PRO only */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.calendarSync ? (
-                      <Check className="w-4 h-4 text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
-                    <span className={`text-xs ${features.calendarSync ? '' : 'text-muted-foreground/60'}`}>
+                    <span className={features.calendarSync ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       Calendar Sync
                     </span>
                     {!features.calendarSync && (
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0">
+                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         PRO
                       </Badge>
                     )}
                   </div>
 
                   {/* Task Rollover - PRO only */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.taskRollover ? (
-                      <Check className="w-4 h-4 text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
-                    <span className={`text-xs ${features.taskRollover ? '' : 'text-muted-foreground/60'}`}>
+                    <span className={features.taskRollover ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       Auto Task Rollover
                     </span>
                     {!features.taskRollover && (
-                      <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0">
+                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         PRO
                       </Badge>
                     )}
@@ -480,11 +591,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <>
                   <Separator />
                   <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#C9E4F7]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
-                    <div className="flex items-start gap-3 mb-3">
-                      <Sparkles className="w-5 h-5 text-[#D4C5F9] flex-shrink-0 mt-0.5" />
+                    <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
+                      <Sparkles className="text-[#D4C5F9] flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                       <div>
-                        <p className="text-sm mb-1">Upgrade to Pro</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="mb-1" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>Upgrade to Pro</p>
+                        <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                           Unlock all 7 PRO features for just $3.99/month
                         </p>
                       </div>
@@ -494,7 +605,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       className="w-full bg-[#D4C5F9] hover:bg-[#D4C5F9]/90 text-gray-800"
                       onClick={() => setShowPricingDialog(true)}
                     >
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      <Sparkles style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                       View Plans
                     </Button>
                   </div>
@@ -507,13 +618,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   
                   {subscription.cancelAtPeriodEnd && (
                     <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-3">
-                      <div className="flex items-start gap-2">
-                        <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                        <Info className="text-amber-600 dark:text-amber-400 flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                         <div>
-                          <p className="text-xs font-medium text-amber-800 dark:text-amber-200 mb-1">
+                          <p className="font-medium text-amber-800 dark:text-amber-200" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
                             Subscription Cancelled
                           </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300">
+                          <p className="text-amber-700 dark:text-amber-300" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                             Your subscription will remain active until {subscription.endDate ? new Date(subscription.endDate).toLocaleDateString() : 'the next billing date'}. You'll continue to have access to all Pro features until then.
                           </p>
                         </div>
@@ -570,16 +681,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           
                           toast.error('Unable to open billing portal', {
                             description: errorMessage,
-                            duration: 5000,
+                            duration: SETTINGS_PANEL_TOAST_DURATION_MS,
                           });
                         }
                       }}
                     >
-                      <CreditCard className="w-4 h-4 mr-2" />
+                      <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                       Manage Subscription
                     </Button>
 
-                    <div className="flex gap-2">
+                    <div className="flex" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -594,7 +705,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         }}
                         disabled={isSubscriptionLoading}
                       >
-                        <RefreshCw className={`w-3 h-3 mr-2 ${isSubscriptionLoading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={isSubscriptionLoading ? 'animate-spin' : ''} style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                         Refresh
                       </Button>
 
@@ -802,7 +913,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       // Permission was just denied, show instructions
                       toast.info('Permission denied', {
                         description: 'Check the instructions below to enable notifications in your browser settings.',
-                        duration: 5000,
+                        duration: SETTINGS_PANEL_TOAST_DURATION_MS,
                       });
                     }
                   }}
@@ -921,7 +1032,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       // Small delay to let the switch update first
                       setTimeout(async () => {
                         await requestPermission();
-                      }, 100);
+                      }, SETTINGS_PANEL_TIMEOUT_DELAY_MS);
                     }
                   }}
                   disabled={permission === 'denied'}
