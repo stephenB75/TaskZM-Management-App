@@ -90,6 +90,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const [syncInterval, setSyncInterval] = useState(300000); // 5 minutes (reduced from 30s to minimize Edge Function invocations)
+  const syncLockRef = useRef<boolean>(false); // Prevent concurrent sync operations
 
   // Load from Supabase FIRST when authenticated, localStorage only as offline fallback
   useEffect(() => {
@@ -119,12 +120,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!workspaceId || !accessToken || !user) return;
 
+    let isMounted = true;
+
     // Always load from server first (source of truth)
     // This ensures desktop and mobile see the same data
-    loadTasksFromServer(workspaceId).then(() => {
+    loadTasksFromServer(workspaceId).then((serverTasks) => {
+      if (!isMounted) return;
+
       // After loading from server, check for any local-only tasks
       const localTasks = getFromLocalStorage<Task[]>('tasks', []);
-      const serverTaskIds = new Set(tasks.map(t => t.id));
+      // Use serverTasks directly instead of tasks state to avoid stale closure
+      const serverTaskIds = new Set((serverTasks || []).map(t => t.id));
       
       // Find tasks that exist locally but not on server
       const localOnlyTasks = localTasks.filter(task => {
@@ -150,6 +156,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             }
           })
         ).then(() => {
+          if (!isMounted) return;
           // Reload from server to get authoritative data including newly synced tasks
           loadTasksFromServer(workspaceId).catch(err => {
             logger.error('Failed to reload tasks after sync:', err);
@@ -161,7 +168,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }).catch(err => {
       logger.error('Failed to load tasks from server during sync:', err);
     });
-  }, [workspaceId, accessToken, user, tasks]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [workspaceId, accessToken, user]); // Removed 'tasks' from dependencies to prevent infinite loop
 
   async function loadWorkspace() {
     if (!user || !accessToken) {
@@ -326,7 +337,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }, [user, accessToken]);
 
   // Load tasks from Supabase (source of truth)
-  async function loadTasksFromServer(wsId: string) {
+  async function loadTasksFromServer(wsId: string): Promise<Task[]> {
     try {
       logger.debug(`Loading tasks from server for workspace: ${wsId}`);
       const serverTasks = await api.getTasks(wsId);
@@ -342,6 +353,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Clear any sync flags to ensure fresh sync on next load
         const syncKey = `synced_local_data_${wsId}`;
         localStorage.removeItem(syncKey);
+        return serverTasks;
       } else {
         // No server data - check localStorage as fallback
         logger.warn('No tasks found on server, checking localStorage');
@@ -363,11 +375,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           if (refreshedTasks && refreshedTasks.length > 0) {
             setTasks(refreshedTasks);
             saveToLocalStorage('tasks', refreshedTasks);
+            return refreshedTasks;
           }
+          return [];
         } else {
           logger.info('No tasks found in server or localStorage');
           setTasks([]);
           saveToLocalStorage('tasks', []);
+          return [];
         }
       }
     } catch (error) {
@@ -380,8 +395,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         toast.error('Failed to load tasks from server, using offline data', {
           description: 'Please check your internet connection',
         });
+        return savedTasks;
       } else {
         setTasks([]);
+        return [];
       }
     }
   }
@@ -610,6 +627,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const targetWorkspaceId = wsId || workspaceId;
     if (!targetWorkspaceId || !accessToken) return;
 
+    // Prevent concurrent sync operations
+    if (syncLockRef.current) {
+      logger.debug('Sync already in progress, skipping...');
+      return;
+    }
+
+    syncLockRef.current = true;
     setIsSyncing(true);
     try {
       logger.debug(`Force syncing with server for workspace: ${targetWorkspaceId}`);
@@ -643,6 +667,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     } finally {
       setIsSyncing(false);
+      syncLockRef.current = false;
     }
   }, [workspaceId, accessToken]);
 
@@ -669,6 +694,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const DEBOUNCE_INTERVAL = 60000; // Only sync once per minute from events
 
   const debouncedSync = useCallback(async () => {
+    if (!workspaceId || !accessToken) return;
+    
     const now = Date.now();
     if (now - lastEventSyncRef.current < DEBOUNCE_INTERVAL) {
       return; // Skip if synced recently
@@ -676,13 +703,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     lastEventSyncRef.current = now;
     
     try {
-      await syncWithServer(workspaceId!, true);
-      await syncProjectsFromServer(workspaceId!);
-      await syncSettingsFromServer(workspaceId!);
+      await syncWithServer(workspaceId, true);
+      await syncProjectsFromServer(workspaceId);
+      await syncFoldersFromServer(workspaceId, true); // Added missing folder sync
+      await syncSettingsFromServer(workspaceId);
     } catch (error) {
       logger.error('Debounced sync error:', error);
     }
-  }, [workspaceId, syncWithServer]);
+  }, [workspaceId, accessToken, syncWithServer]);
 
   // Sync when page becomes visible (user switches back to tab/device) - debounced
   useEffect(() => {

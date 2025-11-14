@@ -177,6 +177,11 @@ export async function getTasks(workspaceId: string): Promise<Task[]> {
     }
 
     const data = await response.json();
+    // Validate response structure
+    if (!data || !Array.isArray(data.tasks)) {
+      logger.error('Invalid getTasks response format:', data);
+      return [];
+    }
     return data.tasks;
   } catch (error) {
     // If backend is not available, return empty array instead of crashing
@@ -186,19 +191,51 @@ export async function getTasks(workspaceId: string): Promise<Task[]> {
 }
 
 export async function saveTask(workspaceId: string, task: Task): Promise<Task> {
-  const response = await fetch(`${API_BASE}/tasks/${workspaceId}`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(task),
-  });
+  try {
+    const response = await fetch(`${API_BASE}/tasks/${workspaceId}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(task),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to save task');
+    if (!response.ok) {
+      let errorMessage = 'Failed to save task';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (parseError) {
+        // If JSON parsing fails, try to get text response
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText.substring(0, 200); // Limit length
+          }
+        } catch (textError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+      }
+      logger.error('saveTask failed:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        error: errorMessage,
+        taskId: task.id
+      });
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    if (!data || !data.task) {
+      logger.error('Invalid saveTask response format:', data);
+      throw new Error('Invalid response format - missing task data');
+    }
+    return data.task;
+  } catch (error) {
+    logger.error('saveTask error:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Failed to save task: ${String(error)}`);
   }
-
-  const data = await response.json();
-  return data.task;
 }
 
 export async function deleteTask(workspaceId: string, taskId: string): Promise<void> {
@@ -281,6 +318,11 @@ export async function getProjects(workspaceId: string) {
     }
 
     const data = await response.json();
+    // Validate response structure
+    if (!data || !Array.isArray(data.projects)) {
+      logger.error('Invalid getProjects response format:', data);
+      return [];
+    }
     return data.projects;
   } catch (error) {
     // If backend is not available, return empty array instead of crashing
@@ -483,18 +525,46 @@ export async function getSettings(workspaceId: string) {
 }
 
 export async function saveSettings(workspaceId: string, settings: any) {
-  const response = await fetch(`${API_BASE}/settings/${workspaceId}`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(settings),
-  });
+  try {
+    const response = await fetch(`${API_BASE}/settings/${workspaceId}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(settings),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to save settings');
+    if (!response.ok) {
+      let errorMessage = 'Failed to save settings';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (parseError) {
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText.substring(0, 200);
+          }
+        } catch (textError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+      }
+      logger.error('saveSettings failed:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        error: errorMessage,
+        workspaceId
+      });
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    logger.error('saveSettings error:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Failed to save settings: ${String(error)}`);
   }
-
-  return response.json();
 }
 
 // Subscription API
