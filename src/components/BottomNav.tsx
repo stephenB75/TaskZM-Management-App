@@ -15,14 +15,24 @@ import {
   NAV_BAR_PADDING_BOTTOM,
   NAV_BAR_BUTTON_PADDING_TOP,
   NAV_BAR_BUTTON_PADDING_BOTTOM,
+  NAV_BAR_ICON_SIZE,
   NAV_BAR_ICON_MARGIN_TOP_ACTIVE,
   NAV_BAR_ICON_MARGIN_TOP_INACTIVE,
   NAV_BAR_INDICATOR_WIDTH,
+  NAV_BAR_INDICATOR_HEIGHT,
   NAV_BAR_INDICATOR_TOP,
   NAV_BAR_INDICATOR_MARGIN_LEFT,
   NAV_BAR_LABEL_TEXT_SIZE,
   NAV_BAR_LABEL_MARGIN_TOP,
+  NAV_BAR_BADGE_SIZE,
   NAV_BAR_BADGE_TEXT_SIZE,
+  NAV_BAR_BADGE_BORDER_WIDTH,
+  NAV_BAR_BADGE_TOP_OFFSET,
+  NAV_BAR_BADGE_RIGHT_OFFSET,
+  NAV_BAR_SYNC_INDICATOR_HEIGHT,
+  NAV_BAR_HORIZONTAL_PADDING,
+  NAV_BAR_ACTIVE_SCALE,
+  NAV_BAR_INITIAL_Y_OFFSET,
   NAV_BAR_ANIMATION_DURATION,
   NAV_BAR_ANIMATION_STIFFNESS,
   NAV_BAR_ANIMATION_DAMPING,
@@ -104,7 +114,7 @@ export function BottomNav({
   return (
     <motion.nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-primary/10 shadow-2xl overflow-visible"
-      initial={{ y: 100 }}
+      initial={{ y: NAV_BAR_INITIAL_Y_OFFSET }}
       animate={{ y: 0 }}
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
       style={{
@@ -114,14 +124,20 @@ export function BottomNav({
     >
       {/* Subtle sync indicator at top */}
       {isSyncing && (
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#B4E4CE] via-[#C9E4F7] to-[#D4C5F9] animate-pulse" />
+        <div 
+          className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#B4E4CE] via-[#C9E4F7] to-[#D4C5F9] animate-pulse" 
+          style={{ height: NAV_BAR_SYNC_INDICATOR_HEIGHT }}
+        />
       )}
 
       <div 
-        className="flex items-center justify-evenly px-1 overflow-visible" 
+        className="flex items-center justify-evenly overflow-visible" 
         style={{ 
           paddingTop: NAV_BAR_PADDING_TOP,
           paddingBottom: `calc(${NAV_BAR_PADDING_BOTTOM} + env(safe-area-inset-bottom, 0px))`,
+          paddingLeft: NAV_BAR_HORIZONTAL_PADDING,
+          paddingRight: NAV_BAR_HORIZONTAL_PADDING,
+          height: `${NAV_BAR_HEIGHT}px`,
           minHeight: `${NAV_BAR_HEIGHT}px`
         }}
       >
@@ -132,15 +148,32 @@ export function BottomNav({
               key={item.id}
               onClick={item.onClick}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 px-1 rounded-xl transition-all relative overflow-visible",
-                "active:scale-95 touch-manipulation",
+                "flex flex-col items-center justify-center flex-1 rounded-xl relative overflow-visible",
+                "touch-manipulation transition-transform duration-100 ease-out",
                 item.active && "text-primary",
                 !item.active &&
                   "text-muted-foreground hover:text-foreground",
               )}
               style={{
                 paddingTop: NAV_BAR_BUTTON_PADDING_TOP,
-                paddingBottom: NAV_BAR_BUTTON_PADDING_BOTTOM
+                paddingBottom: NAV_BAR_BUTTON_PADDING_BOTTOM,
+                paddingLeft: NAV_BAR_HORIZONTAL_PADDING,
+                paddingRight: NAV_BAR_HORIZONTAL_PADDING,
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = `scale(${NAV_BAR_ACTIVE_SCALE})`;
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              onTouchStart={(e) => {
+                e.currentTarget.style.transform = `scale(${NAV_BAR_ACTIVE_SCALE})`;
+              }}
+              onTouchEnd={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
               }}
             >
               {/* Icon - 30% bigger (w-6 h-6 -> w-8 h-8) */}
@@ -149,9 +182,10 @@ export function BottomNav({
                 {item.active && (
                   <motion.div
                     layoutId="bottomNavIndicator"
-                    className="absolute h-1.5 bg-primary rounded-full z-0"
+                    className="absolute bg-primary rounded-full z-0"
                     style={{
                       width: NAV_BAR_INDICATOR_WIDTH,
+                      height: NAV_BAR_INDICATOR_HEIGHT,
                       top: NAV_BAR_INDICATOR_TOP,
                       left: '50%',
                       marginLeft: NAV_BAR_INDICATOR_MARGIN_LEFT,
@@ -163,9 +197,22 @@ export function BottomNav({
                     }}
                   />
                 )}
-                <Icon className="w-8 h-8 relative z-10" />
+                <Icon 
+                  className="relative z-10" 
+                  style={{ width: NAV_BAR_ICON_SIZE, height: NAV_BAR_ICON_SIZE }}
+                />
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className={`absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white font-bold rounded-full flex items-center justify-center border-2 border-white`} style={{ fontSize: NAV_BAR_BADGE_TEXT_SIZE }}>
+                  <span 
+                    className="absolute bg-red-500 text-white font-bold rounded-full flex items-center justify-center border-white" 
+                    style={{ 
+                      fontSize: NAV_BAR_BADGE_TEXT_SIZE,
+                      width: NAV_BAR_BADGE_SIZE,
+                      height: NAV_BAR_BADGE_SIZE,
+                      borderWidth: NAV_BAR_BADGE_BORDER_WIDTH,
+                      top: NAV_BAR_BADGE_TOP_OFFSET,
+                      right: NAV_BAR_BADGE_RIGHT_OFFSET,
+                    }}
+                  >
                     {item.badge > 9 ? "9+" : item.badge}
                   </span>
                 )}
