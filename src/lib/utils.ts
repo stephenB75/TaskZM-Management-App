@@ -229,8 +229,72 @@ export function downloadFile(content: string, filename: string, mimeType: string
 }
 
 // Local storage utilities
-export function getFromLocalStorage<T>(key: string, defaultValue: T): T {
+// Get the current user ID from localStorage (set on signin/signup)
+function getCurrentUserId(): string | null {
   try {
+    return localStorage.getItem('taskzm_current_user_id');
+  } catch {
+    return null;
+  }
+}
+
+// Set the current user ID in localStorage
+function setCurrentUserId(userId: string): void {
+  try {
+    localStorage.setItem('taskzm_current_user_id', userId);
+  } catch (error) {
+    logger.error('Failed to set current user ID:', error);
+  }
+}
+
+// Clear all user data from localStorage
+export function clearUserLocalStorage(): void {
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key === 'tasks' ||
+        key === 'projects' ||
+        key === 'folders' ||
+        key === 'availableTags' ||
+        key === 'hoursSettings' ||
+        key === 'rolloverSettings' ||
+        key === 'ai-settings' ||
+        key.startsWith('taskzm_') ||
+        key.startsWith('subscription_') ||
+        key.startsWith('calendar_') ||
+        key.startsWith('last_sync_timestamp_') ||
+        key.startsWith('last_etag_')
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        logger.warn(`Failed to remove localStorage key: ${key}`, e);
+      }
+    });
+    logger.debug(`Cleared ${keysToRemove.length} localStorage keys`);
+  } catch (error) {
+    logger.error('Error clearing localStorage:', error);
+  }
+}
+
+export function getFromLocalStorage<T>(key: string, defaultValue: T, userId?: string | null): T {
+  try {
+    // If userId is provided, check if it matches the stored user
+    if (userId) {
+      const storedUserId = getCurrentUserId();
+      if (storedUserId && storedUserId !== userId) {
+        // Different user - don't return old data
+        logger.debug(`User mismatch: stored=${storedUserId}, current=${userId}, skipping localStorage for key: ${key}`);
+        return defaultValue;
+      }
+    }
+    
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
   } catch {
@@ -238,8 +302,13 @@ export function getFromLocalStorage<T>(key: string, defaultValue: T): T {
   }
 }
 
-export function saveToLocalStorage<T>(key: string, value: T): void {
+export function saveToLocalStorage<T>(key: string, value: T, userId?: string | null): void {
   try {
+    // If userId is provided, store it to track which user's data this is
+    if (userId) {
+      setCurrentUserId(userId);
+    }
+    
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
     logger.error('Failed to save to localStorage:', error);

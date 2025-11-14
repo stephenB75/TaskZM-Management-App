@@ -144,7 +144,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // Load from Supabase FIRST when authenticated, localStorage only as offline fallback
   useEffect(() => {
     if (!user || !accessToken) {
-      // Not authenticated - use localStorage as fallback only
+      // Not authenticated - use localStorage as fallback only (no userId check needed)
       const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
       const savedProjects = getFromLocalStorage<Project[]>('projects', []);
       setTasks(savedTasks);
@@ -161,6 +161,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
 
     // Authenticated - load from Supabase first
+    // localStorage will be checked with userId in getFromLocalStorage calls
     loadWorkspace();
   }, [user, accessToken]);
 
@@ -177,7 +178,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       if (!isMounted) return;
 
       // After loading from server, check for any local-only tasks
-      const localTasks = getFromLocalStorage<Task[]>('tasks', []);
+      const localTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
       // Use serverTasks directly instead of tasks state to avoid stale closure
       const serverTaskIds = new Set((serverTasks || []).map(t => t.id));
       
@@ -390,7 +391,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Validate workspace ID
     if (!wsId || typeof wsId !== 'string' || wsId.trim() === '') {
       logger.warn('Invalid workspace ID for loadTasksFromServer:', wsId);
-      const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+      const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
       if (savedTasks.length > 0) {
         setTasks(savedTasks);
         return savedTasks;
@@ -443,7 +444,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         logger.info(`Loaded ${serverTasks.length} tasks from server`);
         setTasks(serverTasks);
         // Always update localStorage with server data (overwrite any stale local data)
-        saveToLocalStorage('tasks', serverTasks);
+        saveToLocalStorage('tasks', serverTasks, user?.id);
         setLastSync(new Date());
         
         // Store sync timestamp and ETag for next delta sync
@@ -459,7 +460,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       } else {
         // No server data - this is valid (workspace exists but has no tasks)
         logger.info('No tasks found on server (workspace may be empty)');
-        const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+        const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
         if (savedTasks.length > 0) {
           logger.info(`Found ${savedTasks.length} tasks in localStorage, syncing to server`);
           setTasks(savedTasks);
@@ -476,14 +477,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const refreshedResult = await api.getTasks(wsId);
           if (!refreshedResult.error && refreshedResult.tasks && refreshedResult.tasks.length > 0) {
             setTasks(refreshedResult.tasks);
-            saveToLocalStorage('tasks', refreshedResult.tasks);
+            saveToLocalStorage('tasks', refreshedResult.tasks, user?.id);
             return refreshedResult.tasks;
           }
         }
         // No tasks in server or localStorage - this is valid for a new workspace
         logger.info('No tasks found in server or localStorage');
         setTasks([]);
-        saveToLocalStorage('tasks', []);
+        saveToLocalStorage('tasks', [], user?.id);
         return [];
       }
     } catch (error) {
@@ -509,7 +510,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const serverProjects = await api.getProjects(wsId);
       if (serverProjects && serverProjects.length > 0) {
         setProjects(serverProjects);
-        saveToLocalStorage('projects', serverProjects);
+        saveToLocalStorage('projects', serverProjects, user?.id);
       }
     } catch (error) {
       logger.error('Failed to sync projects:', error);

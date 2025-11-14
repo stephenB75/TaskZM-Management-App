@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { setAccessToken } from '../lib/api';
 import { logger } from '../lib/logger';
+import { clearUserLocalStorage } from '../lib/utils';
 import type { User } from '../types';
 
 interface AuthContextType {
@@ -144,6 +145,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: 'admin',
           isDemo: data.session.user.user_metadata.isDemo || false,
         };
+        
+        // Check if this is a different user - clear localStorage if so
+        const storedUserId = localStorage.getItem('taskzm_current_user_id');
+        if (storedUserId && storedUserId !== userData.id) {
+          logger.info('Different user signing in, clearing localStorage');
+          clearUserLocalStorage();
+        }
+        
+        // Set current user ID
+        localStorage.setItem('taskzm_current_user_id', userData.id);
+        
         setUser(userData);
         setToken(data.session.access_token);
         setAccessToken(data.session.access_token);
@@ -180,6 +192,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Signup failed');
       }
 
+      // Clear localStorage for new signup to prevent seeing old data
+      clearUserLocalStorage();
+      
       // Now sign in with the new credentials
       const session = await signIn(email, password);
       
