@@ -1,14 +1,15 @@
-import React, { useMemo, useId } from "react";
+import React, { useMemo } from "react";
 import {
   X,
   TrendingUp,
   Clock,
   Target,
-  Activity,
   Timer,
   CheckCircle2,
   Calendar,
   BarChart3,
+  Activity,
+  Zap,
 } from "lucide-react";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
@@ -24,9 +25,6 @@ import {
   Bar,
   AreaChart,
   Area,
-  PieChart,
-  Pie,
-  ComposedChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -34,122 +32,160 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
+  ComposedChart,
+  Line,
 } from "recharts";
 import { useTasks } from "../contexts/TaskContext";
 import { motion } from "motion/react";
+import {
+  COLOR_ANALYTICS_BLUE,
+  COLOR_ANALYTICS_GREEN,
+  COLOR_ANALYTICS_ORANGE,
+  COLOR_SUCCESS,
+  COLOR_INFO,
+  COLOR_WARNING,
+  getColorWithOpacity,
+} from "../lib/color-theme";
 
 interface AnalyticsPanelProps {
   onClose: () => void;
 }
 
-// Professional dashboard colors (inspired by Power BI)
-const DASHBOARD_COLORS = {
-  primary: '#0078D4', // Blue
-  secondary: '#107C10', // Green
-  accent: '#FFB900', // Yellow/Orange
-  neutral: '#6B6B6B', // Gray
-  success: '#107C10', // Green
-  warning: '#FFB900', // Yellow
-  info: '#0078D4', // Blue
-  lightBlue: '#4A90E2',
-  lightGreen: '#7ED321',
-  lightGray: '#E8E8E8',
-  darkGray: '#323130',
-  textPrimary: '#323130',
-  textSecondary: '#605E5C',
-  border: '#EDEBE9',
+// Clean, professional color palette
+const ANALYTICS_COLORS = {
+  background: '#FAFAFA',
+  cardBackground: '#FFFFFF',
+  border: '#E5E7EB',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  grid: '#F3F4F6',
+  primary: COLOR_ANALYTICS_BLUE,
+  success: COLOR_ANALYTICS_GREEN,
+  warning: COLOR_ANALYTICS_ORANGE,
+  accent: '#8B5CF6',
 };
 
-// Gauge Chart Component
-function GaugeChart({
-  value,
-  max,
-  label,
-  color = DASHBOARD_COLORS.primary,
-}: {
-  value: number;
-  max: number;
-  label: string;
-  color?: string;
-}) {
-  const percentage = Math.min((value / max) * 100, 100);
-  const radius = 60;
-  const circumference = Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div className="flex flex-col items-center">
-      <div className="relative">
-        <svg width="140" height="80" className="transform -rotate-90">
-          <defs>
-            <linearGradient id={`gauge-${label}`} x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-              <stop offset="100%" stopColor={color} stopOpacity="1" />
-            </linearGradient>
-          </defs>
-          {/* Background arc */}
-          <path
-            d={`M 20 ${radius + 20} A ${radius} ${radius} 0 0 1 ${radius * 2 + 20} ${radius + 20}`}
-            fill="none"
-            stroke={DASHBOARD_COLORS.lightGray}
-            strokeWidth="12"
-            strokeLinecap="round"
-          />
-          {/* Progress arc */}
-          <path
-            d={`M 20 ${radius + 20} A ${radius} ${radius} 0 0 1 ${radius * 2 + 20} ${radius + 20}`}
-            fill="none"
-            stroke={`url(#gauge-${label})`}
-            strokeWidth="12"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center mt-8">
-            <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-              {value.toLocaleString()}
-            </div>
-            <div className="text-[10px] font-medium" style={{ color: DASHBOARD_COLORS.textSecondary }}>
-              {label}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Custom Tooltip
+// Enhanced Custom Tooltip
 function CustomTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
       <div
-        className="bg-white p-2 rounded-md shadow-md border"
-        style={{ borderColor: DASHBOARD_COLORS.border }}
+        className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-xl border"
+        style={{ 
+          borderColor: ANALYTICS_COLORS.border,
+          minWidth: '120px'
+        }}
       >
-        <p className="text-xs font-semibold mb-1.5" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+        <p className="text-sm font-semibold mb-2" style={{ color: ANALYTICS_COLORS.textPrimary }}>
           {label}
         </p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-1.5">
-            <div
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-[10px]" style={{ color: DASHBOARD_COLORS.textSecondary }}>
-              {entry.name}:
-            </span>
-            <span className="text-xs font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-              {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
-            </span>
-          </div>
-        ))}
+        {payload.map((entry: any, index: number) => {
+          const formatValue = (value: number, dataKey: string) => {
+            if (dataKey.includes('Time') || dataKey.includes('minutes')) {
+              const hours = Math.floor(value / 60);
+              const minutes = Math.round(value % 60);
+              return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            }
+            return value.toLocaleString();
+          };
+
+          return (
+            <div key={index} className="flex items-center justify-between gap-3 mb-1 last:mb-0">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-xs" style={{ color: ANALYTICS_COLORS.textSecondary }}>
+                  {entry.name}:
+                </span>
+              </div>
+              <span className="text-xs font-bold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                {formatValue(entry.value, entry.dataKey)}
+              </span>
+            </div>
+          );
+        })}
       </div>
     );
   }
   return null;
+}
+
+// Enhanced Radial Progress Component
+function RadialProgress({
+  value,
+  size = 120,
+  strokeWidth = 12,
+  color,
+  label,
+  subtitle,
+}: {
+  value: number;
+  size?: number;
+  strokeWidth?: number;
+  color: string;
+  label?: string;
+  subtitle?: string;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg
+        width={size}
+        height={size}
+        className="transform -rotate-90"
+      >
+        <defs>
+          <linearGradient id={`radial-${label}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={ANALYTICS_COLORS.grid}
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={`url(#radial-${label})`}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+          {Math.round(value)}%
+        </span>
+        {label && (
+          <span className="text-xs font-medium mt-1" style={{ color: ANALYTICS_COLORS.textSecondary }}>
+            {label}
+          </span>
+        )}
+        {subtitle && (
+          <span className="text-[10px] mt-0.5" style={{ color: ANALYTICS_COLORS.textMuted }}>
+            {subtitle}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
@@ -204,6 +240,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       const timeTracked = tasksUpdatedThisDay.reduce((acc, t) => acc + (t.actualTime || 0), 0);
       return {
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        hours: timeTracked / 60,
         minutes: timeTracked,
       };
     });
@@ -246,18 +283,18 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
     const morningTasks = hourCounts.slice(6, 12).reduce((a, b) => a + b, 0);
     const afternoonTasks = hourCounts.slice(12, 18).reduce((a, b) => a + b, 0);
-    const eveningTasks = hourCounts.slice(18, 24).reduce((a, b) => a + b, 0);
-    const nightTasks = [...hourCounts.slice(0, 6)].reduce((a, b) => a + b, 0);
+    const eveningTasks = hourCounts.slice(18, 22).reduce((a, b) => a + b, 0);
+    const nightTasks = [...hourCounts.slice(0, 6), ...hourCounts.slice(22, 24)].reduce((a, b) => a + b, 0);
 
     const maxCount = Math.max(...hourCounts);
     const peakHour = maxCount > 0 ? hourCounts.indexOf(maxCount) : 12;
 
     const timePatterns = {
       blocks: [
-        { name: "Morning", value: morningTasks, color: DASHBOARD_COLORS.accent },
-        { name: "Afternoon", value: afternoonTasks, color: DASHBOARD_COLORS.primary },
-        { name: "Evening", value: eveningTasks, color: DASHBOARD_COLORS.secondary },
-        { name: "Night", value: nightTasks, color: DASHBOARD_COLORS.neutral },
+        { name: "Morning\n(6AM-12PM)", value: morningTasks, color: ANALYTICS_COLORS.warning },
+        { name: "Afternoon\n(12PM-6PM)", value: afternoonTasks, color: ANALYTICS_COLORS.primary },
+        { name: "Evening\n(6PM-10PM)", value: eveningTasks, color: ANALYTICS_COLORS.success },
+        { name: "Night\n(10PM-6AM)", value: nightTasks, color: ANALYTICS_COLORS.accent },
       ].filter((block) => block.value > 0),
       peakHour,
     };
@@ -270,7 +307,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       });
     });
     const taskTypes = Object.entries(typeCount)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name, value, color: ANALYTICS_COLORS.primary }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
 
@@ -295,6 +332,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           return false;
         }
       }).length;
+
       const created = tasks.filter((t) => {
         if (!t.createdAt) return false;
         try {
@@ -305,6 +343,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           return false;
         }
       }).length;
+
       return {
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         completed,
@@ -328,6 +367,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               total: totalProjectTasks,
               completed: completedProjectTasks,
               completionRate: projectCompletionRate,
+              color: project.color || ANALYTICS_COLORS.primary,
             };
           })
           .filter((p): p is NonNullable<typeof p> => p !== null)
@@ -386,15 +426,20 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           : `${analytics.timePatterns.peakHour - 12} PM`;
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-950">
+    <div className="h-full flex flex-col" style={{ backgroundColor: ANALYTICS_COLORS.background }}>
       <AppHeader
-        title="Analytics"
+        title="Analytics Dashboard"
         panelOpen={true}
         isSidePanelHeader={true}
-        description="Task performance insights"
+        description="Comprehensive insights into your productivity"
         hideDesktopLogo
         actions={
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8"
+          >
             <X className="w-4 h-4" />
           </Button>
         }
@@ -403,312 +448,415 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-4 pt-4 md:pt-4 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="p-6 space-y-6 pt-6 md:pt-6 pb-safe md:pb-6" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
             
-            {/* KPI Cards Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Card className="border shadow-sm">
-                <CardContent className="p-3">
-                  <div className="text-[10px] font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+            {/* KPI Cards Row - Enhanced with icons and better spacing */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+            >
+              <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: getColorWithOpacity(ANALYTICS_COLORS.primary, 0.1) }}>
+                      <Target className="w-5 h-5" style={{ color: ANALYTICS_COLORS.primary }} />
+                    </div>
+                  </div>
+                  <div className="text-sm font-medium mb-1" style={{ color: ANALYTICS_COLORS.textSecondary }}>
                     Total Tasks
                   </div>
-                  <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                  <div className="text-3xl font-bold mb-1" style={{ color: ANALYTICS_COLORS.textPrimary }}>
                     {analytics.totalTasks.toLocaleString()}
                   </div>
+                  <div className="text-xs" style={{ color: ANALYTICS_COLORS.textMuted }}>
+                    All tasks created
+                  </div>
                 </CardContent>
               </Card>
-              <Card className="border shadow-sm">
-                <CardContent className="p-3">
-                  <div className="text-[10px] font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+
+              <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: getColorWithOpacity(ANALYTICS_COLORS.success, 0.1) }}>
+                      <CheckCircle2 className="w-5 h-5" style={{ color: ANALYTICS_COLORS.success }} />
+                    </div>
+                  </div>
+                  <div className="text-sm font-medium mb-1" style={{ color: ANALYTICS_COLORS.textSecondary }}>
                     Completed
                   </div>
-                  <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.success }}>
+                  <div className="text-3xl font-bold mb-1" style={{ color: ANALYTICS_COLORS.success }}>
                     {analytics.completedTasks.toLocaleString()}
                   </div>
+                  <div className="text-xs" style={{ color: ANALYTICS_COLORS.textMuted }}>
+                    {analytics.totalTasks > 0 ? `${Math.round(analytics.completionRate)}% completion rate` : 'No tasks yet'}
+                  </div>
                 </CardContent>
               </Card>
-              <Card className="border shadow-sm">
-                <CardContent className="p-3">
-                  <div className="text-[10px] font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+
+              <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: getColorWithOpacity(ANALYTICS_COLORS.primary, 0.1) }}>
+                      <Timer className="w-5 h-5" style={{ color: ANALYTICS_COLORS.primary }} />
+                    </div>
+                  </div>
+                  <div className="text-sm font-medium mb-1" style={{ color: ANALYTICS_COLORS.textSecondary }}>
                     Time Tracked
                   </div>
-                  <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.primary }}>
-                    {Math.floor(analytics.totalTimeTracked / 60)}h {analytics.totalTimeTracked % 60}m
+                  <div className="text-3xl font-bold mb-1" style={{ color: ANALYTICS_COLORS.primary }}>
+                    {Math.floor(analytics.totalTimeTracked / 60)}h {Math.round(analytics.totalTimeTracked % 60)}m
+                  </div>
+                  <div className="text-xs" style={{ color: ANALYTICS_COLORS.textMuted }}>
+                    Total Pomodoro time
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border shadow-sm">
-                <CardContent className="p-3">
-                  <div className="text-[10px] font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+
+              <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: getColorWithOpacity(ANALYTICS_COLORS.accent, 0.1) }}>
+                      <Calendar className="w-5 h-5" style={{ color: ANALYTICS_COLORS.accent }} />
+                    </div>
+                  </div>
+                  <div className="text-sm font-medium mb-1" style={{ color: ANALYTICS_COLORS.textSecondary }}>
                     This Week
                   </div>
-                  <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.info }}>
-                    {Math.floor(analytics.weeklyTimeTracked / 60)}h {analytics.weeklyTimeTracked % 60}m
+                  <div className="text-3xl font-bold mb-1" style={{ color: ANALYTICS_COLORS.accent }}>
+                    {Math.floor(analytics.weeklyTimeTracked / 60)}h {Math.round(analytics.weeklyTimeTracked % 60)}m
+                  </div>
+                  <div className="text-xs" style={{ color: ANALYTICS_COLORS.textMuted }}>
+                    Time tracked this week
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
 
-            {/* Gauge Charts Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Card className="border shadow-sm">
-                <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+            {/* Completion Rate & Open Tasks Gauges - Enhanced */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+            >
+              <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
                     Completion Rate
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-3 pb-3">
-                  <GaugeChart
-                    value={Math.round(analytics.completionRate)}
-                    max={100}
-                    label="%"
-                    color={DASHBOARD_COLORS.success}
+                <CardContent className="flex items-center justify-center py-6">
+                  <RadialProgress
+                    value={analytics.completionRate}
+                    color={ANALYTICS_COLORS.success}
+                    label="Overall"
+                    subtitle={`${analytics.completedTasks} of ${analytics.totalTasks} tasks`}
                   />
                 </CardContent>
               </Card>
-              <Card className="border shadow-sm">
-                <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+
+              <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
                     Open Tasks
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-3 pb-3">
-                  <GaugeChart
-                    value={analytics.totalTasks - analytics.completedTasks}
-                    max={Math.max(analytics.totalTasks, 100)}
-                    label="tasks"
-                    color={DASHBOARD_COLORS.accent}
+                <CardContent className="flex items-center justify-center py-6">
+                  <RadialProgress
+                    value={analytics.totalTasks > 0 ? ((analytics.totalTasks - analytics.completedTasks) / analytics.totalTasks) * 100 : 0}
+                    color={ANALYTICS_COLORS.warning}
+                    label="Remaining"
+                    subtitle={`${analytics.totalTasks - analytics.completedTasks} tasks open`}
                   />
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
 
-            {/* Time Tracking Trend - Area Chart */}
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-2 pt-3 px-3">
-                <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-                  Time Tracked (Last 7 Days)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={analytics.timeTrackingTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={DASHBOARD_COLORS.primary} stopOpacity={0.6} />
-                          <stop offset="100%" stopColor={DASHBOARD_COLORS.primary} stopOpacity={0.1} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={DASHBOARD_COLORS.lightGray} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
-                        stroke={DASHBOARD_COLORS.border}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
-                        stroke={DASHBOARD_COLORS.border}
-                        tickFormatter={(value) => `${Math.floor(value / 60)}h`}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Area
-                        type="monotone"
-                        dataKey="minutes"
-                        stroke={DASHBOARD_COLORS.primary}
-                        strokeWidth={2}
-                        fill="url(#timeGradient)"
-                        name="Minutes"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Time Tracked Trend - Enhanced Area Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                    Time Tracked (Last 7 Days)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={analytics.timeTrackingTrend}
+                        margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={ANALYTICS_COLORS.primary} stopOpacity={0.4} />
+                            <stop offset="100%" stopColor={ANALYTICS_COLORS.primary} stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={ANALYTICS_COLORS.grid} vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 11, fill: ANALYTICS_COLORS.textSecondary }}
+                        />
+                        <YAxis
+                          tickFormatter={(value) => `${value}h`}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 11, fill: ANALYTICS_COLORS.textSecondary }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area
+                          type="monotone"
+                          dataKey="hours"
+                          stroke={ANALYTICS_COLORS.primary}
+                          strokeWidth={3}
+                          fill="url(#timeGradient)"
+                          name="Hours"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            {/* Productivity Trend - Area Chart */}
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-2 pt-3 px-3">
-                <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-                  Tasks Created vs Completed (Last 7 Days)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={analytics.taskPerDayProgress} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="completedGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={DASHBOARD_COLORS.success} stopOpacity={0.6} />
-                          <stop offset="100%" stopColor={DASHBOARD_COLORS.success} stopOpacity={0.1} />
-                        </linearGradient>
-                        <linearGradient id="createdGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={DASHBOARD_COLORS.primary} stopOpacity={0.6} />
-                          <stop offset="100%" stopColor={DASHBOARD_COLORS.primary} stopOpacity={0.1} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={DASHBOARD_COLORS.lightGray} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
-                        stroke={DASHBOARD_COLORS.border}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
-                        stroke={DASHBOARD_COLORS.border}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '8px' }} iconSize={10} />
-                      <Area
-                        type="monotone"
-                        dataKey="completed"
-                        stroke={DASHBOARD_COLORS.success}
-                        strokeWidth={2}
-                        fill="url(#completedGrad)"
-                        name="Completed"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="created"
-                        stroke={DASHBOARD_COLORS.primary}
-                        strokeWidth={2}
-                        fill="url(#createdGrad)"
-                        name="Created"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Tasks Created vs Completed - Enhanced Composed Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                    Tasks Created vs. Completed (Last 7 Days)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart
+                        data={analytics.taskPerDayProgress}
+                        margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="completedGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={ANALYTICS_COLORS.success} stopOpacity={0.4} />
+                            <stop offset="100%" stopColor={ANALYTICS_COLORS.success} stopOpacity={0.05} />
+                          </linearGradient>
+                          <linearGradient id="createdGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={ANALYTICS_COLORS.primary} stopOpacity={0.4} />
+                            <stop offset="100%" stopColor={ANALYTICS_COLORS.primary} stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={ANALYTICS_COLORS.grid} vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 11, fill: ANALYTICS_COLORS.textSecondary }}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 11, fill: ANALYTICS_COLORS.textSecondary }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: '12px', fontSize: '12px' }} 
+                          iconType="circle" 
+                          iconSize={8}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="completed"
+                          stroke={ANALYTICS_COLORS.success}
+                          strokeWidth={2}
+                          fill="url(#completedGrad)"
+                          name="Completed"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="created"
+                          stroke={ANALYTICS_COLORS.primary}
+                          strokeWidth={2}
+                          fill="url(#createdGrad)"
+                          name="Created"
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            {/* Time Patterns - Stacked Bar Chart */}
+            {/* Task Completion by Time of Day - Enhanced Bar Chart */}
             {analytics.timePatterns.blocks.length > 0 && (
-              <Card className="border shadow-sm">
-                <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-                    Task Completion by Time of Day
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 pb-3">
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={analytics.timePatterns.blocks}
-                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke={DASHBOARD_COLORS.lightGray} />
-                        <XAxis
-                          dataKey="name"
-                          tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
-                          stroke={DASHBOARD_COLORS.border}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
-                          stroke={DASHBOARD_COLORS.border}
-                        />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                          {analytics.timePatterns.blocks.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="mt-3 text-center text-xs" style={{ color: DASHBOARD_COLORS.textSecondary }}>
-                    Peak Hour: <span className="font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>{peakHourLabel}</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-base font-semibold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                      Task Completion by Time of Day
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={analytics.timePatterns.blocks}
+                          margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke={ANALYTICS_COLORS.grid} vertical={false} />
+                          <XAxis
+                            dataKey="name"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 11, fill: ANALYTICS_COLORS.textSecondary }}
+                            interval={0}
+                            angle={-45}
+                            textAnchor="end"
+                            height={60}
+                          />
+                          <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 11, fill: ANALYTICS_COLORS.textSecondary }}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                            {analytics.timePatterns.blocks.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="text-center mt-4">
+                      <div className="text-sm" style={{ color: ANALYTICS_COLORS.textSecondary }}>
+                        Peak completion hour:{" "}
+                        <span className="font-semibold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                          {peakHourLabel}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             )}
 
-            {/* Task Types - Horizontal Bar Chart */}
+            {/* Top Task Tags - Enhanced Horizontal Bar Chart */}
             {analytics.taskTypes.length > 0 && (
-              <Card className="border shadow-sm">
-                <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-                    Top Task Tags
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 pb-3">
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={analytics.taskTypes}
-                        layout="vertical"
-                        margin={{ top: 10, right: 20, left: 80, bottom: 10 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke={DASHBOARD_COLORS.lightGray} horizontal />
-                        <XAxis
-                          type="number"
-                          tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
-                          stroke={DASHBOARD_COLORS.border}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
-                          stroke={DASHBOARD_COLORS.border}
-                          width={70}
-                        />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="value" fill={DASHBOARD_COLORS.primary} radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-base font-semibold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                      Top Task Tags
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={analytics.taskTypes}
+                          layout="vertical"
+                          margin={{ top: 10, right: 20, left: 20, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke={ANALYTICS_COLORS.grid} horizontal />
+                          <XAxis
+                            type="number"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 11, fill: ANALYTICS_COLORS.textSecondary }}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fontSize: 11, fill: ANALYTICS_COLORS.textPrimary }}
+                            width={90}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar dataKey="value" fill={ANALYTICS_COLORS.primary} radius={[0, 8, 8, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             )}
 
-            {/* Project Progress - Table */}
+            {/* Project Progress - Enhanced Table */}
             {analytics.projectProgress.length > 0 && (
-              <Card className="border shadow-sm">
-                <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-                    Project Progress
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 pb-3">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b" style={{ borderColor: DASHBOARD_COLORS.border }}>
-                          <th className="text-left py-1.5 px-3 text-[10px] font-semibold uppercase tracking-wide" style={{ color: DASHBOARD_COLORS.textSecondary }}>
-                            Project
-                          </th>
-                          <th className="text-right py-1.5 px-3 text-[10px] font-semibold uppercase tracking-wide" style={{ color: DASHBOARD_COLORS.textSecondary }}>
-                            Completed
-                          </th>
-                          <th className="text-right py-1.5 px-3 text-[10px] font-semibold uppercase tracking-wide" style={{ color: DASHBOARD_COLORS.textSecondary }}>
-                            Total
-                          </th>
-                          <th className="text-right py-1.5 px-3 text-[10px] font-semibold uppercase tracking-wide" style={{ color: DASHBOARD_COLORS.textSecondary }}>
-                            Progress
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {analytics.projectProgress.map((project, index) => (
-                          <tr key={index} className="border-b" style={{ borderColor: DASHBOARD_COLORS.border }}>
-                            <td className="py-2 px-3 text-xs font-medium" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-                              {project.name}
-                            </td>
-                            <td className="py-2 px-3 text-xs text-right" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-                              {project.completed}
-                            </td>
-                            <td className="py-2 px-3 text-xs text-right" style={{ color: DASHBOARD_COLORS.textPrimary }}>
-                              {project.total}
-                            </td>
-                            <td className="py-2 px-3 text-xs text-right font-semibold" style={{ color: DASHBOARD_COLORS.success }}>
-                              {project.completionRate.toFixed(0)}%
-                            </td>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Card className="shadow-sm border-0" style={{ backgroundColor: ANALYTICS_COLORS.cardBackground, borderColor: ANALYTICS_COLORS.border }}>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-base font-semibold" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                      Project Progress
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr style={{ borderBottom: `1px solid ${ANALYTICS_COLORS.border}` }}>
+                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider" style={{ color: ANALYTICS_COLORS.textSecondary }}>
+                              Project
+                            </th>
+                            <th className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wider" style={{ color: ANALYTICS_COLORS.textSecondary }}>
+                              Completed
+                            </th>
+                            <th className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wider" style={{ color: ANALYTICS_COLORS.textSecondary }}>
+                              Total
+                            </th>
+                            <th className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wider" style={{ color: ANALYTICS_COLORS.textSecondary }}>
+                              Progress
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
+                        </thead>
+                        <tbody>
+                          {analytics.projectProgress.map((project, index) => (
+                            <tr key={index} style={{ borderBottom: `1px solid ${ANALYTICS_COLORS.grid}` }}>
+                              <td className="py-4 px-4 text-sm font-medium" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                                {project.name}
+                              </td>
+                              <td className="py-4 px-4 text-sm text-right" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                                {project.completed}
+                              </td>
+                              <td className="py-4 px-4 text-sm text-right" style={{ color: ANALYTICS_COLORS.textPrimary }}>
+                                {project.total}
+                              </td>
+                              <td className="py-4 px-4 text-sm text-right font-semibold" style={{ color: ANALYTICS_COLORS.success }}>
+                                {project.completionRate.toFixed(0)}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             )}
 
           </div>
