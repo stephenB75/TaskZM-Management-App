@@ -490,15 +490,22 @@ export async function getFolders(
           const error = await response.json();
           errorMessage = error.error || errorMessage;
         } catch (e) {
-          // Ignore parse errors
+          // Ignore parse errors - 404 might mean no folders exist
         }
         
-        // If workspace not found (not just no folders), return empty but log differently
-        if (errorMessage.includes('Workspace not found') || errorMessage.includes('not found')) {
+        // If workspace not found (not just no folders), return empty but log at debug level only
+        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
           logger.debug('Workspace not found (404) - may need to be created:', workspaceId);
         } else {
+          // No folders found - this is expected for new workspaces
           logger.debug('No folders found for workspace (404):', workspaceId);
         }
+        return [];
+      }
+      
+      // Handle 401/403 - authentication/authorization errors
+      if (response.status === 401 || response.status === 403) {
+        logger.error('Authentication error when fetching folders:', { status: response.status, workspaceId });
         return [];
       }
 
@@ -855,7 +862,27 @@ export async function getTeamMembers(workspaceId: string) {
     if (!response.ok) {
       // Handle 404 gracefully - workspace might not exist yet or have no members
       if (response.status === 404) {
-        logger.debug('Workspace not found or has no members (404):', workspaceId);
+        // Check error message to distinguish between "workspace not found" vs "no members"
+        let errorMessage = '';
+        try {
+          const error = await response.json();
+          errorMessage = error.error || '';
+        } catch (e) {
+          // Ignore parse errors - 404 might mean no members exist
+        }
+        
+        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+          logger.debug('Workspace not found (404) - may need to be created:', workspaceId);
+        } else {
+          // No members found - this is expected for new workspaces
+          logger.debug('No team members found for workspace (404):', workspaceId);
+        }
+        return [];
+      }
+      
+      // Handle 401/403 - authentication/authorization errors
+      if (response.status === 401 || response.status === 403) {
+        logger.error('Authentication error when fetching team members:', { status: response.status, workspaceId });
         return [];
       }
       

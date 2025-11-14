@@ -124,6 +124,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_MS); // Auto-sync interval (reduced from 30s to minimize Edge Function invocations)
   const syncLockRef = useRef<boolean>(false); // Prevent concurrent sync operations
+  
+  // Store last sync timestamps and ETags for delta sync
+  const lastSyncTimestampsRef = useRef<{
+    tasks?: string;
+    projects?: string;
+    folders?: string;
+  }>({});
+  const lastETagsRef = useRef<{
+    tasks?: string;
+    projects?: string;
+    folders?: string;
+  }>({});
 
   // Load from Supabase FIRST when authenticated, localStorage only as offline fallback
   useEffect(() => {
@@ -508,9 +520,21 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Check for malformed workspace IDs (e.g., with timestamp suffixes)
+      // Check for malformed workspace IDs (e.g., with timestamp suffixes like workspace_uuid_timestamp)
       // Valid workspace IDs should be UUIDs without extra suffixes
-      const isPotentiallyMalformed = wsId.includes('_') && wsId.split('_').length > 2;
+      // Pattern: workspace_<uuid>_<timestamp> is malformed
+      const workspaceIdParts = wsId.split('_');
+      const isPotentiallyMalformed = workspaceIdParts.length > 2 && workspaceIdParts[0] === 'workspace';
+      
+      // If malformed, extract just the UUID part (workspace_<uuid>)
+      if (isPotentiallyMalformed && workspaceIdParts.length >= 2) {
+        const correctedId = `${workspaceIdParts[0]}_${workspaceIdParts[1]}`;
+        logger.warn('Correcting malformed workspace ID:', { old: wsId, new: correctedId });
+        wsId = correctedId;
+        if (workspaceId !== correctedId) {
+          setWorkspaceId(correctedId);
+        }
+      }
       
       // Ensure workspace exists before attempting to sync
       // This prevents 404 errors when workspace doesn't exist
@@ -549,7 +573,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             }
           }
         } catch (error) {
-          logger.error('Failed to ensure workspace exists during folder sync:', error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          // Only log as error if it's not a simple "not found" case
+          if (!errorMessage.includes('not found') && !errorMessage.includes('404') && !errorMessage.includes('Workspace or endpoint not found')) {
+            logger.error('Failed to ensure workspace exists during folder sync:', error);
+          } else {
+            logger.debug('Workspace not found during folder sync (expected for new workspaces):', errorMessage);
+          }
           // Continue anyway - getFolders will handle 404 gracefully
         }
       }
@@ -641,7 +671,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                       continue;
                     }
                   } catch (ensureError) {
-                    logger.error('Failed to ensure workspace exists:', ensureError);
+                    const ensureErrorMessage = ensureError instanceof Error ? ensureError.message : String(ensureError);
+                    // Only log as error if it's not a simple "not found" case
+                    if (!ensureErrorMessage.includes('not found') && !ensureErrorMessage.includes('404') && !ensureErrorMessage.includes('Workspace or endpoint not found')) {
+                      logger.error('Failed to ensure workspace exists:', ensureError);
+                    } else {
+                      logger.debug('Workspace not found during ensure (expected for new workspaces):', ensureErrorMessage);
+                    }
                     continue; // Skip this folder
                   }
                 } else {
@@ -1777,8 +1813,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
       return null;
     } catch (error) {
-      logger.error('Failed to ensure workspace:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Don't show error toast for expected "not found" cases (workspace will be created on first use)
+      if (errorMessage.includes('not found') || errorMessage.includes('404') || errorMessage.includes('Workspace or endpoint not found')) {
+        logger.debug('Workspace not found during ensure (expected for new users):', errorMessage);
+        return null; // Return null silently - workspace will be created when needed
+      }
+      
+      // For other errors, log and show toast
+      logger.error('Failed to ensure workspace:', error);
       const detailedMessage = errorMessage.includes('Unknown error') 
         ? 'Unable to access workspace. Please check your connection and try again.'
         : errorMessage;
