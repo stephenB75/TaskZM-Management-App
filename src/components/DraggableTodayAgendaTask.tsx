@@ -316,21 +316,24 @@ export function DraggableTodayAgendaTask({
                   </span>
                 )}
 
-                {/* Tracking Badge - Mobile only, shown at top with other badges */}
-                {isMobile && hasFeature("pomodoroTimer") && timerState.isRunning && (
+                {/* Tracking Badge - Shown at top with other badges (mobile and desktop for tasks < 45 mins) */}
+                {task.estimatedTime && task.estimatedTime < 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
                   <div className="flex items-center animate-pulse flex-shrink-0">
-                    <div className="flex items-center rounded-full px-1 py-0.5 bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white gap-0.5 text-[7px]">
-                      <Timer className="w-2 h-2 animate-spin" />
+                    <div className={cn(
+                      "flex items-center rounded-full bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
+                      isMobile ? "px-1 py-0.5 gap-0.5 text-[7px]" : "px-1.5 py-0.5 gap-1 text-[8px]"
+                    )}>
+                      <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
                       <span className="font-semibold">Tracking...</span>
                     </div>
                   </div>
                 )}
 
-                {/* Tracked Time (mobile only, if exists and not running) - shown at top */}
-                {isMobile && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
+                {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
+                {task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <Timer className="text-[#7B68EE] w-2 h-2" />
-                    <span className="text-[#7B68EE] font-medium text-[8px]">
+                    <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
+                    <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[8px]" : "text-[9px]")}>
                       {formatTimer(task.actualTime)}
                     </span>
                   </div>
@@ -478,25 +481,25 @@ export function DraggableTodayAgendaTask({
               </div>
             )}
 
-            {/* Tracking Status - Desktop only (mobile shows at top) */}
-            {!isMobile && hasFeature("pomodoroTimer") && timerState.isRunning && (
+            {/* Tracking Status - Show when timer is running (only for tasks >= 45 mins, tasks < 45 mins show at top) */}
+            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
               <div className={cn(
                 "flex items-center pt-0.5 animate-pulse",
-                "gap-1"
+                isMobile ? "gap-0.5" : "gap-1"
               )}>
                 <div className={cn(
                   "flex items-center rounded-full px-1.5 py-0.5",
                   "bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
-                  "gap-1 text-[10px]"
+                  isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
                 )}>
-                  <Timer className={cn("animate-spin", "w-2.5 h-2.5")} />
+                  <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
                   <span className="font-semibold">Tracking...</span>
                 </div>
               </div>
             )}
 
-            {/* Tracked Time (desktop only, if exists) - mobile shows at top */}
-            {!isMobile && task.actualTime && task.actualTime > 0 && (
+            {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top */}
+            {task.estimatedTime && task.estimatedTime >= 45 && task.actualTime && task.actualTime > 0 && (
               <div className={cn("flex items-center pt-0.5", "gap-1")}>
                 <Timer className={cn("text-[#7B68EE]", "w-3 h-3")} />
                 <span className={cn("text-[#7B68EE] font-medium", "text-[11px]")}>
@@ -505,8 +508,8 @@ export function DraggableTodayAgendaTask({
               </div>
             )}
 
-            {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) */}
-            {hasFeature("pomodoroTimer") && (
+            {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) - only for tasks >= 45 mins, tasks < 45 mins show in inline bottom row */}
+            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
               <div
                 className={cn("absolute", isMobile ? "bottom-0 right-1" : "bottom-2 right-2")}
                 onClick={(e) => e.stopPropagation()}

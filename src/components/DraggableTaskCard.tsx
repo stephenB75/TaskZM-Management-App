@@ -191,11 +191,29 @@ export const DraggableTaskCard = React.forwardRef<
             baseHeight = calculatedBaseHeight;
           }
         } else {
-          // Desktop: absolute positioning for components (no change to desktop)
-          if (hasPomodoro || hasAssignedUsers) {
-            baseHeight = 95; // Increased space on desktop for absolute positioned components
+          // Desktop: apply same rules as mobile for tasks < 45 mins
+          // Tracking badge at top, bottom row has assigned users + pomodoro timer
+          // Increase border height by 20% to accommodate all components comfortably
+          // Additional 10% when all components are active
+          let calculatedBaseHeight = 0;
+          if (hasPomodoro || hasTrackedTime) {
+            // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
+            calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer ? 126 : 114; // Extra space for all components (+20% border height)
+          } else if (hasAssignedUsers && hasPomodoroTimer) {
+            // Both assigned users and pomodoro timer in bottom row
+            calculatedBaseHeight = 120; // Space for both bottom row components (+20% border height)
+          } else if (hasAssignedUsers || hasPomodoroTimer) {
+            // One of assigned users or pomodoro timer in bottom row
+            calculatedBaseHeight = 114; // Space for one bottom row component (+20% border height)
           } else {
-            baseHeight = 85; // Base space for desktop
+            calculatedBaseHeight = 108; // Base space for essential elements only (+20% border height)
+          }
+          
+          // Add 10% increase when ALL components are active (tracking + assigned users + subtasks)
+          if ((hasPomodoro || hasTrackedTime) && hasAssignedUsers && hasSubtasks) {
+            baseHeight = Math.round(calculatedBaseHeight * 1.1);
+          } else {
+            baseHeight = calculatedBaseHeight;
           }
         }
         
@@ -279,9 +297,9 @@ export const DraggableTaskCard = React.forwardRef<
               // For tasks < 45 mins on mobile: inline bottom row needs less padding
               // Base bottom padding for all tasks
               !isMobile && "md:pb-8",
-              // Mobile tasks < 45 mins with inline bottom row: reduced padding (bottom row handles spacing)
+              // Tasks < 45 mins with inline bottom row (mobile and desktop): reduced padding (bottom row handles spacing)
               // Increase padding to ensure bottom row components fit comfortably
-              isMobile && task.estimatedTime && task.estimatedTime < 45 && "pb-2",
+              task.estimatedTime && task.estimatedTime < 45 && (isMobile ? "pb-2" : "md:pb-2.5"),
               // Mobile tasks >= 45 mins: standard padding
               isMobile && (!task.estimatedTime || task.estimatedTime >= 45) && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-6",
               // Extra bottom padding on mobile for tasks >= 45 mins when pomodoro/assigned users present
@@ -356,21 +374,24 @@ export const DraggableTaskCard = React.forwardRef<
                 </span>
               )}
 
-              {/* Tracking Badge - Mobile only, shown at top with other badges */}
-              {isMobile && hasFeature("pomodoroTimer") && timerState.isRunning && (
+              {/* Tracking Badge - Shown at top with other badges (mobile and desktop for tasks < 45 mins) */}
+              {task.estimatedTime && task.estimatedTime < 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
                 <div className="flex items-center animate-pulse flex-shrink-0">
-                  <div className="flex items-center rounded-full px-1 py-0.5 bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white gap-0.5 text-[7px]">
-                    <Timer className="w-2 h-2 animate-spin" />
+                  <div className={cn(
+                    "flex items-center rounded-full bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
+                    isMobile ? "px-1 py-0.5 gap-0.5 text-[7px]" : "px-1.5 py-0.5 gap-1 text-[8px]"
+                  )}>
+                    <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
                     <span className="font-semibold">Tracking...</span>
                   </div>
                 </div>
               )}
 
-              {/* Tracked Time (mobile only, if exists and not running) - shown at top */}
-              {isMobile && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
+              {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
+              {task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Timer className="text-[#7B68EE] w-2 h-2" />
-                  <span className="text-[#7B68EE] font-medium text-[8px]">
+                  <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
+                  <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[8px]" : "text-[9px]")}>
                     {formatTimer(task.actualTime)}
                   </span>
                 </div>
@@ -460,10 +481,10 @@ export const DraggableTaskCard = React.forwardRef<
             </div>
           )}
 
-          {/* Bottom Row: For tasks < 45 mins on mobile, show inline layout; otherwise absolute positioning */}
-          {task.estimatedTime && task.estimatedTime < 45 && isMobile ? (
-            // Inline layout for mobile tasks < 45 mins: assigned users and pomodoro timer in one row (tracking badge moved to top)
-            <div className="flex items-center justify-between gap-1.5 mt-2 pt-2 border-t border-gray-200/50">
+          {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
+          {task.estimatedTime && task.estimatedTime < 45 ? (
+            // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
+            <div className={cn("flex items-center justify-between border-t border-gray-200/50", isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5")}>
               {/* Left: Assigned Users */}
               <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
                 {task.assignedTo && task.assignedTo.length > 0 && (
@@ -476,14 +497,20 @@ export const DraggableTaskCard = React.forwardRef<
                         <TooltipProvider key={userId}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="flex items-center gap-0.5">
-                                <Avatar className="w-3 h-3">
+                              <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
+                                <Avatar className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")}>
                                   <AvatarImage src={member.avatar} alt={member.name} />
-                                  <AvatarFallback className="bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 text-[7px]">
+                                  <AvatarFallback className={cn(
+                                    "bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700",
+                                    isMobile ? "text-[7px]" : "text-[8px]"
+                                  )}>
                                     {initials}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="text-gray-600 font-semibold text-[8px] truncate max-w-[40px]">
+                                <span className={cn(
+                                  "text-gray-600 font-semibold truncate",
+                                  isMobile ? "text-[8px] max-w-[40px]" : "text-[9px] max-w-[60px]"
+                                )}>
                                   {member.name}
                                 </span>
                               </div>
@@ -497,7 +524,7 @@ export const DraggableTaskCard = React.forwardRef<
                       );
                     })}
                     {task.assignedTo.length > 2 && (
-                      <span className="text-gray-500 text-[8px]">+{task.assignedTo.length - 2}</span>
+                      <span className={cn("text-gray-500", isMobile ? "text-[8px]" : "text-[9px]")}>+{task.assignedTo.length - 2}</span>
                     )}
                   </>
                 )}
@@ -582,8 +609,8 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
 
-              {/* Tracking Status - Show when timer is running */}
-              {hasFeature("pomodoroTimer") && timerState.isRunning && (
+              {/* Tracking Status - Show when timer is running (only for tasks >= 45 mins, tasks < 45 mins show at top) */}
+              {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
                 <div className={cn(
                   "flex items-center pt-0.5 animate-pulse",
                   isMobile ? "gap-0.5" : "gap-1"
@@ -599,8 +626,8 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
 
-              {/* Tracked Time (if exists) */}
-              {task.actualTime && task.actualTime > 0 && (
+              {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top */}
+              {task.estimatedTime && task.estimatedTime >= 45 && task.actualTime && task.actualTime > 0 && (
                 <div className={cn("flex items-center pt-0.5", isMobile ? "gap-0.5" : "gap-1")}>
                   <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
                   <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[10px]" : "text-[11px]")}>
@@ -609,8 +636,8 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
 
-              {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) */}
-              {hasFeature("pomodoroTimer") && (
+              {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) - only for tasks >= 45 mins, tasks < 45 mins show in inline bottom row */}
+              {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
                 <div
                   className={cn("absolute", isMobile ? "bottom-0 right-1" : "bottom-2 right-2")}
                   onClick={(e) => e.stopPropagation()}
