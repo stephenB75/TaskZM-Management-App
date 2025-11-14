@@ -154,6 +154,7 @@ export function AppHeader({
         // Main header - fixed positioning, shifts when panel is open (animated to match week view)
         <motion.div 
           className="hidden lg:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
+          initial={false}
           animate={{ 
             left: `${headerLeft}px`,
             width: headerWidth
