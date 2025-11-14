@@ -88,14 +88,21 @@ export function AppHeader({
   // - Main header when panel open: sidebar + panel width
   // - Main header when panel closed: sidebar width only
   // Header responds directly to panelOpen changes, synced with week view animation
-  const headerLeft = isSidePanelHeader 
-    ? SIDEBAR_WIDTH // Side panel headers at start of panel
-    : getMainHeaderLeft(panelOpen); // Main header shifts with panel state
+  // Use useMemo to ensure values update when panelOpen or panelKey changes
+  const headerLeft = React.useMemo(() => {
+    if (isSidePanelHeader) {
+      return SIDEBAR_WIDTH; // Side panel headers at start of panel
+    }
+    return getMainHeaderLeft(panelOpen); // Main header shifts with panel state
+  }, [isSidePanelHeader, panelOpen, panelKey]); // Include panelKey to force update on panel changes
   
   // Calculate header width to properly resize during panel transitions
-  const headerWidth = isSidePanelHeader 
-    ? undefined // Side panel headers don't need width calculation
-    : getMainHeaderWidth(panelOpen); // Main header should span from left position to right edge
+  const headerWidth = React.useMemo(() => {
+    if (isSidePanelHeader) {
+      return undefined; // Side panel headers don't need width calculation
+    }
+    return getMainHeaderWidth(panelOpen); // Main header should span from left position to right edge
+  }, [isSidePanelHeader, panelOpen, panelKey]); // Include panelKey to force update on panel changes
 
   return (
     <>
@@ -267,7 +274,7 @@ export function AppHeader({
       ) : (
         // Main header - fixed positioning, animates with spring physics to sync with week view
         // Uses same spring animation settings as week view (damping: 30, stiffness: 300)
-        // Responds directly to panelOpen changes, matching week view animation timing
+        // animate prop updates automatically when headerLeft and headerWidth change
         <motion.div 
           className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
