@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { cn, getPriorityColor, formatDate, formatTimeAMPM, isOverdue, calculateProgress, isTaskBlocked, getIncompleteDependencies, getInitials } from '../lib/utils';
+import { cn, getPriorityColor, formatDate, formatTimeAMPM, isOverdue, calculateProgress, isTaskBlocked, getIncompleteDependencies, getInitials, sanitizeHTML } from '../lib/utils';
 import { useTasks } from '../contexts/TaskContext';
 import { useTeam } from '../contexts/TeamContext';
 import type { Task } from '../types';
@@ -151,9 +151,21 @@ export function TaskCard({
             </h3>
             
             {task.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
-                {task.description}
-              </p>
+              <div 
+                className={cn(
+                  "text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2",
+                  // Rich text formatting styles
+                  "[&_strong]:font-bold [&_b]:font-bold",
+                  "[&_u]:underline",
+                  "[&_s]:line-through [&_strike]:line-through",
+                  "[&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800 [&_mark]:px-0.5 [&_mark]:rounded",
+                  "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5",
+                  "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
+                  "[&_li]:ml-1",
+                  "[&_p]:my-0.5"
+                )}
+                dangerouslySetInnerHTML={{ __html: sanitizeHTML(task.description) }}
+              />
             )}
 
             {/* Subtasks Display */}

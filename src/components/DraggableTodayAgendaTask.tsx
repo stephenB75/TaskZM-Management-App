@@ -4,7 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "motion/react";
 import { Circle, Timer, Clock, Repeat } from "lucide-react";
 import { Badge } from "./ui/badge";
-import { cn, getInitials, formatTimeAMPM } from "../lib/utils";
+import { cn, getInitials, formatTimeAMPM, sanitizeHTML } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { usePomodoro } from "../contexts/PomodoroContext";
@@ -375,13 +375,23 @@ export function DraggableTodayAgendaTask({
 
             {/* Row 3: Subhead (Description) - Only show if task is 1 hour or more */}
             {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
-              <p className={cn(
-                "text-gray-500 leading-snug whitespace-pre-wrap break-words",
-                isMobile ? "text-[10px]" : "text-xs",
-                (task.estimatedTime && task.estimatedTime <= 30) ? "line-clamp-2" : "line-clamp-4"
-              )}>
-                {task.description}
-              </p>
+              <div 
+                className={cn(
+                  "text-gray-500 leading-snug break-words",
+                  isMobile ? "text-[10px]" : "text-xs",
+                  (task.estimatedTime && task.estimatedTime <= 30) ? "line-clamp-2" : "line-clamp-4",
+                  // Rich text formatting styles
+                  "[&_strong]:font-bold [&_b]:font-bold",
+                  "[&_u]:underline",
+                  "[&_s]:line-through [&_strike]:line-through",
+                  "[&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800 [&_mark]:px-0.5 [&_mark]:rounded",
+                  "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5",
+                  "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
+                  "[&_li]:ml-1",
+                  "[&_p]:my-0.5"
+                )}
+                dangerouslySetInnerHTML={{ __html: sanitizeHTML(task.description) }}
+              />
             )}
 
             {/* Subtasks Display */}

@@ -39,6 +39,7 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { RichTextEditor } from "./RichTextEditor";
 import { Label } from "./ui/label";
 import {
   Select,
@@ -1144,13 +1145,12 @@ export function TaskDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
-                <Textarea
-                  id="description"
+                <RichTextEditor
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={setDescription}
                   placeholder="Add a description..."
                   rows={3}
-                  className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20 resize-none"
+                  className="focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary"
                 />
               </div>
 

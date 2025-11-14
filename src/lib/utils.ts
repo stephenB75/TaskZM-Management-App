@@ -353,6 +353,80 @@ export function getInitials(name: string | undefined | null): string {
 }
 
 // Safe first name extraction
+// Sanitize HTML to prevent XSS attacks while preserving formatting
+export function sanitizeHTML(html: string): string {
+  if (!html || typeof window === 'undefined') return html || '';
+  
+  try {
+    // Create a temporary div to parse HTML
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    
+    // Allow only safe formatting tags
+    const allowedTags = ['b', 'strong', 'u', 's', 'strike', 'mark', 'ul', 'ol', 'li', 'p', 'br', 'span'];
+    const allowedAttributes = ['style', 'class'];
+    
+    // Remove all non-allowed tags
+    const walker = document.createTreeWalker(
+      div,
+      NodeFilter.SHOW_ELEMENT,
+      null
+    );
+    
+    const nodesToRemove: Node[] = [];
+    let node;
+    
+    while (node = walker.nextNode()) {
+      const element = node as HTMLElement;
+      if (!allowedTags.includes(element.tagName.toLowerCase())) {
+        nodesToRemove.push(node);
+      } else {
+        // Remove non-allowed attributes
+        Array.from(element.attributes).forEach(attr => {
+          if (!allowedAttributes.includes(attr.name.toLowerCase())) {
+            element.removeAttribute(attr.name);
+          }
+        });
+        
+        // Sanitize style attribute to only allow safe CSS properties
+        if (element.hasAttribute('style')) {
+          const style = element.getAttribute('style') || '';
+          // Only allow background-color for highlight
+          const sanitizedStyle = style
+            .split(';')
+            .filter(prop => {
+              const trimmed = prop.trim();
+              return trimmed.startsWith('background-color:') || 
+                     trimmed.startsWith('background:');
+            })
+            .join(';');
+          if (sanitizedStyle) {
+            element.setAttribute('style', sanitizedStyle);
+          } else {
+            element.removeAttribute('style');
+          }
+        }
+      }
+    }
+    
+    nodesToRemove.forEach(node => {
+      const parent = node.parentNode;
+      if (parent) {
+        while (node.firstChild) {
+          parent.insertBefore(node.firstChild, node);
+        }
+        parent.removeChild(node);
+      }
+    });
+    
+    return div.innerHTML;
+  } catch (error) {
+    // If sanitization fails, return plain text
+    logger.warn('HTML sanitization failed, returning plain text:', error);
+    return html.replace(/<[^>]*>/g, ''); // Strip all HTML tags
+  }
+}
+
 export function getFirstName(name: string | undefined | null): string {
   if (!name || typeof name !== 'string') return 'Unknown';
   
