@@ -22,6 +22,11 @@ export const COLOR_PASTEL_PINK = '#FFD6E8'; // Pink
 export const COLOR_PASTEL_YELLOW = '#FFF4CC'; // Yellow
 export const COLOR_PASTEL_SAGE = '#D4E8D4'; // Sage green
 
+// Additional colors for analytics (Power BI inspired)
+export const COLOR_ANALYTICS_GREEN = '#10B981'; // Success green (matches COLOR_SUCCESS)
+export const COLOR_ANALYTICS_BLUE = '#3B82F6'; // Info blue (matches COLOR_INFO)
+export const COLOR_ANALYTICS_ORANGE = '#F59E0B'; // Warning orange (matches COLOR_WARNING)
+
 // Background Colors
 export const COLOR_BACKGROUND_LIGHT = '#F5F3FF'; // Light purple background
 export const COLOR_BACKGROUND_WHITE = '#FFFFFF'; // Pure white

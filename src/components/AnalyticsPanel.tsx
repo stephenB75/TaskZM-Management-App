@@ -53,10 +53,13 @@ import {
   COLOR_PASTEL_MINT,
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_PINK,
+  COLOR_PASTEL_PEACH,
   COLOR_BORDER_LIGHT,
   COLOR_BORDER_MEDIUM,
   COLOR_TEXT_SECONDARY,
   COLOR_BACKGROUND_WHITE,
+  COLOR_SUCCESS,
+  COLOR_INFO,
   COLOR_WARNING,
   COLOR_AWARD_STREAK,
   getColorWithOpacity,
@@ -66,31 +69,50 @@ interface AnalyticsPanelProps {
   onClose: () => void;
 }
 
-// Custom Radial Progress Component
+// Enhanced Radial Progress Component - Power BI Style
 function RadialProgress({
   value,
-  size = 100,
-  strokeWidth = 10,
+  size = 120,
+  strokeWidth = 12,
   color,
   label,
+  gradientStart,
+  gradientEnd,
 }: {
   value: number;
   size?: number;
   strokeWidth?: number;
   color: string;
   label?: string;
+  gradientStart?: string;
+  gradientEnd?: string;
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (value / 100) * circumference;
+  const gradientId = `radial-gradient-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
     <div className="relative inline-flex items-center justify-center">
       <svg
         width={size}
         height={size}
-        className="transform -rotate-90"
+        className="transform -rotate-90 drop-shadow-lg"
       >
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={gradientStart || color} stopOpacity="1" />
+            <stop offset="100%" stopColor={gradientEnd || color} stopOpacity="0.8" />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -98,27 +120,40 @@ function RadialProgress({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-gray-200 dark:text-gray-700"
+          className="text-gray-100 dark:text-gray-800"
+          opacity={0.3}
         />
+        {/* Progress circle with gradient */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={color}
+          stroke={`url(#${gradientId})`}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          className="transition-all duration-500 ease-out"
+          className="transition-all duration-1000 ease-out"
+          filter="url(#glow)"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-lg" style={{ color }}>
+        <span 
+          className="text-2xl font-bold"
+          style={{ 
+            background: gradientStart && gradientEnd 
+              ? `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`
+              : color,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
           {Math.round(value)}%
         </span>
         {label && (
-          <span className="text-[10px] text-gray-500">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
             {label}
           </span>
         )}
@@ -127,39 +162,57 @@ function RadialProgress({
   );
 }
 
-// Custom Tooltip
+// Enhanced Custom Tooltip - Power BI Style
 function CustomTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-        <p className="text-xs mb-0.5 font-semibold">{label}</p>
-        {payload.map((entry: any, index: number) => {
-          // Format time in hours and minutes
-          const formatTime = (minutes: number) => {
-            const hours = Math.floor(minutes / 60);
-            const mins = Math.round(minutes % 60);
-            if (hours > 0) {
-              return `${hours}h ${mins}m`;
-            }
-            return `${mins}m`;
-          };
-          
-          const value = entry.dataKey === 'minutes' 
-            ? formatTime(entry.value)
-            : typeof entry.value === "number"
-              ? entry.value.toFixed(1)
-              : entry.value;
-          
-          return (
-            <p
-              key={index}
-              className="text-[10px] font-medium"
-              style={{ color: entry.color }}
-            >
-              {entry.name}: {value}
-            </p>
-          );
-        })}
+      <div 
+        className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-2xl border-2 backdrop-blur-lg"
+        style={{ 
+          borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.2),
+          boxShadow: `0 8px 32px ${getColorWithOpacity(COLOR_PRIMARY, 0.15)}`
+        }}
+      >
+        <p className="text-sm mb-2 font-bold" style={{ color: COLOR_PRIMARY }}>{label}</p>
+        <div className="space-y-1.5">
+          {payload.map((entry: any, index: number) => {
+            // Format time in hours and minutes
+            const formatTime = (minutes: number) => {
+              const hours = Math.floor(minutes / 60);
+              const mins = Math.round(minutes % 60);
+              if (hours > 0) {
+                return `${hours}h ${mins}m`;
+              }
+              return `${mins}m`;
+            };
+            
+            const value = entry.dataKey === 'minutes' 
+              ? formatTime(entry.value)
+              : typeof entry.value === "number"
+                ? entry.value.toFixed(1)
+                : entry.value;
+            
+            return (
+              <div key={index} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                    {entry.name}:
+                  </span>
+                  <span 
+                    className="text-sm font-bold"
+                    style={{ color: entry.color }}
+                  >
+                    {value}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -664,30 +717,41 @@ export function AnalyticsPanel({
               </Card>
             </motion.div>
 
-            {/* Time Tracking Trend Chart - Redesigned */}
+            {/* Time Tracking Trend Chart - Enhanced Power BI Style */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
             >
-              <Card className="border-2" style={{ borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.2) }}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-bold">
+              <Card 
+                className="relative overflow-hidden border-2 shadow-xl"
+                style={{ 
+                  borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.3),
+                  background: `linear-gradient(135deg, ${getColorWithOpacity(COLOR_PRIMARY, 0.08)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.12)})`
+                }}
+              >
+                {/* Decorative elements */}
+                <div 
+                  className="absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 blur-3xl opacity-20"
+                  style={{ backgroundColor: COLOR_PRIMARY }}
+                />
+                <CardHeader className="pb-3 relative z-10">
+                  <CardTitle className="flex items-center gap-2.5 text-base font-bold">
                     <div 
-                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
                       style={{ 
                         background: `linear-gradient(135deg, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID})` 
                       }}
                     >
-                      <Activity className="w-4 h-4 text-white" />
+                      <Activity className="w-5 h-5 text-white" />
                     </div>
                     <span style={{ color: COLOR_PRIMARY }}>
                       Time Tracked (Last 7 Days)
                     </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-64">
+                <CardContent className="relative z-10">
+                  <div className="h-72">
                     <ResponsiveContainer
                       width="100%"
                       height="100%"
@@ -695,10 +759,10 @@ export function AnalyticsPanel({
                       <ComposedChart
                         data={analytics.timeTrackingTrend}
                         margin={{
-                          top: 10,
-                          right: 10,
+                          top: 20,
+                          right: 20,
                           left: 0,
-                          bottom: 5,
+                          bottom: 10,
                         }}
                       >
                         <defs>
@@ -712,17 +776,17 @@ export function AnalyticsPanel({
                             <stop
                               offset="0%"
                               stopColor={COLOR_GRADIENT_START}
-                              stopOpacity={0.9}
+                              stopOpacity={1}
                             />
                             <stop
                               offset="50%"
                               stopColor={COLOR_GRADIENT_MID}
-                              stopOpacity={0.8}
+                              stopOpacity={0.9}
                             />
                             <stop
                               offset="100%"
                               stopColor={COLOR_GRADIENT_END}
-                              stopOpacity={0.7}
+                              stopOpacity={0.8}
                             />
                           </linearGradient>
                           <linearGradient
@@ -738,148 +802,219 @@ export function AnalyticsPanel({
                               stopOpacity={1}
                             />
                             <stop
+                              offset="50%"
+                              stopColor={COLOR_GRADIENT_MID}
+                              stopOpacity={1}
+                            />
+                            <stop
                               offset="100%"
                               stopColor={COLOR_GRADIENT_END}
                               stopOpacity={1}
                             />
                           </linearGradient>
+                          <filter id="barGlow">
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                            <feMerge>
+                              <feMergeNode in="coloredBlur"/>
+                              <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                          </filter>
                         </defs>
                         <CartesianGrid
                           strokeDasharray="3 3"
                           stroke={COLOR_BORDER_LIGHT}
                           opacity={0.3}
+                          vertical={false}
                         />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                          tick={{ fontSize: 11, fill: COLOR_TEXT_SECONDARY, fontWeight: 500 }}
                           stroke={COLOR_BORDER_MEDIUM}
                           style={{ fontFamily: 'system-ui' }}
                         />
                         <YAxis
-                          tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
-                          width={45}
+                          tick={{ fontSize: 11, fill: COLOR_TEXT_SECONDARY, fontWeight: 500 }}
+                          width={50}
                           stroke={COLOR_BORDER_MEDIUM}
                           tickFormatter={formatYAxisTime}
                           style={{ fontFamily: 'system-ui' }}
                         />
                         <Tooltip 
                           content={<CustomTooltip />}
-                          cursor={{ fill: getColorWithOpacity(COLOR_PRIMARY, 0.1) }}
+                          cursor={{ stroke: COLOR_PRIMARY, strokeWidth: 1, strokeDasharray: '5 5' }}
                         />
                         <Bar
                           dataKey="minutes"
                           fill="url(#timeBarGradient)"
-                          radius={[8, 8, 0, 0]}
+                          radius={[10, 10, 0, 0]}
                           name="Time Tracked"
+                          filter="url(#barGlow)"
                         />
                         <Line
                           type="monotone"
                           dataKey="minutes"
                           stroke="url(#timeLineGradient)"
-                          strokeWidth={3}
+                          strokeWidth={4}
                           dot={{ 
                             fill: COLOR_PRIMARY, 
-                            strokeWidth: 2, 
+                            strokeWidth: 3, 
                             stroke: COLOR_BACKGROUND_WHITE,
-                            r: 5 
+                            r: 6,
+                            filter: "url(#barGlow)"
                           }}
                           activeDot={{ 
-                            r: 7, 
+                            r: 9, 
                             fill: COLOR_PRIMARY,
                             stroke: COLOR_BACKGROUND_WHITE,
-                            strokeWidth: 2
+                            strokeWidth: 3,
+                            filter: "url(#barGlow)"
                           }}
                           name="Trend"
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
-                  {/* Summary Stats */}
-                  <div className="mt-4 flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded"
-                        style={{ background: `linear-gradient(135deg, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_END})` }}
-                      />
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Daily Average: {(() => {
+                  {/* Enhanced Summary Stats */}
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div 
+                      className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-xl p-3 border-2 shadow-md"
+                      style={{ borderColor: getColorWithOpacity(COLOR_GRADIENT_START, 0.2) }}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <div 
+                          className="w-3 h-3 rounded shadow-sm"
+                          style={{ background: `linear-gradient(135deg, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_END})` }}
+                        />
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                          Daily Average
+                        </span>
+                      </div>
+                      <p className="text-lg font-bold" style={{ color: COLOR_PRIMARY }}>
+                        {(() => {
                           const avg = analytics.timeTrackingTrend.reduce((sum, d) => sum + d.minutes, 0) / analytics.timeTrackingTrend.length;
                           const hours = Math.floor(avg / 60);
                           const mins = Math.round(avg % 60);
                           return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
                         })()}
-                      </span>
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: COLOR_PRIMARY }}
-                      />
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Peak: {(() => {
+                    <div 
+                      className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-xl p-3 border-2 shadow-md"
+                      style={{ borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.2) }}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <div 
+                          className="w-3 h-3 rounded-full shadow-sm"
+                          style={{ backgroundColor: COLOR_PRIMARY }}
+                        />
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                          Peak Time
+                        </span>
+                      </div>
+                      <p className="text-lg font-bold" style={{ color: COLOR_PRIMARY }}>
+                        {(() => {
                           const peak = Math.max(...analytics.timeTrackingTrend.map(d => d.minutes));
                           const hours = Math.floor(peak / 60);
                           const mins = Math.round(peak % 60);
                           return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
                         })()}
-                      </span>
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Completion Rate with Radial Progress */}
+            {/* Completion Rate with Enhanced Radial Progress - Power BI Style */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="border-green-200/40 dark:border-green-900/40 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    Overall Progress
+              <Card 
+                className="relative overflow-hidden border-2 shadow-xl"
+                style={{ 
+                  borderColor: getColorWithOpacity(COLOR_SUCCESS, 0.3),
+                  background: `linear-gradient(135deg, ${getColorWithOpacity(COLOR_SUCCESS, 0.1)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.15)})`
+                }}
+              >
+                {/* Decorative elements */}
+                <div 
+                  className="absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 blur-2xl opacity-30"
+                  style={{ backgroundColor: COLOR_SUCCESS }}
+                />
+                <CardHeader className="pb-3 relative z-10">
+                  <CardTitle className="flex items-center gap-2.5 text-base font-bold">
+                    <div 
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${COLOR_SUCCESS}, ${COLOR_PASTEL_MINT})`
+                      }}
+                    >
+                      <CheckCircle2 className="w-5 h-5 text-white" />
+                    </div>
+                    <span style={{ color: COLOR_SUCCESS }}>
+                      Overall Progress
+                    </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-around">
+                <CardContent className="relative z-10">
+                  <div className="flex items-center justify-around gap-4">
                     <div className="flex flex-col items-center">
                       <RadialProgress
                         value={analytics.completionRate}
-                        size={90}
-                        strokeWidth={8}
-                        color="#22c55e"
+                        size={120}
+                        strokeWidth={12}
+                        color={COLOR_SUCCESS}
                         label="Complete"
+                        gradientStart={COLOR_SUCCESS}
+                        gradientEnd={COLOR_PASTEL_MINT}
                       />
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <div className="bg-white/60 dark:bg-gray-900/40 rounded-lg p-2 min-w-[100px]">
-                        <p className="text-[9px] text-gray-600 dark:text-gray-400">
-                          Completed
-                        </p>
-                        <p className="text-xl text-green-600">
+                    <div className="flex flex-col gap-3 flex-1">
+                      <div 
+                        className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-xl p-3 border-2 shadow-md hover:shadow-lg transition-all"
+                        style={{ borderColor: getColorWithOpacity(COLOR_SUCCESS, 0.2) }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <CheckCircle2 className="w-4 h-4" style={{ color: COLOR_SUCCESS }} />
+                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                            Completed
+                          </p>
+                        </div>
+                        <p className="text-2xl font-bold" style={{ color: COLOR_SUCCESS }}>
                           {analytics.completedTasks}
                         </p>
                       </div>
-                      <div className="bg-white/60 dark:bg-gray-900/40 rounded-lg p-2 min-w-[100px]">
-                        <p className="text-[9px] text-gray-600 dark:text-gray-400">
-                          Total Tasks
-                        </p>
-                        <p className="text-xl text-blue-600">
+                      <div 
+                        className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-xl p-3 border-2 shadow-md hover:shadow-lg transition-all"
+                        style={{ borderColor: getColorWithOpacity(COLOR_INFO, 0.2) }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Target className="w-4 h-4" style={{ color: COLOR_INFO }} />
+                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                            Total Tasks
+                          </p>
+                        </div>
+                        <p className="text-2xl font-bold" style={{ color: COLOR_INFO }}>
                           {analytics.totalTasks}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 bg-white/40 dark:bg-gray-900/30 rounded-lg p-2">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Avg Completion
-                      </span>
-                      <span className="text-green-600">
-                        {analytics.avgCompletionTime.toFixed(1)}{" "}
-                        days
+                  <div 
+                    className="mt-4 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm rounded-xl p-3 border-2"
+                    style={{ borderColor: getColorWithOpacity(COLOR_SUCCESS, 0.15) }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" style={{ color: COLOR_SUCCESS }} />
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                          Avg Completion Time
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold" style={{ color: COLOR_SUCCESS }}>
+                        {analytics.avgCompletionTime.toFixed(1)} days
                       </span>
                     </div>
                   </div>
@@ -887,21 +1022,41 @@ export function AnalyticsPanel({
               </Card>
             </motion.div>
 
-            {/* Productivity Trend - Area Chart */}
+            {/* Productivity Trend - Enhanced Area Chart - Power BI Style */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
             >
-              <Card className="border-blue-200/40 dark:border-blue-900/40">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <TrendingUp className="w-4 h-4 text-blue-600" />
-                    Productivity Trend (7 Days)
+              <Card 
+                className="relative overflow-hidden border-2 shadow-xl"
+                style={{ 
+                  borderColor: getColorWithOpacity(COLOR_INFO, 0.3),
+                  background: `linear-gradient(135deg, ${getColorWithOpacity(COLOR_INFO, 0.08)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.12)})`
+                }}
+              >
+                {/* Decorative elements */}
+                <div 
+                  className="absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 blur-3xl opacity-20"
+                  style={{ backgroundColor: COLOR_INFO }}
+                />
+                <CardHeader className="pb-3 relative z-10">
+                  <CardTitle className="flex items-center gap-2.5 text-base font-bold">
+                    <div 
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${COLOR_INFO}, ${COLOR_PASTEL_SKY})`
+                      }}
+                    >
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    <span style={{ color: COLOR_INFO }}>
+                      Productivity Trend (7 Days)
+                    </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-44">
+                <CardContent className="relative z-10">
+                  <div className="h-64">
                     <ResponsiveContainer
                       width="100%"
                       height="100%"
@@ -909,10 +1064,10 @@ export function AnalyticsPanel({
                       <AreaChart
                         data={analytics.taskPerDayProgress}
                         margin={{
-                          top: 5,
-                          right: 5,
-                          left: -15,
-                          bottom: 5,
+                          top: 15,
+                          right: 15,
+                          left: 0,
+                          bottom: 10,
                         }}
                       >
                         <defs>
@@ -924,13 +1079,18 @@ export function AnalyticsPanel({
                             y2="1"
                           >
                             <stop
-                              offset="5%"
-                              stopColor="#22c55e"
-                              stopOpacity={0.4}
+                              offset="0%"
+                              stopColor={COLOR_SUCCESS}
+                              stopOpacity={0.6}
                             />
                             <stop
-                              offset="95%"
-                              stopColor="#22c55e"
+                              offset="50%"
+                              stopColor={COLOR_SUCCESS}
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor={COLOR_SUCCESS}
                               stopOpacity={0.05}
                             />
                           </linearGradient>
@@ -942,55 +1102,71 @@ export function AnalyticsPanel({
                             y2="1"
                           >
                             <stop
-                              offset="5%"
-                              stopColor="#3b82f6"
-                              stopOpacity={0.4}
+                              offset="0%"
+                              stopColor={COLOR_INFO}
+                              stopOpacity={0.6}
                             />
                             <stop
-                              offset="95%"
-                              stopColor="#3b82f6"
+                              offset="50%"
+                              stopColor={COLOR_INFO}
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor={COLOR_INFO}
                               stopOpacity={0.05}
                             />
                           </linearGradient>
                         </defs>
                         <CartesianGrid
                           strokeDasharray="3 3"
-                          stroke="#e5e7eb"
-                          opacity={0.5}
+                          stroke={COLOR_BORDER_LIGHT}
+                          opacity={0.3}
                         />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 9 }}
-                          stroke="#9ca3af"
+                          tick={{ fontSize: 11, fill: COLOR_TEXT_SECONDARY, fontWeight: 500 }}
+                          stroke={COLOR_BORDER_MEDIUM}
+                          style={{ fontFamily: 'system-ui' }}
                         />
                         <YAxis
-                          tick={{ fontSize: 9 }}
-                          width={30}
-                          stroke="#9ca3af"
+                          tick={{ fontSize: 11, fill: COLOR_TEXT_SECONDARY, fontWeight: 500 }}
+                          width={40}
+                          stroke={COLOR_BORDER_MEDIUM}
+                          style={{ fontFamily: 'system-ui' }}
                         />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip 
+                          content={<CustomTooltip />}
+                          cursor={{ stroke: COLOR_PRIMARY, strokeWidth: 1, strokeDasharray: '5 5' }}
+                        />
                         <Legend
                           wrapperStyle={{
-                            fontSize: "10px",
-                            paddingTop: "5px",
+                            fontSize: "11px",
+                            paddingTop: "10px",
+                            fontWeight: 500,
                           }}
-                          iconSize={8}
+                          iconSize={12}
+                          iconType="circle"
                         />
                         <Area
                           type="monotone"
                           dataKey="completed"
-                          stroke="#22c55e"
-                          strokeWidth={2}
+                          stroke={COLOR_SUCCESS}
+                          strokeWidth={3}
                           fill="url(#completedGrad)"
-                          name="Done"
+                          name="Completed"
+                          dot={{ fill: COLOR_SUCCESS, strokeWidth: 2, stroke: COLOR_BACKGROUND_WHITE, r: 4 }}
+                          activeDot={{ r: 6, fill: COLOR_SUCCESS, stroke: COLOR_BACKGROUND_WHITE, strokeWidth: 2 }}
                         />
                         <Area
                           type="monotone"
                           dataKey="created"
-                          stroke="#3b82f6"
-                          strokeWidth={2}
+                          stroke={COLOR_INFO}
+                          strokeWidth={3}
                           fill="url(#createdGrad)"
                           name="Created"
+                          dot={{ fill: COLOR_INFO, strokeWidth: 2, stroke: COLOR_BACKGROUND_WHITE, r: 4 }}
+                          activeDot={{ r: 6, fill: COLOR_INFO, stroke: COLOR_BACKGROUND_WHITE, strokeWidth: 2 }}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -999,85 +1175,130 @@ export function AnalyticsPanel({
               </Card>
             </motion.div>
 
-            {/* Time Patterns with Donut */}
+            {/* Time Patterns - Enhanced Donut Chart - Power BI Style */}
             {analytics.timePatterns.blocks.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <Card className="border-[#FFD1A4]/40 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-orange-600" />
-                      Time Patterns
+                <Card 
+                  className="relative overflow-hidden border-2 shadow-xl"
+                  style={{ 
+                    borderColor: getColorWithOpacity(COLOR_WARNING, 0.3),
+                    background: `linear-gradient(135deg, ${getColorWithOpacity(COLOR_WARNING, 0.1)}, ${getColorWithOpacity(COLOR_PASTEL_PEACH, 0.15)})`
+                  }}
+                >
+                  {/* Decorative elements */}
+                  <div 
+                    className="absolute bottom-0 left-0 w-36 h-36 rounded-full -ml-18 -mb-18 blur-3xl opacity-20"
+                    style={{ backgroundColor: COLOR_WARNING }}
+                  />
+                  <CardHeader className="pb-3 relative z-10">
+                    <CardTitle className="flex items-center gap-2.5 text-base font-bold">
+                      <div 
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${COLOR_WARNING}, ${COLOR_AWARD_STREAK})`
+                        }}
+                      >
+                        <Clock className="w-5 h-5 text-white" />
+                      </div>
+                      <span style={{ color: COLOR_WARNING }}>
+                        Time Patterns
+                      </span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-around">
+                  <CardContent className="relative z-10">
+                    <div className="flex items-center justify-around gap-6">
                       <div className="relative">
                         <ResponsiveContainer
-                          width={110}
-                          height={110}
+                          width={140}
+                          height={140}
                         >
                           <PieChart>
+                            <defs>
+                              <filter id="pieGlow">
+                                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                                <feMerge>
+                                  <feMergeNode in="coloredBlur"/>
+                                  <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                              </filter>
+                            </defs>
                             <Pie
-                              data={
-                                analytics.timePatterns.blocks
-                              }
+                              data={analytics.timePatterns.blocks}
                               cx="50%"
                               cy="50%"
-                              innerRadius={30}
-                              outerRadius={45}
-                              paddingAngle={3}
+                              innerRadius={40}
+                              outerRadius={60}
+                              paddingAngle={4}
                               dataKey="value"
+                              stroke={COLOR_BACKGROUND_WHITE}
+                              strokeWidth={2}
                             >
                               {analytics.timePatterns.blocks.map(
                                 (entry, index) => (
                                   <Cell
                                     key={`cell-${index}`}
                                     fill={entry.color}
+                                    filter="url(#pieGlow)"
                                   />
                                 ),
                               )}
                             </Pie>
+                            <Tooltip content={<CustomTooltip />} />
                           </PieChart>
                         </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <Clock className="w-4 h-4 text-orange-600" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                          <div 
+                            className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg"
+                            style={{ 
+                              background: `linear-gradient(135deg, ${COLOR_WARNING}, ${COLOR_AWARD_STREAK})`
+                            }}
+                          >
+                            <Clock className="w-6 h-6 text-white" />
+                          </div>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-2.5 flex-1">
                         {analytics.timePatterns.blocks.map(
                           (block, index) => (
                             <div
                               key={index}
-                              className="flex items-center gap-2 bg-white/60 dark:bg-gray-900/40 rounded-lg px-2 py-1"
+                              className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-xl p-3 border-2 shadow-md hover:shadow-lg transition-all"
+                              style={{ borderColor: getColorWithOpacity(block.color, 0.3) }}
                             >
-                              <div
-                                className="w-2 h-2 rounded-full"
-                                style={{
-                                  backgroundColor: block.color,
-                                }}
-                              />
-                              <div className="flex-1">
-                                <p className="text-[9px] text-gray-600 dark:text-gray-400">
+                              <div className="flex items-center gap-2.5 mb-1">
+                                <div
+                                  className="w-4 h-4 rounded-full shadow-sm"
+                                  style={{
+                                    backgroundColor: block.color,
+                                  }}
+                                />
+                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                                   {block.name}
                                 </p>
-                                <p className="text-sm">
-                                  {block.value}
-                                </p>
                               </div>
+                              <p className="text-xl font-bold" style={{ color: block.color }}>
+                                {block.value} tasks
+                              </p>
                             </div>
                           ),
                         )}
                       </div>
                     </div>
-                    <div className="mt-2 bg-white/40 dark:bg-gray-900/30 rounded-lg p-2 text-center">
-                      <p className="text-[9px] text-gray-600 dark:text-gray-400">
-                        Peak Hour
-                      </p>
-                      <p className="text-sm text-orange-600">
+                    <div 
+                      className="mt-4 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm rounded-xl p-3 border-2 text-center"
+                      style={{ borderColor: getColorWithOpacity(COLOR_WARNING, 0.2) }}
+                    >
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <Zap className="w-4 h-4" style={{ color: COLOR_WARNING }} />
+                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                          Peak Hour
+                        </p>
+                      </div>
+                      <p className="text-lg font-bold" style={{ color: COLOR_WARNING }}>
                         {peakHourLabel}
                       </p>
                     </div>
@@ -1086,62 +1307,119 @@ export function AnalyticsPanel({
               </motion.div>
             )}
 
-            {/* Task Types - Compact Bar */}
+            {/* Task Types - Enhanced Horizontal Bar Chart - Power BI Style */}
             {analytics.taskTypes.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
               >
-                <Card className="border-cyan-200/40 dark:border-cyan-900/40">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <Target className="w-4 h-4 text-cyan-600" />
-                      Top Task Tags
+                <Card 
+                  className="relative overflow-hidden border-2 shadow-xl"
+                  style={{ 
+                    borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.3),
+                    background: `linear-gradient(135deg, ${getColorWithOpacity(COLOR_PRIMARY, 0.08)}, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.12)})`
+                  }}
+                >
+                  {/* Decorative elements */}
+                  <div 
+                    className="absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 blur-3xl opacity-20"
+                    style={{ backgroundColor: COLOR_PRIMARY }}
+                  />
+                  <CardHeader className="pb-3 relative z-10">
+                    <CardTitle className="flex items-center gap-2.5 text-base font-bold">
+                      <div 
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${COLOR_PRIMARY}, ${COLOR_PASTEL_LAVENDER})`
+                        }}
+                      >
+                        <Target className="w-5 h-5 text-white" />
+                      </div>
+                      <span style={{ color: COLOR_PRIMARY }}>
+                        Top Task Tags
+                      </span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="h-40">
+                  <CardContent className="relative z-10">
+                    <div className="h-64">
                       <ResponsiveContainer
                         width="100%"
                         height="100%"
                       >
                         <BarChart
                           data={analytics.taskTypes}
+                          layout="vertical"
                           margin={{
-                            top: 5,
-                            right: 5,
-                            left: -15,
-                            bottom: 25,
+                            top: 10,
+                            right: 20,
+                            left: 80,
+                            bottom: 10,
                           }}
                         >
+                          <defs>
+                            <linearGradient
+                              id="barGradient"
+                              x1="0"
+                              y1="0"
+                              x2="1"
+                              y2="0"
+                            >
+                              <stop
+                                offset="0%"
+                                stopColor={COLOR_GRADIENT_START}
+                                stopOpacity={0.9}
+                              />
+                              <stop
+                                offset="50%"
+                                stopColor={COLOR_GRADIENT_MID}
+                                stopOpacity={0.8}
+                              />
+                              <stop
+                                offset="100%"
+                                stopColor={COLOR_GRADIENT_END}
+                                stopOpacity={0.7}
+                              />
+                            </linearGradient>
+                          </defs>
                           <CartesianGrid
                             strokeDasharray="3 3"
-                            stroke="#e5e7eb"
-                            opacity={0.5}
+                            stroke={COLOR_BORDER_LIGHT}
+                            opacity={0.3}
+                            horizontal={true}
+                            vertical={false}
                           />
                           <XAxis
-                            dataKey="name"
-                            tick={{ fontSize: 9 }}
-                            angle={-35}
-                            textAnchor="end"
-                            height={40}
-                            stroke="#9ca3af"
+                            type="number"
+                            tick={{ fontSize: 11, fill: COLOR_TEXT_SECONDARY, fontWeight: 500 }}
+                            stroke={COLOR_BORDER_MEDIUM}
+                            style={{ fontFamily: 'system-ui' }}
                           />
                           <YAxis
-                            tick={{ fontSize: 9 }}
-                            width={30}
-                            stroke="#9ca3af"
+                            type="category"
+                            dataKey="name"
+                            tick={{ fontSize: 11, fill: COLOR_TEXT_SECONDARY, fontWeight: 500 }}
+                            stroke={COLOR_BORDER_MEDIUM}
+                            width={75}
+                            style={{ fontFamily: 'system-ui' }}
                           />
                           <Tooltip
                             content={<CustomTooltip />}
+                            cursor={{ fill: getColorWithOpacity(COLOR_PRIMARY, 0.1) }}
                           />
                           <Bar
                             dataKey="value"
-                            fill="#06b6d4"
-                            radius={[5, 5, 0, 0]}
-                            name="Count"
-                          />
+                            fill="url(#barGradient)"
+                            radius={[0, 8, 8, 0]}
+                            name="Tasks"
+                          >
+                            {analytics.taskTypes.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={`url(#barGradient)`}
+                              />
+                            ))}
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1150,57 +1428,93 @@ export function AnalyticsPanel({
               </motion.div>
             )}
 
-            {/* Project Progress */}
+            {/* Project Progress - Enhanced Card Design - Power BI Style */}
             {analytics.projectProgress.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <Card className="border-purple-200/40 dark:border-purple-900/40">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <Activity className="w-4 h-4 text-purple-600" />
-                      Project Progress
+                <Card 
+                  className="relative overflow-hidden border-2 shadow-xl"
+                  style={{ 
+                    borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.3),
+                    background: `linear-gradient(135deg, ${getColorWithOpacity(COLOR_PRIMARY, 0.08)}, ${getColorWithOpacity(COLOR_PASTEL_LILAC, 0.12)})`
+                  }}
+                >
+                  {/* Decorative elements */}
+                  <div 
+                    className="absolute bottom-0 left-0 w-36 h-36 rounded-full -ml-18 -mb-18 blur-3xl opacity-20"
+                    style={{ backgroundColor: COLOR_PRIMARY }}
+                  />
+                  <CardHeader className="pb-3 relative z-10">
+                    <CardTitle className="flex items-center gap-2.5 text-base font-bold">
+                      <div 
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${COLOR_PRIMARY}, ${COLOR_PASTEL_LILAC})`
+                        }}
+                      >
+                        <Activity className="w-5 h-5 text-white" />
+                      </div>
+                      <span style={{ color: COLOR_PRIMARY }}>
+                        Project Progress
+                      </span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2.5">
+                  <CardContent className="relative z-10 space-y-3">
                     {analytics.projectProgress.map(
                       (project, index) => (
-                        <div key={index} className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
+                        <div 
+                          key={index} 
+                          className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-xl p-4 border-2 shadow-md hover:shadow-lg transition-all"
+                          style={{ borderColor: getColorWithOpacity(project.color, 0.3) }}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
                               <div
-                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                className="w-4 h-4 rounded-full flex-shrink-0 shadow-sm"
                                 style={{
-                                  backgroundColor:
-                                    project.color,
+                                  backgroundColor: project.color,
                                 }}
                               />
-                              <span className="text-xs truncate">
+                              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
                                 {project.name}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <span className="text-[9px] text-muted-foreground">
-                                {project.completed}/
-                                {project.total}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                {project.completed}/{project.total}
                               </span>
                               <Badge
-                                variant="secondary"
-                                className="text-[9px] h-4 px-1.5"
+                                className="text-xs h-5 px-2 font-bold shadow-sm"
+                                style={{ 
+                                  backgroundColor: getColorWithOpacity(project.color, 0.2),
+                                  color: project.color,
+                                  borderColor: getColorWithOpacity(project.color, 0.3)
+                                }}
                               >
-                                {project.completionRate.toFixed(
-                                  0,
-                                )}
-                                %
+                                {project.completionRate.toFixed(0)}%
                               </Badge>
                             </div>
                           </div>
-                          <Progress
-                            value={project.completionRate}
-                            className="h-1.5"
-                          />
+                          <div className="relative">
+                            <Progress
+                              value={project.completionRate}
+                              className="h-3 rounded-full overflow-hidden"
+                              style={{
+                                backgroundColor: getColorWithOpacity(project.color, 0.1),
+                              }}
+                            />
+                            <div
+                              className="absolute top-0 left-0 h-3 rounded-full transition-all duration-500"
+                              style={{
+                                width: `${project.completionRate}%`,
+                                background: `linear-gradient(90deg, ${project.color}, ${getColorWithOpacity(project.color, 0.7)})`,
+                                boxShadow: `0 2px 8px ${getColorWithOpacity(project.color, 0.4)}`,
+                              }}
+                            />
+                          </div>
                         </div>
                       ),
                     )}
