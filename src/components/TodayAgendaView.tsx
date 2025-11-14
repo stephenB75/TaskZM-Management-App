@@ -136,7 +136,10 @@ export function TodayAgendaView({
     if (minutes < 45) {
       // Compact sizing for shorter tasks: base height + minimal scaling
       // Ensures all elements (title, badges, pomodoro, etc.) fit comfortably
-      const baseHeight = 60; // Base height for essential elements
+      // Mobile only: increase border height by 20% to fit all components
+      // Check if mobile viewport (lg breakpoint is 1024px)
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+      const baseHeight = isMobile ? 72 : 60; // Base height (+20% for mobile border only)
       const scalingFactor = 0.8; // Reduced scaling for shorter tasks
       return Math.max(baseHeight, baseHeight + (minutes - 15) * scalingFactor);
     } else if (minutes >= 60) {

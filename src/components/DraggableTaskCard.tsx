@@ -163,23 +163,24 @@ export const DraggableTaskCard = React.forwardRef<
         const hasPomodoroTimer = hasFeature("pomodoroTimer");
         
         // Auto-adjust base height based on components present
+        // Mobile only: increase border height by 20% to fit all components
         if (isMobile) {
           // Mobile: tracking badge at top, bottom row has assigned users + pomodoro timer
-          // Increase base height to accommodate all components comfortably
+          // Increase border height by 20% to accommodate all components comfortably
           if (hasPomodoro || hasTrackedTime) {
             // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
-            baseHeight = hasAssignedUsers || hasPomodoroTimer ? 105 : 95; // Extra space for all components
+            baseHeight = hasAssignedUsers || hasPomodoroTimer ? 126 : 114; // Extra space for all components (+20% border height)
           } else if (hasAssignedUsers && hasPomodoroTimer) {
             // Both assigned users and pomodoro timer in bottom row
-            baseHeight = 100; // Space for both bottom row components
+            baseHeight = 120; // Space for both bottom row components (+20% border height)
           } else if (hasAssignedUsers || hasPomodoroTimer) {
             // One of assigned users or pomodoro timer in bottom row
-            baseHeight = 95; // Space for one bottom row component
+            baseHeight = 114; // Space for one bottom row component (+20% border height)
           } else {
-            baseHeight = 90; // Base space for essential elements only (increased from 85)
+            baseHeight = 108; // Base space for essential elements only (+20% border height)
           }
         } else {
-          // Desktop: absolute positioning for components
+          // Desktop: absolute positioning for components (no change to desktop)
           if (hasPomodoro || hasAssignedUsers) {
             baseHeight = 95; // Increased space on desktop for absolute positioned components
           } else {
