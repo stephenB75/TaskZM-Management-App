@@ -37,7 +37,22 @@ import {
   NAV_BAR_ANIMATION_STIFFNESS,
   NAV_BAR_ANIMATION_DAMPING,
   NAV_BAR_HAPTIC_DURATION,
+  NAV_BAR_BUTTON_TRANSITION_DURATION,
+  NAV_BAR_SHADOW_OPACITY_LIGHT,
+  NAV_BAR_SHADOW_OPACITY_DARK,
+  NAV_BAR_SHADOW_BLUR_LARGE,
+  NAV_BAR_SHADOW_BLUR_SMALL,
+  NAV_BAR_SHADOW_OFFSET_Y_LARGE,
+  NAV_BAR_SHADOW_OFFSET_Y_SMALL,
 } from "../lib/layout-constants";
+import {
+  COLOR_PRIMARY,
+  COLOR_PASTEL_MINT,
+  COLOR_PASTEL_SKY,
+  COLOR_PASTEL_LILAC,
+  COLOR_BADGE_RED,
+  getColorWithOpacity,
+} from "../lib/color-theme";
 
 interface BottomNavProps {
   currentView: string;
@@ -118,15 +133,17 @@ export function BottomNav({
       animate={{ y: 0 }}
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
       style={{
-        boxShadow:
-          "0 -4px 24px rgba(155, 135, 232, 0.08), 0 -2px 8px rgba(155, 135, 232, 0.04)",
+        boxShadow: `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_LIGHT)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_DARK)}`,
       }}
     >
       {/* Subtle sync indicator at top */}
       {isSyncing && (
         <div 
-          className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#B4E4CE] via-[#C9E4F7] to-[#D4C5F9] animate-pulse" 
-          style={{ height: NAV_BAR_SYNC_INDICATOR_HEIGHT }}
+          className="absolute top-0 left-0 right-0 animate-pulse" 
+          style={{ 
+            height: NAV_BAR_SYNC_INDICATOR_HEIGHT,
+            background: `linear-gradient(to right, ${COLOR_PASTEL_MINT}, ${COLOR_PASTEL_SKY}, ${COLOR_PASTEL_LILAC})`
+          }}
         />
       )}
 
@@ -149,7 +166,7 @@ export function BottomNav({
               onClick={item.onClick}
               className={cn(
                 "flex flex-col items-center justify-center flex-1 rounded-xl relative overflow-visible",
-                "touch-manipulation transition-transform duration-100 ease-out",
+                "touch-manipulation transition-transform ease-out",
                 item.active && "text-primary",
                 !item.active &&
                   "text-muted-foreground hover:text-foreground",
@@ -159,6 +176,7 @@ export function BottomNav({
                 paddingBottom: NAV_BAR_BUTTON_PADDING_BOTTOM,
                 paddingLeft: NAV_BAR_HORIZONTAL_PADDING,
                 paddingRight: NAV_BAR_HORIZONTAL_PADDING,
+                transitionDuration: `${NAV_BAR_BUTTON_TRANSITION_DURATION}ms`,
               }}
               onMouseDown={(e) => {
                 e.currentTarget.style.transform = `scale(${NAV_BAR_ACTIVE_SCALE})`;
@@ -203,8 +221,9 @@ export function BottomNav({
                 />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span 
-                    className="absolute bg-red-500 text-white font-bold rounded-full flex items-center justify-center border-white" 
+                    className="absolute text-white font-bold rounded-full flex items-center justify-center border-white" 
                     style={{ 
+                      backgroundColor: COLOR_BADGE_RED,
                       fontSize: NAV_BAR_BADGE_TEXT_SIZE,
                       width: NAV_BAR_BADGE_SIZE,
                       height: NAV_BAR_BADGE_SIZE,

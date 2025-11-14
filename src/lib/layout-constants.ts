@@ -46,18 +46,18 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 
 // Bottom Navigation Bar constants
 export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
-export const NAV_BAR_PADDING_TOP = '0.625rem'; // Slightly increased to accommodate indicator above icon
-export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
-export const NAV_BAR_BUTTON_PADDING_TOP = '0.25rem'; // Reduced button top padding to fit components
-export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.25rem'; // Reduced button bottom padding to fit components
+export const NAV_BAR_PADDING_TOP = '0.5rem'; // Reduced top padding to move content down
+export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Reduced bottom padding to match top for even spacing
+export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Reduced button top padding to move icons down
+export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.375rem'; // Reduced button bottom padding to match top
 export const NAV_BAR_ICON_SIZE = '2rem'; // w-8 h-8 = 2rem
-export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0.3rem'; // 15% of icon size (2rem * 0.15 = 0.3rem) - moved down by 15%
-export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0.3rem'; // 15% of icon size (2rem * 0.15 = 0.3rem) - moved down by 15%
+export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0.5rem'; // Reduced to move icons down closer to bottom while maintaining proportion
+export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0.5rem'; // Reduced to move icons down closer to bottom while maintaining proportion
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
-export const NAV_BAR_INDICATOR_TOP = '-0.5rem'; // Keep indicator above icon
+export const NAV_BAR_INDICATOR_TOP = '-0.5rem'; // Keep indicator above icon (moves with icon)
 export const NAV_BAR_INDICATOR_MARGIN_LEFT = '-1rem';
 export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
-export const NAV_BAR_LABEL_MARGIN_TOP = '0.125rem'; // Reduced margin for tighter spacing
+export const NAV_BAR_LABEL_MARGIN_TOP = '0.375rem'; // Increased margin for better spacing between icon and label
 export const NAV_BAR_BADGE_SIZE = '1rem'; // w-4 h-4 = 1rem
 export const NAV_BAR_BADGE_TEXT_SIZE = '8px';
 export const NAV_BAR_BADGE_BORDER_WIDTH = '2px';
@@ -72,6 +72,13 @@ export const NAV_BAR_ANIMATION_DURATION = 0.3;
 export const NAV_BAR_ANIMATION_STIFFNESS = 500;
 export const NAV_BAR_ANIMATION_DAMPING = 30;
 export const NAV_BAR_HAPTIC_DURATION = 10; // milliseconds
+export const NAV_BAR_BUTTON_TRANSITION_DURATION = 100; // milliseconds (duration-100 = 100ms)
+export const NAV_BAR_SHADOW_OPACITY_LIGHT = 0.08; // Shadow opacity for lighter shadow
+export const NAV_BAR_SHADOW_OPACITY_DARK = 0.04; // Shadow opacity for darker shadow
+export const NAV_BAR_SHADOW_BLUR_LARGE = 24; // Large blur radius in pixels
+export const NAV_BAR_SHADOW_BLUR_SMALL = 8; // Small blur radius in pixels
+export const NAV_BAR_SHADOW_OFFSET_Y_LARGE = -4; // Large vertical offset in pixels
+export const NAV_BAR_SHADOW_OFFSET_Y_SMALL = -2; // Small vertical offset in pixels
 
 // Panel constants (for side panels like Team, Folders, etc.)
 export const PANEL_PADDING = '1rem'; // p-4 = 1rem
