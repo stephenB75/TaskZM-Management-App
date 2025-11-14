@@ -159,18 +159,24 @@ export const DraggableTaskCard = React.forwardRef<
         let baseHeight = 80; // Base height for essential elements
         const hasPomodoro = hasFeature("pomodoroTimer") && timerState.isRunning;
         const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
-        
-        // Increase base height on mobile when tracking badge is at top (adds to row 1 height)
-        // For tasks < 45 mins on mobile: tracking badge moved to top, so need extra space for row 1
         const hasTrackedTime = task.actualTime && task.actualTime > 0;
-        if (isMobile && (hasPomodoro || hasTrackedTime)) {
-          baseHeight = 88; // Extra space for tracking badge in top row on mobile
-        } else if (isMobile && hasAssignedUsers && duration < 45) {
-          baseHeight = 85; // Space for assigned users in bottom row on mobile
-        } else if (isMobile && (hasPomodoro || hasAssignedUsers) && duration >= 45) {
-          baseHeight = 95; // Extra space for pomodoro timer and assigned users on mobile (absolute positioning)
-        } else if (!isMobile && (hasPomodoro || hasAssignedUsers)) {
-          baseHeight = 90; // Slightly more space on desktop
+        const hasPomodoroTimer = hasFeature("pomodoroTimer");
+        
+        // Auto-adjust base height based on components present
+        if (isMobile) {
+          // Mobile: tracking badge at top, bottom row has assigned users + pomodoro timer
+          if (hasPomodoro || hasTrackedTime) {
+            baseHeight = 92; // Extra space for tracking badge in top row + bottom row components
+          } else if (hasAssignedUsers || hasPomodoroTimer) {
+            baseHeight = 88; // Space for bottom row components (assigned users or pomodoro timer)
+          } else {
+            baseHeight = 85; // Base space for essential elements only
+          }
+        } else {
+          // Desktop: absolute positioning for components
+          if (hasPomodoro || hasAssignedUsers) {
+            baseHeight = 90; // Slightly more space on desktop for absolute positioned components
+          }
         }
         
         const scalingFactor = 0.9; // Reduced scaling for shorter tasks
@@ -253,8 +259,8 @@ export const DraggableTaskCard = React.forwardRef<
               // For tasks < 45 mins on mobile: inline bottom row needs less padding
               // Base bottom padding for all tasks
               !isMobile && "md:pb-8",
-              // Mobile tasks < 45 mins with inline bottom row: reduced padding
-              isMobile && task.estimatedTime && task.estimatedTime < 45 && "pb-2",
+              // Mobile tasks < 45 mins with inline bottom row: reduced padding (bottom row handles spacing)
+              isMobile && task.estimatedTime && task.estimatedTime < 45 && "pb-1",
               // Mobile tasks >= 45 mins: standard padding
               isMobile && (!task.estimatedTime || task.estimatedTime >= 45) && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-6",
               // Extra bottom padding on mobile for tasks >= 45 mins when pomodoro/assigned users present
@@ -435,8 +441,8 @@ export const DraggableTaskCard = React.forwardRef<
 
           {/* Bottom Row: For tasks < 45 mins on mobile, show inline layout; otherwise absolute positioning */}
           {task.estimatedTime && task.estimatedTime < 45 && isMobile ? (
-            // Inline layout for mobile tasks < 45 mins: assigned users, tracking badge, and pomodoro timer in one row
-            <div className="flex items-center justify-between gap-1 mt-1 pt-1 border-t border-gray-200/50">
+            // Inline layout for mobile tasks < 45 mins: assigned users and pomodoro timer in one row (tracking badge moved to top)
+            <div className="flex items-center justify-between gap-1 mt-1.5 pt-1.5 border-t border-gray-200/50">
               {/* Left: Assigned Users */}
               <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
                 {task.assignedTo && task.assignedTo.length > 0 && (
