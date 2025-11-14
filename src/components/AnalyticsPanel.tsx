@@ -108,10 +108,10 @@ function GaugeChart({
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center mt-8">
-            <div className="text-2xl font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+            <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
               {value.toLocaleString()}
             </div>
-            <div className="text-xs font-medium" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+            <div className="text-[10px] font-medium" style={{ color: DASHBOARD_COLORS.textSecondary }}>
               {label}
             </div>
           </div>
@@ -126,22 +126,22 @@ function CustomTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
       <div
-        className="bg-white p-3 rounded-lg shadow-lg border"
+        className="bg-white p-2 rounded-md shadow-md border"
         style={{ borderColor: DASHBOARD_COLORS.border }}
       >
-        <p className="text-sm font-semibold mb-2" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+        <p className="text-xs font-semibold mb-1.5" style={{ color: DASHBOARD_COLORS.textPrimary }}>
           {label}
         </p>
         {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2">
+          <div key={index} className="flex items-center gap-1.5">
             <div
-              className="w-3 h-3 rounded-full"
+              className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-xs" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+            <span className="text-[10px]" style={{ color: DASHBOARD_COLORS.textSecondary }}>
               {entry.name}:
             </span>
-            <span className="text-sm font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+            <span className="text-xs font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
               {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
             </span>
           </div>
@@ -403,46 +403,46 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="p-6 space-y-6 pt-6 md:pt-4 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="p-4 space-y-4 pt-4 md:pt-4 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
             
             {/* KPI Cards Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card className="border shadow-sm">
-                <CardContent className="p-4">
-                  <div className="text-xs font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                <CardContent className="p-3">
+                  <div className="text-[10px] font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                     Total Tasks
                   </div>
-                  <div className="text-2xl font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                  <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                     {analytics.totalTasks.toLocaleString()}
                   </div>
                 </CardContent>
               </Card>
               <Card className="border shadow-sm">
-                <CardContent className="p-4">
-                  <div className="text-xs font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                <CardContent className="p-3">
+                  <div className="text-[10px] font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                     Completed
                   </div>
-                  <div className="text-2xl font-bold" style={{ color: DASHBOARD_COLORS.success }}>
+                  <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.success }}>
                     {analytics.completedTasks.toLocaleString()}
                   </div>
                 </CardContent>
               </Card>
               <Card className="border shadow-sm">
-                <CardContent className="p-4">
-                  <div className="text-xs font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                <CardContent className="p-3">
+                  <div className="text-[10px] font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                     Time Tracked
                   </div>
-                  <div className="text-2xl font-bold" style={{ color: DASHBOARD_COLORS.primary }}>
+                  <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.primary }}>
                     {Math.floor(analytics.totalTimeTracked / 60)}h {analytics.totalTimeTracked % 60}m
                   </div>
                 </CardContent>
               </Card>
               <Card className="border shadow-sm">
-                <CardContent className="p-4">
-                  <div className="text-xs font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                <CardContent className="p-3">
+                  <div className="text-[10px] font-medium mb-1" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                     This Week
                   </div>
-                  <div className="text-2xl font-bold" style={{ color: DASHBOARD_COLORS.info }}>
+                  <div className="text-lg font-bold" style={{ color: DASHBOARD_COLORS.info }}>
                     {Math.floor(analytics.weeklyTimeTracked / 60)}h {analytics.weeklyTimeTracked % 60}m
                   </div>
                 </CardContent>
@@ -450,14 +450,14 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             </div>
 
             {/* Gauge Charts Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Card className="border shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                     Completion Rate
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 pb-3">
                   <GaugeChart
                     value={Math.round(analytics.completionRate)}
                     max={100}
@@ -467,12 +467,12 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 </CardContent>
               </Card>
               <Card className="border shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                     Open Tasks
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 pb-3">
                   <GaugeChart
                     value={analytics.totalTasks - analytics.completedTasks}
                     max={Math.max(analytics.totalTasks, 100)}
@@ -485,13 +485,13 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Time Tracking Trend - Area Chart */}
             <Card className="border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                   Time Tracked (Last 7 Days)
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-64">
+              <CardContent className="px-3 pb-3">
+                <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={analytics.timeTrackingTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
@@ -503,11 +503,11 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                       <CartesianGrid strokeDasharray="3 3" stroke={DASHBOARD_COLORS.lightGray} />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 11, fill: DASHBOARD_COLORS.textSecondary }}
+                        tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
                         stroke={DASHBOARD_COLORS.border}
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: DASHBOARD_COLORS.textSecondary }}
+                        tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
                         stroke={DASHBOARD_COLORS.border}
                         tickFormatter={(value) => `${Math.floor(value / 60)}h`}
                       />
@@ -528,13 +528,13 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Productivity Trend - Area Chart */}
             <Card className="border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                   Tasks Created vs Completed (Last 7 Days)
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-64">
+              <CardContent className="px-3 pb-3">
+                <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={analytics.taskPerDayProgress} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
@@ -550,15 +550,15 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                       <CartesianGrid strokeDasharray="3 3" stroke={DASHBOARD_COLORS.lightGray} />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 11, fill: DASHBOARD_COLORS.textSecondary }}
+                        tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
                         stroke={DASHBOARD_COLORS.border}
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: DASHBOARD_COLORS.textSecondary }}
+                        tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
                         stroke={DASHBOARD_COLORS.border}
                       />
                       <Tooltip content={<CustomTooltip />} />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '8px' }} iconSize={10} />
                       <Area
                         type="monotone"
                         dataKey="completed"
@@ -584,13 +584,13 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             {/* Time Patterns - Stacked Bar Chart */}
             {analytics.timePatterns.blocks.length > 0 && (
               <Card className="border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                     Task Completion by Time of Day
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-64">
+                <CardContent className="px-3 pb-3">
+                  <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={analytics.timePatterns.blocks}
@@ -599,11 +599,11 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                         <CartesianGrid strokeDasharray="3 3" stroke={DASHBOARD_COLORS.lightGray} />
                         <XAxis
                           dataKey="name"
-                          tick={{ fontSize: 11, fill: DASHBOARD_COLORS.textSecondary }}
+                          tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
                           stroke={DASHBOARD_COLORS.border}
                         />
                         <YAxis
-                          tick={{ fontSize: 11, fill: DASHBOARD_COLORS.textSecondary }}
+                          tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
                           stroke={DASHBOARD_COLORS.border}
                         />
                         <Tooltip content={<CustomTooltip />} />
@@ -615,7 +615,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="mt-4 text-center text-sm" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                  <div className="mt-3 text-center text-xs" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                     Peak Hour: <span className="font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>{peakHourLabel}</span>
                   </div>
                 </CardContent>
@@ -625,13 +625,13 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             {/* Task Types - Horizontal Bar Chart */}
             {analytics.taskTypes.length > 0 && (
               <Card className="border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                     Top Task Tags
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-64">
+                <CardContent className="px-3 pb-3">
+                  <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={analytics.taskTypes}
@@ -641,15 +641,15 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                         <CartesianGrid strokeDasharray="3 3" stroke={DASHBOARD_COLORS.lightGray} horizontal />
                         <XAxis
                           type="number"
-                          tick={{ fontSize: 11, fill: DASHBOARD_COLORS.textSecondary }}
+                          tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
                           stroke={DASHBOARD_COLORS.border}
                         />
                         <YAxis
                           type="category"
                           dataKey="name"
-                          tick={{ fontSize: 11, fill: DASHBOARD_COLORS.textSecondary }}
+                          tick={{ fontSize: 10, fill: DASHBOARD_COLORS.textSecondary }}
                           stroke={DASHBOARD_COLORS.border}
-                          width={75}
+                          width={70}
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Bar dataKey="value" fill={DASHBOARD_COLORS.primary} radius={[0, 4, 4, 0]} />
@@ -663,26 +663,26 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             {/* Project Progress - Table */}
             {analytics.projectProgress.length > 0 && (
               <Card className="border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                     Project Progress
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-3 pb-3">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b" style={{ borderColor: DASHBOARD_COLORS.border }}>
-                          <th className="text-left py-2 px-4 text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                          <th className="text-left py-1.5 px-3 text-[10px] font-semibold uppercase tracking-wide" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                             Project
                           </th>
-                          <th className="text-right py-2 px-4 text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                          <th className="text-right py-1.5 px-3 text-[10px] font-semibold uppercase tracking-wide" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                             Completed
                           </th>
-                          <th className="text-right py-2 px-4 text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                          <th className="text-right py-1.5 px-3 text-[10px] font-semibold uppercase tracking-wide" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                             Total
                           </th>
-                          <th className="text-right py-2 px-4 text-xs font-semibold" style={{ color: DASHBOARD_COLORS.textSecondary }}>
+                          <th className="text-right py-1.5 px-3 text-[10px] font-semibold uppercase tracking-wide" style={{ color: DASHBOARD_COLORS.textSecondary }}>
                             Progress
                           </th>
                         </tr>
@@ -690,16 +690,16 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                       <tbody>
                         {analytics.projectProgress.map((project, index) => (
                           <tr key={index} className="border-b" style={{ borderColor: DASHBOARD_COLORS.border }}>
-                            <td className="py-3 px-4 text-sm font-medium" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                            <td className="py-2 px-3 text-xs font-medium" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                               {project.name}
                             </td>
-                            <td className="py-3 px-4 text-sm text-right" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                            <td className="py-2 px-3 text-xs text-right" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                               {project.completed}
                             </td>
-                            <td className="py-3 px-4 text-sm text-right" style={{ color: DASHBOARD_COLORS.textPrimary }}>
+                            <td className="py-2 px-3 text-xs text-right" style={{ color: DASHBOARD_COLORS.textPrimary }}>
                               {project.total}
                             </td>
-                            <td className="py-3 px-4 text-sm text-right font-semibold" style={{ color: DASHBOARD_COLORS.success }}>
+                            <td className="py-2 px-3 text-xs text-right font-semibold" style={{ color: DASHBOARD_COLORS.success }}>
                               {project.completionRate.toFixed(0)}%
                             </td>
                           </tr>
