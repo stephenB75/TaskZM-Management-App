@@ -47,7 +47,7 @@ export function AppHeader({
       return sidebarWidth; // Side panel headers at start of panel
     }
     return panelOpen ? sidebarWidth + panelWidth : sidebarWidth; // Main header shifts when panel opens
-  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth]);
+  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth, panelKey]);
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = useMemo(() => {
@@ -168,7 +168,7 @@ export function AppHeader({
           style={{ minHeight: '73px', height: '73px' }}
         >
           <div className="flex items-center justify-between gap-4">
-            {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
+            {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animation on these elements */}
             <div
               className={cn(
                 "flex items-center min-w-0 flex-1",
@@ -190,14 +190,15 @@ export function AppHeader({
                   src={logoImage}
                   alt="TaskZM Logo"
                   className="h-10 w-auto flex-shrink-0"
+                  style={{ willChange: 'auto' }}
                 />
               )}
               <div className="min-w-0">
-                <h2 className="font-semibold text-foreground uppercase tracking-wide text-sm">
+                <h2 className="font-semibold text-foreground uppercase tracking-wide text-sm" style={{ willChange: 'auto' }}>
                   {typeof title === 'string' ? title : title}
                 </h2>
                 {description && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5" style={{ willChange: 'auto' }}>
                     {description}
                   </p>
                 )}
