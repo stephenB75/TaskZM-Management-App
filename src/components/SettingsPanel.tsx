@@ -638,57 +638,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       variant="outline" 
                       size="sm" 
                       className="w-full"
-                      onClick={async () => {
-                        try {
-                          const { projectId } = await import('../utils/supabase/info');
-                          const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
-                          
-                          const response = await fetch(`${API_BASE}/create-billing-portal`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${accessToken}`,
-                            },
-                          });
-
-                          if (!response.ok) {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Failed to create billing portal session');
-                          }
-
-                          const { url } = await response.json();
-                          if (url) {
-                            window.open(url, '_blank');
-                            toast.success('Opening billing portal...', {
-                              description: 'Manage your subscription, payment methods, and billing history',
-                            });
-                          } else {
-                            throw new Error('No billing portal URL received');
-                          }
-                        } catch (error: any) {
-                          console.error('Billing portal error:', error);
-                          
-                          // Extract error message from response if available
-                          let errorMessage = error.message || 'Please contact support for assistance.';
-                          
-                          // Check if error contains helpful information
-                          if (errorMessage.includes('No active') || errorMessage.includes('No Stripe subscription')) {
-                            errorMessage = 'No active subscription found. Please subscribe to Pro to access billing management.';
-                          } else if (errorMessage.includes('App Store') || errorMessage.includes('Play Store')) {
-                            errorMessage = 'This subscription is managed through the App Store or Play Store. Please manage it through your device\'s subscription settings.';
-                          } else if (errorMessage.includes('not managed through Stripe')) {
-                            errorMessage = 'Your subscription is not managed through Stripe. Please manage it through the platform where you purchased it.';
-                          }
-                          
-                          toast.error('Unable to open billing portal', {
-                            description: errorMessage,
-                            duration: SETTINGS_PANEL_TOAST_DURATION_MS,
-                          });
-                        }
+                      onClick={() => {
+                        // Open PricingDialog to show RevenueCat subscription options
+                        // This will connect to Stripe for web purchases via RevenueCat
+                        setShowPricingDialog(true);
                       }}
                     >
                       <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                      Manage Subscription
+                      {subscription.tier === 'free' ? 'Upgrade to Pro' : 'Manage Subscription'}
                     </Button>
 
                     <div className="flex" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
@@ -1128,6 +1085,49 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   How often to check for due tasks (min: 5, max: 60 minutes)
                 </p>
               </div>
+
+              <Separator className="my-3 md:my-4" />
+
+              {/* Additional Notification Options */}
+              <div className="space-y-2.5 md:space-y-3">
+                <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
+                  <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+                    <Label htmlFor="push-notif" className="text-xs md:text-sm cursor-pointer">Push Notifications</Label>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Desktop and mobile alerts</p>
+                  </div>
+                  <Switch 
+                    id="push-notif" 
+                    checked={notificationSettings.enabled && permission === 'granted'}
+                    disabled={!notificationSettings.enabled || permission !== 'granted'}
+                    className="flex-shrink-0 mt-0.5" 
+                  />
+                </div>
+                
+                <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
+                  <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+                    <Label htmlFor="email-notif" className="text-xs md:text-sm cursor-pointer">Email Notifications</Label>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Daily task summary emails</p>
+                  </div>
+                  <Switch 
+                    id="email-notif" 
+                    className="flex-shrink-0 mt-0.5"
+                    disabled={!notificationSettings.enabled || permission !== 'granted'}
+                  />
+                </div>
+
+                <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
+                  <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+                    <Label htmlFor="sound-notif" className="text-xs md:text-sm cursor-pointer">Sound</Label>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">Play sound for notifications</p>
+                  </div>
+                  <Switch 
+                    id="sound-notif" 
+                    defaultChecked
+                    disabled={!notificationSettings.enabled || permission !== 'granted'}
+                    className="flex-shrink-0 mt-0.5" 
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Current Badge Count */}
@@ -1317,49 +1317,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Notifications */}
-        <AccordionItem value="notifications" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
-          <AccordionTrigger className="hover:no-underline py-4">
-            <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 text-primary" />
-              <span>Notifications</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
-            <div className="space-y-4 sm:space-y-3 md:space-y-3">
-              <div className="flex items-start justify-between gap-3 py-2 sm:py-1">
-                <div className="space-y-0.5 flex-1 min-w-0">
-                  <Label htmlFor="push-notif" className="text-sm cursor-pointer">Push Notifications</Label>
-                  <p className="text-xs text-muted-foreground">Desktop and mobile alerts</p>
-                </div>
-                <Switch id="push-notif" defaultChecked className="flex-shrink-0 mt-0.5" />
-              </div>
-              
-              <div className="flex items-start justify-between gap-3 py-2 sm:py-1">
-                <div className="space-y-0.5 flex-1 min-w-0">
-                  <Label htmlFor="email-notif" className="text-sm cursor-pointer">Email Notifications</Label>
-                  <p className="text-xs text-muted-foreground">Daily task summary emails</p>
-                </div>
-                <Switch id="email-notif" className="flex-shrink-0 mt-0.5" />
-              </div>
-
-              <div className="flex items-start justify-between gap-3 py-2 sm:py-1">
-                <div className="space-y-0.5 flex-1 min-w-0">
-                  <Label htmlFor="sound-notif" className="text-sm cursor-pointer">Sound</Label>
-                  <p className="text-xs text-muted-foreground">Play sound for notifications</p>
-                </div>
-                <Switch id="sound-notif" defaultChecked className="flex-shrink-0 mt-0.5" />
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Date & Time */}
+        {/* Date, Time & Theme */}
         <AccordionItem value="datetime" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-primary" />
-              <span>Date & Time</span>
+              <span>Date, Time & Theme</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
