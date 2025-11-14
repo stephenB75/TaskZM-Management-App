@@ -1,10 +1,20 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { motion } from 'motion/react';
 import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
 import { isTaskBlocked, getIncompleteDependencies } from '../lib/utils';
+import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
 import type { Task } from '../types';
 
 interface DragDropContextType {
@@ -28,6 +38,12 @@ interface DragDropProviderProps {
 export function DragDropProvider({ children }: DragDropProviderProps) {
   const { tasks, updateTask, folders } = useTasks();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [pendingTaskUpdate, setPendingTaskUpdate] = useState<{
+    taskId: string;
+    requestedTime: Date;
+    alternativeTime: Date;
+  } | null>(null);
 
   // Initialize sensors once - useSensors hook is stable and won't cause re-renders
   const sensors = useSensors(
@@ -47,6 +63,123 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
   const handleDragOver = (event: DragOverEvent) => {
     // Store drop position for time calculation
     // This will be used in handleDragEnd to calculate time slot
+  };
+
+  /**
+   * Check if a time slot conflicts with existing tasks on the same day
+   */
+  const checkTimeConflict = (
+    taskId: string,
+    scheduledTime: Date,
+    taskDuration: number
+  ): Task | null => {
+    const today = new Date(scheduledTime);
+    today.setHours(0, 0, 0, 0);
+
+    // Get all tasks scheduled for today (excluding the current task)
+    const todayTasks = tasks.filter((task) => {
+      if (task.id === taskId) return false; // Exclude the task being moved
+      if (task.status === 'done') return false; // Exclude completed tasks
+      return isDateInRecurrence(task, today);
+    });
+
+    const newTaskStart = scheduledTime.getTime();
+    const newTaskEnd = newTaskStart + (taskDuration * 60 * 1000);
+
+    // Check for overlaps with existing tasks
+    for (const existingTask of todayTasks) {
+      if (!existingTask.scheduledDate) continue;
+
+      const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
+      const existingTaskDuration = (existingTask.estimatedTime || 30) * 60 * 1000;
+      const existingTaskEnd = existingTaskStart + existingTaskDuration;
+
+      // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
+      if (newTaskStart < existingTaskEnd && newTaskEnd > existingTaskStart) {
+        return existingTask;
+      }
+    }
+
+    return null;
+  };
+
+  /**
+   * Find the next available time slot after the requested time
+   */
+  const findNextAvailableSlot = (
+    taskId: string,
+    requestedTime: Date,
+    taskDuration: number
+  ): Date => {
+    const today = new Date(requestedTime);
+    today.setHours(0, 0, 0, 0);
+
+    // Get all tasks scheduled for today (excluding the current task)
+    const todayTasks = tasks.filter((task) => {
+      if (task.id === taskId) return false;
+      if (task.status === 'done') return false;
+      return isDateInRecurrence(task, today);
+    });
+
+    // Sort tasks by scheduled time
+    const sortedTasks = todayTasks
+      .filter((task) => task.scheduledDate)
+      .map((task) => ({
+        task,
+        start: new Date(task.scheduledDate!).getTime(),
+        end: new Date(task.scheduledDate!).getTime() + ((task.estimatedTime || 30) * 60 * 1000),
+      }))
+      .sort((a, b) => a.start - b.start);
+
+    // Start checking from the requested time
+    let candidateTime = new Date(requestedTime);
+    const maxHour = 23;
+    const maxMinute = 0;
+
+    // Try to find a slot after the requested time
+    while (candidateTime.getHours() < maxHour || (candidateTime.getHours() === maxHour && candidateTime.getMinutes() <= maxMinute)) {
+      const candidateStart = candidateTime.getTime();
+      const candidateEnd = candidateStart + (taskDuration * 60 * 1000);
+
+      // Check if this slot conflicts with any existing task
+      let hasConflict = false;
+      for (const existing of sortedTasks) {
+        if (candidateStart < existing.end && candidateEnd > existing.start) {
+          hasConflict = true;
+          // Move candidate time to after this conflicting task
+          candidateTime = new Date(existing.end);
+          // Round to nearest 15-minute slot
+          const minutes = candidateTime.getMinutes();
+          const roundedMinutes = Math.ceil(minutes / 15) * 15;
+          if (roundedMinutes >= 60) {
+            candidateTime.setHours(candidateTime.getHours() + 1);
+            candidateTime.setMinutes(0);
+          } else {
+            candidateTime.setMinutes(roundedMinutes);
+          }
+          break;
+        }
+      }
+
+      if (!hasConflict) {
+        return candidateTime;
+      }
+    }
+
+    // If no slot found, return the requested time (user can decide)
+    return requestedTime;
+  };
+
+  /**
+   * Format time for display
+   */
+  const formatTime = (date: Date): string => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    return `${displayHours}:${displayMinutes} ${period}`;
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -144,6 +277,34 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       
       today.setHours(hours, minutes, 0, 0);
       
+      // Check for time conflicts
+      const taskDuration = task.estimatedTime || 30; // Default to 30 minutes if not specified
+      const conflictingTask = checkTimeConflict(taskId, today, taskDuration);
+
+      if (conflictingTask) {
+        // Find next available slot
+        const alternativeTime = findNextAvailableSlot(taskId, today, taskDuration);
+        
+        // Only show dialog if alternative time is different and valid
+        if (alternativeTime.getTime() !== today.getTime() && alternativeTime.getHours() < 24) {
+          // Store the pending update and show dialog
+          setPendingTaskUpdate({
+            taskId,
+            requestedTime: new Date(today), // Create a new Date object to avoid reference issues
+            alternativeTime,
+          });
+          setConflictDialogOpen(true);
+          return;
+        } else {
+          // No valid alternative found, show error
+          toast.error('Time slot is already taken', {
+            description: 'Please choose a different time slot on the timeline.',
+          });
+          return;
+        }
+      }
+
+      // No conflict, proceed with update
       updateTask(taskId, {
         scheduledDate: today.toISOString(),
       });
@@ -235,6 +396,22 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
+  const handleConflictConfirm = () => {
+    if (pendingTaskUpdate) {
+      updateTask(pendingTaskUpdate.taskId, {
+        scheduledDate: pendingTaskUpdate.alternativeTime.toISOString(),
+      });
+      toast.success(`Task scheduled for ${formatTime(pendingTaskUpdate.alternativeTime)}`);
+    }
+    setConflictDialogOpen(false);
+    setPendingTaskUpdate(null);
+  };
+
+  const handleConflictCancel = () => {
+    setConflictDialogOpen(false);
+    setPendingTaskUpdate(null);
+  };
+
   return (
     <DragDropContext.Provider value={{ activeId }}>
       <DndContext
@@ -271,6 +448,27 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           )}
         </DragOverlay>
       </DndContext>
+
+      {/* Conflict Resolution Dialog */}
+      <AlertDialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Time Slot Already Taken</AlertDialogTitle>
+            <AlertDialogDescription>
+              The time slot {pendingTaskUpdate && formatTime(pendingTaskUpdate.requestedTime)} is already occupied by another task.
+              Would you like to schedule this task at {pendingTaskUpdate && formatTime(pendingTaskUpdate.alternativeTime)} instead?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleConflictCancel}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConflictConfirm}>
+              Use {pendingTaskUpdate && formatTime(pendingTaskUpdate.alternativeTime)}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DragDropContext.Provider>
   );
 }
