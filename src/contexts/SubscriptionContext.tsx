@@ -205,11 +205,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   async function upgradeToPro() {
     try {
-      // TODO: In production, integrate with payment provider (Stripe/Paddle)
-      // const session = await createCheckoutSession();
-      // window.location.href = session.url;
-      
-      // For now, simulate upgrade
+      // Development/Testing fallback: Simulate upgrade
+      // Note: Production uses RevenueCat (handled in PricingDialog)
+      // This function is only used when RevenueCat is not configured or fails
       const newSubscription: SubscriptionInfo = {
         tier: 'pro',
         status: 'active',

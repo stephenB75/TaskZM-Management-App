@@ -452,21 +452,7 @@ export function SevenDayKanban({
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] md:from-[#F9F7FD] md:via-white md:to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800" data-tour="kanban">
       
-      {/* Month View Placeholder */}
-      {viewMode === 'month' ? (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center max-w-md">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center">
-              <CalendarDays className="w-10 h-10 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Month View Coming Soon</h3>
-            <p className="text-muted-foreground">
-              Month view is currently in development. Switch back to Week view to manage your tasks.
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* Week View - Kanban Board */
+      {/* Week View - Kanban Board */}
         <div className="flex-1 overflow-hidden">
           <div 
             ref={scrollContainerRef}
