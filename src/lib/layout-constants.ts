@@ -24,11 +24,11 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 };
 
 // Bottom Navigation Bar constants
-export const NAV_BAR_HEIGHT = 56; // Standard mobile nav bar height (matches iOS/Android guidelines)
-export const NAV_BAR_PADDING_TOP = '0.5rem'; // Balanced top padding
+export const NAV_BAR_HEIGHT = 72; // Adjusted height to fit all components (indicator above icon + icon + label + padding)
+export const NAV_BAR_PADDING_TOP = '0.625rem'; // Slightly increased to accommodate indicator above icon
 export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
-export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Balanced button top padding
-export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.375rem'; // Balanced button bottom padding
+export const NAV_BAR_BUTTON_PADDING_TOP = '0.25rem'; // Reduced button top padding to fit components
+export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.25rem'; // Reduced button bottom padding to fit components
 export const NAV_BAR_ICON_SIZE = '2rem'; // w-8 h-8 = 2rem
 export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0'; // Icons centered, no extra margin
 export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0'; // Icons centered, no extra margin
