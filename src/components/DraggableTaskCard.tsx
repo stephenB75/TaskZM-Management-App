@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
-import { cn, formatTimeAMPM, getInitials } from "../lib/utils";
+import { cn, formatTimeAMPM, getInitials, sanitizeHTML } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
