@@ -7,6 +7,14 @@ import { generateId, getFromLocalStorage, saveToLocalStorage } from '../lib/util
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
 import type { Task, Project, Folder, TaskFilters, ViewConfig, HoursSettings, RolloverSettings } from '../types';
+import {
+  WORKSPACE_MAX_RETRIES,
+  WORKSPACE_RETRY_DELAY_BASE_MS,
+  WORKSPACE_TOAST_DURATION_MS,
+  WORKSPACE_NAME_FALLBACK,
+  WORKSPACE_NAME_SUFFIX,
+  WORKSPACE_SYNC_INTERVAL_MS,
+} from '../lib/layout-constants';
 
 interface TaskContextType {
   tasks: Task[];
@@ -89,7 +97,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncInterval, setSyncInterval] = useState(300000); // 5 minutes (reduced from 30s to minimize Edge Function invocations)
+  const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_MS); // Auto-sync interval (reduced from 30s to minimize Edge Function invocations)
   const syncLockRef = useRef<boolean>(false); // Prevent concurrent sync operations
 
   // Load from Supabase FIRST when authenticated, localStorage only as offline fallback
@@ -184,7 +192,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
     
     // Retry logic for workspace loading
-    const maxRetries = 3;
+    const maxRetries = WORKSPACE_MAX_RETRIES;
     let lastError: Error | null = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -225,7 +233,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // If we get here, workspace wasn't found - try to create one
         if (attempt < maxRetries) {
           logger.info(`Attempting to create workspace (attempt ${attempt})`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, WORKSPACE_RETRY_DELAY_BASE_MS * attempt)); // Exponential backoff
         }
         await createWorkspaceIfNeeded();
         // If creation succeeded, retry loading
@@ -236,7 +244,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         
         if (attempt < maxRetries) {
           // Wait before retrying (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          await new Promise(resolve => setTimeout(resolve, WORKSPACE_RETRY_DELAY_BASE_MS * attempt));
           continue;
         }
       }
@@ -251,7 +259,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     
     toast.error('Failed to load workspace. Please refresh the page.', {
       description: detailedMessage,
-      duration: 5000,
+      duration: WORKSPACE_TOAST_DURATION_MS,
     });
     
     // Fallback to localStorage if server fails
@@ -296,7 +304,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
 
       // Create workspace via backend
-      const workspaceName = `${user.name || 'User'}'s Workspace`;
+      const workspaceName = `${user.name || WORKSPACE_NAME_FALLBACK}${WORKSPACE_NAME_SUFFIX}`;
       logger.info('Creating new workspace:', workspaceName);
       const workspaceId = await api.createWorkspace(workspaceName);
       
@@ -330,7 +338,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       
       toast.error('Failed to create workspace', {
         description: detailedMessage,
-        duration: 5000,
+        duration: WORKSPACE_TOAST_DURATION_MS,
       });
       throw error;
     }

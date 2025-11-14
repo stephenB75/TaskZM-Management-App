@@ -101,3 +101,11 @@ export const TEAM_PANEL_MARGIN_RIGHT_MEDIUM = '0.5rem'; // mr-2 = 0.5rem
 export const TEAM_PANEL_TEXTAREA_MIN_HEIGHT = '120px'; // min-h-[120px] = 120px
 export const TEAM_PANEL_TEXTAREA_ROWS = 6;
 
+// Workspace constants (for workspace creation, loading, and management)
+export const WORKSPACE_MAX_RETRIES = 3; // Maximum number of retry attempts for workspace loading
+export const WORKSPACE_RETRY_DELAY_BASE_MS = 1000; // Base delay in milliseconds for exponential backoff (1 second)
+export const WORKSPACE_TOAST_DURATION_MS = 5000; // Toast notification duration in milliseconds (5 seconds)
+export const WORKSPACE_NAME_FALLBACK = 'User'; // Fallback name when user name is not available
+export const WORKSPACE_NAME_SUFFIX = "'s Workspace"; // Suffix appended to user name for workspace name
+export const WORKSPACE_SYNC_INTERVAL_MS = 300000; // Auto-sync interval in milliseconds (5 minutes)
+
