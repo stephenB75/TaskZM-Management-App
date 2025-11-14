@@ -30,8 +30,8 @@ export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe
 export const NAV_BAR_BUTTON_PADDING_TOP = '0.25rem'; // Reduced button top padding to fit components
 export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.25rem'; // Reduced button bottom padding to fit components
 export const NAV_BAR_ICON_SIZE = '2rem'; // w-8 h-8 = 2rem
-export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0'; // Icons centered, no extra margin
-export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0'; // Icons centered, no extra margin
+export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0.3rem'; // 15% of icon size (2rem * 0.15 = 0.3rem) - moved down by 15%
+export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0.3rem'; // 15% of icon size (2rem * 0.15 = 0.3rem) - moved down by 15%
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
 export const NAV_BAR_INDICATOR_TOP = '-0.5rem'; // Keep indicator above icon
 export const NAV_BAR_INDICATOR_MARGIN_LEFT = '-1rem';
