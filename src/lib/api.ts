@@ -247,6 +247,13 @@ export async function getTasks(
 }
 
 export async function saveTask(workspaceId: string, task: Task): Promise<Task> {
+  // Validate workspace ID
+  if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
+    const error = new Error('Invalid workspace ID');
+    logger.error('saveTask failed: Invalid workspace ID', { workspaceId, taskId: task.id });
+    throw error;
+  }
+
   try {
     const response = await fetch(`${API_BASE}/tasks/${workspaceId}`, {
       method: 'POST',
@@ -270,10 +277,34 @@ export async function saveTask(workspaceId: string, task: Task): Promise<Task> {
           errorMessage = response.statusText || errorMessage;
         }
       }
+      
+      // Handle 404 - workspace not found
+      if (response.status === 404 && (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found'))) {
+        const error = new Error('Workspace not found. Please refresh the page to create workspace.');
+        logger.error('saveTask failed: Workspace not found', { 
+          status: response.status, 
+          workspaceId,
+          taskId: task.id
+        });
+        throw error;
+      }
+      
+      // Handle 401/403 - authentication errors
+      if (response.status === 401 || response.status === 403) {
+        const error = new Error('Authentication failed. Please sign in again.');
+        logger.error('saveTask failed: Authentication error', { 
+          status: response.status, 
+          workspaceId,
+          taskId: task.id
+        });
+        throw error;
+      }
+      
       logger.error('saveTask failed:', { 
         status: response.status, 
         statusText: response.statusText,
         error: errorMessage,
+        workspaceId,
         taskId: task.id
       });
       throw new Error(errorMessage);

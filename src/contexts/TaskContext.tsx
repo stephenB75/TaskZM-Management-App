@@ -983,6 +983,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const addTask = useCallback(async (taskData: Partial<Task>) => {
     updateActivity(); // Track demo user activity
+    
+    // Validate and correct workspace ID if needed
+    let currentWorkspaceId = workspaceId;
+    if (currentWorkspaceId) {
+      const workspaceIdParts = currentWorkspaceId.split('_');
+      // Check for malformed workspace IDs (e.g., with timestamp suffixes)
+      if (workspaceIdParts.length > 2 && workspaceIdParts[0] === 'workspace') {
+        const correctedId = `${workspaceIdParts[0]}_${workspaceIdParts[1]}`;
+        logger.warn('Correcting malformed workspace ID in addTask:', { old: currentWorkspaceId, new: correctedId });
+        setWorkspaceId(correctedId);
+        currentWorkspaceId = correctedId;
+      }
+    }
+    
     const newTask: Task = {
       id: generateId(),
       title: taskData.title || 'Untitled Task',
@@ -1007,14 +1021,66 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     };
 
     // Save to Supabase FIRST (source of truth)
-    if (workspaceId && accessToken) {
+    if (currentWorkspaceId && accessToken) {
       try {
-        await api.saveTask(workspaceId, newTask);
+        // Ensure workspace exists before saving task
+        let validWorkspaceId = currentWorkspaceId;
+        try {
+          const ensuredWorkspaceId = await ensureWorkspace();
+          if (ensuredWorkspaceId) {
+            validWorkspaceId = ensuredWorkspaceId;
+            if (validWorkspaceId !== currentWorkspaceId) {
+              // Workspace ID was corrected, update state
+              setWorkspaceId(validWorkspaceId);
+            }
+          } else {
+            // Workspace couldn't be created, save locally
+            throw new Error('Workspace not available');
+          }
+        } catch (ensureError) {
+          const ensureErrorMessage = ensureError instanceof Error ? ensureError.message : String(ensureError);
+          // If it's just a "not found" error, try to create workspace
+          if (ensureErrorMessage.includes('not found') || ensureErrorMessage.includes('404')) {
+            logger.debug('Workspace not found, attempting to create...');
+            // Try creating workspace
+            await createWorkspaceIfNeeded();
+            const { workspaces } = await api.getUserWorkspaces();
+            if (workspaces && workspaces.length > 0 && workspaces[0].id) {
+              validWorkspaceId = workspaces[0].id;
+              setWorkspaceId(validWorkspaceId);
+            } else {
+              throw new Error('Could not create workspace');
+            }
+          } else {
+            throw ensureError;
+          }
+        }
+        
+        await api.saveTask(validWorkspaceId, newTask);
         // Reload from server to get the authoritative version
-        await loadTasksFromServer(workspaceId);
+        await loadTasksFromServer(validWorkspaceId);
         toast.success('Task created');
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to save task to server:', error);
+        
+        // If workspace not found, try to ensure it exists and retry
+        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+          try {
+            logger.debug('Workspace not found when saving task, ensuring workspace exists...');
+            const validWorkspaceId = await ensureWorkspace();
+            if (validWorkspaceId) {
+              // Retry saving with valid workspace ID
+              await api.saveTask(validWorkspaceId, newTask);
+              await loadTasksFromServer(validWorkspaceId);
+              toast.success('Task created');
+              return;
+            }
+          } catch (retryError) {
+            logger.error('Failed to ensure workspace on retry:', retryError);
+          }
+        }
+        
         // Fallback: save locally and cache
         setTasks(prev => {
           const updated = [...prev, newTask];
@@ -1098,6 +1164,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
+    
+    // Validate and correct workspace ID if needed
+    let currentWorkspaceId = workspaceId;
+    if (currentWorkspaceId) {
+      const workspaceIdParts = currentWorkspaceId.split('_');
+      // Check for malformed workspace IDs (e.g., with timestamp suffixes)
+      if (workspaceIdParts.length > 2 && workspaceIdParts[0] === 'workspace') {
+        const correctedId = `${workspaceIdParts[0]}_${workspaceIdParts[1]}`;
+        logger.warn('Correcting malformed workspace ID in updateTask:', { old: currentWorkspaceId, new: correctedId });
+        setWorkspaceId(correctedId);
+        currentWorkspaceId = correctedId;
+      }
+    }
+    
     // Find the task to update
     const currentTask = tasks.find(t => t.id === taskId);
     if (!currentTask) {
@@ -1139,15 +1219,48 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Save to Supabase FIRST (source of truth)
     if (workspaceId && accessToken) {
       try {
-        await api.saveTask(workspaceId, updatedTask);
+        // Ensure workspace exists before saving task
+        let validWorkspaceId = workspaceId;
+        try {
+          const ensuredWorkspaceId = await ensureWorkspace();
+          if (ensuredWorkspaceId) {
+            validWorkspaceId = ensuredWorkspaceId;
+            if (validWorkspaceId !== workspaceId) {
+              // Workspace ID was corrected, update state
+              setWorkspaceId(validWorkspaceId);
+            }
+          } else {
+            // Workspace couldn't be created, save locally
+            throw new Error('Workspace not available');
+          }
+        } catch (ensureError) {
+          const ensureErrorMessage = ensureError instanceof Error ? ensureError.message : String(ensureError);
+          // If it's just a "not found" error, try to create workspace
+          if (ensureErrorMessage.includes('not found') || ensureErrorMessage.includes('404')) {
+            logger.debug('Workspace not found, attempting to create...');
+            // Try creating workspace
+            await createWorkspaceIfNeeded();
+            const { workspaces } = await api.getUserWorkspaces();
+            if (workspaces && workspaces.length > 0 && workspaces[0].id) {
+              validWorkspaceId = workspaces[0].id;
+              setWorkspaceId(validWorkspaceId);
+            } else {
+              throw new Error('Could not create workspace');
+            }
+          } else {
+            throw ensureError;
+          }
+        }
+        
+        await api.saveTask(validWorkspaceId, updatedTask);
         
         // Save next occurrence task to server if created
         if (nextOccurrenceTask) {
-          await api.saveTask(workspaceId, nextOccurrenceTask);
+          await api.saveTask(validWorkspaceId, nextOccurrenceTask);
         }
         
         // Reload from server to get the authoritative version
-        await loadTasksFromServer(workspaceId);
+        await loadTasksFromServer(validWorkspaceId);
         
         if (nextOccurrenceTask) {
           toast.success('Next occurrence created', {
@@ -1155,7 +1268,33 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           });
         }
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to update task on server:', error);
+        
+        // If workspace not found, try to ensure it exists and retry
+        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+          try {
+            logger.debug('Workspace not found when updating task, ensuring workspace exists...');
+            const validWorkspaceId = await ensureWorkspace();
+            if (validWorkspaceId) {
+              // Retry saving with valid workspace ID
+              await api.saveTask(validWorkspaceId, updatedTask);
+              if (nextOccurrenceTask) {
+                await api.saveTask(validWorkspaceId, nextOccurrenceTask);
+              }
+              await loadTasksFromServer(validWorkspaceId);
+              if (nextOccurrenceTask) {
+                toast.success('Next occurrence created', {
+                  description: `Task "${nextOccurrenceTask.title}" scheduled for ${new Date(nextOccurrenceTask.scheduledDate!).toLocaleDateString()}`,
+                });
+              }
+              return;
+            }
+          } catch (retryError) {
+            logger.error('Failed to ensure workspace on retry:', retryError);
+          }
+        }
+        
         // Fallback: update locally
         setTasks(prev => {
           const updated = prev.map(task => {
