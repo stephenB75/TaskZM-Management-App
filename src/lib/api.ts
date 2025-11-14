@@ -170,7 +170,14 @@ export async function getTasks(
     since?: string; // ISO timestamp - only fetch tasks updated after this time
     ifModifiedSince?: string; // ETag/version - check if data changed
   }
-): Promise<Task[]> {
+): Promise<{ tasks: Task[]; error?: Error }> {
+  // Validate workspace ID
+  if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
+    const error = new Error('Invalid workspace ID');
+    logger.warn('Invalid workspace ID for getTasks:', workspaceId);
+    return { tasks: [], error };
+  }
+
   try {
     const params = new URLSearchParams();
     if (options?.since) {
@@ -194,25 +201,48 @@ export async function getTasks(
     // Handle 304 Not Modified (no changes)
     if (response.status === 304) {
       logger.debug('Tasks not modified since last sync');
-      return [];
+      return { tasks: [] };
+    }
+
+    // Handle 404 - workspace might not exist yet (not necessarily an error)
+    if (response.status === 404) {
+      logger.debug('Workspace not found (404) - may need to be created:', workspaceId);
+      return { tasks: [] }; // Return empty array, not an error
+    }
+
+    // Handle 401/403 - authentication/authorization errors
+    if (response.status === 401 || response.status === 403) {
+      const error = new Error('Authentication failed. Please sign in again.');
+      logger.error('Authentication error:', { status: response.status, workspaceId });
+      return { tasks: [], error };
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || 'Failed to fetch tasks');
+      let errorMessage = 'Failed to fetch tasks';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        errorMessage = `Server error (${response.status})`;
+      }
+      const error = new Error(errorMessage);
+      logger.error('Failed to fetch tasks:', { status: response.status, workspaceId, error: errorMessage });
+      return { tasks: [], error };
     }
 
     const data = await response.json();
     // Validate response structure
     if (!data || !Array.isArray(data.tasks)) {
+      const error = new Error('Invalid server response format');
       logger.error('Invalid getTasks response format:', data);
-      return [];
+      return { tasks: [], error };
     }
-    return data.tasks;
+    return { tasks: data.tasks };
   } catch (error) {
-    // If backend is not available, return empty array instead of crashing
-    logger.warn('Backend unavailable, using empty task list:', error);
-    return [];
+    // Network errors or other fetch failures
+    const errorObj = error instanceof Error ? error : new Error('Network error');
+    logger.warn('Backend unavailable:', { workspaceId, error: errorObj.message });
+    return { tasks: [], error: errorObj };
   }
 }
 

@@ -371,10 +371,57 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Load tasks from Supabase (source of truth)
   async function loadTasksFromServer(wsId: string): Promise<Task[]> {
+    // Validate workspace ID
+    if (!wsId || typeof wsId !== 'string' || wsId.trim() === '') {
+      logger.warn('Invalid workspace ID for loadTasksFromServer:', wsId);
+      const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+      if (savedTasks.length > 0) {
+        setTasks(savedTasks);
+        return savedTasks;
+      }
+      return [];
+    }
+
     try {
       logger.debug(`Loading tasks from server for workspace: ${wsId}`);
-      const serverTasks = await api.getTasks(wsId);
+      const result = await api.getTasks(wsId);
+      const { tasks: serverTasks, error } = result;
       
+      // If there was an error, handle it appropriately
+      if (error) {
+        logger.error('Error loading tasks from server:', error);
+        
+        // Check if it's an authentication error
+        if (error.message.includes('Authentication')) {
+          toast.error('Authentication failed', {
+            description: 'Please sign in again to continue.',
+          });
+          // Don't fall back to localStorage for auth errors
+          const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+          setTasks(savedTasks);
+          return savedTasks;
+        }
+        
+        // For other errors, fall back to localStorage if available
+        const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+        if (savedTasks.length > 0) {
+          logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
+          setTasks(savedTasks);
+          toast.error('Failed to load tasks from server, using offline data', {
+            description: error.message || 'Please check your internet connection',
+          });
+          return savedTasks;
+        } else {
+          // No local data, show error but don't set empty array yet
+          toast.error('Failed to load tasks', {
+            description: error.message || 'Please check your internet connection',
+          });
+          setTasks([]);
+          return [];
+        }
+      }
+      
+      // No error - process the tasks
       if (serverTasks && serverTasks.length > 0) {
         // Server has data - use it as source of truth
         logger.info(`Loaded ${serverTasks.length} tasks from server`);
@@ -394,8 +441,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(syncFlagKey);
         return serverTasks;
       } else {
-        // No server data - check localStorage as fallback
-        logger.warn('No tasks found on server, checking localStorage');
+        // No server data - this is valid (workspace exists but has no tasks)
+        logger.info('No tasks found on server (workspace may be empty)');
         const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
         if (savedTasks.length > 0) {
           logger.info(`Found ${savedTasks.length} tasks in localStorage, syncing to server`);
@@ -410,23 +457,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             }
           }
           // After syncing, reload from server to get authoritative data
-          const refreshedTasks = await api.getTasks(wsId);
-          if (refreshedTasks && refreshedTasks.length > 0) {
-            setTasks(refreshedTasks);
-            saveToLocalStorage('tasks', refreshedTasks);
-            return refreshedTasks;
+          const refreshedResult = await api.getTasks(wsId);
+          if (!refreshedResult.error && refreshedResult.tasks && refreshedResult.tasks.length > 0) {
+            setTasks(refreshedResult.tasks);
+            saveToLocalStorage('tasks', refreshedResult.tasks);
+            return refreshedResult.tasks;
           }
-          return [];
-        } else {
-          logger.info('No tasks found in server or localStorage');
-          setTasks([]);
-          saveToLocalStorage('tasks', []);
-          return [];
         }
+        // No tasks in server or localStorage - this is valid for a new workspace
+        logger.info('No tasks found in server or localStorage');
+        setTasks([]);
+        saveToLocalStorage('tasks', []);
+        return [];
       }
     } catch (error) {
-      logger.error('Failed to load tasks from server:', error);
-      // Fallback to localStorage only if server completely fails
+      // Unexpected error (shouldn't happen with new error handling, but keep as safety net)
+      logger.error('Unexpected error loading tasks from server:', error);
       const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
       if (savedTasks.length > 0) {
         logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
@@ -770,7 +816,25 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       logger.debug(`Force syncing with server for workspace: ${targetWorkspaceId}`);
       
       // Load from Supabase (source of truth)
-      const serverTasks = await api.getTasks(targetWorkspaceId);
+      const result = await api.getTasks(targetWorkspaceId);
+      const { tasks: serverTasks, error } = result;
+      
+      // If there was an error, handle it
+      if (error) {
+        logger.error('Sync error:', error);
+        if (!silent) {
+          if (error.message.includes('Authentication')) {
+            toast.error('Authentication failed', {
+              description: 'Please sign in again to continue.',
+            });
+          } else {
+            toast.error('Failed to sync with server', {
+              description: error.message || 'Please check your internet connection',
+            });
+          }
+        }
+        return;
+      }
       
       // Server is source of truth - always use server data, overwrite localStorage
       logger.info(`Synced ${serverTasks.length} tasks from server`);
@@ -783,13 +847,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(syncKey);
       localStorage.setItem(`last_server_sync_${targetWorkspaceId}`, String(Date.now()));
       
-      if (!silent) {
+      if (!silent && serverTasks.length > 0) {
         toast.success('Synced with server', {
           description: `Loaded ${serverTasks.length} task${serverTasks.length !== 1 ? 's' : ''}`,
         });
       }
     } catch (error) {
-      logger.error('Sync error:', error);
+      logger.error('Unexpected sync error:', error);
       // On error, keep current state (might be offline)
       if (!silent) {
         toast.error('Failed to sync with server', {
