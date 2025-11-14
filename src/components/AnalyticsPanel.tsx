@@ -489,16 +489,17 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="h-48">
+                  <div className="h-56" style={{ minHeight: '224px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <PieChart margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
                         <Pie
                           data={analytics.statusDistribution}
                           cx="50%"
-                          cy="50%"
+                          cy="45%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={70}
+                          label={false}
+                          outerRadius={65}
+                          innerRadius={0}
                           fill="#8884d8"
                           dataKey="value"
                         >
@@ -507,6 +508,21 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
+                        <Legend 
+                          verticalAlign="bottom" 
+                          height={36}
+                          iconType="circle"
+                          wrapperStyle={{ paddingTop: '10px' }}
+                          formatter={(value, entry: any) => {
+                            const item = analytics.statusDistribution.find(d => d.name === value);
+                            const percent = item ? ((item.value / analytics.totalTasks) * 100).toFixed(0) : '0';
+                            return (
+                              <span style={{ fontSize: '11px', color: COLOR_TEXT_SECONDARY }}>
+                                {value}: {percent}%
+                              </span>
+                            );
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
