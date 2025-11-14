@@ -39,6 +39,30 @@ export function TodayAgendaView({
     };
   }, []);
 
+  // Make this view a droppable zone for tasks from Kanban
+  const { setNodeRef, isOver } = useDroppable({
+    id: "today-agenda",
+  });
+
+  // Get today's tasks
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const allTodayTasks = tasks.filter((task) => {
+    // Check if task matches today (either exact match or recurrence pattern)
+    return isDateInRecurrence(task, today);
+  });
+
+  // Filter out done tasks - they should not appear in Today Agenda
+  // Done tasks automatically appear in Archive view
+  const incompleteTasks = allTodayTasks.filter((task) => task.status !== "done");
+
+  // Sort incomplete tasks by time
+  const todayTasks = incompleteTasks.sort((a, b) => {
+    const timeA = new Date(a.scheduledDate!).getTime();
+    const timeB = new Date(b.scheduledDate!).getTime();
+    return timeA - timeB;
+  });
+
   // Auto-scroll to current time on mount and when tasks change
   useEffect(() => {
     if (todayTasks.length === 0) return;
@@ -71,8 +95,9 @@ export function TodayAgendaView({
         if (taskElement) {
           taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
-          // If no task found, find the scroll viewport and scroll to approximate current time position
-          const scrollViewport = document.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+          // If no task found, find the scroll viewport within this component and scroll to approximate current time position
+          // Find the scroll viewport by looking for the parent ScrollArea's viewport
+          const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
           if (scrollViewport) {
             // Estimate: each hour is roughly 60px, start from 8 AM
             const hoursFrom8AM = Math.max(0, currentHour - 8);
@@ -88,30 +113,6 @@ export function TodayAgendaView({
     const timer = setTimeout(scrollToCurrentTime, 100);
     return () => clearTimeout(timer);
   }, [todayTasks]);
-
-  // Make this view a droppable zone for tasks from Kanban
-  const { setNodeRef, isOver } = useDroppable({
-    id: "today-agenda",
-  });
-
-  // Get today's tasks
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const allTodayTasks = tasks.filter((task) => {
-    // Check if task matches today (either exact match or recurrence pattern)
-    return isDateInRecurrence(task, today);
-  });
-
-  // Filter out done tasks - they should not appear in Today Agenda
-  // Done tasks automatically appear in Archive view
-  const incompleteTasks = allTodayTasks.filter((task) => task.status !== "done");
-
-  // Sort incomplete tasks by time
-  const todayTasks = incompleteTasks.sort((a, b) => {
-    const timeA = new Date(a.scheduledDate!).getTime();
-    const timeB = new Date(b.scheduledDate!).getTime();
-    return timeA - timeB;
-  });
 
   // Find the first uncompleted task (next up)
   const nextUpTaskId = todayTasks[0]?.id;
