@@ -32,6 +32,7 @@ import {
   Area,
   PieChart,
   Pie,
+  ComposedChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -43,6 +44,23 @@ import {
 import { useTasks } from "../contexts/TaskContext";
 import { motion } from "motion/react";
 import type { Task, TaskPriority } from "../types";
+import {
+  COLOR_PRIMARY,
+  COLOR_GRADIENT_START,
+  COLOR_GRADIENT_MID,
+  COLOR_GRADIENT_END,
+  COLOR_PASTEL_SKY,
+  COLOR_PASTEL_MINT,
+  COLOR_PASTEL_LAVENDER,
+  COLOR_PASTEL_PINK,
+  COLOR_BORDER_LIGHT,
+  COLOR_BORDER_MEDIUM,
+  COLOR_TEXT_SECONDARY,
+  COLOR_BACKGROUND_WHITE,
+  COLOR_WARNING,
+  COLOR_AWARD_STREAK,
+  getColorWithOpacity,
+} from "../lib/color-theme";
 
 interface AnalyticsPanelProps {
   onClose: () => void;
@@ -114,24 +132,49 @@ function CustomTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-        <p className="text-xs mb-0.5">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p
-            key={index}
-            className="text-[10px]"
-            style={{ color: entry.color }}
-          >
-            {entry.name}:{" "}
-            {typeof entry.value === "number"
+        <p className="text-xs mb-0.5 font-semibold">{label}</p>
+        {payload.map((entry: any, index: number) => {
+          // Format time in hours and minutes
+          const formatTime = (minutes: number) => {
+            const hours = Math.floor(minutes / 60);
+            const mins = Math.round(minutes % 60);
+            if (hours > 0) {
+              return `${hours}h ${mins}m`;
+            }
+            return `${mins}m`;
+          };
+          
+          const value = entry.dataKey === 'minutes' 
+            ? formatTime(entry.value)
+            : typeof entry.value === "number"
               ? entry.value.toFixed(1)
-              : entry.value}
-          </p>
-        ))}
+              : entry.value;
+          
+          return (
+            <p
+              key={index}
+              className="text-[10px] font-medium"
+              style={{ color: entry.color }}
+            >
+              {entry.name}: {value}
+            </p>
+          );
+        })}
       </div>
     );
   }
   return null;
 }
+
+// Custom Y-axis formatter for time display
+const formatYAxisTime = (value: number) => {
+  const hours = Math.floor(value / 60);
+  const minutes = Math.round(value % 60);
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+  return `${minutes}m`;
+};
 
 export function AnalyticsPanel({
   onClose,
@@ -467,23 +510,53 @@ export function AnalyticsPanel({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0 }}
             >
-              <Card className="relative overflow-hidden border-2 border-[#7B68EE]/40 bg-gradient-to-br from-violet-100/80 via-purple-50/80 to-pink-50/80 dark:from-violet-950/40 dark:via-purple-950/30 dark:to-pink-950/30 shadow-lg">
+              <Card 
+                className="relative overflow-hidden border-2 shadow-lg"
+                style={{ 
+                  borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.4),
+                  background: `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.8)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.8)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.8)})`
+                }}
+              >
                 {/* Decorative background elements */}
-                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#7B68EE]/15 to-purple-500/15 rounded-full -mr-20 -mt-20 blur-xl" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-400/10 to-rose-400/10 rounded-full -ml-16 -mb-16 blur-xl" />
+                <div 
+                  className="absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 blur-xl"
+                  style={{ 
+                    background: `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PRIMARY, 0.15)}, ${getColorWithOpacity(COLOR_GRADIENT_MID, 0.15)})`
+                  }}
+                />
+                <div 
+                  className="absolute bottom-0 left-0 w-32 h-32 rounded-full -ml-16 -mb-16 blur-xl"
+                  style={{ 
+                    background: `linear-gradient(to top right, ${getColorWithOpacity(COLOR_PASTEL_PINK, 0.1)}, ${getColorWithOpacity(COLOR_GRADIENT_END, 0.1)})`
+                  }}
+                />
                 
                 <CardHeader className="pb-3 pt-5 relative z-10">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2.5 text-lg font-bold">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7B68EE] to-purple-600 flex items-center justify-center shadow-md">
+                      <div 
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md"
+                        style={{ 
+                          background: `linear-gradient(to bottom right, ${COLOR_PRIMARY}, ${COLOR_GRADIENT_MID})`
+                        }}
+                      >
                         <Timer className="w-5 h-5 text-white" />
                       </div>
-                      <span className="bg-gradient-to-r from-[#7B68EE] via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      <span 
+                        className="bg-clip-text text-transparent"
+                        style={{ 
+                          backgroundImage: `linear-gradient(to right, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID}, ${COLOR_GRADIENT_END})`
+                        }}
+                      >
                         Pomodoro Time Tracking
                       </span>
                     </CardTitle>
-                    <Badge variant="outline" className="bg-white/60 dark:bg-gray-900/60 border-[#7B68EE]/30">
-                      <Award className="w-3 h-3 mr-1.5 text-[#7B68EE]" />
+                    <Badge 
+                      variant="outline" 
+                      className="bg-white/60 dark:bg-gray-900/60"
+                      style={{ borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.3) }}
+                    >
+                      <Award className="w-3 h-3 mr-1.5" style={{ color: COLOR_PRIMARY }} />
                       {analytics.tasksWithTime} tasks
                     </Badge>
                   </div>
@@ -495,10 +568,20 @@ export function AnalyticsPanel({
                     {/* Total Time */}
                     <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow flex-shrink-0 min-w-[100px] sm:min-w-0">
                       <div className="flex flex-col items-center">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-2 shadow-sm">
+                        <div 
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 shadow-sm"
+                          style={{ 
+                            background: `linear-gradient(to bottom right, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID})`
+                          }}
+                        >
                           <Timer className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
-                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                        <div 
+                          className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent mb-1"
+                          style={{ 
+                            backgroundImage: `linear-gradient(to right, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID})`
+                          }}
+                        >
                           {Math.floor(analytics.totalTimeTracked / 60)}
                           <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
                           {analytics.totalTimeTracked % 60}
@@ -513,10 +596,20 @@ export function AnalyticsPanel({
                     {/* This Week */}
                     <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow flex-shrink-0 min-w-[100px] sm:min-w-0">
                       <div className="flex flex-col items-center">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-2 shadow-sm">
+                        <div 
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 shadow-sm"
+                          style={{ 
+                            background: `linear-gradient(to bottom right, ${COLOR_PASTEL_MINT}, ${COLOR_GRADIENT_END})`
+                          }}
+                        >
                           <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
-                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-1">
+                        <div 
+                          className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent mb-1"
+                          style={{ 
+                            backgroundImage: `linear-gradient(to right, ${COLOR_PASTEL_MINT}, ${COLOR_GRADIENT_END})`
+                          }}
+                        >
                           {Math.floor(analytics.weeklyTimeTracked / 60)}
                           <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
                           {analytics.weeklyTimeTracked % 60}
@@ -531,10 +624,20 @@ export function AnalyticsPanel({
                     {/* Avg/Task */}
                     <div className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/50 dark:border-gray-800/50 shadow-md hover:shadow-lg transition-shadow flex-shrink-0 min-w-[100px] sm:min-w-0">
                       <div className="flex flex-col items-center">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-2 shadow-sm">
+                        <div 
+                          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 shadow-sm"
+                          style={{ 
+                            background: `linear-gradient(to bottom right, ${COLOR_WARNING}, ${COLOR_AWARD_STREAK})`
+                          }}
+                        >
                           <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
-                        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-1">
+                        <div 
+                          className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent mb-1"
+                          style={{ 
+                            backgroundImage: `linear-gradient(to right, ${COLOR_WARNING}, ${COLOR_AWARD_STREAK})`
+                          }}
+                        >
                           {Math.floor(analytics.avgTimePerTask / 60)}
                           <span className="text-lg text-gray-500 dark:text-gray-400">h</span>{" "}
                           {Math.round(analytics.avgTimePerTask % 60)}
@@ -550,7 +653,10 @@ export function AnalyticsPanel({
                   {/* Summary Footer */}
                   <div className="flex items-center justify-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm rounded-xl p-3 border border-white/50 dark:border-gray-800/50">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-[#7B68EE] animate-pulse" />
+                      <div 
+                        className="w-2 h-2 rounded-full animate-pulse"
+                        style={{ backgroundColor: COLOR_PRIMARY }}
+                      />
                       <span>Active tracking across {analytics.tasksWithTime} tasks</span>
                     </div>
                   </div>
@@ -558,78 +664,166 @@ export function AnalyticsPanel({
               </Card>
             </motion.div>
 
-            {/* Time Tracking Trend Chart */}
+            {/* Time Tracking Trend Chart - Redesigned */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
             >
-              <Card className="border-[#7B68EE]/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Activity className="w-4 h-4 text-[#7B68EE]" />
-                    Time Tracked (Last 7 Days)
+              <Card className="border-2" style={{ borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.2) }}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-sm font-bold">
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID})` 
+                      }}
+                    >
+                      <Activity className="w-4 h-4 text-white" />
+                    </div>
+                    <span style={{ color: COLOR_PRIMARY }}>
+                      Time Tracked (Last 7 Days)
+                    </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-44">
+                  <div className="h-64">
                     <ResponsiveContainer
                       width="100%"
                       height="100%"
                     >
-                      <BarChart
+                      <ComposedChart
                         data={analytics.timeTrackingTrend}
                         margin={{
-                          top: 5,
-                          right: 5,
-                          left: -15,
+                          top: 10,
+                          right: 10,
+                          left: 0,
                           bottom: 5,
                         }}
                       >
                         <defs>
                           <linearGradient
-                            id="barGradient"
+                            id="timeBarGradient"
                             x1="0"
                             y1="0"
                             x2="0"
                             y2="1"
                           >
                             <stop
-                              offset="5%"
-                              stopColor="#7B68EE"
+                              offset="0%"
+                              stopColor={COLOR_GRADIENT_START}
                               stopOpacity={0.9}
                             />
                             <stop
-                              offset="95%"
-                              stopColor="#7B68EE"
-                              stopOpacity={0.6}
+                              offset="50%"
+                              stopColor={COLOR_GRADIENT_MID}
+                              stopOpacity={0.8}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor={COLOR_GRADIENT_END}
+                              stopOpacity={0.7}
+                            />
+                          </linearGradient>
+                          <linearGradient
+                            id="timeLineGradient"
+                            x1="0"
+                            y1="0"
+                            x2="1"
+                            y2="0"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor={COLOR_GRADIENT_START}
+                              stopOpacity={1}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor={COLOR_GRADIENT_END}
+                              stopOpacity={1}
                             />
                           </linearGradient>
                         </defs>
                         <CartesianGrid
                           strokeDasharray="3 3"
-                          stroke="#e5e7eb"
-                          opacity={0.5}
+                          stroke={COLOR_BORDER_LIGHT}
+                          opacity={0.3}
                         />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 9 }}
-                          stroke="#9ca3af"
+                          tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                          stroke={COLOR_BORDER_MEDIUM}
+                          style={{ fontFamily: 'system-ui' }}
                         />
                         <YAxis
-                          tick={{ fontSize: 9 }}
-                          width={30}
-                          stroke="#9ca3af"
+                          tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                          width={45}
+                          stroke={COLOR_BORDER_MEDIUM}
+                          tickFormatter={formatYAxisTime}
+                          style={{ fontFamily: 'system-ui' }}
                         />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip 
+                          content={<CustomTooltip />}
+                          cursor={{ fill: getColorWithOpacity(COLOR_PRIMARY, 0.1) }}
+                        />
                         <Bar
-                          dataKey="hours"
-                          fill="url(#barGradient)"
-                          radius={[6, 6, 0, 0]}
-                          name="Hours"
+                          dataKey="minutes"
+                          fill="url(#timeBarGradient)"
+                          radius={[8, 8, 0, 0]}
+                          name="Time Tracked"
                         />
-                      </BarChart>
+                        <Line
+                          type="monotone"
+                          dataKey="minutes"
+                          stroke="url(#timeLineGradient)"
+                          strokeWidth={3}
+                          dot={{ 
+                            fill: COLOR_PRIMARY, 
+                            strokeWidth: 2, 
+                            stroke: COLOR_BACKGROUND_WHITE,
+                            r: 5 
+                          }}
+                          activeDot={{ 
+                            r: 7, 
+                            fill: COLOR_PRIMARY,
+                            stroke: COLOR_BACKGROUND_WHITE,
+                            strokeWidth: 2
+                          }}
+                          name="Trend"
+                        />
+                      </ComposedChart>
                     </ResponsiveContainer>
+                  </div>
+                  {/* Summary Stats */}
+                  <div className="mt-4 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded"
+                        style={{ background: `linear-gradient(135deg, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_END})` }}
+                      />
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Daily Average: {(() => {
+                          const avg = analytics.timeTrackingTrend.reduce((sum, d) => sum + d.minutes, 0) / analytics.timeTrackingTrend.length;
+                          const hours = Math.floor(avg / 60);
+                          const mins = Math.round(avg % 60);
+                          return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: COLOR_PRIMARY }}
+                      />
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Peak: {(() => {
+                          const peak = Math.max(...analytics.timeTrackingTrend.map(d => d.minutes));
+                          const hours = Math.floor(peak / 60);
+                          const mins = Math.round(peak % 60);
+                          return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                        })()}
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
