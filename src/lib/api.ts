@@ -376,7 +376,21 @@ export async function getFolders(workspaceId: string): Promise<Folder[]> {
     if (!response.ok) {
       // Handle 404 gracefully - workspace might not exist yet or has no folders
       if (response.status === 404) {
-        logger.debug('Workspace not found or has no folders (404):', workspaceId);
+        // Check if it's a workspace not found error vs no folders
+        let errorMessage = 'Unknown error';
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } catch (e) {
+          // Ignore parse errors
+        }
+        
+        // If workspace not found (not just no folders), return empty but log differently
+        if (errorMessage.includes('Workspace not found') || errorMessage.includes('not found')) {
+          logger.debug('Workspace not found (404) - may need to be created:', workspaceId);
+        } else {
+          logger.debug('No folders found for workspace (404):', workspaceId);
+        }
         return [];
       }
 

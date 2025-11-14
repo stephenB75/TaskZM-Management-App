@@ -417,7 +417,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   async function syncFoldersFromServer(wsId: string, mergeWithLocal: boolean = false) {
     try {
+      // Validate workspace ID before attempting sync
+      if (!wsId || typeof wsId !== 'string' || wsId.trim() === '') {
+        logger.warn('Invalid workspace ID for folder sync:', wsId);
+        return;
+      }
+
+      // Try to get folders - this will return empty array if workspace doesn't exist
       let serverFolders = await api.getFolders(wsId);
+      
+      // If we got an empty array, it could mean:
+      // 1. Workspace exists but has no folders (OK - continue)
+      // 2. Workspace doesn't exist (404) - we should ensure workspace exists first
+      // We can't distinguish between these cases from getFolders alone,
+      // but if we get a 404 when trying to save a folder, we'll handle it there
 
       // Normalize server folders to ensure sync flags are accurate
       if (Array.isArray(serverFolders)) {
@@ -429,6 +442,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
 
       // Only sync offline folders if we have valid conditions
+      // Note: serverFolders can be empty array if workspace exists but has no folders
       const canSyncOfflineFolders = mergeWithLocal && 
         accessToken && 
         wsId && 
@@ -471,7 +485,39 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 continue;
               }
 
-              const savedFolder = await api.saveFolder(wsId, payload);
+              // Try to save folder - if workspace doesn't exist, ensureWorkspace will create it
+              let savedFolder;
+              try {
+                savedFolder = await api.saveFolder(wsId, payload);
+              } catch (saveError) {
+                const errorMessage = saveError instanceof Error ? saveError.message : String(saveError);
+                // If workspace doesn't exist, try to ensure it exists and retry
+                if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+                  logger.debug('Workspace not found when saving folder, ensuring workspace exists...');
+                  try {
+                    const validWorkspaceId = await ensureWorkspace();
+                    if (validWorkspaceId && validWorkspaceId === wsId) {
+                      // Workspace now exists, retry saving folder
+                      savedFolder = await api.saveFolder(wsId, payload);
+                    } else if (validWorkspaceId) {
+                      // Workspace ID changed, update and retry
+                      logger.info('Workspace ID changed during folder sync, updating:', { old: wsId, new: validWorkspaceId });
+                      wsId = validWorkspaceId;
+                      savedFolder = await api.saveFolder(wsId, payload);
+                    } else {
+                      // Couldn't create workspace, skip this folder
+                      logger.warn('Cannot sync folder: workspace does not exist and could not be created');
+                      continue;
+                    }
+                  } catch (ensureError) {
+                    logger.error('Failed to ensure workspace exists:', ensureError);
+                    continue; // Skip this folder
+                  }
+                } else {
+                  // Other error, re-throw to be caught by outer catch
+                  throw saveError;
+                }
+              }
               
               if (!savedFolder || !savedFolder.id) {
                 logger.warn('Invalid response from saveFolder:', savedFolder);
