@@ -395,7 +395,7 @@ export const DraggableTaskCard = React.forwardRef<
           </div>
 
           {/* Row 2: H3 Title (Bold) */}
-          <div className={cn("flex items-start", isMobile ? "gap-1" : "gap-1.5")}>
+          <div className={cn("flex items-start", isMobile ? "gap-1 -mt-0.5" : "gap-1.5")}>
             {task.recurrence && task.recurrence.type !== "none" && (
               <Repeat className={cn("text-primary flex-shrink-0 mt-0.5", isMobile ? "w-3 h-3" : "w-3.5 h-3.5")} />
             )}

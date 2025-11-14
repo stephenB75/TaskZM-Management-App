@@ -155,8 +155,8 @@ export function DraggableTodayAgendaTask({
   // Dot should align with headline center, which is approximately at 30px + headline line-height/2
   const badgeHeight = 20; // Badge: text-[10px] with py-0.5
   const badgeMargin = 4; // mb-1 = 4px
-  const rowGap = 6; // gap between badge row and headline row (space-y-1.5 = 6px)
-  const headlineStartPosition = badgeHeight + badgeMargin + rowGap; // ~30px
+  const rowGap = isMobile ? 2 : 6; // gap between badge row and headline row (reduced on mobile: -mt-0.5 = -2px from space-y-1 = 2px total)
+  const headlineStartPosition = badgeHeight + badgeMargin + rowGap; // ~26px on mobile, ~30px on desktop
   const headlineLineHeight = isMobile ? 20 : 24; // text-sm/text-base line-height
   const headlineCenterPosition = headlineStartPosition + (headlineLineHeight / 2); // Center of headline (~40-42px)
   const timeLabelTextHeight = 16; // text-xs height
@@ -355,7 +355,7 @@ export function DraggableTodayAgendaTask({
             </div>
 
             {/* Row 2: H3 Title (Bold) */}
-            <div className={cn("flex items-start", isMobile ? "gap-1" : "gap-1.5")}>
+            <div className={cn("flex items-start", isMobile ? "gap-1 -mt-0.5" : "gap-1.5")}>
               {task.recurrence && task.recurrence.type !== "none" && (
                 <Repeat className={cn("text-primary flex-shrink-0 mt-0.5", isMobile ? "w-3 h-3" : "w-3.5 h-3.5")} />
               )}
