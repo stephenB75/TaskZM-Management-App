@@ -253,20 +253,10 @@ export function AppHeader({
           </motion.div>
         </motion.div>
       ) : (
-        // Main header - fixed positioning, shifts when panel is open (matches dashboard layout animation)
-        // Uses same spring animation as week view/kanban to stay in sync
-        <motion.div 
+        // Main header - fixed positioning, shifts instantly when panel opens/closes (no animation)
+        // Follows week view code sequence - responds to panel push/retract without animation
+        <div 
           className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden dark:bg-gray-900/95"
-          initial={false}
-          animate={{
-            left: `${headerLeft}px`,
-            width: headerWidth,
-          }}
-          transition={{ 
-            type: 'spring', 
-            damping: HEADER_ANIMATION_DAMPING, 
-            stiffness: HEADER_ANIMATION_STIFFNESS
-          }}
           style={{ 
             zIndex: HEADER_Z_INDEX,
             backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
@@ -277,10 +267,12 @@ export function AppHeader({
             paddingBottom: HEADER_PADDING_Y_DESKTOP,
             minHeight: `${HEADER_HEIGHT}px`, 
             height: `${HEADER_HEIGHT}px`,
+            left: `${headerLeft}px`,
+            width: headerWidth,
             right: 0,
           }}
         >
-          {/* Static container for logo and title - prevents them from animating with the header */}
+          {/* Static container for logo and title - no animations */}
           <div 
             className="flex items-center justify-between"
             style={{ 
@@ -288,7 +280,7 @@ export function AppHeader({
               height: '100%',
             }}
           >
-            {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animation on these elements */}
+            {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animations */}
             <div
               className="flex items-center min-w-0 flex-1"
               style={{ gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE }}
@@ -339,7 +331,7 @@ export function AppHeader({
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
       )}
     </>
   );

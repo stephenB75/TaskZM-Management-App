@@ -54,6 +54,7 @@ import {
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_PINK,
   COLOR_PASTEL_PEACH,
+  COLOR_PASTEL_LILAC,
   COLOR_BORDER_LIGHT,
   COLOR_BORDER_MEDIUM,
   COLOR_TEXT_SECONDARY,
@@ -236,6 +237,30 @@ export function AnalyticsPanel({
   const { tasks, projects } = useTasks();
 
   const analytics = useMemo(() => {
+    // Safety check: ensure tasks and projects are arrays
+    if (!Array.isArray(tasks)) {
+      console.warn('AnalyticsPanel: tasks is not an array', tasks);
+      return {
+        totalTimeTracked: 0,
+        tasksWithTime: 0,
+        avgTimePerTask: 0,
+        timeTrackingTrend: [],
+        weeklyTimeTracked: 0,
+        totalTasks: 0,
+        completedTasks: 0,
+        completionRate: 0,
+        timePatterns: {
+          hourly: [],
+          blocks: [],
+          peakHour: 12,
+        },
+        taskTypes: [],
+        taskPerDayProgress: [],
+        projectProgress: [],
+        avgCompletionTime: 0,
+      };
+    }
+
     const now = new Date();
 
     // Time tracking analytics (from Pomodoro timer)
@@ -278,9 +303,15 @@ export function AnalyticsPanel({
         if (!t.actualTime || t.actualTime <= 0) return false;
         if (!t.updatedAt) return false;
         
-        const updatedDate = new Date(t.updatedAt);
-        updatedDate.setHours(0, 0, 0, 0);
-        return updatedDate.getTime() === date.getTime();
+        try {
+          const updatedDate = new Date(t.updatedAt);
+          if (isNaN(updatedDate.getTime())) return false;
+          updatedDate.setHours(0, 0, 0, 0);
+          return updatedDate.getTime() === date.getTime();
+        } catch (error) {
+          console.warn('Invalid updatedAt date for task:', t.id, error);
+          return false;
+        }
       });
 
       // Sum up the actualTime for tasks updated on this day
@@ -314,9 +345,15 @@ export function AnalyticsPanel({
       if (!t.actualTime || t.actualTime <= 0) return false;
       // Must have been updated this week (indicates active tracking)
       if (!t.updatedAt) return false;
-      const updatedDate = new Date(t.updatedAt);
-      updatedDate.setHours(0, 0, 0, 0);
-      return updatedDate >= startOfWeek;
+      try {
+        const updatedDate = new Date(t.updatedAt);
+        if (isNaN(updatedDate.getTime())) return false;
+        updatedDate.setHours(0, 0, 0, 0);
+        return updatedDate >= startOfWeek;
+      } catch (error) {
+        console.warn('Invalid updatedAt date for task:', t.id, error);
+        return false;
+      }
     });
 
     // Sum up all tracked time for tasks updated this week
@@ -337,12 +374,24 @@ export function AnalyticsPanel({
     const timePatterns = (() => {
       const hourCounts = new Array(24).fill(0);
       const completedTasksList = tasks.filter(
-        (t) => t.completedAt,
+        (t) => t.completedAt && t.completedAt instanceof Date || typeof t.completedAt === 'string',
       );
 
       completedTasksList.forEach((task) => {
-        const hour = new Date(task.completedAt!).getHours();
-        hourCounts[hour]++;
+        try {
+          if (task.completedAt) {
+            const completedDate = new Date(task.completedAt);
+            if (!isNaN(completedDate.getTime())) {
+              const hour = completedDate.getHours();
+              if (hour >= 0 && hour < 24) {
+                hourCounts[hour]++;
+              }
+            }
+          }
+        } catch (error) {
+          // Skip invalid dates
+          console.warn('Invalid completedAt date for task:', task.id, error);
+        }
       });
 
       // Group into time blocks
@@ -359,6 +408,10 @@ export function AnalyticsPanel({
         (a, b) => a + b,
         0,
       );
+
+      // Calculate peak hour safely
+      const maxCount = Math.max(...hourCounts);
+      const peakHour = maxCount > 0 ? hourCounts.indexOf(maxCount) : 12; // Default to noon if no data
 
       return {
         hourly: Array.from({ length: 24 }, (_, i) => ({
@@ -377,29 +430,29 @@ export function AnalyticsPanel({
           {
             name: "Morning",
             value: morningTasks,
-            color: "#FFD1A4",
-            fill: "#FFD1A4",
+            color: COLOR_PASTEL_PEACH,
+            fill: COLOR_PASTEL_PEACH,
           },
           {
             name: "Afternoon",
             value: afternoonTasks,
-            color: "#A4D4FF",
-            fill: "#A4D4FF",
+            color: COLOR_PASTEL_SKY,
+            fill: COLOR_PASTEL_SKY,
           },
           {
             name: "Evening",
             value: eveningTasks,
-            color: "#C4B5FD",
-            fill: "#C4B5FD",
+            color: COLOR_PASTEL_LAVENDER,
+            fill: COLOR_PASTEL_LAVENDER,
           },
           {
             name: "Night",
             value: nightTasks,
-            color: "#93C5FD",
-            fill: "#93C5FD",
+            color: COLOR_PASTEL_LILAC,
+            fill: COLOR_PASTEL_LILAC,
           },
         ].filter((block) => block.value > 0),
-        peakHour: hourCounts.indexOf(Math.max(...hourCounts)),
+        peakHour,
       };
     })();
 
@@ -433,15 +486,28 @@ export function AnalyticsPanel({
 
         const completed = tasks.filter((t) => {
           if (!t.completedAt) return false;
-          const completedDate = new Date(t.completedAt);
-          return (
-            completedDate >= date && completedDate < nextDay
-          );
+          try {
+            const completedDate = new Date(t.completedAt);
+            if (isNaN(completedDate.getTime())) return false;
+            return (
+              completedDate >= date && completedDate < nextDay
+            );
+          } catch (error) {
+            console.warn('Invalid completedAt date for task:', t.id, error);
+            return false;
+          }
         }).length;
 
         const created = tasks.filter((t) => {
-          const createdDate = new Date(t.createdAt);
-          return createdDate >= date && createdDate < nextDay;
+          if (!t.createdAt) return false;
+          try {
+            const createdDate = new Date(t.createdAt);
+            if (isNaN(createdDate.getTime())) return false;
+            return createdDate >= date && createdDate < nextDay;
+          } catch (error) {
+            console.warn('Invalid createdAt date for task:', t.id, error);
+            return false;
+          }
         }).length;
 
         return {
@@ -457,12 +523,14 @@ export function AnalyticsPanel({
 
     // Project Progress
     const projectProgress = (() => {
-      if (!projects || projects.length === 0) {
+      if (!Array.isArray(projects) || projects.length === 0) {
         return [];
       }
 
       return projects
         .map((project) => {
+          if (!project || !project.id) return null;
+          
           const projectTasks = tasks.filter(
             (t) => t.projectId === project.id,
           );
@@ -477,29 +545,41 @@ export function AnalyticsPanel({
               : 0;
 
           return {
-            name: project.name,
+            name: project.name || 'Unnamed Project',
             total: totalProjectTasks,
             completed: completedProjectTasks,
             completionRate: projectCompletionRate,
-            color: project.color || "#7B68EE",
+            color: project.color || COLOR_PRIMARY,
           };
         })
+        .filter((p): p is NonNullable<typeof p> => p !== null)
         .sort((a, b) => b.completionRate - a.completionRate)
         .slice(0, 5);
     })();
 
     // Task Durations
-    const completedWithDates = tasks.filter(
-      (t) => t.completedAt && t.createdAt,
-    );
+    const completedWithDates = tasks.filter((t) => {
+      if (!t.completedAt || !t.createdAt) return false;
+      try {
+        const created = new Date(t.createdAt);
+        const completed = new Date(t.completedAt);
+        return !isNaN(created.getTime()) && !isNaN(completed.getTime());
+      } catch (error) {
+        return false;
+      }
+    });
     const avgCompletionTime =
       completedWithDates.length > 0
         ? completedWithDates.reduce((acc, task) => {
-            const created = new Date(task.createdAt).getTime();
-            const completed = new Date(
-              task.completedAt!,
-            ).getTime();
-            return acc + (completed - created);
+            try {
+              const created = new Date(task.createdAt).getTime();
+              const completed = new Date(task.completedAt!).getTime();
+              if (isNaN(created) || isNaN(completed)) return acc;
+              return acc + (completed - created);
+            } catch (error) {
+              console.warn('Error calculating completion time for task:', task.id, error);
+              return acc;
+            }
           }, 0) /
           completedWithDates.length /
           (1000 * 60 * 60 * 24)
@@ -522,14 +602,16 @@ export function AnalyticsPanel({
     };
   }, [tasks, projects]);
 
+  // Safely calculate peak hour label with fallback
+  const peakHour = analytics?.timePatterns?.peakHour ?? 12;
   const peakHourLabel =
-    analytics.timePatterns.peakHour === 0
+    peakHour === 0
       ? "12 AM"
-      : analytics.timePatterns.peakHour < 12
-        ? `${analytics.timePatterns.peakHour} AM`
-        : analytics.timePatterns.peakHour === 12
+      : peakHour < 12
+        ? `${peakHour} AM`
+        : peakHour === 12
           ? "12 PM"
-          : `${analytics.timePatterns.peakHour - 12} PM`;
+          : `${peakHour - 12} PM`;
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-[#E6D5F0]/35 via-[#C9E4F7]/35 to-[#B8E6D5]/35 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
