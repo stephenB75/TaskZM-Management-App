@@ -462,10 +462,10 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
         hideDesktopLogo
       />
       {/* Spacer for fixed header on mobile */}
-      <div className="md:hidden h-[64px]" />
+      <div className="lg:hidden h-[64px]" />
 
       {/* Search Bar */}
-      <div className="px-4 py-3 border-b">
+      <div className="px-4 py-3 lg:py-3 border-b lg:pt-0 pt-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -489,7 +489,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
       {/* Folders List */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-3 pb-safe md:pb-4">
+        <div className="p-4 pt-6 lg:pt-4 space-y-3 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
           {filteredFolders.length === 0 ? (
             <div className="text-center py-12">
               <Folder className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
