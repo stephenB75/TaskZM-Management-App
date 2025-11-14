@@ -9,6 +9,25 @@ import { motion } from "motion/react";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
+import {
+  NAV_BAR_HEIGHT,
+  NAV_BAR_PADDING_TOP,
+  NAV_BAR_PADDING_BOTTOM,
+  NAV_BAR_BUTTON_PADDING_TOP,
+  NAV_BAR_BUTTON_PADDING_BOTTOM,
+  NAV_BAR_ICON_MARGIN_TOP_ACTIVE,
+  NAV_BAR_ICON_MARGIN_TOP_INACTIVE,
+  NAV_BAR_INDICATOR_WIDTH,
+  NAV_BAR_INDICATOR_TOP,
+  NAV_BAR_INDICATOR_MARGIN_LEFT,
+  NAV_BAR_LABEL_TEXT_SIZE,
+  NAV_BAR_LABEL_MARGIN_TOP,
+  NAV_BAR_BADGE_TEXT_SIZE,
+  NAV_BAR_ANIMATION_DURATION,
+  NAV_BAR_ANIMATION_STIFFNESS,
+  NAV_BAR_ANIMATION_DAMPING,
+  NAV_BAR_HAPTIC_DURATION,
+} from "../lib/layout-constants";
 
 interface BottomNavProps {
   currentView: string;
@@ -31,7 +50,7 @@ export function BottomNav({
   // Haptic feedback for modern mobile devices
   const triggerHaptic = () => {
     if ("vibrate" in navigator) {
-      navigator.vibrate(10); // Very subtle vibration
+      navigator.vibrate(NAV_BAR_HAPTIC_DURATION);
     }
   };
 
@@ -87,7 +106,7 @@ export function BottomNav({
       className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-primary/10 shadow-2xl overflow-visible"
       initial={{ y: 100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
       style={{
         boxShadow:
           "0 -4px 24px rgba(155, 135, 232, 0.08), 0 -2px 8px rgba(155, 135, 232, 0.04)",
@@ -101,9 +120,9 @@ export function BottomNav({
       <div 
         className="flex items-center justify-evenly px-1 overflow-visible" 
         style={{ 
-          paddingTop: '0.75rem',
-          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
-          minHeight: '65px'
+          paddingTop: NAV_BAR_PADDING_TOP,
+          paddingBottom: `calc(${NAV_BAR_PADDING_BOTTOM} + env(safe-area-inset-bottom, 0px))`,
+          minHeight: `${NAV_BAR_HEIGHT}px`
         }}
       >
         {navItems.map((item) => {
@@ -120,40 +139,40 @@ export function BottomNav({
                   "text-muted-foreground hover:text-foreground",
               )}
               style={{
-                paddingTop: '0.5rem',
-                paddingBottom: '0.1434375rem'
+                paddingTop: NAV_BAR_BUTTON_PADDING_TOP,
+                paddingBottom: NAV_BAR_BUTTON_PADDING_BOTTOM
               }}
             >
               {/* Icon - 30% bigger (w-6 h-6 -> w-8 h-8) */}
-              <div className="relative flex items-center justify-center" style={{ marginTop: item.active ? '0.75rem' : '0.5rem' }}>
+              <div className="relative flex items-center justify-center" style={{ marginTop: item.active ? NAV_BAR_ICON_MARGIN_TOP_ACTIVE : NAV_BAR_ICON_MARGIN_TOP_INACTIVE }}>
                 {/* Active indicator - centered above icon */}
                 {item.active && (
                   <motion.div
                     layoutId="bottomNavIndicator"
                     className="absolute h-1.5 bg-primary rounded-full z-0"
                     style={{
-                      width: '2rem',
-                      top: '-0.5rem',
+                      width: NAV_BAR_INDICATOR_WIDTH,
+                      top: NAV_BAR_INDICATOR_TOP,
                       left: '50%',
-                      marginLeft: '-1rem',
+                      marginLeft: NAV_BAR_INDICATOR_MARGIN_LEFT,
                     }}
                     transition={{
                       type: "spring",
-                      stiffness: 500,
-                      damping: 30,
+                      stiffness: NAV_BAR_ANIMATION_STIFFNESS,
+                      damping: NAV_BAR_ANIMATION_DAMPING,
                     }}
                   />
                 )}
                 <Icon className="w-8 h-8 relative z-10" />
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                  <span className={`absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white font-bold rounded-full flex items-center justify-center border-2 border-white`} style={{ fontSize: NAV_BAR_BADGE_TEXT_SIZE }}>
                     {item.badge > 9 ? "9+" : item.badge}
                   </span>
                 )}
               </div>
 
-              {/* Label - ~15% bigger (8px -> 11px) */}
-              <span className="text-[11px] font-medium leading-tight" style={{ marginTop: '0.25rem' }}>
+              {/* Label */}
+              <span className="font-medium leading-tight" style={{ fontSize: NAV_BAR_LABEL_TEXT_SIZE, marginTop: NAV_BAR_LABEL_MARGIN_TOP }}>
                 {item.label}
               </span>
             </button>

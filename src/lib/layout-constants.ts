@@ -23,3 +23,25 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
   return `calc(100% - ${left}px)`;
 };
 
+// Bottom Navigation Bar constants
+export const NAV_BAR_HEIGHT = 65; // minHeight in pixels
+export const NAV_BAR_PADDING_TOP = '0.75rem';
+export const NAV_BAR_PADDING_BOTTOM = '0.75rem';
+export const NAV_BAR_BUTTON_PADDING_TOP = '0.5rem';
+export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.1434375rem';
+export const NAV_BAR_ICON_SIZE = '2rem'; // w-8 h-8 = 2rem
+export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0.75rem';
+export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0.5rem';
+export const NAV_BAR_INDICATOR_WIDTH = '2rem';
+export const NAV_BAR_INDICATOR_TOP = '-0.5rem';
+export const NAV_BAR_INDICATOR_MARGIN_LEFT = '-1rem';
+export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
+export const NAV_BAR_LABEL_MARGIN_TOP = '0.25rem';
+export const NAV_BAR_BADGE_SIZE = '1rem'; // w-4 h-4 = 1rem
+export const NAV_BAR_BADGE_TEXT_SIZE = '8px';
+export const NAV_BAR_BADGE_BORDER_WIDTH = '2px';
+export const NAV_BAR_ANIMATION_DURATION = 0.3;
+export const NAV_BAR_ANIMATION_STIFFNESS = 500;
+export const NAV_BAR_ANIMATION_DAMPING = 30;
+export const NAV_BAR_HAPTIC_DURATION = 10; // milliseconds
+
