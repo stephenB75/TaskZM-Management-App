@@ -591,6 +591,58 @@ export function useAIScheduler() {
           
           scheduleDate.setHours(selectedHour, selectedMinute, 0, 0);
           
+          // Verify no double booking - check for time overlaps with existing tasks
+          const newTaskStart = scheduleDate.getTime();
+          const newTaskDuration = taskDurationMinutes;
+          const newTaskEnd = newTaskStart + (newTaskDuration * 60 * 1000);
+          
+          let hasConflict = false;
+          for (const existingTask of existingTasksForDay) {
+            if (!existingTask.scheduledDate) continue;
+            
+            const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
+            const existingTaskDuration = (existingTask.estimatedTime || 30) * 60 * 1000;
+            const existingTaskEnd = existingTaskStart + existingTaskDuration;
+            
+            // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
+            if (newTaskStart < existingTaskEnd && newTaskEnd > existingTaskStart) {
+              hasConflict = true;
+              break;
+            }
+          }
+          
+          // If conflict found, find next available slot after all existing tasks
+          if (hasConflict) {
+            if (existingTasksForDay.length > 0) {
+              // Find the latest task end time
+              let latestEndTime = 0;
+              for (const existingTask of existingTasksForDay) {
+                if (!existingTask.scheduledDate) continue;
+                const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
+                const existingTaskDuration = (existingTask.estimatedTime || 30) * 60 * 1000;
+                const existingTaskEnd = existingTaskStart + existingTaskDuration;
+                if (existingTaskEnd > latestEndTime) {
+                  latestEndTime = existingTaskEnd;
+                }
+              }
+              
+              // Schedule after the latest task
+              const conflictFreeDate = new Date(latestEndTime);
+              scheduleDate.setHours(conflictFreeDate.getHours(), conflictFreeDate.getMinutes(), 0, 0);
+              
+              // Round to nearest 15 minutes
+              const roundedMinutes = Math.round(scheduleDate.getMinutes() / 15) * 15;
+              scheduleDate.setMinutes(roundedMinutes);
+              
+              // Ensure we don't exceed work hours
+              if (scheduleDate.getHours() >= workEndHour) {
+                // Move to next day
+                scheduleDate.setDate(scheduleDate.getDate() + 1);
+                scheduleDate.setHours(workStartHour, 0, 0, 0);
+              }
+            }
+          }
+          
           // Update reason with time information
           if (!reason.includes('scheduled') && !reason.includes('hours')) {
             const timeStr = scheduleDate.toLocaleTimeString('en-US', { 
@@ -602,7 +654,7 @@ export function useAIScheduler() {
           }
         }
         
-        // Schedule the task (we've already verified it fits)
+        // Schedule the task (we've already verified it fits and has no conflicts)
         plan.push({ task, scheduledDate: scheduleDate, reason });
         addToDailyHours(scheduleDate, taskHours, task);
         tasksScheduledToday++;

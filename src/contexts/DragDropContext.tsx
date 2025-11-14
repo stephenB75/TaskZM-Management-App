@@ -29,6 +29,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
   const { tasks, updateTask, folders } = useTasks();
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Initialize sensors once - useSensors hook is stable and won't cause re-renders
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
