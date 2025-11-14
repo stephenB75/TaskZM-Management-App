@@ -185,15 +185,16 @@ export function PomodoroTimer({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
+              className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}
             >
               <Button
-                size="sm"
-                variant="outline"
+                size="icon"
+                variant="ghost"
                 className={cn(
                   "rounded-full border-[#7B68EE]/30 text-[#7B68EE] hover:bg-[#7B68EE]/10",
                   timerState.sessionsCompleted > 0 &&
                     "border-[#50C878]/30 text-[#50C878] hover:bg-[#50C878]/10",
-                  isMobile ? "h-3 px-0.5 text-[7px]" : "h-6 px-2 text-[10px]",
+                  isMobile ? "h-2.5 w-2.5" : "h-5 w-5",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -201,12 +202,15 @@ export function PomodoroTimer({
                 }}
               >
                 <Play className={cn(isMobile ? "w-1.5 h-1.5" : "w-3 h-3")} />
-                {timerState.sessionsCompleted > 0 && (
-                  <span className={cn(isMobile ? "ml-0.5 text-[6px]" : "ml-1")}>
-                    {timerState.sessionsCompleted} 🍅
-                  </span>
-                )}
               </Button>
+              {timerState.sessionsCompleted > 0 && (
+                <span className={cn(
+                  "text-[#50C878] font-medium",
+                  isMobile ? "text-[6px]" : "text-[10px]"
+                )}>
+                  {timerState.sessionsCompleted} 🍅
+                </span>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
