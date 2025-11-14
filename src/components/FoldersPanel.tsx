@@ -102,6 +102,7 @@ import {
   PANEL_PADDING,
   PANEL_GAP_LARGE,
   PANEL_GAP_MEDIUM,
+  PANEL_EMPTY_STATE_TEXT_SIZE,
 } from "../lib/layout-constants";
 
 interface FoldersPanelProps {
