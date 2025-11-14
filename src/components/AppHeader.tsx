@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -83,37 +83,73 @@ export function AppHeader({
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
   
-  // Use state to force re-render when panelOpen or panelKey changes
-  // This ensures the header position updates immediately
-  const [headerUpdateKey, setHeaderUpdateKey] = useState(0);
-  const [currentPanelOpen, setCurrentPanelOpen] = useState(panelOpen);
+  // Track panel state to handle transitions properly
+  // When panelKey changes between panels, we need to close the header first, then reopen it
+  // This matches the AnimatePresence mode="wait" behavior where panels close before opening
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const prevPanelKeyRef = useRef(panelKey);
+  const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Update state immediately when panelOpen changes to force re-render
+  // Detect panel key changes (switching between panels)
   useEffect(() => {
-    if (currentPanelOpen !== panelOpen) {
-      setCurrentPanelOpen(panelOpen);
-      setHeaderUpdateKey(prev => prev + 1);
+    // Clear any existing timer
+    if (transitionTimerRef.current) {
+      clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
     }
-  }, [panelOpen, currentPanelOpen]);
-  
-  // Also update when panelKey changes
-  useEffect(() => {
-    setHeaderUpdateKey(prev => prev + 1);
+    
+    // If panelKey changed and we had a panel open before, we're transitioning
+    if (prevPanelKeyRef.current !== panelKey && prevPanelKeyRef.current !== undefined && panelKey !== undefined) {
+      // Both are panel views (not dashboard), so we're switching panels
+      const wasPanel = prevPanelKeyRef.current !== 'dashboard' && prevPanelKeyRef.current !== undefined;
+      const isPanel = panelKey !== 'dashboard' && panelKey !== undefined;
+      
+      if (wasPanel && isPanel) {
+        // Switching from one panel to another - close header immediately
+        setIsTransitioning(true);
+        // After the panel animation completes (spring: damping 30, stiffness 300 ≈ 200-300ms), reopen
+        // Use requestAnimationFrame to ensure we wait for the next frame, then add delay
+        requestAnimationFrame(() => {
+          transitionTimerRef.current = setTimeout(() => {
+            setIsTransitioning(false);
+          }, 250); // Match spring animation timing (damping 30, stiffness 300)
+        });
+      } else {
+        // Not switching between panels, just update normally
+        setIsTransitioning(false);
+      }
+    } else {
+      // No panel key change or initial render
+      setIsTransitioning(false);
+    }
+    
+    prevPanelKeyRef.current = panelKey;
+    
+    // Cleanup on unmount
+    return () => {
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+      }
+    };
   }, [panelKey]);
+  
+  // Calculate effective panelOpen state - close during transitions
+  // When transitioning between panels, temporarily close the header to match panel animation
+  const effectivePanelOpen = isTransitioning ? false : panelOpen;
   
   // Calculate left position and width using layout constants
   // - Side panel headers: positioned at sidebar width - start of panel
   // - Main header when panel open: sidebar + panel width
   // - Main header when panel closed: sidebar width only
-  // Use currentPanelOpen state to ensure we're using the latest value
+  // Use effectivePanelOpen to handle transitions properly
   const headerLeft = isSidePanelHeader 
     ? SIDEBAR_WIDTH // Side panel headers at start of panel
-    : getMainHeaderLeft(currentPanelOpen); // Main header shifts instantly when panel opens/closes
+    : getMainHeaderLeft(effectivePanelOpen); // Main header shifts instantly when panel opens/closes
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = isSidePanelHeader 
     ? undefined // Side panel headers don't need width calculation
-    : getMainHeaderWidth(currentPanelOpen); // Main header should span from left position to right edge
+    : getMainHeaderWidth(effectivePanelOpen); // Main header should span from left position to right edge
 
   return (
     <>
@@ -285,10 +321,10 @@ export function AppHeader({
       ) : (
         // Main header - fixed positioning, shifts instantly when panel opens/closes (no animation)
         // Follows week view code sequence - responds to panel push/retract without animation
-        // Use key prop based on panelOpen state, panelKey, and updateKey to force re-render when panel state changes
-        // Include panelOpen in key to ensure React unmounts/remounts when state changes
+        // Use key prop based on effectivePanelOpen and panelKey to force re-render when panel state changes
+        // Include effectivePanelOpen in key to ensure React unmounts/remounts when state changes
         <div 
-          key={`main-header-${String(currentPanelOpen)}-${String(panelKey || 'default')}-${headerUpdateKey}`}
+          key={`main-header-${String(effectivePanelOpen)}-${String(panelKey || 'default')}-${isTransitioning ? 'transitioning' : 'stable'}`}
           className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
