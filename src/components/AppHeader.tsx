@@ -46,8 +46,9 @@ export function AppHeader({
     if (isSidePanelHeader) {
       return sidebarWidth; // Side panel headers at start of panel
     }
-    return panelOpen ? sidebarWidth + panelWidth : sidebarWidth; // Main header shifts when panel opens
-  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth, panelKey]);
+    // Main header shifts when panel opens/closes - matches week view animation
+    return panelOpen ? sidebarWidth + panelWidth : sidebarWidth;
+  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth]);
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = useMemo(() => {
@@ -55,6 +56,7 @@ export function AppHeader({
       return undefined; // Side panel headers don't need width calculation
     }
     // Main header should span from left position to right edge
+    // Use calc to ensure it fills remaining space dynamically
     return `calc(100% - ${headerLeft}px)`;
   }, [isSidePanelHeader, headerLeft]);
 
@@ -153,8 +155,11 @@ export function AppHeader({
       ) : (
         // Main header - fixed positioning, shifts when panel is open (uses layout animation like week view)
         <motion.div 
-          className="hidden lg:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 overflow-hidden"
-          layout
+          className="hidden lg:block fixed top-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 overflow-hidden"
+          animate={{
+            left: `${headerLeft}px`,
+            width: headerWidth,
+          }}
           initial={false}
           transition={{ 
             type: 'spring', 
@@ -165,8 +170,7 @@ export function AppHeader({
           style={{ 
             minHeight: '73px', 
             height: '73px',
-            left: `${headerLeft}px`,
-            width: headerWidth
+            right: 0,
           }}
         >
           <div className="flex items-center justify-between gap-4">
