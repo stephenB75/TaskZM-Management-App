@@ -12,6 +12,27 @@ export const PANEL_WIDTH = 440;
 // Header height (matches header minHeight/height in AppHeader.tsx and padding in App.tsx)
 export const HEADER_HEIGHT = 73;
 
+// Header-specific constants
+export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px)
+export const HEADER_PADDING_Y_MOBILE = '1rem'; // py-4 = 1rem (16px)
+export const HEADER_PADDING_X_DESKTOP = '1.5rem'; // px-6 = 1.5rem (24px)
+export const HEADER_PADDING_Y_DESKTOP = '1rem'; // py-4 = 1rem (16px)
+export const HEADER_ICON_SIZE_SMALL = '1rem'; // w-4 h-4 = 1rem (16px)
+export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
+export const HEADER_LOGO_HEIGHT = '2.5rem'; // h-10 = 2.5rem (40px)
+export const HEADER_TITLE_SIZE_MOBILE = '1.25rem'; // text-xl = 1.25rem (20px)
+export const HEADER_TITLE_SIZE_DESKTOP = '0.875rem'; // text-sm = 0.875rem (14px)
+export const HEADER_DESCRIPTION_SIZE = '0.75rem'; // text-xs = 0.75rem (12px)
+export const HEADER_DESCRIPTION_MARGIN_TOP = '0.125rem'; // mt-0.5 = 0.125rem (2px)
+export const HEADER_GAP_SMALL = '0.375rem'; // gap-1.5 = 0.375rem (6px)
+export const HEADER_GAP_MEDIUM = '0.5rem'; // gap-2 = 0.5rem (8px)
+export const HEADER_GAP_LARGE = '0.75rem'; // gap-3 = 0.75rem (12px)
+export const HEADER_GAP_XLARGE = '1rem'; // gap-4 = 1rem (16px)
+export const HEADER_Z_INDEX = 40; // z-40 = 40
+export const HEADER_BACKGROUND_OPACITY = 0.95; // bg-white/95 = 95% opacity
+export const HEADER_ANIMATION_DAMPING = 30; // Spring animation damping
+export const HEADER_ANIMATION_STIFFNESS = 300; // Spring animation stiffness
+
 // Calculate main header left position when panel is open
 export const getMainHeaderLeft = (panelOpen: boolean): number => {
   return panelOpen ? SIDEBAR_WIDTH + PANEL_WIDTH : SIDEBAR_WIDTH;

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from "react";
+import React, { useMemo } from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -7,8 +7,37 @@ import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSidebar } from "../contexts/SidebarContext";
-import { cn } from "../lib/utils";
-import { SIDEBAR_WIDTH, PANEL_WIDTH, HEADER_HEIGHT, getMainHeaderLeft, getMainHeaderWidth } from "../lib/layout-constants";
+import { 
+  SIDEBAR_WIDTH, 
+  PANEL_WIDTH, 
+  HEADER_HEIGHT, 
+  getMainHeaderLeft, 
+  getMainHeaderWidth,
+  HEADER_PADDING_X_MOBILE,
+  HEADER_PADDING_Y_MOBILE,
+  HEADER_PADDING_X_DESKTOP,
+  HEADER_PADDING_Y_DESKTOP,
+  HEADER_ICON_SIZE_SMALL,
+  HEADER_BUTTON_SIZE,
+  HEADER_LOGO_HEIGHT,
+  HEADER_TITLE_SIZE_MOBILE,
+  HEADER_TITLE_SIZE_DESKTOP,
+  HEADER_DESCRIPTION_SIZE,
+  HEADER_DESCRIPTION_MARGIN_TOP,
+  HEADER_GAP_SMALL,
+  HEADER_GAP_MEDIUM,
+  HEADER_GAP_LARGE,
+  HEADER_GAP_XLARGE,
+  HEADER_Z_INDEX,
+  HEADER_BACKGROUND_OPACITY,
+  HEADER_ANIMATION_DAMPING,
+  HEADER_ANIMATION_STIFFNESS,
+} from "../lib/layout-constants";
+import {
+  COLOR_GRADIENT_START,
+  COLOR_GRADIENT_MID,
+  COLOR_GRADIENT_END,
+} from "../lib/color-theme";
 import logoImage from "../assets/taskzm-logo.png";
 
 interface AppHeaderProps {
@@ -60,41 +89,59 @@ export function AppHeader({
   return (
     <>
       {/* Mobile Header - Fixed at top */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-3 py-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div 
+        className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm dark:bg-gray-900/95"
+        style={{
+          zIndex: HEADER_Z_INDEX,
+          backgroundColor: `rgba(255, 255, 255, ${HEADER_BACKGROUND_OPACITY})`,
+          paddingLeft: HEADER_PADDING_X_MOBILE,
+          paddingRight: HEADER_PADDING_X_MOBILE,
+          paddingTop: HEADER_PADDING_Y_MOBILE,
+          paddingBottom: HEADER_PADDING_Y_MOBILE,
+        }}
+      >
+        <div className="flex items-center justify-between" style={{ gap: HEADER_GAP_MEDIUM }}>
+          <div className="flex items-center min-w-0 flex-1" style={{ gap: HEADER_GAP_MEDIUM }}>
             {/* Back Button (if onBack provided) or Menu Button */}
             {onBack ? (
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex-shrink-0 h-8 w-8 p-0"
+                className="flex-shrink-0 p-0"
+                style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
                 onClick={onBack}
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
               </Button>
             ) : (
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex-shrink-0 h-8 w-8 p-0"
+                className="flex-shrink-0 p-0"
+                style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
                 onClick={toggleSidebar}
               >
-                <Menu className="w-4 h-4" />
+                <Menu style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
               </Button>
             )}
 
             {/* Title - Shows view title on mobile only */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent">
+              <h1 
+                className="font-bold bg-clip-text text-transparent"
+                style={{
+                  fontSize: HEADER_TITLE_SIZE_MOBILE,
+                  backgroundImage: `linear-gradient(to right, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID}, ${COLOR_GRADIENT_END})`,
+                }}
+              >
                 {typeof title === 'string' ? title : title}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_SMALL }}>
             {/* Custom Actions */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center" style={{ gap: HEADER_GAP_SMALL }}>
               {actions}
             </div>
           </div>
@@ -104,38 +151,59 @@ export function AppHeader({
       {/* Desktop Header - Side panel headers are relative, main header is fixed */}
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel
-        <div className="hidden lg:block relative z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 flex-shrink-0" style={{ minHeight: `${HEADER_HEIGHT}px`, height: `${HEADER_HEIGHT}px` }}>
-          <div className="flex items-center justify-between gap-4">
+        <div 
+          className="hidden lg:block relative border-b backdrop-blur-lg shadow-sm flex-shrink-0 dark:bg-gray-900/95"
+          style={{ 
+            zIndex: HEADER_Z_INDEX,
+            backgroundColor: `rgba(255, 255, 255, ${HEADER_BACKGROUND_OPACITY})`,
+            paddingLeft: HEADER_PADDING_X_DESKTOP,
+            paddingRight: HEADER_PADDING_X_DESKTOP,
+            paddingTop: HEADER_PADDING_Y_DESKTOP,
+            paddingBottom: HEADER_PADDING_Y_DESKTOP,
+            minHeight: `${HEADER_HEIGHT}px`, 
+            height: `${HEADER_HEIGHT}px` 
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ gap: HEADER_GAP_XLARGE }}>
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
             <div
-              className={cn(
-                "flex items-center min-w-0 flex-1",
-                hideDesktopLogo ? "gap-3" : "gap-4",
-              )}
+              className="flex items-center min-w-0 flex-1"
+              style={{ gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE }}
             >
               {onBack && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={onBack}
-                  className="h-8 w-8 flex-shrink-0 -ml-2"
+                  className="flex-shrink-0 -ml-2"
+                  style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
                 </Button>
               )}
               {!hideDesktopLogo && (
                 <img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="h-10 w-auto flex-shrink-0"
+                  className="w-auto flex-shrink-0"
+                  style={{ height: HEADER_LOGO_HEIGHT }}
                 />
               )}
               <div className="min-w-0">
-                <h2 className="font-semibold text-foreground uppercase tracking-wide text-sm">
+                <h2 
+                  className="font-semibold text-foreground uppercase tracking-wide"
+                  style={{ fontSize: HEADER_TITLE_SIZE_DESKTOP }}
+                >
                   {typeof title === 'string' ? title : title}
                 </h2>
                 {description && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p 
+                    className="text-muted-foreground"
+                    style={{ 
+                      fontSize: HEADER_DESCRIPTION_SIZE,
+                      marginTop: HEADER_DESCRIPTION_MARGIN_TOP,
+                    }}
+                  >
                     {description}
                   </p>
                 )}
@@ -143,7 +211,7 @@ export function AppHeader({
             </div>
             {/* Right side: Actions (switch + buttons) */}
             {actions && (
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_MEDIUM }}>
                 {actions}
               </div>
             )}
@@ -153,54 +221,69 @@ export function AppHeader({
         // Main header - fixed positioning, shifts when panel is open (matches dashboard layout animation)
         // Simply animates to new position when headerLeft/headerWidth change (including when panelKey changes)
         <motion.div 
-          className="hidden lg:block fixed top-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 overflow-hidden"
+          className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden dark:bg-gray-900/95"
           animate={{
             left: `${headerLeft}px`,
             width: headerWidth,
           }}
           transition={{ 
             type: 'spring', 
-            damping: 30, 
-            stiffness: 300
+            damping: HEADER_ANIMATION_DAMPING, 
+            stiffness: HEADER_ANIMATION_STIFFNESS
           }}
           style={{ 
+            zIndex: HEADER_Z_INDEX,
+            backgroundColor: `rgba(255, 255, 255, ${HEADER_BACKGROUND_OPACITY})`,
+            paddingLeft: HEADER_PADDING_X_DESKTOP,
+            paddingRight: HEADER_PADDING_X_DESKTOP,
+            paddingTop: HEADER_PADDING_Y_DESKTOP,
+            paddingBottom: HEADER_PADDING_Y_DESKTOP,
             minHeight: `${HEADER_HEIGHT}px`, 
             height: `${HEADER_HEIGHT}px`,
             right: 0,
           }}
         >
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between" style={{ gap: HEADER_GAP_XLARGE }}>
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animation on these elements */}
             <div
-              className={cn(
-                "flex items-center min-w-0 flex-1",
-                hideDesktopLogo ? "gap-3" : "gap-4",
-              )}
+              className="flex items-center min-w-0 flex-1"
+              style={{ gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE }}
             >
               {onBack && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={onBack}
-                  className="h-8 w-8 flex-shrink-0 -ml-2"
+                  className="flex-shrink-0 -ml-2"
+                  style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
                 </Button>
               )}
               {!hideDesktopLogo && (
                 <img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="h-10 w-auto flex-shrink-0"
-                  style={{ willChange: 'auto' }}
+                  className="w-auto flex-shrink-0"
+                  style={{ height: HEADER_LOGO_HEIGHT, willChange: 'auto' }}
                 />
               )}
               <div className="min-w-0">
-                <h2 className="font-semibold text-foreground uppercase tracking-wide text-sm" style={{ willChange: 'auto' }}>
+                <h2 
+                  className="font-semibold text-foreground uppercase tracking-wide"
+                  style={{ fontSize: HEADER_TITLE_SIZE_DESKTOP, willChange: 'auto' }}
+                >
                   {typeof title === 'string' ? title : title}
                 </h2>
                 {description && (
-                  <p className="text-xs text-muted-foreground mt-0.5" style={{ willChange: 'auto' }}>
+                  <p 
+                    className="text-muted-foreground"
+                    style={{ 
+                      fontSize: HEADER_DESCRIPTION_SIZE,
+                      marginTop: HEADER_DESCRIPTION_MARGIN_TOP,
+                      willChange: 'auto',
+                    }}
+                  >
                     {description}
                   </p>
                 )}
@@ -208,7 +291,7 @@ export function AppHeader({
             </div>
             {/* Right side: Actions (switch + buttons) */}
             {actions && (
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_MEDIUM }}>
                 {actions}
               </div>
             )}
