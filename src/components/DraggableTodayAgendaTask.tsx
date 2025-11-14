@@ -255,9 +255,14 @@ export function DraggableTodayAgendaTask({
               "hover:bg-white/80 hover:shadow-xl hover:border-gray-400/90 transition-all duration-200",
               task.status === "done" && "opacity-60",
               isNextUp && "ring-2 ring-primary/20",
-              // Compact padding for shorter tasks to fit all elements
-              task.estimatedTime && task.estimatedTime < 45 && !isMobile && "md:py-2 md:pb-6 md:space-y-1",
-              task.estimatedTime && task.estimatedTime < 45 && isMobile && "py-1 pb-4 space-y-0.5",
+              // Compact padding for shorter tasks (< 45 mins) - auto-adjusts when pomodoro/assigned users are present
+              // Only applies to tasks < 45 mins, but considers pomodoro timer and assigned users for better fit
+              (task.estimatedTime && task.estimatedTime < 45) && !isMobile && "md:py-2 md:pb-6 md:space-y-1",
+              // On mobile: extra compact when pomodoro/assigned users present, standard compact otherwise
+              (task.estimatedTime && task.estimatedTime < 45) && isMobile && 
+                ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0))
+                ? "py-0.5 pb-3 space-y-0.5" // Extra compact for pomodoro/assigned users
+                : "py-1 pb-4 space-y-0.5", // Standard compact
               // Enhanced padding for tasks 1 hour or more to accommodate descriptions
               task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3.5 md:pb-12 md:space-y-2.5",
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",

@@ -154,8 +154,19 @@ export const DraggableTaskCard = React.forwardRef<
       
       if (duration < 45) {
         // Compact sizing for shorter tasks: base height + minimal scaling
-        // Ensures all elements (title, badges, pomodoro, etc.) fit comfortably
-        const baseHeight = 80; // Base height for essential elements
+        // Ensures all elements (title, badges, pomodoro, assigned users, etc.) fit comfortably
+        // Auto-adjusts base height when pomodoro timer is running or users are assigned
+        let baseHeight = 80; // Base height for essential elements
+        const hasPomodoro = hasFeature("pomodoroTimer") && timerState.isRunning;
+        const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
+        
+        // Increase base height on mobile when pomodoro or assigned users are present
+        if (isMobile && (hasPomodoro || hasAssignedUsers)) {
+          baseHeight = 95; // Extra space for pomodoro timer and assigned users on mobile
+        } else if (!isMobile && (hasPomodoro || hasAssignedUsers)) {
+          baseHeight = 90; // Slightly more space on desktop
+        }
+        
         const scalingFactor = 0.9; // Reduced scaling for shorter tasks
         const calculatedHeight = baseHeight + (duration - 15) * scalingFactor;
         return Math.min(Math.max(calculatedHeight, baseHeight), maxHeight);
@@ -232,9 +243,14 @@ export const DraggableTaskCard = React.forwardRef<
               "hover:bg-white/80 hover:shadow-xl hover:border-gray-400/90 transition-all duration-200",
               task.status === "done" && "opacity-60",
               isDragging ? "w-[280px] flex-shrink-0" : "flex-1",
-              // Compact padding for shorter tasks to fit all elements
-              task.estimatedTime && task.estimatedTime < 45 && !isMobile && "md:py-2 md:pb-6 md:space-y-1",
-              task.estimatedTime && task.estimatedTime < 45 && isMobile && "py-1 pb-4 space-y-0.5",
+              // Compact padding for shorter tasks (< 45 mins) - auto-adjusts when pomodoro/assigned users are present
+              // Only applies to tasks < 45 mins, but considers pomodoro timer and assigned users for better fit
+              (task.estimatedTime && task.estimatedTime < 45) && !isMobile && "md:py-2 md:pb-6 md:space-y-1",
+              // On mobile: extra compact when pomodoro/assigned users present, standard compact otherwise
+              (task.estimatedTime && task.estimatedTime < 45) && isMobile && 
+                ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0))
+                ? "py-0.5 pb-3 space-y-0.5" // Extra compact for pomodoro/assigned users
+                : "py-1 pb-4 space-y-0.5", // Standard compact
               // Enhanced padding for tasks 1 hour or more to accommodate descriptions
               task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3.5 md:pb-12 md:space-y-2.5",
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
