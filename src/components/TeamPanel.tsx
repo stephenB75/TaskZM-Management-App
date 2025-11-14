@@ -59,6 +59,49 @@ import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
 import type { User } from "../types";
+import {
+  PANEL_PADDING,
+  PANEL_PADDING_TOP_MOBILE,
+  PANEL_PADDING_TOP_DESKTOP,
+  PANEL_CONTENT_SPACING,
+  PANEL_SECTION_SPACING,
+  PANEL_FIELD_SPACING,
+  PANEL_GAP_SMALL,
+  PANEL_GAP_MEDIUM,
+  PANEL_GAP_LARGE,
+  TEAM_PANEL_AVATAR_SIZE,
+  TEAM_PANEL_AVATAR_BORDER_WIDTH,
+  TEAM_PANEL_ICON_SIZE_SMALL,
+  TEAM_PANEL_ICON_SIZE_MEDIUM,
+  TEAM_PANEL_ICON_SIZE_LARGE,
+  TEAM_PANEL_BUTTON_SIZE,
+  TEAM_PANEL_BUTTON_SIZE_SMALL,
+  TEAM_PANEL_DROPDOWN_WIDTH,
+  TEAM_PANEL_ROLE_BORDER_WIDTH,
+  TEAM_PANEL_NOTIFICATION_BADGE_SIZE,
+  TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+  TEAM_PANEL_NOTIFICATION_DOT_BORDER_WIDTH,
+  TEAM_PANEL_CARD_PADDING,
+  TEAM_PANEL_CARD_PADDING_LEFT,
+  TEAM_PANEL_SEARCH_ICON_SIZE,
+  TEAM_PANEL_EMPTY_STATE_ICON_SIZE,
+  TEAM_PANEL_MOBILE_HEADER_SPACER,
+  TEAM_PANEL_BOTTOM_PADDING_MOBILE,
+  TEAM_PANEL_DROPDOWN_Z_INDEX,
+  TEAM_PANEL_NOTIFICATION_Z_INDEX,
+  TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX,
+  TEAM_PANEL_TEXT_SIZE_SMALL,
+  TEAM_PANEL_TEXT_SIZE_MEDIUM,
+  TEAM_PANEL_MARGIN_BOTTOM_SMALL,
+  TEAM_PANEL_MARGIN_BOTTOM_MEDIUM,
+  TEAM_PANEL_MARGIN_BOTTOM_LARGE,
+  TEAM_PANEL_MARGIN_BOTTOM_XLARGE,
+  TEAM_PANEL_MARGIN_TOP_SMALL,
+  TEAM_PANEL_MARGIN_RIGHT_SMALL,
+  TEAM_PANEL_MARGIN_RIGHT_MEDIUM,
+  TEAM_PANEL_TEXTAREA_MIN_HEIGHT,
+  TEAM_PANEL_TEXTAREA_ROWS,
+} from "../lib/layout-constants";
 
 export function TeamPanel() {
   const {
@@ -250,13 +293,14 @@ export function TeamPanel() {
   };
 
   const getRoleIcon = (role: string) => {
+    const iconSize = TEAM_PANEL_ICON_SIZE_MEDIUM;
     switch (role) {
       case "admin":
-        return <ShieldCheck className="w-4 h-4" />;
+        return <ShieldCheck style={{ width: iconSize, height: iconSize }} />;
       case "member":
-        return <Shield className="w-4 h-4" />;
+        return <Shield style={{ width: iconSize, height: iconSize }} />;
       case "viewer":
-        return <Eye className="w-4 h-4" />;
+        return <Eye style={{ width: iconSize, height: iconSize }} />;
       default:
         return null;
     }
@@ -348,7 +392,7 @@ export function TeamPanel() {
               : "bg-amber-50 text-amber-700 border-amber-200"
           )}
         >
-          <Clock className="w-3 h-3 mr-1" />
+          <Clock style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
           {expiration?.isExpired ? "Expired" : "Pending"}
         </Badge>
       );
@@ -357,9 +401,10 @@ export function TeamPanel() {
       return (
         <Badge
           variant="outline"
-          className="text-xs bg-gray-50 text-gray-700 border-gray-200"
+          className="bg-gray-50 text-gray-700 border-gray-200"
+          style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}
         >
-          <XCircle className="w-3 h-3 mr-1" />
+          <XCircle style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
           Declined
         </Badge>
       );
@@ -474,33 +519,54 @@ export function TeamPanel() {
           {/* Left border accent based on role */}
           <div 
             className={cn(
-              "absolute left-0 top-0 bottom-0 w-1 rounded-l-md",
+              "absolute left-0 top-0 bottom-0 rounded-l-md",
               member.role === "admin" && "bg-purple-500",
               member.role === "member" && "bg-blue-500",
               member.role === "viewer" && "bg-gray-400"
             )}
+            style={{ width: TEAM_PANEL_ROLE_BORDER_WIDTH }}
           />
           
           {/* Notification Badge */}
           {member.hasUnreadNotification &&
             member.inviteStatus === "accepted" && (
-              <div className="absolute top-2 right-2 z-20">
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+              <div className="absolute top-2 right-2" style={{ zIndex: TEAM_PANEL_NOTIFICATION_Z_INDEX }}>
+                <div 
+                  className="bg-primary rounded-full animate-pulse" 
+                  style={{ 
+                    width: TEAM_PANEL_NOTIFICATION_BADGE_SIZE, 
+                    height: TEAM_PANEL_NOTIFICATION_BADGE_SIZE 
+                  }} 
+                />
               </div>
             )}
           
-          <CardContent className="p-4 pl-5">
-            <div className="flex items-start gap-3">
+          <CardContent 
+            className="rounded-lg"
+            style={{ 
+              padding: TEAM_PANEL_CARD_PADDING,
+              paddingLeft: TEAM_PANEL_CARD_PADDING_LEFT
+            }}
+          >
+            <div className="flex items-start" style={{ gap: PANEL_GAP_LARGE }}>
               {/* Simple Avatar */}
               <div className="relative flex-shrink-0">
-                <div className={cn(
-                  "w-12 h-12 rounded-lg flex items-center justify-center",
-                  "bg-muted border-2",
-                  member.role === "admin" && "border-purple-300 dark:border-purple-700",
-                  member.role === "member" && "border-blue-300 dark:border-blue-700",
-                  member.role === "viewer" && "border-gray-300 dark:border-gray-700"
-                )}>
-                  <span className="text-sm font-semibold text-foreground">
+                <div 
+                  className={cn(
+                    "rounded-lg flex items-center justify-center",
+                    "bg-muted",
+                    member.role === "admin" && "border-purple-300 dark:border-purple-700",
+                    member.role === "member" && "border-blue-300 dark:border-blue-700",
+                    member.role === "viewer" && "border-gray-300 dark:border-gray-700"
+                  )}
+                  style={{
+                    width: TEAM_PANEL_AVATAR_SIZE,
+                    height: TEAM_PANEL_AVATAR_SIZE,
+                    borderWidth: TEAM_PANEL_AVATAR_BORDER_WIDTH,
+                    borderStyle: 'solid'
+                  }}
+                >
+                  <span className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}>
                     {member.name
                       .split(" ")
                       .map((n) => n[0])
@@ -511,31 +577,41 @@ export function TeamPanel() {
                 </div>
                 {member.hasUnreadNotification &&
                   member.inviteStatus === "accepted" && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-background" />
+                    <div 
+                      className="absolute bg-primary rounded-full border-background" 
+                      style={{ 
+                        width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                        height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                        borderWidth: TEAM_PANEL_NOTIFICATION_DOT_BORDER_WIDTH,
+                        borderStyle: 'solid',
+                        bottom: '-0.125rem',
+                        right: '-0.125rem'
+                      }} 
+                    />
                   )}
               </div>
 
               {/* Info Section */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-start justify-between" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm mb-1">
+                    <h3 className="font-semibold" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
                       {member.name}
                       {isCurrentUser && (
-                        <span className="text-xs font-normal text-muted-foreground ml-1">
+                        <span className="font-normal text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
                           (You)
                         </span>
                       )}
                     </h3>
                     
                     {/* Role and Status Badges */}
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
                       <Badge
                         variant={getRoleBadgeVariant(member.role)}
-                        className="text-xs px-2 py-0.5"
+                        style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
                       >
                         {getRoleIcon(member.role)}
-                        <span className="ml-1 capitalize">
+                        <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
                           {member.role}
                         </span>
                       </Badge>
@@ -545,8 +621,8 @@ export function TeamPanel() {
                 </div>
 
                 {/* Email */}
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                  <Mail className="w-3 h-3 flex-shrink-0" />
+                <div className="flex items-center text-muted-foreground" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
+                  <Mail className="flex-shrink-0" style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL }} />
                   <span className="truncate">
                     {member.email}
                   </span>
@@ -554,13 +630,15 @@ export function TeamPanel() {
 
                 {/* Expiration Date */}
                 {member.inviteStatus === "pending" && member.expiresAt && (
-                  <div className="flex items-center gap-1.5 text-xs mb-2">
-                    <Calendar className={cn(
-                      "w-3 h-3 flex-shrink-0",
-                      formatExpirationDate(member.expiresAt)?.isExpired 
-                        ? "text-red-500" 
-                        : "text-amber-500"
-                    )} />
+                  <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
+                    <Calendar 
+                      className="flex-shrink-0"
+                      style={{ 
+                        width: TEAM_PANEL_ICON_SIZE_SMALL, 
+                        height: TEAM_PANEL_ICON_SIZE_SMALL,
+                        color: formatExpirationDate(member.expiresAt)?.isExpired ? 'rgb(239 68 68)' : 'rgb(245 158 11)'
+                      }} 
+                    />
                     <span className={cn(
                       formatExpirationDate(member.expiresAt)?.isExpired 
                         ? "text-red-600 dark:text-red-400 font-medium" 
@@ -573,17 +651,18 @@ export function TeamPanel() {
 
                 {/* Task Stats */}
                 {stats.total > 0 && (
-                  <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-2 border-t">
+                  <div className="flex items-center flex-wrap border-t" style={{ gap: PANEL_GAP_SMALL, marginTop: TEAM_PANEL_MARGIN_TOP_SMALL, paddingTop: TEAM_PANEL_MARGIN_TOP_SMALL }}>
                     <Badge 
                       variant="outline" 
-                      className="text-xs px-2 py-0.5"
+                      style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
                     >
                       {stats.total} {stats.total === 1 ? "task" : "tasks"}
                     </Badge>
                     {stats.completed > 0 && (
                       <Badge 
                         variant="outline" 
-                        className="text-xs px-2 py-0.5 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700"
+                        className="text-green-700 dark:text-green-400 border-green-300 dark:border-green-700"
+                        style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
                       >
                         {stats.completed} done
                       </Badge>
@@ -591,7 +670,8 @@ export function TeamPanel() {
                     {stats.inProgress > 0 && (
                       <Badge 
                         variant="outline" 
-                        className="text-xs px-2 py-0.5 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                        className="text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                        style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
                       >
                         {stats.inProgress} active
                       </Badge>
@@ -599,7 +679,8 @@ export function TeamPanel() {
                     {stats.todo > 0 && (
                       <Badge 
                         variant="outline" 
-                        className="text-xs px-2 py-0.5 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700"
+                        className="text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700"
+                        style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
                       >
                         {stats.todo} todo
                       </Badge>
@@ -610,7 +691,8 @@ export function TeamPanel() {
 
               {/* Actions Menu */}
               <div 
-                className="relative z-50"
+                className="relative"
+                style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <DropdownMenu
@@ -623,18 +705,25 @@ export function TeamPanel() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 flex-shrink-0 hover:bg-transparent hover:text-current"
+                      className="flex-shrink-0 hover:bg-transparent hover:text-current"
+                      style={{ 
+                        height: TEAM_PANEL_BUTTON_SIZE, 
+                        width: TEAM_PANEL_BUTTON_SIZE 
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
                       data-slot="dropdown-menu-trigger"
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <MoreVertical style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
                     align="end"
-                    className="z-[9999] w-48"
+                    style={{ 
+                      zIndex: TEAM_PANEL_DROPDOWN_Z_INDEX,
+                      width: TEAM_PANEL_DROPDOWN_WIDTH
+                    }}
                     onCloseAutoFocus={(e) => {
                       e.preventDefault();
                     }}
@@ -650,7 +739,7 @@ export function TeamPanel() {
                           }}
                           className="cursor-pointer"
                         >
-                          <Send className="w-4 h-4 mr-2" />
+                          <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                           Resend Invitation
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -665,7 +754,7 @@ export function TeamPanel() {
                           }}
                           className="cursor-pointer"
                         >
-                          <Bell className="w-4 h-4 mr-2" />
+                          <Bell style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                           Accept Invite (Demo)
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -677,10 +766,10 @@ export function TeamPanel() {
                           }}
                           className="text-destructive focus:text-destructive cursor-pointer"
                         >
-                          <XCircle className="w-4 h-4 mr-2" />
+                          <XCircle style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                           Decline Invitation
                         </DropdownMenuItem>
-                        <Separator className="my-1" />
+                        <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
                       </>
                     )}
                     <DropdownMenuItem
@@ -693,7 +782,7 @@ export function TeamPanel() {
                       disabled={member.role === "admin"}
                       className="cursor-pointer"
                     >
-                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      <ShieldCheck style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Make Admin
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -706,7 +795,7 @@ export function TeamPanel() {
                       disabled={member.role === "member"}
                       className="cursor-pointer"
                     >
-                      <Shield className="w-4 h-4 mr-2" />
+                      <Shield style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Make Member
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -719,10 +808,10 @@ export function TeamPanel() {
                       disabled={member.role === "viewer"}
                       className="cursor-pointer"
                     >
-                      <Eye className="w-4 h-4 mr-2" />
+                      <Eye style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Make Viewer
                     </DropdownMenuItem>
-                    <Separator className="my-1" />
+                    <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
                     <DropdownMenuItem
                       onSelect={() => {
                         setDropdownOpen(false);
@@ -733,7 +822,7 @@ export function TeamPanel() {
                       className="text-destructive focus:text-destructive cursor-pointer"
                       disabled={isCurrentUser}
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
+                      <Trash2 style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Remove
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -861,7 +950,7 @@ export function TeamPanel() {
             : `${filteredMembers.length} of ${teamMembers.length} member${teamMembers.length === 1 ? "" : "s"}`
         }
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
             {teamMembers.length > 0 && (
               <Button
                 onClick={() => setShowBulkInvite(true)}
@@ -869,7 +958,7 @@ export function TeamPanel() {
                 size="sm"
                 className="hidden sm:flex"
               >
-                <UserPlus className="w-4 h-4 mr-2" />
+                <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                 Bulk Invite
               </Button>
             )}
@@ -878,7 +967,7 @@ export function TeamPanel() {
               className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
               size="sm"
             >
-              <UserPlus className="w-4 h-4 mr-2" />
+              <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
               <span className="hidden sm:inline">Add Member</span>
               <span className="sm:hidden">Add</span>
             </Button>
@@ -887,26 +976,46 @@ export function TeamPanel() {
         hideDesktopLogo
       />
       {/* Spacer for fixed header on mobile */}
-      <div className="lg:hidden h-[64px]" />
+      <div className="lg:hidden" style={{ height: TEAM_PANEL_MOBILE_HEADER_SPACER }} />
 
       {/* Search Bar */}
-      <div className="px-4 py-3 lg:py-3 border-b lg:pt-0 pt-4">
+      <div 
+        className="border-b"
+        style={{ 
+          paddingLeft: PANEL_PADDING,
+          paddingRight: PANEL_PADDING,
+          paddingTop: '0.75rem',
+          paddingBottom: '0.75rem'
+        }}
+      >
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search 
+            className="absolute top-1/2 -translate-y-1/2 text-muted-foreground" 
+            style={{ 
+              left: '0.75rem',
+              width: TEAM_PANEL_SEARCH_ICON_SIZE, 
+              height: TEAM_PANEL_SEARCH_ICON_SIZE 
+            }} 
+          />
           <Input
             placeholder="Search members by name, email, or role..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            style={{ paddingLeft: '2.25rem' }}
           />
           {searchQuery && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              className="absolute top-1/2 -translate-y-1/2"
+              style={{ 
+                right: '0.25rem',
+                height: TEAM_PANEL_BUTTON_SIZE_SMALL, 
+                width: TEAM_PANEL_BUTTON_SIZE_SMALL 
+              }}
               onClick={() => setSearchQuery("")}
             >
-              <X className="w-4 h-4" />
+              <X style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
             </Button>
           )}
         </div>
@@ -914,54 +1023,71 @@ export function TeamPanel() {
 
       {/* Team Members List */}
       <ScrollArea className="flex-1">
-        <div className="p-4 pt-6 lg:pt-4 space-y-3 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div 
+          className="pb-safe md:pb-4" 
+          style={{ 
+            padding: PANEL_PADDING,
+            paddingTop: PANEL_PADDING_TOP_MOBILE,
+            paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
+            gap: PANEL_CONTENT_SPACING
+          }}
+        >
           {filteredMembers.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-              <p className="text-sm text-muted-foreground mb-1">
+            <div className="text-center" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
+              <Users 
+                className="mx-auto text-muted-foreground opacity-50" 
+                style={{ 
+                  width: TEAM_PANEL_EMPTY_STATE_ICON_SIZE, 
+                  height: TEAM_PANEL_EMPTY_STATE_ICON_SIZE,
+                  marginBottom: TEAM_PANEL_MARGIN_BOTTOM_LARGE
+                }} 
+              />
+              <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
                 {searchQuery ? "No members match your search" : "No team members yet"}
               </p>
               {!searchQuery && (
                 <>
-                  <p className="text-xs text-muted-foreground mb-4">
+                  <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_XLARGE }}>
                     Invite family members or teammates to collaborate
                   </p>
                   <Button
                     onClick={() => setShowAddMember(true)}
                     variant="outline"
                     size="sm"
-                    className="mt-2"
+                    style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
                   >
-                    <UserPlus className="w-4 h-4 mr-2" />
+                    <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                     Add your first member
                   </Button>
                 </>
               )}
             </div>
           ) : (
-            filteredMembers.map((member) => {
-              const stats = getTaskStats(member.id);
-              const isCurrentUser = member.id === currentUser?.id;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_CONTENT_SPACING }}>
+              {filteredMembers.map((member) => {
+                const stats = getTaskStats(member.id);
+                const isCurrentUser = member.id === currentUser?.id;
 
-              return (
-                <TeamMemberCard
-                  key={member.id}
-                  member={member}
-                  stats={stats}
-                  isCurrentUser={isCurrentUser}
-                  onCardClick={handleCardClick}
-                  onResendInvitation={handleResendInvitation}
-                  onDeclineInvitation={handleDeclineInvitation}
-                  onUpdateRole={handleUpdateRole}
-                  onRemoveMember={handleRemoveMember}
-                  getRoleIcon={getRoleIcon}
-                  getRoleBadgeVariant={getRoleBadgeVariant}
-                  getInviteStatusBadge={getInviteStatusBadge}
-                  formatExpirationDate={formatExpirationDate}
-                  acceptInvitation={acceptInvitation}
-                />
-              );
-            })
+                return (
+                  <TeamMemberCard
+                    key={member.id}
+                    member={member}
+                    stats={stats}
+                    isCurrentUser={isCurrentUser}
+                    onCardClick={handleCardClick}
+                    onResendInvitation={handleResendInvitation}
+                    onDeclineInvitation={handleDeclineInvitation}
+                    onUpdateRole={handleUpdateRole}
+                    onRemoveMember={handleRemoveMember}
+                    getRoleIcon={getRoleIcon}
+                    getRoleBadgeVariant={getRoleBadgeVariant}
+                    getInviteStatusBadge={getInviteStatusBadge}
+                    formatExpirationDate={formatExpirationDate}
+                    acceptInvitation={acceptInvitation}
+                  />
+                );
+              })}
+            </div>
           )}
         </div>
       </ScrollArea>
@@ -979,8 +1105,8 @@ export function TeamPanel() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingTop: PANEL_PADDING, paddingBottom: PANEL_PADDING }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
@@ -993,7 +1119,7 @@ export function TeamPanel() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
@@ -1006,7 +1132,7 @@ export function TeamPanel() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label htmlFor="role">Role</Label>
               <Select
                 value={newMemberRole}
@@ -1019,33 +1145,33 @@ export function TeamPanel() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4" />
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+                      <ShieldCheck style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
                       <div>
                         <div>Admin</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
                           Full access
                         </div>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="member">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+                      <Shield style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
                       <div>
                         <div>Member</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
                           Can edit tasks
                         </div>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="viewer">
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4" />
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+                      <Eye style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
                       <div>
                         <div>Viewer</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
                           Read-only access
                         </div>
                       </div>
@@ -1064,12 +1190,12 @@ export function TeamPanel() {
                 setShowAddMember(false);
                 setShowBulkInvite(true);
               }}
-              className="text-xs"
+              style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}
             >
-              <UserPlus className="w-3 h-3 mr-1" />
+              <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
               Bulk Invite
             </Button>
-            <div className="flex gap-2">
+            <div className="flex" style={{ gap: PANEL_GAP_MEDIUM }}>
               <Button
                 variant="outline"
                 onClick={() => setShowAddMember(false)}
@@ -1100,23 +1226,31 @@ export function TeamPanel() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingTop: PANEL_PADDING, paddingBottom: PANEL_PADDING }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label htmlFor="bulk-emails">Email Addresses *</Label>
               <textarea
                 id="bulk-emails"
                 value={bulkInvites}
                 onChange={(e) => setBulkInvites(e.target.value)}
                 placeholder="john@example.com&#10;jane@example.com&#10;bob@example.com"
-                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                rows={6}
+                className="flex w-full rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  minHeight: TEAM_PANEL_TEXTAREA_MIN_HEIGHT,
+                  paddingLeft: '0.75rem',
+                  paddingRight: '0.75rem',
+                  paddingTop: '0.5rem',
+                  paddingBottom: '0.5rem',
+                  fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM
+                }}
+                rows={TEAM_PANEL_TEXTAREA_ROWS}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
                 One email per line or comma-separated. Names will be auto-generated from emails.
               </p>
             </div>
 
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label htmlFor="bulk-role">Role</Label>
               <Select
                 value={newMemberRole}
@@ -1129,33 +1263,33 @@ export function TeamPanel() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4" />
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+                      <ShieldCheck style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
                       <div>
                         <div>Admin</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
                           Full access
                         </div>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="member">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+                      <Shield style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
                       <div>
                         <div>Member</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
                           Can edit tasks
                         </div>
                       </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="viewer">
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4" />
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+                      <Eye style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
                       <div>
                         <div>Viewer</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
                           Read-only access
                         </div>
                       </div>
@@ -1166,7 +1300,7 @@ export function TeamPanel() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end" style={{ gap: PANEL_GAP_MEDIUM }}>
             <Button
               variant="outline"
               onClick={() => {
@@ -1182,12 +1316,12 @@ export function TeamPanel() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} className="animate-spin" />
                   Inviting...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4 mr-2" />
+                  <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                   Send Invitations
                 </>
               )}

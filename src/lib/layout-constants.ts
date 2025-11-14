@@ -52,3 +52,52 @@ export const NAV_BAR_ANIMATION_STIFFNESS = 500;
 export const NAV_BAR_ANIMATION_DAMPING = 30;
 export const NAV_BAR_HAPTIC_DURATION = 10; // milliseconds
 
+// Panel constants (for side panels like Team, Folders, etc.)
+export const PANEL_PADDING = '1rem'; // p-4 = 1rem
+export const PANEL_PADDING_TOP = '1rem'; // pt-4 = 1rem
+export const PANEL_PADDING_BOTTOM = '1rem'; // pb-4 = 1rem
+export const PANEL_PADDING_LEFT = '1rem'; // pl-4 = 1rem
+export const PANEL_PADDING_RIGHT = '1rem'; // pr-4 = 1rem
+export const PANEL_PADDING_TOP_MOBILE = '1.5rem'; // pt-6 = 1.5rem
+export const PANEL_PADDING_TOP_DESKTOP = '1rem'; // lg:pt-4 = 1rem
+export const PANEL_CONTENT_SPACING = '0.75rem'; // space-y-3 = 0.75rem
+export const PANEL_SECTION_SPACING = '1rem'; // space-y-4 = 1rem
+export const PANEL_FIELD_SPACING = '0.5rem'; // space-y-2 = 0.5rem
+export const PANEL_GAP_SMALL = '0.375rem'; // gap-1.5 = 0.375rem
+export const PANEL_GAP_MEDIUM = '0.5rem'; // gap-2 = 0.5rem
+export const PANEL_GAP_LARGE = '0.75rem'; // gap-3 = 0.75rem
+
+// Team Panel specific constants
+export const TEAM_PANEL_AVATAR_SIZE = '3rem'; // w-12 h-12 = 3rem
+export const TEAM_PANEL_AVATAR_BORDER_WIDTH = '2px'; // border-2 = 2px
+export const TEAM_PANEL_ICON_SIZE_SMALL = '0.75rem'; // w-3 h-3 = 0.75rem
+export const TEAM_PANEL_ICON_SIZE_MEDIUM = '1rem'; // w-4 h-4 = 1rem
+export const TEAM_PANEL_ICON_SIZE_LARGE = '3rem'; // w-12 h-12 = 3rem
+export const TEAM_PANEL_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem
+export const TEAM_PANEL_BUTTON_SIZE_SMALL = '1.75rem'; // h-7 w-7 = 1.75rem
+export const TEAM_PANEL_DROPDOWN_WIDTH = '12rem'; // w-48 = 12rem
+export const TEAM_PANEL_ROLE_BORDER_WIDTH = '0.25rem'; // w-1 = 0.25rem
+export const TEAM_PANEL_NOTIFICATION_BADGE_SIZE = '0.5rem'; // w-2 h-2 = 0.5rem
+export const TEAM_PANEL_NOTIFICATION_DOT_SIZE = '0.75rem'; // w-3 h-3 = 0.75rem
+export const TEAM_PANEL_NOTIFICATION_DOT_BORDER_WIDTH = '2px'; // border-2 = 2px
+export const TEAM_PANEL_CARD_PADDING = '1rem'; // p-4 = 1rem
+export const TEAM_PANEL_CARD_PADDING_LEFT = '1.25rem'; // pl-5 = 1.25rem
+export const TEAM_PANEL_SEARCH_ICON_SIZE = '1rem'; // w-4 h-4 = 1rem
+export const TEAM_PANEL_EMPTY_STATE_ICON_SIZE = '3rem'; // w-12 h-12 = 3rem
+export const TEAM_PANEL_MOBILE_HEADER_SPACER = '64px'; // h-[64px] = 64px
+export const TEAM_PANEL_BOTTOM_PADDING_MOBILE = 'calc(6rem + env(safe-area-inset-bottom, 0px))';
+export const TEAM_PANEL_DROPDOWN_Z_INDEX = 9999; // z-[9999]
+export const TEAM_PANEL_NOTIFICATION_Z_INDEX = 20; // z-20
+export const TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX = 50; // z-50
+export const TEAM_PANEL_TEXT_SIZE_SMALL = '0.75rem'; // text-xs = 0.75rem
+export const TEAM_PANEL_TEXT_SIZE_MEDIUM = '0.875rem'; // text-sm = 0.875rem
+export const TEAM_PANEL_MARGIN_BOTTOM_SMALL = '0.25rem'; // mb-1 = 0.25rem
+export const TEAM_PANEL_MARGIN_BOTTOM_MEDIUM = '0.5rem'; // mb-2 = 0.5rem
+export const TEAM_PANEL_MARGIN_BOTTOM_LARGE = '0.75rem'; // mb-3 = 0.75rem
+export const TEAM_PANEL_MARGIN_BOTTOM_XLARGE = '1rem'; // mb-4 = 1rem
+export const TEAM_PANEL_MARGIN_TOP_SMALL = '0.5rem'; // mt-2 = 0.5rem
+export const TEAM_PANEL_MARGIN_RIGHT_SMALL = '0.25rem'; // mr-1 = 0.25rem
+export const TEAM_PANEL_MARGIN_RIGHT_MEDIUM = '0.5rem'; // mr-2 = 0.5rem
+export const TEAM_PANEL_TEXTAREA_MIN_HEIGHT = '120px'; // min-h-[120px] = 120px
+export const TEAM_PANEL_TEXTAREA_ROWS = 6;
+
