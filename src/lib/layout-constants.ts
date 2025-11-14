@@ -208,6 +208,9 @@ export const WORKSPACE_TOAST_DURATION_MS = 5000; // Toast notification duration 
 export const WORKSPACE_NAME_FALLBACK = 'User'; // Fallback name when user name is not available
 export const WORKSPACE_NAME_SUFFIX = "'s Workspace"; // Suffix appended to user name for workspace name
 export const WORKSPACE_SYNC_INTERVAL_MS = 300000; // Auto-sync interval in milliseconds (5 minutes)
+export const WORKSPACE_SYNC_INTERVAL_ACTIVE_MS = 120000; // Active sync interval (2 minutes) when user is actively using the app
+export const WORKSPACE_SYNC_INTERVAL_IDLE_MS = 600000; // Idle sync interval (10 minutes) when user is inactive
+export const WORKSPACE_ACTIVITY_TIMEOUT_MS = 300000; // Timeout to consider user inactive (5 minutes)
 
 // Settings Panel constants
 export const SETTINGS_PANEL_MOBILE_HEADER_SPACER = '64px'; // h-[64px] = 64px

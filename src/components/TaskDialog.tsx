@@ -77,6 +77,7 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
+import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
 import type {
   Task,
   TaskPriority,
@@ -393,6 +394,14 @@ export function TaskDialog({
   const [scheduledMinutes, setScheduledMinutes] = useState("");
   const [timeFormat, setTimeFormat] = useState<"12hr" | "24hr">("12hr");
   const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
+  
+  // Conflict detection state
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [pendingTaskData, setPendingTaskData] = useState<{
+    taskData: Partial<Task>;
+    requestedTime: Date;
+    alternativeTime: Date;
+  } | null>(null);
   const [dependencies, setDependencies] = useState<string[]>(
     [],
   );
@@ -896,6 +905,49 @@ export function TaskDialog({
       assignedTo,
     };
 
+    // Check for time conflicts if scheduled date is set
+    if (finalScheduledDate) {
+      const scheduledDateTime = new Date(finalScheduledDate);
+      const taskDuration = totalMinutes > 0 ? totalMinutes : 30; // Default to 30 minutes
+      const taskId = task?.id || null;
+      
+      const conflictingTask = checkTimeConflict(
+        taskId,
+        scheduledDateTime,
+        taskDuration,
+        tasks
+      );
+
+      if (conflictingTask) {
+        // Find next available slot
+        const alternativeTime = findNextAvailableSlot(
+          taskId,
+          scheduledDateTime,
+          taskDuration,
+          tasks
+        );
+        
+        // Only show dialog if alternative time is different and valid
+        if (alternativeTime.getTime() !== scheduledDateTime.getTime() && alternativeTime.getHours() < 24) {
+          // Store the pending task data and show dialog
+          setPendingTaskData({
+            taskData,
+            requestedTime: scheduledDateTime,
+            alternativeTime,
+          });
+          setConflictDialogOpen(true);
+          return; // Don't submit yet
+        } else {
+          // No valid alternative found, show error
+          toast.error('Time slot is already taken', {
+            description: 'Please choose a different time slot.',
+          });
+          return;
+        }
+      }
+    }
+
+    // No conflict, proceed with submission
     if (task) {
       await updateTask(task.id, taskData);
     } else {
@@ -903,6 +955,33 @@ export function TaskDialog({
     }
 
     onClose();
+  };
+
+  const handleConflictConfirm = async () => {
+    if (pendingTaskData) {
+      // Update scheduled date to alternative time
+      const updatedTaskData = {
+        ...pendingTaskData.taskData,
+        scheduledDate: pendingTaskData.alternativeTime.toISOString(),
+      };
+      
+      if (task) {
+        await updateTask(task.id, updatedTaskData);
+      } else {
+        await addTask(updatedTaskData);
+      }
+      
+      toast.success(`Task scheduled for ${formatTime(pendingTaskData.alternativeTime)}`);
+    }
+    setConflictDialogOpen(false);
+    setPendingTaskData(null);
+    onClose();
+  };
+
+  const handleConflictCancel = () => {
+    setConflictDialogOpen(false);
+    setPendingTaskData(null);
+    // Don't close dialog, let user adjust the time
   };
 
   const addTag = async () => {
@@ -2605,6 +2684,27 @@ export function TaskDialog({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete Task
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Conflict Resolution Dialog */}
+      <AlertDialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Time Slot Already Taken</AlertDialogTitle>
+            <AlertDialogDescription>
+              The time slot {pendingTaskData && formatTime(pendingTaskData.requestedTime)} is already occupied by another task.
+              Would you like to schedule this task at {pendingTaskData && formatTime(pendingTaskData.alternativeTime)} instead?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleConflictCancel}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConflictConfirm}>
+              Use {pendingTaskData && formatTime(pendingTaskData.alternativeTime)}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -14,6 +14,9 @@ import {
   WORKSPACE_NAME_FALLBACK,
   WORKSPACE_NAME_SUFFIX,
   WORKSPACE_SYNC_INTERVAL_MS,
+  WORKSPACE_SYNC_INTERVAL_ACTIVE_MS,
+  WORKSPACE_SYNC_INTERVAL_IDLE_MS,
+  WORKSPACE_ACTIVITY_TIMEOUT_MS,
 } from '../lib/layout-constants';
 import {
   TOAST_DURATION_MEDIUM_MS,
@@ -380,9 +383,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         saveToLocalStorage('tasks', serverTasks);
         setLastSync(new Date());
         
+        // Store sync timestamp and ETag for next delta sync
+        const syncTimestamp = new Date().toISOString();
+        const syncKey = `last_sync_timestamp_tasks_${wsId}`;
+        localStorage.setItem(syncKey, syncTimestamp);
+        lastSyncTimestampsRef.current.tasks = syncTimestamp;
+        
         // Clear any sync flags to ensure fresh sync on next load
-        const syncKey = `synced_local_data_${wsId}`;
-        localStorage.removeItem(syncKey);
+        const syncFlagKey = `synced_local_data_${wsId}`;
+        localStorage.removeItem(syncFlagKey);
         return serverTasks;
       } else {
         // No server data - check localStorage as fallback

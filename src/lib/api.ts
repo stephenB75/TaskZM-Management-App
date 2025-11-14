@@ -164,12 +164,38 @@ export async function getWorkspace(workspaceId: string) {
 }
 
 // Task API
-export async function getTasks(workspaceId: string): Promise<Task[]> {
+export async function getTasks(
+  workspaceId: string,
+  options?: {
+    since?: string; // ISO timestamp - only fetch tasks updated after this time
+    ifModifiedSince?: string; // ETag/version - check if data changed
+  }
+): Promise<Task[]> {
   try {
-    const response = await fetch(`${API_BASE}/tasks/${workspaceId}`, {
+    const params = new URLSearchParams();
+    if (options?.since) {
+      params.append('since', options.since);
+    }
+    if (options?.ifModifiedSince) {
+      params.append('ifModifiedSince', options.ifModifiedSince);
+    }
+
+    const url = `${API_BASE}/tasks/${workspaceId}${params.toString() ? `?${params.toString()}` : ''}`;
+    const headers = { ...getHeaders() };
+    if (options?.ifModifiedSince) {
+      headers['If-Modified-Since'] = options.ifModifiedSince;
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
-      headers: getHeaders(),
+      headers,
     });
+
+    // Handle 304 Not Modified (no changes)
+    if (response.status === 304) {
+      logger.debug('Tasks not modified since last sync');
+      return [];
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -305,12 +331,38 @@ export async function getTimeTrackingSessions(workspaceId: string): Promise<Time
 }
 
 // Projects API
-export async function getProjects(workspaceId: string) {
+export async function getProjects(
+  workspaceId: string,
+  options?: {
+    since?: string; // ISO timestamp - only fetch projects updated after this time
+    ifModifiedSince?: string; // ETag/version - check if data changed
+  }
+) {
   try {
-    const response = await fetch(`${API_BASE}/projects/${workspaceId}`, {
+    const params = new URLSearchParams();
+    if (options?.since) {
+      params.append('since', options.since);
+    }
+    if (options?.ifModifiedSince) {
+      params.append('ifModifiedSince', options.ifModifiedSince);
+    }
+
+    const url = `${API_BASE}/projects/${workspaceId}${params.toString() ? `?${params.toString()}` : ''}`;
+    const headers = { ...getHeaders() };
+    if (options?.ifModifiedSince) {
+      headers['If-Modified-Since'] = options.ifModifiedSince;
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
-      headers: getHeaders(),
+      headers,
     });
+
+    // Handle 304 Not Modified (no changes)
+    if (response.status === 304) {
+      logger.debug('Projects not modified since last sync');
+      return [];
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -360,7 +412,13 @@ export async function deleteProject(workspaceId: string, projectId: string): Pro
 }
 
 // Folder API
-export async function getFolders(workspaceId: string): Promise<Folder[]> {
+export async function getFolders(
+  workspaceId: string,
+  options?: {
+    since?: string; // ISO timestamp - only fetch folders updated after this time
+    ifModifiedSince?: string; // ETag/version - check if data changed
+  }
+): Promise<Folder[]> {
   try {
     // Validate workspace ID format
     if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
@@ -368,10 +426,30 @@ export async function getFolders(workspaceId: string): Promise<Folder[]> {
       return [];
     }
 
-    const response = await fetch(`${API_BASE}/folders/${workspaceId}`, {
+    const params = new URLSearchParams();
+    if (options?.since) {
+      params.append('since', options.since);
+    }
+    if (options?.ifModifiedSince) {
+      params.append('ifModifiedSince', options.ifModifiedSince);
+    }
+
+    const url = `${API_BASE}/folders/${workspaceId}${params.toString() ? `?${params.toString()}` : ''}`;
+    const headers = { ...getHeaders() };
+    if (options?.ifModifiedSince) {
+      headers['If-Modified-Since'] = options.ifModifiedSince;
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
-      headers: getHeaders(),
+      headers,
     });
+
+    // Handle 304 Not Modified (no changes)
+    if (response.status === 304) {
+      logger.debug('Folders not modified since last sync');
+      return [];
+    }
 
     if (!response.ok) {
       // Handle 404 gracefully - workspace might not exist yet or has no folders
