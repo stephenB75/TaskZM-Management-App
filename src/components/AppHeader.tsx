@@ -151,21 +151,23 @@ export function AppHeader({
           </div>
         </div>
       ) : (
-        // Main header - fixed positioning, shifts when panel is open (animated to match week view)
+        // Main header - fixed positioning, shifts when panel is open (uses layout animation like week view)
         <motion.div 
           className="hidden lg:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 overflow-hidden"
+          layout
           initial={false}
-          animate={{ 
-            left: `${headerLeft}px`,
-            width: headerWidth
-          }}
           transition={{ 
             type: 'spring', 
             damping: 30, 
             stiffness: 300,
             mass: 1
           }}
-          style={{ minHeight: '73px', height: '73px' }}
+          style={{ 
+            minHeight: '73px', 
+            height: '73px',
+            left: `${headerLeft}px`,
+            width: headerWidth
+          }}
         >
           <div className="flex items-center justify-between gap-4">
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animation on these elements */}
