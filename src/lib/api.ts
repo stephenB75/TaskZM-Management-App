@@ -500,14 +500,47 @@ export async function updateFolder(workspaceId: string, folderId: string, update
 }
 
 export async function deleteFolder(workspaceId: string, folderId: string): Promise<void> {
+  // Validate workspace ID format
+  if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '' || workspaceId.includes(':')) {
+    throw new Error('Invalid workspace ID');
+  }
+
   const response = await fetch(`${API_BASE}/folders/${workspaceId}/${folderId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to delete folder');
+    // Try to parse error as JSON, fallback to text or status text
+    let errorMessage = 'Failed to delete folder';
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } else {
+        const text = await response.text();
+        errorMessage = text || response.statusText || errorMessage;
+      }
+    } catch (parseError) {
+      errorMessage = response.statusText || errorMessage;
+    }
+
+    // Provide more helpful error messages
+    if (response.status === 404) {
+      if (errorMessage.includes('Workspace not found') || errorMessage.includes('not found')) {
+        errorMessage = 'Workspace not found. Please refresh the page to reload your workspace.';
+      } else {
+        errorMessage = 'Folder or workspace not found. Please refresh the page.';
+      }
+    } else if (response.status === 401) {
+      errorMessage = 'Authentication required. Please sign in again.';
+    } else if (response.status === 403) {
+      errorMessage = 'You do not have permission to delete folders in this workspace.';
+    }
+
+    logger.error('Delete folder error:', { error: errorMessage, status: response.status, workspaceId, folderId });
+    throw new Error(errorMessage);
   }
 }
 

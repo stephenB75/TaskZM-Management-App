@@ -453,6 +453,52 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Check for malformed workspace IDs (e.g., with timestamp suffixes)
+      // Valid workspace IDs should be UUIDs without extra suffixes
+      const isPotentiallyMalformed = wsId.includes('_') && wsId.split('_').length > 2;
+      
+      // Ensure workspace exists before attempting to sync
+      // This prevents 404 errors when workspace doesn't exist
+      // Also corrects malformed workspace IDs
+      if (accessToken && user) {
+        try {
+          // Try to get workspaces - this will auto-create if missing
+          const { workspaces } = await api.getUserWorkspaces();
+          if (workspaces && workspaces.length > 0 && workspaces[0].id) {
+            const validWorkspaceId = workspaces[0].id;
+            if (validWorkspaceId !== wsId) {
+              if (isPotentiallyMalformed) {
+                logger.warn('Potentially malformed workspace ID detected and corrected:', { old: wsId, new: validWorkspaceId });
+              } else {
+                logger.info('Workspace ID updated during folder sync:', { old: wsId, new: validWorkspaceId });
+              }
+              wsId = validWorkspaceId;
+              if (workspaceId !== validWorkspaceId) {
+                setWorkspaceId(validWorkspaceId);
+              }
+            }
+          } else {
+            // No workspace found, try to create one
+            await createWorkspaceIfNeeded();
+            // After creation, get the workspaceId
+            const { workspaces: newWorkspaces } = await api.getUserWorkspaces();
+            if (newWorkspaces && newWorkspaces.length > 0 && newWorkspaces[0].id) {
+              const validWorkspaceId = newWorkspaces[0].id;
+              wsId = validWorkspaceId;
+              if (workspaceId !== validWorkspaceId) {
+                setWorkspaceId(validWorkspaceId);
+              }
+            } else {
+              logger.warn('Cannot sync folders: workspace does not exist and could not be created');
+              return;
+            }
+          }
+        } catch (error) {
+          logger.error('Failed to ensure workspace exists during folder sync:', error);
+          // Continue anyway - getFolders will handle 404 gracefully
+        }
+      }
+
       // Try to get folders - this will return empty array if workspace doesn't exist
       let serverFolders = await api.getFolders(wsId);
       
