@@ -24,16 +24,16 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 };
 
 // Bottom Navigation Bar constants
-export const NAV_BAR_HEIGHT = 65; // minHeight in pixels
-export const NAV_BAR_PADDING_TOP = '0.75rem';
-export const NAV_BAR_PADDING_BOTTOM = '0.75rem';
-export const NAV_BAR_BUTTON_PADDING_TOP = '0.5rem';
-export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.1434375rem';
+export const NAV_BAR_HEIGHT = 70; // minHeight in pixels (increased to accommodate lower positioning)
+export const NAV_BAR_PADDING_TOP = '0.5rem'; // Reduced top padding to move content down
+export const NAV_BAR_PADDING_BOTTOM = '1rem'; // Increased bottom padding to push content down
+export const NAV_BAR_BUTTON_PADDING_TOP = '0.25rem'; // Reduced button top padding
+export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.5rem'; // Increased button bottom padding
 export const NAV_BAR_ICON_SIZE = '2rem'; // w-8 h-8 = 2rem
-export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0.75rem';
-export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0.5rem';
+export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0.25rem'; // Reduced to move icons down
+export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0.25rem'; // Reduced to move icons down
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
-export const NAV_BAR_INDICATOR_TOP = '-0.5rem';
+export const NAV_BAR_INDICATOR_TOP = '-0.5rem'; // Keep indicator above icon
 export const NAV_BAR_INDICATOR_MARGIN_LEFT = '-1rem';
 export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
 export const NAV_BAR_LABEL_MARGIN_TOP = '0.25rem';
