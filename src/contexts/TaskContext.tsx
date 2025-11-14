@@ -1068,13 +1068,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
           try {
             logger.debug('Workspace not found when saving task, ensuring workspace exists...');
+            // Explicitly create workspace
+            await createWorkspaceIfNeeded();
+            // Wait a bit for workspace to be fully created
+            await new Promise(resolve => setTimeout(resolve, 1000));
             const validWorkspaceId = await ensureWorkspace();
             if (validWorkspaceId) {
+              logger.info('Workspace created, retrying task save with workspace ID:', validWorkspaceId);
               // Retry saving with valid workspace ID
               await api.saveTask(validWorkspaceId, newTask);
               await loadTasksFromServer(validWorkspaceId);
               toast.success('Task created');
               return;
+            } else {
+              logger.error('Workspace creation failed - no workspace ID returned');
             }
           } catch (retryError) {
             logger.error('Failed to ensure workspace on retry:', retryError);
@@ -1275,8 +1282,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
           try {
             logger.debug('Workspace not found when updating task, ensuring workspace exists...');
+            // Explicitly create workspace
+            await createWorkspaceIfNeeded();
+            // Wait a bit for workspace to be fully created
+            await new Promise(resolve => setTimeout(resolve, 1000));
             const validWorkspaceId = await ensureWorkspace();
             if (validWorkspaceId) {
+              logger.info('Workspace created, retrying task update with workspace ID:', validWorkspaceId);
               // Retry saving with valid workspace ID
               await api.saveTask(validWorkspaceId, updatedTask);
               if (nextOccurrenceTask) {
@@ -1289,6 +1301,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 });
               }
               return;
+            } else {
+              logger.error('Workspace creation failed - no workspace ID returned');
             }
           } catch (retryError) {
             logger.error('Failed to ensure workspace on retry:', retryError);
@@ -1911,11 +1925,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Expose ensureWorkspace for manual triggering
   const ensureWorkspace = useCallback(async (): Promise<string | null> => {
-    // If workspace already exists in state, return it
-    if (workspaceId) {
-      return workspaceId;
-    }
-    
     // If no user/auth, can't create workspace
     if (!user || !accessToken) {
       logger.warn('Cannot ensure workspace: user or accessToken missing');
@@ -1923,41 +1932,55 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
     
     try {
-      // First, check if workspace already exists (getUserWorkspaces auto-creates if missing)
-      // This prevents creating duplicate workspaces
+      // First, try to get existing workspace (getUserWorkspaces auto-creates if missing)
+      logger.debug('Ensuring workspace exists...');
       const { workspaces } = await api.getUserWorkspaces();
+      
       if (workspaces && workspaces.length > 0 && workspaces[0].id) {
         const wsId = workspaces[0].id;
-        // Update state if it's not already set
+        logger.info('Workspace found/created:', wsId);
+        
+        // Update state if it's different
         if (workspaceId !== wsId) {
           setWorkspaceId(wsId);
         }
         return wsId;
       }
       
-      // Only create if no workspace exists (shouldn't happen due to auto-creation, but safety check)
-      logger.warn('No workspace found after getUserWorkspaces, creating one');
+      // If getUserWorkspaces didn't return a workspace, explicitly create one
+      logger.warn('No workspace returned from getUserWorkspaces, creating explicitly...');
       await createWorkspaceIfNeeded();
       
-      // After creation, get the workspaceId from state or fetch it
-      if (workspaceId) {
-        return workspaceId;
-      }
-      // If state hasn't updated yet, fetch it directly
+      // After creation, fetch the workspace ID
       const { workspaces: newWorkspaces } = await api.getUserWorkspaces();
       if (newWorkspaces && newWorkspaces.length > 0 && newWorkspaces[0].id) {
         const wsId = newWorkspaces[0].id;
+        logger.info('Workspace created successfully:', wsId);
         setWorkspaceId(wsId);
         return wsId;
       }
+      
+      // If still no workspace, something went wrong
+      logger.error('Failed to create workspace - no workspace ID returned');
       return null;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       
-      // Don't show error toast for expected "not found" cases (workspace will be created on first use)
+      // Try to create workspace explicitly if getUserWorkspaces failed
       if (errorMessage.includes('not found') || errorMessage.includes('404') || errorMessage.includes('Workspace or endpoint not found')) {
-        logger.debug('Workspace not found during ensure (expected for new users):', errorMessage);
-        return null; // Return null silently - workspace will be created when needed
+        logger.debug('Workspace not found, attempting explicit creation...');
+        try {
+          await createWorkspaceIfNeeded();
+          const { workspaces: retryWorkspaces } = await api.getUserWorkspaces();
+          if (retryWorkspaces && retryWorkspaces.length > 0 && retryWorkspaces[0].id) {
+            const wsId = retryWorkspaces[0].id;
+            logger.info('Workspace created after retry:', wsId);
+            setWorkspaceId(wsId);
+            return wsId;
+          }
+        } catch (createError) {
+          logger.error('Failed to create workspace on retry:', createError);
+        }
       }
       
       // For other errors, log and show toast
