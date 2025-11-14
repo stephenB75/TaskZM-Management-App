@@ -223,14 +223,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           <div className="max-w-2xl mx-auto space-y-4 sm:space-y-3 md:space-y-2" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))', paddingTop: '1rem' }}>
           <Accordion type="single" collapsible className="w-full">
         {/* User Profile */}
-        <AccordionItem value="user-profile" className="border rounded-lg px-4 py-2 md:py-0 bg-card">
+        <AccordionItem value="user-profile" className="border rounded-lg px-4 py-3 sm:py-2 md:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <User className="w-5 h-5 text-primary" />
               <span>User Profile</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                 <User className="w-8 h-8 text-primary" />
@@ -281,7 +281,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Subscription */}
-        <AccordionItem value="subscription" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="subscription" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <CreditCard className="w-5 h-5 text-primary" />
@@ -294,8 +294,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
-            <div className="space-y-3">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+            <div className="space-y-4 sm:space-y-3 md:space-y-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
@@ -630,7 +630,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Calendar Integration */}
-        <AccordionItem value="calendar" className="border rounded-lg px-4 bg-card" data-tour="calendar-integration">
+        <AccordionItem value="calendar" className="border rounded-lg px-4 py-2 sm:py-0 bg-card" data-tour="calendar-integration">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-primary" />
@@ -642,7 +642,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             {!features.calendarSync ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -1036,14 +1036,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Tags Management */}
-        <AccordionItem value="tags" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="tags" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Tag className="w-5 h-5 text-primary" />
               <span>Tags Management</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <p className="text-sm text-muted-foreground">
               Create and manage custom tags for organizing tasks
             </p>
@@ -1097,14 +1097,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* AI Settings */}
-        <AccordionItem value="ai-settings" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="ai-settings" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Sparkles className="w-5 h-5 text-primary" />
               <span>AI Scheduling</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <p className="text-sm text-muted-foreground">
               Configure AI-powered automatic task scheduling
             </p>
@@ -1206,16 +1206,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Notifications */}
-        <AccordionItem value="notifications" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="notifications" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Bell className="w-5 h-5 text-primary" />
               <span>Notifications</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-3 py-1">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+            <div className="space-y-4 sm:space-y-3 md:space-y-3">
+              <div className="flex items-start justify-between gap-3 py-2 sm:py-1">
                 <div className="space-y-0.5 flex-1 min-w-0">
                   <Label htmlFor="push-notif" className="text-sm cursor-pointer">Push Notifications</Label>
                   <p className="text-xs text-muted-foreground">Desktop and mobile alerts</p>
@@ -1223,7 +1223,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <Switch id="push-notif" defaultChecked className="flex-shrink-0 mt-0.5" />
               </div>
               
-              <div className="flex items-start justify-between gap-3 py-1">
+              <div className="flex items-start justify-between gap-3 py-2 sm:py-1">
                 <div className="space-y-0.5 flex-1 min-w-0">
                   <Label htmlFor="email-notif" className="text-sm cursor-pointer">Email Notifications</Label>
                   <p className="text-xs text-muted-foreground">Daily task summary emails</p>
@@ -1231,7 +1231,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <Switch id="email-notif" className="flex-shrink-0 mt-0.5" />
               </div>
 
-              <div className="flex items-start justify-between gap-3 py-1">
+              <div className="flex items-start justify-between gap-3 py-2 sm:py-1">
                 <div className="space-y-0.5 flex-1 min-w-0">
                   <Label htmlFor="sound-notif" className="text-sm cursor-pointer">Sound</Label>
                   <p className="text-xs text-muted-foreground">Play sound for notifications</p>
@@ -1243,18 +1243,18 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Date & Time */}
-        <AccordionItem value="datetime" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="datetime" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-primary" />
               <span>Date & Time</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
-            <div className="space-y-3">
-              <div className="space-y-2">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+            <div className="space-y-4 sm:space-y-3 md:space-y-3">
+              <div className="space-y-2 sm:space-y-2">
                 <Label className="text-sm">Time Format</Label>
-                <RadioGroup defaultValue="12h">
+                <RadioGroup defaultValue="12h" className="space-y-2 sm:space-y-1.5">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="12h" id="12h" />
                     <Label htmlFor="12h" className="text-sm cursor-pointer">12-hour (2:00 PM)</Label>
@@ -1266,11 +1266,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </RadioGroup>
               </div>
 
-              <Separator />
+              <Separator className="my-3 sm:my-2" />
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:space-y-2">
                 <Label className="text-sm">Week Starts On</Label>
-                <RadioGroup defaultValue="sunday">
+                <RadioGroup defaultValue="sunday" className="space-y-2 sm:space-y-1.5">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="sunday" id="sunday" />
                     <Label htmlFor="sunday" className="text-sm cursor-pointer">Sunday</Label>
@@ -1282,11 +1282,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </RadioGroup>
               </div>
 
-              <Separator />
+              <Separator className="my-3 sm:my-2" />
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:space-y-2">
                 <Label htmlFor="theme-select" className="text-sm">Theme</Label>
-                <RadioGroup value={theme} onValueChange={(value) => setTheme(value as any)}>
+                <RadioGroup value={theme} onValueChange={(value) => setTheme(value as any)} className="space-y-2 sm:space-y-1.5">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="light" id="light" />
                     <Label htmlFor="light" className="flex items-center gap-2 cursor-pointer text-sm">
@@ -1315,7 +1315,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Task Rollover */}
-        <AccordionItem value="rollover" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="rollover" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <RotateCcw className="w-5 h-5 text-primary" />
@@ -1327,7 +1327,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             {!features.taskRollover ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -1394,14 +1394,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Task Category Hours */}
-        <AccordionItem value="hours" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="hours" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Briefcase className="w-5 h-5 text-primary" />
               <span>Task Category Hours</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <p className="text-sm text-muted-foreground">
               Set preferred hours for different task categories
             </p>
@@ -1704,7 +1704,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Awards & Achievements */}
-        <AccordionItem value="awards" className="border rounded-lg px-4 bg-card" data-tour="awards-section">
+        <AccordionItem value="awards" className="border rounded-lg px-4 py-2 sm:py-0 bg-card" data-tour="awards-section">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Trophy className="w-5 h-5 text-primary" />
@@ -1714,7 +1714,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </Badge>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Quietly track your achievements as you complete tasks. Awards appear as subtle notifications in the corner.
@@ -2045,7 +2045,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* App Tour */}
-        <AccordionItem value="app-tour" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="app-tour" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Compass className="w-5 h-5 text-primary" />
@@ -2057,7 +2057,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <p className="text-sm text-muted-foreground">
               Take a guided tour of TaskZM's features and learn how to get the most out of your neurodivergent-friendly task manager.
             </p>
@@ -2115,15 +2115,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* About */}
-        <AccordionItem value="about" className="border rounded-lg px-4 bg-card">
+        <AccordionItem value="about" className="border rounded-lg px-4 py-2 sm:py-0 bg-card">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Info className="w-5 h-5 text-primary" />
               <span>About</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4">
-            <div className="space-y-3">
+          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+            <div className="space-y-4 sm:space-y-3 md:space-y-3">
               <div className="flex flex-col items-center gap-1.5">
                 <img 
                   src={taskzmLogo} 
