@@ -243,12 +243,20 @@ function AppContent() {
       setCurrentView('dashboard');
     } else {
       setCurrentView(view);
+      // On mobile, when dashboard is selected, default to week view
+      if (view === 'dashboard' && isMobile) {
+        setMobileView('week');
+      }
     }
     setSidebarOpen(false); // Close mobile sidebar on view change
   };
 
   const handleClosePanel = () => {
     setCurrentView('dashboard');
+    // On mobile, when closing a panel, default to week view
+    if (isMobile) {
+      setMobileView('week');
+    }
   };
 
   const handleAISchedule = async () => {
