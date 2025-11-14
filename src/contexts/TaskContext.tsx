@@ -122,8 +122,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_MS); // Auto-sync interval (reduced from 30s to minimize Edge Function invocations)
+  const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Start with idle interval (10 minutes)
   const syncLockRef = useRef<boolean>(false); // Prevent concurrent sync operations
+  
+  // Activity tracking for adaptive polling
+  const lastActivityRef = useRef<number>(Date.now());
+  const isActiveRef = useRef<boolean>(false);
   
   // Store last sync timestamps and ETags for delta sync
   const lastSyncTimestampsRef = useRef<{
@@ -902,16 +906,66 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaceId, accessToken]);
 
-  // Auto-sync: Poll server for changes at regular intervals
+  // Activity tracking for adaptive polling
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
+    const handleActivity = () => {
+      lastActivityRef.current = Date.now();
+      if (!isActiveRef.current) {
+        isActiveRef.current = true;
+        // Switch to active interval (2 minutes)
+        setSyncInterval(WORKSPACE_SYNC_INTERVAL_ACTIVE_MS);
+        logger.debug('User activity detected, switching to active sync interval (2 min)');
+      }
+    };
+
+    // Track user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Check for inactivity periodically
+    const activityCheckInterval = setInterval(() => {
+      const timeSinceActivity = Date.now() - lastActivityRef.current;
+      if (timeSinceActivity > WORKSPACE_ACTIVITY_TIMEOUT_MS && isActiveRef.current) {
+        isActiveRef.current = false;
+        // Switch to idle interval (10 minutes)
+        setSyncInterval(WORKSPACE_SYNC_INTERVAL_IDLE_MS);
+        logger.debug('User inactive, switching to idle sync interval (10 min)');
+      }
+    }, 60000); // Check every minute
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity);
+      });
+      clearInterval(activityCheckInterval);
+    };
+  }, [autoSyncEnabled, workspaceId, accessToken]);
+
+  // Auto-sync: Poll server for changes at adaptive intervals
+  useEffect(() => {
+    if (!autoSyncEnabled || !workspaceId || !accessToken) return;
+
+    // Only sync tasks on auto-sync (most frequently changing data)
+    // Projects, folders, and settings change less frequently
     const syncTimer = setInterval(async () => {
       try {
+        // Only sync tasks on regular interval (most frequently changing)
         await syncWithServer(workspaceId, true); // Silent sync
-        await syncProjectsFromServer(workspaceId);
-        await syncFoldersFromServer(workspaceId, true); // Merge mode to preserve pending folders
-        await syncSettingsFromServer(workspaceId);
+        
+        // Sync other resources less frequently (every 3rd interval for idle, every 2nd for active)
+        const syncCount = Math.floor(Date.now() / syncInterval);
+        if (syncCount % (isActiveRef.current ? 2 : 3) === 0) {
+          // Sync projects, folders, and settings less frequently
+          await Promise.all([
+            syncProjectsFromServer(workspaceId),
+            syncFoldersFromServer(workspaceId, true),
+            syncSettingsFromServer(workspaceId),
+          ]);
+        }
       } catch (error) {
         logger.error('Auto-sync error:', error);
       }
@@ -922,34 +976,57 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Debounce helper to prevent multiple rapid syncs
   const lastEventSyncRef = useRef<number>(0);
-  const DEBOUNCE_INTERVAL = 60000; // Only sync once per minute from events
+  const DEBOUNCE_INTERVAL = 120000; // Only sync once per 2 minutes from events (increased from 1 minute)
+  const lastFullSyncRef = useRef<number>(0);
+  const FULL_SYNC_INTERVAL = 300000; // Full sync (all resources) every 5 minutes
 
-  const debouncedSync = useCallback(async () => {
+  const debouncedSync = useCallback(async (fullSync: boolean = false) => {
     if (!workspaceId || !accessToken) return;
     
     const now = Date.now();
-    if (now - lastEventSyncRef.current < DEBOUNCE_INTERVAL) {
+    
+    // Always allow tasks sync (most important)
+    const shouldSyncTasks = now - lastEventSyncRef.current >= DEBOUNCE_INTERVAL;
+    
+    // Only do full sync if explicitly requested or enough time has passed
+    const shouldFullSync = fullSync || (now - lastFullSyncRef.current >= FULL_SYNC_INTERVAL);
+    
+    if (!shouldSyncTasks && !shouldFullSync) {
       return; // Skip if synced recently
     }
-    lastEventSyncRef.current = now;
+    
+    if (shouldSyncTasks) {
+      lastEventSyncRef.current = now;
+    }
+    if (shouldFullSync) {
+      lastFullSyncRef.current = now;
+    }
     
     try {
+      // Always sync tasks (most frequently changing)
       await syncWithServer(workspaceId, true);
-      await syncProjectsFromServer(workspaceId);
-      await syncFoldersFromServer(workspaceId, true); // Added missing folder sync
-      await syncSettingsFromServer(workspaceId);
+      
+      // Only sync other resources on full sync
+      if (shouldFullSync) {
+        await Promise.all([
+          syncProjectsFromServer(workspaceId),
+          syncFoldersFromServer(workspaceId, true),
+          syncSettingsFromServer(workspaceId),
+        ]);
+      }
     } catch (error) {
       logger.error('Debounced sync error:', error);
     }
   }, [workspaceId, accessToken, syncWithServer]);
 
-  // Sync when page becomes visible (user switches back to tab/device) - debounced
+  // Sync when page becomes visible (user switches back to tab/device) - debounced with full sync
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        debouncedSync();
+        // Do full sync when user returns to app
+        debouncedSync(true);
       }
     };
 
@@ -957,12 +1034,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [autoSyncEnabled, workspaceId, accessToken, debouncedSync]);
 
-  // Sync when network comes back online - debounced
+  // Sync when network comes back online - debounced with full sync
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
     const handleOnline = () => {
-      debouncedSync();
+      // Do full sync when network comes back
+      debouncedSync(true);
     };
 
     window.addEventListener('online', handleOnline);
@@ -974,7 +1052,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
     const handleFocus = () => {
-      debouncedSync();
+      // Only sync tasks on focus (not full sync)
+      debouncedSync(false);
     };
 
     window.addEventListener('focus', handleFocus);
