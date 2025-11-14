@@ -105,7 +105,7 @@ export function AppHeader({
       {/* Desktop Header - Side panel headers are relative, main header is fixed */}
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel
-        <div className="hidden md:block relative z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 flex-shrink-0" style={{ minHeight: '73px', height: '73px' }}>
+        <div className="hidden lg:block relative z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 flex-shrink-0" style={{ minHeight: '73px', height: '73px' }}>
           <div className="flex items-center justify-between gap-4">
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
             <div
@@ -153,9 +153,7 @@ export function AppHeader({
       ) : (
         // Main header - fixed positioning, shifts when panel is open (animated to match week view)
         <motion.div 
-          className="hidden md:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
-          key={panelKey || 'header'}
-          layout
+          className="hidden lg:block fixed top-0 right-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4"
           animate={{ 
             left: `${headerLeft}px`,
             width: headerWidth
@@ -163,7 +161,8 @@ export function AppHeader({
           transition={{ 
             type: 'spring', 
             damping: 30, 
-            stiffness: 300
+            stiffness: 300,
+            mass: 1
           }}
           style={{ minHeight: '73px', height: '73px' }}
         >
