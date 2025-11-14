@@ -8,6 +8,7 @@ import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSidebar } from "../contexts/SidebarContext";
 import { cn } from "../lib/utils";
+import { SIDEBAR_WIDTH, PANEL_WIDTH, HEADER_HEIGHT, getMainHeaderLeft, getMainHeaderWidth } from "../lib/layout-constants";
 import logoImage from "../assets/taskzm-logo.png";
 
 interface AppHeaderProps {
@@ -35,20 +36,17 @@ export function AppHeader({
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
   
-  // Calculate left position and width:
-  // - Side panel headers: positioned at sidebar width (64px) - start of panel
-  // - Main header when panel open: sidebar (64px) + panel (440px) = 504px from left
-  // - Main header when panel closed: sidebar (64px) from left
-  const sidebarWidth = 64; // w-16 = 64px
-  const panelWidth = 440;
-  
+  // Calculate left position and width using layout constants
+  // - Side panel headers: positioned at sidebar width - start of panel
+  // - Main header when panel open: sidebar + panel width
+  // - Main header when panel closed: sidebar width only
   const headerLeft = useMemo(() => {
     if (isSidePanelHeader) {
-      return sidebarWidth; // Side panel headers at start of panel
+      return SIDEBAR_WIDTH; // Side panel headers at start of panel
     }
     // Main header shifts when panel opens/closes - matches week view animation
-    return panelOpen ? sidebarWidth + panelWidth : sidebarWidth;
-  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth]);
+    return getMainHeaderLeft(panelOpen);
+  }, [isSidePanelHeader, panelOpen]);
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = useMemo(() => {
@@ -56,9 +54,8 @@ export function AppHeader({
       return undefined; // Side panel headers don't need width calculation
     }
     // Main header should span from left position to right edge
-    // Use calc to ensure it fills remaining space dynamically
-    return `calc(100% - ${headerLeft}px)`;
-  }, [isSidePanelHeader, headerLeft]);
+    return getMainHeaderWidth(panelOpen);
+  }, [isSidePanelHeader, panelOpen]);
 
   return (
     <>
@@ -107,7 +104,7 @@ export function AppHeader({
       {/* Desktop Header - Side panel headers are relative, main header is fixed */}
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel
-        <div className="hidden lg:block relative z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 flex-shrink-0" style={{ minHeight: '73px', height: '73px' }}>
+        <div className="hidden lg:block relative z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 flex-shrink-0" style={{ minHeight: `${HEADER_HEIGHT}px`, height: `${HEADER_HEIGHT}px` }}>
           <div className="flex items-center justify-between gap-4">
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
             <div
@@ -167,8 +164,8 @@ export function AppHeader({
             stiffness: 300
           }}
           style={{ 
-            minHeight: '73px', 
-            height: '73px',
+            minHeight: `${HEADER_HEIGHT}px`, 
+            height: `${HEADER_HEIGHT}px`,
             right: 0,
           }}
         >

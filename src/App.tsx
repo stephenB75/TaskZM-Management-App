@@ -42,6 +42,7 @@ import { configureRevenueCat, resetRevenueCat } from './lib/revenuecat';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
+import { PANEL_WIDTH, HEADER_HEIGHT } from './lib/layout-constants';
 import './styles/globals.css';
 
 function AppContent() {
@@ -410,7 +411,7 @@ function AppContent() {
                 key={currentView}
                 initial={{ width: 0, opacity: 0 }}
                 animate={{ 
-                  width: 440,
+                  width: PANEL_WIDTH,
                   opacity: 1 
                 }}
                 exit={{ width: 0, opacity: 0 }}
@@ -438,7 +439,8 @@ function AppContent() {
 
           {/* Desktop: Dashboard - pushed to the right when panel is open */}
           <motion.div 
-            className="hidden lg:block h-full flex-1 overflow-hidden pt-[73px]"
+            className={`hidden lg:block h-full flex-1 overflow-hidden`}
+            style={{ paddingTop: `${HEADER_HEIGHT}px` }}
             layout
             initial={false}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
