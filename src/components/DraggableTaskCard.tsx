@@ -160,12 +160,15 @@ export const DraggableTaskCard = React.forwardRef<
         const hasPomodoro = hasFeature("pomodoroTimer") && timerState.isRunning;
         const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
         
-        // Increase base height on mobile when pomodoro or assigned users are present
-        // For tasks < 45 mins on mobile: inline bottom row needs less height (handled by padding)
-        if (isMobile && (hasPomodoro || hasAssignedUsers) && duration >= 45) {
+        // Increase base height on mobile when tracking badge is at top (adds to row 1 height)
+        // For tasks < 45 mins on mobile: tracking badge moved to top, so need extra space for row 1
+        const hasTrackedTime = task.actualTime && task.actualTime > 0;
+        if (isMobile && (hasPomodoro || hasTrackedTime)) {
+          baseHeight = 88; // Extra space for tracking badge in top row on mobile
+        } else if (isMobile && hasAssignedUsers && duration < 45) {
+          baseHeight = 85; // Space for assigned users in bottom row on mobile
+        } else if (isMobile && (hasPomodoro || hasAssignedUsers) && duration >= 45) {
           baseHeight = 95; // Extra space for pomodoro timer and assigned users on mobile (absolute positioning)
-        } else if (isMobile && (hasPomodoro || hasAssignedUsers) && duration < 45) {
-          baseHeight = 85; // Less space needed for inline bottom row on mobile
         } else if (!isMobile && (hasPomodoro || hasAssignedUsers)) {
           baseHeight = 90; // Slightly more space on desktop
         }
@@ -280,7 +283,7 @@ export const DraggableTaskCard = React.forwardRef<
             }
           }}
         >
-          {/* Row 1: Time + Priority Badge + Tag + Duration (left) + Checkbox (right) */}
+          {/* Row 1: Time + Priority Badge + Tag + Duration + Tracking Badge (mobile) (left) + Checkbox (right) */}
           <div className={cn("flex items-center justify-between", isMobile ? "gap-1" : "gap-2")}>
             <div className={cn("flex items-center flex-1 min-w-0", isMobile ? "gap-1" : "gap-1.5")}>
               {/* Scheduled Time with AM/PM */}
@@ -324,6 +327,26 @@ export const DraggableTaskCard = React.forwardRef<
                 <span className={cn("text-gray-500 font-medium flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
                   {formatDuration(task.estimatedTime)}
                 </span>
+              )}
+
+              {/* Tracking Badge - Mobile only, shown at top with other badges */}
+              {isMobile && hasFeature("pomodoroTimer") && timerState.isRunning && (
+                <div className="flex items-center animate-pulse flex-shrink-0">
+                  <div className="flex items-center rounded-full px-1 py-0.5 bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white gap-0.5 text-[7px]">
+                    <Timer className="w-2 h-2 animate-spin" />
+                    <span className="font-semibold">Tracking...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Tracked Time (mobile only, if exists and not running) - shown at top */}
+              {isMobile && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <Timer className="text-[#7B68EE] w-2 h-2" />
+                  <span className="text-[#7B68EE] font-medium text-[8px]">
+                    {formatTimer(task.actualTime)}
+                  </span>
+                </div>
               )}
             </div>
 
@@ -453,28 +476,8 @@ export const DraggableTaskCard = React.forwardRef<
                 )}
               </div>
 
-              {/* Center/Right: Tracking Badge and Pomodoro Timer inline */}
+              {/* Center/Right: Pomodoro Timer only (tracking badge moved to top on mobile) */}
               <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Tracking Status - Show when timer is running */}
-                {hasFeature("pomodoroTimer") && timerState.isRunning && (
-                  <div className="flex items-center animate-pulse">
-                    <div className="flex items-center rounded-full px-1 py-0.5 bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white gap-0.5 text-[7px]">
-                      <Timer className="w-2 h-2 animate-spin" />
-                      <span className="font-semibold">Tracking...</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Tracked Time (if exists and not running) */}
-                {task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
-                  <div className="flex items-center gap-0.5">
-                    <Timer className="text-[#7B68EE] w-2 h-2" />
-                    <span className="text-[#7B68EE] font-medium text-[8px]">
-                      {formatTimer(task.actualTime)}
-                    </span>
-                  </div>
-                )}
-
                 {/* Pomodoro Timer */}
                 {hasFeature("pomodoroTimer") && (
                   <div onClick={(e) => e.stopPropagation()}>
