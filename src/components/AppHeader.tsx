@@ -272,10 +272,11 @@ export function AppHeader({
           </motion.div>
         </motion.div>
       ) : (
-        // Main header - fixed positioning, animates with spring physics to sync with week view
-        // Uses same spring animation settings as week view (damping: 30, stiffness: 300)
-        // animate prop updates automatically when headerLeft and headerWidth change
-        <motion.div 
+        // Main header - fixed positioning, shifts instantly when panel opens/closes (no animation)
+        // Follows week view code sequence - responds to panel push/retract without animation
+        // Key prop ensures re-render when panelOpen or panelKey changes
+        <div 
+          key={`main-header-${String(panelOpen)}-${String(panelKey || 'default')}`}
           className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
@@ -287,16 +288,12 @@ export function AppHeader({
             paddingBottom: HEADER_PADDING_Y_DESKTOP,
             minHeight: `${HEADER_HEIGHT}px`, 
             height: `${HEADER_HEIGHT}px`,
-            right: 0,
-          }}
-          animate={{
             left: `${headerLeft}px`,
             width: headerWidth,
-          }}
-          transition={{
-            type: 'spring',
-            damping: HEADER_ANIMATION_DAMPING,
-            stiffness: HEADER_ANIMATION_STIFFNESS,
+            right: 0,
+            // Explicitly disable any CSS transitions to ensure instant updates
+            transition: 'none',
+            willChange: 'left, width', // Hint to browser for better performance
           }}
         >
           {/* Static container for logo and title - no animations */}
@@ -360,10 +357,10 @@ export function AppHeader({
               <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_MEDIUM }}>
                 {actions}
               </div>
-                   )}
-                 </div>
-               </motion.div>
-             )}
-           </>
-         );
-       }
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
