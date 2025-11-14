@@ -159,7 +159,9 @@ export function PomodoroTimer({
               <Button
                 size="icon"
                 variant="ghost"
-                className={cn(isMobile ? "h-2.5 w-2.5" : "h-5 w-5")}
+                className={cn(
+                  isMobile ? "h-2.5 w-2.5 bg-transparent hover:bg-transparent border-0" : "h-5 w-5"
+                )}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleTimer();
@@ -170,7 +172,9 @@ export function PomodoroTimer({
               <Button
                 size="icon"
                 variant="ghost"
-                className={cn(isMobile ? "h-2.5 w-2.5" : "h-5 w-5")}
+                className={cn(
+                  isMobile ? "h-2.5 w-2.5 bg-transparent hover:bg-transparent border-0" : "h-5 w-5"
+                )}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleStopTimer();
@@ -191,10 +195,12 @@ export function PomodoroTimer({
                 size="icon"
                 variant="ghost"
                 className={cn(
-                  "rounded-full border-[#7B68EE]/30 text-[#7B68EE] hover:bg-[#7B68EE]/10",
-                  timerState.sessionsCompleted > 0 &&
-                    "border-[#50C878]/30 text-[#50C878] hover:bg-[#50C878]/10",
-                  isMobile ? "h-2.5 w-2.5" : "h-5 w-5",
+                  "rounded-full text-[#7B68EE]",
+                  timerState.sessionsCompleted > 0 && "text-[#50C878]",
+                  isMobile 
+                    ? "h-2.5 w-2.5 bg-transparent hover:bg-transparent border-0" 
+                    : "h-5 w-5 border-[#7B68EE]/30 hover:bg-[#7B68EE]/10",
+                  timerState.sessionsCompleted > 0 && !isMobile && "border-[#50C878]/30 hover:bg-[#50C878]/10",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();

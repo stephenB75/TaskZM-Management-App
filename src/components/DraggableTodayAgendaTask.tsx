@@ -508,7 +508,7 @@ export function DraggableTodayAgendaTask({
             {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) */}
             {hasFeature("pomodoroTimer") && (
               <div
-                className={cn("absolute", isMobile ? "bottom-1 right-1" : "bottom-2 right-2")}
+                className={cn("absolute", isMobile ? "bottom-0 right-1" : "bottom-2 right-2")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <PomodoroTimer

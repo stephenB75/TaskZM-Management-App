@@ -164,20 +164,31 @@ export const DraggableTaskCard = React.forwardRef<
         
         // Auto-adjust base height based on components present
         // Mobile only: increase border height by 20% to fit all components
+        // Additional 10% increase when ALL components are active (tracking + assigned users + subtasks)
+        const hasSubtasks = task.subtasks && task.subtasks.length > 0;
         if (isMobile) {
           // Mobile: tracking badge at top, bottom row has assigned users + pomodoro timer
           // Increase border height by 20% to accommodate all components comfortably
+          // Additional 10% when all components are active
+          let calculatedBaseHeight = 0;
           if (hasPomodoro || hasTrackedTime) {
             // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
-            baseHeight = hasAssignedUsers || hasPomodoroTimer ? 126 : 114; // Extra space for all components (+20% border height)
+            calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer ? 126 : 114; // Extra space for all components (+20% border height)
           } else if (hasAssignedUsers && hasPomodoroTimer) {
             // Both assigned users and pomodoro timer in bottom row
-            baseHeight = 120; // Space for both bottom row components (+20% border height)
+            calculatedBaseHeight = 120; // Space for both bottom row components (+20% border height)
           } else if (hasAssignedUsers || hasPomodoroTimer) {
             // One of assigned users or pomodoro timer in bottom row
-            baseHeight = 114; // Space for one bottom row component (+20% border height)
+            calculatedBaseHeight = 114; // Space for one bottom row component (+20% border height)
           } else {
-            baseHeight = 108; // Base space for essential elements only (+20% border height)
+            calculatedBaseHeight = 108; // Base space for essential elements only (+20% border height)
+          }
+          
+          // Add 10% increase when ALL components are active (tracking + assigned users + subtasks)
+          if ((hasPomodoro || hasTrackedTime) && hasAssignedUsers && hasSubtasks) {
+            baseHeight = Math.round(calculatedBaseHeight * 1.1);
+          } else {
+            baseHeight = calculatedBaseHeight;
           }
         } else {
           // Desktop: absolute positioning for components (no change to desktop)
@@ -601,7 +612,7 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) */}
               {hasFeature("pomodoroTimer") && (
                 <div
-                  className={cn("absolute", isMobile ? "bottom-1 right-1" : "bottom-2 right-2")}
+                  className={cn("absolute", isMobile ? "bottom-0 right-1" : "bottom-2 right-2")}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <PomodoroTimer
