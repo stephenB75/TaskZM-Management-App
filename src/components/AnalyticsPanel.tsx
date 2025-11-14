@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useId } from "react";
 import {
   X,
   TrendingUp,
@@ -90,7 +90,8 @@ function RadialProgress({
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (value / 100) * circumference;
-  const gradientId = `radial-gradient-${Math.random().toString(36).substr(2, 9)}`;
+  const gradientId = useId();
+  const glowId = useId();
 
   return (
     <div className="relative inline-flex items-center justify-center">
@@ -104,7 +105,7 @@ function RadialProgress({
             <stop offset="0%" stopColor={gradientStart || color} stopOpacity="1" />
             <stop offset="100%" stopColor={gradientEnd || color} stopOpacity="0.8" />
           </linearGradient>
-          <filter id="glow">
+          <filter id={glowId}>
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
@@ -135,7 +136,7 @@ function RadialProgress({
           strokeDashoffset={offset}
           strokeLinecap="round"
           className="transition-all duration-1000 ease-out"
-          filter="url(#glow)"
+          filter={`url(#${glowId})`}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

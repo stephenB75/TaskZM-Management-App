@@ -6,7 +6,11 @@ import {
   Highlighter, 
   List, 
   Type,
-  Eraser
+  Eraser,
+  CaseLower,
+  Pilcrow,
+  Minus,
+  Plus
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
@@ -28,6 +32,19 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [fontSizeLevel, setFontSizeLevel] = useState(3);
+
+  const FONT_SIZE_MAP: Record<number, string> = {
+    1: "12px",
+    2: "13px",
+    3: "14px",
+    4: "16px",
+    5: "18px",
+    6: "20px",
+    7: "24px",
+  };
+  const MIN_FONT_LEVEL = 1;
+  const MAX_FONT_LEVEL = 6;
 
   // Initialize editor content
   useEffect(() => {
@@ -48,6 +65,45 @@ export function RichTextEditor({
     handleInput();
   };
 
+  const normalizeFontTags = () => {
+    if (!editorRef.current) return;
+    const fonts = editorRef.current.querySelectorAll("font[size]");
+    fonts.forEach((font) => {
+      const size = font.getAttribute("size");
+      if (!size) return;
+      const span = document.createElement("span");
+      span.style.fontSize = FONT_SIZE_MAP[parseInt(size, 10)] || FONT_SIZE_MAP[3];
+      span.innerHTML = font.innerHTML;
+      font.replaceWith(span);
+    });
+  };
+
+  const applyFontSize = (level: number) => {
+    const clamped = Math.max(MIN_FONT_LEVEL, Math.min(MAX_FONT_LEVEL, level));
+    execCommand("fontSize", clamped.toString());
+    normalizeFontTags();
+    setFontSizeLevel(clamped);
+  };
+
+  const transformSelection = (transformer: (input: string) => string) => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const selectedText = range.toString();
+      if (selectedText) {
+        const transformed = transformer(selectedText);
+        range.deleteContents();
+        const textNode = document.createTextNode(transformed);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        handleInput();
+      }
+    }
+  };
+
   const formatText = (format: string) => {
     switch (format) {
       case 'bold':
@@ -63,37 +119,22 @@ export function RichTextEditor({
         execCommand('backColor', '#fef08a'); // Yellow highlight
         break;
       case 'uppercase':
-        // Convert selected text to uppercase
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const selectedText = range.toString();
-          if (selectedText) {
-            const uppercaseText = selectedText.toUpperCase();
-            // Delete selected text and insert uppercase
-            range.deleteContents();
-            const textNode = document.createTextNode(uppercaseText);
-            range.insertNode(textNode);
-            // Move cursor after inserted text
-            range.setStartAfter(textNode);
-            range.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(range);
-            handleInput();
-          } else {
-            // If no selection, wrap current word or apply to next typed text
-            // For simplicity, just set a flag that will be handled on next input
-            execCommand('styleWithCSS', 'true');
-          }
-        }
+        transformSelection((text) => text.toUpperCase());
+        break;
+      case 'lowercase':
+        transformSelection((text) => text.toLowerCase());
         break;
       case 'bullet':
         execCommand('insertUnorderedList');
+        break;
+      case 'paragraph':
+        execCommand('formatBlock', '<p>');
         break;
       case 'clear':
         // Remove all formatting from selection
         execCommand('removeFormat');
         execCommand('unlink'); // Remove links too
+        setFontSizeLevel(3);
         break;
     }
   };
@@ -114,9 +155,15 @@ export function RichTextEditor({
   };
 
   return (
-    <div className={cn("border border-primary/20 rounded-md bg-white dark:bg-gray-800/80", className)}>
+    <div 
+      className={cn(
+        "border rounded-xl bg-white/80 dark:bg-gray-900/70 backdrop-blur-sm shadow-sm",
+        "border-primary/10",
+        className
+      )}
+    >
       {/* Formatting Toolbar */}
-      <div className="flex items-center gap-1 p-2 border-b border-primary/10 bg-gray-50 dark:bg-gray-900/50 rounded-t-md">
+      <div className="flex flex-wrap items-center gap-1.5 p-2 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl">
         <Button
           type="button"
           variant="ghost"
@@ -182,11 +229,59 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className="h-7 w-7 p-0"
+          onClick={() => formatText('lowercase')}
+          title="Lowercase"
+        >
+          <CaseLower className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
           onClick={() => formatText('bullet')}
           title="Bullet List"
         >
           <List className="w-4 h-4" />
         </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => formatText('paragraph')}
+          title="Paragraph"
+        >
+          <Pilcrow className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-5 bg-border mx-1" />
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => applyFontSize(fontSizeLevel - 1)}
+            disabled={fontSizeLevel <= MIN_FONT_LEVEL}
+            title="Decrease font size"
+          >
+            <Minus className="w-4 h-4" />
+          </Button>
+          <span className="text-[11px] font-semibold text-muted-foreground w-6 text-center">
+            A
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => applyFontSize(fontSizeLevel + 1)}
+            disabled={fontSizeLevel >= MAX_FONT_LEVEL}
+            title="Increase font size"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
         <div className="w-px h-5 bg-border mx-1" />
         <Button
           type="button"
@@ -208,8 +303,8 @@ export function RichTextEditor({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={cn(
-          "min-h-[60px] p-3 outline-none text-sm",
-          "focus:ring-2 focus:ring-primary/20 focus:border-primary",
+          "min-h-[60px] p-3 outline-none text-sm rounded-b-xl",
+          "focus:ring-2 focus:ring-primary/20 focus:border-primary/40",
           !value && "text-muted-foreground",
           rows === 3 && "min-h-[60px]",
           rows === 4 && "min-h-[80px]",

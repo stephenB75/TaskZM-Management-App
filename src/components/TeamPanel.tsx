@@ -102,6 +102,12 @@ import {
   TEAM_PANEL_TEXTAREA_MIN_HEIGHT,
   TEAM_PANEL_TEXTAREA_ROWS,
 } from "../lib/layout-constants";
+import {
+  COLOR_PASTEL_LAVENDER,
+  COLOR_PASTEL_SKY,
+  COLOR_PASTEL_MINT,
+  getColorWithOpacity,
+} from "../lib/color-theme";
 
 export function TeamPanel() {
   const {
@@ -938,7 +944,12 @@ export function TeamPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+    <div
+      className="h-full flex flex-col dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 dark:bg-gradient-to-b"
+      style={{
+        background: `linear-gradient(to bottom, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.35)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.35)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.35)})`,
+      }}
+    >
       {/* Header */}
       <AppHeader
         title="Team"
@@ -980,11 +991,11 @@ export function TeamPanel() {
 
       {/* Search Bar */}
       <div 
-        className="border-b"
+        className="border-b border-primary/10"
         style={{ 
           paddingLeft: PANEL_PADDING,
           paddingRight: PANEL_PADDING,
-          paddingTop: '0.75rem',
+          paddingTop: '1rem',
           paddingBottom: '0.75rem'
         }}
       >
@@ -1027,7 +1038,7 @@ export function TeamPanel() {
           className="pb-safe md:pb-4" 
           style={{ 
             padding: PANEL_PADDING,
-            paddingTop: PANEL_PADDING_TOP_MOBILE,
+            paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + 0.5rem)`,
             paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
             gap: PANEL_CONTENT_SPACING
           }}

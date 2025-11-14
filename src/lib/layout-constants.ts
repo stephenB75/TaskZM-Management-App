@@ -30,6 +30,9 @@ export const HEADER_GAP_LARGE = '0.75rem'; // gap-3 = 0.75rem (12px)
 export const HEADER_GAP_XLARGE = '1rem'; // gap-4 = 1rem (16px)
 export const HEADER_Z_INDEX = 40; // z-40 = 40
 export const HEADER_BACKGROUND_OPACITY = 0.95; // bg-white/95 = 95% opacity
+export const HEADER_BACKGROUND_LIGHT_COLOR = '#FFFFFF';
+export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.95)';
+export const HEADER_BORDER_COLOR = 'rgba(148, 163, 184, 0.2)';
 export const HEADER_ANIMATION_DAMPING = 30; // Spring animation damping
 export const HEADER_ANIMATION_STIFFNESS = 300; // Spring animation stiffness
 
@@ -46,13 +49,13 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 
 // Bottom Navigation Bar constants
 export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
-export const NAV_BAR_PADDING_TOP = '0.5rem'; // Reduced top padding to move content down
-export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Reduced bottom padding to match top for even spacing
-export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Reduced button top padding to move icons down
-export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.375rem'; // Reduced button bottom padding to match top
+export const NAV_BAR_PADDING_TOP = '0.5rem'; // Balanced top padding
+export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
+export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Button top padding
+export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.375rem'; // Button bottom padding
 export const NAV_BAR_ICON_SIZE = '2rem'; // w-8 h-8 = 2rem
-export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0.5rem'; // Reduced to move icons down closer to bottom while maintaining proportion
-export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0.5rem'; // Reduced to move icons down closer to bottom while maintaining proportion
+export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '1.05rem'; // Move icons closer to nav bottom (approx 15% of nav height)
+export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '1.05rem'; // Move icons closer to nav bottom (approx 15% of nav height)
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
 export const NAV_BAR_INDICATOR_TOP = '-0.5rem'; // Keep indicator above icon (moves with icon)
 export const NAV_BAR_INDICATOR_MARGIN_LEFT = '-1rem';

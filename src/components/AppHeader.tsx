@@ -32,11 +32,14 @@ import {
   HEADER_BACKGROUND_OPACITY,
   HEADER_ANIMATION_DAMPING,
   HEADER_ANIMATION_STIFFNESS,
+  HEADER_BACKGROUND_LIGHT_COLOR,
+  HEADER_BORDER_COLOR,
 } from "../lib/layout-constants";
 import {
   COLOR_GRADIENT_START,
   COLOR_GRADIENT_MID,
   COLOR_GRADIENT_END,
+  getColorWithOpacity,
 } from "../lib/color-theme";
 import logoImage from "../assets/taskzm-logo.png";
 
@@ -93,7 +96,8 @@ export function AppHeader({
         className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm dark:bg-gray-900/95"
         style={{
           zIndex: HEADER_Z_INDEX,
-          backgroundColor: `rgba(255, 255, 255, ${HEADER_BACKGROUND_OPACITY})`,
+          backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
+          borderColor: HEADER_BORDER_COLOR,
           paddingLeft: HEADER_PADDING_X_MOBILE,
           paddingRight: HEADER_PADDING_X_MOBILE,
           paddingTop: HEADER_PADDING_Y_MOBILE,
@@ -162,7 +166,8 @@ export function AppHeader({
           }}
           style={{ 
             zIndex: HEADER_Z_INDEX,
-            backgroundColor: `rgba(255, 255, 255, ${HEADER_BACKGROUND_OPACITY})`,
+            backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
+            borderColor: HEADER_BORDER_COLOR,
             paddingLeft: HEADER_PADDING_X_DESKTOP,
             paddingRight: HEADER_PADDING_X_DESKTOP,
             paddingTop: HEADER_PADDING_Y_DESKTOP,
@@ -264,7 +269,8 @@ export function AppHeader({
           }}
           style={{ 
             zIndex: HEADER_Z_INDEX,
-            backgroundColor: `rgba(255, 255, 255, ${HEADER_BACKGROUND_OPACITY})`,
+            backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
+            borderColor: HEADER_BORDER_COLOR,
             paddingLeft: HEADER_PADDING_X_DESKTOP,
             paddingRight: HEADER_PADDING_X_DESKTOP,
             paddingTop: HEADER_PADDING_Y_DESKTOP,

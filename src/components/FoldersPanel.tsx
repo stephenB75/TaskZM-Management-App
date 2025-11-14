@@ -54,6 +54,12 @@ import { cn } from "../lib/utils";
 import { logger } from "../lib/logger";
 import { FolderView } from "./FolderView";
 import type { Folder as FolderType } from "../types";
+import {
+  COLOR_PASTEL_LAVENDER,
+  COLOR_PASTEL_SKY,
+  COLOR_PASTEL_MINT,
+  getColorWithOpacity,
+} from "../lib/color-theme";
 
 interface FoldersPanelProps {
   onFolderSelect?: (folder: FolderType) => void;
@@ -435,7 +441,12 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+    <div
+      className="h-full flex flex-col dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 dark:bg-gradient-to-b"
+      style={{
+        background: `linear-gradient(to bottom, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.35)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.35)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.35)})`,
+      }}
+    >
       {/* Header */}
       <AppHeader
         title="Folders"
@@ -465,7 +476,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       <div className="lg:hidden h-[64px]" />
 
       {/* Search Bar */}
-      <div className="px-4 py-3 lg:py-3 border-b lg:pt-0 pt-4">
+      <div className="px-4 pt-5 pb-3 lg:pt-4 border-b border-primary/10">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -489,7 +500,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
       {/* Folders List */}
       <ScrollArea className="flex-1">
-        <div className="p-4 pt-6 lg:pt-4 space-y-3 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="p-4 pt-5 lg:pt-4 space-y-3 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
           {filteredFolders.length === 0 ? (
             <div className="text-center py-12">
               <Folder className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
