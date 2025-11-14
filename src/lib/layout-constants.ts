@@ -147,6 +147,59 @@ export const TEAM_PANEL_MARGIN_RIGHT_SMALL = '0.25rem'; // mr-1 = 0.25rem
 export const TEAM_PANEL_MARGIN_RIGHT_MEDIUM = '0.5rem'; // mr-2 = 0.5rem
 export const TEAM_PANEL_TEXTAREA_MIN_HEIGHT = '120px'; // min-h-[120px] = 120px
 export const TEAM_PANEL_TEXTAREA_ROWS = 6;
+export const TEAM_PANEL_BADGE_PADDING_X = '0.5rem'; // px-2 = 0.5rem
+export const TEAM_PANEL_BADGE_PADDING_Y = '0.125rem'; // py-0.5 = 0.125rem
+export const TEAM_PANEL_TEXTAREA_PADDING_X = '0.75rem'; // px-3 = 0.75rem
+export const TEAM_PANEL_TEXTAREA_PADDING_Y = '0.5rem'; // py-2 = 0.5rem
+export const TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT = '0.25rem'; // right-1 = 0.25rem
+export const TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET = '0.5rem'; // Additional padding top offset
+
+// Folder Panel specific constants
+export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '64px'; // h-[64px] = 64px
+export const FOLDER_PANEL_SEARCH_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem
+export const FOLDER_PANEL_SEARCH_PADDING_BOTTOM = '0.75rem'; // pb-3 = 0.75rem
+export const FOLDER_PANEL_SEARCH_PADDING_TOP_DESKTOP = '1rem'; // lg:pt-4 = 1rem
+export const FOLDER_PANEL_CONTENT_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem
+export const FOLDER_PANEL_CONTENT_PADDING_TOP_DESKTOP = '1rem'; // lg:pt-4 = 1rem
+export const FOLDER_PANEL_EMPTY_STATE_PADDING_Y = '3rem'; // py-12 = 3rem
+export const FOLDER_PANEL_EMPTY_STATE_ICON_SIZE = '3rem'; // w-12 h-12 = 3rem
+export const FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM = '0.75rem'; // mb-3 = 0.75rem
+export const FOLDER_PANEL_CARD_HEADER_PADDING_BOTTOM = '0.75rem'; // pb-3 = 0.75rem
+export const FOLDER_PANEL_CARD_HEADER_PADDING_TOP = '1rem'; // pt-4 = 1rem
+export const FOLDER_PANEL_CARD_HEADER_PADDING_LEFT = '1.25rem'; // pl-5 = 1.25rem
+export const FOLDER_PANEL_CARD_CONTENT_PADDING_BOTTOM = '1rem'; // pb-4 = 1rem
+export const FOLDER_PANEL_CARD_CONTENT_PADDING_LEFT = '1.25rem'; // pl-5 = 1.25rem
+export const FOLDER_PANEL_FOLDER_ICON_SIZE = '2.5rem'; // w-10 h-10 = 2.5rem
+export const FOLDER_PANEL_FOLDER_ICON_INNER_SIZE = '1.25rem'; // w-5 h-5 = 1.25rem
+export const FOLDER_PANEL_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem
+export const FOLDER_PANEL_BUTTON_SIZE_SMALL = '1.75rem'; // h-7 w-7 = 1.75rem
+export const FOLDER_PANEL_DROPDOWN_WIDTH = '12rem'; // w-48 = 12rem
+export const FOLDER_PANEL_DROPDOWN_Z_INDEX = 9999; // z-[9999]
+export const FOLDER_PANEL_COLOR_PICKER_SIZE = '2rem'; // w-8 h-8 = 2rem
+export const FOLDER_PANEL_SEARCH_ICON_LEFT = '0.75rem'; // left-3 = 0.75rem
+export const FOLDER_PANEL_SEARCH_INPUT_PADDING_LEFT = '2.25rem'; // pl-9 = 2.25rem
+export const FOLDER_PANEL_SEARCH_CLEAR_BUTTON_RIGHT = '0.25rem'; // right-1 = 0.25rem
+export const FOLDER_PANEL_CARD_TITLE_MARGIN_BOTTOM = '0.25rem'; // mb-1 = 0.25rem
+export const FOLDER_PANEL_BADGE_PADDING_X = '0.5rem'; // px-2 = 0.5rem
+export const FOLDER_PANEL_BADGE_PADDING_Y = '0.125rem'; // py-0.5 = 0.125rem
+export const FOLDER_PANEL_BADGE_TEXT_SIZE = '0.75rem'; // text-xs = 0.75rem
+export const FOLDER_PANEL_TEXT_SIZE_MEDIUM = '1rem'; // text-base = 1rem (16px)
+export const FOLDER_PANEL_ICON_SIZE_SMALL = '1rem'; // w-4 h-4 = 1rem
+export const FOLDER_PANEL_ICON_MARGIN_RIGHT = '0.5rem'; // mr-2 = 0.5rem
+export const FOLDER_PANEL_DIALOG_MAX_WIDTH = '28rem'; // sm:max-w-md = 28rem
+export const FOLDER_PANEL_DIALOG_CONTENT_SPACING = '1rem'; // space-y-4 = 1rem
+export const FOLDER_PANEL_DIALOG_FIELD_SPACING = '0.5rem'; // space-y-2 = 0.5rem
+export const FOLDER_PANEL_DIALOG_PADDING_Y = '1rem'; // py-4 = 1rem
+export const FOLDER_PANEL_COLOR_PICKER_GAP = '0.5rem'; // gap-2 = 0.5rem
+
+// Common Panel Constants (for both Folder and Team panels)
+export const PANEL_DROPDOWN_TIMEOUT_DELAY_MS = 150; // Timeout delay for dropdown menu actions (150ms)
+export const PANEL_SEARCH_BAR_PADDING_TOP = '1rem'; // pt-4 = 1rem
+export const PANEL_SEARCH_BAR_PADDING_BOTTOM = '0.75rem'; // pb-3 = 0.75rem
+export const PANEL_SEARCH_ICON_POSITION_LEFT = '0.75rem'; // left-3 = 0.75rem
+export const PANEL_SEARCH_INPUT_PADDING_LEFT = '2.25rem'; // pl-9 = 2.25rem
+export const PANEL_EMPTY_STATE_PADDING_Y = '3rem'; // py-12 = 3rem
+export const PANEL_EMPTY_STATE_TEXT_SIZE = '0.875rem'; // text-sm = 0.875rem
 
 // Workspace constants (for workspace creation, loading, and management)
 export const WORKSPACE_MAX_RETRIES = 3; // Maximum number of retry attempts for workspace loading

@@ -58,8 +58,53 @@ import {
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_SKY,
   COLOR_PASTEL_MINT,
+  COLOR_FOLDER_DEFAULT,
+  FOLDER_COLOR_OPTIONS,
   getColorWithOpacity,
 } from "../lib/color-theme";
+import {
+  FOLDER_PANEL_MOBILE_HEADER_SPACER,
+  FOLDER_PANEL_SEARCH_PADDING_TOP,
+  FOLDER_PANEL_SEARCH_PADDING_BOTTOM,
+  FOLDER_PANEL_SEARCH_PADDING_TOP_DESKTOP,
+  FOLDER_PANEL_CONTENT_PADDING_TOP,
+  FOLDER_PANEL_CONTENT_PADDING_TOP_DESKTOP,
+  FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
+  FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+  FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM,
+  FOLDER_PANEL_CARD_HEADER_PADDING_BOTTOM,
+  FOLDER_PANEL_CARD_HEADER_PADDING_TOP,
+  FOLDER_PANEL_CARD_HEADER_PADDING_LEFT,
+  FOLDER_PANEL_CARD_CONTENT_PADDING_BOTTOM,
+  FOLDER_PANEL_CARD_CONTENT_PADDING_LEFT,
+  FOLDER_PANEL_FOLDER_ICON_SIZE,
+  FOLDER_PANEL_FOLDER_ICON_INNER_SIZE,
+  FOLDER_PANEL_BUTTON_SIZE,
+  FOLDER_PANEL_BUTTON_SIZE_SMALL,
+  FOLDER_PANEL_DROPDOWN_WIDTH,
+  FOLDER_PANEL_DROPDOWN_Z_INDEX,
+  FOLDER_PANEL_COLOR_PICKER_SIZE,
+  FOLDER_PANEL_SEARCH_ICON_LEFT,
+  FOLDER_PANEL_SEARCH_INPUT_PADDING_LEFT,
+  FOLDER_PANEL_SEARCH_CLEAR_BUTTON_RIGHT,
+  FOLDER_PANEL_CARD_TITLE_MARGIN_BOTTOM,
+  FOLDER_PANEL_BADGE_PADDING_X,
+  FOLDER_PANEL_BADGE_PADDING_Y,
+  FOLDER_PANEL_BADGE_TEXT_SIZE,
+  FOLDER_PANEL_TEXT_SIZE_MEDIUM,
+  FOLDER_PANEL_ICON_SIZE_SMALL,
+  FOLDER_PANEL_ICON_MARGIN_RIGHT,
+  FOLDER_PANEL_DIALOG_MAX_WIDTH,
+  FOLDER_PANEL_DIALOG_CONTENT_SPACING,
+  FOLDER_PANEL_DIALOG_FIELD_SPACING,
+  FOLDER_PANEL_DIALOG_PADDING_Y,
+  FOLDER_PANEL_COLOR_PICKER_GAP,
+  PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
+  PANEL_CONTENT_SPACING,
+  PANEL_PADDING,
+  PANEL_GAP_LARGE,
+  PANEL_GAP_MEDIUM,
+} from "../lib/layout-constants";
 
 interface FoldersPanelProps {
   onFolderSelect?: (folder: FolderType) => void;
@@ -78,7 +123,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
   const [editingFolder, setEditingFolder] = useState<FolderType | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderDescription, setNewFolderDescription] = useState("");
-  const [newFolderColor, setNewFolderColor] = useState("#3b82f6");
+  const [newFolderColor, setNewFolderColor] = useState(COLOR_FOLDER_DEFAULT);
   const [searchQuery, setSearchQuery] = useState("");
   const [folderToDelete, setFolderToDelete] = useState<FolderType | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -108,7 +153,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       });
       setNewFolderName("");
       setNewFolderDescription("");
-      setNewFolderColor("#3b82f6");
+      setNewFolderColor(COLOR_FOLDER_DEFAULT);
       setShowAddFolder(false);
     } catch (error) {
       logger.error("Error adding folder:", error);
@@ -120,7 +165,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
     setEditingFolder(folder);
     setNewFolderName(folder.name || "");
     setNewFolderDescription(folder.description || "");
-    setNewFolderColor(folder.color || "#3b82f6");
+    setNewFolderColor(folder.color || COLOR_FOLDER_DEFAULT);
     setShowAddFolder(true);
   }, []);
 
@@ -139,7 +184,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       setEditingFolder(null);
       setNewFolderName("");
       setNewFolderDescription("");
-      setNewFolderColor("#3b82f6");
+      setNewFolderColor(COLOR_FOLDER_DEFAULT);
       setShowAddFolder(false);
     } catch (error) {
       logger.error("Error updating folder:", error);
@@ -250,31 +295,52 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
           {/* Left border accent */}
           <div 
             className="absolute left-0 top-0 bottom-0 w-1 rounded-l-md"
-            style={{ backgroundColor: folder.color || "#3b82f6" }}
+            style={{ backgroundColor: folder.color || COLOR_FOLDER_DEFAULT }}
           />
           
-          <CardHeader className="pb-3 pt-4 pl-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
+          <CardHeader 
+            className="flex-shrink-0"
+            style={{ 
+              paddingBottom: FOLDER_PANEL_CARD_HEADER_PADDING_BOTTOM,
+              paddingTop: FOLDER_PANEL_CARD_HEADER_PADDING_TOP,
+              paddingLeft: FOLDER_PANEL_CARD_HEADER_PADDING_LEFT
+            }}
+          >
+            <div className="flex items-start justify-between" style={{ gap: PANEL_GAP_LARGE }}>
+              <div className="flex items-start flex-1 min-w-0" style={{ gap: PANEL_GAP_LARGE }}>
                 {/* Simple folder icon */}
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  className="rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ 
-                    backgroundColor: `${folder.color || "#3b82f6"}15`,
+                    width: FOLDER_PANEL_FOLDER_ICON_SIZE,
+                    height: FOLDER_PANEL_FOLDER_ICON_SIZE,
+                    backgroundColor: getColorWithOpacity(folder.color || COLOR_FOLDER_DEFAULT, 0.08),
                   }}
                 >
                   <Folder
-                    className="w-5 h-5"
-                    style={{ color: folder.color || "#3b82f6" }}
+                    style={{ 
+                      width: FOLDER_PANEL_FOLDER_ICON_INNER_SIZE,
+                      height: FOLDER_PANEL_FOLDER_ICON_INNER_SIZE,
+                      color: folder.color || COLOR_FOLDER_DEFAULT
+                    }}
                   />
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <CardTitle className="text-base font-semibold mb-1">
+                  <CardTitle 
+                    className="font-semibold"
+                    style={{ 
+                      fontSize: FOLDER_PANEL_TEXT_SIZE_MEDIUM,
+                      marginBottom: FOLDER_PANEL_CARD_TITLE_MARGIN_BOTTOM
+                    }}
+                  >
                     {folder.name || "Unnamed Folder"}
                   </CardTitle>
                   {folder.description && (
-                    <CardDescription className="text-xs line-clamp-1">
+                    <CardDescription 
+                      className="line-clamp-1"
+                      style={{ fontSize: FOLDER_PANEL_BADGE_TEXT_SIZE }}
+                    >
                       {folder.description}
                     </CardDescription>
                   )}
@@ -283,7 +349,8 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               
               {/* Dropdown menu */}
               <div 
-                className="relative z-50"
+                className="relative"
+                style={{ zIndex: FOLDER_PANEL_DROPDOWN_Z_INDEX }}
                 onClick={(e) => {
                   e.stopPropagation();
                 }} 
@@ -298,18 +365,25 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 flex-shrink-0 hover:bg-transparent hover:text-current"
+                      className="flex-shrink-0 hover:bg-transparent hover:text-current"
+                      style={{ 
+                        height: FOLDER_PANEL_BUTTON_SIZE,
+                        width: FOLDER_PANEL_BUTTON_SIZE
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
                       aria-label="Folder options"
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <MoreVertical style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL }} />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
                     align="end"
-                    className="z-[9999] w-48"
+                    style={{ 
+                      zIndex: FOLDER_PANEL_DROPDOWN_Z_INDEX,
+                      width: FOLDER_PANEL_DROPDOWN_WIDTH
+                    }}
                     onCloseAutoFocus={(e) => {
                       e.preventDefault();
                     }}
@@ -319,11 +393,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                         setDropdownOpen(false);
                         setTimeout(() => {
                           onFolderClick(folder);
-                        }, 150);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
                       className="cursor-pointer"
                     >
-                      <Folder className="w-4 h-4 mr-2" />
+                      <Folder style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                       Open Folder
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -331,11 +405,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                         setDropdownOpen(false);
                         setTimeout(() => {
                           onEditFolder(folder);
-                        }, 150);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
                       className="cursor-pointer"
                     >
-                      <Edit2 className="w-4 h-4 mr-2" />
+                      <Edit2 style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -343,11 +417,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                         setDropdownOpen(false);
                         setTimeout(() => {
                           onDeleteFolder(folder);
-                        }, 150);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
                       className="text-destructive focus:text-destructive cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
+                      <Trash2 style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -356,19 +430,37 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
             </div>
           </CardHeader>
           
-          <CardContent className="pt-0 pb-4 pl-5">
-            <div className="flex items-center justify-between">
+          <CardContent 
+            style={{ 
+              paddingTop: 0,
+              paddingBottom: FOLDER_PANEL_CARD_CONTENT_PADDING_BOTTOM,
+              paddingLeft: FOLDER_PANEL_CARD_CONTENT_PADDING_LEFT
+            }}
+          >
+            <div className="flex items-center justify-between" style={{ gap: PANEL_GAP_MEDIUM }}>
               {/* Stats */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
                 <Badge 
                   variant="secondary" 
-                  className="text-xs px-2 py-0.5"
+                  style={{ 
+                    fontSize: FOLDER_PANEL_BADGE_TEXT_SIZE,
+                    paddingLeft: FOLDER_PANEL_BADGE_PADDING_X,
+                    paddingRight: FOLDER_PANEL_BADGE_PADDING_X,
+                    paddingTop: FOLDER_PANEL_BADGE_PADDING_Y,
+                    paddingBottom: FOLDER_PANEL_BADGE_PADDING_Y
+                  }}
                 >
                   {taskCount} {taskCount === 1 ? "task" : "tasks"}
                 </Badge>
                 <Badge 
                   variant="secondary" 
-                  className="text-xs px-2 py-0.5"
+                  style={{ 
+                    fontSize: FOLDER_PANEL_BADGE_TEXT_SIZE,
+                    paddingLeft: FOLDER_PANEL_BADGE_PADDING_X,
+                    paddingRight: FOLDER_PANEL_BADGE_PADDING_X,
+                    paddingTop: FOLDER_PANEL_BADGE_PADDING_Y,
+                    paddingBottom: FOLDER_PANEL_BADGE_PADDING_Y
+                  }}
                 >
                   {projectCount} {projectCount === 1 ? "project" : "projects"}
                 </Badge>
@@ -379,7 +471,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 flex-shrink-0 hover:bg-transparent hover:text-current"
+                className="flex-shrink-0 hover:bg-transparent hover:text-current"
+                style={{ 
+                  height: FOLDER_PANEL_BUTTON_SIZE,
+                  width: FOLDER_PANEL_BUTTON_SIZE
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -395,7 +491,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 }}
                 aria-label="Open folder"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL }} />
               </Button>
             </div>
           </CardContent>
@@ -419,16 +515,8 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
   
   DroppableFolderCard.displayName = 'DroppableFolderCard';
 
-  const colorOptions = [
-    "#3b82f6", // Blue
-    "#8b5cf6", // Purple
-    "#ec4899", // Pink
-    "#f59e0b", // Amber
-    "#10b981", // Green
-    "#ef4444", // Red
-    "#06b6d4", // Cyan
-    "#f97316", // Orange
-  ];
+  // Use color options from constants
+  const colorOptions = FOLDER_COLOR_OPTIONS;
 
   // If a folder is selected, show folder view
   if (selectedFolder) {
@@ -459,7 +547,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               setEditingFolder(null);
               setNewFolderName("");
               setNewFolderDescription("");
-              setNewFolderColor("#3b82f6");
+              setNewFolderColor(COLOR_FOLDER_DEFAULT);
               setShowAddFolder(true);
             }}
             className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
@@ -473,26 +561,46 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
         hideDesktopLogo
       />
       {/* Spacer for fixed header on mobile */}
-      <div className="lg:hidden h-[64px]" />
+      <div className="lg:hidden" style={{ height: FOLDER_PANEL_MOBILE_HEADER_SPACER }} />
 
       {/* Search Bar */}
-      <div className="px-4 pt-5 pb-3 lg:pt-4 border-b border-primary/10">
+      <div 
+        className="border-b border-primary/10"
+        style={{ 
+          paddingLeft: PANEL_PADDING,
+          paddingRight: PANEL_PADDING,
+          paddingTop: FOLDER_PANEL_SEARCH_PADDING_TOP,
+          paddingBottom: FOLDER_PANEL_SEARCH_PADDING_BOTTOM
+        }}
+      >
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search 
+            className="absolute top-1/2 -translate-y-1/2 text-muted-foreground" 
+            style={{ 
+              left: FOLDER_PANEL_SEARCH_ICON_LEFT,
+              width: FOLDER_PANEL_ICON_SIZE_SMALL,
+              height: FOLDER_PANEL_ICON_SIZE_SMALL
+            }} 
+          />
           <Input
             placeholder="Search folders by name or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            style={{ paddingLeft: FOLDER_PANEL_SEARCH_INPUT_PADDING_LEFT }}
           />
           {searchQuery && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              className="absolute top-1/2 -translate-y-1/2"
+              style={{ 
+                right: FOLDER_PANEL_SEARCH_CLEAR_BUTTON_RIGHT,
+                height: FOLDER_PANEL_BUTTON_SIZE_SMALL,
+                width: FOLDER_PANEL_BUTTON_SIZE_SMALL
+              }}
               onClick={() => setSearchQuery("")}
             >
-              <X className="h-4 w-4" />
+              <X style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL }} />
             </Button>
           )}
         </div>
@@ -500,11 +608,35 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
       {/* Folders List */}
       <ScrollArea className="flex-1">
-        <div className="p-4 pt-5 lg:pt-4 space-y-3 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div 
+          className="pb-safe md:pb-4" 
+          style={{ 
+            padding: PANEL_PADDING,
+            paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
+            paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))',
+            gap: PANEL_CONTENT_SPACING
+          }}
+        >
           {filteredFolders.length === 0 ? (
-            <div className="text-center py-12">
-              <Folder className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-              <p className="text-sm text-muted-foreground">
+            <div 
+              className="text-center" 
+              style={{ 
+                paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
+                paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
+              }}
+            >
+              <Folder 
+                className="mx-auto text-muted-foreground opacity-50" 
+                style={{ 
+                  width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                  height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                  marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
+                }} 
+              />
+              <p 
+                className="text-muted-foreground"
+                style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
+              >
                 {searchQuery
                   ? "No folders match your search"
                   : "No folders yet"}
@@ -512,10 +644,10 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               {!searchQuery && (
                 <Button
                   onClick={() => setShowAddFolder(true)}
-                  className="mt-4"
                   size="sm"
+                  style={{ marginTop: PANEL_PADDING }}
                 >
-                  <FolderPlus className="w-4 h-4 mr-2" />
+                  <FolderPlus style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                   Create Your First Folder
                 </Button>
               )}
@@ -543,7 +675,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
       {/* Add/Edit Folder Dialog */}
       <Dialog open={showAddFolder} onOpenChange={setShowAddFolder}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent style={{ maxWidth: FOLDER_PANEL_DIALOG_MAX_WIDTH }}>
           <DialogHeader>
             <DialogTitle>
               {editingFolder ? "Edit Folder" : "Create New Folder"}
@@ -554,8 +686,8 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 : "Organize your tasks and projects into folders."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: FOLDER_PANEL_DIALOG_CONTENT_SPACING, paddingTop: FOLDER_PANEL_DIALOG_PADDING_Y, paddingBottom: FOLDER_PANEL_DIALOG_PADDING_Y }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: FOLDER_PANEL_DIALOG_FIELD_SPACING }}>
               <Label htmlFor="folder-name">Folder Name *</Label>
               <Input
                 id="folder-name"
@@ -570,7 +702,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 }}
               />
             </div>
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: FOLDER_PANEL_DIALOG_FIELD_SPACING }}>
               <Label htmlFor="folder-description">Description</Label>
               <Input
                 id="folder-description"
@@ -579,21 +711,25 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 onChange={(e) => setNewFolderDescription(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: FOLDER_PANEL_DIALOG_FIELD_SPACING }}>
               <Label>Color</Label>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex flex-wrap" style={{ gap: FOLDER_PANEL_COLOR_PICKER_GAP }}>
                 {colorOptions.map((color) => (
                   <button
                     key={color}
                     type="button"
                     onClick={() => setNewFolderColor(color)}
                     className={cn(
-                      "w-8 h-8 rounded-full border-2 transition-all",
+                      "rounded-full border-2 transition-all",
                       newFolderColor === color
                         ? "border-foreground scale-110"
                         : "border-transparent hover:scale-105"
                     )}
-                    style={{ backgroundColor: color }}
+                    style={{ 
+                      width: FOLDER_PANEL_COLOR_PICKER_SIZE,
+                      height: FOLDER_PANEL_COLOR_PICKER_SIZE,
+                      backgroundColor: color
+                    }}
                   />
                 ))}
               </div>
@@ -607,7 +743,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 setEditingFolder(null);
                 setNewFolderName("");
                 setNewFolderDescription("");
-                setNewFolderColor("#3b82f6");
+                setNewFolderColor(COLOR_FOLDER_DEFAULT);
               }}
             >
               Cancel

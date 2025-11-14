@@ -101,11 +101,33 @@ import {
   TEAM_PANEL_MARGIN_RIGHT_MEDIUM,
   TEAM_PANEL_TEXTAREA_MIN_HEIGHT,
   TEAM_PANEL_TEXTAREA_ROWS,
+  TEAM_PANEL_BADGE_PADDING_X,
+  TEAM_PANEL_BADGE_PADDING_Y,
+  TEAM_PANEL_TEXTAREA_PADDING_X,
+  TEAM_PANEL_TEXTAREA_PADDING_Y,
+  TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT,
+  TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET,
+  PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
+  PANEL_SEARCH_BAR_PADDING_TOP,
+  PANEL_SEARCH_BAR_PADDING_BOTTOM,
+  PANEL_SEARCH_ICON_POSITION_LEFT,
+  PANEL_SEARCH_INPUT_PADDING_LEFT,
+  PANEL_EMPTY_STATE_PADDING_Y,
+  PANEL_EMPTY_STATE_TEXT_SIZE,
 } from "../lib/layout-constants";
 import {
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_SKY,
   COLOR_PASTEL_MINT,
+  COLOR_ROLE_ADMIN,
+  COLOR_ROLE_MEMBER,
+  COLOR_ROLE_VIEWER,
+  COLOR_STATUS_EXPIRED_RED,
+  COLOR_STATUS_PENDING_AMBER,
+  COLOR_STATUS_DECLINED_GRAY,
+  COLOR_TASK_COMPLETED_GREEN,
+  COLOR_TASK_IN_PROGRESS_AMBER,
+  COLOR_TASK_TODO_BLUE,
   getColorWithOpacity,
 } from "../lib/color-theme";
 
@@ -391,12 +413,18 @@ export function TeamPanel() {
       return (
         <Badge
           variant="outline"
-          className={cn(
-            "text-xs",
-            expiration?.isExpired
-              ? "bg-red-50 text-red-700 border-red-200"
-              : "bg-amber-50 text-amber-700 border-amber-200"
-          )}
+          style={{
+            fontSize: TEAM_PANEL_TEXT_SIZE_SMALL,
+            backgroundColor: expiration?.isExpired 
+              ? getColorWithOpacity(COLOR_STATUS_EXPIRED_RED, 0.1)
+              : getColorWithOpacity(COLOR_STATUS_PENDING_AMBER, 0.1),
+            color: expiration?.isExpired 
+              ? COLOR_STATUS_EXPIRED_RED 
+              : COLOR_STATUS_PENDING_AMBER,
+            borderColor: expiration?.isExpired 
+              ? getColorWithOpacity(COLOR_STATUS_EXPIRED_RED, 0.3)
+              : getColorWithOpacity(COLOR_STATUS_PENDING_AMBER, 0.3)
+          }}
         >
           <Clock style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
           {expiration?.isExpired ? "Expired" : "Pending"}
@@ -407,8 +435,12 @@ export function TeamPanel() {
       return (
         <Badge
           variant="outline"
-          className="bg-gray-50 text-gray-700 border-gray-200"
-          style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}
+          style={{
+            fontSize: TEAM_PANEL_TEXT_SIZE_SMALL,
+            backgroundColor: getColorWithOpacity(COLOR_STATUS_DECLINED_GRAY, 0.1),
+            color: COLOR_STATUS_DECLINED_GRAY,
+            borderColor: getColorWithOpacity(COLOR_STATUS_DECLINED_GRAY, 0.3)
+          }}
         >
           <XCircle style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
           Declined
@@ -524,13 +556,15 @@ export function TeamPanel() {
         >
           {/* Left border accent based on role */}
           <div 
-            className={cn(
-              "absolute left-0 top-0 bottom-0 rounded-l-md",
-              member.role === "admin" && "bg-purple-500",
-              member.role === "member" && "bg-blue-500",
-              member.role === "viewer" && "bg-gray-400"
-            )}
-            style={{ width: TEAM_PANEL_ROLE_BORDER_WIDTH }}
+            className="absolute left-0 top-0 bottom-0 rounded-l-md"
+            style={{ 
+              width: TEAM_PANEL_ROLE_BORDER_WIDTH,
+              backgroundColor: member.role === "admin" 
+                ? COLOR_ROLE_ADMIN 
+                : member.role === "member" 
+                  ? COLOR_ROLE_MEMBER 
+                  : COLOR_ROLE_VIEWER
+            }}
           />
           
           {/* Notification Badge */}
@@ -558,18 +592,17 @@ export function TeamPanel() {
               {/* Simple Avatar */}
               <div className="relative flex-shrink-0">
                 <div 
-                  className={cn(
-                    "rounded-lg flex items-center justify-center",
-                    "bg-muted",
-                    member.role === "admin" && "border-purple-300 dark:border-purple-700",
-                    member.role === "member" && "border-blue-300 dark:border-blue-700",
-                    member.role === "viewer" && "border-gray-300 dark:border-gray-700"
-                  )}
+                  className="rounded-lg flex items-center justify-center bg-muted"
                   style={{
                     width: TEAM_PANEL_AVATAR_SIZE,
                     height: TEAM_PANEL_AVATAR_SIZE,
                     borderWidth: TEAM_PANEL_AVATAR_BORDER_WIDTH,
-                    borderStyle: 'solid'
+                    borderStyle: 'solid',
+                    borderColor: member.role === "admin" 
+                      ? getColorWithOpacity(COLOR_ROLE_ADMIN, 0.3)
+                      : member.role === "member" 
+                        ? getColorWithOpacity(COLOR_ROLE_MEMBER, 0.3)
+                        : getColorWithOpacity(COLOR_ROLE_VIEWER, 0.3)
                   }}
                 >
                   <span className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}>
@@ -614,7 +647,13 @@ export function TeamPanel() {
                     <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
                       <Badge
                         variant={getRoleBadgeVariant(member.role)}
-                        style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
+                        style={{ 
+                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                          paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                          paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                          paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                          paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
+                        }}
                       >
                         {getRoleIcon(member.role)}
                         <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
@@ -642,14 +681,19 @@ export function TeamPanel() {
                       style={{ 
                         width: TEAM_PANEL_ICON_SIZE_SMALL, 
                         height: TEAM_PANEL_ICON_SIZE_SMALL,
-                        color: formatExpirationDate(member.expiresAt)?.isExpired ? 'rgb(239 68 68)' : 'rgb(245 158 11)'
+                        color: formatExpirationDate(member.expiresAt)?.isExpired 
+                          ? COLOR_STATUS_EXPIRED_RED 
+                          : COLOR_STATUS_PENDING_AMBER
                       }} 
                     />
-                    <span className={cn(
-                      formatExpirationDate(member.expiresAt)?.isExpired 
-                        ? "text-red-600 dark:text-red-400 font-medium" 
-                        : "text-amber-600 dark:text-amber-400"
-                    )}>
+                    <span 
+                      className="font-medium"
+                      style={{
+                        color: formatExpirationDate(member.expiresAt)?.isExpired 
+                          ? COLOR_STATUS_EXPIRED_RED 
+                          : COLOR_STATUS_PENDING_AMBER
+                      }}
+                    >
                       {formatExpirationDate(member.expiresAt)?.text}
                     </span>
                   </div>
@@ -660,15 +704,29 @@ export function TeamPanel() {
                   <div className="flex items-center flex-wrap border-t" style={{ gap: PANEL_GAP_SMALL, marginTop: TEAM_PANEL_MARGIN_TOP_SMALL, paddingTop: TEAM_PANEL_MARGIN_TOP_SMALL }}>
                     <Badge 
                       variant="outline" 
-                      style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
+                      style={{ 
+                        fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                        paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                        paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                        paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                        paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
+                      }}
                     >
                       {stats.total} {stats.total === 1 ? "task" : "tasks"}
                     </Badge>
                     {stats.completed > 0 && (
                       <Badge 
                         variant="outline" 
-                        className="text-green-700 dark:text-green-400 border-green-300 dark:border-green-700"
-                        style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
+                        style={{ 
+                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                          paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                          paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                          paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                          paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
+                          color: COLOR_TASK_COMPLETED_GREEN,
+                          borderColor: getColorWithOpacity(COLOR_TASK_COMPLETED_GREEN, 0.3),
+                          backgroundColor: getColorWithOpacity(COLOR_TASK_COMPLETED_GREEN, 0.1)
+                        }}
                       >
                         {stats.completed} done
                       </Badge>
@@ -676,8 +734,16 @@ export function TeamPanel() {
                     {stats.inProgress > 0 && (
                       <Badge 
                         variant="outline" 
-                        className="text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700"
-                        style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
+                        style={{ 
+                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                          paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                          paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                          paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                          paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
+                          color: COLOR_TASK_IN_PROGRESS_AMBER,
+                          borderColor: getColorWithOpacity(COLOR_TASK_IN_PROGRESS_AMBER, 0.3),
+                          backgroundColor: getColorWithOpacity(COLOR_TASK_IN_PROGRESS_AMBER, 0.1)
+                        }}
                       >
                         {stats.inProgress} active
                       </Badge>
@@ -685,8 +751,16 @@ export function TeamPanel() {
                     {stats.todo > 0 && (
                       <Badge 
                         variant="outline" 
-                        className="text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700"
-                        style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, paddingLeft: '0.5rem', paddingRight: '0.5rem', paddingTop: '0.125rem', paddingBottom: '0.125rem' }}
+                        style={{ 
+                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                          paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                          paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                          paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                          paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
+                          color: COLOR_TASK_TODO_BLUE,
+                          borderColor: getColorWithOpacity(COLOR_TASK_TODO_BLUE, 0.3),
+                          backgroundColor: getColorWithOpacity(COLOR_TASK_TODO_BLUE, 0.1)
+                        }}
                       >
                         {stats.todo} todo
                       </Badge>
@@ -741,41 +815,41 @@ export function TeamPanel() {
                             setDropdownOpen(false);
                             setTimeout(() => {
                               onResendInvitation(member);
-                            }, 150);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                          Resend Invitation
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => {
-                            setDropdownOpen(false);
-                            setTimeout(() => {
-                              acceptInvitation(member.id);
-                              toast.success(
-                                `${member.name} accepted the invitation!`,
-                              );
-                            }, 150);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Bell style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                          Accept Invite (Demo)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => {
-                            setDropdownOpen(false);
-                            setTimeout(() => {
-                              onDeclineInvitation(member);
-                            }, 150);
-                          }}
-                          className="text-destructive focus:text-destructive cursor-pointer"
-                        >
-                          <XCircle style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                          Decline Invitation
-                        </DropdownMenuItem>
-                        <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      Resend Invitation
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setDropdownOpen(false);
+                        setTimeout(() => {
+                          acceptInvitation(member.id);
+                          toast.success(
+                            `${member.name} accepted the invitation!`,
+                          );
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Bell style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      Accept Invite (Demo)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setDropdownOpen(false);
+                        setTimeout(() => {
+                          onDeclineInvitation(member);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                      }}
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                    >
+                      <XCircle style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      Decline Invitation
+                    </DropdownMenuItem>
+                    <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
                       </>
                     )}
                     <DropdownMenuItem
@@ -783,7 +857,7 @@ export function TeamPanel() {
                         setDropdownOpen(false);
                         setTimeout(() => {
                           onUpdateRole(member, "admin");
-                        }, 150);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
                       disabled={member.role === "admin"}
                       className="cursor-pointer"
@@ -796,7 +870,7 @@ export function TeamPanel() {
                         setDropdownOpen(false);
                         setTimeout(() => {
                           onUpdateRole(member, "member");
-                        }, 150);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
                       disabled={member.role === "member"}
                       className="cursor-pointer"
@@ -809,7 +883,7 @@ export function TeamPanel() {
                         setDropdownOpen(false);
                         setTimeout(() => {
                           onUpdateRole(member, "viewer");
-                        }, 150);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
                       disabled={member.role === "viewer"}
                       className="cursor-pointer"
@@ -823,7 +897,7 @@ export function TeamPanel() {
                         setDropdownOpen(false);
                         setTimeout(() => {
                           onRemoveMember(member);
-                        }, 150);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
                       className="text-destructive focus:text-destructive cursor-pointer"
                       disabled={isCurrentUser}
@@ -995,15 +1069,15 @@ export function TeamPanel() {
         style={{ 
           paddingLeft: PANEL_PADDING,
           paddingRight: PANEL_PADDING,
-          paddingTop: '1rem',
-          paddingBottom: '0.75rem'
+          paddingTop: PANEL_SEARCH_BAR_PADDING_TOP,
+          paddingBottom: PANEL_SEARCH_BAR_PADDING_BOTTOM
         }}
       >
         <div className="relative">
           <Search 
             className="absolute top-1/2 -translate-y-1/2 text-muted-foreground" 
             style={{ 
-              left: '0.75rem',
+              left: PANEL_SEARCH_ICON_POSITION_LEFT,
               width: TEAM_PANEL_SEARCH_ICON_SIZE, 
               height: TEAM_PANEL_SEARCH_ICON_SIZE 
             }} 
@@ -1012,7 +1086,7 @@ export function TeamPanel() {
             placeholder="Search members by name, email, or role..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: '2.25rem' }}
+            style={{ paddingLeft: PANEL_SEARCH_INPUT_PADDING_LEFT }}
           />
           {searchQuery && (
             <Button
@@ -1020,7 +1094,7 @@ export function TeamPanel() {
               size="icon"
               className="absolute top-1/2 -translate-y-1/2"
               style={{ 
-                right: '0.25rem',
+                right: TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT,
                 height: TEAM_PANEL_BUTTON_SIZE_SMALL, 
                 width: TEAM_PANEL_BUTTON_SIZE_SMALL 
               }}
@@ -1038,13 +1112,19 @@ export function TeamPanel() {
           className="pb-safe md:pb-4" 
           style={{ 
             padding: PANEL_PADDING,
-            paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + 0.5rem)`,
+            paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
             paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
             gap: PANEL_CONTENT_SPACING
           }}
         >
           {filteredMembers.length === 0 ? (
-            <div className="text-center" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
+            <div 
+              className="text-center" 
+              style={{ 
+                paddingTop: PANEL_EMPTY_STATE_PADDING_Y, 
+                paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
+              }}
+            >
               <Users 
                 className="mx-auto text-muted-foreground opacity-50" 
                 style={{ 
@@ -1053,12 +1133,24 @@ export function TeamPanel() {
                   marginBottom: TEAM_PANEL_MARGIN_BOTTOM_LARGE
                 }} 
               />
-              <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
+              <p 
+                className="text-muted-foreground" 
+                style={{ 
+                  fontSize: PANEL_EMPTY_STATE_TEXT_SIZE, 
+                  marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
+                }}
+              >
                 {searchQuery ? "No members match your search" : "No team members yet"}
               </p>
               {!searchQuery && (
                 <>
-                  <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_XLARGE }}>
+                  <p 
+                    className="text-muted-foreground" 
+                    style={{ 
+                      fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                      marginBottom: TEAM_PANEL_MARGIN_BOTTOM_XLARGE
+                    }}
+                  >
                     Invite family members or teammates to collaborate
                   </p>
                   <Button
@@ -1248,10 +1340,10 @@ export function TeamPanel() {
                 className="flex w-full rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{
                   minHeight: TEAM_PANEL_TEXTAREA_MIN_HEIGHT,
-                  paddingLeft: '0.75rem',
-                  paddingRight: '0.75rem',
-                  paddingTop: '0.5rem',
-                  paddingBottom: '0.5rem',
+                  paddingLeft: TEAM_PANEL_TEXTAREA_PADDING_X,
+                  paddingRight: TEAM_PANEL_TEXTAREA_PADDING_X,
+                  paddingTop: TEAM_PANEL_TEXTAREA_PADDING_Y,
+                  paddingBottom: TEAM_PANEL_TEXTAREA_PADDING_Y,
                   fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM
                 }}
                 rows={TEAM_PANEL_TEXTAREA_ROWS}

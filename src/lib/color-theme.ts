@@ -68,6 +68,46 @@ export const COLOR_BADGE_BLUE = '#3B82F6'; // Blue for badges
 // Project Default Color
 export const COLOR_PROJECT_DEFAULT = '#3B82F6'; // Blue for default project
 
+// Folder Default Color
+export const COLOR_FOLDER_DEFAULT = '#3B82F6'; // Blue for default folder
+
+// Folder Color Options
+export const COLOR_FOLDER_BLUE = '#3B82F6'; // Blue
+export const COLOR_FOLDER_PURPLE = '#8B5CF6'; // Purple
+export const COLOR_FOLDER_PINK = '#EC4899'; // Pink
+export const COLOR_FOLDER_AMBER = '#F59E0B'; // Amber
+export const COLOR_FOLDER_GREEN = '#10B981'; // Green
+export const COLOR_FOLDER_RED = '#EF4444'; // Red
+export const COLOR_FOLDER_CYAN = '#06B6D4'; // Cyan
+export const COLOR_FOLDER_ORANGE = '#F97316'; // Orange
+
+// Folder Color Options Array (for color picker)
+export const FOLDER_COLOR_OPTIONS = [
+  COLOR_FOLDER_BLUE,
+  COLOR_FOLDER_PURPLE,
+  COLOR_FOLDER_PINK,
+  COLOR_FOLDER_AMBER,
+  COLOR_FOLDER_GREEN,
+  COLOR_FOLDER_RED,
+  COLOR_FOLDER_CYAN,
+  COLOR_FOLDER_ORANGE,
+];
+
+// Team Role Colors
+export const COLOR_ROLE_ADMIN = '#8B5CF6'; // Purple for admin role
+export const COLOR_ROLE_MEMBER = '#3B82F6'; // Blue for member role
+export const COLOR_ROLE_VIEWER = '#9CA3AF'; // Gray for viewer role
+
+// Status Badge Colors (for team invitations)
+export const COLOR_STATUS_EXPIRED_RED = '#EF4444'; // Red for expired invitations
+export const COLOR_STATUS_PENDING_AMBER = '#F59E0B'; // Amber for pending invitations
+export const COLOR_STATUS_DECLINED_GRAY = '#6B7280'; // Gray for declined invitations
+
+// Task Status Colors (for team member stats)
+export const COLOR_TASK_COMPLETED_GREEN = '#10B981'; // Green for completed tasks
+export const COLOR_TASK_IN_PROGRESS_AMBER = '#F59E0B'; // Amber for in-progress tasks
+export const COLOR_TASK_TODO_BLUE = '#3B82F6'; // Blue for todo tasks
+
 // Helper function to get color with opacity
 export const getColorWithOpacity = (color: string, opacity: number): string => {
   // Convert hex to rgba
