@@ -18,6 +18,8 @@ import {
   RotateCcw,
   Timer,
   Users,
+  X,
+  Crown,
 } from "lucide-react";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { toast } from "sonner";
@@ -28,6 +30,7 @@ import {
   getOfferings,
 } from "../lib/revenuecat";
 import { getPlatform } from "../lib/platform";
+import { cn } from "../lib/utils";
 
 interface PricingDialogProps {
   open: boolean;
@@ -207,7 +210,7 @@ export function PricingDialog({
   ];
 
   const proTierFeatures = [
-    { icon: Check, text: "Everything in Free", included: true },
+    { icon: Check, text: "Everything in Free", included: true, isHeader: true },
     {
       icon: Sparkles,
       text: "AI Scheduler",
@@ -252,245 +255,273 @@ export function PricingDialog({
     },
   ];
 
+  const calculateSavings = () => {
+    if (!offerings.monthly || !offerings.yearly) return 0;
+    const monthlyPrice = parseFloat(offerings.monthly.price);
+    const yearlyPrice = parseFloat(offerings.yearly.price);
+    const yearlyEquivalent = monthlyPrice * 12;
+    if (yearlyEquivalent === 0) return 0;
+    return Math.round(((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100);
+  };
+
+  const savings = calculateSavings();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-center">
-            Choose Your Plan
-          </DialogTitle>
-          <DialogDescription className="text-center">
-            Unlock powerful features to supercharge your
-            productivity
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0 sm:p-6">
+        <div className="p-4 sm:p-6">
+          <DialogHeader className="text-center mb-6 sm:mb-8">
+            <DialogTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent">
+              Choose Your Plan
+            </DialogTitle>
+            <DialogDescription className="text-base sm:text-lg mt-2 text-muted-foreground">
+              Unlock powerful features to supercharge your productivity
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="grid md:grid-cols-2 gap-6 mt-6">
-          {/* Free Tier */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="border-2 border-gray-200 rounded-xl p-6 bg-white dark:bg-gray-900 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg">Free</h3>
-              {subscription.tier === "free" && (
-                <Badge
-                  variant="outline"
-                  className="bg-[#B5E8D3] text-gray-800 border-[#B5E8D3]"
-                >
-                  Current Plan
-                </Badge>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl">$0</span>
-                <span className="text-gray-500">/month</span>
-              </div>
-            </div>
-
-            <ul className="space-y-3 mb-6">
-              {freeTierFeatures.map((feature, index) => (
-                <li
-                  key={index}
-                  className="flex items-start gap-3"
-                >
-                  <feature.icon className="w-5 h-5 text-[#B5E8D3] flex-shrink-0 mt-0.5" />
-                  <span className="text-sm">
-                    {feature.text}
+          {/* Plan Toggle - Only for Pro Plan */}
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <div className="inline-flex items-center gap-2 p-1.5 bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#4A4A5E] dark:to-[#3E3E52] rounded-xl shadow-sm">
+              <button
+                type="button"
+                onClick={() => setSelectedPlan('monthly')}
+                className={cn(
+                  "px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-all duration-200",
+                  selectedPlan === 'monthly'
+                    ? 'bg-white dark:bg-gray-700 text-[#9B87E8] dark:text-[#9B87E8] shadow-md'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                )}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPlan('yearly')}
+                className={cn(
+                  "px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-all duration-200 relative",
+                  selectedPlan === 'yearly'
+                    ? 'bg-white dark:bg-gray-700 text-[#9B87E8] dark:text-[#9B87E8] shadow-md'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                )}
+              >
+                Yearly
+                {savings > 0 && (
+                  <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 rounded-full">
+                    Save {savings}%
                   </span>
-                </li>
-              ))}
-            </ul>
+                )}
+              </button>
+            </div>
+          </div>
 
-            <Button
-              variant="outline"
-              className="w-full"
-              disabled={subscription.tier === "free"}
+          {/* Plans Grid - Stack on mobile, side-by-side on desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+            {/* Free Tier */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="relative border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-5 sm:p-6 lg:p-8 bg-white dark:bg-gray-900"
             >
-              {subscription.tier === "free"
-                ? "Current Plan"
-                : "Downgrade"}
-            </Button>
-          </motion.div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Free</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Perfect for getting started</p>
+                </div>
+                {subscription.tier === "free" && (
+                  <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-xs sm:text-sm px-2 sm:px-3 py-1">
+                    Current Plan
+                  </Badge>
+                )}
+              </div>
 
-          {/* Pro Tier */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="border-2 border-[#D4C5F9] rounded-xl p-6 bg-gradient-to-br from-[#D4C5F9]/10 to-[#C9E4F7]/10 dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5 relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4C5F9] opacity-10 rounded-bl-full" />
+              <div className="mb-6">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-gray-100">$0</span>
+                  <span className="text-lg text-muted-foreground">/month</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">Forever free, no credit card required</p>
+              </div>
 
-            <div className="flex items-center justify-between mb-4 relative z-10">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg">Pro</h3>
-                <Badge className="bg-[#D4C5F9] text-gray-800 border-[#D4C5F9]">
-                  <Sparkles className="w-3 h-3 mr-1" />
+              <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                {freeTierFeatures.map((feature, index) => (
+                  <li
+                    key={index}
+                    className="flex items-start gap-3"
+                  >
+                    <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5">
+                      <feature.icon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-800 dark:text-gray-100" />
+                    </div>
+                    <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300">
+                      {feature.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                variant="outline"
+                className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                disabled={subscription.tier === "free"}
+              >
+                {subscription.tier === "free"
+                  ? "Current Plan"
+                  : "Downgrade"}
+              </Button>
+            </motion.div>
+
+            {/* Pro Tier - Featured */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="relative border-2 border-[#9B87E8] rounded-2xl p-5 sm:p-6 lg:p-8 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl"
+            >
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-[#B8E6D5]/20 to-[#C9E4F7]/20 rounded-tr-full blur-2xl" />
+              
+              {/* Popular Badge */}
+              <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-lg">
+                  <Crown className="w-3 h-3 mr-1" />
                   Popular
                 </Badge>
               </div>
-              {subscription.tier === "pro" && (
-                <Badge
-                  variant="outline"
-                  className="bg-[#B5E8D3] text-gray-800 border-[#B5E8D3]"
-                >
-                  Current Plan
-                </Badge>
-              )}
-            </div>
 
-            {/* Plan Toggle */}
-            <div className="mb-4 relative z-10">
-              <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlan('monthly')}
-                  className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                    selectedPlan === 'monthly'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                  }`}
-                >
-                  Monthly
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlan('yearly')}
-                  className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                    selectedPlan === 'yearly'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                  }`}
-                >
-                  Yearly
-                  {offerings.yearly && offerings.monthly && (() => {
-                    const monthlyPrice = parseFloat(offerings.monthly.price);
-                    const yearlyPrice = parseFloat(offerings.yearly.price);
-                    const yearlyEquivalent = monthlyPrice * 12;
-                    const savings = yearlyEquivalent > 0 
-                      ? Math.round(((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100)
-                      : 0;
-                    return savings > 0 ? (
-                      <span className="ml-1 text-xs text-[#D4C5F9] font-semibold">
-                        Save {savings}%
-                      </span>
-                    ) : null;
-                  })()}
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-6 relative z-10">
-              {selectedPlan === 'monthly' ? (
-                <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl">
-                      {offerings.monthly?.priceString || '$3.99'}
-                    </span>
-                    <span className="text-gray-500">/month</span>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro</h3>
+                      <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#9B87E8]" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Unlock all premium features</p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Billed monthly, cancel anytime
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl">
-                      {offerings.yearly?.priceString || '$39.99'}
-                    </span>
-                    <span className="text-gray-500">/year</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Billed annually, save {(() => {
-                      if (!offerings.monthly || !offerings.yearly) return 0;
-                      const monthlyPrice = parseFloat(offerings.monthly.price);
-                      const yearlyPrice = parseFloat(offerings.yearly.price);
-                      const yearlyEquivalent = monthlyPrice * 12;
-                      if (yearlyEquivalent === 0) return 0;
-                      return Math.round(((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100);
-                    })()}% • Cancel anytime
-                  </p>
-                  {offerings.yearly && offerings.monthly && (
-                    <p className="text-xs text-[#D4C5F9] font-semibold mt-1">
-                      ${((parseFloat(offerings.yearly.price) / 12).toFixed(2))} per month
-                    </p>
+                  {subscription.tier === "pro" && (
+                    <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-xs sm:text-sm px-2 sm:px-3 py-1">
+                      Current Plan
+                    </Badge>
                   )}
-                </>
-              )}
-            </div>
+                </div>
 
-            <ul className="space-y-3 mb-6 relative z-10">
-              {proTierFeatures.map((feature, index) => (
-                <li
-                  key={index}
-                  className="flex items-start gap-3"
-                >
-                  <feature.icon
-                    className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                      feature.highlight
-                        ? "text-[#D4C5F9]"
-                        : "text-gray-400"
-                    }`}
-                  />
-                  <span
-                    className={`text-sm ${feature.highlight ? "" : ""}`}
-                  >
-                    {feature.text}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                <div className="mb-6">
+                  {selectedPlan === 'monthly' ? (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                          {offerings.monthly?.priceString || '$3.99'}
+                        </span>
+                        <span className="text-lg text-muted-foreground">/month</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">Billed monthly, cancel anytime</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                          {offerings.yearly?.priceString || '$39.99'}
+                        </span>
+                        <span className="text-lg text-muted-foreground">/year</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <p className="text-sm text-muted-foreground">
+                          Billed annually
+                        </p>
+                        {savings > 0 && (
+                          <Badge className="bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-semibold">
+                            Save {savings}%
+                          </Badge>
+                        )}
+                      </div>
+                      {offerings.yearly && offerings.monthly && (
+                        <p className="text-sm font-semibold text-[#9B87E8] mt-1">
+                          ${((parseFloat(offerings.yearly.price) / 12).toFixed(2))} per month
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
 
-            <div className="space-y-3 relative z-10">
-              <Button
-                className="w-full bg-[#D4C5F9] hover:bg-[#D4C5F9]/90 text-gray-800"
-                disabled={
-                  subscription.tier === "pro" || isUpgrading
-                }
-                onClick={handleUpgrade}
-              >
-                {isUpgrading ? (
-                  "Processing..."
-                ) : subscription.tier === "pro" ? (
-                  "Current Plan"
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Upgrade to Pro
-                  </>
-                )}
-              </Button>
+                <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                  {proTierFeatures.map((feature, index) => (
+                    <li
+                      key={index}
+                      className={cn(
+                        "flex items-start gap-3",
+                        feature.isHeader && "pt-2 border-t border-[#9B87E8]/20 dark:border-[#9B87E8]/30"
+                      )}
+                    >
+                      <div className={cn(
+                        "flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center mt-0.5",
+                        feature.highlight
+                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9] shadow-md"
+                          : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
+                      )}>
+                        <feature.icon className={cn(
+                          "w-3 h-3 sm:w-4 sm:h-4",
+                          feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
+                        )} />
+                      </div>
+                      <span className={cn(
+                        "text-sm sm:text-base",
+                        feature.highlight
+                          ? "text-gray-900 dark:text-gray-100 font-medium"
+                          : "text-gray-700 dark:text-gray-300"
+                      )}>
+                        {feature.text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
 
-              {/* Show Restore button for native platforms */}
-              {platform.isNative &&
-                subscription.tier !== "pro" && (
+                <div className="space-y-3">
                   <Button
-                    variant="outline"
-                    className="w-full"
-                    disabled={isRestoring}
-                    onClick={handleRestore}
+                    className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-lg hover:shadow-xl transition-all duration-200 text-base sm:text-lg font-semibold py-6 sm:py-7"
+                    disabled={
+                      subscription.tier === "pro" || isUpgrading
+                    }
+                    onClick={handleUpgrade}
                   >
-                    {isRestoring
-                      ? "Restoring..."
-                      : "Restore Purchases"}
+                    {isUpgrading ? (
+                      "Processing..."
+                    ) : subscription.tier === "pro" ? (
+                      "Current Plan"
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5 mr-2" />
+                        Upgrade to Pro
+                      </>
+                    )}
                   </Button>
-                )}
-            </div>
-          </motion.div>
-        </div>
 
-        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <p className="text-xs text-center text-gray-600 dark:text-gray-400">
-            💡 All plans include unlimited tasks and seamless
-            calendar integration. Upgrade anytime to unlock
-            AI-powered scheduling and advanced analytics.
-          </p>
+                  {/* Show Restore button for native platforms */}
+                  {platform.isNative &&
+                    subscription.tier !== "pro" && (
+                      <Button
+                        variant="outline"
+                        className="w-full border-[#9B87E8]/30 text-[#9B87E8] hover:bg-[#9B87E8]/10"
+                        disabled={isRestoring}
+                        onClick={handleRestore}
+                      >
+                        {isRestoring
+                          ? "Restoring..."
+                          : "Restore Purchases"}
+                      </Button>
+                    )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Footer Note */}
+          <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-gradient-to-r from-[#E6D5F0]/30 via-[#C9E4F7]/30 to-[#B8E6D5]/30 dark:from-[#4A4A5E]/50 dark:via-[#3E3E52]/50 dark:to-[#3E3E52]/50 rounded-xl border border-[#9B87E8]/20">
+            <p className="text-xs sm:text-sm text-center text-gray-700 dark:text-gray-300">
+              💡 All plans include unlimited tasks and seamless calendar integration. 
+              <span className="font-semibold text-[#9B87E8]"> Upgrade anytime</span> to unlock 
+              AI-powered scheduling and advanced analytics.
+            </p>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
