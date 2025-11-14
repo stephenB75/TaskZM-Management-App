@@ -24,7 +24,7 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 };
 
 // Bottom Navigation Bar constants
-export const NAV_BAR_HEIGHT = 86; // Increased by 20% from 72px to accommodate all components comfortably (indicator above icon + icon + label + padding)
+export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
 export const NAV_BAR_PADDING_TOP = '0.625rem'; // Slightly increased to accommodate indicator above icon
 export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
 export const NAV_BAR_BUTTON_PADDING_TOP = '0.25rem'; // Reduced button top padding to fit components
