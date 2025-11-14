@@ -1624,10 +1624,54 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     });
 
     // Save to Supabase (source of truth)
-    if (workspaceId && accessToken) {
+    if (accessToken) {
       try {
+        // Ensure workspace exists before saving folder
+        let currentWorkspaceId = workspaceId;
+        if (!currentWorkspaceId) {
+          const validWorkspaceId = await ensureWorkspace();
+          if (!validWorkspaceId) {
+            toast.error('Workspace not available. Please refresh the page.');
+            return;
+          }
+          currentWorkspaceId = validWorkspaceId;
+        }
+
         logger.debug('Saving folder to server:', newFolder.id);
-        const savedFolder = await api.saveFolder(workspaceId, newFolder);
+        let savedFolder: Folder;
+        try {
+          savedFolder = await api.saveFolder(currentWorkspaceId, newFolder);
+        } catch (saveError) {
+          const errorMessage = saveError instanceof Error ? saveError.message : String(saveError);
+          // If workspace not found, try to ensure it exists and retry
+          if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+            logger.debug('Workspace not found when saving folder, ensuring workspace exists...');
+            try {
+              // Explicitly create workspace
+              await createWorkspaceIfNeeded();
+              // Wait a bit for workspace to be fully created
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              const validWorkspaceId = await ensureWorkspace();
+              if (validWorkspaceId) {
+                logger.info('Workspace created, retrying folder save with workspace ID:', validWorkspaceId);
+                // Retry saving with valid workspace ID
+                savedFolder = await api.saveFolder(validWorkspaceId, newFolder);
+                // Update workspace ID in state if it changed
+                if (workspaceId !== validWorkspaceId) {
+                  setWorkspaceId(validWorkspaceId);
+                }
+              } else {
+                throw new Error('Workspace creation failed - no workspace ID returned');
+              }
+            } catch (retryError) {
+              logger.error('Failed to ensure workspace on retry:', retryError);
+              throw saveError; // Re-throw original error
+            }
+          } else {
+            throw saveError; // Re-throw if not a workspace error
+          }
+        }
+
         logger.debug('Folder saved to server, updating state:', savedFolder.id);
         const normalizedSavedFolder: Folder = {
           ...savedFolder,
@@ -1676,7 +1720,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         logger.error('Failed to save folder to server:', error);
         // Keep the optimistic update, but mark it for sync
-        toast.error('Folder saved offline, will sync when online');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+          toast.error('Workspace not found. Please refresh the page.');
+        } else {
+          toast.error('Folder saved offline, will sync when online');
+        }
       }
     } else {
       // No workspace/auth - already saved locally above
@@ -1732,7 +1781,82 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    if (!workspaceId || !accessToken) {
+    // Save to server
+    if (accessToken) {
+      try {
+        // Ensure workspace exists before updating folder
+        let currentWorkspaceId = workspaceId;
+        if (!currentWorkspaceId) {
+          const validWorkspaceId = await ensureWorkspace();
+          if (!validWorkspaceId) {
+            toast.error('Workspace not available. Please refresh the page.');
+            return;
+          }
+          currentWorkspaceId = validWorkspaceId;
+        }
+
+        let updatedFolder: Folder;
+        try {
+          updatedFolder = await api.updateFolder(currentWorkspaceId, folderId, updates);
+        } catch (updateError) {
+          const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
+          // If workspace not found, try to ensure it exists and retry
+          if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+            logger.debug('Workspace not found when updating folder, ensuring workspace exists...');
+            try {
+              // Explicitly create workspace
+              await createWorkspaceIfNeeded();
+              // Wait a bit for workspace to be fully created
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              const validWorkspaceId = await ensureWorkspace();
+              if (validWorkspaceId) {
+                logger.info('Workspace created, retrying folder update with workspace ID:', validWorkspaceId);
+                // Retry updating with valid workspace ID
+                updatedFolder = await api.updateFolder(validWorkspaceId, folderId, updates);
+                // Update workspace ID in state if it changed
+                if (workspaceId !== validWorkspaceId) {
+                  setWorkspaceId(validWorkspaceId);
+                }
+              } else {
+                throw new Error('Workspace creation failed - no workspace ID returned');
+              }
+            } catch (retryError) {
+              logger.error('Failed to ensure workspace on retry:', retryError);
+              throw updateError; // Re-throw original error
+            }
+          } else {
+            throw updateError; // Re-throw if not a workspace error
+          }
+        }
+
+        const normalizedUpdatedFolder: Folder = {
+          ...updatedFolder,
+          pendingSync: false,
+          synced: true,
+        };
+        // Update state with server response to ensure we have the exact server version
+        setFolders(prev => {
+          const updated = prev.map(f => f.id === folderId ? normalizedUpdatedFolder : f);
+          saveToLocalStorage('folders', updated);
+          return updated;
+        });
+        toast.success('Folder updated');
+      } catch (error) {
+        logger.error('Failed to update folder on server:', error);
+        // Keep the optimistic update, but mark it for sync
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+          toast.error('Workspace not found. Please refresh the page.');
+        } else {
+          setFolders(prev => {
+            const updated = prev.map(f => f.id === folderId ? { ...f, ...updates, synced: false, pendingSync: true } : f);
+            saveToLocalStorage('folders', updated);
+            return updated;
+          });
+          toast.error('Folder update failed, will sync when online');
+        }
+      }
+    } else {
       // No workspace/auth - update locally only
       setFolders(prev => {
         const updated = prev.map(folder =>
@@ -1822,9 +1946,61 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     });
 
     // Delete from Supabase (source of truth)
-    if (workspaceId && accessToken) {
+    if (accessToken) {
       try {
-        await api.deleteFolder(workspaceId, folderId);
+        // Ensure workspace exists before deleting folder
+        let currentWorkspaceId = workspaceId;
+        if (!currentWorkspaceId) {
+          const validWorkspaceId = await ensureWorkspace();
+          if (!validWorkspaceId) {
+            toast.error('Workspace not available. Please refresh the page.');
+            // Re-add folder to state since deletion failed
+            setFolders(prev => {
+              if (folderToDelete && !prev.find(f => f.id === folderId)) {
+                const updated = [...prev, folderToDelete];
+                saveToLocalStorage('folders', updated);
+                return updated;
+              }
+              return prev;
+            });
+            return;
+          }
+          currentWorkspaceId = validWorkspaceId;
+        }
+
+        try {
+          await api.deleteFolder(currentWorkspaceId, folderId);
+        } catch (deleteError) {
+          const errorMessage = deleteError instanceof Error ? deleteError.message : String(deleteError);
+          // If workspace not found, try to ensure it exists and retry
+          if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+            logger.debug('Workspace not found when deleting folder, ensuring workspace exists...');
+            try {
+              // Explicitly create workspace
+              await createWorkspaceIfNeeded();
+              // Wait a bit for workspace to be fully created
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              const validWorkspaceId = await ensureWorkspace();
+              if (validWorkspaceId) {
+                logger.info('Workspace created, retrying folder deletion with workspace ID:', validWorkspaceId);
+                // Retry deleting with valid workspace ID
+                await api.deleteFolder(validWorkspaceId, folderId);
+                // Update workspace ID in state if it changed
+                if (workspaceId !== validWorkspaceId) {
+                  setWorkspaceId(validWorkspaceId);
+                }
+              } else {
+                throw new Error('Workspace creation failed - no workspace ID returned');
+              }
+            } catch (retryError) {
+              logger.error('Failed to ensure workspace on retry:', retryError);
+              throw deleteError; // Re-throw original error
+            }
+          } else {
+            throw deleteError; // Re-throw if not a workspace error
+          }
+        }
+
         // Folder already removed from state optimistically above
         // Just ensure localStorage is in sync
         toast.success('Folder deleted');
@@ -1839,10 +2015,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           }
           return prev;
         });
-        toast.error('Folder deletion failed, will sync when online');
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+          toast.error('Workspace not found. Please refresh the page.');
+        } else {
+          toast.error('Folder deletion failed, will sync when online');
+        }
       }
     } else {
       // No workspace/auth - already deleted locally above
+      logger.warn('No workspace or access token, deleting folder locally only');
       toast.success('Folder deleted (offline)');
     }
   }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag]);

@@ -202,12 +202,14 @@ app.post("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
     const workspaceId = c.req.param('workspaceId');
     const task = await c.req.json();
 
-    // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -245,12 +247,14 @@ app.delete("/make-server-65e6e67f/tasks/:workspaceId/:taskId", async (c) => {
     const workspaceId = c.req.param('workspaceId');
     const taskId = c.req.param('taskId');
 
-    // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -286,12 +290,14 @@ app.get("/make-server-65e6e67f/workspace/:workspaceId", async (c) => {
 
     const workspaceId = c.req.param('workspaceId');
 
-    // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -463,11 +469,14 @@ app.get("/make-server-65e6e67f/activities/:workspaceId", async (c) => {
     const workspaceId = c.req.param('workspaceId');
 
     // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -498,11 +507,14 @@ app.post("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
     const session = await c.req.json();
 
     // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -528,11 +540,14 @@ app.get("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
     const workspaceId = c.req.param('workspaceId');
 
     // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -593,11 +608,14 @@ app.post("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
     const project = await c.req.json();
 
     // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -624,11 +642,14 @@ app.delete("/make-server-65e6e67f/projects/:workspaceId/:projectId", async (c) =
     const projectId = c.req.param('projectId');
 
     // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -856,11 +877,14 @@ app.post("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
     const { availableTags, hoursSettings, rolloverSettings, viewConfig } = await c.req.json();
 
     // Verify user has access to this workspace
-    const members = await kv.get(`workspace_${workspaceId}_members`);
-    if (!members) {
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
@@ -1867,10 +1891,28 @@ app.post("/make-server-65e6e67f/calendar/sync-task", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const { task, provider } = await c.req.json();
+    const { task, provider, workspaceId } = await c.req.json();
 
-    if (!task || !provider) {
-      return c.json({ error: 'Missing task or provider' }, 400);
+    if (!task || !provider || !workspaceId) {
+      return c.json({ error: 'Missing task, provider, or workspaceId' }, 400);
+    }
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Verify task belongs to this workspace
+    const taskData = await kv.get(`workspace_${workspaceId}_task_${task.id}`);
+    if (!taskData) {
+      return c.json({ error: 'Task not found in workspace' }, 404);
     }
 
     // Check if task already has an event
@@ -1907,6 +1949,18 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
 
     if (!workspaceId || !provider) {
       return c.json({ error: 'Missing workspaceId or provider' }, 400);
+    }
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+
+    // Verify user has access to this workspace
+    const members = await getWorkspaceMembers(workspaceId);
+    if (!members.includes(userId)) {
+      return c.json({ error: 'Access denied' }, 403);
     }
 
     // Get all tasks with scheduled dates

@@ -289,7 +289,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   // Sync a single task to calendar
   const syncTask = useCallback(async (taskId: string, provider: CalendarProvider) => {
-    if (!user || !accessToken) return;
+    if (!user || !accessToken || !workspaceId) return;
 
     const task = tasks.find(t => t.id === taskId);
     if (!task) {
@@ -311,7 +311,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ task, provider }),
+        body: JSON.stringify({ task, provider, workspaceId }),
       });
 
       if (!response.ok) {
@@ -329,7 +329,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsSyncing(false);
     }
-  }, [user, accessToken, tasks]);
+  }, [user, accessToken, tasks, workspaceId]);
 
   // Sync all tasks to calendar
   const syncAllTasks = useCallback(async (provider: CalendarProvider) => {
