@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -42,13 +42,29 @@ export function AppHeader({
   const sidebarWidth = 64; // w-16 = 64px
   const panelWidth = 440;
   
+  // Track previous headerLeft to ensure animation triggers when switching panels
+  const prevHeaderLeftRef = useRef<number | null>(null);
+  const prevPanelKeyRef = useRef<string | number | undefined>(panelKey);
+  
   const headerLeft = useMemo(() => {
     if (isSidePanelHeader) {
       return sidebarWidth; // Side panel headers at start of panel
     }
     // Main header shifts when panel opens/closes - matches week view animation
     return panelOpen ? sidebarWidth + panelWidth : sidebarWidth;
-  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth, panelKey]);
+  }, [isSidePanelHeader, panelOpen, sidebarWidth, panelWidth]);
+  
+  // Update previous values when panelKey changes (before remount)
+  useEffect(() => {
+    if (!isSidePanelHeader && panelKey !== prevPanelKeyRef.current) {
+      // Panel changed - save current position as previous for animation
+      prevHeaderLeftRef.current = headerLeft;
+      prevPanelKeyRef.current = panelKey;
+    } else if (!isSidePanelHeader) {
+      // Panel didn't change, update ref for next time
+      prevHeaderLeftRef.current = headerLeft;
+    }
+  }, [panelKey, headerLeft, isSidePanelHeader]);
   
   // Calculate header width to properly resize during panel transitions
   const headerWidth = useMemo(() => {
@@ -155,12 +171,16 @@ export function AppHeader({
       ) : (
         // Main header - fixed positioning, shifts when panel is open (uses layout animation like week view)
         <motion.div 
+          key={`header-${panelKey || 'dashboard'}`} // Force re-animation when panel changes
           className="hidden lg:block fixed top-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 overflow-hidden"
           animate={{
             left: `${headerLeft}px`,
             width: headerWidth,
           }}
-          initial={false}
+          initial={prevHeaderLeftRef.current !== null ? {
+            left: `${prevHeaderLeftRef.current}px`,
+            width: `calc(100% - ${prevHeaderLeftRef.current}px)`,
+          } : false}
           transition={{ 
             type: 'spring', 
             damping: 30, 
