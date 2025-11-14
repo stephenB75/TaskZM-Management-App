@@ -66,9 +66,7 @@ import {
   FOLDER_PANEL_MOBILE_HEADER_SPACER,
   FOLDER_PANEL_SEARCH_PADDING_TOP,
   FOLDER_PANEL_SEARCH_PADDING_BOTTOM,
-  FOLDER_PANEL_SEARCH_PADDING_TOP_DESKTOP,
   FOLDER_PANEL_CONTENT_PADDING_TOP,
-  FOLDER_PANEL_CONTENT_PADDING_TOP_DESKTOP,
   FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
   FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
   FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM,
@@ -228,9 +226,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
   
   // Initialize mounted folders from current folders list (only once)
   useEffect(() => {
-    if (!initializedRef.current && folders.length > 0) {
+    if (!initializedRef.current && folders && folders.length > 0) {
       folders.forEach(folder => {
-        mountedFoldersRef.current.add(folder.id);
+        if (folder && folder.id) {
+          mountedFoldersRef.current.add(folder.id);
+        }
       });
       initializedRef.current = true;
     }
