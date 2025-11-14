@@ -40,6 +40,7 @@ export function AppHeader({
   // - Side panel headers: positioned at sidebar width - start of panel
   // - Main header when panel open: sidebar + panel width
   // - Main header when panel closed: sidebar width only
+  // Matches week view behavior: responds to panelOpen changes
   const headerLeft = useMemo(() => {
     if (isSidePanelHeader) {
       return SIDEBAR_WIDTH; // Side panel headers at start of panel
@@ -151,7 +152,9 @@ export function AppHeader({
         </div>
       ) : (
         // Main header - fixed positioning, shifts when panel is open (matches dashboard layout animation)
+        // Uses key prop to force re-animation when panelKey changes (like AnimatePresence mode="wait" for panels)
         <motion.div 
+          key={`header-${panelKey || 'dashboard'}`} // Force re-animation when panel changes, matching panel behavior
           className="hidden lg:block fixed top-0 z-40 border-b bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-sm px-6 py-4 overflow-hidden"
           animate={{
             left: `${headerLeft}px`,
