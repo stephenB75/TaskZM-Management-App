@@ -161,8 +161,11 @@ export const DraggableTaskCard = React.forwardRef<
         const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
         
         // Increase base height on mobile when pomodoro or assigned users are present
-        if (isMobile && (hasPomodoro || hasAssignedUsers)) {
-          baseHeight = 95; // Extra space for pomodoro timer and assigned users on mobile
+        // For tasks < 45 mins on mobile: inline bottom row needs less height (handled by padding)
+        if (isMobile && (hasPomodoro || hasAssignedUsers) && duration >= 45) {
+          baseHeight = 95; // Extra space for pomodoro timer and assigned users on mobile (absolute positioning)
+        } else if (isMobile && (hasPomodoro || hasAssignedUsers) && duration < 45) {
+          baseHeight = 85; // Less space needed for inline bottom row on mobile
         } else if (!isMobile && (hasPomodoro || hasAssignedUsers)) {
           baseHeight = 90; // Slightly more space on desktop
         }
@@ -244,11 +247,15 @@ export const DraggableTaskCard = React.forwardRef<
               task.status === "done" && "opacity-60",
               isDragging ? "w-[280px] flex-shrink-0" : "flex-1",
               // Bottom padding: auto-adjusts based on content (pomodoro timer, assigned users)
+              // For tasks < 45 mins on mobile: inline bottom row needs less padding
               // Base bottom padding for all tasks
               !isMobile && "md:pb-8",
-              isMobile && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-6",
-              // Extra bottom padding on mobile when pomodoro/assigned users present to fit components
-              isMobile && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-8",
+              // Mobile tasks < 45 mins with inline bottom row: reduced padding
+              isMobile && task.estimatedTime && task.estimatedTime < 45 && "pb-2",
+              // Mobile tasks >= 45 mins: standard padding
+              isMobile && (!task.estimatedTime || task.estimatedTime >= 45) && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-6",
+              // Extra bottom padding on mobile for tasks >= 45 mins when pomodoro/assigned users present
+              isMobile && (!task.estimatedTime || task.estimatedTime >= 45) && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-8",
               // Compact padding for shorter tasks (< 45 mins) - auto-adjusts when pomodoro/assigned users are present
               // Only applies to tasks < 45 mins, but considers pomodoro timer and assigned users for better fit
               (task.estimatedTime && task.estimatedTime < 45) && !isMobile && "md:py-2 md:space-y-1",
@@ -403,107 +410,193 @@ export const DraggableTaskCard = React.forwardRef<
             </div>
           )}
 
-          {/* Assignee Display - Positioned in lower left corner */}
-          {task.assignedTo && task.assignedTo.length > 0 && (
-            <div
-              className={cn(
-                "absolute flex items-center flex-wrap",
-                isMobile ? "bottom-1 left-1 gap-1 max-w-[calc(100%-60px)]" : "bottom-2 left-2 gap-2 max-w-[calc(100%-80px)]",
-              )}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {task.assignedTo.slice(0, 3).map((userId) => {
-                const member = getTeamMember(userId);
-                if (!member) return null;
+          {/* Bottom Row: For tasks < 45 mins on mobile, show inline layout; otherwise absolute positioning */}
+          {task.estimatedTime && task.estimatedTime < 45 && isMobile ? (
+            // Inline layout for mobile tasks < 45 mins: assigned users, tracking badge, and pomodoro timer in one row
+            <div className="flex items-center justify-between gap-1 mt-1 pt-1 border-t border-gray-200/50">
+              {/* Left: Assigned Users */}
+              <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
+                {task.assignedTo && task.assignedTo.length > 0 && (
+                  <>
+                    {task.assignedTo.slice(0, 2).map((userId) => {
+                      const member = getTeamMember(userId);
+                      if (!member) return null;
+                      const initials = getInitials(member.name);
+                      return (
+                        <TooltipProvider key={userId}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-0.5">
+                                <Avatar className="w-3 h-3">
+                                  <AvatarImage src={member.avatar} alt={member.name} />
+                                  <AvatarFallback className="bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 text-[7px]">
+                                    {initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-gray-600 font-semibold text-[8px] truncate max-w-[40px]">
+                                  {member.name}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{member.name}</p>
+                              <p className="text-xs text-gray-400">{member.email}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    })}
+                    {task.assignedTo.length > 2 && (
+                      <span className="text-gray-500 text-[8px]">+{task.assignedTo.length - 2}</span>
+                    )}
+                  </>
+                )}
+              </div>
 
-                const initials = getInitials(member.name);
+              {/* Center/Right: Tracking Badge and Pomodoro Timer inline */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Tracking Status - Show when timer is running */}
+                {hasFeature("pomodoroTimer") && timerState.isRunning && (
+                  <div className="flex items-center animate-pulse">
+                    <div className="flex items-center rounded-full px-1 py-0.5 bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white gap-0.5 text-[7px]">
+                      <Timer className="w-2 h-2 animate-spin" />
+                      <span className="font-semibold">Tracking...</span>
+                    </div>
+                  </div>
+                )}
 
-                return (
-                  <TooltipProvider key={userId}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
-                          <Avatar className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")}>
-                            <AvatarImage
-                              src={member.avatar}
-                              alt={member.name}
-                            />
-                            <AvatarFallback className={cn(
-                              "bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700",
-                              isMobile ? "text-[7px]" : "text-[8px]",
-                            )}>
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className={cn(
-                            "text-gray-600 font-semibold",
-                            isMobile ? "text-[9px]" : "text-[10px]",
-                          )}>
-                            {member.name}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{member.name}</p>
-                        <p className="text-xs text-gray-400">
-                          {member.email}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              })}
-              {task.assignedTo.length > 3 && (
-                <span className={cn("text-gray-500", isMobile ? "text-[9px]" : "text-[10px]")}>
-                  +{task.assignedTo.length - 3}
-                </span>
-              )}
-            </div>
-          )}
+                {/* Tracked Time (if exists and not running) */}
+                {task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
+                  <div className="flex items-center gap-0.5">
+                    <Timer className="text-[#7B68EE] w-2 h-2" />
+                    <span className="text-[#7B68EE] font-medium text-[8px]">
+                      {formatTimer(task.actualTime)}
+                    </span>
+                  </div>
+                )}
 
-          {/* Tracking Status - Show when timer is running */}
-          {hasFeature("pomodoroTimer") && timerState.isRunning && (
-            <div className={cn(
-              "flex items-center pt-0.5 animate-pulse",
-              isMobile ? "gap-0.5" : "gap-1"
-            )}>
-              <div className={cn(
-                "flex items-center rounded-full px-1.5 py-0.5",
-                "bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
-                isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
-              )}>
-                <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
-                <span className="font-semibold">Tracking...</span>
+                {/* Pomodoro Timer */}
+                {hasFeature("pomodoroTimer") && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <PomodoroTimer
+                      taskId={task.id}
+                      taskTitle={task.title}
+                      onTimeUpdate={handlePomodoroTimeUpdate}
+                      compact={true}
+                      initialTime={task.actualTime || 0}
+                      estimatedTime={task.estimatedTime || undefined}
+                      isMobile={isMobile}
+                    />
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          ) : (
+            // Absolute positioning for desktop or tasks >= 45 mins
+            <>
+              {/* Assignee Display - Positioned in lower left corner */}
+              {task.assignedTo && task.assignedTo.length > 0 && (
+                <div
+                  className={cn(
+                    "absolute flex items-center flex-wrap",
+                    isMobile ? "bottom-1 left-1 gap-1 max-w-[calc(100%-60px)]" : "bottom-2 left-2 gap-2 max-w-[calc(100%-80px)]",
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {task.assignedTo.slice(0, 3).map((userId) => {
+                    const member = getTeamMember(userId);
+                    if (!member) return null;
 
-          {/* Tracked Time (if exists) */}
-          {task.actualTime && task.actualTime > 0 && (
-            <div className={cn("flex items-center pt-0.5", isMobile ? "gap-0.5" : "gap-1")}>
-              <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
-              <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[10px]" : "text-[11px]")}>
-                {formatTimer(task.actualTime)} tracked
-              </span>
-            </div>
-          )}
+                    const initials = getInitials(member.name);
 
-          {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) */}
-          {hasFeature("pomodoroTimer") && (
-            <div
-              className={cn("absolute", isMobile ? "bottom-1 right-1" : "bottom-2 right-2")}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <PomodoroTimer
-                taskId={task.id}
-                taskTitle={task.title}
-                onTimeUpdate={handlePomodoroTimeUpdate}
-                compact={true}
-                initialTime={task.actualTime || 0}
-                estimatedTime={task.estimatedTime || undefined}
-                isMobile={isMobile}
-              />
-            </div>
+                    return (
+                      <TooltipProvider key={userId}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
+                              <Avatar className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")}>
+                                <AvatarImage
+                                  src={member.avatar}
+                                  alt={member.name}
+                                />
+                                <AvatarFallback className={cn(
+                                  "bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700",
+                                  isMobile ? "text-[7px]" : "text-[8px]",
+                                )}>
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className={cn(
+                                "text-gray-600 font-semibold",
+                                isMobile ? "text-[9px]" : "text-[10px]",
+                              )}>
+                                {member.name}
+                              </span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{member.name}</p>
+                            <p className="text-xs text-gray-400">
+                              {member.email}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
+                  {task.assignedTo.length > 3 && (
+                    <span className={cn("text-gray-500", isMobile ? "text-[9px]" : "text-[10px]")}>
+                      +{task.assignedTo.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Tracking Status - Show when timer is running */}
+              {hasFeature("pomodoroTimer") && timerState.isRunning && (
+                <div className={cn(
+                  "flex items-center pt-0.5 animate-pulse",
+                  isMobile ? "gap-0.5" : "gap-1"
+                )}>
+                  <div className={cn(
+                    "flex items-center rounded-full px-1.5 py-0.5",
+                    "bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
+                    isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
+                  )}>
+                    <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
+                    <span className="font-semibold">Tracking...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Tracked Time (if exists) */}
+              {task.actualTime && task.actualTime > 0 && (
+                <div className={cn("flex items-center pt-0.5", isMobile ? "gap-0.5" : "gap-1")}>
+                  <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
+                  <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[10px]" : "text-[11px]")}>
+                    {formatTimer(task.actualTime)} tracked
+                  </span>
+                </div>
+              )}
+
+              {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) */}
+              {hasFeature("pomodoroTimer") && (
+                <div
+                  className={cn("absolute", isMobile ? "bottom-1 right-1" : "bottom-2 right-2")}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <PomodoroTimer
+                    taskId={task.id}
+                    taskTitle={task.title}
+                    onTimeUpdate={handlePomodoroTimeUpdate}
+                    compact={true}
+                    initialTime={task.actualTime || 0}
+                    estimatedTime={task.estimatedTime || undefined}
+                    isMobile={isMobile}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
