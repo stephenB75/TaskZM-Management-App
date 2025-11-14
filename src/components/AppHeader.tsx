@@ -33,7 +33,22 @@ import {
   HEADER_ANIMATION_DAMPING,
   HEADER_ANIMATION_STIFFNESS,
   HEADER_BACKGROUND_LIGHT_COLOR,
+  HEADER_BACKGROUND_DARK_COLOR,
   HEADER_BORDER_COLOR,
+  HEADER_BUTTON_NEGATIVE_MARGIN_LEFT,
+  HEADER_SIDE_PANEL_ANIMATION_DURATION,
+  HEADER_SIDE_PANEL_ANIMATION_DELAY_INITIAL,
+  HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT,
+  HEADER_SIDE_PANEL_ANIMATION_DELAY_LEFT,
+  HEADER_SIDE_PANEL_ANIMATION_DELAY_LOGO,
+  HEADER_SIDE_PANEL_ANIMATION_DELAY_TITLE,
+  HEADER_SIDE_PANEL_ANIMATION_DELAY_RIGHT,
+  HEADER_SIDE_PANEL_ANIMATION_Y_OFFSET,
+  HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_LEFT,
+  HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_TITLE,
+  HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT,
+  HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL,
+  HEADER_SIDE_PANEL_ANIMATION_EASE,
 } from "../lib/layout-constants";
 import {
   COLOR_GRADIENT_START,
@@ -93,7 +108,7 @@ export function AppHeader({
     <>
       {/* Mobile Header - Fixed at top */}
       <div 
-        className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm dark:bg-gray-900/95"
+        className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm"
         style={{
           zIndex: HEADER_Z_INDEX,
           backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
@@ -156,13 +171,13 @@ export function AppHeader({
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel, with fade animation
         <motion.div 
-          className="hidden lg:block relative border-b backdrop-blur-lg shadow-sm flex-shrink-0 dark:bg-gray-900/95"
-          initial={{ opacity: 0, y: -10 }}
+          className="hidden lg:block relative border-b backdrop-blur-lg shadow-sm flex-shrink-0"
+          initial={{ opacity: 0, y: HEADER_SIDE_PANEL_ANIMATION_Y_OFFSET }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ 
-            duration: 0.3,
-            ease: "easeOut",
-            delay: 0.1
+            duration: HEADER_SIDE_PANEL_ANIMATION_DURATION,
+            ease: HEADER_SIDE_PANEL_ANIMATION_EASE,
+            delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_INITIAL
           }}
           style={{ 
             zIndex: HEADER_Z_INDEX,
@@ -181,23 +196,27 @@ export function AppHeader({
             style={{ gap: HEADER_GAP_XLARGE }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
+            transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION + 0.1, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT }}
           >
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
             <motion.div
               className="flex items-center min-w-0 flex-1"
               style={{ gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE }}
-              initial={{ opacity: 0, x: -10 }}
+              initial={{ opacity: 0, x: HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_LEFT }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
+              transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_LEFT }}
             >
               {onBack && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={onBack}
-                  className="flex-shrink-0 -ml-2"
-                  style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
+                  className="flex-shrink-0"
+                  style={{ 
+                    height: HEADER_BUTTON_SIZE, 
+                    width: HEADER_BUTTON_SIZE,
+                    marginLeft: HEADER_BUTTON_NEGATIVE_MARGIN_LEFT
+                  }}
                 >
                   <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
                 </Button>
@@ -208,16 +227,16 @@ export function AppHeader({
                   alt="TaskZM Logo"
                   className="w-auto flex-shrink-0"
                   style={{ height: HEADER_LOGO_HEIGHT }}
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.25 }}
+                  transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_LOGO }}
                 />
               )}
               <motion.div 
                 className="min-w-0"
-                initial={{ opacity: 0, x: -5 }}
+                initial={{ opacity: 0, x: HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_TITLE }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.3 }}
+                transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_TITLE }}
               >
                 <h2 
                   className="font-semibold text-foreground uppercase tracking-wide"
@@ -243,9 +262,9 @@ export function AppHeader({
               <motion.div 
                 className="flex items-center flex-shrink-0" 
                 style={{ gap: HEADER_GAP_MEDIUM }}
-                initial={{ opacity: 0, x: 10 }}
+                initial={{ opacity: 0, x: HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
+                transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_RIGHT }}
               >
                 {actions}
               </motion.div>
@@ -256,7 +275,7 @@ export function AppHeader({
         // Main header - fixed positioning, shifts instantly when panel opens/closes (no animation)
         // Follows week view code sequence - responds to panel push/retract without animation
         <div 
-          className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden dark:bg-gray-900/95"
+          className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
             backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
@@ -290,8 +309,12 @@ export function AppHeader({
                   variant="ghost"
                   size="icon"
                   onClick={onBack}
-                  className="flex-shrink-0 -ml-2"
-                  style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
+                  className="flex-shrink-0"
+                  style={{ 
+                    height: HEADER_BUTTON_SIZE, 
+                    width: HEADER_BUTTON_SIZE,
+                    marginLeft: HEADER_BUTTON_NEGATIVE_MARGIN_LEFT
+                  }}
                 >
                   <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
                 </Button>

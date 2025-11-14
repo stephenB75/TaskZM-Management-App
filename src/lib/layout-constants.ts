@@ -35,6 +35,22 @@ export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.95)';
 export const HEADER_BORDER_COLOR = 'rgba(148, 163, 184, 0.2)';
 export const HEADER_ANIMATION_DAMPING = 30; // Spring animation damping
 export const HEADER_ANIMATION_STIFFNESS = 300; // Spring animation stiffness
+export const HEADER_BUTTON_NEGATIVE_MARGIN_LEFT = '-0.5rem'; // -ml-2 = -0.5rem
+export const HEADER_SIDE_PANEL_ANIMATION_DURATION = 0.3; // Side panel header fade animation duration
+export const HEADER_SIDE_PANEL_ANIMATION_DELAY_INITIAL = 0.1; // Initial delay for side panel header
+export const HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT = 0.15; // Delay for content fade in
+export const HEADER_SIDE_PANEL_ANIMATION_DELAY_LEFT = 0.2; // Delay for left side elements
+export const HEADER_SIDE_PANEL_ANIMATION_DELAY_LOGO = 0.25; // Delay for logo animation
+export const HEADER_SIDE_PANEL_ANIMATION_DELAY_TITLE = 0.3; // Delay for title animation
+export const HEADER_SIDE_PANEL_ANIMATION_DELAY_RIGHT = 0.2; // Delay for right side elements
+export const HEADER_SIDE_PANEL_ANIMATION_Y_OFFSET = -10; // Initial Y offset for side panel header
+export const HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_LEFT = -10; // X offset for left side elements
+export const HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_TITLE = -5; // X offset for title
+export const HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT = 10; // X offset for right side elements
+export const HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL = 0.9; // Initial scale for logo
+export const HEADER_SIDE_PANEL_ANIMATION_EASE = 'easeOut'; // Easing function for side panel animations
+export const HEADER_MOBILE_SPACER_HEIGHT = '1.75rem'; // h-7 = 1.75rem (28px) - spacer for mobile header
+export const HEADER_MOBILE_SPACER_HEIGHT_PX = 28; // h-7 = 28px - for calculations
 
 // Calculate main header left position when panel is open
 export const getMainHeaderLeft = (panelOpen: boolean): number => {

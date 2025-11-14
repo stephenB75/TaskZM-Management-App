@@ -48,7 +48,7 @@ import { configureRevenueCat, resetRevenueCat } from './lib/revenuecat';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, HEADER_HEIGHT } from './lib/layout-constants';
+import { PANEL_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS } from './lib/layout-constants';
 import './styles/globals.css';
 
 function AppContent() {
@@ -414,8 +414,10 @@ function AppContent() {
               )}
             </div>
             {/* Bottom nav spacer - ensures content doesn't hide behind bottom nav */}
-            {/* Reduced to h-7 (28px) to minimize space above nav bar */}
-            <div className="h-7 flex-shrink-0" />
+            <div 
+              className="flex-shrink-0" 
+              style={{ height: HEADER_MOBILE_SPACER_HEIGHT }}
+            />
           </div>
 
           {/* Desktop: Slide-out Panels with Push Effect */}
@@ -457,7 +459,7 @@ function AppContent() {
             style={{ paddingTop: `${HEADER_HEIGHT}px` }}
             layout
             initial={false}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            transition={{ type: 'spring', damping: HEADER_ANIMATION_DAMPING, stiffness: HEADER_ANIMATION_STIFFNESS }}
           >
             <DashboardView 
               mobileView={mobileView}
