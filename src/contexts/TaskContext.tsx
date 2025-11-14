@@ -524,25 +524,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Check for malformed workspace IDs (e.g., with timestamp suffixes like workspace_uuid_timestamp)
-      // Valid workspace IDs should be UUIDs without extra suffixes
-      // Pattern: workspace_<uuid>_<timestamp> is malformed
-      const workspaceIdParts = wsId.split('_');
-      const isPotentiallyMalformed = workspaceIdParts.length > 2 && workspaceIdParts[0] === 'workspace';
-      
-      // If malformed, extract just the UUID part (workspace_<uuid>)
-      if (isPotentiallyMalformed && workspaceIdParts.length >= 2) {
-        const correctedId = `${workspaceIdParts[0]}_${workspaceIdParts[1]}`;
-        logger.warn('Correcting malformed workspace ID:', { old: wsId, new: correctedId });
-        wsId = correctedId;
-        if (workspaceId !== correctedId) {
-          setWorkspaceId(correctedId);
-        }
-      }
-      
       // Ensure workspace exists before attempting to sync
       // This prevents 404 errors when workspace doesn't exist
-      // Also corrects malformed workspace IDs
+      // Note: Server uses format workspace_${userId}_${timestamp}, so timestamps are valid
       if (accessToken && user) {
         try {
           // Try to get workspaces - this will auto-create if missing
@@ -550,11 +534,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           if (workspaces && workspaces.length > 0 && workspaces[0].id) {
             const validWorkspaceId = workspaces[0].id;
             if (validWorkspaceId !== wsId) {
-              if (isPotentiallyMalformed) {
-                logger.warn('Potentially malformed workspace ID detected and corrected:', { old: wsId, new: validWorkspaceId });
-              } else {
-                logger.info('Workspace ID updated during folder sync:', { old: wsId, new: validWorkspaceId });
-              }
+              logger.info('Workspace ID updated during folder sync:', { old: wsId, new: validWorkspaceId });
               wsId = validWorkspaceId;
               if (workspaceId !== validWorkspaceId) {
                 setWorkspaceId(validWorkspaceId);
@@ -1063,17 +1043,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const addTask = useCallback(async (taskData: Partial<Task>) => {
     updateActivity(); // Track demo user activity
     
-    // Validate and correct workspace ID if needed
+    // Validate workspace ID
     let currentWorkspaceId = workspaceId;
-    if (currentWorkspaceId) {
-      const workspaceIdParts = currentWorkspaceId.split('_');
-      // Check for malformed workspace IDs (e.g., with timestamp suffixes)
-      if (workspaceIdParts.length > 2 && workspaceIdParts[0] === 'workspace') {
-        const correctedId = `${workspaceIdParts[0]}_${workspaceIdParts[1]}`;
-        logger.warn('Correcting malformed workspace ID in addTask:', { old: currentWorkspaceId, new: correctedId });
-        setWorkspaceId(correctedId);
-        currentWorkspaceId = correctedId;
+    if (!currentWorkspaceId) {
+      // Ensure workspace exists before creating task
+      const validWorkspaceId = await ensureWorkspace();
+      if (!validWorkspaceId) {
+        toast.error('Workspace not available. Please refresh the page.');
+        return;
       }
+      currentWorkspaceId = validWorkspaceId;
     }
     
     const newTask: Task = {
@@ -1251,17 +1230,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
     
-    // Validate and correct workspace ID if needed
+    // Validate workspace ID
     let currentWorkspaceId = workspaceId;
-    if (currentWorkspaceId) {
-      const workspaceIdParts = currentWorkspaceId.split('_');
-      // Check for malformed workspace IDs (e.g., with timestamp suffixes)
-      if (workspaceIdParts.length > 2 && workspaceIdParts[0] === 'workspace') {
-        const correctedId = `${workspaceIdParts[0]}_${workspaceIdParts[1]}`;
-        logger.warn('Correcting malformed workspace ID in updateTask:', { old: currentWorkspaceId, new: correctedId });
-        setWorkspaceId(correctedId);
-        currentWorkspaceId = correctedId;
+    if (!currentWorkspaceId) {
+      // Ensure workspace exists before updating task
+      const validWorkspaceId = await ensureWorkspace();
+      if (!validWorkspaceId) {
+        toast.error('Workspace not available. Please refresh the page.');
+        return;
       }
+      currentWorkspaceId = validWorkspaceId;
     }
     
     // Find the task to update
