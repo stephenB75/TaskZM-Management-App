@@ -118,14 +118,34 @@ export async function configureRevenueCat(userId: string): Promise<void> {
       
       // Try to import and configure RevenueCat
       try {
-        const Purchases = await import('@revenuecat/purchases-js');
+        const PurchasesModule = await import('@revenuecat/purchases-js');
+        
+        // The SDK exports a Purchases class - try to get it from default or named export
+        const Purchases = (PurchasesModule.default?.Purchases || PurchasesModule.Purchases || PurchasesModule.default || PurchasesModule) as any;
+        
+        // Debug: Log what we imported
+        console.log('🔍 RevenueCat SDK imported:', {
+          hasDefault: !!PurchasesModule.default,
+          hasPurchasesClass: !!PurchasesModule.Purchases,
+          hasConfigure: typeof Purchases?.configure === 'function',
+          moduleKeys: Object.keys(PurchasesModule),
+          PurchasesType: typeof Purchases,
+          PurchasesKeys: Purchases ? Object.keys(Purchases).slice(0, 15) : []
+        });
         
         // Wrap configuration in try-catch to handle any initialization errors
         try {
-          await Purchases.configure({
+          if (!Purchases || typeof Purchases.configure !== 'function') {
+            throw new Error(`Purchases.configure is not a function. Purchases type: ${typeof Purchases}. Available: ${Purchases ? Object.keys(Purchases).join(', ') : 'none'}`);
+          }
+          
+          // Configure using the static method
+          const purchasesInstance = Purchases.configure({
             apiKey,
             appUserID: userId
           });
+          
+          console.log('✅ Purchases instance created:', !!purchasesInstance);
           
           console.log('✅ RevenueCat configured successfully');
           console.log('   Payment processing: ENABLED');
@@ -188,8 +208,12 @@ export async function getSubscriptionStatus(): Promise<'pro' | 'free'> {
 
     if (platform.isWeb) {
       try {
-        const Purchases = await import('@revenuecat/purchases-js');
-        const customerInfo = await Purchases.getCustomerInfo();
+        const PurchasesModule = await import('@revenuecat/purchases-js');
+        const Purchases = (PurchasesModule.default?.Purchases || PurchasesModule.Purchases || PurchasesModule.default || PurchasesModule) as any;
+        
+        // Get the configured instance
+        const purchasesInstance = Purchases.getSharedInstance();
+        const customerInfo = await purchasesInstance.getCustomerInfo();
         
         // Check for active 'pro' entitlement
         const isProActive = customerInfo.entitlements.active.pro !== undefined;
@@ -257,9 +281,12 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
     if (platform.isWeb) {
       // Web: Use Stripe via RevenueCat
       try {
-        const Purchases = await import('@revenuecat/purchases-js');
+        const PurchasesModule = await import('@revenuecat/purchases-js');
+        const Purchases = (PurchasesModule.default?.Purchases || PurchasesModule.Purchases || PurchasesModule.default || PurchasesModule) as any;
         
-        const offerings = await Purchases.getOfferings();
+        // Get the configured instance
+        const purchasesInstance = Purchases.getSharedInstance();
+        const offerings = await purchasesInstance.getOfferings();
         if (!offerings || !offerings.current) {
           throw new Error('No subscription offerings available');
         }
@@ -283,7 +310,9 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           throw new Error(`${packageType} subscription not found`);
         }
         
-        const { customerInfo } = await Purchases.purchasePackage(selectedPackage);
+        // Use the instance method for purchase
+        const purchasesInstance = Purchases.getSharedInstance();
+        const { customerInfo } = await purchasesInstance.purchase({ rcPackage: selectedPackage });
         
         // Check if purchase was successful
         const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
@@ -355,9 +384,20 @@ export async function restorePurchases(): Promise<boolean> {
     console.log(`Restoring purchases on ${platform.platform}`);
 
     if (platform.isWeb) {
-      // Web: Just check current status (no restore needed for Stripe)
-      const status = await getSubscriptionStatus();
-      return status === 'pro';
+      // Web: Use getCustomerInfo to restore (works for Stripe too)
+      try {
+        const PurchasesModule = await import('@revenuecat/purchases-js');
+        const Purchases = (PurchasesModule.default?.Purchases || PurchasesModule.Purchases || PurchasesModule.default || PurchasesModule) as any;
+        
+        // Get the configured instance
+        const purchasesInstance = Purchases.getSharedInstance();
+        const customerInfo = await purchasesInstance.getCustomerInfo();
+        const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
+        return isProActive;
+      } catch (error) {
+        console.warn('Failed to restore purchases:', error);
+        return false;
+      }
     } else {
       // Native platforms
       const Capacitor = (window as any).Capacitor;
@@ -396,10 +436,13 @@ export async function getOfferings(): Promise<RevenueCatOffering | null> {
 
     if (platform.isWeb) {
       try {
-        const Purchases = await import('@revenuecat/purchases-js');
+        const PurchasesModule = await import('@revenuecat/purchases-js');
+        const Purchases = (PurchasesModule.default?.Purchases || PurchasesModule.Purchases || PurchasesModule.default || PurchasesModule) as any;
         console.log('📦 RevenueCat SDK imported successfully');
         
-        const offerings = await Purchases.getOfferings();
+        // Get the configured instance
+        const purchasesInstance = Purchases.getSharedInstance();
+        const offerings = await purchasesInstance.getOfferings();
         console.log('📋 Raw offerings response:', offerings);
         
         // Safely return offerings with null checks
