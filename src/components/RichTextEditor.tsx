@@ -13,7 +13,9 @@ import {
   Pilcrow,
   Minus,
   Plus,
-  Code
+  Code,
+  Indent,
+  Outdent
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
@@ -150,12 +152,31 @@ export function RichTextEditor({
         transformSelection((text) => text.toLowerCase());
         break;
       case 'bullet':
+        // Toggle unordered list - execCommand automatically toggles
         execCommand('insertUnorderedList');
+        // Ensure focus and update
+        setTimeout(() => {
+          editorRef.current?.focus();
+          handleInput();
+        }, 0);
         break;
       case 'numbered':
+        // Toggle ordered list - execCommand automatically toggles
         execCommand('insertOrderedList');
+        // Ensure focus and update
+        setTimeout(() => {
+          editorRef.current?.focus();
+          handleInput();
+        }, 0);
+        break;
+      case 'indent':
+        execCommand('indent');
+        break;
+      case 'outdent':
+        execCommand('outdent');
         break;
       case 'paragraph':
+        // Convert current block to paragraph with proper formatting
         execCommand('formatBlock', '<p>');
         break;
       case 'clear':
@@ -170,17 +191,26 @@ export function RichTextEditor({
   const isFormatActive = (format: string): boolean => {
     if (!editorRef.current) return false;
     
-    switch (format) {
-      case 'bold':
-        return document.queryCommandState('bold');
-      case 'italic':
-        return document.queryCommandState('italic');
-      case 'underline':
-        return document.queryCommandState('underline');
-      case 'strikethrough':
-        return document.queryCommandState('strikethrough');
-      default:
-        return false;
+    try {
+      switch (format) {
+        case 'bold':
+          return document.queryCommandState('bold');
+        case 'italic':
+          return document.queryCommandState('italic');
+        case 'underline':
+          return document.queryCommandState('underline');
+        case 'strikethrough':
+          return document.queryCommandState('strikethrough');
+        case 'bullet':
+          return document.queryCommandState('insertUnorderedList');
+        case 'numbered':
+          return document.queryCommandState('insertOrderedList');
+        default:
+          return false;
+      }
+    } catch (error) {
+      // Fallback for browsers that don't support queryCommandState
+      return false;
     }
   };
 
@@ -277,7 +307,10 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className={cn(
+            "h-7 w-7 p-0",
+            isFormatActive('bullet') && "bg-primary/10 text-primary"
+          )}
           onClick={() => formatText('bullet')}
           title="Bullet List"
         >
@@ -287,11 +320,37 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className={cn(
+            "h-7 w-7 p-0",
+            isFormatActive('numbered') && "bg-primary/10 text-primary"
+          )}
           onClick={() => formatText('numbered')}
           title="Numbered List"
         >
           <ListOrdered className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-5 bg-border mx-1" />
+        
+        {/* Indentation */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => formatText('outdent')}
+          title="Decrease Indent"
+        >
+          <Outdent className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => formatText('indent')}
+          title="Increase Indent"
+        >
+          <Indent className="w-4 h-4" />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -375,6 +434,20 @@ export function RichTextEditor({
           rows === 3 && "min-h-[60px]",
           rows === 4 && "min-h-[80px]",
           rows === 5 && "min-h-[100px]",
+          // List styling - ensure lists are visible and properly formatted
+          "[&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1 [&_ul]:space-y-1 [&_ul]:block",
+          "[&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1 [&_ol]:space-y-1 [&_ol]:block",
+          "[&_li]:ml-2 [&_li]:leading-relaxed [&_li]:block",
+          // Paragraph and indentation styling
+          "[&_p]:my-1 [&_p]:leading-relaxed [&_p]:block",
+          "[&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-3 [&_blockquote]:ml-2 [&_blockquote]:italic [&_blockquote]:my-1",
+          // Code styling
+          "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block",
+          // Ensure proper display of formatted text
+          "[&_strong]:font-bold [&_b]:font-bold",
+          "[&_em]:italic [&_i]:italic",
+          "[&_u]:underline",
+          "[&_s]:line-through [&_strike]:line-through",
         )}
         style={{
           minHeight: `${rows * 20}px`,
@@ -383,12 +456,30 @@ export function RichTextEditor({
         suppressContentEditableWarning
       />
       
-      {/* Placeholder styling */}
+      {/* Placeholder and list styling */}
       <style>{`
         [contenteditable][data-placeholder]:empty:before {
           content: attr(data-placeholder);
           color: #9ca3af;
           pointer-events: none;
+        }
+        [contenteditable] ul,
+        [contenteditable] ol {
+          display: block;
+          list-style-position: outside;
+          margin-left: 1rem;
+          margin-top: 0.25rem;
+          margin-bottom: 0.25rem;
+        }
+        [contenteditable] ul {
+          list-style-type: disc;
+        }
+        [contenteditable] ol {
+          list-style-type: decimal;
+        }
+        [contenteditable] li {
+          display: list-item;
+          margin-left: 0.5rem;
         }
       `}</style>
     </div>
