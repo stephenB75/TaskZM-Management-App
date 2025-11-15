@@ -114,25 +114,49 @@ export function PricingDialog({
           onOpenChange(false);
           return;
         } else {
-          // User cancelled or payment failed
+          // Payment failed or user cancelled
           console.log("Purchase cancelled or failed");
+          toast.error("Payment failed", {
+            description:
+              "The payment could not be processed. Please check your payment method and try again.",
+          });
           return;
         }
       } catch (rcError: any) {
-        // If user cancelled, don't show any message
+        // If user cancelled, show a friendly message
         if (
           rcError.message?.includes("cancelled") ||
           rcError.userCancelled
         ) {
+          // Don't show error for cancellation - user intentionally cancelled
           return;
         }
 
         // SECURITY: In production, never allow free upgrades
         if (isProduction) {
           console.error("Payment processing failed in production:", rcError.message);
-          toast.error("Payment processing unavailable", {
-            description:
-              "Unable to process payment. Please contact support or try again later.",
+          
+          // Provide more specific error messages based on error type
+          let errorTitle = "Payment processing unavailable";
+          let errorDescription = "Unable to process payment. Please contact support or try again later.";
+          
+          if (rcError.message?.includes("not configured")) {
+            errorTitle = "Payment system not configured";
+            errorDescription = "Payment processing is currently unavailable. Please contact support.";
+          } else if (rcError.message?.includes("No subscription offerings available") || 
+                     rcError.message?.includes("subscription not found")) {
+            errorTitle = "Subscription not available";
+            errorDescription = "The selected subscription plan is not available. Please try again or contact support.";
+          } else if (rcError.message?.includes("network") || rcError.message?.includes("timeout")) {
+            errorTitle = "Connection error";
+            errorDescription = "Unable to connect to payment service. Please check your internet connection and try again.";
+          } else if (rcError.message) {
+            // Use the specific error message if available
+            errorDescription = rcError.message;
+          }
+          
+          toast.error(errorTitle, {
+            description: errorDescription,
           });
           return;
         }
