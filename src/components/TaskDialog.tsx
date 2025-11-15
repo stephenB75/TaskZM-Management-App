@@ -70,6 +70,7 @@ import {
   getDateString,
   validateDependencies,
   getIncompleteDependencies,
+  getInitials,
 } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
@@ -2445,11 +2446,7 @@ export function TaskDialog({
                               >
                                 <div className="flex items-center gap-1.5">
                                   <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
-                                    {member.name
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")
-                                      .toUpperCase()}
+                                    {getInitials(member.name)}
                                   </div>
                                   <span>{member.name}</span>
                                   <X className="w-3 h-3 ml-1" />

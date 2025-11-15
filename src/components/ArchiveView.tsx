@@ -17,11 +17,6 @@ import { Input } from "./ui/input";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "./ui/avatar";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -395,32 +390,16 @@ export function ArchiveView() {
                                         if (!member)
                                           return null;
 
-                                        const initials =
-                                          member.name
-                                            .split(" ")
-                                            .map((n) => n[0])
-                                            .join("")
-                                            .toUpperCase()
-                                            .slice(0, 2);
+                                        const initials = getInitials(member.name);
 
                                         return (
                                           <div
                                             key={userId}
                                             className="flex items-center gap-1"
                                           >
-                                            <Avatar className="w-3.5 h-3.5">
-                                              <AvatarImage
-                                                src={
-                                                  member.avatar
-                                                }
-                                                alt={
-                                                  member.name
-                                                }
-                                              />
-                                              <AvatarFallback className="text-[7px] bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60">
-                                                {initials}
-                                              </AvatarFallback>
-                                            </Avatar>
+                                            <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60 flex items-center justify-center text-[7px] font-semibold">
+                                              {initials}
+                                            </div>
                                             <span className="text-[10px] text-gray-600 opacity-60 font-semibold">
                                               {member.name}
                                             </span>

@@ -9,11 +9,6 @@ import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { usePomodoro } from "../contexts/PomodoroContext";
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "./ui/avatar";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -458,18 +453,12 @@ export function DraggableTodayAgendaTask({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
-                            <Avatar className={cn(isMobile ? "w-3 h-3" : "w-4 h-4")}>
-                              <AvatarImage
-                                src={member.avatar}
-                                alt={member.name}
-                              />
-                              <AvatarFallback className={cn(
-                                "bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700",
-                                isMobile ? "text-[7px]" : "text-[8px]",
-                              )}>
-                                {initials}
-                              </AvatarFallback>
-                            </Avatar>
+                            <div className={cn(
+                              "rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center font-semibold",
+                              isMobile ? "w-3 h-3 text-[7px]" : "w-4 h-4 text-[8px]",
+                            )}>
+                              {initials}
+                            </div>
                             <span className={cn(
                               "text-gray-600 font-semibold",
                               isMobile ? "text-[9px]" : "text-[10px]",

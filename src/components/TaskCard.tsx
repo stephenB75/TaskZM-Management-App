@@ -5,7 +5,6 @@ import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -217,12 +216,9 @@ export function TaskCard({
                   
                   return (
                     <div key={userId} className="flex items-center gap-1.5">
-                      <Avatar className="w-5 h-5">
-                        <AvatarImage src={member.avatar} alt={member.name} />
-                        <AvatarFallback className="text-[10px] bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 text-purple-700 dark:text-purple-300">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 flex items-center justify-center text-[10px] font-semibold text-purple-700 dark:text-purple-300">
+                        {initials}
+                      </div>
                       <span className="text-xs text-gray-600 dark:text-gray-400 font-semibold">
                         {member.name}
                       </span>

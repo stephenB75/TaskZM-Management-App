@@ -18,11 +18,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "./ui/avatar";
 import { ScrollArea } from "./ui/scroll-area";
 import {
   Select,
@@ -511,19 +506,9 @@ export function InboxView() {
                                             key={userId}
                                             className="flex items-center gap-1.5"
                                           >
-                                            <Avatar className="w-4 h-4">
-                                              <AvatarImage
-                                                src={
-                                                  member.avatar
-                                                }
-                                                alt={
-                                                  member.name
-                                                }
-                                              />
-                                              <AvatarFallback className="text-[8px] bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700">
-                                                {initials}
-                                              </AvatarFallback>
-                                            </Avatar>
+                                            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center text-[8px] font-semibold">
+                                              {initials}
+                                            </div>
                                             <span className="text-xs text-gray-600 font-semibold">
                                               {member.name}
                                             </span>
