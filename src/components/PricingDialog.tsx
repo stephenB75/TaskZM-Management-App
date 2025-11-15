@@ -22,6 +22,7 @@ import {
   Crown,
 } from "lucide-react";
 import { useSubscription } from "../contexts/SubscriptionContext";
+import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import {
@@ -68,15 +69,48 @@ export function PricingDialog({
   }>({ connected: false, packagesLoaded: 0, lastChecked: null });
   const platform = getPlatform();
 
+  // Get user from auth context for RevenueCat configuration
+  const { user } = useAuth();
+
   // Load offerings when dialog opens
   React.useEffect(() => {
     if (open) {
-      loadOfferings();
+      // Ensure RevenueCat is configured before loading offerings
+      const ensureConfigured = async () => {
+        const { configureRevenueCat, isRevenueCatConfigured } = await import('../lib/revenuecat');
+        
+        // Try to configure if not already configured and we have a user
+        if (!isRevenueCatConfigured() && user?.id) {
+          console.log('🔄 RevenueCat not configured, attempting to configure...');
+          try {
+            await configureRevenueCat(user.id);
+          } catch (error) {
+            console.warn('Failed to configure RevenueCat:', error);
+          }
+        }
+        
+        loadOfferings();
+      };
+      ensureConfigured();
     }
-  }, [open]);
+  }, [open, user?.id]);
 
   const loadOfferings = async () => {
     try {
+      // Check if RevenueCat is configured first
+      const { isRevenueCatConfigured } = await import('../lib/revenuecat');
+      
+      if (!isRevenueCatConfigured()) {
+        console.log('ℹ️  RevenueCat not configured yet');
+        console.log('   Configuration should happen automatically on login');
+        setRevenueCatStatus({
+          connected: false,
+          packagesLoaded: 0,
+          lastChecked: new Date().toISOString(),
+        });
+        return;
+      }
+      
       console.log('🔄 Loading offerings from RevenueCat...');
       const rcOfferings = await getOfferings();
       

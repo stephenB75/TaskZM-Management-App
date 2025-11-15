@@ -51,12 +51,12 @@ let currentUserId: string | null = null;
  */
 export async function configureRevenueCat(userId: string): Promise<void> {
   if (isConfigured && currentUserId === userId) {
-    console.log('RevenueCat already configured for user:', userId);
+    console.log('✅ RevenueCat already configured for user:', userId);
     return;
   }
 
   const platform = getPlatform();
-  console.log(`Configuring RevenueCat for platform: ${platform.platform}, user: ${userId}`);
+  console.log(`🔄 Configuring RevenueCat for platform: ${platform.platform}, user: ${userId}`);
 
   try {
     if (platform.isWeb) {
@@ -66,11 +66,21 @@ export async function configureRevenueCat(userId: string): Promise<void> {
       const apiKey = (import.meta as any).env?.VITE_REVENUECAT_WEB_PUBLIC_KEY;
       
       // Check if API key is missing or is a placeholder
-      if (!apiKey || apiKey === 'dev_mode_placeholder') {
-        // Running in development mode without RevenueCat - this is fine
-        // App will use legacy payment flow
+      if (!apiKey || apiKey === 'dev_mode_placeholder' || apiKey.trim() === '') {
+        console.log('ℹ️  RevenueCat API key not found in environment variables');
+        console.log('   Payment mode: SIMULATED (no real charges)');
+        console.log('   To enable: Add VITE_REVENUECAT_WEB_PUBLIC_KEY to .env file');
         return;
       }
+
+      // Validate API key format (should start with 'rc_')
+      if (!apiKey.startsWith('rc_')) {
+        console.warn('⚠️  RevenueCat API key format appears invalid (should start with "rc_")');
+        console.warn('   Payment mode: SIMULATED (no real charges)');
+        return;
+      }
+      
+      console.log('📦 RevenueCat API key found, initializing SDK...');
       
       // Try to import and configure RevenueCat
       try {
@@ -85,20 +95,22 @@ export async function configureRevenueCat(userId: string): Promise<void> {
           
           console.log('✅ RevenueCat configured successfully');
           console.log('   Payment processing: ENABLED');
+          console.log('   User ID:', userId);
           isConfigured = true;
           currentUserId = userId;
         } catch (configError: any) {
           // Handle configuration errors gracefully
-          console.warn('RevenueCat configuration error (non-critical):', configError?.message || configError);
-          console.log('   Payment mode: SIMULATED (no real charges)');
+          console.error('❌ RevenueCat configuration failed:', configError?.message || configError);
+          console.warn('   Payment mode: SIMULATED (no real charges)');
+          console.warn('   Check your API key and RevenueCat dashboard settings');
           // Don't set isConfigured to true if configuration failed
           return;
         }
       } catch (importError) {
-        console.log('ℹ️  RevenueCat SDK not installed (this is OK for development)');
+        console.error('❌ RevenueCat SDK import failed:', importError);
+        console.log('ℹ️  RevenueCat SDK not installed');
         console.log('   Payment mode: SIMULATED (no real charges)');
         console.log('   To enable real payments: npm install @revenuecat/purchases-js');
-        console.log('   Guide: /docs/PAYMENT_SYSTEM_SETUP.md');
         // Don't throw, just continue without RevenueCat
         return;
       }
@@ -109,7 +121,7 @@ export async function configureRevenueCat(userId: string): Promise<void> {
       const Purchases = Capacitor?.Plugins?.Purchases;
       
       if (!Purchases) {
-        console.warn('RevenueCat native plugin not found, running in web fallback mode');
+        console.warn('⚠️  RevenueCat native plugin not found, running in web fallback mode');
         return;
       }
       
@@ -120,8 +132,8 @@ export async function configureRevenueCat(userId: string): Promise<void> {
       currentUserId = userId;
     }
   } catch (error) {
-    console.error('Failed to configure RevenueCat:', error);
-    console.warn('App will continue to work with legacy payment flow');
+    console.error('❌ Failed to configure RevenueCat:', error);
+    console.warn('   App will continue to work with legacy payment flow');
     // Don't throw - allow app to continue without RevenueCat
   }
 }

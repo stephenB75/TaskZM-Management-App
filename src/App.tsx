@@ -104,9 +104,19 @@ function AppContent() {
       if (!hasSeenMessage) {
         console.log('%c✨ TaskZM v1.0.1 - Baseline Reset ✨', 'font-size: 16px; font-weight: bold; color: #9D87C3;');
         console.log('%cℹ️  Payment System Status:', 'font-weight: bold; color: #4A90E2;');
-        console.log('  • Mode: Development (simulated payments)');
-        console.log('  • To enable real payments: npm install @revenuecat/purchases-js');
-        console.log('  • Guide: /PAYMENT_SETUP_QUICK_FIX.md');
+        
+        // Check if RevenueCat API key is configured
+        const apiKey = (import.meta as any).env?.VITE_REVENUECAT_WEB_PUBLIC_KEY;
+        if (apiKey && apiKey !== 'dev_mode_placeholder' && apiKey.trim() !== '' && apiKey.startsWith('rc_')) {
+          console.log('  • RevenueCat: API key found ✅');
+          console.log('  • Mode: Production (real payments enabled)');
+          console.log('  • RevenueCat will configure automatically on login');
+        } else {
+          console.log('  • RevenueCat: API key not found');
+          console.log('  • Mode: Development (simulated payments)');
+          console.log('  • To enable real payments: Add VITE_REVENUECAT_WEB_PUBLIC_KEY to .env');
+        }
+        
         window?.sessionStorage?.setItem('taskzm_session_info_shown', 'true');
       }
     } catch (error) {
