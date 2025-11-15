@@ -140,9 +140,16 @@ export async function configureRevenueCat(userId: string): Promise<void> {
           }
           
           // Configure using the static method
+          // Validate userId before passing
+          if (!userId || userId.trim() === '') {
+            throw new Error('User ID is required for RevenueCat configuration');
+          }
+          
+          console.log('🔍 Configuring with userId:', userId.substring(0, 8) + '...');
+          
           const purchasesInstance = Purchases.configure({
             apiKey,
-            appUserID: userId
+            appUserId: userId  // Note: it's appUserId, not appUserID
           });
           
           console.log('✅ Purchases instance created:', !!purchasesInstance);
