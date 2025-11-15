@@ -57,20 +57,15 @@ export function PricingDialog({
   const [isRestoring, setIsRestoring] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [isDowngrading, setIsDowngrading] = React.useState(false);
-  const [selectedPlan, setSelectedPlan] = React.useState<'monthly' | 'yearly'>('monthly');
   const [offerings, setOfferings] = React.useState<{
-    monthly?: { price: string; priceString: string; currencyCode: string };
-    yearly?: { price: string; priceString: string; currencyCode: string };
+    monthly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
+    yearly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
   }>({});
-  const [allPackages, setAllPackages] = React.useState<Array<{
-    identifier: string;
-    price: string;
-    priceString: string;
-    currencyCode: string;
-    title: string;
-    description: string;
-    packageType: 'monthly' | 'yearly' | 'other';
-  }>>([]);
+  const [revenueCatStatus, setRevenueCatStatus] = React.useState<{
+    connected: boolean;
+    packagesLoaded: number;
+    lastChecked: string | null;
+  }>({ connected: false, packagesLoaded: 0, lastChecked: null });
   const platform = getPlatform();
 
   // Load offerings when dialog opens
@@ -82,190 +77,78 @@ export function PricingDialog({
 
   const loadOfferings = async () => {
     try {
+      console.log('🔄 Loading offerings from RevenueCat...');
       const rcOfferings = await getOfferings();
+      
       if (rcOfferings?.availablePackages) {
-        // Find monthly and yearly for backward compatibility
+        console.log('✅ RevenueCat connected! Packages found:', rcOfferings.availablePackages.length);
+        console.log('📦 All packages:', rcOfferings.availablePackages.map((p: any) => ({
+          identifier: p.identifier,
+          price: p.product.priceString,
+          title: p.product.title
+        })));
+
+        // Find monthly and yearly packages
         const monthlyPkg = rcOfferings.availablePackages.find(
-          pkg => MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+          (pkg: any) => MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
         );
         const yearlyPkg = rcOfferings.availablePackages.find(
-          pkg => YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+          (pkg: any) => YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
         );
+
+        console.log('📅 Monthly package:', monthlyPkg ? {
+          identifier: monthlyPkg.identifier,
+          price: monthlyPkg.product.priceString,
+          title: monthlyPkg.product.title
+        } : 'NOT FOUND');
+        console.log('📅 Yearly package:', yearlyPkg ? {
+          identifier: yearlyPkg.identifier,
+          price: yearlyPkg.product.priceString,
+          title: yearlyPkg.product.title
+        } : 'NOT FOUND');
 
         setOfferings({
           monthly: monthlyPkg ? {
             price: monthlyPkg.product.price.toString(),
             priceString: monthlyPkg.product.priceString,
             currencyCode: monthlyPkg.product.currencyCode,
+            identifier: monthlyPkg.identifier,
+            title: monthlyPkg.product.title || 'Monthly Pro',
+            description: monthlyPkg.product.description || '',
           } : undefined,
           yearly: yearlyPkg ? {
             price: yearlyPkg.product.price.toString(),
             priceString: yearlyPkg.product.priceString,
             currencyCode: yearlyPkg.product.currencyCode,
+            identifier: yearlyPkg.identifier,
+            title: yearlyPkg.product.title || 'Yearly Pro',
+            description: yearlyPkg.product.description || '',
           } : undefined,
         });
 
-        // Load ALL available packages from RevenueCat
-        const packages = rcOfferings.availablePackages.map((pkg: any) => {
-          // Determine package type
-          let packageType: 'monthly' | 'yearly' | 'other' = 'other';
-          if (MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)) {
-            packageType = 'monthly';
-          } else if (YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)) {
-            packageType = 'yearly';
-          }
-
-          return {
-            identifier: pkg.identifier,
-            price: pkg.product.price.toString(),
-            priceString: pkg.product.priceString,
-            currencyCode: pkg.product.currencyCode,
-            title: pkg.product.title || pkg.identifier,
-            description: pkg.product.description || '',
-            packageType,
-          };
+        setRevenueCatStatus({
+          connected: true,
+          packagesLoaded: rcOfferings.availablePackages.length,
+          lastChecked: new Date().toISOString(),
         });
-
-        setAllPackages(packages);
-        console.log('Loaded all packages from RevenueCat:', packages);
+      } else {
+        console.warn('⚠️ RevenueCat returned no packages');
+        setRevenueCatStatus({
+          connected: false,
+          packagesLoaded: 0,
+          lastChecked: new Date().toISOString(),
+        });
       }
     } catch (error) {
-      console.log('Failed to load offerings, using defaults:', error);
-    }
-  };
-
-  const handleUpgrade = async () => {
-    try {
-      setIsUpgrading(true);
-
-      // Check if we're in production mode
-      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
-      const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-
-      // Try RevenueCat purchase first (works for all platforms)
-      try {
-        console.log(
-          `Attempting ${selectedPlan} purchase on ${platform.platform}`,
-        );
-        const success = await purchaseProSubscription(selectedPlan);
-
-        if (success) {
-          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess, {
-            description: SUBSCRIPTION_UI_TEXT.messages.upgradeSuccessDesc,
-          });
-
-          // Refresh subscription status from backend
-          await refreshSubscription();
-          setIsUpgrading(false);
-          onOpenChange(false);
-          return;
-        } else {
-          // Payment failed or user cancelled
-          console.log("Purchase cancelled or failed");
-          toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed, {
-            description: SUBSCRIPTION_UI_TEXT.messages.paymentFailedDesc,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-      } catch (rcError: any) {
-        // If user cancelled, don't show error - user intentionally cancelled
-        if (
-          rcError.message?.includes("cancelled") ||
-          rcError.userCancelled
-        ) {
-          setIsUpgrading(false);
-          return;
-        }
-
-        // SECURITY: In production, never allow free upgrades
-        if (isProduction) {
-          console.error("Payment processing failed in production:", rcError.message);
-          
-          // Provide more specific error messages based on error type
-          let errorTitle = "Payment processing unavailable";
-          let errorDescription = "Unable to process payment. Please contact support or try again later.";
-          
-          if (rcError.message?.includes("not configured")) {
-            errorTitle = "Payment system not configured";
-            errorDescription = "Payment processing is currently unavailable. Please contact support.";
-          } else if (rcError.message?.includes("No subscription offerings available") || 
-                     rcError.message?.includes("subscription not found")) {
-            errorTitle = "Subscription not available";
-            errorDescription = "The selected subscription plan is not available. Please try again or contact support.";
-          } else if (rcError.message?.includes("network") || rcError.message?.includes("timeout")) {
-            errorTitle = "Connection error";
-            errorDescription = "Unable to connect to payment service. Please check your internet connection and try again.";
-          } else if (rcError.message) {
-            // Use the specific error message if available
-            errorDescription = rcError.message;
-          }
-          
-          toast.error(errorTitle, {
-            description: errorDescription,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-
-        // Development mode only: Allow fallback for testing
-        if (isDevelopment) {
-          // RevenueCat not configured - this is expected in development
-          if (rcError.message?.includes("not configured")) {
-            console.log(
-              "ℹ️  RevenueCat not fully configured - using development mode",
-            );
-            console.log(
-              "ℹ️  To enable payment processing, run: npm install @revenuecat/purchases-js",
-            );
-            console.log(
-              "ℹ️  See /docs/PAYMENT_SYSTEM_SETUP.md for full setup guide",
-            );
-          } else {
-            console.warn(
-              "⚠️  Payment processing unavailable:",
-              rcError.message,
-            );
-          }
-
-          // Fall back to simulated upgrade (DEVELOPMENT ONLY)
-          console.log(
-            "→ Using simulated upgrade for development",
-          );
-          
-          try {
-            await upgradeToPro();
-            toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode, {
-              description: SUBSCRIPTION_UI_TEXT.messages.upgradeDevModeDesc,
-            });
-            setIsUpgrading(false);
-            onOpenChange(false);
-            return;
-          } catch (upgradeError) {
-            console.error("Development upgrade failed:", upgradeError);
-            setIsUpgrading(false);
-            throw upgradeError;
-          }
-        }
-
-        // Unknown environment - err on the side of caution
-        console.error("Payment processing failed:", rcError.message);
-        toast.error("Payment processing unavailable", {
-          description:
-            "Unable to process payment. Please contact support.",
-        });
-        setIsUpgrading(false);
-      }
-    } catch (error: any) {
-      console.error("Upgrade error:", error);
-      toast.error("Upgrade failed", {
-        description:
-          error.message ||
-          "Please try again or contact support.",
+      console.error('❌ Failed to load offerings from RevenueCat:', error);
+      setRevenueCatStatus({
+        connected: false,
+        packagesLoaded: 0,
+        lastChecked: new Date().toISOString(),
       });
-      setIsUpgrading(false);
     }
   };
+
 
   const handleRestore = async () => {
     try {
@@ -366,13 +249,155 @@ export function PricingDialog({
 
   const savings = calculateSavings();
 
+  const handleUpgradeMonthly = async () => {
+    try {
+      setIsUpgrading(true);
+      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
+      const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
+
+      try {
+        console.log(`Attempting monthly purchase on ${platform.platform}`);
+        const success = await purchaseProSubscription('monthly');
+        
+        if (success) {
+          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess, {
+            description: SUBSCRIPTION_UI_TEXT.messages.upgradeSuccessDesc,
+          });
+          await refreshSubscription();
+          setIsUpgrading(false);
+          onOpenChange(false);
+          return;
+        } else {
+          toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed, {
+            description: SUBSCRIPTION_UI_TEXT.messages.paymentFailedDesc,
+          });
+          setIsUpgrading(false);
+          return;
+        }
+      } catch (rcError: any) {
+        if (rcError.message?.includes("cancelled") || rcError.userCancelled) {
+          setIsUpgrading(false);
+          return;
+        }
+
+        if (isProduction) {
+          console.error("Payment processing failed in production:", rcError.message);
+          toast.error("Payment processing unavailable", {
+            description: "Unable to process payment. Please contact support or try again later.",
+          });
+          setIsUpgrading(false);
+          return;
+        }
+
+        if (isDevelopment) {
+          console.log("→ Using simulated upgrade for development (monthly)");
+          try {
+            await upgradeToPro();
+            toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode, {
+              description: SUBSCRIPTION_UI_TEXT.messages.upgradeDevModeDesc,
+            });
+            setIsUpgrading(false);
+            onOpenChange(false);
+            return;
+          } catch (upgradeError) {
+            console.error("Development upgrade failed:", upgradeError);
+            setIsUpgrading(false);
+            throw upgradeError;
+          }
+        }
+
+        toast.error("Upgrade failed", {
+          description: rcError.message || "Please try again or contact support.",
+        });
+        setIsUpgrading(false);
+      }
+    } catch (error: any) {
+      console.error("Monthly upgrade error:", error);
+      toast.error("Upgrade failed", {
+        description: error.message || "Please try again or contact support.",
+      });
+      setIsUpgrading(false);
+    }
+  };
+
+  const handleUpgradeYearly = async () => {
+    try {
+      setIsUpgrading(true);
+      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
+      const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
+
+      try {
+        console.log(`Attempting yearly purchase on ${platform.platform}`);
+        const success = await purchaseProSubscription('yearly');
+        
+        if (success) {
+          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess, {
+            description: SUBSCRIPTION_UI_TEXT.messages.upgradeSuccessDesc,
+          });
+          await refreshSubscription();
+          setIsUpgrading(false);
+          onOpenChange(false);
+          return;
+        } else {
+          toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed, {
+            description: SUBSCRIPTION_UI_TEXT.messages.paymentFailedDesc,
+          });
+          setIsUpgrading(false);
+          return;
+        }
+      } catch (rcError: any) {
+        if (rcError.message?.includes("cancelled") || rcError.userCancelled) {
+          setIsUpgrading(false);
+          return;
+        }
+
+        if (isProduction) {
+          console.error("Payment processing failed in production:", rcError.message);
+          toast.error("Payment processing unavailable", {
+            description: "Unable to process payment. Please contact support or try again later.",
+          });
+          setIsUpgrading(false);
+          return;
+        }
+
+        if (isDevelopment) {
+          console.log("→ Using simulated upgrade for development (yearly)");
+          try {
+            await upgradeToPro();
+            toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode, {
+              description: SUBSCRIPTION_UI_TEXT.messages.upgradeDevModeDesc,
+            });
+            setIsUpgrading(false);
+            onOpenChange(false);
+            return;
+          } catch (upgradeError) {
+            console.error("Development upgrade failed:", upgradeError);
+            setIsUpgrading(false);
+            throw upgradeError;
+          }
+        }
+
+        toast.error("Upgrade failed", {
+          description: rcError.message || "Please try again or contact support.",
+        });
+        setIsUpgrading(false);
+      }
+    } catch (error: any) {
+      console.error("Yearly upgrade error:", error);
+      toast.error("Upgrade failed", {
+        description: error.message || "Please try again or contact support.",
+      });
+      setIsUpgrading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] lg:max-w-[1400px] max-h-[95vh] overflow-y-auto p-0 md:p-0">
         <div className="p-6 md:p-8 lg:p-10 xl:p-12">
-          {/* Header and Toggle in Horizontal Layout */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 md:mb-10 gap-6">
-            <DialogHeader className="text-left md:text-left">
+          {/* Header */}
+          <div className="mb-8 md:mb-10">
+            <DialogHeader className="text-center">
               <DialogTitle className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent mb-2">
                 {SUBSCRIPTION_UI_TEXT.title}
               </DialogTitle>
@@ -381,53 +406,22 @@ export function PricingDialog({
               </DialogDescription>
             </DialogHeader>
 
-            {/* Plan Toggle - Spacious Horizontal */}
-            <div className="inline-flex items-center gap-3 p-2 bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#4A4A5E] dark:to-[#3E3E52] rounded-2xl shadow-lg">
-              <button
-                type="button"
-                onClick={() => setSelectedPlan('monthly')}
-                className={cn(
-                  "px-8 py-3 rounded-xl text-base font-semibold transition-all duration-300",
-                  selectedPlan === 'monthly'
-                    ? 'bg-white dark:bg-gray-700 text-[#9B87E8] dark:text-[#9B87E8] shadow-md'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                )}
-              >
-                {SUBSCRIPTION_UI_TEXT.toggle.monthly}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPlan('yearly')}
-                className={cn(
-                  "px-8 py-3 rounded-xl text-base font-semibold transition-all duration-300",
-                  selectedPlan === 'yearly'
-                    ? 'bg-white dark:bg-gray-700 text-[#9B87E8] dark:text-[#9B87E8] shadow-md'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  {SUBSCRIPTION_UI_TEXT.toggle.yearly}
-                  {savings > 0 && (
-                    <span className="px-3 py-1 text-xs font-bold bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 rounded-full">
-                      Save {savings}%
-                    </span>
-                  )}
-                </span>
-              </button>
+            {/* RevenueCat Connection Status */}
+            <div className={`mt-4 p-3 rounded-lg text-center text-sm ${
+              revenueCatStatus.connected 
+                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200' 
+                : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
+            }`}>
+              {revenueCatStatus.connected ? (
+                <span>✅ RevenueCat Connected • {revenueCatStatus.packagesLoaded} package(s) loaded</span>
+              ) : (
+                <span>⚠️ RevenueCat not connected • Using default pricing</span>
+              )}
             </div>
           </div>
 
-          {/* Display all available packages from RevenueCat */}
-          {allPackages.length > 0 && (
-            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-              <p className="text-sm md:text-base text-blue-800 dark:text-blue-200">
-                <strong>Available Plans from RevenueCat:</strong> {allPackages.map(pkg => `${pkg.title} (${pkg.priceString})`).join(', ')}
-              </p>
-            </div>
-          )}
-
-          {/* Plans Grid - Spacious Horizontal Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 max-w-full">
+          {/* Plans Grid - 3 Columns: Free, Monthly Pro, Yearly Pro */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 max-w-full">
             {/* Free Tier - Spacious Design */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -490,191 +484,183 @@ export function PricingDialog({
               </Button>
             </motion.div>
 
-            {/* Pro Tier - Spacious Featured Design */}
+            {/* Monthly Pro Tier */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="relative border-2 border-[#9B87E8] rounded-2xl md:rounded-3xl p-8 md:p-10 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
+              className="relative border-2 border-[#9B87E8] rounded-2xl md:rounded-3xl p-6 md:p-8 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
             >
-              {/* Enhanced Decorative elements */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#B8E6D5]/25 to-[#C9E4F7]/25 rounded-tr-full blur-3xl" />
+              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
               
-              {/* Popular Badge - Enhanced */}
-              <div className="absolute top-6 right-6 z-20">
-                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-xl px-4 py-2 text-sm font-semibold">
-                  <Crown className="w-4 h-4 mr-1.5" />
-                  {SUBSCRIPTION_UI_TEXT.pro.badge.popular}
-                </Badge>
-              </div>
-
               <div className="relative z-10 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between mb-4">
                   <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">{SUBSCRIPTION_UI_TEXT.pro.title}</h3>
-                      <Sparkles className="w-6 h-6 md:w-7 md:h-7 text-[#9B87E8] animate-pulse" />
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro Monthly</h3>
+                      <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.pro.subtitle}</p>
+                    <p className="text-sm md:text-base text-muted-foreground">Billed monthly</p>
                   </div>
-                  {subscription.tier === "pro" && (
-                    <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-sm px-4 py-2 shadow-sm flex-shrink-0">
-                      {SUBSCRIPTION_UI_TEXT.pro.badge.current}
-                    </Badge>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                      {offerings.monthly?.priceString || DEFAULT_MONTHLY_PRICE}
+                    </span>
+                    <span className="text-lg md:text-xl text-muted-foreground">/month</span>
+                  </div>
+                  {offerings.monthly?.description && (
+                    <p className="text-xs md:text-sm text-muted-foreground mt-1 italic">
+                      {offerings.monthly.description}
+                    </p>
                   )}
                 </div>
 
-                <div className="mb-8">
-                  {selectedPlan === 'monthly' ? (
-                    <>
-                      <div className="flex items-baseline gap-2 mb-2">
-                        <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                          {offerings.monthly?.priceString || DEFAULT_MONTHLY_PRICE}
-                        </span>
-                        <span className="text-xl md:text-2xl text-muted-foreground">/month</span>
-                      </div>
-                      <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.pro.description}</p>
-                      {/* Show product description from RevenueCat if available */}
-                      {allPackages.find(p => p.packageType === 'monthly')?.description && (
-                        <p className="text-sm md:text-base text-muted-foreground mt-2 italic">
-                          {allPackages.find(p => p.packageType === 'monthly')?.description}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-baseline gap-2 mb-2">
-                        <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                          {offerings.yearly?.priceString || DEFAULT_YEARLY_PRICE}
-                        </span>
-                        <span className="text-xl md:text-2xl text-muted-foreground">/year</span>
-                      </div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <p className="text-base md:text-lg text-muted-foreground">
-                          {SUBSCRIPTION_UI_TEXT.pro.descriptionYearly}
-                        </p>
-                        {savings > 0 && (
-                          <Badge className="bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-sm font-bold px-3 py-1">
-                            Save {savings}%
-                          </Badge>
-                        )}
-                      </div>
-                      {offerings.yearly && offerings.monthly && (
-                        <p className="text-base md:text-lg font-semibold text-[#9B87E8]">
-                          ${((parseFloat(offerings.yearly.price) / 12).toFixed(2))} per month
-                        </p>
-                      )}
-                      {/* Show product description from RevenueCat if available */}
-                      {allPackages.find(p => p.packageType === 'yearly')?.description && (
-                        <p className="text-sm md:text-base text-muted-foreground mt-2 italic">
-                          {allPackages.find(p => p.packageType === 'yearly')?.description}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Features in 2 columns for spacious layout */}
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 flex-1">
-                  {proTierFeatures.map((feature, index) => (
-                    <li
-                      key={index}
-                      className={cn(
-                        "flex items-start gap-4 group",
-                        feature.isHeader && "pt-4 border-t border-[#9B87E8]/30 dark:border-[#9B87E8]/40 mt-2 md:col-span-2"
-                      )}
-                    >
+                {/* Features list - compact */}
+                <ul className="space-y-3 mb-6 flex-1">
+                  {proTierFeatures.slice(0, 4).map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
                       <div className={cn(
-                        "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5 transition-all duration-200",
+                        "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5",
                         feature.highlight
-                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9] shadow-md group-hover:scale-110"
-                          : "bg-[#B8E6D5] dark:bg-[#5A8A7A] group-hover:scale-110"
+                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
+                          : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
                       )}>
                         <feature.icon className={cn(
-                          "w-4 h-4",
+                          "w-3 h-3",
                           feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
                         )} />
                       </div>
-                      <span className={cn(
-                        "text-base md:text-lg transition-colors leading-relaxed",
-                        feature.highlight
-                          ? "text-gray-900 dark:text-gray-100 font-semibold group-hover:text-[#9B87E8]"
-                          : "text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100"
-                      )}>
+                      <span className="text-sm md:text-base text-gray-700 dark:text-gray-300">
                         {feature.text}
                       </span>
                     </li>
                   ))}
+                  <li className="text-xs md:text-sm text-muted-foreground pt-2">
+                    + {proTierFeatures.length - 4} more features
+                  </li>
                 </ul>
 
-                <div className="space-y-4">
-                  <Button
-                    className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-xl hover:shadow-2xl transition-all duration-300 text-base md:text-lg font-bold py-6 md:py-7 hover:scale-[1.01] active:scale-[0.99]"
-                    disabled={
-                      subscription.tier === "pro" || isUpgrading
-                    }
-                    onClick={handleUpgrade}
-                  >
-                    {isUpgrading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        {SUBSCRIPTION_UI_TEXT.pro.button.processing}
-                      </span>
-                    ) : subscription.tier === "pro" ? (
-                      SUBSCRIPTION_UI_TEXT.pro.button.current
-                    ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <Sparkles className="w-5 h-5" />
-                        {SUBSCRIPTION_UI_TEXT.pro.button.upgrade}
-                      </span>
-                    )}
-                  </Button>
-
-                  {/* Cancel Subscription Button - Always show for Pro users */}
-                  {subscription.tier === "pro" && (
-                    <>
-                      {!subscription.cancelAtPeriodEnd ? (
-                        <Button
-                          variant="outline"
-                          className="w-full border-2 border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base md:text-lg py-5 md:py-6 font-semibold transition-all duration-200 hover:scale-[1.01]"
-                          disabled={isCancelling}
-                          onClick={handleCancel}
-                        >
-                          {isCancelling ? (
-                            <span className="flex items-center justify-center gap-2">
-                              <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                              {SUBSCRIPTION_UI_TEXT.pro.button.cancelling}
-                            </span>
-                          ) : (
-                            SUBSCRIPTION_UI_TEXT.pro.button.cancel
-                          )}
-                        </Button>
-                      ) : (
-                        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
-                          <p className="text-sm md:text-base text-yellow-800 dark:text-yellow-200 text-center">
-                            {SUBSCRIPTION_UI_TEXT.messages.cancelWarning}
-                          </p>
-                        </div>
-                      )}
-                    </>
+                <Button
+                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base font-bold py-5 md:py-6 hover:scale-[1.01]"
+                  disabled={subscription.tier === "pro" || isUpgrading}
+                  onClick={handleUpgradeMonthly}
+                >
+                  {isUpgrading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Processing...
+                    </span>
+                  ) : subscription.tier === "pro" ? (
+                    "Current Plan"
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Upgrade Monthly
+                    </span>
                   )}
+                </Button>
+              </div>
+            </motion.div>
 
-                  {/* Show Restore button for native platforms */}
-                  {platform.isNative &&
-                    subscription.tier !== "pro" && (
-                      <Button
-                        variant="outline"
-                        className="w-full border-2 border-[#9B87E8]/40 text-[#9B87E8] hover:bg-[#9B87E8]/10 text-base md:text-lg py-5 md:py-6 font-semibold transition-all duration-200 hover:scale-[1.01]"
-                        disabled={isRestoring}
-                        onClick={handleRestore}
-                      >
-                        {isRestoring
-                          ? "Restoring..."
-                          : "Restore Purchases"}
-                      </Button>
-                    )}
+            {/* Yearly Pro Tier - Featured */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="relative border-2 border-[#9B87E8] rounded-2xl md:rounded-3xl p-6 md:p-8 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/40 transition-all duration-300 flex flex-col"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-2xl" />
+              
+              {/* Popular Badge */}
+              <div className="absolute top-4 right-4 z-20">
+                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-lg px-3 py-1 text-xs font-semibold">
+                  <Crown className="w-3 h-3 mr-1" />
+                  Best Value
+                </Badge>
+              </div>
+
+              <div className="relative z-10 flex flex-col flex-1">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro Yearly</h3>
+                      <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-[#9B87E8] animate-pulse" />
+                    </div>
+                    <p className="text-sm md:text-base text-muted-foreground">Billed annually</p>
+                  </div>
                 </div>
+
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                      {offerings.yearly?.priceString || DEFAULT_YEARLY_PRICE}
+                    </span>
+                    <span className="text-lg md:text-xl text-muted-foreground">/year</span>
+                  </div>
+                  {savings > 0 && (
+                    <Badge className="mb-2 bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-bold px-2 py-1">
+                      Save {savings}%
+                    </Badge>
+                  )}
+                  {offerings.yearly && offerings.monthly && (
+                    <p className="text-sm md:text-base font-semibold text-[#9B87E8]">
+                      ${((parseFloat(offerings.yearly.price) / 12).toFixed(2))} per month
+                    </p>
+                  )}
+                  {offerings.yearly?.description && (
+                    <p className="text-xs md:text-sm text-muted-foreground mt-1 italic">
+                      {offerings.yearly.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Features list - compact */}
+                <ul className="space-y-3 mb-6 flex-1">
+                  {proTierFeatures.slice(0, 4).map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <div className={cn(
+                        "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5",
+                        feature.highlight
+                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
+                          : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
+                      )}>
+                        <feature.icon className={cn(
+                          "w-3 h-3",
+                          feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
+                        )} />
+                      </div>
+                      <span className="text-sm md:text-base text-gray-700 dark:text-gray-300">
+                        {feature.text}
+                      </span>
+                    </li>
+                  ))}
+                  <li className="text-xs md:text-sm text-muted-foreground pt-2">
+                    + {proTierFeatures.length - 4} more features
+                  </li>
+                </ul>
+
+                <Button
+                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-xl hover:shadow-2xl transition-all duration-300 text-sm md:text-base font-bold py-5 md:py-6 hover:scale-[1.01]"
+                  disabled={subscription.tier === "pro" || isUpgrading}
+                  onClick={handleUpgradeYearly}
+                >
+                  {isUpgrading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Processing...
+                    </span>
+                  ) : subscription.tier === "pro" ? (
+                    "Current Plan"
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Upgrade Yearly
+                    </span>
+                  )}
+                </Button>
               </div>
             </motion.div>
           </div>
@@ -692,3 +678,4 @@ export function PricingDialog({
     </Dialog>
   );
 }
+
