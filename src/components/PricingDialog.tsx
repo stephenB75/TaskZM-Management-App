@@ -31,6 +31,16 @@ import {
 } from "../lib/revenuecat";
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
+import {
+  DEFAULT_MONTHLY_PRICE,
+  DEFAULT_YEARLY_PRICE,
+  MONTHLY_PACKAGE_IDENTIFIERS,
+  YEARLY_PACKAGE_IDENTIFIERS,
+  SUBSCRIPTION_UI_TEXT,
+  FREE_TIER_FEATURES,
+  PRO_TIER_FEATURES,
+  PRO_FEATURES_LIST,
+} from "../lib/subscription-constants";
 
 interface PricingDialogProps {
   open: boolean;
@@ -66,10 +76,10 @@ export function PricingDialog({
       const rcOfferings = await getOfferings();
       if (rcOfferings?.availablePackages) {
         const monthlyPkg = rcOfferings.availablePackages.find(
-          pkg => ['$rc_monthly', 'monthly'].includes(pkg.identifier)
+          pkg => MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
         );
         const yearlyPkg = rcOfferings.availablePackages.find(
-          pkg => ['$rc_annual', '$rc_yearly', 'annual', 'yearly'].includes(pkg.identifier)
+          pkg => YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
         );
 
         setOfferings({
@@ -106,9 +116,8 @@ export function PricingDialog({
         const success = await purchaseProSubscription(selectedPlan);
 
         if (success) {
-          toast.success("🎉 Welcome to TaskZM Pro!", {
-            description:
-              "You now have access to all premium features.",
+          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess, {
+            description: SUBSCRIPTION_UI_TEXT.messages.upgradeSuccessDesc,
           });
 
           // Refresh subscription status from backend
@@ -118,9 +127,8 @@ export function PricingDialog({
         } else {
           // Payment failed or user cancelled
           console.log("Purchase cancelled or failed");
-          toast.error("Payment failed", {
-            description:
-              "The payment could not be processed. Please check your payment method and try again.",
+          toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed, {
+            description: SUBSCRIPTION_UI_TEXT.messages.paymentFailedDesc,
           });
           return;
         }
@@ -189,9 +197,8 @@ export function PricingDialog({
           );
           
           await upgradeToPro();
-          toast.success("🎉 Welcome to TaskZM Pro! (Development Mode)", {
-            description:
-              "You now have access to all premium features. This is a development-only upgrade.",
+          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode, {
+            description: SUBSCRIPTION_UI_TEXT.messages.upgradeDevModeDesc,
           });
           onOpenChange(false);
           return;
@@ -224,21 +231,20 @@ export function PricingDialog({
       const success = await restorePurchases();
 
       if (success) {
-        toast.success("✅ Subscription restored!", {
-          description: "Your Pro features are now active.",
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored, {
+          description: SUBSCRIPTION_UI_TEXT.messages.subscriptionRestoredDesc,
         });
         await refreshSubscription();
         onOpenChange(false);
       } else {
-        toast.info("No active subscription found", {
-          description:
-            "If you believe this is an error, please contact support.",
+        toast.info(SUBSCRIPTION_UI_TEXT.messages.noActiveSubscription, {
+          description: SUBSCRIPTION_UI_TEXT.messages.noActiveSubscriptionDesc,
         });
       }
     } catch (error: any) {
       console.error("Restore error:", error);
-      toast.error("Restore failed", {
-        description: error.message || "Please try again later.",
+      toast.error(SUBSCRIPTION_UI_TEXT.messages.restoreFailed, {
+        description: error.message || SUBSCRIPTION_UI_TEXT.messages.restoreFailedDesc,
       });
     } finally {
       setIsRestoring(false);
@@ -248,9 +254,7 @@ export function PricingDialog({
   const handleCancel = async () => {
     // Show confirmation dialog
     const confirmed = window.confirm(
-      "Are you sure you want to cancel your subscription?\n\n" +
-      "Your Pro features will remain active until the end of your billing period. " +
-      "You can reactivate anytime before then."
+      `${SUBSCRIPTION_UI_TEXT.confirmations.cancel.title}\n\n${SUBSCRIPTION_UI_TEXT.confirmations.cancel.message}`
     );
 
     if (!confirmed) {
@@ -261,14 +265,13 @@ export function PricingDialog({
       setIsCancelling(true);
       await cancelSubscription();
       await refreshSubscription();
-      toast.success("Subscription cancelled", {
-        description:
-          "Your subscription will cancel at the end of your billing period. You can reactivate anytime before then.",
+      toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionCancelled, {
+        description: SUBSCRIPTION_UI_TEXT.messages.subscriptionCancelledDesc,
       });
     } catch (error: any) {
       console.error("Cancel error:", error);
-      toast.error("Failed to cancel subscription", {
-        description: error.message || "Please try again or contact support.",
+      toast.error(SUBSCRIPTION_UI_TEXT.messages.cancelFailed, {
+        description: error.message || SUBSCRIPTION_UI_TEXT.messages.cancelFailedDesc,
       });
     } finally {
       setIsCancelling(false);
@@ -277,17 +280,9 @@ export function PricingDialog({
 
   const handleDowngrade = async () => {
     // Show confirmation dialog
+    const featuresList = PRO_FEATURES_LIST.map(f => `• ${f}`).join('\n');
     const confirmed = window.confirm(
-      "Are you sure you want to downgrade to Free?\n\n" +
-      "You will lose access to all Pro features immediately:\n" +
-      "• AI Scheduler\n" +
-      "• Task Hours & Time Tracking\n" +
-      "• Analytics Dashboard\n" +
-      "• Calendar Sync\n" +
-      "• Auto Task Rollover\n" +
-      "• Pomodoro Timer\n" +
-      "• Team Collaboration\n\n" +
-      "This action cannot be undone. You can upgrade again anytime."
+      `${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.title}\n\n${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.messagePrefix}\n${featuresList}${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.messageSuffix}`
     );
 
     if (!confirmed) {
@@ -298,80 +293,23 @@ export function PricingDialog({
       setIsDowngrading(true);
       await downgradeToFree();
       await refreshSubscription();
-      toast.success("Downgraded to Free", {
-        description:
-          "You've been downgraded to the Free tier. You can upgrade to Pro again anytime.",
+      toast.success(SUBSCRIPTION_UI_TEXT.messages.downgradeSuccess, {
+        description: SUBSCRIPTION_UI_TEXT.messages.downgradeSuccessDesc,
       });
       onOpenChange(false);
     } catch (error: any) {
       console.error("Downgrade error:", error);
-      toast.error("Failed to downgrade subscription", {
-        description: error.message || "Please try again or contact support.",
+      toast.error(SUBSCRIPTION_UI_TEXT.messages.downgradeFailed, {
+        description: error.message || SUBSCRIPTION_UI_TEXT.messages.downgradeFailedDesc,
       });
     } finally {
       setIsDowngrading(false);
     }
   };
 
-  const freeTierFeatures = [
-    { icon: Check, text: "Unlimited tasks", included: true },
-    {
-      icon: Calendar,
-      text: "7-Day Kanban & Month View",
-      included: true,
-    },
-    {
-      icon: Tag,
-      text: "Custom Tags & Organization",
-      included: true,
-    },
-  ];
-
-  const proTierFeatures = [
-    { icon: Check, text: "Everything in Free", included: true, isHeader: true },
-    {
-      icon: Sparkles,
-      text: "AI Scheduler",
-      included: true,
-      highlight: true,
-    },
-    {
-      icon: Zap,
-      text: "Task Hours & Time Tracking",
-      included: true,
-      highlight: true,
-    },
-    {
-      icon: BarChart3,
-      text: "Analytics Dashboard",
-      included: true,
-      highlight: true,
-    },
-    {
-      icon: Calendar,
-      text: "Calendar Sync (Google, Outlook, Apple)",
-      included: true,
-      highlight: true,
-    },
-    {
-      icon: RotateCcw,
-      text: "Auto Task Rollover",
-      included: true,
-      highlight: true,
-    },
-    {
-      icon: Timer,
-      text: "Pomodoro Timer",
-      included: true,
-      highlight: true,
-    },
-    {
-      icon: Users,
-      text: "Team Collaboration",
-      included: true,
-      highlight: true,
-    },
-  ];
+  // Use feature definitions from constants
+  const freeTierFeatures = FREE_TIER_FEATURES;
+  const proTierFeatures = PRO_TIER_FEATURES;
 
   const calculateSavings = () => {
     if (!offerings.monthly || !offerings.yearly) return 0;
@@ -392,10 +330,10 @@ export function PricingDialog({
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 md:mb-10 gap-6">
             <DialogHeader className="text-left md:text-left">
               <DialogTitle className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent mb-2">
-                Choose Your Plan
+                {SUBSCRIPTION_UI_TEXT.title}
               </DialogTitle>
               <DialogDescription className="text-base md:text-lg lg:text-xl mt-2 text-muted-foreground">
-                Unlock powerful features to supercharge your productivity
+                {SUBSCRIPTION_UI_TEXT.description}
               </DialogDescription>
             </DialogHeader>
 
@@ -411,7 +349,7 @@ export function PricingDialog({
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 )}
               >
-                Monthly
+                {SUBSCRIPTION_UI_TEXT.toggle.monthly}
               </button>
               <button
                 type="button"
@@ -424,7 +362,7 @@ export function PricingDialog({
                 )}
               >
                 <span className="flex items-center gap-2">
-                  Yearly
+                  {SUBSCRIPTION_UI_TEXT.toggle.yearly}
                   {savings > 0 && (
                     <span className="px-3 py-1 text-xs font-bold bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 rounded-full">
                       Save {savings}%
@@ -446,22 +384,22 @@ export function PricingDialog({
             >
               <div className="flex items-start justify-between mb-6">
                 <div className="flex-1">
-                  <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">Free</h3>
-                  <p className="text-base md:text-lg text-muted-foreground">Perfect for getting started</p>
+                  <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
+                  <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
                 </div>
                 {subscription.tier === "free" && (
                   <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-sm px-4 py-2 shadow-sm flex-shrink-0">
-                    Current
+                    {SUBSCRIPTION_UI_TEXT.free.button.current}
                   </Badge>
                 )}
               </div>
 
               <div className="mb-8">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-gray-100">$0</span>
-                  <span className="text-xl md:text-2xl text-muted-foreground">/month</span>
+                  <span className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-gray-100">{SUBSCRIPTION_UI_TEXT.free.price}</span>
+                  <span className="text-xl md:text-2xl text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
                 </div>
-                <p className="text-base md:text-lg text-muted-foreground">Forever free, no credit card required</p>
+                <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.description}</p>
               </div>
 
               <ul className="space-y-4 mb-8 flex-1">
@@ -489,12 +427,12 @@ export function PricingDialog({
                 {isDowngrading ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                    Downgrading...
+                    {SUBSCRIPTION_UI_TEXT.pro.button.downgrading}
                   </span>
                 ) : subscription.tier === "free" ? (
-                  "Current Plan"
+                  SUBSCRIPTION_UI_TEXT.free.button.current
                 ) : (
-                  "Downgrade to Free"
+                  SUBSCRIPTION_UI_TEXT.free.button.downgrade
                 )}
               </Button>
             </motion.div>
@@ -514,7 +452,7 @@ export function PricingDialog({
               <div className="absolute top-6 right-6 z-20">
                 <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-xl px-4 py-2 text-sm font-semibold">
                   <Crown className="w-4 h-4 mr-1.5" />
-                  Popular
+                  {SUBSCRIPTION_UI_TEXT.pro.badge.popular}
                 </Badge>
               </div>
 
@@ -522,14 +460,14 @@ export function PricingDialog({
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro</h3>
+                      <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">{SUBSCRIPTION_UI_TEXT.pro.title}</h3>
                       <Sparkles className="w-6 h-6 md:w-7 md:h-7 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-base md:text-lg text-muted-foreground">Unlock all premium features</p>
+                    <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.pro.subtitle}</p>
                   </div>
                   {subscription.tier === "pro" && (
                     <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-sm px-4 py-2 shadow-sm flex-shrink-0">
-                      Current
+                      {SUBSCRIPTION_UI_TEXT.pro.badge.current}
                     </Badge>
                   )}
                 </div>
@@ -539,23 +477,23 @@ export function PricingDialog({
                     <>
                       <div className="flex items-baseline gap-2 mb-2">
                         <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                          {offerings.monthly?.priceString || '$3.99'}
+                          {offerings.monthly?.priceString || DEFAULT_MONTHLY_PRICE}
                         </span>
                         <span className="text-xl md:text-2xl text-muted-foreground">/month</span>
                       </div>
-                      <p className="text-base md:text-lg text-muted-foreground">Billed monthly, cancel anytime</p>
+                      <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.pro.description}</p>
                     </>
                   ) : (
                     <>
                       <div className="flex items-baseline gap-2 mb-2">
                         <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                          {offerings.yearly?.priceString || '$39.99'}
+                          {offerings.yearly?.priceString || DEFAULT_YEARLY_PRICE}
                         </span>
                         <span className="text-xl md:text-2xl text-muted-foreground">/year</span>
                       </div>
                       <div className="flex items-center gap-3 mb-2">
                         <p className="text-base md:text-lg text-muted-foreground">
-                          Billed annually
+                          {SUBSCRIPTION_UI_TEXT.pro.descriptionYearly}
                         </p>
                         {savings > 0 && (
                           <Badge className="bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-sm font-bold px-3 py-1">
@@ -616,14 +554,14 @@ export function PricingDialog({
                     {isUpgrading ? (
                       <span className="flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Processing...
+                        {SUBSCRIPTION_UI_TEXT.pro.button.processing}
                       </span>
                     ) : subscription.tier === "pro" ? (
-                      "Current Plan"
+                      SUBSCRIPTION_UI_TEXT.pro.button.current
                     ) : (
                       <span className="flex items-center justify-center gap-2">
                         <Sparkles className="w-5 h-5" />
-                        Upgrade to Pro
+                        {SUBSCRIPTION_UI_TEXT.pro.button.upgrade}
                       </span>
                     )}
                   </Button>
@@ -639,10 +577,10 @@ export function PricingDialog({
                       {isCancelling ? (
                         <span className="flex items-center justify-center gap-2">
                           <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                          Cancelling...
+                          {SUBSCRIPTION_UI_TEXT.pro.button.cancelling}
                         </span>
                       ) : (
-                        "Cancel Subscription"
+                        SUBSCRIPTION_UI_TEXT.pro.button.cancel
                       )}
                     </Button>
                   )}
@@ -651,7 +589,7 @@ export function PricingDialog({
                   {subscription.tier === "pro" && subscription.cancelAtPeriodEnd && (
                     <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
                       <p className="text-sm md:text-base text-yellow-800 dark:text-yellow-200 text-center">
-                        ⚠️ Your subscription will cancel at the end of your billing period. You can reactivate anytime before then.
+                        {SUBSCRIPTION_UI_TEXT.messages.cancelWarning}
                       </p>
                     </div>
                   )}
@@ -678,9 +616,9 @@ export function PricingDialog({
           {/* Footer Note - Spacious */}
           <div className="mt-8 md:mt-10 p-5 md:p-6 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-xl md:rounded-2xl border-2 border-[#9B87E8]/30 shadow-lg backdrop-blur-sm">
             <p className="text-sm md:text-base lg:text-lg text-center text-gray-700 dark:text-gray-300 leading-relaxed">
-              💡 All plans include unlimited tasks and seamless calendar integration. 
-              <span className="font-semibold text-[#9B87E8]"> Upgrade anytime</span> to unlock 
-              AI-powered scheduling and advanced analytics.
+              {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
+              <span className="font-semibold text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
+              {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
             </p>
           </div>
         </div>
