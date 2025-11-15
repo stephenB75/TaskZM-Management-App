@@ -41,10 +41,11 @@ export function PricingDialog({
   open,
   onOpenChange,
 }: PricingDialogProps) {
-  const { subscription, upgradeToPro, refreshSubscription } =
+  const { subscription, upgradeToPro, refreshSubscription, cancelSubscription } =
     useSubscription();
   const [isUpgrading, setIsUpgrading] = React.useState(false);
   const [isRestoring, setIsRestoring] = React.useState(false);
+  const [isCancelling, setIsCancelling] = React.useState(false);
   const [selectedPlan, setSelectedPlan] = React.useState<'monthly' | 'yearly'>('monthly');
   const [offerings, setOfferings] = React.useState<{
     monthly?: { price: string; priceString: string; currencyCode: string };
@@ -240,6 +241,36 @@ export function PricingDialog({
       });
     } finally {
       setIsRestoring(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel your subscription?\n\n" +
+      "Your Pro features will remain active until the end of your billing period. " +
+      "You can reactivate anytime before then."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsCancelling(true);
+      await cancelSubscription();
+      await refreshSubscription();
+      toast.success("Subscription cancelled", {
+        description:
+          "Your subscription will cancel at the end of your billing period. You can reactivate anytime before then.",
+      });
+    } catch (error: any) {
+      console.error("Cancel error:", error);
+      toast.error("Failed to cancel subscription", {
+        description: error.message || "Please try again or contact support.",
+      });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -549,6 +580,34 @@ export function PricingDialog({
                       </span>
                     )}
                   </Button>
+
+                  {/* Cancel Subscription Button - Show for Pro users who haven't cancelled */}
+                  {subscription.tier === "pro" && !subscription.cancelAtPeriodEnd && (
+                    <Button
+                      variant="outline"
+                      className="w-full border-2 border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm py-4 font-semibold transition-all duration-200 hover:scale-[1.01]"
+                      disabled={isCancelling}
+                      onClick={handleCancel}
+                    >
+                      {isCancelling ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          Cancelling...
+                        </span>
+                      ) : (
+                        "Cancel Subscription"
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Show message if already cancelled */}
+                  {subscription.tier === "pro" && subscription.cancelAtPeriodEnd && (
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <p className="text-xs md:text-sm text-yellow-800 dark:text-yellow-200 text-center">
+                        ⚠️ Your subscription will cancel at the end of your billing period. You can reactivate anytime before then.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Show Restore button for native platforms */}
                   {platform.isNative &&
