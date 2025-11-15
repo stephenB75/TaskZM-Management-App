@@ -63,13 +63,34 @@ export async function configureRevenueCat(userId: string): Promise<void> {
       // Web: Use RevenueCat Purchases JS SDK with Stripe
       
       // Get public API key from environment
-      const apiKey = (import.meta as any).env?.VITE_REVENUECAT_WEB_PUBLIC_KEY;
+      // Try multiple ways to access it in case of build/runtime differences
+      const env = (import.meta as any).env || {};
+      let apiKey = env.VITE_REVENUECAT_WEB_PUBLIC_KEY;
+      
+      // Fallback: try direct access
+      if (!apiKey && (window as any).__VITE_ENV__) {
+        apiKey = (window as any).__VITE_ENV__.VITE_REVENUECAT_WEB_PUBLIC_KEY;
+      }
       
       // Debug: Log all environment variables that start with VITE_ (for debugging)
       if (!apiKey) {
-        const allEnvKeys = Object.keys((import.meta as any).env || {}).filter((key: string) => key.startsWith('VITE_'));
+        const allEnvKeys = Object.keys(env).filter((key: string) => key.startsWith('VITE_'));
+        const isProd = env.MODE === 'production' || env.PROD === true;
         console.log('🔍 Debug: Available VITE_ environment variables:', allEnvKeys);
-        console.log('🔍 Debug: import.meta.env keys:', Object.keys((import.meta as any).env || {}));
+        console.log('🔍 Debug: import.meta.env keys:', Object.keys(env));
+        console.log('🔍 Debug: Mode:', env.MODE, '| PROD:', env.PROD, '| DEV:', env.DEV);
+        console.log('🔍 Debug: Is Production Build:', isProd);
+        console.log('🔍 Debug: Direct access test:', env.VITE_REVENUECAT_WEB_PUBLIC_KEY);
+        console.log('🔍 Debug: Full env object (first 500 chars):', JSON.stringify(env).substring(0, 500));
+        
+        if (isProd) {
+          console.warn('⚠️  Running in PRODUCTION mode - .env file is NOT used!');
+          console.warn('   Environment variables must be set in your hosting platform:');
+          console.warn('   - Railway: Project Settings → Variables');
+          console.warn('   - Vercel: Project Settings → Environment Variables');
+          console.warn('   - Netlify: Site Settings → Environment Variables');
+          console.warn('   Add: VITE_REVENUECAT_WEB_PUBLIC_KEY=rcb_OXJjKGSEpjpdaauCINwqRtgBeeKN');
+        }
       }
       
       // Check if API key is missing or is a placeholder
