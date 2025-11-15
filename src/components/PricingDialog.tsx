@@ -62,6 +62,15 @@ export function PricingDialog({
     monthly?: { price: string; priceString: string; currencyCode: string };
     yearly?: { price: string; priceString: string; currencyCode: string };
   }>({});
+  const [allPackages, setAllPackages] = React.useState<Array<{
+    identifier: string;
+    price: string;
+    priceString: string;
+    currencyCode: string;
+    title: string;
+    description: string;
+    packageType: 'monthly' | 'yearly' | 'other';
+  }>>([]);
   const platform = getPlatform();
 
   // Load offerings when dialog opens
@@ -75,6 +84,7 @@ export function PricingDialog({
     try {
       const rcOfferings = await getOfferings();
       if (rcOfferings?.availablePackages) {
+        // Find monthly and yearly for backward compatibility
         const monthlyPkg = rcOfferings.availablePackages.find(
           pkg => MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
         );
@@ -94,6 +104,30 @@ export function PricingDialog({
             currencyCode: yearlyPkg.product.currencyCode,
           } : undefined,
         });
+
+        // Load ALL available packages from RevenueCat
+        const packages = rcOfferings.availablePackages.map((pkg: any) => {
+          // Determine package type
+          let packageType: 'monthly' | 'yearly' | 'other' = 'other';
+          if (MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)) {
+            packageType = 'monthly';
+          } else if (YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)) {
+            packageType = 'yearly';
+          }
+
+          return {
+            identifier: pkg.identifier,
+            price: pkg.product.price.toString(),
+            priceString: pkg.product.priceString,
+            currencyCode: pkg.product.currencyCode,
+            title: pkg.product.title || pkg.identifier,
+            description: pkg.product.description || '',
+            packageType,
+          };
+        });
+
+        setAllPackages(packages);
+        console.log('Loaded all packages from RevenueCat:', packages);
       }
     } catch (error) {
       console.log('Failed to load offerings, using defaults:', error);
@@ -373,6 +407,15 @@ export function PricingDialog({
             </div>
           </div>
 
+          {/* Display all available packages from RevenueCat */}
+          {allPackages.length > 0 && (
+            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+              <p className="text-sm md:text-base text-blue-800 dark:text-blue-200">
+                <strong>Available Plans from RevenueCat:</strong> {allPackages.map(pkg => `${pkg.title} (${pkg.priceString})`).join(', ')}
+              </p>
+            </div>
+          )}
+
           {/* Plans Grid - Spacious Horizontal Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 max-w-full">
             {/* Free Tier - Spacious Design */}
@@ -482,6 +525,12 @@ export function PricingDialog({
                         <span className="text-xl md:text-2xl text-muted-foreground">/month</span>
                       </div>
                       <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.pro.description}</p>
+                      {/* Show product description from RevenueCat if available */}
+                      {allPackages.find(p => p.packageType === 'monthly')?.description && (
+                        <p className="text-sm md:text-base text-muted-foreground mt-2 italic">
+                          {allPackages.find(p => p.packageType === 'monthly')?.description}
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>
@@ -504,6 +553,12 @@ export function PricingDialog({
                       {offerings.yearly && offerings.monthly && (
                         <p className="text-base md:text-lg font-semibold text-[#9B87E8]">
                           ${((parseFloat(offerings.yearly.price) / 12).toFixed(2))} per month
+                        </p>
+                      )}
+                      {/* Show product description from RevenueCat if available */}
+                      {allPackages.find(p => p.packageType === 'yearly')?.description && (
+                        <p className="text-sm md:text-base text-muted-foreground mt-2 italic">
+                          {allPackages.find(p => p.packageType === 'yearly')?.description}
                         </p>
                       )}
                     </>
@@ -566,32 +621,33 @@ export function PricingDialog({
                     )}
                   </Button>
 
-                  {/* Cancel Subscription Button - Show for Pro users who haven't cancelled */}
-                  {subscription.tier === "pro" && !subscription.cancelAtPeriodEnd && (
-                    <Button
-                      variant="outline"
-                      className="w-full border-2 border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base md:text-lg py-5 md:py-6 font-semibold transition-all duration-200 hover:scale-[1.01]"
-                      disabled={isCancelling}
-                      onClick={handleCancel}
-                    >
-                      {isCancelling ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                          {SUBSCRIPTION_UI_TEXT.pro.button.cancelling}
-                        </span>
+                  {/* Cancel Subscription Button - Always show for Pro users */}
+                  {subscription.tier === "pro" && (
+                    <>
+                      {!subscription.cancelAtPeriodEnd ? (
+                        <Button
+                          variant="outline"
+                          className="w-full border-2 border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base md:text-lg py-5 md:py-6 font-semibold transition-all duration-200 hover:scale-[1.01]"
+                          disabled={isCancelling}
+                          onClick={handleCancel}
+                        >
+                          {isCancelling ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                              {SUBSCRIPTION_UI_TEXT.pro.button.cancelling}
+                            </span>
+                          ) : (
+                            SUBSCRIPTION_UI_TEXT.pro.button.cancel
+                          )}
+                        </Button>
                       ) : (
-                        SUBSCRIPTION_UI_TEXT.pro.button.cancel
+                        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
+                          <p className="text-sm md:text-base text-yellow-800 dark:text-yellow-200 text-center">
+                            {SUBSCRIPTION_UI_TEXT.messages.cancelWarning}
+                          </p>
+                        </div>
                       )}
-                    </Button>
-                  )}
-
-                  {/* Show message if already cancelled */}
-                  {subscription.tier === "pro" && subscription.cancelAtPeriodEnd && (
-                    <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
-                      <p className="text-sm md:text-base text-yellow-800 dark:text-yellow-200 text-center">
-                        {SUBSCRIPTION_UI_TEXT.messages.cancelWarning}
-                      </p>
-                    </div>
+                    </>
                   )}
 
                   {/* Show Restore button for native platforms */}
