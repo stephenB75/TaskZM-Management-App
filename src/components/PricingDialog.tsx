@@ -41,11 +41,12 @@ export function PricingDialog({
   open,
   onOpenChange,
 }: PricingDialogProps) {
-  const { subscription, upgradeToPro, refreshSubscription, cancelSubscription } =
+  const { subscription, upgradeToPro, refreshSubscription, cancelSubscription, downgradeToFree } =
     useSubscription();
   const [isUpgrading, setIsUpgrading] = React.useState(false);
   const [isRestoring, setIsRestoring] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
+  const [isDowngrading, setIsDowngrading] = React.useState(false);
   const [selectedPlan, setSelectedPlan] = React.useState<'monthly' | 'yearly'>('monthly');
   const [offerings, setOfferings] = React.useState<{
     monthly?: { price: string; priceString: string; currencyCode: string };
@@ -274,6 +275,44 @@ export function PricingDialog({
     }
   };
 
+  const handleDowngrade = async () => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "Are you sure you want to downgrade to Free?\n\n" +
+      "You will lose access to all Pro features immediately:\n" +
+      "• AI Scheduler\n" +
+      "• Task Hours & Time Tracking\n" +
+      "• Analytics Dashboard\n" +
+      "• Calendar Sync\n" +
+      "• Auto Task Rollover\n" +
+      "• Pomodoro Timer\n" +
+      "• Team Collaboration\n\n" +
+      "This action cannot be undone. You can upgrade again anytime."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDowngrading(true);
+      await downgradeToFree();
+      await refreshSubscription();
+      toast.success("Downgraded to Free", {
+        description:
+          "You've been downgraded to the Free tier. You can upgrade to Pro again anytime.",
+      });
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Downgrade error:", error);
+      toast.error("Failed to downgrade subscription", {
+        description: error.message || "Please try again or contact support.",
+      });
+    } finally {
+      setIsDowngrading(false);
+    }
+  };
+
   const freeTierFeatures = [
     { icon: Check, text: "Unlimited tasks", included: true },
     {
@@ -444,11 +483,19 @@ export function PricingDialog({
               <Button
                 variant="outline"
                 className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm py-4 font-semibold transition-all duration-200 hover:scale-[1.01]"
-                disabled={subscription.tier === "free"}
+                disabled={subscription.tier === "free" || isDowngrading}
+                onClick={subscription.tier === "pro" ? handleDowngrade : undefined}
               >
-                {subscription.tier === "free"
-                  ? "Current Plan"
-                  : "Downgrade"}
+                {isDowngrading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    Downgrading...
+                  </span>
+                ) : subscription.tier === "free" ? (
+                  "Current Plan"
+                ) : (
+                  "Downgrade to Free"
+                )}
               </Button>
             </motion.div>
 

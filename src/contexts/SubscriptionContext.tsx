@@ -10,6 +10,7 @@ interface SubscriptionContextType {
   isLoading: boolean;
   upgradeToPro: () => Promise<void>;
   cancelSubscription: () => Promise<void>;
+  downgradeToFree: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   hasFeature: (feature: keyof SubscriptionFeatures) => boolean;
 }
@@ -262,6 +263,31 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function downgradeToFree() {
+    try {
+      const freeSubscription: SubscriptionInfo = {
+        tier: 'free',
+        status: 'inactive',
+        startDate: null,
+        endDate: null,
+        cancelAtPeriodEnd: false,
+      };
+      
+      // Save to database
+      await api.saveSubscription(freeSubscription);
+      
+      setSubscription(freeSubscription);
+      localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(freeSubscription));
+      
+      toast.success('✅ Downgraded to Free tier');
+      console.log('✅ Downgraded to Free tier');
+    } catch (error) {
+      console.error('Downgrade failed:', error);
+      toast.error('Failed to downgrade subscription');
+      throw error;
+    }
+  }
+
   function hasFeature(feature: keyof SubscriptionFeatures): boolean {
     return features[feature];
   }
@@ -274,6 +300,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         isLoading, 
         upgradeToPro, 
         cancelSubscription,
+        downgradeToFree,
         refreshSubscription,
         hasFeature 
       }}
