@@ -190,9 +190,30 @@ export async function getSubscriptionStatus(): Promise<'pro' | 'free'> {
  * @param packageType - 'monthly' or 'yearly' subscription package
  */
 export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' = 'monthly'): Promise<boolean> {
-  // If RevenueCat not configured, throw error to trigger fallback
+  // If RevenueCat not configured, try to configure it first
   if (!isConfigured) {
-    throw new Error('RevenueCat not configured');
+    console.warn('⚠️ RevenueCat not configured, attempting to configure before purchase...');
+    
+    // Try to get user ID from current context
+    // If we have a stored user ID, use it
+    if (currentUserId) {
+      console.log('🔄 Re-configuring RevenueCat with stored user ID:', currentUserId);
+      try {
+        await configureRevenueCat(currentUserId);
+      } catch (configError) {
+        console.error('❌ Failed to configure RevenueCat:', configError);
+        throw new Error('RevenueCat not configured. Please ensure you are logged in and RevenueCat API key is set.');
+      }
+    } else {
+      // No user ID available - configuration must happen on login
+      console.error('❌ RevenueCat not configured and no user ID available');
+      throw new Error('RevenueCat not configured. Please refresh the page and try again.');
+    }
+    
+    // Check again after configuration attempt
+    if (!isConfigured) {
+      throw new Error('RevenueCat configuration failed. Please check your API key and try again.');
+    }
   }
 
   try {
@@ -329,37 +350,69 @@ export async function restorePurchases(): Promise<boolean> {
 export async function getOfferings(): Promise<RevenueCatOffering | null> {
   // If RevenueCat not configured, return null
   if (!isConfigured) {
-    console.warn('RevenueCat not configured, no offerings available');
+    console.warn('⚠️ RevenueCat not configured, no offerings available');
+    console.warn('   isConfigured:', isConfigured);
+    console.warn('   currentUserId:', currentUserId);
     return null;
   }
 
   try {
     const platform = getPlatform();
+    console.log(`🔄 Fetching offerings from RevenueCat (platform: ${platform.platform})...`);
 
     if (platform.isWeb) {
       try {
         const Purchases = await import('@revenuecat/purchases-js');
+        console.log('📦 RevenueCat SDK imported successfully');
+        
         const offerings = await Purchases.getOfferings();
+        console.log('📋 Raw offerings response:', offerings);
+        
         // Safely return offerings with null checks
-        if (!offerings || !offerings.current) {
+        if (!offerings) {
+          console.warn('⚠️ RevenueCat returned null/undefined offerings');
           return null;
         }
-        return offerings.current as any;
-      } catch (importError) {
-        console.warn('RevenueCat not available');
+        
+        if (!offerings.current) {
+          console.warn('⚠️ RevenueCat has no current offering');
+          console.warn('   Available offerings:', Object.keys(offerings));
+          console.warn('   Check RevenueCat dashboard to ensure an offering is set as "current"');
+          return null;
+        }
+        
+        const currentOffering = offerings.current as any;
+        console.log('✅ Current offering found:', currentOffering.identifier);
+        console.log('📦 Available packages:', currentOffering.availablePackages?.length || 0);
+        
+        if (!currentOffering.availablePackages || currentOffering.availablePackages.length === 0) {
+          console.warn('⚠️ Current offering has no packages');
+          console.warn('   Check RevenueCat dashboard to ensure packages are attached to the offering');
+          return null;
+        }
+        
+        return currentOffering;
+      } catch (importError: any) {
+        console.error('❌ RevenueCat SDK import failed:', importError);
+        console.error('   Error details:', importError.message || importError);
         return null;
       }
     } else {
       const Capacitor = (window as any).Capacitor;
       const Purchases = Capacitor?.Plugins?.Purchases;
       
-      if (!Purchases) return null;
+      if (!Purchases) {
+        console.warn('⚠️ RevenueCat native plugin not available');
+        return null;
+      }
       
       const { offerings } = await Purchases.getOfferings();
       return offerings.current;
     }
-  } catch (error) {
-    console.error('Failed to get offerings:', error);
+  } catch (error: any) {
+    console.error('❌ Failed to get offerings:', error);
+    console.error('   Error message:', error.message || error);
+    console.error('   Error stack:', error.stack);
     return null;
   }
 }

@@ -98,11 +98,34 @@ export function PricingDialog({
   const loadOfferings = async () => {
     try {
       // Check if RevenueCat is configured first
-      const { isRevenueCatConfigured } = await import('../lib/revenuecat');
+      const { isRevenueCatConfigured, getCurrentUserId } = await import('../lib/revenuecat');
       
-      if (!isRevenueCatConfigured()) {
+      const configured = isRevenueCatConfigured();
+      const userId = getCurrentUserId();
+      
+      console.log('🔍 RevenueCat Status Check:');
+      console.log('   isConfigured:', configured);
+      console.log('   currentUserId:', userId);
+      console.log('   currentUser:', user?.id);
+      
+      if (!configured) {
         console.log('ℹ️  RevenueCat not configured yet');
         console.log('   Configuration should happen automatically on login');
+        console.log('   Attempting to configure now...');
+        
+        // Try to configure if we have a user
+        if (user?.id) {
+          const { configureRevenueCat } = await import('../lib/revenuecat');
+          try {
+            await configureRevenueCat(user.id);
+            console.log('✅ Configuration attempt completed');
+          } catch (configError) {
+            console.error('❌ Configuration failed:', configError);
+          }
+        } else {
+          console.warn('⚠️  No user ID available for configuration');
+        }
+        
         setRevenueCatStatus({
           connected: false,
           packagesLoaded: 0,
@@ -114,7 +137,7 @@ export function PricingDialog({
       console.log('🔄 Loading offerings from RevenueCat...');
       const rcOfferings = await getOfferings();
       
-      if (rcOfferings?.availablePackages) {
+      if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
         console.log('✅ RevenueCat connected! Packages found:', rcOfferings.availablePackages.length);
         console.log('📦 All packages:', rcOfferings.availablePackages.map((p: any) => ({
           identifier: p.identifier,
@@ -166,15 +189,21 @@ export function PricingDialog({
           lastChecked: new Date().toISOString(),
         });
       } else {
-        console.warn('⚠️ RevenueCat returned no packages');
+        console.warn('⚠️ RevenueCat returned no packages or empty offerings');
+        console.warn('   This could mean:');
+        console.warn('   1. No offerings configured in RevenueCat dashboard');
+        console.warn('   2. No packages attached to the current offering');
+        console.warn('   3. Products not set up in RevenueCat');
         setRevenueCatStatus({
           connected: false,
           packagesLoaded: 0,
           lastChecked: new Date().toISOString(),
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to load offerings from RevenueCat:', error);
+      console.error('   Error message:', error.message || error);
+      console.error('   Error stack:', error.stack);
       setRevenueCatStatus({
         connected: false,
         packagesLoaded: 0,
@@ -289,6 +318,31 @@ export function PricingDialog({
       const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
 
+      // Ensure RevenueCat is configured before attempting purchase
+      const { isRevenueCatConfigured, configureRevenueCat } = await import('../lib/revenuecat');
+      
+      if (!isRevenueCatConfigured() && user?.id) {
+        console.log('🔄 RevenueCat not configured, configuring before purchase...');
+        try {
+          await configureRevenueCat(user.id);
+          console.log('✅ RevenueCat configured, proceeding with purchase...');
+        } catch (configError: any) {
+          console.error('❌ Failed to configure RevenueCat:', configError);
+          toast.error('Configuration Error', {
+            description: 'Failed to initialize payment system. Please refresh the page and try again.',
+          });
+          setIsUpgrading(false);
+          return;
+        }
+      } else if (!isRevenueCatConfigured()) {
+        console.error('❌ RevenueCat not configured and no user ID available');
+        toast.error('Configuration Error', {
+          description: 'Please ensure you are logged in and try again.',
+        });
+        setIsUpgrading(false);
+        return;
+      }
+
       try {
         console.log(`Attempting monthly purchase on ${platform.platform}`);
         const success = await purchaseProSubscription('monthly');
@@ -359,6 +413,31 @@ export function PricingDialog({
       setIsUpgrading(true);
       const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
+
+      // Ensure RevenueCat is configured before attempting purchase
+      const { isRevenueCatConfigured, configureRevenueCat } = await import('../lib/revenuecat');
+      
+      if (!isRevenueCatConfigured() && user?.id) {
+        console.log('🔄 RevenueCat not configured, configuring before purchase...');
+        try {
+          await configureRevenueCat(user.id);
+          console.log('✅ RevenueCat configured, proceeding with purchase...');
+        } catch (configError: any) {
+          console.error('❌ Failed to configure RevenueCat:', configError);
+          toast.error('Configuration Error', {
+            description: 'Failed to initialize payment system. Please refresh the page and try again.',
+          });
+          setIsUpgrading(false);
+          return;
+        }
+      } else if (!isRevenueCatConfigured()) {
+        console.error('❌ RevenueCat not configured and no user ID available');
+        toast.error('Configuration Error', {
+          description: 'Please ensure you are logged in and try again.',
+        });
+        setIsUpgrading(false);
+        return;
+      }
 
       try {
         console.log(`Attempting yearly purchase on ${platform.platform}`);
