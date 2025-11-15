@@ -139,44 +139,53 @@ export function PricingDialog({
       
       if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
         console.log('✅ RevenueCat connected! Packages found:', rcOfferings.availablePackages.length);
-        console.log('📦 All packages:', rcOfferings.availablePackages.map((p: any) => ({
+        
+        // Filter out packages without products and log them
+        const validPackages = rcOfferings.availablePackages.filter((p: any) => p && p.product);
+        const invalidPackages = rcOfferings.availablePackages.filter((p: any) => !p || !p.product);
+        
+        if (invalidPackages.length > 0) {
+          console.warn('⚠️ Found packages without products:', invalidPackages.map((p: any) => p?.identifier || 'unknown'));
+        }
+        
+        console.log('📦 All valid packages:', validPackages.map((p: any) => ({
           identifier: p.identifier,
-          price: p.product.priceString,
-          title: p.product.title
+          price: p.product?.priceString || 'N/A',
+          title: p.product?.title || 'N/A'
         })));
 
-        // Find monthly and yearly packages
-        const monthlyPkg = rcOfferings.availablePackages.find(
-          (pkg: any) => MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+        // Find monthly and yearly packages (only from valid packages)
+        const monthlyPkg = validPackages.find(
+          (pkg: any) => pkg && MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
         );
-        const yearlyPkg = rcOfferings.availablePackages.find(
-          (pkg: any) => YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+        const yearlyPkg = validPackages.find(
+          (pkg: any) => pkg && YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
         );
 
         console.log('📅 Monthly package:', monthlyPkg ? {
           identifier: monthlyPkg.identifier,
-          price: monthlyPkg.product.priceString,
-          title: monthlyPkg.product.title
+          price: monthlyPkg.product?.priceString || 'N/A',
+          title: monthlyPkg.product?.title || 'N/A'
         } : 'NOT FOUND');
         console.log('📅 Yearly package:', yearlyPkg ? {
           identifier: yearlyPkg.identifier,
-          price: yearlyPkg.product.priceString,
-          title: yearlyPkg.product.title
+          price: yearlyPkg.product?.priceString || 'N/A',
+          title: yearlyPkg.product?.title || 'N/A'
         } : 'NOT FOUND');
 
         setOfferings({
-          monthly: monthlyPkg ? {
-            price: monthlyPkg.product.price.toString(),
-            priceString: monthlyPkg.product.priceString,
-            currencyCode: monthlyPkg.product.currencyCode,
+          monthly: monthlyPkg && monthlyPkg.product ? {
+            price: monthlyPkg.product.price?.toString() || '0',
+            priceString: monthlyPkg.product.priceString || DEFAULT_MONTHLY_PRICE,
+            currencyCode: monthlyPkg.product.currencyCode || 'USD',
             identifier: monthlyPkg.identifier,
             title: monthlyPkg.product.title || 'Monthly Pro',
             description: monthlyPkg.product.description || '',
           } : undefined,
-          yearly: yearlyPkg ? {
-            price: yearlyPkg.product.price.toString(),
-            priceString: yearlyPkg.product.priceString,
-            currencyCode: yearlyPkg.product.currencyCode,
+          yearly: yearlyPkg && yearlyPkg.product ? {
+            price: yearlyPkg.product.price?.toString() || '0',
+            priceString: yearlyPkg.product.priceString || DEFAULT_YEARLY_PRICE,
+            currencyCode: yearlyPkg.product.currencyCode || 'USD',
             identifier: yearlyPkg.identifier,
             title: yearlyPkg.product.title || 'Yearly Pro',
             description: yearlyPkg.product.description || '',

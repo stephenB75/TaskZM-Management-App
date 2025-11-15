@@ -324,8 +324,18 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
         const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
         console.log(`Web ${packageType} purchase result:`, isProActive ? 'success' : 'failed');
         return isProActive;
-      } catch (importError) {
-        throw new Error('RevenueCat SDK not available - using fallback payment method');
+      } catch (importError: any) {
+        console.error('❌ RevenueCat purchase error:', importError);
+        console.error('   Error type:', importError?.constructor?.name);
+        console.error('   Error message:', importError?.message || importError);
+        
+        // Check if it's a specific error we can handle
+        if (importError?.message?.includes('not configured') || importError?.message?.includes('not available')) {
+          throw new Error('RevenueCat SDK not available - using fallback payment method');
+        }
+        
+        // Re-throw the original error with more context
+        throw new Error(`Purchase failed: ${importError?.message || 'Unknown error occurred'}`);
       }
     } else {
       // Native platforms (iOS/Android)
