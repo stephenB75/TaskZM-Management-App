@@ -26,6 +26,13 @@ import {
 } from "./ui/select";
 import { cn } from "../lib/utils";
 import type { Task } from "../types";
+import {
+  NOTIFICATION_STORAGE_KEYS,
+  NOTIFICATION_TITLES,
+  NOTIFICATION_TYPES,
+  NOTIFICATION_PANEL_TEXT,
+  NOTIFICATION_TIME_FORMATS,
+} from "../lib/notification-constants";
 
 interface NotificationItem {
   id: string;
@@ -45,22 +52,22 @@ export function NotificationsPanel() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
   const [readNotifications, setReadNotifications] = useState<Set<string>>(
-    () => new Set(JSON.parse(localStorage.getItem('readNotifications') || '[]'))
+    () => new Set(JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.readNotifications) || '[]'))
   );
 
   // Save read notifications to localStorage
   useEffect(() => {
-    localStorage.setItem('readNotifications', JSON.stringify(Array.from(readNotifications)));
+    localStorage.setItem(NOTIFICATION_STORAGE_KEYS.readNotifications, JSON.stringify(Array.from(readNotifications)));
   }, [readNotifications]);
 
   // Track last seen Pomodoro session counts to detect new completions
   const [lastSeenSessions, setLastSeenSessions] = useState<Record<string, number>>(
-    () => JSON.parse(localStorage.getItem('lastSeenPomodoroSessions') || '{}')
+    () => JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.lastSeenPomodoroSessions) || '{}')
   );
 
   // Save last seen sessions to localStorage
   useEffect(() => {
-    localStorage.setItem('lastSeenPomodoroSessions', JSON.stringify(lastSeenSessions));
+    localStorage.setItem(NOTIFICATION_STORAGE_KEYS.lastSeenPomodoroSessions, JSON.stringify(lastSeenSessions));
   }, [lastSeenSessions]);
 
   // Generate notifications from tasks
@@ -82,8 +89,8 @@ export function NotificationsPanel() {
         .forEach(task => {
           newNotifications.push({
             id: `overdue_${task.id}`,
-            type: 'task-overdue',
-            title: 'Task Overdue',
+            type: NOTIFICATION_TYPES.taskOverdue as NotificationItem['type'],
+            title: NOTIFICATION_TITLES.taskOverdue,
             message: `${task.title} was due ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}`,
             timestamp: new Date(task.dueDate || now),
             read: readNotifications.has(`overdue_${task.id}`),
@@ -106,14 +113,14 @@ export function NotificationsPanel() {
         .forEach(task => {
           const dueDate = new Date(task.dueDate!);
           const timeUntil = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60));
-          const timeText = timeUntil < 60 
+          const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold
             ? `${timeUntil} minutes` 
             : `${Math.round(timeUntil / 60)} hours`;
           
           newNotifications.push({
             id: `due-soon_${task.id}`,
-            type: 'task-due-soon',
-            title: 'Task Due Soon',
+            type: NOTIFICATION_TYPES.taskDueSoon as NotificationItem['type'],
+            title: NOTIFICATION_TITLES.taskDueSoon,
             message: `${task.title} is due in ${timeText}`,
             timestamp: dueDate,
             read: readNotifications.has(`due-soon_${task.id}`),
@@ -137,8 +144,8 @@ export function NotificationsPanel() {
         if (!readNotifications.has(notificationId)) {
           newNotifications.push({
             id: notificationId,
-            type: 'pomodoro-complete',
-            title: 'Pomodoro Complete',
+            type: NOTIFICATION_TYPES.pomodoroComplete as NotificationItem['type'],
+            title: NOTIFICATION_TITLES.pomodoroComplete,
             message: `Completed ${newSessions} session${newSessions > 1 ? 's' : ''} for "${task.title}"`,
             timestamp: new Date(),
             read: false,
@@ -153,8 +160,8 @@ export function NotificationsPanel() {
         if (!readNotifications.has(notificationId)) {
           newNotifications.push({
             id: notificationId,
-            type: 'pomodoro-complete',
-            title: 'Pomodoro Complete',
+            type: NOTIFICATION_TYPES.pomodoroComplete as NotificationItem['type'],
+            title: NOTIFICATION_TITLES.pomodoroComplete,
             message: `Completed ${timerState.sessionsCompleted} session${timerState.sessionsCompleted > 1 ? 's' : ''} for "${task.title}"`,
             timestamp: new Date(),
             read: false,
@@ -231,7 +238,7 @@ export function NotificationsPanel() {
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
       <AppHeader
-        title="Notifications"
+        title={NOTIFICATION_PANEL_TEXT.title}
         panelOpen={true}
         isSidePanelHeader={true}
         description={`${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
@@ -245,8 +252,8 @@ export function NotificationsPanel() {
             disabled={unreadCount === 0}
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Mark all read</span>
-            <span className="sm:hidden">Mark read</span>
+            <span className="hidden sm:inline">{NOTIFICATION_PANEL_TEXT.markAllRead}</span>
+            <span className="sm:hidden">{NOTIFICATION_PANEL_TEXT.markRead}</span>
           </Button>
         }
       />
@@ -263,10 +270,10 @@ export function NotificationsPanel() {
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Notifications</SelectItem>
-                <SelectItem value="task-overdue">Overdue Tasks</SelectItem>
-                <SelectItem value="task-due-soon">Due Soon</SelectItem>
-                <SelectItem value="pomodoro-complete">Pomodoro</SelectItem>
+                <SelectItem value="all">{NOTIFICATION_PANEL_TEXT.filters.all}</SelectItem>
+                <SelectItem value={NOTIFICATION_TYPES.taskOverdue}>{NOTIFICATION_PANEL_TEXT.filters.overdue}</SelectItem>
+                <SelectItem value={NOTIFICATION_TYPES.taskDueSoon}>{NOTIFICATION_PANEL_TEXT.filters.dueSoon}</SelectItem>
+                <SelectItem value={NOTIFICATION_TYPES.pomodoroComplete}>{NOTIFICATION_PANEL_TEXT.filters.pomodoro}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -282,11 +289,11 @@ export function NotificationsPanel() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-2">
                   {filterType === "all"
-                    ? "No notifications"
-                    : "No notifications of this type"}
+                    ? NOTIFICATION_PANEL_TEXT.emptyState.noNotifications
+                    : NOTIFICATION_PANEL_TEXT.emptyState.noNotificationsOfType}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  You're all caught up!
+                  {NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp}
                 </p>
               </div>
             ) : (

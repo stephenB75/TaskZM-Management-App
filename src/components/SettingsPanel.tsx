@@ -81,6 +81,7 @@ import {
   SETTINGS_PANEL_TOAST_DURATION_MS,
   SETTINGS_PANEL_TIMEOUT_DELAY_MS,
 } from '../lib/layout-constants';
+import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -857,7 +858,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   variant={permission === 'granted' ? 'default' : permission === 'denied' ? 'destructive' : 'secondary'}
                   className="text-xs flex-shrink-0"
                 >
-                  {permission === 'granted' ? 'Granted' : permission === 'denied' ? 'Denied' : 'Not Set'}
+                  {permission === 'granted' ? NOTIFICATION_PANEL_TEXT.permission.granted : permission === 'denied' ? NOTIFICATION_PANEL_TEXT.permission.denied : NOTIFICATION_PANEL_TEXT.permission.notSet}
                 </Badge>
               </div>
               {permission !== 'granted' && (
@@ -869,8 +870,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     const granted = await requestPermission();
                     if (!granted && permission === 'default') {
                       // Permission was just denied, show instructions
-                      toast.info('Permission denied', {
-                        description: 'Check the instructions below to enable notifications in your browser settings.',
+                      toast.info(NOTIFICATION_TOAST_MESSAGES.permissionDeniedInfo, {
+                        description: NOTIFICATION_TOAST_MESSAGES.permissionDeniedDescription,
                         duration: SETTINGS_PANEL_TOAST_DURATION_MS,
                       });
                     }
@@ -880,8 +881,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <Bell className="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" />
                   <span className="truncate">
                     {permission === 'denied' 
-                      ? 'Notifications Blocked (Enable in Browser Settings)' 
-                      : 'Enable Notifications'}
+                      ? NOTIFICATION_PANEL_TEXT.permission.blocked
+                      : NOTIFICATION_PANEL_TEXT.permission.enable}
                   </span>
                 </Button>
               )}
@@ -1000,8 +1001,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                 <div className="space-y-0.5 flex-1 min-w-0 pr-2">
-                  <Label htmlFor="notifications-badge" className="text-xs md:text-sm cursor-pointer">Show App Icon Badge</Label>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Display task count on app icon</p>
+                  <Label htmlFor="notifications-badge" className="text-xs md:text-sm cursor-pointer">{NOTIFICATION_PANEL_TEXT.badge.showAppIconBadge}</Label>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">{NOTIFICATION_PANEL_TEXT.badge.displayTaskCount}</p>
                 </div>
                 <Switch 
                   id="notifications-badge" 
@@ -1134,13 +1135,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             {notificationSettings.showBadge && badgeCount > 0 && (
               <div className="mt-3 md:mt-4 p-2.5 md:p-3 rounded-lg border bg-primary/5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs md:text-sm font-medium">Current Badge Count</span>
+                  <span className="text-xs md:text-sm font-medium">{NOTIFICATION_PANEL_TEXT.badge.currentBadgeCount}</span>
                   <Badge variant="destructive" className="text-base md:text-lg px-2 md:px-3 py-0.5 md:py-1">
                     {badgeCount}
                   </Badge>
                 </div>
                 <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
-                  {badgeCount === 1 ? 'task needs attention' : 'tasks need attention'}
+                  {badgeCount === 1 ? NOTIFICATION_PANEL_TEXT.badge.taskNeedsAttention : NOTIFICATION_PANEL_TEXT.badge.tasksNeedAttention}
                 </p>
               </div>
             )}

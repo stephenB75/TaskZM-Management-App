@@ -4,6 +4,17 @@ import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import { logger } from '../lib/logger';
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  NOTIFICATION_STORAGE_KEYS,
+  NOTIFICATION_ICONS,
+  NOTIFICATION_TOAST_MESSAGES,
+  NOTIFICATION_TITLES,
+  NOTIFICATION_TAG_PREFIXES,
+  NOTIFICATION_ERRORS,
+  NOTIFICATION_TIME_FORMATS,
+  NOTIFICATION_INTERVALS,
+} from '../lib/notification-constants';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -25,21 +36,12 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const DEFAULT_SETTINGS: NotificationSettings = {
-  enabled: true,
-  showBadge: true,
-  dueDateReminders: true,
-  overdueAlerts: true,
-  reminderTime: 60, // 1 hour before due date
-  checkInterval: 15, // Check every 15 minutes
-};
-
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { tasks } = useTasks();
   const { user } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [settings, setSettings] = useState<NotificationSettings>(() => 
-    getFromLocalStorage<NotificationSettings>('notificationSettings', DEFAULT_SETTINGS)
+    getFromLocalStorage<NotificationSettings>(NOTIFICATION_STORAGE_KEYS.settings, DEFAULT_NOTIFICATION_SETTINGS as NotificationSettings)
   );
   const [badgeCount, setBadgeCount] = useState(0);
 
@@ -53,7 +55,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Request notification permission
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!('Notification' in window)) {
-      toast.error('Notifications are not supported in this browser');
+      toast.error(NOTIFICATION_TOAST_MESSAGES.notSupported);
       return false;
     }
 
@@ -63,7 +65,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     if (Notification.permission === 'denied') {
-      toast.error('Notifications are blocked. Please enable them in your browser settings.');
+      toast.error(NOTIFICATION_TOAST_MESSAGES.blocked);
       setPermission('denied');
       return false;
     }
@@ -73,15 +75,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setPermission(result);
       
       if (result === 'granted') {
-        toast.success('Notifications enabled');
+        toast.success(NOTIFICATION_TOAST_MESSAGES.enabled);
         return true;
       } else {
-        toast.error('Notification permission denied');
+        toast.error(NOTIFICATION_TOAST_MESSAGES.permissionDenied);
         return false;
       }
     } catch (error) {
       logger.error('Error requesting notification permission:', error);
-      toast.error('Failed to request notification permission');
+      toast.error(NOTIFICATION_TOAST_MESSAGES.requestFailed);
       return false;
     }
   }, []);
@@ -156,7 +158,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const updateSettings = useCallback((newSettings: Partial<NotificationSettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...newSettings };
-      saveToLocalStorage('notificationSettings', updated);
+      saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.settings, updated);
       
       // If disabling, clear badge
       if (!updated.enabled || !updated.showBadge) {
@@ -184,7 +186,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (!settings.enabled || permission !== 'granted' || !user) return;
 
     const now = new Date();
-    const notifiedTasksArray = getFromLocalStorage<string[]>('notifiedTasks', []);
+    const notifiedTasksArray = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.notifiedTasks, []);
     const notifiedTasks = new Set(notifiedTasksArray);
 
     // Check for overdue tasks
@@ -195,20 +197,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         dueDate.setHours(0, 0, 0, 0);
         const today = new Date(now);
         today.setHours(0, 0, 0, 0);
-        return dueDate < today && !notifiedTasks.has(`overdue_${task.id}`);
+        return dueDate < today && !notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
       });
 
       overdueTasks.forEach(task => {
         try {
-          new Notification('Task Overdue', {
+          new Notification(NOTIFICATION_TITLES.taskOverdue, {
             body: `${task.title} was due ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}`,
-            icon: '/icon-192.png',
-            badge: '/icon-192.png',
-            tag: `overdue_${task.id}`,
+            icon: NOTIFICATION_ICONS.default,
+            badge: NOTIFICATION_ICONS.badge,
+            tag: `${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`,
             requireInteraction: false,
           });
           
-          notifiedTasks.add(`overdue_${task.id}`);
+          notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
         } catch (error) {
           logger.error('Failed to show notification:', error);
         }
@@ -222,24 +224,26 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const dueSoonTasks = tasks.filter(task => {
         if (task.status === 'done' || !task.dueDate) return false;
         const dueDate = new Date(task.dueDate);
-        return dueDate >= now && dueDate <= reminderTime && !notifiedTasks.has(`reminder_${task.id}`);
+        return dueDate >= now && dueDate <= reminderTime && !notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
       });
 
       dueSoonTasks.forEach(task => {
         try {
           const dueDate = new Date(task.dueDate!);
           const timeUntil = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60));
-          const timeText = timeUntil < 60 ? `${timeUntil} minutes` : `${Math.round(timeUntil / 60)} hours`;
+          const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
+            ? `${timeUntil} minutes` 
+            : `${Math.round(timeUntil / 60)} hours`;
           
-          new Notification('Task Due Soon', {
+          new Notification(NOTIFICATION_TITLES.taskDueSoon, {
             body: `${task.title} is due in ${timeText}`,
-            icon: '/icon-192.png',
-            badge: '/icon-192.png',
-            tag: `reminder_${task.id}`,
+            icon: NOTIFICATION_ICONS.default,
+            badge: NOTIFICATION_ICONS.badge,
+            tag: `${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`,
             requireInteraction: false,
           });
           
-          notifiedTasks.add(`reminder_${task.id}`);
+          notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
         } catch (error) {
           logger.error('Failed to show notification:', error);
         }
@@ -266,7 +270,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    saveToLocalStorage('notifiedTasks', Array.from(cleanedTasks));
+    saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.notifiedTasks, Array.from(cleanedTasks));
   }, [tasks, settings, permission, user]);
 
   // Update badge when tasks or settings change
@@ -306,7 +310,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // Use a small delay to batch multiple task updates
     const timeoutId = setTimeout(() => {
       checkAndNotify();
-    }, 100);
+    }, NOTIFICATION_INTERVALS.taskUpdateDelay);
     
     return () => clearTimeout(timeoutId);
   }, [tasks, settings.enabled, permission, user, checkAndNotify]);
@@ -348,7 +352,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 export function useNotifications() {
   const context = useContext(NotificationContext);
   if (context === undefined) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    throw new Error(NOTIFICATION_ERRORS.contextError);
   }
   return context;
 }

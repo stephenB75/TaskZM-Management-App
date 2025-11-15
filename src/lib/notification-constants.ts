@@ -1,0 +1,113 @@
+/**
+ * Notification System Constants
+ * Centralized configuration for notifications, toast messages, and notification settings
+ */
+
+// Default notification settings
+export const DEFAULT_NOTIFICATION_SETTINGS = {
+  enabled: true,
+  showBadge: true,
+  dueDateReminders: true,
+  overdueAlerts: true,
+  reminderTime: 60, // 1 hour before due date (in minutes)
+  checkInterval: 15, // Check every 15 minutes (in minutes)
+} as const;
+
+// LocalStorage keys
+export const NOTIFICATION_STORAGE_KEYS = {
+  settings: 'notificationSettings',
+  notifiedTasks: 'notifiedTasks',
+  readNotifications: 'readNotifications',
+  lastSeenPomodoroSessions: 'lastSeenPomodoroSessions',
+} as const;
+
+// Notification icon paths
+export const NOTIFICATION_ICONS = {
+  default: '/icon-192.png',
+  badge: '/icon-192.png',
+} as const;
+
+// Toast messages
+export const NOTIFICATION_TOAST_MESSAGES = {
+  notSupported: 'Notifications are not supported in this browser',
+  blocked: 'Notifications are blocked. Please enable them in your browser settings.',
+  enabled: 'Notifications enabled',
+  permissionDenied: 'Notification permission denied',
+  requestFailed: 'Failed to request notification permission',
+  permissionDeniedInfo: 'Permission denied',
+  permissionDeniedDescription: 'Check the instructions below to enable notifications in your browser settings.',
+} as const;
+
+// Browser notification titles and messages
+export const NOTIFICATION_TITLES = {
+  taskOverdue: 'Task Overdue',
+  taskDueSoon: 'Task Due Soon',
+  pomodoroComplete: 'Pomodoro Complete',
+  pomodoroBreak: 'Pomodoro Break',
+} as const;
+
+// Notification panel UI text
+export const NOTIFICATION_PANEL_TEXT = {
+  title: 'Notifications',
+  markAllRead: 'Mark all read',
+  markRead: 'Mark read',
+  emptyState: {
+    noNotifications: 'No notifications',
+    noNotificationsOfType: 'No notifications of this type',
+    allCaughtUp: "You're all caught up!",
+  },
+  filters: {
+    all: 'All Notifications',
+    overdue: 'Overdue Tasks',
+    dueSoon: 'Due Soon',
+    pomodoro: 'Pomodoro',
+  },
+  permission: {
+    granted: 'Granted',
+    denied: 'Denied',
+    notSet: 'Not Set',
+    enable: 'Enable Notifications',
+    blocked: 'Notifications Blocked (Enable in Browser Settings)',
+  },
+  badge: {
+    showAppIconBadge: 'Show App Icon Badge',
+    displayTaskCount: 'Display task count on app icon',
+    currentBadgeCount: 'Current Badge Count',
+    taskNeedsAttention: 'task needs attention',
+    tasksNeedAttention: 'tasks need attention',
+  },
+} as const;
+
+// Notification type identifiers
+export const NOTIFICATION_TYPES = {
+  taskOverdue: 'task-overdue',
+  taskDueSoon: 'task-due-soon',
+  pomodoroComplete: 'pomodoro-complete',
+  pomodoroBreak: 'pomodoro-break',
+  system: 'system',
+} as const;
+
+// Notification tag prefixes (for browser notifications)
+export const NOTIFICATION_TAG_PREFIXES = {
+  overdue: 'overdue_',
+  reminder: 'reminder_',
+  pomodoro: 'pomodoro_',
+} as const;
+
+// Time formatting constants
+export const NOTIFICATION_TIME_FORMATS = {
+  minutesThreshold: 60, // Show "X minutes" if less than 60, otherwise "X hours"
+  cleanupHours: 24, // Clean up notifications older than 24 hours
+} as const;
+
+// Notification check intervals (in milliseconds)
+export const NOTIFICATION_INTERVALS = {
+  taskUpdateDelay: 100, // Delay before checking notifications after task update (ms)
+  defaultCheckInterval: DEFAULT_NOTIFICATION_SETTINGS.checkInterval * 60 * 1000, // Convert minutes to ms
+} as const;
+
+// Error messages
+export const NOTIFICATION_ERRORS = {
+  contextError: 'useNotifications must be used within a NotificationProvider',
+} as const;
+
