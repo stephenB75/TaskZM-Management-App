@@ -1475,12 +1475,43 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <div className="flex items-center gap-3">
               <Briefcase className="w-5 h-5 text-primary" />
               <span>Task Category Hours</span>
+              {!features.taskHours && (
+                <Badge variant="secondary" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground">
+                  PRO
+                </Badge>
+              )}
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Set preferred hours for different task categories
-            </p>
+            {!features.taskHours ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Set preferred working hours for different task categories (Work, Personal, Projects) with separate weekday and weekend schedules.
+                </p>
+                
+                <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#B4E4CE]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
+                  <div className="space-y-2">
+                    <p className="text-sm">Upgrade to Pro to unlock:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                      <li>• Weekday/weekend hour settings</li>
+                      <li>• Category-specific hours (Work, Personal, Projects)</li>
+                      <li>• Better work-life balance</li>
+                      <li>• AI respects your boundaries</li>
+                    </ul>
+                  </div>
+                  <Button 
+                    onClick={() => setShowPricingDialog(true)}
+                    className="w-full mt-3 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] hover:opacity-90"
+                  >
+                    Upgrade to Pro
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Set preferred hours for different task categories
+                </p>
 
             {/* Weekday/Weekend Toggle */}
             <div className="flex justify-center">
@@ -1776,6 +1807,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
               </div>
             </div>
+              </>
+            )}
           </AccordionContent>
         </AccordionItem>
 
