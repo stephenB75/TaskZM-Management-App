@@ -439,7 +439,11 @@ export async function getProjects(
     return data.projects;
   } catch (error) {
     // If backend is not available, return empty array instead of crashing
-    logger.warn('Backend unavailable, using empty project list:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // Only log warnings for non-404 errors (404 is expected for new/empty workspaces)
+    if (!errorMessage.includes('404') && !errorMessage.includes('Not found')) {
+      logger.warn('Backend unavailable, using empty project list:', error);
+    }
     return [];
   }
 }
@@ -880,7 +884,7 @@ export async function inviteTeamMember(workspaceId: string, email: string, name:
 export async function getTeamMembers(workspaceId: string) {
   // Validate workspace ID format
   if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
-    logger.warn('Invalid workspace ID for getTeamMembers:', workspaceId);
+    logger.debug('Invalid workspace ID for getTeamMembers:', workspaceId);
     return [];
   }
 
@@ -932,8 +936,10 @@ export async function getTeamMembers(workspaceId: string) {
         errorMessage = response.statusText || errorMessage;
       }
       
-      // Only log non-404 errors
-      logger.warn('Failed to fetch team members:', errorMessage);
+      // Only log warnings for non-404 errors
+      if (response.status !== 404) {
+        logger.warn('Failed to fetch team members:', errorMessage);
+      }
       throw new Error(errorMessage);
     }
 
