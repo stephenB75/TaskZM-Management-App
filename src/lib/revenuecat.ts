@@ -310,8 +310,7 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           throw new Error(`${packageType} subscription not found`);
         }
         
-        // Use the instance method for purchase
-        const purchasesInstance = Purchases.getSharedInstance();
+        // Use the instance method for purchase (reuse instance from above)
         const { customerInfo } = await purchasesInstance.purchase({ rcPackage: selectedPackage });
         
         // Check if purchase was successful
