@@ -13,6 +13,7 @@ import {
   CalendarRange,
 } from "lucide-react";
 import { useAI } from "../contexts/AIContext";
+import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -61,6 +62,7 @@ interface AIRecommendationPanelProps {
 export function AIRecommendationPanel({
   onClose,
 }: AIRecommendationPanelProps) {
+  const { hasFeature } = useSubscription();
   const { settings: aiSettings } = useAI();
   const {
     generateSchedulePlan,
@@ -90,6 +92,14 @@ export function AIRecommendationPanel({
   const [rescheduleDateOpen, setRescheduleDateOpen] = useState(false);
 
   const handleScheduleUnscheduledTasks = () => {
+    // Check if user has access to AI Scheduler feature
+    if (!hasFeature('aiScheduler')) {
+      toast.error('AI Scheduler is a Pro feature', {
+        description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
+      });
+      return;
+    }
+
     const result = generateSchedulePlan();
     
     // Check if any days exceed 5 hours
@@ -146,6 +156,14 @@ export function AIRecommendationPanel({
   };
 
   const handleReschedule = async () => {
+    // Check if user has access to AI Scheduler feature
+    if (!hasFeature('aiScheduler')) {
+      toast.error('Re-schedule is a Pro feature', {
+        description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
+      });
+      return;
+    }
+
     if (!selectedDate || !rescheduleType) return;
 
     try {

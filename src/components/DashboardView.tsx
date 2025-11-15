@@ -38,6 +38,7 @@ import { Label } from "./ui/label";
 import { AIRecommendationPanel } from "./AIRecommendationPanel";
 import { AppHeader } from "./AppHeader";
 import { useTasks } from "../contexts/TaskContext";
+import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
@@ -391,6 +392,7 @@ export function DashboardView({
   panelKey,
 }: DashboardViewProps) {
   const { tasks, updateTask } = useTasks();
+  const { hasFeature } = useSubscription();
   const { rescheduleDay, rescheduleWeek, rescheduleMonth, getScheduledTasksForDay, getScheduledTasksForWeek, getScheduledTasksForMonth } = useAIScheduler();
   const [viewMode, setViewMode] = useState<"week" | "month">(
     "week",
@@ -465,6 +467,14 @@ export function DashboardView({
   };
 
   const handleScheduleUnscheduledTasks = () => {
+    // Check if user has access to AI Scheduler feature
+    if (!hasFeature('aiScheduler')) {
+      toast.error('AI Scheduler is a Pro feature', {
+        description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
+      });
+      return;
+    }
+
     const unscheduledTasks = tasks.filter(
       (t) => !t.scheduledDate && t.status !== "done",
     );
@@ -634,6 +644,13 @@ export function DashboardView({
   };
 
   const handleRandomReschedule = async (type: "day" | "week" | "month", selectedDate?: Date) => {
+    // Check if user has access to AI Scheduler feature
+    if (!hasFeature('aiScheduler')) {
+      toast.error('Re-schedule is a Pro feature', {
+        description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
+      });
+      return;
+    }
     if (!selectedDate) {
       toast.error("Please select a date", {
         description: "You must select a specific date, week, or month to reschedule.",
@@ -847,6 +864,13 @@ export function DashboardView({
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  // Check if user has access to AI Scheduler feature
+                  if (!hasFeature('aiScheduler')) {
+                    toast.error('Re-schedule is a Pro feature', {
+                      description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
+                    });
+                    return;
+                  }
                   try {
                     setShowRescheduleDialog(true);
                   } catch (error) {
