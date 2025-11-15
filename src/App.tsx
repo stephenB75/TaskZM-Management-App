@@ -107,7 +107,7 @@ function AppContent() {
         
         // Check if RevenueCat API key is configured
         const apiKey = (import.meta as any).env?.VITE_REVENUECAT_WEB_PUBLIC_KEY;
-        if (apiKey && apiKey !== 'dev_mode_placeholder' && apiKey.trim() !== '' && apiKey.startsWith('rc_')) {
+        if (apiKey && apiKey !== 'dev_mode_placeholder' && apiKey.trim() !== '' && (apiKey.startsWith('rc_') || apiKey.startsWith('rcb_'))) {
           console.log('  • RevenueCat: API key found ✅');
           console.log('  • Mode: Production (real payments enabled)');
           console.log('  • RevenueCat will configure automatically on login');

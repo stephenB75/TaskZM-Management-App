@@ -65,18 +65,31 @@ export async function configureRevenueCat(userId: string): Promise<void> {
       // Get public API key from environment
       const apiKey = (import.meta as any).env?.VITE_REVENUECAT_WEB_PUBLIC_KEY;
       
+      // Debug: Log all environment variables that start with VITE_ (for debugging)
+      if (!apiKey) {
+        const allEnvKeys = Object.keys((import.meta as any).env || {}).filter((key: string) => key.startsWith('VITE_'));
+        console.log('🔍 Debug: Available VITE_ environment variables:', allEnvKeys);
+        console.log('🔍 Debug: import.meta.env keys:', Object.keys((import.meta as any).env || {}));
+      }
+      
       // Check if API key is missing or is a placeholder
-      if (!apiKey || apiKey === 'dev_mode_placeholder' || apiKey.trim() === '') {
+      if (!apiKey || apiKey === 'dev_mode_placeholder' || (typeof apiKey === 'string' && apiKey.trim() === '')) {
         console.log('ℹ️  RevenueCat API key not found in environment variables');
         console.log('   Payment mode: SIMULATED (no real charges)');
         console.log('   To enable: Add VITE_REVENUECAT_WEB_PUBLIC_KEY to .env file');
+        console.log('   📝 Instructions:');
+        console.log('      1. Create a .env file in the project root (same level as package.json)');
+        console.log('      2. Add: VITE_REVENUECAT_WEB_PUBLIC_KEY=rc_your_key_here');
+        console.log('      3. Restart the dev server (npm run dev)');
+        console.log('   🔍 Current API key value:', apiKey || 'undefined');
         return;
       }
 
-      // Validate API key format (should start with 'rc_')
-      if (!apiKey.startsWith('rc_')) {
-        console.warn('⚠️  RevenueCat API key format appears invalid (should start with "rc_")');
+      // Validate API key format (should start with 'rc_' or 'rcb_' for web)
+      if (!apiKey.startsWith('rc_') && !apiKey.startsWith('rcb_')) {
+        console.warn('⚠️  RevenueCat API key format appears invalid (should start with "rc_" or "rcb_")');
         console.warn('   Payment mode: SIMULATED (no real charges)');
+        console.warn('   Current key format:', apiKey.substring(0, 5) + '...');
         return;
       }
       
