@@ -156,6 +156,7 @@ export function PricingDialog({
 
           // Refresh subscription status from backend
           await refreshSubscription();
+          setIsUpgrading(false);
           onOpenChange(false);
           return;
         } else {
@@ -164,15 +165,16 @@ export function PricingDialog({
           toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed, {
             description: SUBSCRIPTION_UI_TEXT.messages.paymentFailedDesc,
           });
+          setIsUpgrading(false);
           return;
         }
       } catch (rcError: any) {
-        // If user cancelled, show a friendly message
+        // If user cancelled, don't show error - user intentionally cancelled
         if (
           rcError.message?.includes("cancelled") ||
           rcError.userCancelled
         ) {
-          // Don't show error for cancellation - user intentionally cancelled
+          setIsUpgrading(false);
           return;
         }
 
@@ -202,6 +204,7 @@ export function PricingDialog({
           toast.error(errorTitle, {
             description: errorDescription,
           });
+          setIsUpgrading(false);
           return;
         }
 
@@ -230,12 +233,19 @@ export function PricingDialog({
             "→ Using simulated upgrade for development",
           );
           
-          await upgradeToPro();
-          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode, {
-            description: SUBSCRIPTION_UI_TEXT.messages.upgradeDevModeDesc,
-          });
-          onOpenChange(false);
-          return;
+          try {
+            await upgradeToPro();
+            toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode, {
+              description: SUBSCRIPTION_UI_TEXT.messages.upgradeDevModeDesc,
+            });
+            setIsUpgrading(false);
+            onOpenChange(false);
+            return;
+          } catch (upgradeError) {
+            console.error("Development upgrade failed:", upgradeError);
+            setIsUpgrading(false);
+            throw upgradeError;
+          }
         }
 
         // Unknown environment - err on the side of caution
@@ -244,6 +254,7 @@ export function PricingDialog({
           description:
             "Unable to process payment. Please contact support.",
         });
+        setIsUpgrading(false);
       }
     } catch (error: any) {
       console.error("Upgrade error:", error);
@@ -252,7 +263,6 @@ export function PricingDialog({
           error.message ||
           "Please try again or contact support.",
       });
-    } finally {
       setIsUpgrading(false);
     }
   };
