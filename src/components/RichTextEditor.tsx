@@ -1,16 +1,19 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { 
   Bold, 
+  Italic,
   Underline, 
   Strikethrough, 
   Highlighter, 
   List, 
+  ListOrdered,
   Type,
   Eraser,
   CaseLower,
   Pilcrow,
   Minus,
-  Plus
+  Plus,
+  Code
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
@@ -109,6 +112,9 @@ export function RichTextEditor({
       case 'bold':
         execCommand('bold');
         break;
+      case 'italic':
+        execCommand('italic');
+        break;
       case 'underline':
         execCommand('underline');
         break;
@@ -118,6 +124,25 @@ export function RichTextEditor({
       case 'highlight':
         execCommand('backColor', '#fef08a'); // Yellow highlight
         break;
+      case 'code':
+        // Wrap selection in code tags
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const selectedText = range.toString();
+          if (selectedText) {
+            const codeNode = document.createElement('code');
+            codeNode.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+            codeNode.style.padding = '2px 4px';
+            codeNode.style.borderRadius = '3px';
+            codeNode.style.fontFamily = 'monospace';
+            codeNode.textContent = selectedText;
+            range.deleteContents();
+            range.insertNode(codeNode);
+            handleInput();
+          }
+        }
+        break;
       case 'uppercase':
         transformSelection((text) => text.toUpperCase());
         break;
@@ -126,6 +151,9 @@ export function RichTextEditor({
         break;
       case 'bullet':
         execCommand('insertUnorderedList');
+        break;
+      case 'numbered':
+        execCommand('insertOrderedList');
         break;
       case 'paragraph':
         execCommand('formatBlock', '<p>');
@@ -145,6 +173,8 @@ export function RichTextEditor({
     switch (format) {
       case 'bold':
         return document.queryCommandState('bold');
+      case 'italic':
+        return document.queryCommandState('italic');
       case 'underline':
         return document.queryCommandState('underline');
       case 'strikethrough':
@@ -164,6 +194,7 @@ export function RichTextEditor({
     >
       {/* Formatting Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5 p-2 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl">
+        {/* Text Formatting Group */}
         <Button
           type="button"
           variant="ghost"
@@ -173,9 +204,22 @@ export function RichTextEditor({
             isFormatActive('bold') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('bold')}
-          title="Bold"
+          title="Bold (Ctrl+B)"
         >
           <Bold className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "h-7 w-7 p-0",
+            isFormatActive('italic') && "bg-primary/10 text-primary"
+          )}
+          onClick={() => formatText('italic')}
+          title="Italic (Ctrl+I)"
+        >
+          <Italic className="w-4 h-4" />
         </Button>
         <Button
           type="button"
@@ -186,7 +230,7 @@ export function RichTextEditor({
             isFormatActive('underline') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('underline')}
-          title="Underline"
+          title="Underline (Ctrl+U)"
         >
           <Underline className="w-4 h-4" />
         </Button>
@@ -203,6 +247,9 @@ export function RichTextEditor({
         >
           <Strikethrough className="w-4 h-4" />
         </Button>
+        <div className="w-px h-5 bg-border mx-1" />
+        
+        {/* Highlight & Code */}
         <Button
           type="button"
           variant="ghost"
@@ -213,7 +260,42 @@ export function RichTextEditor({
         >
           <Highlighter className="w-4 h-4" />
         </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => formatText('code')}
+          title="Code"
+        >
+          <Code className="w-4 h-4" />
+        </Button>
         <div className="w-px h-5 bg-border mx-1" />
+        
+        {/* Lists */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => formatText('bullet')}
+          title="Bullet List"
+        >
+          <List className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => formatText('numbered')}
+          title="Numbered List"
+        >
+          <ListOrdered className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-5 bg-border mx-1" />
+        
+        {/* Text Transform */}
         <Button
           type="button"
           variant="ghost"
@@ -234,27 +316,9 @@ export function RichTextEditor({
         >
           <CaseLower className="w-4 h-4" />
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          onClick={() => formatText('bullet')}
-          title="Bullet List"
-        >
-          <List className="w-4 h-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          onClick={() => formatText('paragraph')}
-          title="Paragraph"
-        >
-          <Pilcrow className="w-4 h-4" />
-        </Button>
         <div className="w-px h-5 bg-border mx-1" />
+        
+        {/* Font Size */}
         <div className="flex items-center gap-1">
           <Button
             type="button"
@@ -283,6 +347,8 @@ export function RichTextEditor({
           </Button>
         </div>
         <div className="w-px h-5 bg-border mx-1" />
+        
+        {/* Clear Formatting */}
         <Button
           type="button"
           variant="ghost"
