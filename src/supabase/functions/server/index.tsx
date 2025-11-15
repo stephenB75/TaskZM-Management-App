@@ -955,12 +955,65 @@ app.post("/make-server-65e6e67f/subscription", async (c) => {
 
     const subscription = await c.req.json();
 
+    // SECURITY: Validate payment for Pro upgrades
+    // If upgrading to Pro, verify payment was made through RevenueCat webhook
+    if (subscription.tier === 'pro') {
+      // Check if there's a valid payment source (webhook data)
+      const existingTier = await kv.get(`user:${userId}:tier`);
+      const subscriptionStore = await kv.get(`user:${userId}:subscription_store`);
+      const subscriptionStatus = await kv.get(`user:${userId}:subscription_status`);
+      
+      // Check if this is an upgrade attempt (from free to pro)
+      const isUpgradeAttempt = existingTier !== 'pro';
+      
+      if (isUpgradeAttempt) {
+        // This is an upgrade - require payment verification
+        // Payment verification exists if:
+        // 1. Has subscription store (stripe/app_store/play_store/admin_granted) indicating payment
+        // 2. Has active status from webhook
+        const hasValidPayment = 
+          subscriptionStore || // Has payment store (set by webhook)
+          subscriptionStatus === 'active'; // Has active status from webhook
+        
+        // If no valid payment source, reject the upgrade
+        if (!hasValidPayment) {
+          console.error(`SECURITY: User ${userId} attempted to upgrade to Pro without payment verification`);
+          return c.json({ 
+            error: 'Payment verification required. Subscription upgrades must be processed through the payment system.',
+            code: 'PAYMENT_VERIFICATION_REQUIRED'
+          }, 403);
+        }
+        
+        // Log the subscription upgrade for audit
+        console.log(`Subscription upgrade for user ${userId}: Free -> Pro (verified payment source: ${subscriptionStore || 'active status'})`);
+      } else {
+        // Already Pro - allow status updates (renewal, cancellation, etc.)
+        console.log(`Subscription update for user ${userId}: Pro tier status update`);
+      }
+    }
+
+    // If downgrading to free, allow it (no payment needed)
+    if (subscription.tier === 'free') {
+      console.log(`Subscription update for user ${userId}: Downgrading to Free tier`);
+    }
+
     // Save subscription in both formats for compatibility
     // Legacy format (for existing code)
     await kv.set(`user_${userId}_subscription`, subscription);
     
     // Webhook format (for RevenueCat sync)
+    // Only update if tier is being set (don't overwrite webhook data unnecessarily)
     if (subscription.tier) {
+      // If upgrading to Pro, ensure we have payment verification
+      if (subscription.tier === 'pro') {
+        // Don't overwrite webhook-set data, but update if needed
+        const currentStore = await kv.get(`user:${userId}:subscription_store`);
+        if (!currentStore) {
+          // This shouldn't happen if validation above worked, but set a flag
+          await kv.set(`user:${userId}:subscription_store`, 'manual_update');
+          console.warn(`Warning: Pro tier set for user ${userId} without clear payment source`);
+        }
+      }
       await kv.set(`user:${userId}:tier`, subscription.tier);
     }
     if (subscription.status) {

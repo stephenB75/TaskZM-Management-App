@@ -205,9 +205,18 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   async function upgradeToPro() {
     try {
+      // SECURITY: Check if we're in production
+      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
+      
+      if (isProduction) {
+        throw new Error('Direct upgrade not allowed in production. Payment verification required.');
+      }
+
       // Development/Testing fallback: Simulate upgrade
-      // Note: Production uses RevenueCat (handled in PricingDialog)
-      // This function is only used when RevenueCat is not configured or fails
+      // Note: This should ONLY be called from PricingDialog in development mode
+      // Production uses RevenueCat (handled in PricingDialog)
+      console.warn('⚠️  Using development-only upgrade method. This should not happen in production.');
+      
       const newSubscription: SubscriptionInfo = {
         tier: 'pro',
         status: 'active',
@@ -222,8 +231,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setSubscription(newSubscription);
       localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(newSubscription));
       
-      toast.success('✅ Upgraded to Pro tier');
-      console.log('✅ Upgraded to Pro tier');
+      toast.success('✅ Upgraded to Pro tier (Development Mode)');
+      console.log('✅ Upgraded to Pro tier (Development Mode)');
     } catch (error) {
       console.error('Upgrade failed:', error);
       toast.error('Failed to upgrade subscription');

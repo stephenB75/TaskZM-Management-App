@@ -92,6 +92,10 @@ export function PricingDialog({
     try {
       setIsUpgrading(true);
 
+      // Check if we're in production mode
+      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
+      const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
+
       // Try RevenueCat purchase first (works for all platforms)
       try {
         console.log(
@@ -123,37 +127,57 @@ export function PricingDialog({
           return;
         }
 
-        // RevenueCat not configured - this is expected in development
-        if (rcError.message?.includes("not configured")) {
-          console.log(
-            "ℹ️  RevenueCat not fully configured - using development mode",
-          );
-          console.log(
-            "ℹ️  To enable payment processing, run: npm install @revenuecat/purchases-js",
-          );
-          console.log(
-            "ℹ️  See /docs/PAYMENT_SYSTEM_SETUP.md for full setup guide",
-          );
-        } else {
-          console.warn(
-            "⚠️  Payment processing unavailable:",
-            rcError.message,
-          );
+        // SECURITY: In production, never allow free upgrades
+        if (isProduction) {
+          console.error("Payment processing failed in production:", rcError.message);
+          toast.error("Payment processing unavailable", {
+            description:
+              "Unable to process payment. Please contact support or try again later.",
+          });
+          return;
         }
 
-        // Fall back to simulated upgrade (for development/testing)
-        console.log(
-          "→ Using simulated upgrade for development",
-        );
-      }
+        // Development mode only: Allow fallback for testing
+        if (isDevelopment) {
+          // RevenueCat not configured - this is expected in development
+          if (rcError.message?.includes("not configured")) {
+            console.log(
+              "ℹ️  RevenueCat not fully configured - using development mode",
+            );
+            console.log(
+              "ℹ️  To enable payment processing, run: npm install @revenuecat/purchases-js",
+            );
+            console.log(
+              "ℹ️  See /docs/PAYMENT_SYSTEM_SETUP.md for full setup guide",
+            );
+          } else {
+            console.warn(
+              "⚠️  Payment processing unavailable:",
+              rcError.message,
+            );
+          }
 
-      // Fallback: Use existing upgrade method (for development/testing)
-      await upgradeToPro();
-      toast.success("🎉 Welcome to TaskZM Pro!", {
-        description:
-          "You now have access to all premium features.",
-      });
-      onOpenChange(false);
+          // Fall back to simulated upgrade (DEVELOPMENT ONLY)
+          console.log(
+            "→ Using simulated upgrade for development",
+          );
+          
+          await upgradeToPro();
+          toast.success("🎉 Welcome to TaskZM Pro! (Development Mode)", {
+            description:
+              "You now have access to all premium features. This is a development-only upgrade.",
+          });
+          onOpenChange(false);
+          return;
+        }
+
+        // Unknown environment - err on the side of caution
+        console.error("Payment processing failed:", rcError.message);
+        toast.error("Payment processing unavailable", {
+          description:
+            "Unable to process payment. Please contact support.",
+        });
+      }
     } catch (error: any) {
       console.error("Upgrade error:", error);
       toast.error("Upgrade failed", {
