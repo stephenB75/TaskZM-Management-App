@@ -386,26 +386,26 @@ export function PricingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto p-0 md:p-0">
-        <div className="p-4 md:p-6 lg:p-8">
+      <DialogContent className="max-w-[95vw] lg:max-w-[1400px] max-h-[95vh] overflow-y-auto p-0 md:p-0">
+        <div className="p-6 md:p-8 lg:p-10 xl:p-12">
           {/* Header and Toggle in Horizontal Layout */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 md:mb-8 gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 md:mb-10 gap-6">
             <DialogHeader className="text-left md:text-left">
-              <DialogTitle className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent mb-1">
+              <DialogTitle className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent mb-2">
                 Choose Your Plan
               </DialogTitle>
-              <DialogDescription className="text-sm md:text-base mt-1 text-muted-foreground">
+              <DialogDescription className="text-base md:text-lg lg:text-xl mt-2 text-muted-foreground">
                 Unlock powerful features to supercharge your productivity
               </DialogDescription>
             </DialogHeader>
 
-            {/* Plan Toggle - Compact Horizontal */}
-            <div className="inline-flex items-center gap-2 p-1.5 bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#4A4A5E] dark:to-[#3E3E52] rounded-xl shadow-md">
+            {/* Plan Toggle - Spacious Horizontal */}
+            <div className="inline-flex items-center gap-3 p-2 bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#4A4A5E] dark:to-[#3E3E52] rounded-2xl shadow-lg">
               <button
                 type="button"
                 onClick={() => setSelectedPlan('monthly')}
                 className={cn(
-                  "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300",
+                  "px-8 py-3 rounded-xl text-base font-semibold transition-all duration-300",
                   selectedPlan === 'monthly'
                     ? 'bg-white dark:bg-gray-700 text-[#9B87E8] dark:text-[#9B87E8] shadow-md'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -417,16 +417,16 @@ export function PricingDialog({
                 type="button"
                 onClick={() => setSelectedPlan('yearly')}
                 className={cn(
-                  "px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300",
+                  "px-8 py-3 rounded-xl text-base font-semibold transition-all duration-300",
                   selectedPlan === 'yearly'
                     ? 'bg-white dark:bg-gray-700 text-[#9B87E8] dark:text-[#9B87E8] shadow-md'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 )}
               >
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2">
                   Yearly
                   {savings > 0 && (
-                    <span className="px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 rounded-full">
+                    <span className="px-3 py-1 text-xs font-bold bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 rounded-full">
                       Save {savings}%
                     </span>
                   )}
@@ -435,45 +435,45 @@ export function PricingDialog({
             </div>
           </div>
 
-          {/* Plans Grid - Horizontal Compact Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-full">
-            {/* Free Tier - Horizontal Compact */}
+          {/* Plans Grid - Spacious Horizontal Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 max-w-full">
+            {/* Free Tier - Spacious Design */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
-              className="relative border-2 border-gray-200 dark:border-gray-700 rounded-xl md:rounded-2xl p-5 md:p-6 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-md hover:shadow-lg flex flex-col"
+              className="relative border-2 border-gray-200 dark:border-gray-700 rounded-2xl md:rounded-3xl p-8 md:p-10 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl flex flex-col"
             >
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-6">
                 <div className="flex-1">
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Free</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground">Perfect for getting started</p>
+                  <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">Free</h3>
+                  <p className="text-base md:text-lg text-muted-foreground">Perfect for getting started</p>
                 </div>
                 {subscription.tier === "free" && (
-                  <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-xs px-2.5 py-1 shadow-sm flex-shrink-0">
+                  <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-sm px-4 py-2 shadow-sm flex-shrink-0">
                     Current
                   </Badge>
                 )}
               </div>
 
-              <div className="mb-4">
-                <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100">$0</span>
-                  <span className="text-base md:text-lg text-muted-foreground">/month</span>
+              <div className="mb-8">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-gray-100">$0</span>
+                  <span className="text-xl md:text-2xl text-muted-foreground">/month</span>
                 </div>
-                <p className="text-xs md:text-sm text-muted-foreground">Forever free, no credit card required</p>
+                <p className="text-base md:text-lg text-muted-foreground">Forever free, no credit card required</p>
               </div>
 
-              <ul className="space-y-2 mb-6 flex-1">
+              <ul className="space-y-4 mb-8 flex-1">
                 {freeTierFeatures.map((feature, index) => (
                   <li
                     key={index}
-                    className="flex items-start gap-2.5 group"
+                    className="flex items-start gap-4 group"
                   >
-                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5 group-hover:scale-110 transition-transform duration-200">
-                      <feature.icon className="w-3 h-3 text-gray-800 dark:text-gray-100" />
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5 group-hover:scale-110 transition-transform duration-200">
+                      <feature.icon className="w-4 h-4 text-gray-800 dark:text-gray-100" />
                     </div>
-                    <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors leading-tight">
+                    <span className="text-base md:text-lg text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors leading-relaxed">
                       {feature.text}
                     </span>
                   </li>
@@ -482,13 +482,13 @@ export function PricingDialog({
 
               <Button
                 variant="outline"
-                className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm py-4 font-semibold transition-all duration-200 hover:scale-[1.01]"
+                className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-base md:text-lg py-6 font-semibold transition-all duration-200 hover:scale-[1.01]"
                 disabled={subscription.tier === "free" || isDowngrading}
                 onClick={subscription.tier === "pro" ? handleDowngrade : undefined}
               >
                 {isDowngrading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
                     Downgrading...
                   </span>
                 ) : subscription.tier === "free" ? (
@@ -499,72 +499,72 @@ export function PricingDialog({
               </Button>
             </motion.div>
 
-            {/* Pro Tier - Horizontal Compact Featured */}
+            {/* Pro Tier - Spacious Featured Design */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-5 md:p-6 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl hover:shadow-[#9B87E8]/20 transition-all duration-300 flex flex-col"
+              className="relative border-2 border-[#9B87E8] rounded-2xl md:rounded-3xl p-8 md:p-10 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
             >
-              {/* Compact Decorative elements */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-[#B8E6D5]/20 to-[#C9E4F7]/20 rounded-tr-full blur-2xl" />
+              {/* Enhanced Decorative elements */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#B8E6D5]/25 to-[#C9E4F7]/25 rounded-tr-full blur-3xl" />
               
-              {/* Popular Badge - Compact */}
-              <div className="absolute top-4 right-4 z-20">
-                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-lg px-2.5 py-1 text-xs font-semibold">
-                  <Crown className="w-3 h-3 mr-1" />
+              {/* Popular Badge - Enhanced */}
+              <div className="absolute top-6 right-6 z-20">
+                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-xl px-4 py-2 text-sm font-semibold">
+                  <Crown className="w-4 h-4 mr-1.5" />
                   Popular
                 </Badge>
               </div>
 
               <div className="relative z-10 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-6">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro</h3>
-                      <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro</h3>
+                      <Sparkles className="w-6 h-6 md:w-7 md:h-7 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-xs md:text-sm text-muted-foreground">Unlock all premium features</p>
+                    <p className="text-base md:text-lg text-muted-foreground">Unlock all premium features</p>
                   </div>
                   {subscription.tier === "pro" && (
-                    <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-xs px-2.5 py-1 shadow-sm flex-shrink-0">
+                    <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-sm px-4 py-2 shadow-sm flex-shrink-0">
                       Current
                     </Badge>
                   )}
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-8">
                   {selectedPlan === 'monthly' ? (
                     <>
-                      <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                           {offerings.monthly?.priceString || '$3.99'}
                         </span>
-                        <span className="text-base md:text-lg text-muted-foreground">/month</span>
+                        <span className="text-xl md:text-2xl text-muted-foreground">/month</span>
                       </div>
-                      <p className="text-xs md:text-sm text-muted-foreground">Billed monthly, cancel anytime</p>
+                      <p className="text-base md:text-lg text-muted-foreground">Billed monthly, cancel anytime</p>
                     </>
                   ) : (
                     <>
-                      <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                           {offerings.yearly?.priceString || '$39.99'}
                         </span>
-                        <span className="text-base md:text-lg text-muted-foreground">/year</span>
+                        <span className="text-xl md:text-2xl text-muted-foreground">/year</span>
                       </div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-xs md:text-sm text-muted-foreground">
+                      <div className="flex items-center gap-3 mb-2">
+                        <p className="text-base md:text-lg text-muted-foreground">
                           Billed annually
                         </p>
                         {savings > 0 && (
-                          <Badge className="bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-bold px-2 py-0.5">
+                          <Badge className="bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-sm font-bold px-3 py-1">
                             Save {savings}%
                           </Badge>
                         )}
                       </div>
                       {offerings.yearly && offerings.monthly && (
-                        <p className="text-xs md:text-sm font-semibold text-[#9B87E8]">
+                        <p className="text-base md:text-lg font-semibold text-[#9B87E8]">
                           ${((parseFloat(offerings.yearly.price) / 12).toFixed(2))} per month
                         </p>
                       )}
@@ -572,29 +572,29 @@ export function PricingDialog({
                   )}
                 </div>
 
-                {/* Features in 2 columns for horizontal layout */}
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6 flex-1">
+                {/* Features in 2 columns for spacious layout */}
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 flex-1">
                   {proTierFeatures.map((feature, index) => (
                     <li
                       key={index}
                       className={cn(
-                        "flex items-start gap-2.5 group",
-                        feature.isHeader && "pt-2 border-t border-[#9B87E8]/30 dark:border-[#9B87E8]/40 mt-1 md:col-span-2"
+                        "flex items-start gap-4 group",
+                        feature.isHeader && "pt-4 border-t border-[#9B87E8]/30 dark:border-[#9B87E8]/40 mt-2 md:col-span-2"
                       )}
                     >
                       <div className={cn(
-                        "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 transition-all duration-200",
+                        "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5 transition-all duration-200",
                         feature.highlight
-                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9] shadow-sm group-hover:scale-110"
+                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9] shadow-md group-hover:scale-110"
                           : "bg-[#B8E6D5] dark:bg-[#5A8A7A] group-hover:scale-110"
                       )}>
                         <feature.icon className={cn(
-                          "w-3 h-3",
+                          "w-4 h-4",
                           feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
                         )} />
                       </div>
                       <span className={cn(
-                        "text-xs md:text-sm transition-colors leading-tight",
+                        "text-base md:text-lg transition-colors leading-relaxed",
                         feature.highlight
                           ? "text-gray-900 dark:text-gray-100 font-semibold group-hover:text-[#9B87E8]"
                           : "text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100"
@@ -605,9 +605,9 @@ export function PricingDialog({
                   ))}
                 </ul>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <Button
-                    className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base font-bold py-5 hover:scale-[1.01] active:scale-[0.99]"
+                    className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-xl hover:shadow-2xl transition-all duration-300 text-base md:text-lg font-bold py-6 md:py-7 hover:scale-[1.01] active:scale-[0.99]"
                     disabled={
                       subscription.tier === "pro" || isUpgrading
                     }
@@ -615,14 +615,14 @@ export function PricingDialog({
                   >
                     {isUpgrading ? (
                       <span className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Processing...
                       </span>
                     ) : subscription.tier === "pro" ? (
                       "Current Plan"
                     ) : (
                       <span className="flex items-center justify-center gap-2">
-                        <Sparkles className="w-4 h-4" />
+                        <Sparkles className="w-5 h-5" />
                         Upgrade to Pro
                       </span>
                     )}
@@ -632,13 +632,13 @@ export function PricingDialog({
                   {subscription.tier === "pro" && !subscription.cancelAtPeriodEnd && (
                     <Button
                       variant="outline"
-                      className="w-full border-2 border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm py-4 font-semibold transition-all duration-200 hover:scale-[1.01]"
+                      className="w-full border-2 border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base md:text-lg py-5 md:py-6 font-semibold transition-all duration-200 hover:scale-[1.01]"
                       disabled={isCancelling}
                       onClick={handleCancel}
                     >
                       {isCancelling ? (
                         <span className="flex items-center justify-center gap-2">
-                          <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
                           Cancelling...
                         </span>
                       ) : (
@@ -649,8 +649,8 @@ export function PricingDialog({
 
                   {/* Show message if already cancelled */}
                   {subscription.tier === "pro" && subscription.cancelAtPeriodEnd && (
-                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                      <p className="text-xs md:text-sm text-yellow-800 dark:text-yellow-200 text-center">
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl">
+                      <p className="text-sm md:text-base text-yellow-800 dark:text-yellow-200 text-center">
                         ⚠️ Your subscription will cancel at the end of your billing period. You can reactivate anytime before then.
                       </p>
                     </div>
@@ -661,7 +661,7 @@ export function PricingDialog({
                     subscription.tier !== "pro" && (
                       <Button
                         variant="outline"
-                        className="w-full border-2 border-[#9B87E8]/40 text-[#9B87E8] hover:bg-[#9B87E8]/10 text-sm py-4 font-semibold transition-all duration-200 hover:scale-[1.01]"
+                        className="w-full border-2 border-[#9B87E8]/40 text-[#9B87E8] hover:bg-[#9B87E8]/10 text-base md:text-lg py-5 md:py-6 font-semibold transition-all duration-200 hover:scale-[1.01]"
                         disabled={isRestoring}
                         onClick={handleRestore}
                       >
@@ -675,9 +675,9 @@ export function PricingDialog({
             </motion.div>
           </div>
 
-          {/* Footer Note - Horizontal Compact */}
-          <div className="mt-4 md:mt-6 p-3 md:p-4 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg md:rounded-xl border-2 border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
-            <p className="text-xs md:text-sm text-center text-gray-700 dark:text-gray-300 leading-relaxed">
+          {/* Footer Note - Spacious */}
+          <div className="mt-8 md:mt-10 p-5 md:p-6 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-xl md:rounded-2xl border-2 border-[#9B87E8]/30 shadow-lg backdrop-blur-sm">
+            <p className="text-sm md:text-base lg:text-lg text-center text-gray-700 dark:text-gray-300 leading-relaxed">
               💡 All plans include unlimited tasks and seamless calendar integration. 
               <span className="font-semibold text-[#9B87E8]"> Upgrade anytime</span> to unlock 
               AI-powered scheduling and advanced analytics.
