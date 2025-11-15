@@ -10,10 +10,17 @@ import {
   Timer,
   Trophy,
   Tag,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  AlertCircle,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Checkbox } from "./ui/checkbox";
 import {
   Card,
   CardContent,
@@ -27,34 +34,155 @@ import {
   TabsList,
   TabsTrigger,
 } from "./ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { PrivacyPolicyDialog } from "./PrivacyPolicyDialog";
+import { TermsOfServiceDialog } from "./TermsOfServiceDialog";
 import taskzmLogo from "../assets/taskzm-logo.png";
+import { createClient } from '@supabase/supabase-js';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
+
+const supabase = createClient(
+  `https://${projectId}.supabase.co`,
+  publicAnonKey
+);
+
+// Password strength calculation
+function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 'strong'; score: number; feedback: string[] } {
+  let score = 0;
+  const feedback: string[] = [];
+
+  if (password.length >= 8) score += 1;
+  else feedback.push('At least 8 characters');
+
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+  else feedback.push('Mix of uppercase and lowercase');
+
+  if (/\d/.test(password)) score += 1;
+  else feedback.push('Include numbers');
+
+  if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+  else feedback.push('Include special characters');
+
+  if (password.length >= 12) score += 1;
+
+  let strength: 'weak' | 'medium' | 'strong' = 'weak';
+  if (score >= 4) strength = 'strong';
+  else if (score >= 2) strength = 'medium';
+
+  return { strength, score, feedback };
+}
 
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Sign In State
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   // Sign Up State
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
-  const [signUpConfirmPassword, setSignUpConfirmPassword] =
-    useState("");
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  // Password strength
+  const passwordStrength = getPasswordStrength(signUpPassword);
+  const passwordsMatch = signUpPassword && signUpConfirmPassword && signUpPassword === signUpConfirmPassword;
+
+  // Email validation
+  const validateEmail = (email: string, isSignUp: boolean = false): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      if (isSignUp) {
+        setEmailError("Please enter a valid email address");
+      }
+      return false;
+    }
+    if (isSignUp) {
+      setEmailError("");
+    }
+    return true;
+  };
+
+  // Handle forgot password
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    if (!validateEmail(forgotPasswordEmail, false)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Password reset email sent! Check your inbox.", {
+        duration: 5000,
+      });
+      setShowForgotPasswordDialog(false);
+      setForgotPasswordEmail("");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to send reset email";
+      toast.error(errorMessage);
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateEmail(signInEmail, false)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       await signIn(signInEmail, signInPassword);
+      
+      // Store remember me preference
+      if (rememberMe) {
+        localStorage.setItem('taskzm_remember_email', signInEmail);
+      } else {
+        localStorage.removeItem('taskzm_remember_email');
+      }
+      
       toast.success("Welcome back! 🎉");
     } catch (error) {
       const errorMessage =
@@ -62,18 +190,21 @@ export function AuthScreen() {
           ? error.message
           : "Failed to sign in";
 
-      // If invalid credentials, suggest signing up
+      // If invalid credentials, suggest signing up or forgot password
       if (
         errorMessage.toLowerCase().includes("invalid") ||
         errorMessage.toLowerCase().includes("credentials")
       ) {
         toast.error(
-          "Invalid credentials. Don't have an account?",
+          "Invalid credentials. Forgot your password?",
           {
             duration: 6000,
             action: {
-              label: "Sign Up",
-              onClick: () => setActiveTab("signup"),
+              label: "Reset Password",
+              onClick: () => {
+                setForgotPasswordEmail(signInEmail);
+                setShowForgotPasswordDialog(true);
+              },
             },
           },
         );
@@ -114,6 +245,15 @@ export function AuthScreen() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!validateEmail(signUpEmail, true)) {
+      return;
+    }
+
+    if (!acceptedTerms) {
+      toast.error("Please accept the Terms of Service and Privacy Policy");
+      return;
+    }
+
     if (signUpPassword !== signUpConfirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -121,6 +261,11 @@ export function AuthScreen() {
 
     if (signUpPassword.length < 6) {
       toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    if (passwordStrength.strength === 'weak' && signUpPassword.length < 8) {
+      toast.error("Password is too weak. Please use a stronger password.");
       return;
     }
 
@@ -159,6 +304,15 @@ export function AuthScreen() {
       setIsLoading(false);
     }
   };
+
+  // Load remembered email on mount
+  React.useEffect(() => {
+    const rememberedEmail = localStorage.getItem('taskzm_remember_email');
+    if (rememberedEmail) {
+      setSignInEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   // Animation variants
   const containerVariants = {
@@ -556,37 +710,83 @@ export function AuthScreen() {
                         <Label htmlFor="signin-email" className="text-xs sm:text-sm">
                           Email
                         </Label>
-                        <Input
-                          id="signin-email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={signInEmail}
-                          onChange={(e) =>
-                            setSignInEmail(e.target.value)
-                          }
-                          required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="signin-email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={signInEmail}
+                            onChange={(e) =>
+                              setSignInEmail(e.target.value)
+                            }
+                            onBlur={() => {
+                              if (signInEmail) {
+                                validateEmail(signInEmail, false);
+                              }
+                            }}
+                            required
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10"
+                          />
+                          <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        </div>
                       </div>
 
                       <div className="space-y-1 sm:space-y-1.5">
-                        <Label
-                          htmlFor="signin-password"
-                          className="text-xs sm:text-sm"
-                        >
-                          Password
-                        </Label>
-                        <Input
-                          id="signin-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={signInPassword}
-                          onChange={(e) =>
-                            setSignInPassword(e.target.value)
-                          }
-                          required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
+                        <div className="flex items-center justify-between">
+                          <Label
+                            htmlFor="signin-password"
+                            className="text-xs sm:text-sm"
+                          >
+                            Password
+                          </Label>
+                          <button
+                            type="button"
+                            onClick={() => setShowForgotPasswordDialog(true)}
+                            className="text-[10px] sm:text-xs text-[#7B68EE] hover:text-[#6A5ACD] transition-colors"
+                          >
+                            Forgot password?
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <Input
+                            id="signin-password"
+                            type={showSignInPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={signInPassword}
+                            onChange={(e) =>
+                              setSignInPassword(e.target.value)
+                            }
+                            required
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSignInPassword(!showSignInPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                            aria-label={showSignInPassword ? "Hide password" : "Show password"}
+                          >
+                            {showSignInPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Remember Me */}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="remember-me"
+                          checked={rememberMe}
+                          onCheckedChange={(checked) => setRememberMe(checked === true)}
                         />
+                        <Label
+                          htmlFor="remember-me"
+                          className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer"
+                        >
+                          Remember me
+                        </Label>
                       </div>
 
                       <motion.div
@@ -682,17 +882,46 @@ export function AuthScreen() {
                         >
                           Email
                         </Label>
-                        <Input
-                          id="signup-email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={signUpEmail}
-                          onChange={(e) =>
-                            setSignUpEmail(e.target.value)
-                          }
-                          required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="signup-email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={signUpEmail}
+                            onChange={(e) => {
+                              setSignUpEmail(e.target.value);
+                              if (e.target.value) {
+                                validateEmail(e.target.value, true);
+                              } else {
+                                setEmailError("");
+                              }
+                            }}
+                            onBlur={() => {
+                              if (signUpEmail) {
+                                validateEmail(signUpEmail, true);
+                              }
+                            }}
+                            required
+                            className={`border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10 ${
+                              emailError ? 'border-red-500' : ''
+                            }`}
+                          />
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            {signUpEmail && (
+                              emailError ? (
+                                <AlertCircle className="w-4 h-4 text-red-500" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                              )
+                            )}
+                          </div>
+                        </div>
+                        {emailError && (
+                          <p className="text-[10px] text-red-500 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {emailError}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-1 sm:space-y-1.5">
@@ -702,17 +931,68 @@ export function AuthScreen() {
                         >
                           Password
                         </Label>
-                        <Input
-                          id="signup-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={signUpPassword}
-                          onChange={(e) =>
-                            setSignUpPassword(e.target.value)
-                          }
-                          required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="signup-password"
+                            type={showSignUpPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={signUpPassword}
+                            onChange={(e) =>
+                              setSignUpPassword(e.target.value)
+                            }
+                            required
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                            aria-label={showSignUpPassword ? "Hide password" : "Show password"}
+                          >
+                            {showSignUpPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                        {/* Password Strength Indicator */}
+                        {signUpPassword && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-300 ${
+                                    passwordStrength.strength === 'weak'
+                                      ? 'bg-red-500 w-1/3'
+                                      : passwordStrength.strength === 'medium'
+                                      ? 'bg-yellow-500 w-2/3'
+                                      : 'bg-green-500 w-full'
+                                  }`}
+                                />
+                              </div>
+                              <span className={`text-[10px] font-medium ${
+                                passwordStrength.strength === 'weak'
+                                  ? 'text-red-500'
+                                  : passwordStrength.strength === 'medium'
+                                  ? 'text-yellow-500'
+                                  : 'text-green-500'
+                              }`}>
+                                {passwordStrength.strength.toUpperCase()}
+                              </span>
+                            </div>
+                            {passwordStrength.feedback.length > 0 && passwordStrength.strength !== 'strong' && (
+                              <ul className="text-[10px] text-gray-600 dark:text-gray-400 space-y-0.5">
+                                {passwordStrength.feedback.slice(0, 2).map((item, idx) => (
+                                  <li key={idx} className="flex items-center gap-1">
+                                    <span className="text-red-500">•</span>
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-1 sm:space-y-1.5">
@@ -722,19 +1002,85 @@ export function AuthScreen() {
                         >
                           Confirm Password
                         </Label>
-                        <Input
-                          id="signup-confirm-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={signUpConfirmPassword}
-                          onChange={(e) =>
-                            setSignUpConfirmPassword(
-                              e.target.value,
-                            )
-                          }
-                          required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
+                        <div className="relative">
+                          <Input
+                            id="signup-confirm-password"
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={signUpConfirmPassword}
+                            onChange={(e) =>
+                              setSignUpConfirmPassword(
+                                e.target.value,
+                              )
+                            }
+                            required
+                            className={`border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10 ${
+                              signUpConfirmPassword && !passwordsMatch ? 'border-red-500' : ''
+                            } ${
+                              signUpConfirmPassword && passwordsMatch ? 'border-green-500' : ''
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                        {signUpConfirmPassword && (
+                          <p className={`text-[10px] flex items-center gap-1 ${
+                            passwordsMatch ? 'text-green-500' : 'text-red-500'
+                          }`}>
+                            {passwordsMatch ? (
+                              <>
+                                <CheckCircle className="w-3 h-3" />
+                                Passwords match
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="w-3 h-3" />
+                                Passwords do not match
+                              </>
+                            )}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Terms and Privacy */}
+                      <div className="flex items-start space-x-2 pt-1">
+                        <Checkbox
+                          id="accept-terms"
+                          checked={acceptedTerms}
+                          onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                          className="mt-0.5"
                         />
+                        <Label
+                          htmlFor="accept-terms"
+                          className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer leading-tight"
+                        >
+                          I agree to the{" "}
+                          <button
+                            type="button"
+                            onClick={() => setShowTermsDialog(true)}
+                            className="text-[#7B68EE] hover:text-[#6A5ACD] underline"
+                          >
+                            Terms of Service
+                          </button>
+                          {" "}and{" "}
+                          <button
+                            type="button"
+                            onClick={() => setShowPrivacyDialog(true)}
+                            className="text-[#7B68EE] hover:text-[#6A5ACD] underline"
+                          >
+                            Privacy Policy
+                          </button>
+                        </Label>
                       </div>
 
                       <motion.div
@@ -779,6 +1125,70 @@ export function AuthScreen() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPasswordDialog} onOpenChange={setShowForgotPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-[#7B68EE]" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <div className="relative">
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowForgotPasswordDialog(false);
+                  setForgotPasswordEmail("");
+                }}
+                disabled={isSendingReset}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSendingReset || !forgotPasswordEmail}
+                className="bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6]"
+              >
+                {isSendingReset ? "Sending..." : "Send Reset Link"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Privacy Policy Dialog */}
+      <PrivacyPolicyDialog
+        open={showPrivacyDialog}
+        onOpenChange={setShowPrivacyDialog}
+      />
+
+      {/* Terms of Service Dialog */}
+      <TermsOfServiceDialog
+        open={showTermsDialog}
+        onOpenChange={setShowTermsDialog}
+      />
     </div>
   );
 }
