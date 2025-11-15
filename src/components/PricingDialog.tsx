@@ -393,21 +393,21 @@ export function PricingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] lg:max-w-[1400px] max-h-[95vh] overflow-y-auto p-0 md:p-0">
-        <div className="p-6 md:p-8 lg:p-10 xl:p-12">
+      <DialogContent className="max-w-[95vw] lg:max-w-[980px] max-h-[95vh] overflow-y-auto p-0 md:p-0">
+        <div className="p-4 md:p-5 lg:p-7 xl:p-8">
           {/* Header */}
-          <div className="mb-8 md:mb-10">
+          <div className="mb-5 md:mb-7">
             <DialogHeader className="text-center">
-              <DialogTitle className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent mb-2">
+              <DialogTitle className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent mb-2">
                 {SUBSCRIPTION_UI_TEXT.title}
               </DialogTitle>
-              <DialogDescription className="text-base md:text-lg lg:text-xl mt-2 text-muted-foreground">
+              <DialogDescription className="text-sm md:text-base lg:text-lg mt-2 text-muted-foreground">
                 {SUBSCRIPTION_UI_TEXT.description}
               </DialogDescription>
             </DialogHeader>
 
             {/* RevenueCat Connection Status */}
-            <div className={`mt-4 p-3 rounded-lg text-center text-sm ${
+            <div className={`mt-3 p-2 rounded-lg text-center text-xs ${
               revenueCatStatus.connected 
                 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200' 
                 : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
@@ -421,44 +421,44 @@ export function PricingDialog({
           </div>
 
           {/* Plans Grid - 3 Columns: Free, Monthly Pro, Yearly Pro */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 max-w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 lg:gap-7 max-w-full">
             {/* Free Tier - Spacious Design */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
-              className="relative border-2 border-gray-200 dark:border-gray-700 rounded-2xl md:rounded-3xl p-8 md:p-10 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl flex flex-col"
+              className="relative border-2 border-gray-200 dark:border-gray-700 rounded-xl md:rounded-2xl p-5 md:p-7 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl flex flex-col"
             >
-              <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
-                  <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
+                  <p className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
                 </div>
                 {subscription.tier === "free" && (
-                  <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-sm px-4 py-2 shadow-sm flex-shrink-0">
+                  <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-xs px-3 py-1 shadow-sm flex-shrink-0">
                     {SUBSCRIPTION_UI_TEXT.free.button.current}
                   </Badge>
                 )}
               </div>
 
-              <div className="mb-8">
+              <div className="mb-5">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-gray-100">{SUBSCRIPTION_UI_TEXT.free.price}</span>
-                  <span className="text-xl md:text-2xl text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
+                  <span className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">{SUBSCRIPTION_UI_TEXT.free.price}</span>
+                  <span className="text-base md:text-xl text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
                 </div>
-                <p className="text-base md:text-lg text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.description}</p>
+                <p className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.description}</p>
               </div>
 
-              <ul className="space-y-4 mb-8 flex-1">
+              <ul className="space-y-3 mb-5 flex-1">
                 {freeTierFeatures.map((feature, index) => (
                   <li
                     key={index}
-                    className="flex items-start gap-4 group"
+                    className="flex items-start gap-3 group"
                   >
-                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5 group-hover:scale-110 transition-transform duration-200">
-                      <feature.icon className="w-4 h-4 text-gray-800 dark:text-gray-100" />
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5 group-hover:scale-110 transition-transform duration-200">
+                      <feature.icon className="w-3 h-3 text-gray-800 dark:text-gray-100" />
                     </div>
-                    <span className="text-base md:text-lg text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors leading-relaxed">
+                    <span className="text-sm md:text-base text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors leading-relaxed">
                       {feature.text}
                     </span>
                   </li>
@@ -467,13 +467,13 @@ export function PricingDialog({
 
               <Button
                 variant="outline"
-                className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-base md:text-lg py-6 font-semibold transition-all duration-200 hover:scale-[1.01]"
+                className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm md:text-base py-4 font-semibold transition-all duration-200 hover:scale-[1.01]"
                 disabled={subscription.tier === "free" || isDowngrading}
                 onClick={subscription.tier === "pro" ? handleDowngrade : undefined}
               >
                 {isDowngrading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
                     {SUBSCRIPTION_UI_TEXT.pro.button.downgrading}
                   </span>
                 ) : subscription.tier === "free" ? (
@@ -489,75 +489,75 @@ export function PricingDialog({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="relative border-2 border-[#9B87E8] rounded-2xl md:rounded-3xl p-6 md:p-8 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
+              className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
             >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
               
               <div className="relative z-10 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro Monthly</h3>
-                      <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-[#9B87E8] animate-pulse" />
+                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro Monthly</h3>
+                      <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-sm md:text-base text-muted-foreground">Billed monthly</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Billed monthly</p>
                   </div>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                    <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                       {offerings.monthly?.priceString || DEFAULT_MONTHLY_PRICE}
                     </span>
-                    <span className="text-lg md:text-xl text-muted-foreground">/month</span>
+                    <span className="text-sm md:text-base text-muted-foreground">/month</span>
                   </div>
                   {offerings.monthly?.description && (
-                    <p className="text-xs md:text-sm text-muted-foreground mt-1 italic">
+                    <p className="text-xs text-muted-foreground mt-1 italic">
                       {offerings.monthly.description}
                     </p>
                   )}
                 </div>
 
                 {/* Features list - compact */}
-                <ul className="space-y-3 mb-6 flex-1">
+                <ul className="space-y-2 mb-4 flex-1">
                   {proTierFeatures.slice(0, 4).map((feature, index) => (
-                    <li key={index} className="flex items-start gap-3">
+                    <li key={index} className="flex items-start gap-2">
                       <div className={cn(
-                        "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5",
+                        "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
                         feature.highlight
                           ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
                           : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
                       )}>
                         <feature.icon className={cn(
-                          "w-3 h-3",
+                          "w-2.5 h-2.5",
                           feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
                         )} />
                       </div>
-                      <span className="text-sm md:text-base text-gray-700 dark:text-gray-300">
+                      <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
                         {feature.text}
                       </span>
                     </li>
                   ))}
-                  <li className="text-xs md:text-sm text-muted-foreground pt-2">
+                  <li className="text-xs text-muted-foreground pt-1">
                     + {proTierFeatures.length - 4} more features
                   </li>
                 </ul>
 
                 <Button
-                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base font-bold py-5 md:py-6 hover:scale-[1.01]"
+                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-xs md:text-sm font-bold py-3 md:py-4 hover:scale-[1.01]"
                   disabled={subscription.tier === "pro" || isUpgrading}
                   onClick={handleUpgradeMonthly}
                 >
                   {isUpgrading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       Processing...
                     </span>
                   ) : subscription.tier === "pro" ? (
                     "Current Plan"
                   ) : (
                     <span className="flex items-center justify-center gap-2">
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-3 h-3" />
                       Upgrade Monthly
                     </span>
                   )}
@@ -570,93 +570,93 @@ export function PricingDialog({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="relative border-2 border-[#9B87E8] rounded-2xl md:rounded-3xl p-6 md:p-8 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/40 transition-all duration-300 flex flex-col"
+              className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/40 transition-all duration-300 flex flex-col"
             >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-2xl" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-2xl" />
               
               {/* Popular Badge */}
-              <div className="absolute top-4 right-4 z-20">
-                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-lg px-3 py-1 text-xs font-semibold">
-                  <Crown className="w-3 h-3 mr-1" />
+              <div className="absolute top-3 right-3 z-20">
+                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-lg px-2 py-0.5 text-xs font-semibold">
+                  <Crown className="w-2.5 h-2.5 mr-1" />
                   Best Value
                 </Badge>
               </div>
 
               <div className="relative z-10 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro Yearly</h3>
-                      <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-[#9B87E8] animate-pulse" />
+                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro Yearly</h3>
+                      <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-sm md:text-base text-muted-foreground">Billed annually</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Billed annually</p>
                   </div>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                    <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                       {offerings.yearly?.priceString || DEFAULT_YEARLY_PRICE}
                     </span>
-                    <span className="text-lg md:text-xl text-muted-foreground">/year</span>
+                    <span className="text-sm md:text-base text-muted-foreground">/year</span>
                   </div>
                   {savings > 0 && (
-                    <Badge className="mb-2 bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-bold px-2 py-1">
+                    <Badge className="mb-2 bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-bold px-2 py-0.5">
                       Save {savings}%
                     </Badge>
                   )}
                   {offerings.yearly && offerings.monthly && (
-                    <p className="text-sm md:text-base font-semibold text-[#9B87E8]">
+                    <p className="text-xs md:text-sm font-semibold text-[#9B87E8]">
                       ${((parseFloat(offerings.yearly.price) / 12).toFixed(2))} per month
                     </p>
                   )}
                   {offerings.yearly?.description && (
-                    <p className="text-xs md:text-sm text-muted-foreground mt-1 italic">
+                    <p className="text-xs text-muted-foreground mt-1 italic">
                       {offerings.yearly.description}
                     </p>
                   )}
                 </div>
 
                 {/* Features list - compact */}
-                <ul className="space-y-3 mb-6 flex-1">
+                <ul className="space-y-2 mb-4 flex-1">
                   {proTierFeatures.slice(0, 4).map((feature, index) => (
-                    <li key={index} className="flex items-start gap-3">
+                    <li key={index} className="flex items-start gap-2">
                       <div className={cn(
-                        "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5",
+                        "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
                         feature.highlight
                           ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
                           : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
                       )}>
                         <feature.icon className={cn(
-                          "w-3 h-3",
+                          "w-2.5 h-2.5",
                           feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
                         )} />
                       </div>
-                      <span className="text-sm md:text-base text-gray-700 dark:text-gray-300">
+                      <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
                         {feature.text}
                       </span>
                     </li>
                   ))}
-                  <li className="text-xs md:text-sm text-muted-foreground pt-2">
+                  <li className="text-xs text-muted-foreground pt-1">
                     + {proTierFeatures.length - 4} more features
                   </li>
                 </ul>
 
                 <Button
-                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-xl hover:shadow-2xl transition-all duration-300 text-sm md:text-base font-bold py-5 md:py-6 hover:scale-[1.01]"
+                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-xl hover:shadow-2xl transition-all duration-300 text-xs md:text-sm font-bold py-3 md:py-4 hover:scale-[1.01]"
                   disabled={subscription.tier === "pro" || isUpgrading}
                   onClick={handleUpgradeYearly}
                 >
                   {isUpgrading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       Processing...
                     </span>
                   ) : subscription.tier === "pro" ? (
                     "Current Plan"
                   ) : (
                     <span className="flex items-center justify-center gap-2">
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-3 h-3" />
                       Upgrade Yearly
                     </span>
                   )}
@@ -666,8 +666,8 @@ export function PricingDialog({
           </div>
 
           {/* Footer Note - Spacious */}
-          <div className="mt-8 md:mt-10 p-5 md:p-6 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-xl md:rounded-2xl border-2 border-[#9B87E8]/30 shadow-lg backdrop-blur-sm">
-            <p className="text-sm md:text-base lg:text-lg text-center text-gray-700 dark:text-gray-300 leading-relaxed">
+          <div className="mt-5 md:mt-7 p-3 md:p-4 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg md:rounded-xl border-2 border-[#9B87E8]/30 shadow-lg backdrop-blur-sm">
+            <p className="text-xs md:text-sm lg:text-base text-center text-gray-700 dark:text-gray-300 leading-relaxed">
               {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
               <span className="font-semibold text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
               {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
