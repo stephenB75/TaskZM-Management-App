@@ -4,6 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   root: __dirname, // Set root to src/ directory (where index.html is)
+  envDir: path.resolve(__dirname, '..'), // Look for .env files in project root (parent of src/)
   plugins: [react()],
   base: '/',
   resolve: {
