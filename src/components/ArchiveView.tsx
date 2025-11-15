@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
-import { cn, prepareTaskForDialog } from "../lib/utils";
+import { cn, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
 import type { Task } from "../types";
 
@@ -364,9 +364,23 @@ export function ArchiveView() {
                               </h3>
 
                               {task.description && (
-                                <p className="text-xs text-muted-foreground line-clamp-2 opacity-60 leading-tight">
-                                  {task.description}
-                                </p>
+                                <div 
+                                  className={cn(
+                                    "text-xs text-muted-foreground line-clamp-2 opacity-60 leading-tight",
+                                    hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
+                                    hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
+                                    hasHTMLTags(task.description) && "[&_u]:underline",
+                                    hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
+                                    hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
+                                    hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
+                                    hasHTMLTags(task.description) && "[&_li]:ml-1",
+                                    hasHTMLTags(task.description) && "[&_p]:my-0.5"
+                                  )}
+                                  {...(hasHTMLTags(task.description) 
+                                    ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                                    : { children: task.description }
+                                  )}
+                                />
                               )}
 
                               {/* Assignee Display */}

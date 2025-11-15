@@ -4,7 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "motion/react";
 import { Circle, Timer, Clock, Repeat } from "lucide-react";
 import { Badge } from "./ui/badge";
-import { cn, getInitials, formatTimeAMPM, sanitizeHTML } from "../lib/utils";
+import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { usePomodoro } from "../contexts/PomodoroContext";
@@ -380,17 +380,22 @@ export function DraggableTodayAgendaTask({
                   "text-gray-500 leading-snug break-words",
                   isMobile ? "text-[10px]" : "text-xs",
                   (task.estimatedTime && task.estimatedTime <= 30) ? "line-clamp-2" : "line-clamp-4",
-                  // Rich text formatting styles
-                  "[&_strong]:font-bold [&_b]:font-bold",
-                  "[&_u]:underline",
-                  "[&_s]:line-through [&_strike]:line-through",
-                  "[&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800 [&_mark]:px-0.5 [&_mark]:rounded",
-                  "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5",
-                  "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
-                  "[&_li]:ml-1",
-                  "[&_p]:my-0.5"
+                  // Rich text formatting styles - only apply if HTML is present
+                  hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
+                  hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
+                  hasHTMLTags(task.description) && "[&_u]:underline",
+                  hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
+                  hasHTMLTags(task.description) && "[&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800 [&_mark]:px-0.5 [&_mark]:rounded",
+                  hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5",
+                  hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
+                  hasHTMLTags(task.description) && "[&_li]:ml-1",
+                  hasHTMLTags(task.description) && "[&_p]:my-0.5",
+                  hasHTMLTags(task.description) && "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
                 )}
-                dangerouslySetInnerHTML={{ __html: sanitizeHTML(task.description) }}
+                {...(hasHTMLTags(task.description) 
+                  ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                  : { children: task.description }
+                )}
               />
             )}
 

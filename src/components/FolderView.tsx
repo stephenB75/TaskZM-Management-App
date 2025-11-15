@@ -30,7 +30,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { ScrollArea } from "./ui/scroll-area";
-import { cn, getInitials } from "../lib/utils";
+import { cn, getInitials, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "sonner";
 import type { Task, Folder as FolderType } from "../types";
 
@@ -476,9 +476,23 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                           </div>
 
                           {task.description && (
-                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                              {task.description}
-                            </p>
+                            <div 
+                              className={cn(
+                                "text-xs text-muted-foreground mb-2 line-clamp-2",
+                                hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
+                                hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
+                                hasHTMLTags(task.description) && "[&_u]:underline",
+                                hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
+                                hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
+                                hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
+                                hasHTMLTags(task.description) && "[&_li]:ml-1",
+                                hasHTMLTags(task.description) && "[&_p]:my-0.5"
+                              )}
+                              {...(hasHTMLTags(task.description) 
+                                ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                                : { children: task.description }
+                              )}
+                            />
                           )}
 
                           <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">

@@ -40,7 +40,7 @@ import { AppHeader } from "./AppHeader";
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
-import { cn } from "../lib/utils";
+import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "sonner";
 import type { Task } from "../types";
 
@@ -1138,9 +1138,23 @@ export function DashboardView({
                             </div>
                           </div>
                           {task.description && (
-                            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                              {task.description}
-                            </p>
+                            <div 
+                              className={cn(
+                                "text-xs text-muted-foreground mb-2 line-clamp-1",
+                                hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
+                                hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
+                                hasHTMLTags(task.description) && "[&_u]:underline",
+                                hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
+                                hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
+                                hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
+                                hasHTMLTags(task.description) && "[&_li]:ml-1",
+                                hasHTMLTags(task.description) && "[&_p]:my-0.5"
+                              )}
+                              {...(hasHTMLTags(task.description) 
+                                ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                                : { children: task.description }
+                              )}
+                            />
                           )}
 
                           {/* AI Reasoning */}

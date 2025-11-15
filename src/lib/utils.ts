@@ -423,8 +423,23 @@ export function getInitials(name: string | undefined | null): string {
 
 // Safe first name extraction
 // Sanitize HTML to prevent XSS attacks while preserving formatting
+/**
+ * Check if a string contains HTML tags
+ */
+export function hasHTMLTags(text: string): boolean {
+  if (!text || typeof text !== 'string') return false;
+  // Check for HTML tags (simple regex check)
+  const htmlTagPattern = /<[^>]+>/;
+  return htmlTagPattern.test(text);
+}
+
 export function sanitizeHTML(html: string): string {
   if (!html || typeof window === 'undefined') return html || '';
+  
+  // If it's not HTML, return as-is
+  if (!hasHTMLTags(html)) {
+    return html;
+  }
   
   try {
     // Create a temporary div to parse HTML
@@ -432,7 +447,7 @@ export function sanitizeHTML(html: string): string {
     div.innerHTML = html;
     
     // Allow only safe formatting tags
-    const allowedTags = ['b', 'strong', 'u', 's', 'strike', 'mark', 'ul', 'ol', 'li', 'p', 'br', 'span'];
+    const allowedTags = ['b', 'strong', 'i', 'em', 'u', 's', 'strike', 'mark', 'ul', 'ol', 'li', 'p', 'br', 'span', 'code'];
     const allowedAttributes = ['style', 'class'];
     
     // Remove all non-allowed tags
@@ -460,13 +475,15 @@ export function sanitizeHTML(html: string): string {
         // Sanitize style attribute to only allow safe CSS properties
         if (element.hasAttribute('style')) {
           const style = element.getAttribute('style') || '';
-          // Only allow background-color for highlight
+          // Allow background-color, font-size, and other safe properties
           const sanitizedStyle = style
             .split(';')
             .filter(prop => {
-              const trimmed = prop.trim();
+              const trimmed = prop.trim().toLowerCase();
               return trimmed.startsWith('background-color:') || 
-                     trimmed.startsWith('background:');
+                     trimmed.startsWith('background:') ||
+                     trimmed.startsWith('font-size:') ||
+                     trimmed.startsWith('color:');
             })
             .join(';');
           if (sanitizedStyle) {
