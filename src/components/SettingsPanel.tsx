@@ -82,6 +82,7 @@ import {
   SETTINGS_PANEL_TIMEOUT_DELAY_MS,
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
+import { getInitials } from '../lib/utils';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -305,7 +306,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <User style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE }} className="text-primary" />
+              <div 
+                className="rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold"
+                style={{ 
+                  width: '2rem', 
+                  height: '2rem',
+                  fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL
+                }}
+              >
+                {getInitials(user?.name)}
+              </div>
               <span>User Profile</span>
             </div>
           </AccordionTrigger>
@@ -318,13 +328,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           >
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_LARGE }}>
               <div 
-                className="rounded-full bg-primary/10 flex items-center justify-center"
+                className="rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary font-semibold shadow-sm"
                 style={{ 
                   width: SETTINGS_PANEL_AVATAR_SIZE, 
-                  height: SETTINGS_PANEL_AVATAR_SIZE 
+                  height: SETTINGS_PANEL_AVATAR_SIZE,
+                  fontSize: '1.5rem'
                 }}
               >
-                <User style={{ width: SETTINGS_PANEL_ICON_SIZE_XLARGE, height: SETTINGS_PANEL_ICON_SIZE_XLARGE }} className="text-primary" />
+                {getInitials(user?.name)}
               </div>
               <div className="flex-1" style={{ gap: SETTINGS_PANEL_SPACING_XSMALL }}>
                 <div style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}>{user?.name}</div>
