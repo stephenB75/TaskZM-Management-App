@@ -212,17 +212,26 @@ export function PricingDialog({
         console.log('📋 Offering identifier:', rcOfferings.identifier || 'N/A');
         
         // Log ALL packages first (before filtering) to see what RevenueCat is actually returning
-        console.log('📦 ALL PACKAGES FROM REVENUECAT (before filtering):');
+        console.log('============================================================');
+        console.log('📦 REVENUECAT PACKAGES - RAW DATA FROM API');
+        console.log('============================================================');
+        console.log('Total packages returned by RevenueCat:', rcOfferings.availablePackages.length);
+        console.log('These are the ACTUAL identifiers from RevenueCat (NOT hardcoded):');
+        const allIdentifiers: string[] = [];
         rcOfferings.availablePackages.forEach((p: any, index: number) => {
           const identifier = p?.identifier || 'N/A';
+          if (identifier !== 'N/A') {
+            allIdentifiers.push(identifier);
+          }
           const hasProduct = !!p?.product;
           const productKeys = p?.product && typeof p.product === 'object' ? Object.keys(p.product) : [];
           // Check if product has ANY data (not just specific fields)
           const hasProductData = hasProduct && productKeys.length > 0;
           
           // Log the FULL product object to see what RevenueCat is actually returning
-          console.log(`   Package ${index + 1}:`, {
-            identifier,
+          console.log(`\n   📦 Package ${index + 1} from RevenueCat:`, {
+            identifier: identifier,
+            identifierSource: '✅ FROM REVENUECAT API (not hardcoded)',
             hasIdentifier: !!p?.identifier,
             hasProduct,
             hasProductData,
@@ -234,11 +243,28 @@ export function PricingDialog({
             priceString: p?.product?.priceString || 'N/A',
             price: p?.product?.price || 'N/A',
             currencyCode: p?.product?.currencyCode || 'N/A',
+            subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A',
             // Log the entire product object structure
-            fullProductObject: p?.product ? JSON.stringify(p.product, null, 2).substring(0, 200) : 'N/A',
+            fullProductObject: p?.product ? JSON.stringify(p.product, null, 2).substring(0, 300) : 'N/A',
             willBeProcessed: !!p?.identifier ? 'YES (has identifier)' : 'NO (no identifier)'
           });
         });
+        
+        console.log('\n📋 SUMMARY: All package identifiers from RevenueCat:');
+        console.log('   Identifiers:', allIdentifiers.length > 0 ? allIdentifiers : 'NONE');
+        console.log('   ✅ These are the ACTUAL identifiers returned by RevenueCat API');
+        console.log('   ✅ NOT hardcoded - these come directly from RevenueCat dashboard');
+        if (allIdentifiers.some(id => id.includes('monthly') || id.includes('rc_monthly'))) {
+          console.log('   ✅ Found monthly package identifier in RevenueCat response');
+        } else {
+          console.log('   ⚠️ Monthly package identifier NOT found in RevenueCat response');
+        }
+        if (allIdentifiers.some(id => id.includes('annual') || id.includes('yearly') || id.includes('rc_annual') || id.includes('rc_yearly'))) {
+          console.log('   ✅ Found yearly package identifier in RevenueCat response');
+        } else {
+          console.log('   ⚠️ Yearly package identifier NOT found in RevenueCat response');
+        }
+        console.log('============================================================');
         
         // VERY lenient validation: accept ANY package with an identifier
         // RevenueCat sometimes returns packages with empty product objects that get populated later
