@@ -171,6 +171,48 @@ export const SUBSCRIPTION_UI_TEXT = {
     downgradedToFree: "✅ Downgraded to Free tier",
     downgradeFailed: "Failed to downgrade subscription",
   },
+  planCards: {
+    monthly: {
+      title: "Pro Monthly",
+      billingPeriod: "Billed monthly",
+      button: {
+        processing: "Processing...",
+        current: "Current Plan",
+        upgrade: "Upgrade Monthly",
+      },
+    },
+    yearly: {
+      title: "Pro Yearly",
+      billingPeriod: "Billed annually",
+      badge: "Best Value",
+      savingsLabel: (percent: number) => `Save ${percent}%`,
+      perMonthLabel: (price: string) => `$${price} per month`,
+      button: {
+        processing: "Processing...",
+        current: "Current Plan",
+        upgrade: "Upgrade Yearly",
+      },
+    },
+    priceUnits: {
+      month: "/month",
+      year: "/year",
+    },
+  },
+  configuration: {
+    errorTitle: "Configuration Error",
+    initializationFailed: "Failed to initialize payment system. Please refresh the page and try again.",
+    loginRequired: "Please ensure you are logged in and try again.",
+  },
+  upgrade: {
+    failed: "Upgrade failed",
+    failedDesc: "Please try again or contact support.",
+    monthlyNotAvailable: "Monthly subscription is not currently available. Only yearly subscription is available.",
+    yearlyNotAvailable: "Yearly subscription is not currently available.",
+  },
+  revenueCat: {
+    connected: (count: number) => `✅ RevenueCat Connected • ${count} package(s) loaded`,
+    notConnected: "⚠️ RevenueCat not connected • Using default pricing",
+  },
 } as const;
 
 // Feature definitions

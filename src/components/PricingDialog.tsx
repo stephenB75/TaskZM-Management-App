@@ -228,23 +228,42 @@ export function PricingDialog({
           title: yearlyPkg.product?.title || 'N/A'
         } : 'NOT FOUND');
 
+        // Set offerings from RevenueCat - this is the source of truth
+        const monthlyOffering = monthlyPkg && monthlyPkg.product ? {
+          price: monthlyPkg.product.price?.toString() || '0',
+          priceString: monthlyPkg.product.priceString || DEFAULT_MONTHLY_PRICE,
+          currencyCode: monthlyPkg.product.currencyCode || DEFAULT_CURRENCY_CODE,
+          identifier: monthlyPkg.identifier,
+          title: monthlyPkg.product.title || DEFAULT_MONTHLY_TITLE,
+          description: monthlyPkg.product.description || '',
+        } : undefined;
+
+        const yearlyOffering = yearlyPkg && yearlyPkg.product ? {
+          price: yearlyPkg.product.price?.toString() || '0',
+          priceString: yearlyPkg.product.priceString || DEFAULT_YEARLY_PRICE,
+          currencyCode: yearlyPkg.product.currencyCode || DEFAULT_CURRENCY_CODE,
+          identifier: yearlyPkg.identifier,
+          title: yearlyPkg.product.title || DEFAULT_YEARLY_TITLE,
+          description: yearlyPkg.product.description || '',
+        } : undefined;
+
+        console.log('✅ Setting offerings from RevenueCat:');
+        console.log('   Monthly:', monthlyOffering ? {
+          identifier: monthlyOffering.identifier,
+          priceString: monthlyOffering.priceString,
+          title: monthlyOffering.title,
+          fromRevenueCat: monthlyPkg.product.priceString ? 'YES' : 'NO (using default)'
+        } : 'NOT AVAILABLE');
+        console.log('   Yearly:', yearlyOffering ? {
+          identifier: yearlyOffering.identifier,
+          priceString: yearlyOffering.priceString,
+          title: yearlyOffering.title,
+          fromRevenueCat: yearlyPkg.product.priceString ? 'YES' : 'NO (using default)'
+        } : 'NOT AVAILABLE');
+
         setOfferings({
-          monthly: monthlyPkg && monthlyPkg.product ? {
-            price: monthlyPkg.product.price?.toString() || '0',
-            priceString: monthlyPkg.product.priceString || DEFAULT_MONTHLY_PRICE,
-            currencyCode: monthlyPkg.product.currencyCode || DEFAULT_CURRENCY_CODE,
-            identifier: monthlyPkg.identifier,
-            title: monthlyPkg.product.title || DEFAULT_MONTHLY_TITLE,
-            description: monthlyPkg.product.description || '',
-          } : undefined,
-          yearly: yearlyPkg && yearlyPkg.product ? {
-            price: yearlyPkg.product.price?.toString() || '0',
-            priceString: yearlyPkg.product.priceString || DEFAULT_YEARLY_PRICE,
-            currencyCode: yearlyPkg.product.currencyCode || DEFAULT_CURRENCY_CODE,
-            identifier: yearlyPkg.identifier,
-            title: yearlyPkg.product.title || DEFAULT_YEARLY_TITLE,
-            description: yearlyPkg.product.description || '',
-          } : undefined,
+          monthly: monthlyOffering,
+          yearly: yearlyOffering,
         });
 
         setRevenueCatStatus({
@@ -397,16 +416,16 @@ export function PricingDialog({
           console.log('✅ RevenueCat configured, proceeding with purchase...');
         } catch (configError: any) {
           console.error('❌ Failed to configure RevenueCat:', configError);
-          toast.error('Configuration Error', {
-            description: 'Failed to initialize payment system. Please refresh the page and try again.',
+          toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
+            description: SUBSCRIPTION_UI_TEXT.configuration.initializationFailed,
           });
           setIsUpgrading(false);
           return;
         }
       } else if (!isRevenueCatConfigured()) {
         console.error('❌ RevenueCat not configured and no user ID available');
-        toast.error('Configuration Error', {
-          description: 'Please ensure you are logged in and try again.',
+        toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
+          description: SUBSCRIPTION_UI_TEXT.configuration.loginRequired,
         });
         setIsUpgrading(false);
         return;
@@ -416,7 +435,7 @@ export function PricingDialog({
       if (!offerings.monthly) {
         console.error('❌ Monthly package not available');
         toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-          description: 'Monthly subscription is not currently available. Only yearly subscription is available.',
+          description: SUBSCRIPTION_UI_TEXT.upgrade.monthlyNotAvailable,
         });
         setIsUpgrading(false);
         return;
@@ -445,7 +464,7 @@ export function PricingDialog({
         if (!offerings.monthly) {
           console.error('❌ Monthly package still not available after reload');
           toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-            description: 'Monthly subscription is not currently available. Only yearly subscription is available.',
+            description: SUBSCRIPTION_UI_TEXT.upgrade.monthlyNotAvailable,
           });
           setIsUpgrading(false);
           return;
@@ -517,15 +536,15 @@ export function PricingDialog({
           }
         }
 
-        toast.error("Upgrade failed", {
-          description: rcError.message || "Please try again or contact support.",
+        toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
+          description: rcError.message || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc,
         });
         setIsUpgrading(false);
       }
     } catch (error: any) {
       console.error("Monthly upgrade error:", error);
-      toast.error("Upgrade failed", {
-        description: error.message || "Please try again or contact support.",
+      toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
+        description: error.message || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc,
       });
       setIsUpgrading(false);
     }
@@ -547,16 +566,16 @@ export function PricingDialog({
           console.log('✅ RevenueCat configured, proceeding with purchase...');
         } catch (configError: any) {
           console.error('❌ Failed to configure RevenueCat:', configError);
-          toast.error('Configuration Error', {
-            description: 'Failed to initialize payment system. Please refresh the page and try again.',
+          toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
+            description: SUBSCRIPTION_UI_TEXT.configuration.initializationFailed,
           });
           setIsUpgrading(false);
           return;
         }
       } else if (!isRevenueCatConfigured()) {
         console.error('❌ RevenueCat not configured and no user ID available');
-        toast.error('Configuration Error', {
-          description: 'Please ensure you are logged in and try again.',
+        toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
+          description: SUBSCRIPTION_UI_TEXT.configuration.loginRequired,
         });
         setIsUpgrading(false);
         return;
@@ -566,7 +585,7 @@ export function PricingDialog({
       if (!offerings.yearly) {
         console.error('❌ Yearly package not available');
         toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-          description: 'Yearly subscription is not currently available.',
+          description: SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable,
         });
         setIsUpgrading(false);
         return;
@@ -595,7 +614,7 @@ export function PricingDialog({
         if (!offerings.yearly) {
           console.error('❌ Yearly package still not available after reload');
           toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-            description: 'Yearly subscription is not currently available.',
+            description: SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable,
           });
           setIsUpgrading(false);
           return;
@@ -667,15 +686,15 @@ export function PricingDialog({
           }
         }
 
-        toast.error("Upgrade failed", {
-          description: rcError.message || "Please try again or contact support.",
+        toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
+          description: rcError.message || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc,
         });
         setIsUpgrading(false);
       }
     } catch (error: any) {
       console.error("Yearly upgrade error:", error);
-      toast.error("Upgrade failed", {
-        description: error.message || "Please try again or contact support.",
+      toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
+        description: error.message || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc,
       });
       setIsUpgrading(false);
     }
@@ -703,9 +722,9 @@ export function PricingDialog({
                 : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
             }`}>
               {revenueCatStatus.connected ? (
-                <span>✅ RevenueCat Connected • {revenueCatStatus.packagesLoaded} package(s) loaded</span>
+                <span>{SUBSCRIPTION_UI_TEXT.revenueCat.connected(revenueCatStatus.packagesLoaded)}</span>
               ) : (
-                <span>⚠️ RevenueCat not connected • Using default pricing</span>
+                <span>{SUBSCRIPTION_UI_TEXT.revenueCat.notConnected}</span>
               )}
             </div>
           </div>
@@ -788,10 +807,10 @@ export function PricingDialog({
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro Monthly</h3>
+                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">{SUBSCRIPTION_UI_TEXT.planCards.monthly.title}</h3>
                       <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-xs md:text-sm text-muted-foreground">Billed monthly</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod}</p>
                   </div>
                 </div>
 
@@ -799,8 +818,13 @@ export function PricingDialog({
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                       {offerings.monthly?.priceString || DEFAULT_MONTHLY_PRICE}
+                      {!offerings.monthly?.priceString && revenueCatStatus.connected && (
+                        <span className="text-xs text-muted-foreground ml-1" title="Using default price - RevenueCat price not available">
+                          *
+                        </span>
+                      )}
                     </span>
-                    <span className="text-sm md:text-base text-muted-foreground">/month</span>
+                    <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
                   </div>
                   {offerings.monthly?.description && (
                     <p className="text-xs text-muted-foreground mt-1 italic">
@@ -842,14 +866,14 @@ export function PricingDialog({
                   {isUpgrading ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Processing...
+                      {SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}
                     </span>
                   ) : subscription.tier === "pro" ? (
-                    "Current Plan"
+                    SUBSCRIPTION_UI_TEXT.planCards.monthly.button.current
                   ) : (
                     <span className="flex items-center justify-center gap-2">
                       <Sparkles className="w-3 h-3" />
-                      Upgrade Monthly
+                      {SUBSCRIPTION_UI_TEXT.planCards.monthly.button.upgrade}
                     </span>
                   )}
                 </Button>
@@ -870,7 +894,7 @@ export function PricingDialog({
               <div className="absolute top-3 right-3 z-20">
                 <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-lg px-2 py-0.5 text-xs font-semibold">
                   <Crown className="w-2.5 h-2.5 mr-1" />
-                  Best Value
+                  {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
                 </Badge>
               </div>
 
@@ -878,10 +902,10 @@ export function PricingDialog({
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">Pro Yearly</h3>
+                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">{SUBSCRIPTION_UI_TEXT.planCards.yearly.title}</h3>
                       <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-xs md:text-sm text-muted-foreground">Billed annually</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod}</p>
                   </div>
                 </div>
 
@@ -889,17 +913,22 @@ export function PricingDialog({
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                       {offerings.yearly?.priceString || DEFAULT_YEARLY_PRICE}
+                      {!offerings.yearly?.priceString && revenueCatStatus.connected && (
+                        <span className="text-xs text-muted-foreground ml-1" title="Using default price - RevenueCat price not available">
+                          *
+                        </span>
+                      )}
                     </span>
-                    <span className="text-sm md:text-base text-muted-foreground">/year</span>
+                    <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
                   </div>
                   {savings > 0 && (
                     <Badge className="mb-2 bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-bold px-2 py-0.5">
-                      Save {savings}%
+                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings)}
                     </Badge>
                   )}
                   {offerings.yearly && offerings.monthly && (
                     <p className="text-xs md:text-sm font-semibold text-[#9B87E8]">
-                      ${((parseFloat(offerings.yearly.price) / 12).toFixed(2))} per month
+                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(((parseFloat(offerings.yearly.price) / 12).toFixed(2)))}
                     </p>
                   )}
                   {offerings.yearly?.description && (
@@ -942,14 +971,14 @@ export function PricingDialog({
                   {isUpgrading ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Processing...
+                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}
                     </span>
                   ) : subscription.tier === "pro" ? (
-                    "Current Plan"
+                    SUBSCRIPTION_UI_TEXT.planCards.yearly.button.current
                   ) : (
                     <span className="flex items-center justify-center gap-2">
                       <Sparkles className="w-3 h-3" />
-                      Upgrade Yearly
+                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.button.upgrade}
                     </span>
                   )}
                 </Button>
