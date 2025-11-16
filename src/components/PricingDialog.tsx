@@ -151,7 +151,8 @@ export function PricingDialog({
       // Sometimes product data takes a moment to populate after SDK initialization
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const rcOfferings = await getOfferings();
+      // Force refresh to get latest packages from RevenueCat (bypasses cache)
+      const rcOfferings = await getOfferings(true);
       
       if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
         console.log('✅ RevenueCat connected! Packages found:', rcOfferings.availablePackages.length);
@@ -562,14 +563,14 @@ export function PricingDialog({
 
       // Check if offerings are available before purchase
       console.log('🔍 Checking if offerings are available...');
-      const offeringsCheck = await getOfferings();
+        const offeringsCheck = await getOfferings(true);
       if (!offeringsCheck || !offeringsCheck.availablePackages || offeringsCheck.availablePackages.length === 0) {
         console.warn('⚠️ No offerings found, attempting to reload...');
         // Try reloading offerings
         await loadOfferings();
         
         // Check again after reload
-        const offeringsCheck2 = await getOfferings();
+        const offeringsCheck2 = await getOfferings(true);
         if (!offeringsCheck2 || !offeringsCheck2.availablePackages || offeringsCheck2.availablePackages.length === 0) {
           console.error('❌ No offerings available after reload');
           toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
@@ -731,7 +732,7 @@ export function PricingDialog({
         await loadOfferings();
         
         // Get fresh offerings directly from RevenueCat to verify
-        const freshOfferings = await getOfferings();
+        const freshOfferings = await getOfferings(true);
         if (!freshOfferings?.availablePackages || freshOfferings.availablePackages.length === 0) {
           console.error('❌ No packages available from RevenueCat');
           console.error('   This usually means:');
@@ -875,14 +876,14 @@ export function PricingDialog({
 
       // Check if offerings are available before purchase
       console.log('🔍 Checking if offerings are available...');
-      const offeringsCheck = await getOfferings();
+        const offeringsCheck = await getOfferings(true);
       if (!offeringsCheck || !offeringsCheck.availablePackages || offeringsCheck.availablePackages.length === 0) {
         console.warn('⚠️ No offerings found, attempting to reload...');
         // Try reloading offerings
         await loadOfferings();
         
         // Check again after reload
-        const offeringsCheck2 = await getOfferings();
+        const offeringsCheck2 = await getOfferings(true);
         if (!offeringsCheck2 || !offeringsCheck2.availablePackages || offeringsCheck2.availablePackages.length === 0) {
           console.error('❌ No offerings available after reload');
           toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {

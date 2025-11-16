@@ -509,8 +509,9 @@ export async function restorePurchases(): Promise<boolean> {
 
 /**
  * Get available offerings/packages
+ * @param forceRefresh - If true, forces a fresh fetch from RevenueCat (bypasses cache)
  */
-export async function getOfferings(): Promise<RevenueCatOffering | null> {
+export async function getOfferings(forceRefresh: boolean = false): Promise<RevenueCatOffering | null> {
   // If RevenueCat not configured, return null
   if (!isConfigured) {
     console.warn('⚠️ RevenueCat not configured, no offerings available');
@@ -521,7 +522,7 @@ export async function getOfferings(): Promise<RevenueCatOffering | null> {
 
   try {
     const platform = getPlatform();
-    console.log(`🔄 Fetching offerings from RevenueCat (platform: ${platform.platform})...`);
+    console.log(`🔄 Fetching offerings from RevenueCat (platform: ${platform.platform}, forceRefresh: ${forceRefresh})...`);
 
     if (platform.isWeb) {
       try {
@@ -539,6 +540,18 @@ export async function getOfferings(): Promise<RevenueCatOffering | null> {
           console.log('✅ Customer info synced');
         } catch (syncError: any) {
           console.warn('⚠️ Could not sync purchases (this is usually fine):', syncError?.message || syncError);
+        }
+        
+        // If force refresh, try to invalidate cache by getting customer info first
+        if (forceRefresh) {
+          try {
+            console.log('🔄 Force refreshing - fetching customer info to invalidate cache...');
+            await purchasesInstance.getCustomerInfo();
+            // Add a small delay to ensure cache is cleared
+            await new Promise(resolve => setTimeout(resolve, 300));
+          } catch (error: any) {
+            console.warn('⚠️ Could not refresh customer info:', error?.message || error);
+          }
         }
         
         const offerings = await purchasesInstance.getOfferings();

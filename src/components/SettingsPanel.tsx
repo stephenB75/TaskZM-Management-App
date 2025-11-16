@@ -139,7 +139,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           return;
         }
 
-        const offerings = await getOfferings();
+        // Force refresh to get latest packages from RevenueCat
+        const offerings = await getOfferings(true);
         if (offerings?.availablePackages && offerings.availablePackages.length > 0) {
           // Filter for packages with valid product data (not just empty objects)
           const hasValidProduct = (p: any) => {
