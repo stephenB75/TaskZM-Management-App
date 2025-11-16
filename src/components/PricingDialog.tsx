@@ -339,6 +339,15 @@ export function PricingDialog({
           }
         })), null, 2));
         
+        // Helper to check if package has valid product data (defined early for use in identifier discovery)
+        const hasValidProductData = (pkg: any): boolean => {
+          if (!pkg?.product) return false;
+          // Check if product has price data
+          const hasPriceString = pkg.product.priceString && pkg.product.priceString.trim() !== '';
+          const hasPriceAmount = pkg.product.price != null && pkg.product.price !== 0;
+          return hasPriceString || hasPriceAmount;
+        };
+        
         // DYNAMIC IDENTIFIER DETECTION: Extract identifiers from RevenueCat packages
         // This replaces hardcoded identifier lists with actual identifiers from RevenueCat
         const discoveredIdentifiers = {
@@ -354,9 +363,17 @@ export function PricingDialog({
           }
         };
         
-        // Extract all identifiers from packages for dynamic matching
+        // Extract identifiers ONLY from packages with valid product data
+        // This ensures we only use identifiers from packages that actually have pricing info
         validPackages.forEach((pkg: any) => {
           if (!pkg) return;
+          
+          // Only discover identifiers from packages with valid product data
+          // Packages without product data are likely not properly configured in RevenueCat
+          if (!hasValidProductData(pkg)) {
+            console.warn(`⚠️ Skipping identifier discovery for package ${pkg.identifier} - no valid product data`);
+            return;
+          }
           
           const identifier = pkg.identifier || '';
           const productId = pkg.product?.identifier || '';
@@ -398,29 +415,27 @@ export function PricingDialog({
           }
         });
         
-        // Prioritize discovered identifiers, only add fallbacks if nothing was discovered
-        const monthlyIdentifiers = discoveredIdentifiers.monthly.packageIdentifiers.length > 0 || discoveredIdentifiers.monthly.productIds.length > 0
-          ? [...new Set([...discoveredIdentifiers.monthly.packageIdentifiers, ...discoveredIdentifiers.monthly.productIds])]
-          : MONTHLY_PACKAGE_IDENTIFIERS; // Only use fallback if no dynamic identifiers found
+        // Use ONLY discovered identifiers from RevenueCat - NO hardcoded fallbacks
+        // This ensures we only match packages that RevenueCat actually returns
+        const monthlyIdentifiers = [...new Set([...discoveredIdentifiers.monthly.packageIdentifiers, ...discoveredIdentifiers.monthly.productIds])];
+        const yearlyIdentifiers = [...new Set([...discoveredIdentifiers.yearly.packageIdentifiers, ...discoveredIdentifiers.yearly.productIds])];
         
-        const yearlyIdentifiers = discoveredIdentifiers.yearly.packageIdentifiers.length > 0 || discoveredIdentifiers.yearly.productIds.length > 0
-          ? [...new Set([...discoveredIdentifiers.yearly.packageIdentifiers, ...discoveredIdentifiers.yearly.productIds])]
-          : YEARLY_PACKAGE_IDENTIFIERS; // Only use fallback if no dynamic identifiers found
-        
-        console.log('🔍 Dynamic Identifier Detection:');
-        console.log('   Discovered Monthly Identifiers:', {
+        console.log('🔍 Dynamic Identifier Detection (NO HARDCODED FALLBACKS):');
+        console.log('   Discovered Monthly Identifiers from RevenueCat:', {
           packageIdentifiers: discoveredIdentifiers.monthly.packageIdentifiers,
           productIds: discoveredIdentifiers.monthly.productIds,
-          productTitles: discoveredIdentifiers.monthly.productTitles
+          productTitles: discoveredIdentifiers.monthly.productTitles,
+          total: monthlyIdentifiers.length
         });
-        console.log('   Discovered Yearly Identifiers:', {
+        console.log('   Discovered Yearly Identifiers from RevenueCat:', {
           packageIdentifiers: discoveredIdentifiers.yearly.packageIdentifiers,
           productIds: discoveredIdentifiers.yearly.productIds,
-          productTitles: discoveredIdentifiers.yearly.productTitles
+          productTitles: discoveredIdentifiers.yearly.productTitles,
+          total: yearlyIdentifiers.length
         });
-        console.log('   Using Combined Identifiers (discovered + fallback):');
-        console.log('   Monthly:', monthlyIdentifiers);
-        console.log('   Yearly:', yearlyIdentifiers);
+        console.log('   Using ONLY RevenueCat identifiers (no hardcoded fallbacks):');
+        console.log('   Monthly:', monthlyIdentifiers.length > 0 ? monthlyIdentifiers : 'NONE (will match by metadata/keywords only)');
+        console.log('   Yearly:', yearlyIdentifiers.length > 0 ? yearlyIdentifiers : 'NONE (will match by metadata/keywords only)');
 
         // Find monthly and yearly packages using dynamic identifiers
         // Try multiple matching strategies: exact match, case-insensitive, partial match, and product metadata
@@ -440,9 +455,16 @@ export function PricingDialog({
           const productTitleLower = productTitle.toLowerCase();
           
           // Check if this is a monthly package
+          // Match ONLY based on actual RevenueCat package data, not hardcoded identifiers
           if (!monthlyPkg) {
-            // Check identifier against dynamic monthly list (prioritize discovered identifiers)
-            const isMonthlyById = monthlyIdentifiers.some(id => {
+            // Priority 1: Check product metadata (billing period) - most reliable if product exists
+            const isMonthlyByMetadata = pkg.product?.subscriptionPeriod === 'P1M' || 
+                                       pkg.product?.subscriptionPeriod === 'MONTH' ||
+                                       (pkg.product?.subscriptionPeriod && 
+                                        pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'));
+            
+            // Priority 2: Check identifier/product ID against discovered RevenueCat identifiers (not hardcoded)
+            const isMonthlyById = monthlyIdentifiers.length > 0 && monthlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
               return identifierLower === idLower || 
                      identifierLower === idLower.replace('$', '') ||
@@ -451,36 +473,25 @@ export function PricingDialog({
                      identifierLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product ID against dynamic monthly list (exact match first, then pattern matching)
-            const isMonthlyByProductId = monthlyIdentifiers.some(id => {
+            const isMonthlyByProductId = monthlyIdentifiers.length > 0 && monthlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
-              // Exact match (most reliable)
               if (productIdLower === idLower) return true;
-              // Pattern matching for package identifiers
               return productIdLower.includes(idLower.replace('$', '')) ||
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product title/name against discovered monthly titles
-            const isMonthlyByProductTitle = discoveredIdentifiers.monthly.productTitles.some(title => {
+            // Priority 3: Check product title/name against discovered RevenueCat titles
+            const isMonthlyByProductTitle = discoveredIdentifiers.monthly.productTitles.length > 0 && discoveredIdentifiers.monthly.productTitles.some(title => {
               const titleLower = title.toLowerCase();
               return productTitleLower.includes(titleLower) && 
                      !productTitleLower.includes('year') &&
                      !productTitleLower.includes('annual');
-            }) || monthlyIdentifiers.some(id => {
-              const idLower = id.toLowerCase();
-              return productTitleLower.includes(idLower) && 
-                     !productTitleLower.includes('year') &&
-                     !productTitleLower.includes('annual');
             });
             
-            // Check for monthly keywords (but not yearly/annual)
+            // Priority 4: Check for monthly keywords in actual package data (not hardcoded patterns)
             const hasMonthlyKeywords = (identifierLower.includes('month') || 
-                                      identifierLower.includes('rc_monthly') ||
                                       productIdLower.includes('month') ||
-                                      productIdLower.includes('rc_monthly') ||
-                                      productTitleLower.includes('month') ||
-                                      productTitleLower.includes('pro')) && 
+                                      productTitleLower.includes('month')) && 
                                      !identifierLower.includes('year') && 
                                      !identifierLower.includes('annual') &&
                                      !productIdLower.includes('year') &&
@@ -488,13 +499,14 @@ export function PricingDialog({
                                      !productTitleLower.includes('year') &&
                                      !productTitleLower.includes('annual');
             
-            // Check product metadata (billing period) - only if product exists
-            const isMonthlyByMetadata = pkg.product?.subscriptionPeriod === 'P1M' || 
-                                       pkg.product?.subscriptionPeriod === 'MONTH' ||
-                                       (pkg.product?.subscriptionPeriod && 
-                                        pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'));
+            // Only match if we have valid product data OR strong metadata/keyword match
+            const hasValidMatch = isMonthlyByMetadata || 
+                                 (isMonthlyById && hasValidProductData(pkg)) ||
+                                 (isMonthlyByProductId && hasValidProductData(pkg)) ||
+                                 (isMonthlyByProductTitle && hasValidProductData(pkg)) ||
+                                 (hasMonthlyKeywords && hasValidProductData(pkg));
             
-            if (isMonthlyById || isMonthlyByProductId || isMonthlyByProductTitle || hasMonthlyKeywords || isMonthlyByMetadata) {
+            if (hasValidMatch) {
               monthlyPkg = pkg;
               console.log('✅ Found monthly package:', {
                 identifier,
@@ -502,15 +514,24 @@ export function PricingDialog({
                 productTitle: productTitle || 'N/A',
                 priceString: pkg.product?.priceString || 'N/A',
                 hasProduct: !!pkg.product,
-                matchedBy: isMonthlyById ? 'identifier' : isMonthlyByProductId ? 'productId' : isMonthlyByProductTitle ? 'productTitle' : hasMonthlyKeywords ? 'keywords' : 'metadata'
+                hasValidProductData: hasValidProductData(pkg),
+                matchedBy: isMonthlyByMetadata ? 'metadata' : isMonthlyById ? 'identifier' : isMonthlyByProductId ? 'productId' : isMonthlyByProductTitle ? 'productTitle' : hasMonthlyKeywords ? 'keywords' : 'unknown'
               });
             }
           }
           
           // Check if this is a yearly package
+          // Match ONLY based on actual RevenueCat package data, not hardcoded identifiers
           if (!yearlyPkg) {
-            // Check identifier against dynamic yearly list (prioritize discovered identifiers)
-            const isYearlyById = yearlyIdentifiers.some(id => {
+            // Priority 1: Check product metadata (billing period) - most reliable if product exists
+            const isYearlyByMetadata = pkg.product?.subscriptionPeriod === 'P1Y' || 
+                                      pkg.product?.subscriptionPeriod === 'YEAR' ||
+                                      pkg.product?.subscriptionPeriod === 'ANNUAL' ||
+                                      (pkg.product?.subscriptionPeriod && 
+                                       pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
+            
+            // Priority 2: Check identifier/product ID against discovered RevenueCat identifiers (not hardcoded)
+            const isYearlyById = yearlyIdentifiers.length > 0 && yearlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
               return identifierLower === idLower || 
                      identifierLower === idLower.replace('$', '') ||
@@ -519,43 +540,35 @@ export function PricingDialog({
                      identifierLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product ID against dynamic yearly list (exact match first, then pattern matching)
-            const isYearlyByProductId = yearlyIdentifiers.some(id => {
+            const isYearlyByProductId = yearlyIdentifiers.length > 0 && yearlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
-              // Exact match (most reliable)
               if (productIdLower === idLower) return true;
-              // Pattern matching for package identifiers
               return productIdLower.includes(idLower.replace('$', '')) ||
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product title/name against discovered yearly titles
-            const isYearlyByProductTitle = discoveredIdentifiers.yearly.productTitles.some(title => {
+            // Priority 3: Check product title/name against discovered RevenueCat titles
+            const isYearlyByProductTitle = discoveredIdentifiers.yearly.productTitles.length > 0 && discoveredIdentifiers.yearly.productTitles.some(title => {
               const titleLower = title.toLowerCase();
               return productTitleLower.includes(titleLower);
-            }) || yearlyIdentifiers.some(id => {
-              const idLower = id.toLowerCase();
-              return productTitleLower.includes(idLower);
             });
             
-            // Check for yearly/annual keywords
+            // Priority 4: Check for yearly/annual keywords in actual package data (not hardcoded patterns)
             const hasYearlyKeywords = identifierLower.includes('year') || 
                                       identifierLower.includes('annual') ||
-                                      identifierLower.includes('rc_yearly') ||
-                                      identifierLower.includes('rc_annual') ||
                                       productIdLower.includes('year') ||
                                       productIdLower.includes('annual') ||
                                       productTitleLower.includes('year') ||
                                       productTitleLower.includes('annual');
             
-            // Check product metadata (billing period) - only if product exists
-            const isYearlyByMetadata = pkg.product?.subscriptionPeriod === 'P1Y' || 
-                                      pkg.product?.subscriptionPeriod === 'YEAR' ||
-                                      pkg.product?.subscriptionPeriod === 'ANNUAL' ||
-                                      (pkg.product?.subscriptionPeriod && 
-                                       pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
+            // Only match if we have valid product data OR strong metadata/keyword match
+            const hasValidMatch = isYearlyByMetadata || 
+                                 (isYearlyById && hasValidProductData(pkg)) ||
+                                 (isYearlyByProductId && hasValidProductData(pkg)) ||
+                                 (isYearlyByProductTitle && hasValidProductData(pkg)) ||
+                                 (hasYearlyKeywords && hasValidProductData(pkg));
             
-            if (isYearlyById || isYearlyByProductId || isYearlyByProductTitle || hasYearlyKeywords || isYearlyByMetadata) {
+            if (hasValidMatch) {
               yearlyPkg = pkg;
               console.log('✅ Found yearly package:', {
                 identifier,
@@ -563,7 +576,8 @@ export function PricingDialog({
                 productTitle: productTitle || 'N/A',
                 priceString: pkg.product?.priceString || 'N/A',
                 hasProduct: !!pkg.product,
-                matchedBy: isYearlyById ? 'identifier' : isYearlyByProductId ? 'productId' : isYearlyByProductTitle ? 'productTitle' : hasYearlyKeywords ? 'keywords' : 'metadata'
+                hasValidProductData: hasValidProductData(pkg),
+                matchedBy: isYearlyByMetadata ? 'metadata' : isYearlyById ? 'identifier' : isYearlyByProductId ? 'productId' : isYearlyByProductTitle ? 'productTitle' : hasYearlyKeywords ? 'keywords' : 'unknown'
               });
             }
           }
@@ -632,15 +646,6 @@ export function PricingDialog({
             priceValue: pkg.product.price
           });
           return null;
-        };
-        
-        // Helper to check if package has valid product data
-        const hasValidProductData = (pkg: any): boolean => {
-          if (!pkg?.product) return false;
-          // Check if product has price data
-          const hasPriceString = pkg.product.priceString && pkg.product.priceString.trim() !== '';
-          const hasPriceAmount = pkg.product.price != null && pkg.product.price !== 0;
-          return hasPriceString || hasPriceAmount;
         };
         
         // Only create offerings if packages have valid product data from RevenueCat
