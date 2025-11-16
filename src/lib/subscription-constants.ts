@@ -151,12 +151,36 @@ export const SUBSCRIPTION_UI_TEXT = {
     subscriptionNotAvailableCheckDesc: "No subscription packages are currently available. Please check RevenueCat dashboard configuration or try again later.",
   },
   settings: {
-    upgradeToPro: "Upgrade to Pro",
-    unlockFeatures: (count: number, price: string) => `Unlock all ${count} PRO features for just ${price}/month`,
+    sectionTitle: "Subscription",
+    proBadge: "Pro",
     currentPlan: {
+      label: "Current Plan",
       pro: "TaskZM Pro",
       free: "Free Plan",
     },
+    subscriptionDetails: {
+      started: "Started:",
+      expires: "Expires:",
+      nextBilling: "Next billing:",
+      activeStatus: "Active",
+      nextBillingDate: "the next billing date",
+    },
+    features: {
+      sectionTitle: "Your Features:",
+      unlimitedTasks: "Unlimited Tasks",
+      customTags: "Custom Tags",
+      aiScheduler: "AI Scheduler",
+      taskHours: "Task Hours (Weekday/Weekend)",
+      analytics: "Analytics Dashboard",
+      pomodoroTimer: "Pomodoro Timer",
+      teamCollaboration: "Team Collaboration",
+      calendarSync: "Calendar Sync",
+      autoTaskRollover: "Auto Task Rollover",
+      proBadge: "PRO",
+    },
+    upgradeToPro: "Upgrade to Pro",
+    unlockFeatures: (count: number, price: string) => `Unlock all ${count} PRO features for just ${price}/month`,
+    viewPlans: "View Plans",
     subscriptionStatusRefreshed: "Subscription status refreshed",
     subscriptionRefreshFailed: "Failed to refresh subscription",
     subscriptionWillCancel: "Subscription will cancel at period end",
@@ -165,6 +189,15 @@ export const SUBSCRIPTION_UI_TEXT = {
     subscriptionCancelFailedDesc: "Please try again or contact support.",
     manageSubscription: "Manage Subscription",
     cancelConfirmation: "Are you sure you want to cancel your subscription? Your Pro features will remain active until the end of your billing period.",
+    refresh: "Refresh",
+    cancel: "Cancel",
+    subscriptionCancelled: {
+      title: "Subscription Cancelled",
+      message: (endDate: string | null | undefined) => {
+        const dateText = endDate ? new Date(endDate).toLocaleDateString() : 'the next billing date';
+        return `Your subscription will remain active until ${dateText}. You'll continue to have access to all Pro features until then.`;
+      },
+    },
   },
   context: {
     upgradedDevMode: "✅ Upgraded to Pro tier (Development Mode)",

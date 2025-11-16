@@ -480,11 +480,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE }} className="text-primary" />
-              <span>Subscription</span>
+              <span>{SUBSCRIPTION_UI_TEXT.settings.sectionTitle}</span>
               {subscription.tier === 'pro' && (
                 <Badge className="bg-[#D4C5F9] text-gray-800 border-[#D4C5F9]" style={{ marginLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL }}>
                   <Sparkles style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
-                  Pro
+                  {SUBSCRIPTION_UI_TEXT.settings.proBadge}
                 </Badge>
               )}
             </div>
@@ -500,7 +500,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm">Current Plan</Label>
+                    <Label className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.currentPlan.label}</Label>
                     {isSubscriptionLoading && (
                       <RefreshCw style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL }} className="text-muted-foreground animate-spin" />
                     )}
@@ -510,7 +510,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </p>
                   {subscription.tier === 'pro' && subscription.startDate && (
                     <p className="text-muted-foreground/70" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
-                      Started: {new Date(subscription.startDate).toLocaleDateString()}
+                      {SUBSCRIPTION_UI_TEXT.settings.subscriptionDetails.started} {new Date(subscription.startDate).toLocaleDateString()}
                     </p>
                   )}
                 </div>
@@ -520,7 +520,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 >
                   {subscription.status 
                     ? subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)
-                    : 'Active'
+                    : SUBSCRIPTION_UI_TEXT.settings.subscriptionDetails.activeStatus
                   }
                 </Badge>
               </div>
@@ -530,10 +530,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div className="text-xs text-muted-foreground space-y-1">
                   {subscription.cancelAtPeriodEnd ? (
                     <p className="text-amber-600 dark:text-amber-400">
-                      Expires: {new Date(subscription.endDate).toLocaleDateString()}
+                      {SUBSCRIPTION_UI_TEXT.settings.subscriptionDetails.expires} {new Date(subscription.endDate).toLocaleDateString()}
                     </p>
                   ) : (
-                    <p>Next billing: {new Date(subscription.endDate).toLocaleDateString()}</p>
+                    <p>{SUBSCRIPTION_UI_TEXT.settings.subscriptionDetails.nextBilling} {new Date(subscription.endDate).toLocaleDateString()}</p>
                   )}
                 </div>
               )}
@@ -542,18 +542,18 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               {/* Features List */}
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Your Features:</Label>
+                <Label className="text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.settings.features.sectionTitle}</Label>
                 <div className="grid gap-2">
                   {/* Unlimited Tasks - Available for all */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
-                    <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>Unlimited Tasks</span>
+                    <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.unlimitedTasks}</span>
                   </div>
 
                   {/* Custom Tags - Available for all */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
-                    <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>Custom Tags</span>
+                    <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.customTags}</span>
                   </div>
 
                   {/* AI Scheduler - PRO only */}
@@ -564,11 +564,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
                     <span className={features.aiScheduler ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                      AI Scheduler
+                      {SUBSCRIPTION_UI_TEXT.settings.features.aiScheduler}
                     </span>
                     {!features.aiScheduler && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
-                        PRO
+                        {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
@@ -581,11 +581,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
                     <span className={features.taskHours ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                      Task Hours (Weekday/Weekend)
+                      {SUBSCRIPTION_UI_TEXT.settings.features.taskHours}
                     </span>
                     {!features.taskHours && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
-                        PRO
+                        {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
@@ -598,11 +598,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
                     <span className={features.analytics ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                      Analytics Dashboard
+                      {SUBSCRIPTION_UI_TEXT.settings.features.analytics}
                     </span>
                     {!features.analytics && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
-                        PRO
+                        {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
@@ -615,11 +615,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
                     <span className={features.pomodoroTimer ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                      Pomodoro Timer
+                      {SUBSCRIPTION_UI_TEXT.settings.features.pomodoroTimer}
                     </span>
                     {!features.pomodoroTimer && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
-                        PRO
+                        {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
@@ -632,11 +632,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
                     <span className={features.teamFeatures ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                      Team Collaboration
+                      {SUBSCRIPTION_UI_TEXT.settings.features.teamCollaboration}
                     </span>
                     {!features.teamFeatures && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
-                        PRO
+                        {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
@@ -649,11 +649,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
                     <span className={features.calendarSync ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                      Calendar Sync
+                      {SUBSCRIPTION_UI_TEXT.settings.features.calendarSync}
                     </span>
                     {!features.calendarSync && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
-                        PRO
+                        {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
@@ -666,11 +666,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
                     )}
                     <span className={features.taskRollover ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                      Auto Task Rollover
+                      {SUBSCRIPTION_UI_TEXT.settings.features.autoTaskRollover}
                     </span>
                     {!features.taskRollover && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
-                        PRO
+                        {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
@@ -696,7 +696,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       onClick={() => setShowPricingDialog(true)}
                     >
                       <Sparkles style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                      View Plans
+                      {SUBSCRIPTION_UI_TEXT.settings.viewPlans}
                     </Button>
                   </div>
                 </>
@@ -712,10 +712,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <Info className="text-amber-600 dark:text-amber-400 flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                         <div>
                           <p className="font-medium text-amber-800 dark:text-amber-200" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
-                            Subscription Cancelled
+                            {SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelled.title}
                           </p>
                           <p className="text-amber-700 dark:text-amber-300" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                            Your subscription will remain active until {subscription.endDate ? new Date(subscription.endDate).toLocaleDateString() : 'the next billing date'}. You'll continue to have access to all Pro features until then.
+                            {SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelled.message(subscription.endDate)}
                           </p>
                         </div>
                       </div>
@@ -753,7 +753,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         disabled={isSubscriptionLoading}
                       >
                         <RefreshCw className={isSubscriptionLoading ? 'animate-spin' : ''} style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                        Refresh
+                        {SUBSCRIPTION_UI_TEXT.settings.refresh}
                       </Button>
 
                       {!subscription.cancelAtPeriodEnd && (
@@ -776,7 +776,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             }
                           }}
                         >
-                          Cancel
+                          {SUBSCRIPTION_UI_TEXT.settings.cancel}
                         </Button>
                       )}
                     </div>
