@@ -633,28 +633,48 @@ export function PricingDialog({
             return null; // Return null instead of default to indicate missing data
           }
           
-          // First try priceString (formatted price from RevenueCat)
-          if (pkg.product.priceString && pkg.product.priceString.trim() !== '') {
-            return pkg.product.priceString.trim();
+          // First try priceString (formatted price from RevenueCat) - this is the most reliable
+          if (pkg.product.priceString && typeof pkg.product.priceString === 'string' && pkg.product.priceString.trim() !== '') {
+            const priceStr = pkg.product.priceString.trim();
+            console.log(`✅ Using priceString from RevenueCat for ${pkg.identifier}: ${priceStr}`);
+            return priceStr;
           }
           
           // If priceString is empty, try to format from price amount
+          // Note: price is usually in cents for Stripe, but RevenueCat may return it differently
           if (pkg.product.price != null && pkg.product.price !== 0) {
             const currencyCode = pkg.product.currencyCode || DEFAULT_CURRENCY_CODE;
-            const priceAmount = typeof pkg.product.price === 'number' 
-              ? pkg.product.price 
-              : parseFloat(pkg.product.price.toString());
+            let priceAmount: number;
             
+            // Handle different price formats
+            if (typeof pkg.product.price === 'number') {
+              priceAmount = pkg.product.price;
+            } else if (typeof pkg.product.price === 'string') {
+              priceAmount = parseFloat(pkg.product.price);
+            } else {
+              priceAmount = parseFloat(String(pkg.product.price));
+            }
+            
+            // Check if price is in cents (Stripe format) - if > 100, likely in cents
+            // RevenueCat usually returns price in the smallest currency unit (cents for USD)
             if (!isNaN(priceAmount) && priceAmount > 0) {
+              // Convert from cents to dollars if needed (for USD and similar currencies)
+              const isLikelyInCents = currencyCode === 'USD' && priceAmount > 100;
+              const displayAmount = isLikelyInCents ? priceAmount / 100 : priceAmount;
+              
               // Format price with currency
               try {
-                return new Intl.NumberFormat('en-US', {
+                const formatted = new Intl.NumberFormat('en-US', {
                   style: 'currency',
                   currency: currencyCode,
-                }).format(priceAmount);
+                }).format(displayAmount);
+                console.log(`✅ Formatted price from amount for ${pkg.identifier}: ${formatted} (from ${priceAmount} ${isLikelyInCents ? 'cents' : currencyCode})`);
+                return formatted;
               } catch (e) {
                 // Fallback to simple formatting if Intl fails
-                return `${currencyCode === 'USD' ? '$' : currencyCode} ${priceAmount.toFixed(2)}`;
+                const formatted = `${currencyCode === 'USD' ? '$' : currencyCode} ${displayAmount.toFixed(2)}`;
+                console.log(`✅ Formatted price (fallback) for ${pkg.identifier}: ${formatted}`);
+                return formatted;
               }
             }
           }
@@ -663,8 +683,10 @@ export function PricingDialog({
           console.warn('⚠️ Package product has no valid price data:', {
             identifier: pkg?.identifier,
             hasPriceString: !!pkg.product.priceString,
+            priceStringValue: pkg.product.priceString,
             hasPrice: pkg.product.price != null,
-            priceValue: pkg.product.price
+            priceValue: pkg.product.price,
+            currencyCode: pkg.product.currencyCode
           });
           return null;
         };

@@ -716,18 +716,50 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
             // Clear cache by syncing purchases and getting fresh customer info
             await purchasesInstance.syncPurchases();
             await purchasesInstance.getCustomerInfo();
-            // Add delay to ensure cache is cleared
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Add delay to ensure cache is cleared and product data loads
+            await new Promise(resolve => setTimeout(resolve, 1000));
             console.log('🔄 Force refresh: Cache cleared, fetching fresh offerings from RevenueCat');
           } catch (error: any) {
             console.warn('⚠️ Could not clear cache during force refresh:', error?.message);
           }
         }
         
+        // Fetch offerings with retry logic to ensure product data is loaded
         let offerings;
-        try {
-          offerings = await purchasesInstance.getOfferings();
-        } catch (offeringsError: any) {
+        let retryCount = 0;
+        const maxRetries = 3;
+        let offeringsError: any = null;
+        
+        while (retryCount < maxRetries) {
+          try {
+            offerings = await purchasesInstance.getOfferings();
+            
+            // Check if we have packages with product data
+            const hasPackagesWithProductData = offerings?.current?.availablePackages?.some((pkg: any) => 
+              pkg?.product && 
+              (pkg.product.priceString || pkg.product.price)
+            );
+            
+            // If we have product data or this is the last retry, break
+            if (hasPackagesWithProductData || retryCount === maxRetries - 1) {
+              break;
+            }
+            
+            // Wait before retrying
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.log(`🔄 Retry ${retryCount}/${maxRetries}: Waiting for product data to load...`);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          } catch (error: any) {
+            // If error, store it and break
+            offeringsError = error;
+            break;
+          }
+        }
+        
+        // Handle errors from getOfferings call
+        if (offeringsError) {
           // Check for 401 Unauthorized (credentials issue)
           const errorMessage = offeringsError?.message || String(offeringsError || '');
           const errorCode = offeringsError?.code || '';
