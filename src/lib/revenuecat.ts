@@ -342,17 +342,33 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           ? YEARLY_PACKAGE_IDENTIFIERS
           : MONTHLY_PACKAGE_IDENTIFIERS;
         
-        // Try exact match first, then case-insensitive match, then partial match
+        // Try exact match first (with and without $ prefix), then case-insensitive match, then partial match
         const selectedPackage = availablePackages.find((pkg: any) => {
           if (!pkg) return false;
-          const identifier = pkg.identifier?.toLowerCase() || '';
-          return packageIdentifiers.some(id => {
+          const identifier = pkg.identifier || '';
+          const identifierLower = identifier.toLowerCase();
+          
+          // Check exact matches (with and without $ prefix)
+          const exactMatch = packageIdentifiers.some(id => {
             const idLower = id.toLowerCase();
-            return identifier === idLower || 
-                   identifier.includes(idLower.replace('$rc_', '')) ||
-                   (packageType === 'monthly' && (identifier.includes('month') && !identifier.includes('year'))) ||
-                   (packageType === 'yearly' && (identifier.includes('year') || identifier.includes('annual')));
+            return identifierLower === idLower || 
+                   identifierLower === idLower.replace('$', '') ||
+                   identifierLower === idLower.replace('$rc_', 'rc_');
           });
+          
+          if (exactMatch) return true;
+          
+          // Fallback to keyword matching
+          if (packageType === 'monthly') {
+            return (identifierLower.includes('month') || identifierLower.includes('rc_monthly')) && 
+                   !identifierLower.includes('year') && 
+                   !identifierLower.includes('annual');
+          } else {
+            return identifierLower.includes('year') || 
+                   identifierLower.includes('annual') ||
+                   identifierLower.includes('rc_yearly') ||
+                   identifierLower.includes('rc_annual');
+          }
         });
         
         if (!selectedPackage) {

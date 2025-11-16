@@ -173,25 +173,48 @@ export function PricingDialog({
         console.log('🔍 Looking for yearly identifiers:', YEARLY_PACKAGE_IDENTIFIERS);
 
         // Find monthly and yearly packages (only from valid packages)
-        // Try exact match first, then case-insensitive match, then partial match
+        // Try exact match first (with and without $ prefix), then case-insensitive match, then partial match
         const monthlyPkg = validPackages.find((pkg: any) => {
           if (!pkg) return false;
-          const identifier = pkg.identifier?.toLowerCase() || '';
-          return MONTHLY_PACKAGE_IDENTIFIERS.some(id => 
-            identifier === id.toLowerCase() || 
-            identifier.includes('month') ||
-            (identifier.includes('monthly') && !identifier.includes('year'))
-          );
+          const identifier = pkg.identifier || '';
+          const identifierLower = identifier.toLowerCase();
+          
+          // Check exact matches (with and without $ prefix)
+          const exactMatch = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+            const idLower = id.toLowerCase();
+            return identifierLower === idLower || 
+                   identifierLower === idLower.replace('$', '') ||
+                   identifierLower === idLower.replace('$rc_', 'rc_');
+          });
+          
+          if (exactMatch) return true;
+          
+          // Check for monthly keywords (but not yearly)
+          return (identifierLower.includes('month') || identifierLower.includes('rc_monthly')) && 
+                 !identifierLower.includes('year') && 
+                 !identifierLower.includes('annual');
         });
         
         const yearlyPkg = validPackages.find((pkg: any) => {
           if (!pkg) return false;
-          const identifier = pkg.identifier?.toLowerCase() || '';
-          return YEARLY_PACKAGE_IDENTIFIERS.some(id => 
-            identifier === id.toLowerCase() || 
-            identifier.includes('year') ||
-            identifier.includes('annual')
-          );
+          const identifier = pkg.identifier || '';
+          const identifierLower = identifier.toLowerCase();
+          
+          // Check exact matches (with and without $ prefix)
+          const exactMatch = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+            const idLower = id.toLowerCase();
+            return identifierLower === idLower || 
+                   identifierLower === idLower.replace('$', '') ||
+                   identifierLower === idLower.replace('$rc_', 'rc_');
+          });
+          
+          if (exactMatch) return true;
+          
+          // Check for yearly/annual keywords
+          return identifierLower.includes('year') || 
+                 identifierLower.includes('annual') ||
+                 identifierLower.includes('rc_yearly') ||
+                 identifierLower.includes('rc_annual');
         });
 
         console.log('📅 Monthly package:', monthlyPkg ? {

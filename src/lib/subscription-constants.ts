@@ -28,24 +28,31 @@ export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 
 // Package identifiers for RevenueCat
 // RevenueCat can use various identifier patterns, so we check for multiple possibilities
+// Note: RevenueCat package identifiers can be with or without the $ prefix
 export const MONTHLY_PACKAGE_IDENTIFIERS = [
-  '$rc_monthly', 
+  '$rc_monthly',  // With $ prefix
+  'rc_monthly',   // Without $ prefix (common in RevenueCat)
   'monthly', 
   'monthly_pro', 
   'pro_monthly',
   '$rc_monthly_pro',
+  'rc_monthly_pro',
   'monthly_subscription',
   'monthly_plan'
 ];
 export const YEARLY_PACKAGE_IDENTIFIERS = [
-  '$rc_annual', 
-  '$rc_yearly', 
+  '$rc_annual',   // With $ prefix
+  '$rc_yearly',   // With $ prefix
+  'rc_annual',    // Without $ prefix (common in RevenueCat)
+  'rc_yearly',    // Without $ prefix (common in RevenueCat)
   'annual', 
   'yearly',
   'yearly_pro',
   'pro_yearly',
   '$rc_annual_pro',
   '$rc_yearly_pro',
+  'rc_annual_pro',
+  'rc_yearly_pro',
   'annual_subscription',
   'yearly_subscription',
   'annual_plan',
