@@ -328,17 +328,46 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           throw new Error('No subscription offerings available. Please check RevenueCat dashboard configuration.');
         }
         
-        // Safely access availablePackages with null check
-        const availablePackages = offerings.current.availablePackages || [];
+        // Combine packages from current offering AND all offerings (same logic as getOfferings)
+        // This ensures we find packages even if they're in a non-current offering
+        const currentPackages = offerings.current?.availablePackages || [];
+        const allOfferings = offerings.all || {};
+        const allPackagesFromAllOfferings: any[] = [];
+        
+        // Add packages from current offering
+        currentPackages.forEach((pkg: any) => {
+          if (pkg && !allPackagesFromAllOfferings.find(p => p?.identifier === pkg?.identifier)) {
+            allPackagesFromAllOfferings.push(pkg);
+          }
+        });
+        
+        // Add packages from all other offerings
+        Object.values(allOfferings).forEach((offering: any) => {
+          if (offering && offering.availablePackages) {
+            offering.availablePackages.forEach((pkg: any) => {
+              if (pkg && !allPackagesFromAllOfferings.find(p => p?.identifier === pkg?.identifier)) {
+                allPackagesFromAllOfferings.push(pkg);
+              }
+            });
+          }
+        });
+        
+        const availablePackages = allPackagesFromAllOfferings;
+        
         if (availablePackages.length === 0) {
-          console.error('❌ No packages found in current offering');
-          console.error('   Available packages:', availablePackages.length);
-          console.error('   Offering ID:', offerings.current.identifier);
-          throw new Error('No subscription packages available in the current offering. Please check RevenueCat dashboard.');
+          console.error('❌ No packages found in any offering');
+          console.error('   Current offering packages:', currentPackages.length);
+          console.error('   All offerings count:', Object.keys(allOfferings).length);
+          console.error('   Current offering ID:', offerings.current?.identifier || 'N/A');
+          throw new Error('No subscription packages available in any offering. Please check RevenueCat dashboard.');
         }
         
-        console.log(`📦 Found ${availablePackages.length} package(s) in offering "${offerings.current.identifier}"`);
+        console.log(`📦 Found ${availablePackages.length} package(s) total (${currentPackages.length} from current offering, ${availablePackages.length - currentPackages.length} from other offerings)`);
         console.log('   Package identifiers:', availablePackages.map((p: any) => p?.identifier || 'unknown'));
+        console.log('   Current offering:', offerings.current?.identifier || 'N/A');
+        if (Object.keys(allOfferings).length > 0) {
+          console.log('   Other offerings:', Object.keys(allOfferings).join(', '));
+        }
         
         // Find the requested package
         // Import identifiers from constants for consistency
@@ -352,16 +381,22 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           if (!pkg) return;
           const identifier = pkg.identifier || '';
           const productId = pkg.product?.identifier || '';
+          const productTitle = pkg.product?.title || '';
           const subscriptionPeriod = pkg.product?.subscriptionPeriod || '';
           const identifierLower = identifier.toLowerCase();
           const productIdLower = productId.toLowerCase();
+          const productTitleLower = productTitle.toLowerCase();
           
+          // Comprehensive monthly detection (same logic as PricingDialog)
           const looksMonthly = subscriptionPeriod === 'P1M' || 
                               subscriptionPeriod === 'MONTH' ||
                               (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('month')) ||
                               identifierLower.includes('month') ||
-                              productIdLower.includes('month');
+                              productIdLower.includes('month') ||
+                              productTitleLower.includes('month') ||
+                              (identifierLower.includes('pro') && !identifierLower.includes('year') && !identifierLower.includes('annual') && !productTitleLower.includes('year') && !productTitleLower.includes('annual'));
           
+          // Comprehensive yearly detection (same logic as PricingDialog)
           const looksYearly = subscriptionPeriod === 'P1Y' || 
                              subscriptionPeriod === 'YEAR' ||
                              subscriptionPeriod === 'ANNUAL' ||
@@ -369,14 +404,24 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
                              identifierLower.includes('year') ||
                              identifierLower.includes('annual') ||
                              productIdLower.includes('year') ||
-                             productIdLower.includes('annual');
+                             productIdLower.includes('annual') ||
+                             productTitleLower.includes('year') ||
+                             productTitleLower.includes('annual');
           
           if (looksMonthly && !looksYearly) {
             if (identifier) discoveredMonthlyIds.push(identifier);
             if (productId) discoveredMonthlyIds.push(productId);
+            console.log(`   ✅ Discovered monthly package: ${identifier} (productId: ${productId}, title: ${productTitle})`);
           } else if (looksYearly) {
             if (identifier) discoveredYearlyIds.push(identifier);
             if (productId) discoveredYearlyIds.push(productId);
+            console.log(`   ✅ Discovered yearly package: ${identifier} (productId: ${productId}, title: ${productTitle})`);
+          } else {
+            console.log(`   ⚠️ Package ${identifier} could not be categorized as monthly or yearly`);
+            console.log(`      - subscriptionPeriod: ${subscriptionPeriod}`);
+            console.log(`      - identifier: ${identifier}`);
+            console.log(`      - productId: ${productId}`);
+            console.log(`      - productTitle: ${productTitle}`);
           }
         });
         
@@ -391,13 +436,17 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           combined: packageIdentifiers
         });
         
-        // Try exact match first (package identifier, then product ID), then pattern matching
+        // Use comprehensive matching logic (same as PricingDialog)
+        // Try exact match first (package identifier, then product ID), then pattern matching, then metadata
         const selectedPackage = availablePackages.find((pkg: any) => {
           if (!pkg) return false;
           const identifier = pkg.identifier || '';
           const identifierLower = identifier.toLowerCase();
           const productId = pkg.product?.identifier || '';
           const productIdLower = productId.toLowerCase();
+          const productTitle = pkg.product?.title || '';
+          const productTitleLower = productTitle.toLowerCase();
+          const subscriptionPeriod = pkg.product?.subscriptionPeriod || '';
           
           // Check exact matches on package identifier (with and without $ prefix)
           const exactIdentifierMatch = packageIdentifiers.some(id => {
@@ -407,7 +456,10 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
                    identifierLower === idLower.replace('$rc_', 'rc_');
           });
           
-          if (exactIdentifierMatch) return true;
+          if (exactIdentifierMatch) {
+            console.log(`   ✅ Matched by identifier: ${identifier}`);
+            return true;
+          }
           
           // Check exact match on product ID (most reliable for Stripe/App Store products)
           const exactProductIdMatch = packageIdentifiers.some(id => {
@@ -415,19 +467,80 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
             return productIdLower === idLower;
           });
           
-          if (exactProductIdMatch) return true;
-          
-          // Fallback to keyword matching on identifier
-          if (packageType === 'monthly') {
-            return (identifierLower.includes('month') || identifierLower.includes('rc_monthly')) && 
-                   !identifierLower.includes('year') && 
-                   !identifierLower.includes('annual');
-          } else {
-            return identifierLower.includes('year') || 
-                   identifierLower.includes('annual') ||
-                   identifierLower.includes('rc_yearly') ||
-                   identifierLower.includes('rc_annual');
+          if (exactProductIdMatch) {
+            console.log(`   ✅ Matched by product ID: ${productId}`);
+            return true;
           }
+          
+          // Check product title matching (for cases like "TaskZM Yearly Yearly")
+          const titleMatch = packageIdentifiers.some(id => {
+            const idLower = id.toLowerCase();
+            if (packageType === 'monthly') {
+              return productTitleLower.includes(idLower) && 
+                     !productTitleLower.includes('year') &&
+                     !productTitleLower.includes('annual');
+            } else {
+              return productTitleLower.includes(idLower);
+            }
+          });
+          
+          if (titleMatch) {
+            console.log(`   ✅ Matched by product title: ${productTitle}`);
+            return true;
+          }
+          
+          // Check subscription period metadata
+          if (packageType === 'monthly') {
+            const isMonthlyByMetadata = subscriptionPeriod === 'P1M' || 
+                                       subscriptionPeriod === 'MONTH' ||
+                                       (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('month'));
+            if (isMonthlyByMetadata) {
+              console.log(`   ✅ Matched by subscription period (monthly): ${subscriptionPeriod}`);
+              return true;
+            }
+          } else {
+            const isYearlyByMetadata = subscriptionPeriod === 'P1Y' || 
+                                      subscriptionPeriod === 'YEAR' ||
+                                      subscriptionPeriod === 'ANNUAL' ||
+                                      (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('year'));
+            if (isYearlyByMetadata) {
+              console.log(`   ✅ Matched by subscription period (yearly): ${subscriptionPeriod}`);
+              return true;
+            }
+          }
+          
+          // Fallback to keyword matching on identifier and product fields
+          if (packageType === 'monthly') {
+            const hasMonthlyKeywords = (identifierLower.includes('month') || 
+                                      identifierLower.includes('rc_monthly') ||
+                                      productIdLower.includes('month') ||
+                                      productTitleLower.includes('month')) && 
+                                     !identifierLower.includes('year') && 
+                                     !identifierLower.includes('annual') &&
+                                     !productIdLower.includes('year') &&
+                                     !productIdLower.includes('annual') &&
+                                     !productTitleLower.includes('year') &&
+                                     !productTitleLower.includes('annual');
+            if (hasMonthlyKeywords) {
+              console.log(`   ✅ Matched by keywords (monthly): identifier=${identifier}, productId=${productId}, title=${productTitle}`);
+              return true;
+            }
+          } else {
+            const hasYearlyKeywords = identifierLower.includes('year') || 
+                                     identifierLower.includes('annual') ||
+                                     identifierLower.includes('rc_yearly') ||
+                                     identifierLower.includes('rc_annual') ||
+                                     productIdLower.includes('year') ||
+                                     productIdLower.includes('annual') ||
+                                     productTitleLower.includes('year') ||
+                                     productTitleLower.includes('annual');
+            if (hasYearlyKeywords) {
+              console.log(`   ✅ Matched by keywords (yearly): identifier=${identifier}, productId=${productId}, title=${productTitle}`);
+              return true;
+            }
+          }
+          
+          return false;
         });
         
         if (!selectedPackage) {
