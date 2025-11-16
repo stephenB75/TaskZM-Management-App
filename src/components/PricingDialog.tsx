@@ -655,13 +655,51 @@ export function PricingDialog({
             priceString: offerings.yearly.priceString
           } : 'NOT AVAILABLE'
         });
+        
+        // Check if RevenueCat is configured
+        const { isRevenueCatConfigured } = await import('../lib/revenuecat');
+        if (!isRevenueCatConfigured()) {
+          console.error('   RevenueCat is not configured');
+          toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
+            description: SUBSCRIPTION_UI_TEXT.configuration.initializationFailed,
+          });
+          setIsUpgrading(false);
+          return;
+        }
+        
         console.error('   Attempting to reload offerings to check for yearly package...');
         
         // Try reloading offerings one more time
         await loadOfferings();
         
-        // Check again after reload
+        // Get fresh offerings directly from RevenueCat to verify
+        const freshOfferings = await getOfferings();
+        if (!freshOfferings?.availablePackages || freshOfferings.availablePackages.length === 0) {
+          console.error('❌ No packages available from RevenueCat');
+          console.error('   This usually means:');
+          console.error('   1. No offerings configured in RevenueCat dashboard');
+          console.error('   2. No packages attached to the current offering');
+          console.error('   3. Products not set up in RevenueCat');
+          toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
+            description: SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableCheckDesc,
+          });
+          setIsUpgrading(false);
+          return;
+        }
+        
+        // Log available packages for debugging
+        console.error('   Available packages from RevenueCat:', freshOfferings.availablePackages.map((p: any) => ({
+          identifier: p?.identifier || 'unknown',
+          productId: p?.product?.identifier || 'unknown',
+          priceString: p?.product?.priceString || 'N/A',
+          subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A'
+        })));
+        
+        // Check again after reload (state may not have updated yet, so check fresh offerings)
         if (!offerings.yearly) {
+          console.error('❌ Yearly package still not available after reload');
+          console.error('   This may indicate a package identifier mismatch');
+          console.error('   Check RevenueCat dashboard to ensure package identifiers match:', YEARLY_PACKAGE_IDENTIFIERS);
           toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
             description: SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable,
           });
