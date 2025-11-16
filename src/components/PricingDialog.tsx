@@ -365,7 +365,7 @@ export function PricingDialog({
   const handleRestore = async () => {
     try {
       setIsRestoring(true);
-      console.log("Restoring purchases...");
+      console.log(SUBSCRIPTION_UI_TEXT.messages.restoringPurchases);
 
       const success = await restorePurchases();
 

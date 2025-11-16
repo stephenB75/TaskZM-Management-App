@@ -3,7 +3,7 @@ import type { SubscriptionInfo, SubscriptionTier, SubscriptionFeatures } from '.
 import { useAuth } from './AuthContext';
 import * as api from '../lib/api';
 import { toast } from 'sonner';
-import { SUBSCRIPTION_UI_TEXT } from '../lib/subscription-constants';
+import { SUBSCRIPTION_UI_TEXT, SUBSCRIPTION_STORAGE_KEY_PREFIX, SUBSCRIPTION_SYNC_INTERVAL } from '../lib/subscription-constants';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo;
@@ -120,7 +120,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             console.log('✅ Backend subscription updated from RevenueCat');
             
             setSubscription(updatedSubscription);
-            localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(updatedSubscription));
+            localStorage.setItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`, JSON.stringify(updatedSubscription));
             setIsLoading(false);
             return;
           } else {
@@ -160,7 +160,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             console.log('✅ Backend subscription updated to Free from RevenueCat');
             
             setSubscription(updatedSubscription);
-            localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(updatedSubscription));
+            localStorage.setItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`, JSON.stringify(updatedSubscription));
             setIsLoading(false);
             return;
           }
@@ -180,7 +180,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(normalized));
       } else {
         // Fallback to localStorage if server fails
-        const stored = localStorage.getItem(`subscription_${user?.id}`);
+        const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
@@ -195,7 +195,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       console.warn('Failed to load subscription from server, using fallback:', error);
       // Fallback to localStorage on error
       try {
-        const stored = localStorage.getItem(`subscription_${user?.id}`);
+        const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
         if (stored) {
           const parsed = JSON.parse(stored);
           setSubscription(normalizeSubscription(parsed));
@@ -265,7 +265,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         console.warn('Periodic subscription sync failed:', error);
         // Don't show error to user for background sync
       });
-    }, 5 * 60 * 1000); // 5 minutes
+    }, SUBSCRIPTION_SYNC_INTERVAL);
 
     // Also sync when window regains focus (user returns to app)
     const handleFocus = () => {
@@ -289,7 +289,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
       
       if (isProduction) {
-        throw new Error('Direct upgrade not allowed in production. Payment verification required.');
+        throw new Error(SUBSCRIPTION_UI_TEXT.context.upgradeNotAllowedProduction);
       }
 
       // Development/Testing fallback: Simulate upgrade
@@ -392,7 +392,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 export function useSubscription() {
   const context = useContext(SubscriptionContext);
   if (context === undefined) {
-    throw new Error('useSubscription must be used within a SubscriptionProvider');
+    throw new Error(SUBSCRIPTION_UI_TEXT.context.hookError);
   }
   return context;
 }

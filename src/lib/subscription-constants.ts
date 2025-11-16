@@ -65,6 +65,13 @@ export const PRO_FEATURES_COUNT = 7;
 // Number of features to display in plan cards before showing "+ X more features"
 export const FEATURES_DISPLAY_LIMIT = 4;
 
+// LocalStorage key prefix for subscription data
+export const SUBSCRIPTION_STORAGE_KEY_PREFIX = 'subscription_';
+
+// Subscription sync intervals (in milliseconds)
+export const SUBSCRIPTION_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+export const PRICING_REFRESH_INTERVAL = 60 * 1000; // 60 seconds
+
 // UI Text
 export const SUBSCRIPTION_UI_TEXT = {
   title: "Choose Your Plan",
@@ -108,6 +115,7 @@ export const SUBSCRIPTION_UI_TEXT = {
     upgradeDescription: "to unlock AI-powered scheduling and advanced analytics.",
   },
   messages: {
+    restoringPurchases: "Restoring purchases...",
     upgradeSuccess: "🎉 Welcome to TaskZM Pro!",
     upgradeSuccessDesc: "You now have access to all premium features.",
     upgradeDevMode: "🎉 Welcome to TaskZM Pro! (Development Mode)",
@@ -202,10 +210,12 @@ export const SUBSCRIPTION_UI_TEXT = {
   context: {
     upgradedDevMode: "✅ Upgraded to Pro tier (Development Mode)",
     upgradeFailed: "Failed to upgrade subscription",
+    upgradeNotAllowedProduction: "Direct upgrade not allowed in production. Payment verification required.",
     subscriptionWillCancelAtPeriodEnd: "Subscription will cancel at period end",
     cancelFailed: "Failed to cancel subscription",
     downgradedToFree: "✅ Downgraded to Free tier",
     downgradeFailed: "Failed to downgrade subscription",
+    hookError: "useSubscription must be used within a SubscriptionProvider",
   },
   planCards: {
     monthly: {

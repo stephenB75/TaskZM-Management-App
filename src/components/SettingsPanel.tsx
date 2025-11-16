@@ -83,7 +83,7 @@ import {
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
-import { DEFAULT_MONTHLY_PRICE, MONTHLY_PACKAGE_IDENTIFIERS, YEARLY_PACKAGE_IDENTIFIERS, SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
+import { DEFAULT_MONTHLY_PRICE, MONTHLY_PACKAGE_IDENTIFIERS, YEARLY_PACKAGE_IDENTIFIERS, SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT, PRICING_REFRESH_INTERVAL } from '../lib/subscription-constants';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -175,8 +175,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
     // Load pricing on mount and when subscription changes
     loadPricing();
     
-    // Refresh pricing every 60 seconds
-    const refreshInterval = setInterval(loadPricing, 60000);
+    // Refresh pricing periodically
+    const refreshInterval = setInterval(loadPricing, PRICING_REFRESH_INTERVAL);
     
     return () => {
       clearInterval(refreshInterval);
