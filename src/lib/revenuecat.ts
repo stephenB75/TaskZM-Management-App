@@ -342,23 +342,33 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           ? YEARLY_PACKAGE_IDENTIFIERS
           : MONTHLY_PACKAGE_IDENTIFIERS;
         
-        // Try exact match first (with and without $ prefix), then case-insensitive match, then partial match
+        // Try exact match first (package identifier, then product ID), then pattern matching
         const selectedPackage = availablePackages.find((pkg: any) => {
-          if (!pkg) return false;
+          if (!pkg || !pkg.product) return false;
           const identifier = pkg.identifier || '';
           const identifierLower = identifier.toLowerCase();
+          const productId = pkg.product.identifier || '';
+          const productIdLower = productId.toLowerCase();
           
-          // Check exact matches (with and without $ prefix)
-          const exactMatch = packageIdentifiers.some(id => {
+          // Check exact matches on package identifier (with and without $ prefix)
+          const exactIdentifierMatch = packageIdentifiers.some(id => {
             const idLower = id.toLowerCase();
             return identifierLower === idLower || 
                    identifierLower === idLower.replace('$', '') ||
                    identifierLower === idLower.replace('$rc_', 'rc_');
           });
           
-          if (exactMatch) return true;
+          if (exactIdentifierMatch) return true;
           
-          // Fallback to keyword matching
+          // Check exact match on product ID (most reliable for Stripe/App Store products)
+          const exactProductIdMatch = packageIdentifiers.some(id => {
+            const idLower = id.toLowerCase();
+            return productIdLower === idLower;
+          });
+          
+          if (exactProductIdMatch) return true;
+          
+          // Fallback to keyword matching on identifier
           if (packageType === 'monthly') {
             return (identifierLower.includes('month') || identifierLower.includes('rc_monthly')) && 
                    !identifierLower.includes('year') && 
@@ -549,9 +559,20 @@ export async function getOfferings(): Promise<RevenueCatOffering | null> {
         
         // Log package details for verification
         console.log('📦 Package details:');
+        let validPackageCount = 0;
+        let emptyProductCount = 0;
         currentOffering.availablePackages.forEach((pkg: any, index: number) => {
-          if (pkg && pkg.product) {
-            console.log(`   Package ${index + 1}:`, {
+          if (!pkg) {
+            console.warn(`   Package ${index + 1}: null or undefined`);
+            return;
+          }
+          
+          const productKeys = pkg.product ? Object.keys(pkg.product) : [];
+          const hasValidProduct = productKeys.length > 0 && (pkg.product?.identifier || pkg.product?.priceString || pkg.product?.price);
+          
+          if (hasValidProduct) {
+            validPackageCount++;
+            console.log(`   Package ${index + 1} (VALID):`, {
               identifier: pkg.identifier || 'unknown',
               productId: pkg.product.identifier || 'unknown',
               priceString: pkg.product.priceString || 'N/A',
@@ -561,8 +582,22 @@ export async function getOfferings(): Promise<RevenueCatOffering | null> {
               description: pkg.product.description || 'N/A',
               subscriptionPeriod: pkg.product.subscriptionPeriod || 'N/A'
             });
+          } else {
+            emptyProductCount++;
+            console.warn(`   Package ${index + 1} (INVALID - empty product):`, {
+              identifier: pkg.identifier || 'unknown',
+              hasProduct: !!pkg.product,
+              productKeys: productKeys.length > 0 ? productKeys : 'empty object',
+              productData: pkg.product || 'missing'
+            });
           }
         });
+        
+        if (emptyProductCount > 0) {
+          console.warn(`⚠️ Found ${emptyProductCount} package(s) with empty product data`);
+          console.warn('   This usually means products are not properly linked in RevenueCat dashboard');
+          console.warn('   Valid packages:', validPackageCount);
+        }
         
         return currentOffering;
       } catch (importError: any) {

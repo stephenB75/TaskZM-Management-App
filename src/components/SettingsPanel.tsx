@@ -141,7 +141,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
         const offerings = await getOfferings();
         if (offerings?.availablePackages && offerings.availablePackages.length > 0) {
-          const validPackages = offerings.availablePackages.filter((p: any) => p && p.product);
+          // Filter for packages with valid product data (not just empty objects)
+          const hasValidProduct = (p: any) => {
+            if (!p || !p.product) return false;
+            const productKeys = Object.keys(p.product);
+            return productKeys.length > 0 && (p.product.identifier || p.product.priceString || p.product.price);
+          };
+          const validPackages = offerings.availablePackages.filter(hasValidProduct);
           
           // Use the same robust matching logic as PricingDialog
           let monthlyPkg: any = null;
@@ -168,8 +174,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               
               const isMonthlyByProductId = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
                 const idLower = id.toLowerCase();
-                return productIdLower === idLower || 
-                       productIdLower.includes(idLower.replace('$', '')) ||
+                // Exact match (most reliable)
+                if (productIdLower === idLower) return true;
+                // Pattern matching for package identifiers
+                return productIdLower.includes(idLower.replace('$', '')) ||
                        productIdLower.includes(idLower.replace('$rc_', 'rc_'));
               });
               
@@ -205,8 +213,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               
               const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
                 const idLower = id.toLowerCase();
-                return productIdLower === idLower || 
-                       productIdLower.includes(idLower.replace('$', '')) ||
+                // Exact match (most reliable)
+                if (productIdLower === idLower) return true;
+                // Pattern matching for package identifiers
+                return productIdLower.includes(idLower.replace('$', '')) ||
                        productIdLower.includes(idLower.replace('$rc_', 'rc_'));
               });
               

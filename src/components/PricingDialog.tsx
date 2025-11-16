@@ -152,11 +152,32 @@ export function PricingDialog({
         console.log('✅ RevenueCat connected! Packages found:', rcOfferings.availablePackages.length);
         
         // Filter out packages without products and log them
-        const validPackages = rcOfferings.availablePackages.filter((p: any) => p && p.product);
-        const invalidPackages = rcOfferings.availablePackages.filter((p: any) => !p || !p.product);
+        // Check that product exists AND has actual data (not just an empty object)
+        const hasValidProduct = (p: any) => {
+          if (!p || !p.product) return false;
+          // Check if product object has any actual properties (not just an empty object)
+          const productKeys = Object.keys(p.product);
+          return productKeys.length > 0 && (p.product.identifier || p.product.priceString || p.product.price);
+        };
+        
+        const validPackages = rcOfferings.availablePackages.filter(hasValidProduct);
+        const invalidPackages = rcOfferings.availablePackages.filter((p: any) => !hasValidProduct(p));
         
         if (invalidPackages.length > 0) {
-          console.warn('⚠️ Found packages without products:', invalidPackages.map((p: any) => p?.identifier || 'unknown'));
+          console.warn('⚠️ Found packages with missing or empty product data:');
+          invalidPackages.forEach((p: any) => {
+            const identifier = p?.identifier || 'unknown';
+            const productKeys = p?.product ? Object.keys(p.product) : [];
+            console.warn(`   - ${identifier}:`, {
+              hasProduct: !!p?.product,
+              productKeys: productKeys.length > 0 ? productKeys : 'empty object',
+              productData: p?.product || 'missing'
+            });
+          });
+          console.warn('   This usually means:');
+          console.warn('   1. Products are not properly linked to packages in RevenueCat dashboard');
+          console.warn('   2. Product data hasn\'t loaded yet (try refreshing)');
+          console.warn('   3. RevenueCat configuration issue - check your API key and dashboard settings');
         }
         
         // Log all package identifiers for debugging
@@ -216,11 +237,13 @@ export function PricingDialog({
                      identifierLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product ID against monthly list
+            // Check product ID against monthly list (exact match first, then pattern matching)
             const isMonthlyByProductId = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
               const idLower = id.toLowerCase();
-              return productIdLower === idLower || 
-                     productIdLower.includes(idLower.replace('$', '')) ||
+              // Exact match (most reliable)
+              if (productIdLower === idLower) return true;
+              // Pattern matching for package identifiers
+              return productIdLower.includes(idLower.replace('$', '')) ||
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
@@ -263,11 +286,13 @@ export function PricingDialog({
                      identifierLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product ID against yearly list
+            // Check product ID against yearly list (exact match first, then pattern matching)
             const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
               const idLower = id.toLowerCase();
-              return productIdLower === idLower || 
-                     productIdLower.includes(idLower.replace('$', '')) ||
+              // Exact match (most reliable)
+              if (productIdLower === idLower) return true;
+              // Pattern matching for package identifiers
+              return productIdLower.includes(idLower.replace('$', '')) ||
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
@@ -745,8 +770,27 @@ export function PricingDialog({
         })), null, 2));
         
         // Try to find yearly package in fresh offerings using the same matching logic
+        // Filter for packages with valid product data first
+        const hasValidProduct = (p: any) => {
+          if (!p || !p.product) return false;
+          const productKeys = Object.keys(p.product);
+          return productKeys.length > 0 && (p.product.identifier || p.product.priceString || p.product.price);
+        };
+        
+        const validFreshPackages = freshOfferings.availablePackages.filter(hasValidProduct);
+        
+        if (validFreshPackages.length === 0) {
+          console.error('❌ No packages with valid product data found');
+          console.error('   All packages have empty product objects');
+          console.error('   This indicates a RevenueCat configuration issue');
+          console.error('   Please check:');
+          console.error('   1. Products are linked to packages in RevenueCat dashboard');
+          console.error('   2. Products have pricing configured');
+          console.error('   3. API key has correct permissions');
+        }
+        
         let foundYearlyPkg: any = null;
-        for (const pkg of freshOfferings.availablePackages) {
+        for (const pkg of validFreshPackages) {
           if (!pkg || !pkg.product) continue;
           
           const identifier = pkg.identifier || '';
@@ -764,11 +808,13 @@ export function PricingDialog({
                    identifierLower.includes(idLower.replace('$rc_', 'rc_'));
           });
           
-          // Check product ID against yearly list
+          // Check product ID against yearly list (exact match first, then pattern matching)
           const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
             const idLower = id.toLowerCase();
-            return productIdLower === idLower || 
-                   productIdLower.includes(idLower.replace('$', '')) ||
+            // Exact match (most reliable)
+            if (productIdLower === idLower) return true;
+            // Pattern matching for package identifiers
+            return productIdLower.includes(idLower.replace('$', '')) ||
                    productIdLower.includes(idLower.replace('$rc_', 'rc_'));
           });
           

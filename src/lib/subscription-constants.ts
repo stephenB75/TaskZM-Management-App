@@ -26,6 +26,15 @@ export const DEFAULT_CURRENCY_CODE = "USD";
 export const DEFAULT_MONTHLY_TITLE = "Monthly Pro";
 export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 
+// Product identifiers from RevenueCat/Stripe/App Store/Google Play
+// These are the actual product IDs that RevenueCat uses
+export const MONTHLY_PRODUCT_IDS = [
+  'proddf11a9ef49',  // Monthly subscription product ID
+];
+export const YEARLY_PRODUCT_IDS = [
+  'prod40f95d4507',  // Yearly subscription product ID
+];
+
 // Package identifiers for RevenueCat
 // RevenueCat can use various identifier patterns, so we check for multiple possibilities
 // Note: RevenueCat package identifiers can be with or without the $ prefix
@@ -38,7 +47,8 @@ export const MONTHLY_PACKAGE_IDENTIFIERS = [
   '$rc_monthly_pro',
   'rc_monthly_pro',
   'monthly_subscription',
-  'monthly_plan'
+  'monthly_plan',
+  ...MONTHLY_PRODUCT_IDS,  // Include product IDs
 ];
 export const YEARLY_PACKAGE_IDENTIFIERS = [
   '$rc_annual',   // With $ prefix
@@ -56,7 +66,8 @@ export const YEARLY_PACKAGE_IDENTIFIERS = [
   'annual_subscription',
   'yearly_subscription',
   'annual_plan',
-  'yearly_plan'
+  'yearly_plan',
+  ...YEARLY_PRODUCT_IDS,  // Include product IDs
 ];
 
 // Number of PRO features (for UI display)

@@ -113,8 +113,10 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
 
       const isMonthlyByProductId = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
         const idLower = id.toLowerCase();
-        return productIdLower === idLower || 
-               productIdLower.includes(idLower.replace('$', '')) ||
+        // Exact match (most reliable)
+        if (productIdLower === idLower) return true;
+        // Pattern matching for package identifiers
+        return productIdLower.includes(idLower.replace('$', '')) ||
                productIdLower.includes(idLower.replace('$rc_', 'rc_'));
       });
 
@@ -152,8 +154,10 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
 
         const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
           const idLower = id.toLowerCase();
-          return productIdLower === idLower || 
-                 productIdLower.includes(idLower.replace('$', '')) ||
+          // Exact match (most reliable)
+          if (productIdLower === idLower) return true;
+          // Pattern matching for package identifiers
+          return productIdLower.includes(idLower.replace('$', '')) ||
                  productIdLower.includes(idLower.replace('$rc_', 'rc_'));
         });
 
