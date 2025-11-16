@@ -644,14 +644,28 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
         // Force refresh cache if requested
         if (forceRefresh) {
           try {
+            // Clear cache by syncing purchases and getting fresh customer info
+            await purchasesInstance.syncPurchases();
             await purchasesInstance.getCustomerInfo();
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // Add delay to ensure cache is cleared
+            await new Promise(resolve => setTimeout(resolve, 500));
+            console.log('🔄 Force refresh: Cache cleared, fetching fresh offerings from RevenueCat');
           } catch (error: any) {
-            // Silently fail
+            console.warn('⚠️ Could not clear cache during force refresh:', error?.message);
           }
         }
         
         const offerings = await purchasesInstance.getOfferings();
+        
+        // Log what we received for verification
+        if (forceRefresh && offerings?.current) {
+          console.log('✅ Fresh offerings received from RevenueCat:', {
+            offeringId: offerings.current.identifier,
+            packageCount: offerings.current.availablePackages?.length || 0,
+            packageIdentifiers: offerings.current.availablePackages?.map((p: any) => p?.identifier || 'unknown') || [],
+            timestamp: new Date().toISOString()
+          });
+        }
         
         if (!offerings?.current) {
           console.warn('⚠️ RevenueCat has no current offering');
