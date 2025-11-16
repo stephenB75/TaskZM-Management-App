@@ -591,26 +591,80 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           
           return isProActive;
         } catch (purchaseError: any) {
+          // Extract comprehensive error information
+          const errorName = purchaseError?.name || purchaseError?.constructor?.name || 'Unknown';
+          const errorMessage = purchaseError?.message || purchaseError?.toString() || String(purchaseError) || 'Unknown error';
+          const errorCode = purchaseError?.code || purchaseError?.errorCode || 'N/A';
+          const errorUnderlyingErrorMessage = purchaseError?.underlyingErrorMessage || purchaseError?.underlyingError?.message || 'N/A';
+          
+          console.error('❌ RevenueCat purchase error details:');
+          console.error('   Error name:', errorName);
+          console.error('   Error message:', errorMessage);
+          console.error('   Error code:', errorCode);
+          console.error('   Underlying error:', errorUnderlyingErrorMessage);
+          console.error('   Full error object:', {
+            keys: Object.keys(purchaseError || {}),
+            stringified: JSON.stringify(purchaseError, Object.getOwnPropertyNames(purchaseError), 2)
+          });
+          
           // Check if this is a user cancellation (not an error)
-          if (purchaseError?.userCancelled || purchaseError?.message?.toLowerCase().includes('cancel')) {
+          const isUserCancelled = purchaseError?.userCancelled || 
+                                 purchaseError?.userCancelled === true ||
+                                 errorMessage?.toLowerCase().includes('cancel') ||
+                                 errorMessage?.toLowerCase().includes('cancelled') ||
+                                 errorName?.toLowerCase().includes('cancel');
+          
+          if (isUserCancelled) {
             console.log('ℹ️ User cancelled the purchase');
             throw { ...purchaseError, userCancelled: true };
           }
           
           // Check if this is a checkout-related error
-          if (purchaseError?.message?.toLowerCase().includes('checkout') || 
-              purchaseError?.message?.toLowerCase().includes('stripe')) {
-            console.error('❌ Stripe Checkout error:', purchaseError.message);
+          const isCheckoutError = errorMessage?.toLowerCase().includes('checkout') || 
+                                 errorMessage?.toLowerCase().includes('stripe') ||
+                                 errorMessage?.toLowerCase().includes('payment form') ||
+                                 errorMessage?.toLowerCase().includes('unable to open') ||
+                                 errorCode?.toString().includes('checkout');
+          
+          if (isCheckoutError) {
+            console.error('❌ Stripe Checkout error detected');
             console.error('   This might indicate:');
             console.error('   1. Stripe integration not properly configured in RevenueCat');
             console.error('   2. Checkout session creation failed');
             console.error('   3. Payment form not accessible');
-            throw new Error(`Checkout failed: ${purchaseError.message || 'Unable to open payment form'}`);
+            console.error('   4. Browser blocking popups/modals');
+            throw new Error(`Checkout failed: ${errorMessage || 'Unable to open payment form'}`);
           }
           
-          // Re-throw other errors
-          console.error('❌ Purchase error:', purchaseError);
-          throw purchaseError;
+          // Check for network/connection errors
+          const isNetworkError = errorMessage?.toLowerCase().includes('network') ||
+                                errorMessage?.toLowerCase().includes('fetch') ||
+                                errorMessage?.toLowerCase().includes('connection') ||
+                                errorMessage?.toLowerCase().includes('timeout');
+          
+          if (isNetworkError) {
+            console.error('❌ Network error during purchase');
+            throw new Error(`Network error: ${errorMessage || 'Unable to connect to payment service'}`);
+          }
+          
+          // Check for configuration errors
+          const isConfigError = errorMessage?.toLowerCase().includes('not configured') ||
+                               errorMessage?.toLowerCase().includes('not available') ||
+                               errorMessage?.toLowerCase().includes('api key') ||
+                               errorCode?.toString().includes('config');
+          
+          if (isConfigError) {
+            console.error('❌ RevenueCat configuration error');
+            throw new Error(`Configuration error: ${errorMessage || 'RevenueCat is not properly configured'}`);
+          }
+          
+          // Re-throw with enhanced error message
+          const enhancedMessage = errorMessage !== 'Unknown error' && errorMessage !== 'Ie' 
+            ? errorMessage 
+            : `Purchase failed: ${errorName} (code: ${errorCode})`;
+          
+          console.error('❌ Purchase error (re-throwing):', enhancedMessage);
+          throw new Error(enhancedMessage);
         }
       } catch (importError: any) {
         console.error('❌ RevenueCat purchase error:', importError);
