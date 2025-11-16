@@ -10,6 +10,7 @@ import {
   NOTIFICATION_ICONS,
   NOTIFICATION_TOAST_MESSAGES,
   NOTIFICATION_TITLES,
+  NOTIFICATION_MESSAGES,
   NOTIFICATION_TAG_PREFIXES,
   NOTIFICATION_ERRORS,
   NOTIFICATION_TIME_FORMATS,
@@ -248,8 +249,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       overdueTasks.forEach(task => {
         try {
+          const dueDateText = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '';
           const notification = new Notification(NOTIFICATION_TITLES.taskOverdue, {
-            body: `${task.title} was due ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}`,
+            body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dueDateText),
             icon: NOTIFICATION_ICONS.default,
             badge: NOTIFICATION_ICONS.badge,
             tag: `${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`,
@@ -283,11 +285,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           const dueDate = new Date(task.dueDate!);
           const timeUntil = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60));
           const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
-            ? `${timeUntil} minutes` 
-            : `${Math.round(timeUntil / 60)} hours`;
+            ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
+            : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
           
           const notification = new Notification(NOTIFICATION_TITLES.taskDueSoon, {
-            body: `${task.title} is due in ${timeText}`,
+            body: NOTIFICATION_MESSAGES.taskDueIn(task.title, timeText),
             icon: NOTIFICATION_ICONS.default,
             badge: NOTIFICATION_ICONS.badge,
             tag: `${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`,

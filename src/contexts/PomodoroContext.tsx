@@ -7,6 +7,7 @@ import {
   POMODORO_LONG_BREAK_DURATION,
   STORAGE_KEY_POMODORO,
 } from '../lib/business-constants';
+import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES } from '../lib/notification-constants';
 
 type TimerMode = 'work' | 'shortBreak' | 'longBreak';
 
@@ -390,7 +391,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       delete intervalsRef.current[taskId];
     }
 
-    const taskTitle = taskTitlesRef.current[taskId] || 'Task';
+    const taskTitle = taskTitlesRef.current[taskId] || NOTIFICATION_MESSAGES.defaultTaskTitle;
 
     if (current.mode === 'work') {
       // Calculate total time: existing tracked time + elapsed time in this session
@@ -432,8 +433,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
 
       // Show notification
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Pomodoro Complete! 🍅', {
-          body: `Great work on "${taskTitle}"! Time for a break.`,
+        new Notification(NOTIFICATION_TITLES.pomodoroComplete, {
+          body: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
           icon: '/favicon.ico',
         });
       }
@@ -456,8 +457,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     } else {
       // Break finished, switch back to work
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Break Over! ☕', {
-          body: `Ready to focus on "${taskTitle}" again?`,
+        new Notification(NOTIFICATION_TITLES.pomodoroBreak, {
+          body: NOTIFICATION_MESSAGES.pomodoroBreakOver(taskTitle),
           icon: '/favicon.ico',
         });
       }

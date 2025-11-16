@@ -42,8 +42,22 @@ export const NOTIFICATION_TOAST_MESSAGES = {
 export const NOTIFICATION_TITLES = {
   taskOverdue: 'Task Overdue',
   taskDueSoon: 'Task Due Soon',
-  pomodoroComplete: 'Pomodoro Complete',
-  pomodoroBreak: 'Pomodoro Break',
+  pomodoroComplete: 'Pomodoro Complete! 🍅',
+  pomodoroBreak: 'Break Over! ☕',
+} as const;
+
+// Notification body message templates
+export const NOTIFICATION_MESSAGES = {
+  taskWasDue: (taskTitle: string, dueDate: string) => `${taskTitle} was due ${dueDate}`,
+  taskDueIn: (taskTitle: string, timeText: string) => `${taskTitle} is due in ${timeText}`,
+  timeMinutes: (minutes: number) => `${minutes} minutes`,
+  timeHours: (hours: number) => `${hours} hours`,
+  pomodoroComplete: (taskTitle: string) => `Great work on "${taskTitle}"! Time for a break.`,
+  pomodoroBreakOver: (taskTitle: string) => `Ready to focus on "${taskTitle}" again?`,
+  pomodoroSessionsCompleted: (count: number, taskTitle: string) => 
+    `Completed ${count} session${count > 1 ? 's' : ''} for "${taskTitle}"`,
+  unreadCount: (count: number) => `${count} unread notification${count === 1 ? '' : 's'}`,
+  defaultTaskTitle: 'Task', // Fallback task title when task title is missing
 } as const;
 
 // Notification panel UI text
@@ -61,6 +75,7 @@ export const NOTIFICATION_PANEL_TEXT = {
     overdue: 'Overdue Tasks',
     dueSoon: 'Due Soon',
     pomodoro: 'Pomodoro',
+    placeholder: 'Filter',
   },
   permission: {
     granted: 'Granted',

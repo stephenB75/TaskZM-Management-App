@@ -29,6 +29,7 @@ import type { Task } from "../types";
 import {
   NOTIFICATION_STORAGE_KEYS,
   NOTIFICATION_TITLES,
+  NOTIFICATION_MESSAGES,
   NOTIFICATION_TYPES,
   NOTIFICATION_PANEL_TEXT,
   NOTIFICATION_TIME_FORMATS,
@@ -87,11 +88,12 @@ export function NotificationsPanel() {
           return dueDate < today;
         })
         .forEach(task => {
+          const dueDateText = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '';
           newNotifications.push({
             id: `overdue_${task.id}`,
             type: NOTIFICATION_TYPES.taskOverdue as NotificationItem['type'],
             title: NOTIFICATION_TITLES.taskOverdue,
-            message: `${task.title} was due ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}`,
+            message: NOTIFICATION_MESSAGES.taskWasDue(task.title, dueDateText),
             timestamp: new Date(task.dueDate || now),
             read: readNotifications.has(`overdue_${task.id}`),
             taskId: task.id,
@@ -114,14 +116,14 @@ export function NotificationsPanel() {
           const dueDate = new Date(task.dueDate!);
           const timeUntil = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60));
           const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold
-            ? `${timeUntil} minutes` 
-            : `${Math.round(timeUntil / 60)} hours`;
+            ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
+            : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
           
           newNotifications.push({
             id: `due-soon_${task.id}`,
             type: NOTIFICATION_TYPES.taskDueSoon as NotificationItem['type'],
             title: NOTIFICATION_TITLES.taskDueSoon,
-            message: `${task.title} is due in ${timeText}`,
+            message: NOTIFICATION_MESSAGES.taskDueIn(task.title, timeText),
             timestamp: dueDate,
             read: readNotifications.has(`due-soon_${task.id}`),
             taskId: task.id,
@@ -146,7 +148,7 @@ export function NotificationsPanel() {
             id: notificationId,
             type: NOTIFICATION_TYPES.pomodoroComplete as NotificationItem['type'],
             title: NOTIFICATION_TITLES.pomodoroComplete,
-            message: `Completed ${newSessions} session${newSessions > 1 ? 's' : ''} for "${task.title}"`,
+            message: NOTIFICATION_MESSAGES.pomodoroSessionsCompleted(newSessions, task.title),
             timestamp: new Date(),
             read: false,
             taskId: task.id,
@@ -162,7 +164,7 @@ export function NotificationsPanel() {
             id: notificationId,
             type: NOTIFICATION_TYPES.pomodoroComplete as NotificationItem['type'],
             title: NOTIFICATION_TITLES.pomodoroComplete,
-            message: `Completed ${timerState.sessionsCompleted} session${timerState.sessionsCompleted > 1 ? 's' : ''} for "${task.title}"`,
+            message: NOTIFICATION_MESSAGES.pomodoroSessionsCompleted(timerState.sessionsCompleted, task.title),
             timestamp: new Date(),
             read: false,
             taskId: task.id,
@@ -241,7 +243,7 @@ export function NotificationsPanel() {
         title={NOTIFICATION_PANEL_TEXT.title}
         panelOpen={true}
         isSidePanelHeader={true}
-        description={`${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
+        description={NOTIFICATION_MESSAGES.unreadCount(unreadCount)}
         hideDesktopLogo
         actions={
           <Button
@@ -267,7 +269,7 @@ export function NotificationsPanel() {
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-full sm:w-[180px] h-10 bg-white dark:bg-gray-900">
                 <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter" />
+                <SelectValue placeholder={NOTIFICATION_PANEL_TEXT.filters.placeholder} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{NOTIFICATION_PANEL_TEXT.filters.all}</SelectItem>
