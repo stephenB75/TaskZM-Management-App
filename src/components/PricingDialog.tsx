@@ -645,11 +645,29 @@ export function PricingDialog({
       // Check if yearly package is available
       if (!offerings.yearly) {
         console.error('❌ Yearly package not available');
-        toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-          description: SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable,
+        console.error('   Current offerings state:', {
+          monthly: offerings.monthly ? {
+            identifier: offerings.monthly.identifier,
+            priceString: offerings.monthly.priceString
+          } : 'NOT AVAILABLE',
+          yearly: offerings.yearly ? {
+            identifier: offerings.yearly.identifier,
+            priceString: offerings.yearly.priceString
+          } : 'NOT AVAILABLE'
         });
-        setIsUpgrading(false);
-        return;
+        console.error('   Attempting to reload offerings to check for yearly package...');
+        
+        // Try reloading offerings one more time
+        await loadOfferings();
+        
+        // Check again after reload
+        if (!offerings.yearly) {
+          toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
+            description: SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable,
+          });
+          setIsUpgrading(false);
+          return;
+        }
       }
 
       // Check if offerings are available before purchase
