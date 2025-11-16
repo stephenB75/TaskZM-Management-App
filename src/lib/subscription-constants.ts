@@ -172,6 +172,8 @@ export const SUBSCRIPTION_UI_TEXT = {
   errors: {
     paymentProcessingUnavailable: "Payment processing unavailable",
     paymentProcessingUnavailableDesc: "Unable to process payment. Please contact support or try again later.",
+    paymentFormError: "Payment Form Error",
+    paymentFormErrorDesc: "Unable to open or interact with the payment form. Please check: 1) Stripe is properly configured in RevenueCat dashboard, 2) Your browser allows popups/modals, 3) No browser extensions are blocking the payment form. If the issue persists, try a different browser or check the browser console for errors.",
     subscriptionNotAvailable: "Subscription Not Available",
     subscriptionNotAvailableDesc: "Subscription packages are not currently available. This may be a configuration issue. Please check RevenueCat dashboard or contact support.",
     packageNotFound: "Package Not Found",
@@ -265,6 +267,7 @@ export const SUBSCRIPTION_UI_TEXT = {
       month: "/month",
       year: "/year",
     },
+    moreFeaturesLabel: "more features",
   },
   configuration: {
     errorTitle: "Configuration Error",

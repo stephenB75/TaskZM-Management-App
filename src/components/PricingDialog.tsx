@@ -966,8 +966,8 @@ export function PricingDialog({
               rcError.message?.toLowerCase().includes("stripe") ||
               rcError.message?.toLowerCase().includes("payment form") ||
               rcError.message?.toLowerCase().includes("unable to open")) {
-            errorTitle = "Payment Form Error";
-            errorDescription = "Unable to open or interact with the payment form. Please check: 1) Stripe is properly configured in RevenueCat dashboard, 2) Your browser allows popups/modals, 3) No browser extensions are blocking the payment form. If the issue persists, try a different browser or check the browser console for errors.";
+            errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentFormError;
+            errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentFormErrorDesc;
           } else if (rcError.message?.includes("No subscription offerings available") || 
               rcError.message?.includes("No subscription packages available")) {
             errorTitle = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable;
@@ -1286,8 +1286,8 @@ export function PricingDialog({
               rcError.message?.toLowerCase().includes("stripe") ||
               rcError.message?.toLowerCase().includes("payment form") ||
               rcError.message?.toLowerCase().includes("unable to open")) {
-            errorTitle = "Payment Form Error";
-            errorDescription = "Unable to open or interact with the payment form. Please check: 1) Stripe is properly configured in RevenueCat dashboard, 2) Your browser allows popups/modals, 3) No browser extensions are blocking the payment form. If the issue persists, try a different browser or check the browser console for errors.";
+            errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentFormError;
+            errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentFormErrorDesc;
           } else if (rcError.message?.includes("No subscription offerings available") || 
               rcError.message?.includes("No subscription packages available")) {
             errorTitle = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable;
@@ -1494,7 +1494,7 @@ export function PricingDialog({
                     </li>
                   ))}
                   <li className="text-xs text-muted-foreground pt-1">
-                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} more features
+                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
                   </li>
                 </ul>
 
@@ -1599,7 +1599,7 @@ export function PricingDialog({
                     </li>
                   ))}
                   <li className="text-xs text-muted-foreground pt-1">
-                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} more features
+                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
                   </li>
                 </ul>
 
