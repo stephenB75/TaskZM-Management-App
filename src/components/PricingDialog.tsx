@@ -583,9 +583,43 @@ export function PricingDialog({
 
         // Set offerings from RevenueCat - this is the source of truth
         // Handle packages even if product data is missing (use defaults with package identifier)
+        // Helper function to extract price string from product, with fallback logic
+        const getPriceString = (pkg: any, defaultPrice: string): string => {
+          if (!pkg?.product) return defaultPrice;
+          
+          // First try priceString (formatted price from RevenueCat)
+          if (pkg.product.priceString && pkg.product.priceString.trim() !== '') {
+            return pkg.product.priceString.trim();
+          }
+          
+          // If priceString is empty, try to format from price amount
+          if (pkg.product.price != null && pkg.product.price !== 0) {
+            const currencyCode = pkg.product.currencyCode || DEFAULT_CURRENCY_CODE;
+            const priceAmount = typeof pkg.product.price === 'number' 
+              ? pkg.product.price 
+              : parseFloat(pkg.product.price.toString());
+            
+            if (!isNaN(priceAmount) && priceAmount > 0) {
+              // Format price with currency
+              try {
+                return new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: currencyCode,
+                }).format(priceAmount);
+              } catch (e) {
+                // Fallback to simple formatting if Intl fails
+                return `${currencyCode === 'USD' ? '$' : currencyCode} ${priceAmount.toFixed(2)}`;
+              }
+            }
+          }
+          
+          // Last resort: use default
+          return defaultPrice;
+        };
+        
         const monthlyOffering = monthlyPkg ? {
           price: (monthlyPkg.product?.price?.toString() ?? '0'),
-          priceString: (monthlyPkg.product?.priceString ?? DEFAULT_MONTHLY_PRICE),
+          priceString: getPriceString(monthlyPkg, DEFAULT_MONTHLY_PRICE),
           currencyCode: (monthlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: monthlyPkg.identifier || 'monthly',
           title: (monthlyPkg.product?.title?.trim() || DEFAULT_MONTHLY_TITLE),
@@ -594,7 +628,7 @@ export function PricingDialog({
 
         const yearlyOffering = yearlyPkg ? {
           price: (yearlyPkg.product?.price?.toString() ?? '0'),
-          priceString: (yearlyPkg.product?.priceString ?? DEFAULT_YEARLY_PRICE),
+          priceString: getPriceString(yearlyPkg, DEFAULT_YEARLY_PRICE),
           currencyCode: (yearlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: yearlyPkg.identifier || 'yearly',
           title: (yearlyPkg.product?.title?.trim() || DEFAULT_YEARLY_TITLE),
@@ -640,7 +674,9 @@ export function PricingDialog({
         
         console.log('\n✅ Setting offerings from RevenueCat:');
         if (monthlyOffering) {
-          const fromRC = monthlyPkg?.product?.priceString != null && monthlyPkg.product.priceString !== '';
+          const hasPriceString = monthlyPkg?.product?.priceString != null && monthlyPkg.product.priceString.trim() !== '';
+          const hasPriceAmount = monthlyPkg?.product?.price != null && monthlyPkg.product.price !== 0;
+          const fromRC = hasPriceString || hasPriceAmount;
           console.log('   Monthly Offering:', {
             identifier: monthlyOffering.identifier,
             priceString: monthlyOffering.priceString,
@@ -648,15 +684,21 @@ export function PricingDialog({
             currencyCode: monthlyOffering.currencyCode,
             title: monthlyOffering.title,
             description: monthlyOffering.description,
-            fromRevenueCat: fromRC ? 'YES ✅' : 'NO (using default) ⚠️',
-            rawPriceString: monthlyPkg?.product?.priceString || 'null/undefined',
-            rawPrice: monthlyPkg?.product?.price || 'null/undefined',
+            fromRevenueCat: fromRC ? '✅ YES' : '⚠️ Using defaults',
+            source: hasPriceString ? 'priceString' : hasPriceAmount ? 'price (formatted)' : 'default'
+          });
+          console.log('   Raw product data:', {
+            priceString: monthlyPkg?.product?.priceString || 'N/A',
+            price: monthlyPkg?.product?.price || 'N/A',
+            currencyCode: monthlyPkg?.product?.currencyCode || 'N/A'
           });
         } else {
           console.log('   Monthly: NOT AVAILABLE (package not found in RevenueCat)');
         }
         if (yearlyOffering) {
-          const fromRC = yearlyPkg?.product?.priceString != null && yearlyPkg.product.priceString !== '';
+          const hasPriceString = yearlyPkg?.product?.priceString != null && yearlyPkg.product.priceString.trim() !== '';
+          const hasPriceAmount = yearlyPkg?.product?.price != null && yearlyPkg.product.price !== 0;
+          const fromRC = hasPriceString || hasPriceAmount;
           console.log('   Yearly Offering:', {
             identifier: yearlyOffering.identifier,
             priceString: yearlyOffering.priceString,
@@ -664,9 +706,13 @@ export function PricingDialog({
             currencyCode: yearlyOffering.currencyCode,
             title: yearlyOffering.title,
             description: yearlyOffering.description,
-            fromRevenueCat: fromRC ? 'YES ✅' : 'NO (using default) ⚠️',
-            rawPriceString: yearlyPkg?.product?.priceString || 'null/undefined',
-            rawPrice: yearlyPkg?.product?.price || 'null/undefined',
+            fromRevenueCat: fromRC ? '✅ YES' : '⚠️ Using defaults',
+            source: hasPriceString ? 'priceString' : hasPriceAmount ? 'price (formatted)' : 'default'
+          });
+          console.log('   Raw product data:', {
+            priceString: yearlyPkg?.product?.priceString || 'N/A',
+            price: yearlyPkg?.product?.price || 'N/A',
+            currencyCode: yearlyPkg?.product?.currencyCode || 'N/A'
           });
         } else {
           console.log('   Yearly: NOT AVAILABLE (package not found in RevenueCat)');
@@ -915,7 +961,14 @@ export function PricingDialog({
           let errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailable;
           let errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailableDesc;
           
-          if (rcError.message?.includes("No subscription offerings available") || 
+          // Check for checkout/payment form specific errors
+          if (rcError.message?.toLowerCase().includes("checkout") || 
+              rcError.message?.toLowerCase().includes("stripe") ||
+              rcError.message?.toLowerCase().includes("payment form") ||
+              rcError.message?.toLowerCase().includes("unable to open")) {
+            errorTitle = "Payment Form Error";
+            errorDescription = "Unable to open or interact with the payment form. Please check: 1) Stripe is properly configured in RevenueCat dashboard, 2) Your browser allows popups/modals, 3) No browser extensions are blocking the payment form. If the issue persists, try a different browser or check the browser console for errors.";
+          } else if (rcError.message?.includes("No subscription offerings available") || 
               rcError.message?.includes("No subscription packages available")) {
             errorTitle = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable;
             errorDescription = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc;
@@ -1228,7 +1281,14 @@ export function PricingDialog({
           let errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailable;
           let errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailableDesc;
           
-          if (rcError.message?.includes("No subscription offerings available") || 
+          // Check for checkout/payment form specific errors
+          if (rcError.message?.toLowerCase().includes("checkout") || 
+              rcError.message?.toLowerCase().includes("stripe") ||
+              rcError.message?.toLowerCase().includes("payment form") ||
+              rcError.message?.toLowerCase().includes("unable to open")) {
+            errorTitle = "Payment Form Error";
+            errorDescription = "Unable to open or interact with the payment form. Please check: 1) Stripe is properly configured in RevenueCat dashboard, 2) Your browser allows popups/modals, 3) No browser extensions are blocking the payment form. If the issue persists, try a different browser or check the browser console for errors.";
+          } else if (rcError.message?.includes("No subscription offerings available") || 
               rcError.message?.includes("No subscription packages available")) {
             errorTitle = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable;
             errorDescription = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc;

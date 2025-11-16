@@ -438,14 +438,67 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
         }
         
         console.log(`✅ Found ${packageType} package:`, selectedPackage.identifier);
+        console.log('📦 Package details:', {
+          identifier: selectedPackage.identifier,
+          productId: selectedPackage.product?.identifier,
+          priceString: selectedPackage.product?.priceString,
+          title: selectedPackage.product?.title
+        });
         
-        // Use the instance method for purchase (reuse instance from above)
-        const { customerInfo } = await purchasesInstance.purchase({ rcPackage: selectedPackage });
+        // For web, RevenueCat will open Stripe Checkout automatically
+        // The purchase method should handle the checkout flow and return customerInfo when complete
+        console.log('🔄 Initiating Stripe Checkout via RevenueCat...');
+        console.log('   This will open a Stripe Checkout form where users can enter payment details');
         
-        // Check if purchase was successful
-        const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
-        console.log(`Web ${packageType} purchase result:`, isProActive ? 'success' : 'failed');
-        return isProActive;
+        try {
+          // Use the instance method for purchase (reuse instance from above)
+          // This will automatically open Stripe Checkout for web purchases
+          const purchaseResult = await purchasesInstance.purchase({ rcPackage: selectedPackage });
+          
+          // Handle the purchase result - it might be customerInfo directly or wrapped
+          const customerInfo = purchaseResult?.customerInfo || purchaseResult;
+          
+          if (!customerInfo) {
+            console.error('❌ No customerInfo returned from purchase');
+            throw new Error('Purchase completed but no customer information received');
+          }
+          
+          // Check if purchase was successful
+          const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
+          console.log(`✅ Web ${packageType} purchase result:`, isProActive ? 'SUCCESS' : 'FAILED');
+          
+          if (isProActive) {
+            console.log('   ✅ Pro entitlement is now active');
+            console.log('   Active entitlements:', Object.keys(customerInfo.entitlements?.active || {}));
+          } else {
+            console.warn('   ⚠️ Purchase completed but Pro entitlement not active');
+            console.warn('   Available entitlements:', Object.keys(customerInfo.entitlements?.active || {}));
+            console.warn('   All entitlements:', customerInfo.entitlements);
+          }
+          
+          return isProActive;
+        } catch (purchaseError: any) {
+          // Check if this is a user cancellation (not an error)
+          if (purchaseError?.userCancelled || purchaseError?.message?.toLowerCase().includes('cancel')) {
+            console.log('ℹ️ User cancelled the purchase');
+            throw { ...purchaseError, userCancelled: true };
+          }
+          
+          // Check if this is a checkout-related error
+          if (purchaseError?.message?.toLowerCase().includes('checkout') || 
+              purchaseError?.message?.toLowerCase().includes('stripe')) {
+            console.error('❌ Stripe Checkout error:', purchaseError.message);
+            console.error('   This might indicate:');
+            console.error('   1. Stripe integration not properly configured in RevenueCat');
+            console.error('   2. Checkout session creation failed');
+            console.error('   3. Payment form not accessible');
+            throw new Error(`Checkout failed: ${purchaseError.message || 'Unable to open payment form'}`);
+          }
+          
+          // Re-throw other errors
+          console.error('❌ Purchase error:', purchaseError);
+          throw purchaseError;
+        }
       } catch (importError: any) {
         console.error('❌ RevenueCat purchase error:', importError);
         console.error('   Error type:', importError?.constructor?.name);
