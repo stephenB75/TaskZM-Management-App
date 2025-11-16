@@ -79,33 +79,97 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       
-      // First, try to get subscription status from RevenueCat (if available)
+      // First, try to get subscription status from RevenueCat (source of truth)
+      let rcStatus: 'pro' | 'free' | null = null;
+      let shouldSyncToBackend = false;
+      
       try {
         const { getSubscriptionStatus, isRevenueCatConfigured } = await import('../lib/revenuecat');
         if (isRevenueCatConfigured()) {
-          const rcStatus = await getSubscriptionStatus();
-          if (rcStatus === 'pro') {
-            // RevenueCat says user is Pro - sync with backend
-            const serverSubscription = await api.getSubscription();
-            const normalized = normalizeSubscription(serverSubscription || {
-              tier: 'pro',
-              status: 'active',
-              startDate: new Date().toISOString(),
-              endDate: null,
-              cancelAtPeriodEnd: false,
-            });
-            setSubscription(normalized);
-            localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(normalized));
-            setIsLoading(false);
-            return;
-          }
+          console.log('🔄 Checking subscription status from RevenueCat...');
+          rcStatus = await getSubscriptionStatus();
+          console.log('📊 RevenueCat subscription status:', rcStatus);
+          shouldSyncToBackend = true; // RevenueCat is source of truth, sync to backend
         }
       } catch (rcError) {
         // RevenueCat not available or not configured - continue with backend check
         console.log('RevenueCat check failed, using backend subscription:', rcError);
       }
       
-      // Fetch from database
+      // If RevenueCat says Pro, sync to backend
+      if (shouldSyncToBackend && rcStatus === 'pro') {
+        console.log('✅ RevenueCat shows Pro subscription - syncing to backend...');
+        try {
+          const serverSubscription = await api.getSubscription();
+          const currentTier = serverSubscription?.tier || 'free';
+          
+          // If backend doesn't match RevenueCat, update it
+          if (currentTier !== 'pro') {
+            console.log('🔄 Backend subscription out of sync, updating from RevenueCat...');
+            const updatedSubscription: SubscriptionInfo = {
+              tier: 'pro',
+              status: 'active',
+              startDate: serverSubscription?.startDate || new Date().toISOString(),
+              endDate: serverSubscription?.endDate || null,
+              cancelAtPeriodEnd: serverSubscription?.cancelAtPeriodEnd || false,
+            };
+            
+            // Save to backend
+            await api.saveSubscription(updatedSubscription);
+            console.log('✅ Backend subscription updated from RevenueCat');
+            
+            setSubscription(updatedSubscription);
+            localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(updatedSubscription));
+            setIsLoading(false);
+            return;
+          } else {
+            // Backend already matches, just use it
+            const normalized = normalizeSubscription(serverSubscription);
+            setSubscription(normalized);
+            localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(normalized));
+            setIsLoading(false);
+            return;
+          }
+        } catch (syncError) {
+          console.warn('Failed to sync RevenueCat status to backend:', syncError);
+          // Continue with normal flow
+        }
+      }
+      
+      // If RevenueCat says Free, also sync to backend
+      if (shouldSyncToBackend && rcStatus === 'free') {
+        console.log('ℹ️ RevenueCat shows Free subscription - checking backend...');
+        try {
+          const serverSubscription = await api.getSubscription();
+          const currentTier = serverSubscription?.tier || 'free';
+          
+          // If backend says Pro but RevenueCat says Free, update backend
+          if (currentTier === 'pro') {
+            console.log('🔄 Backend shows Pro but RevenueCat shows Free - syncing to Free...');
+            const updatedSubscription: SubscriptionInfo = {
+              tier: 'free',
+              status: 'inactive',
+              startDate: null,
+              endDate: null,
+              cancelAtPeriodEnd: false,
+            };
+            
+            // Save to backend
+            await api.saveSubscription(updatedSubscription);
+            console.log('✅ Backend subscription updated to Free from RevenueCat');
+            
+            setSubscription(updatedSubscription);
+            localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(updatedSubscription));
+            setIsLoading(false);
+            return;
+          }
+        } catch (syncError) {
+          console.warn('Failed to sync RevenueCat status to backend:', syncError);
+          // Continue with normal flow
+        }
+      }
+      
+      // Fetch from database (fallback or when RevenueCat not configured)
       const serverSubscription = await api.getSubscription();
       
       if (serverSubscription) {
@@ -160,9 +224,23 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   const refreshSubscription = useCallback(async () => {
-    console.log('Refreshing subscription status from backend...');
+    console.log('🔄 Refreshing subscription status from RevenueCat and backend...');
+    
+    // Ensure RevenueCat is configured before refreshing
+    try {
+      const { configureRevenueCat, isRevenueCatConfigured } = await import('../lib/revenuecat');
+      if (!isRevenueCatConfigured() && user?.id) {
+        console.log('🔄 RevenueCat not configured, configuring before refresh...');
+        await configureRevenueCat(user.id);
+      }
+    } catch (configError) {
+      console.warn('Failed to configure RevenueCat during refresh:', configError);
+    }
+    
+    // Load subscription (which will sync from RevenueCat)
     await loadSubscription();
-  }, [loadSubscription]);
+    console.log('✅ Subscription refresh complete');
+  }, [loadSubscription, user?.id]);
 
   // Initial load when user logs in
   useEffect(() => {
