@@ -328,7 +328,7 @@ export function PricingDialog({
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
 
       // Ensure RevenueCat is configured before attempting purchase
-      const { isRevenueCatConfigured, configureRevenueCat } = await import('../lib/revenuecat');
+      const { isRevenueCatConfigured, configureRevenueCat, getOfferings } = await import('../lib/revenuecat');
       
       if (!isRevenueCatConfigured() && user?.id) {
         console.log('🔄 RevenueCat not configured, configuring before purchase...');
@@ -350,6 +350,26 @@ export function PricingDialog({
         });
         setIsUpgrading(false);
         return;
+      }
+
+      // Check if offerings are available before purchase
+      console.log('🔍 Checking if offerings are available...');
+      const offeringsCheck = await getOfferings();
+      if (!offeringsCheck || !offeringsCheck.availablePackages || offeringsCheck.availablePackages.length === 0) {
+        console.warn('⚠️ No offerings found, attempting to reload...');
+        // Try reloading offerings
+        await loadOfferings();
+        
+        // Check again after reload
+        const offeringsCheck2 = await getOfferings();
+        if (!offeringsCheck2 || !offeringsCheck2.availablePackages || offeringsCheck2.availablePackages.length === 0) {
+          console.error('❌ No offerings available after reload');
+          toast.error('Subscription Not Available', {
+            description: 'No subscription packages are currently available. Please check RevenueCat dashboard configuration or try again later.',
+          });
+          setIsUpgrading(false);
+          return;
+        }
       }
 
       try {
@@ -379,8 +399,22 @@ export function PricingDialog({
 
         if (isProduction) {
           console.error("Payment processing failed in production:", rcError.message);
-          toast.error("Payment processing unavailable", {
-            description: "Unable to process payment. Please contact support or try again later.",
+          
+          // Provide specific error messages based on error type
+          let errorTitle = "Payment processing unavailable";
+          let errorDescription = "Unable to process payment. Please contact support or try again later.";
+          
+          if (rcError.message?.includes("No subscription offerings available") || 
+              rcError.message?.includes("No subscription packages available")) {
+            errorTitle = "Subscription Not Available";
+            errorDescription = "Subscription packages are not currently available. This may be a configuration issue. Please check RevenueCat dashboard or contact support.";
+          } else if (rcError.message?.includes("subscription package not found")) {
+            errorTitle = "Package Not Found";
+            errorDescription = "The requested subscription package was not found. Please contact support.";
+          }
+          
+          toast.error(errorTitle, {
+            description: errorDescription,
           });
           setIsUpgrading(false);
           return;
@@ -424,7 +458,7 @@ export function PricingDialog({
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
 
       // Ensure RevenueCat is configured before attempting purchase
-      const { isRevenueCatConfigured, configureRevenueCat } = await import('../lib/revenuecat');
+      const { isRevenueCatConfigured, configureRevenueCat, getOfferings } = await import('../lib/revenuecat');
       
       if (!isRevenueCatConfigured() && user?.id) {
         console.log('🔄 RevenueCat not configured, configuring before purchase...');
@@ -446,6 +480,26 @@ export function PricingDialog({
         });
         setIsUpgrading(false);
         return;
+      }
+
+      // Check if offerings are available before purchase
+      console.log('🔍 Checking if offerings are available...');
+      const offeringsCheck = await getOfferings();
+      if (!offeringsCheck || !offeringsCheck.availablePackages || offeringsCheck.availablePackages.length === 0) {
+        console.warn('⚠️ No offerings found, attempting to reload...');
+        // Try reloading offerings
+        await loadOfferings();
+        
+        // Check again after reload
+        const offeringsCheck2 = await getOfferings();
+        if (!offeringsCheck2 || !offeringsCheck2.availablePackages || offeringsCheck2.availablePackages.length === 0) {
+          console.error('❌ No offerings available after reload');
+          toast.error('Subscription Not Available', {
+            description: 'No subscription packages are currently available. Please check RevenueCat dashboard configuration or try again later.',
+          });
+          setIsUpgrading(false);
+          return;
+        }
       }
 
       try {
@@ -475,8 +529,22 @@ export function PricingDialog({
 
         if (isProduction) {
           console.error("Payment processing failed in production:", rcError.message);
-          toast.error("Payment processing unavailable", {
-            description: "Unable to process payment. Please contact support or try again later.",
+          
+          // Provide specific error messages based on error type
+          let errorTitle = "Payment processing unavailable";
+          let errorDescription = "Unable to process payment. Please contact support or try again later.";
+          
+          if (rcError.message?.includes("No subscription offerings available") || 
+              rcError.message?.includes("No subscription packages available")) {
+            errorTitle = "Subscription Not Available";
+            errorDescription = "Subscription packages are not currently available. This may be a configuration issue. Please check RevenueCat dashboard or contact support.";
+          } else if (rcError.message?.includes("subscription package not found")) {
+            errorTitle = "Package Not Found";
+            errorDescription = "The requested subscription package was not found. Please contact support.";
+          }
+          
+          toast.error(errorTitle, {
+            description: errorDescription,
           });
           setIsUpgrading(false);
           return;

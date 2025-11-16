@@ -293,16 +293,47 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
         
         // Get the configured instance
         const purchasesInstance = Purchases.getSharedInstance();
-        const offerings = await purchasesInstance.getOfferings();
+        
+        // Try to get offerings - with retry logic
+        let offerings = null;
+        let retries = 2;
+        
+        while (retries > 0 && (!offerings || !offerings.current)) {
+          console.log(`🔄 Fetching offerings from RevenueCat (${3 - retries}/3 attempts)...`);
+          offerings = await purchasesInstance.getOfferings();
+          
+          if (offerings && offerings.current) {
+            break;
+          }
+          
+          retries--;
+          if (retries > 0) {
+            console.log('⚠️ No offerings found, retrying in 1 second...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        
         if (!offerings || !offerings.current) {
-          throw new Error('No subscription offerings available');
+          console.error('❌ No subscription offerings available after retries');
+          console.error('   This usually means:');
+          console.error('   1. No offerings configured in RevenueCat dashboard');
+          console.error('   2. No "current" offering is set in RevenueCat');
+          console.error('   3. Products are not properly linked to packages');
+          console.error('   Check RevenueCat dashboard: https://app.revenuecat.com');
+          throw new Error('No subscription offerings available. Please check RevenueCat dashboard configuration.');
         }
         
         // Safely access availablePackages with null check
         const availablePackages = offerings.current.availablePackages || [];
         if (availablePackages.length === 0) {
-          throw new Error('No subscription packages available');
+          console.error('❌ No packages found in current offering');
+          console.error('   Available packages:', availablePackages.length);
+          console.error('   Offering ID:', offerings.current.identifier);
+          throw new Error('No subscription packages available in the current offering. Please check RevenueCat dashboard.');
         }
+        
+        console.log(`📦 Found ${availablePackages.length} package(s) in offering "${offerings.current.identifier}"`);
+        console.log('   Package identifiers:', availablePackages.map((p: any) => p?.identifier || 'unknown'));
         
         // Find the requested package
         const packageIdentifier = packageType === 'yearly' 
@@ -314,8 +345,13 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
         );
         
         if (!selectedPackage) {
-          throw new Error(`${packageType} subscription not found`);
+          console.error(`❌ ${packageType} subscription package not found`);
+          console.error('   Available package identifiers:', availablePackages.map((p: any) => p?.identifier || 'unknown'));
+          console.error('   Looking for:', packageIdentifier);
+          throw new Error(`${packageType} subscription package not found. Available packages: ${availablePackages.map((p: any) => p?.identifier || 'unknown').join(', ')}`);
         }
+        
+        console.log(`✅ Found ${packageType} package:`, selectedPackage.identifier);
         
         // Use the instance method for purchase (reuse instance from above)
         const { customerInfo } = await purchasesInstance.purchase({ rcPackage: selectedPackage });
