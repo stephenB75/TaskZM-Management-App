@@ -24,8 +24,9 @@ import {
   SelectValue,
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
-import { cn, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { cn, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getInitials } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
+import { toast } from "sonner";
 import type { Task } from "../types";
 
 export function ArchiveView() {
