@@ -425,15 +425,15 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           }
         });
         
-        // Combine discovered identifiers with fallback identifiers
-        const packageIdentifiers = packageType === 'yearly' 
-          ? [...new Set([...discoveredYearlyIds, ...YEARLY_PACKAGE_IDENTIFIERS])]
-          : [...new Set([...discoveredMonthlyIds, ...MONTHLY_PACKAGE_IDENTIFIERS])];
+        // Prioritize discovered identifiers, only use fallbacks if nothing was discovered
+        const packageIdentifiers = packageType === 'yearly'
+          ? (discoveredYearlyIds.length > 0 ? discoveredYearlyIds : YEARLY_PACKAGE_IDENTIFIERS)
+          : (discoveredMonthlyIds.length > 0 ? discoveredMonthlyIds : MONTHLY_PACKAGE_IDENTIFIERS);
         
         console.log(`🔍 Dynamic package matching for ${packageType}:`, {
           discovered: packageType === 'yearly' ? discoveredYearlyIds : discoveredMonthlyIds,
-          fallback: packageType === 'yearly' ? YEARLY_PACKAGE_IDENTIFIERS : MONTHLY_PACKAGE_IDENTIFIERS,
-          combined: packageIdentifiers
+          usingFallback: packageType === 'yearly' ? discoveredYearlyIds.length === 0 : discoveredMonthlyIds.length === 0,
+          identifiers: packageIdentifiers
         });
         
         // Use comprehensive matching logic (same as PricingDialog)

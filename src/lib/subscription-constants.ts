@@ -26,57 +26,18 @@ export const DEFAULT_CURRENCY_CODE = "USD";
 export const DEFAULT_MONTHLY_TITLE = "Monthly Pro";
 export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 
-// Product identifiers from RevenueCat/Stripe/App Store/Google Play
-// NOTE: These are FALLBACK identifiers only. The app now dynamically detects identifiers from RevenueCat.
-// These are kept for backwards compatibility and as fallbacks if dynamic detection fails.
-export const MONTHLY_PRODUCT_IDS = [
-  'proddf11a9ef49',  // Monthly subscription product ID (fallback)
-];
-export const YEARLY_PRODUCT_IDS = [
-  'prod40f95d4507',  // Yearly subscription product ID (fallback)
-];
-
-// Package identifiers for RevenueCat - FALLBACK ONLY
-// NOTE: The app now dynamically extracts identifiers from RevenueCat packages.
-// These are kept as fallbacks for backwards compatibility and keyword matching.
-// Primary matching now uses identifiers discovered from RevenueCat packages.
+// Minimal fallback identifiers - ONLY used if dynamic detection finds nothing
+// The app primarily uses identifiers dynamically discovered from RevenueCat packages.
+// These minimal fallbacks are kept only as a last resort safety net.
 export const MONTHLY_PACKAGE_IDENTIFIERS = [
-  // Common RevenueCat patterns (fallback)
-  '$rc_monthly',
-  'rc_monthly',
-  'monthly', 
-  'monthly_pro', 
-  'pro_monthly',
-  'pro',
-  'PRO',
-  '$rc_monthly_pro',
-  'rc_monthly_pro',
-  'monthly_subscription',
-  'monthly_plan',
-  // Product IDs (fallback)
-  ...MONTHLY_PRODUCT_IDS,
+  '$rc_monthly',  // Most common RevenueCat monthly pattern
+  'monthly',      // Simple keyword fallback
 ];
 export const YEARLY_PACKAGE_IDENTIFIERS = [
-  // Common RevenueCat patterns (fallback)
-  '$rc_annual',
-  '$rc_yearly',
-  'rc_annual',
-  'rc_yearly',
-  'annual', 
-  'yearly',
-  'Yearly',
-  'yearly_pro',
-  'pro_yearly',
-  '$rc_annual_pro',
-  '$rc_yearly_pro',
-  'rc_annual_pro',
-  'rc_yearly_pro',
-  'annual_subscription',
-  'yearly_subscription',
-  'annual_plan',
-  'yearly_plan',
-  // Product IDs (fallback)
-  ...YEARLY_PRODUCT_IDS,
+  '$rc_annual',   // Most common RevenueCat yearly pattern
+  '$rc_yearly',   // Alternative RevenueCat yearly pattern
+  'yearly',       // Simple keyword fallback
+  'annual',       // Alternative keyword fallback
 ];
 
 // Number of PRO features (for UI display)

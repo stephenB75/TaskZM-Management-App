@@ -382,22 +382,14 @@ export function PricingDialog({
           }
         });
         
-        // Combine discovered identifiers with fallback identifiers (for backwards compatibility)
-        const monthlyIdentifiers = [
-          ...new Set([
-            ...discoveredIdentifiers.monthly.packageIdentifiers,
-            ...discoveredIdentifiers.monthly.productIds,
-            ...MONTHLY_PACKAGE_IDENTIFIERS // Keep fallback identifiers
-          ])
-        ];
+        // Prioritize discovered identifiers, only add fallbacks if nothing was discovered
+        const monthlyIdentifiers = discoveredIdentifiers.monthly.packageIdentifiers.length > 0 || discoveredIdentifiers.monthly.productIds.length > 0
+          ? [...new Set([...discoveredIdentifiers.monthly.packageIdentifiers, ...discoveredIdentifiers.monthly.productIds])]
+          : MONTHLY_PACKAGE_IDENTIFIERS; // Only use fallback if no dynamic identifiers found
         
-        const yearlyIdentifiers = [
-          ...new Set([
-            ...discoveredIdentifiers.yearly.packageIdentifiers,
-            ...discoveredIdentifiers.yearly.productIds,
-            ...YEARLY_PACKAGE_IDENTIFIERS // Keep fallback identifiers
-          ])
-        ];
+        const yearlyIdentifiers = discoveredIdentifiers.yearly.packageIdentifiers.length > 0 || discoveredIdentifiers.yearly.productIds.length > 0
+          ? [...new Set([...discoveredIdentifiers.yearly.packageIdentifiers, ...discoveredIdentifiers.yearly.productIds])]
+          : YEARLY_PACKAGE_IDENTIFIERS; // Only use fallback if no dynamic identifiers found
         
         console.log('🔍 Dynamic Identifier Detection:');
         console.log('   Discovered Monthly Identifiers:', {

@@ -125,9 +125,13 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
       }
     });
     
-    // Combine discovered identifiers with fallback identifiers
-    const monthlyIdentifiers = [...new Set([...discoveredMonthlyIds, ...MONTHLY_PACKAGE_IDENTIFIERS])];
-    const yearlyIdentifiers = [...new Set([...discoveredYearlyIds, ...YEARLY_PACKAGE_IDENTIFIERS])];
+    // Prioritize discovered identifiers, only use fallbacks if nothing was discovered
+    const monthlyIdentifiers = discoveredMonthlyIds.length > 0 
+      ? discoveredMonthlyIds 
+      : MONTHLY_PACKAGE_IDENTIFIERS;
+    const yearlyIdentifiers = discoveredYearlyIds.length > 0 
+      ? discoveredYearlyIds 
+      : YEARLY_PACKAGE_IDENTIFIERS;
 
     for (const pkg of validPackages) {
       if (!pkg || !pkg.product) continue;

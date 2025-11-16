@@ -186,9 +186,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             }
           });
           
-          // Combine discovered identifiers with fallback identifiers
-          const monthlyIdentifiers = [...new Set([...discoveredMonthlyIds, ...MONTHLY_PACKAGE_IDENTIFIERS])];
-          const yearlyIdentifiers = [...new Set([...discoveredYearlyIds, ...YEARLY_PACKAGE_IDENTIFIERS])];
+          // Prioritize discovered identifiers, only use fallbacks if nothing was discovered
+          const monthlyIdentifiers = discoveredMonthlyIds.length > 0 
+            ? discoveredMonthlyIds 
+            : MONTHLY_PACKAGE_IDENTIFIERS;
+          const yearlyIdentifiers = discoveredYearlyIds.length > 0 
+            ? discoveredYearlyIds 
+            : YEARLY_PACKAGE_IDENTIFIERS;
           
           // Use the same robust matching logic as PricingDialog with dynamic identifiers
           let monthlyPkg: any = null;
@@ -2620,11 +2624,22 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 const offerings = await getOfferings();
                 if (offerings?.availablePackages && offerings.availablePackages.length > 0) {
                   const validPackages = offerings.availablePackages.filter((p: any) => p && p.product);
+                  // Use keyword-based matching instead of hardcoded identifiers
                   const monthlyPkg = validPackages.find(
-                    (pkg: any) => pkg && MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+                    (pkg: any) => pkg && (
+                      pkg.identifier?.toLowerCase().includes('month') ||
+                      pkg.product?.identifier?.toLowerCase().includes('month') ||
+                      (pkg.product?.subscriptionPeriod && pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'))
+                    ) && !pkg.identifier?.toLowerCase().includes('year') && !pkg.identifier?.toLowerCase().includes('annual')
                   );
                   const yearlyPkg = validPackages.find(
-                    (pkg: any) => pkg && YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+                    (pkg: any) => pkg && (
+                      pkg.identifier?.toLowerCase().includes('year') ||
+                      pkg.identifier?.toLowerCase().includes('annual') ||
+                      pkg.product?.identifier?.toLowerCase().includes('year') ||
+                      pkg.product?.identifier?.toLowerCase().includes('annual') ||
+                      (pkg.product?.subscriptionPeriod && pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'))
+                    )
                   );
                   setCurrentPricing({
                     monthly: monthlyPkg?.product?.priceString || DEFAULT_MONTHLY_PRICE,
