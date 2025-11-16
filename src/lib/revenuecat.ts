@@ -531,8 +531,36 @@ export async function getOfferings(): Promise<RevenueCatOffering | null> {
         
         // Get the configured instance
         const purchasesInstance = Purchases.getSharedInstance();
+        
+        // Try to sync customer info first to ensure product data is loaded
+        try {
+          console.log('🔄 Syncing customer info to ensure product data is loaded...');
+          await purchasesInstance.syncPurchases();
+          console.log('✅ Customer info synced');
+        } catch (syncError: any) {
+          console.warn('⚠️ Could not sync purchases (this is usually fine):', syncError?.message || syncError);
+        }
+        
         const offerings = await purchasesInstance.getOfferings();
         console.log('📋 Raw offerings response:', offerings);
+        
+        // Log the full structure to understand what RevenueCat is returning
+        if (offerings?.current) {
+          console.log('📋 Current offering structure:', {
+            identifier: offerings.current.identifier,
+            serverDescription: offerings.current.serverDescription,
+            metadata: offerings.current.metadata,
+            packageCount: offerings.current.availablePackages?.length || 0,
+            packages: offerings.current.availablePackages?.map((p: any) => ({
+              identifier: p?.identifier,
+              packageType: p?.packageType,
+              productExists: !!p?.product,
+              productKeys: p?.product ? Object.keys(p.product) : [],
+              productIdentifier: p?.product?.identifier,
+              productPriceString: p?.product?.priceString
+            })) || []
+          });
+        }
         
         // Safely return offerings with null checks
         if (!offerings) {
@@ -594,9 +622,29 @@ export async function getOfferings(): Promise<RevenueCatOffering | null> {
         });
         
         if (emptyProductCount > 0) {
-          console.warn(`⚠️ Found ${emptyProductCount} package(s) with empty product data`);
-          console.warn('   This usually means products are not properly linked in RevenueCat dashboard');
-          console.warn('   Valid packages:', validPackageCount);
+          console.error(`❌ Found ${emptyProductCount} package(s) with empty product data`);
+          console.error('   This indicates a RevenueCat configuration issue:');
+          console.error('   1. Products must be created in RevenueCat Dashboard → Products');
+          console.error('   2. Products must be linked to Packages in RevenueCat Dashboard → Packages');
+          console.error('   3. Packages must be added to the current Offering in RevenueCat Dashboard → Offerings');
+          console.error('   4. For Stripe products, ensure the Stripe integration is properly configured');
+          console.error('   5. Product IDs should match:');
+          console.error('      - Monthly: proddf11a9ef49');
+          console.error('      - Yearly: prod40f95d4507');
+          console.error('   Valid packages found:', validPackageCount);
+          console.error('   Empty packages found:', emptyProductCount);
+          
+          // Log which packages are missing product data
+          currentOffering.availablePackages.forEach((pkg: any, index: number) => {
+            if (pkg && pkg.product) {
+              const productKeys = Object.keys(pkg.product);
+              if (productKeys.length === 0 || (!pkg.product.identifier && !pkg.product.priceString && !pkg.product.price)) {
+                console.error(`   - Package "${pkg.identifier}" has empty product data`);
+                console.error(`     Package type: ${pkg.packageType || 'unknown'}`);
+                console.error(`     Product keys: ${productKeys.length > 0 ? productKeys.join(', ') : 'none'}`);
+              }
+            }
+          });
         }
         
         return currentOffering;

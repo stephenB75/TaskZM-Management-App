@@ -146,6 +146,11 @@ export function PricingDialog({
       }
       
       console.log('🔄 Loading offerings from RevenueCat...');
+      
+      // Add a small delay to ensure RevenueCat has time to load product data
+      // Sometimes product data takes a moment to populate after SDK initialization
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const rcOfferings = await getOfferings();
       
       if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
