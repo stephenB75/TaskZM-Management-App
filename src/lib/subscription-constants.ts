@@ -27,43 +27,44 @@ export const DEFAULT_MONTHLY_TITLE = "Monthly Pro";
 export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 
 // Product identifiers from RevenueCat/Stripe/App Store/Google Play
-// These are the actual product IDs that RevenueCat uses
+// NOTE: These are FALLBACK identifiers only. The app now dynamically detects identifiers from RevenueCat.
+// These are kept for backwards compatibility and as fallbacks if dynamic detection fails.
 export const MONTHLY_PRODUCT_IDS = [
-  'proddf11a9ef49',  // Monthly subscription product ID
+  'proddf11a9ef49',  // Monthly subscription product ID (fallback)
 ];
 export const YEARLY_PRODUCT_IDS = [
-  'prod40f95d4507',  // Yearly subscription product ID
+  'prod40f95d4507',  // Yearly subscription product ID (fallback)
 ];
 
-// Package identifiers for RevenueCat
-// RevenueCat can use various identifier patterns, so we check for multiple possibilities
-// Note: RevenueCat package identifiers can be with or without the $ prefix
-// Also check product titles/names as RevenueCat may use those as identifiers
+// Package identifiers for RevenueCat - FALLBACK ONLY
+// NOTE: The app now dynamically extracts identifiers from RevenueCat packages.
+// These are kept as fallbacks for backwards compatibility and keyword matching.
+// Primary matching now uses identifiers discovered from RevenueCat packages.
 export const MONTHLY_PACKAGE_IDENTIFIERS = [
-  '$rc_monthly',  // With $ prefix
-  'rc_monthly',   // Without $ prefix (common in RevenueCat)
+  // Common RevenueCat patterns (fallback)
+  '$rc_monthly',
+  'rc_monthly',
   'monthly', 
   'monthly_pro', 
   'pro_monthly',
-  'pro',          // Simple "pro" identifier (common in RevenueCat)
-  'PRO',          // Uppercase variant
+  'pro',
+  'PRO',
   '$rc_monthly_pro',
   'rc_monthly_pro',
   'monthly_subscription',
   'monthly_plan',
-  'taskzm pro',   // Product name variants
-  'taskzm_pro',
-  'taskzm-pro',
-  ...MONTHLY_PRODUCT_IDS,  // Include product IDs
+  // Product IDs (fallback)
+  ...MONTHLY_PRODUCT_IDS,
 ];
 export const YEARLY_PACKAGE_IDENTIFIERS = [
-  '$rc_annual',   // With $ prefix
-  '$rc_yearly',   // With $ prefix
-  'rc_annual',    // Without $ prefix (common in RevenueCat)
-  'rc_yearly',    // Without $ prefix (common in RevenueCat)
+  // Common RevenueCat patterns (fallback)
+  '$rc_annual',
+  '$rc_yearly',
+  'rc_annual',
+  'rc_yearly',
   'annual', 
   'yearly',
-  'Yearly',       // Capitalized variant (from dashboard)
+  'Yearly',
   'yearly_pro',
   'pro_yearly',
   '$rc_annual_pro',
@@ -74,10 +75,8 @@ export const YEARLY_PACKAGE_IDENTIFIERS = [
   'yearly_subscription',
   'annual_plan',
   'yearly_plan',
-  'taskzm yearly', // Product name variants
-  'taskzm_yearly',
-  'taskzm-yearly',
-  ...YEARLY_PRODUCT_IDS,  // Include product IDs
+  // Product IDs (fallback)
+  ...YEARLY_PRODUCT_IDS,
 ];
 
 // Number of PRO features (for UI display)

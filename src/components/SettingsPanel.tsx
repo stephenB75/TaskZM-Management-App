@@ -150,21 +150,61 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           };
           const validPackages = offerings.availablePackages.filter(hasValidProduct);
           
-          // Use the same robust matching logic as PricingDialog
+          // Dynamic identifier detection: Extract identifiers from RevenueCat packages
+          const discoveredMonthlyIds: string[] = [];
+          const discoveredYearlyIds: string[] = [];
+          
+          validPackages.forEach((pkg: any) => {
+            if (!pkg) return;
+            const identifier = pkg.identifier || '';
+            const productId = pkg.product?.identifier || '';
+            const subscriptionPeriod = pkg.product?.subscriptionPeriod || '';
+            const identifierLower = identifier.toLowerCase();
+            const productIdLower = productId.toLowerCase();
+            
+            const looksMonthly = subscriptionPeriod === 'P1M' || 
+                                subscriptionPeriod === 'MONTH' ||
+                                (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('month')) ||
+                                identifierLower.includes('month') ||
+                                productIdLower.includes('month');
+            
+            const looksYearly = subscriptionPeriod === 'P1Y' || 
+                               subscriptionPeriod === 'YEAR' ||
+                               subscriptionPeriod === 'ANNUAL' ||
+                               (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('year')) ||
+                               identifierLower.includes('year') ||
+                               identifierLower.includes('annual') ||
+                               productIdLower.includes('year') ||
+                               productIdLower.includes('annual');
+            
+            if (looksMonthly && !looksYearly) {
+              if (identifier) discoveredMonthlyIds.push(identifier);
+              if (productId) discoveredMonthlyIds.push(productId);
+            } else if (looksYearly) {
+              if (identifier) discoveredYearlyIds.push(identifier);
+              if (productId) discoveredYearlyIds.push(productId);
+            }
+          });
+          
+          // Combine discovered identifiers with fallback identifiers
+          const monthlyIdentifiers = [...new Set([...discoveredMonthlyIds, ...MONTHLY_PACKAGE_IDENTIFIERS])];
+          const yearlyIdentifiers = [...new Set([...discoveredYearlyIds, ...YEARLY_PACKAGE_IDENTIFIERS])];
+          
+          // Use the same robust matching logic as PricingDialog with dynamic identifiers
           let monthlyPkg: any = null;
           let yearlyPkg: any = null;
           
           for (const pkg of validPackages) {
-            if (!pkg || !pkg.product) continue;
+            if (!pkg) continue;
             
             const identifier = pkg.identifier || '';
             const identifierLower = identifier.toLowerCase();
-            const productId = pkg.product.identifier || '';
+            const productId = pkg.product?.identifier || '';
             const productIdLower = productId.toLowerCase();
             
             // Check if this is a monthly package
             if (!monthlyPkg) {
-              const isMonthlyById = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+              const isMonthlyById = monthlyIdentifiers.some(id => {
                 const idLower = id.toLowerCase();
                 return identifierLower === idLower || 
                        identifierLower === idLower.replace('$', '') ||
@@ -173,7 +213,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                        identifierLower.includes(idLower.replace('$rc_', 'rc_'));
               });
               
-              const isMonthlyByProductId = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+              const isMonthlyByProductId = monthlyIdentifiers.some(id => {
                 const idLower = id.toLowerCase();
                 // Exact match (most reliable)
                 if (productIdLower === idLower) return true;
@@ -191,9 +231,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                        !productIdLower.includes('year') &&
                                        !productIdLower.includes('annual');
               
-              const isMonthlyByMetadata = pkg.product.subscriptionPeriod === 'P1M' || 
-                                         pkg.product.subscriptionPeriod === 'MONTH' ||
-                                         (pkg.product.subscriptionPeriod && 
+              const isMonthlyByMetadata = pkg.product?.subscriptionPeriod === 'P1M' || 
+                                         pkg.product?.subscriptionPeriod === 'MONTH' ||
+                                         (pkg.product?.subscriptionPeriod && 
                                           pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'));
               
               if (isMonthlyById || isMonthlyByProductId || hasMonthlyKeywords || isMonthlyByMetadata) {
@@ -203,7 +243,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             
             // Check if this is a yearly package
             if (!yearlyPkg) {
-              const isYearlyById = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+              const isYearlyById = yearlyIdentifiers.some(id => {
                 const idLower = id.toLowerCase();
                 return identifierLower === idLower || 
                        identifierLower === idLower.replace('$', '') ||
@@ -212,7 +252,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                        identifierLower.includes(idLower.replace('$rc_', 'rc_'));
               });
               
-              const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+              const isYearlyByProductId = yearlyIdentifiers.some(id => {
                 const idLower = id.toLowerCase();
                 // Exact match (most reliable)
                 if (productIdLower === idLower) return true;
@@ -222,17 +262,17 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               });
               
               const hasYearlyKeywords = identifierLower.includes('year') || 
-                                        identifierLower.includes('annual') ||
-                                        identifierLower.includes('rc_yearly') ||
-                                        identifierLower.includes('rc_annual') ||
-                                        productIdLower.includes('year') ||
-                                        productIdLower.includes('annual');
+                                       identifierLower.includes('annual') ||
+                                       identifierLower.includes('rc_yearly') ||
+                                       identifierLower.includes('rc_annual') ||
+                                       productIdLower.includes('year') ||
+                                       productIdLower.includes('annual');
               
-              const isYearlyByMetadata = pkg.product.subscriptionPeriod === 'P1Y' || 
-                                        pkg.product.subscriptionPeriod === 'YEAR' ||
-                                        pkg.product.subscriptionPeriod === 'ANNUAL' ||
-                                        (pkg.product.subscriptionPeriod && 
-                                         pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
+              const isYearlyByMetadata = pkg.product?.subscriptionPeriod === 'P1Y' || 
+                                       pkg.product?.subscriptionPeriod === 'YEAR' ||
+                                       pkg.product?.subscriptionPeriod === 'ANNUAL' ||
+                                       (pkg.product?.subscriptionPeriod && 
+                                        pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
               
               if (isYearlyById || isYearlyByProductId || hasYearlyKeywords || isYearlyByMetadata) {
                 yearlyPkg = pkg;

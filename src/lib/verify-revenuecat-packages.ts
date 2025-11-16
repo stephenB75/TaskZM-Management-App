@@ -86,8 +86,48 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
       return result;
     }
 
-    // Process each package
-    const validPackages = offerings.availablePackages.filter((p: any) => p && p.product);
+    // Process each package - accept packages with identifiers even if product is missing
+    const validPackages = offerings.availablePackages.filter((p: any) => p && p.identifier);
+
+    // Dynamic identifier detection: Extract identifiers from RevenueCat packages
+    const discoveredMonthlyIds: string[] = [];
+    const discoveredYearlyIds: string[] = [];
+    
+    validPackages.forEach((pkg: any) => {
+      if (!pkg) return;
+      const identifier = pkg.identifier || '';
+      const productId = pkg.product?.identifier || '';
+      const subscriptionPeriod = pkg.product?.subscriptionPeriod || '';
+      const identifierLower = identifier.toLowerCase();
+      const productIdLower = productId.toLowerCase();
+      
+      const looksMonthly = subscriptionPeriod === 'P1M' || 
+                          subscriptionPeriod === 'MONTH' ||
+                          (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('month')) ||
+                          identifierLower.includes('month') ||
+                          productIdLower.includes('month');
+      
+      const looksYearly = subscriptionPeriod === 'P1Y' || 
+                         subscriptionPeriod === 'YEAR' ||
+                         subscriptionPeriod === 'ANNUAL' ||
+                         (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('year')) ||
+                         identifierLower.includes('year') ||
+                         identifierLower.includes('annual') ||
+                         productIdLower.includes('year') ||
+                         productIdLower.includes('annual');
+      
+      if (looksMonthly && !looksYearly) {
+        if (identifier) discoveredMonthlyIds.push(identifier);
+        if (productId) discoveredMonthlyIds.push(productId);
+      } else if (looksYearly) {
+        if (identifier) discoveredYearlyIds.push(identifier);
+        if (productId) discoveredYearlyIds.push(productId);
+      }
+    });
+    
+    // Combine discovered identifiers with fallback identifiers
+    const monthlyIdentifiers = [...new Set([...discoveredMonthlyIds, ...MONTHLY_PACKAGE_IDENTIFIERS])];
+    const yearlyIdentifiers = [...new Set([...discoveredYearlyIds, ...YEARLY_PACKAGE_IDENTIFIERS])];
 
     for (const pkg of validPackages) {
       if (!pkg || !pkg.product) continue;
@@ -97,12 +137,12 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
       const productId = pkg.product.identifier || '';
       const productIdLower = productId.toLowerCase();
 
-      // Check if it's a monthly package
+      // Check if it's a monthly package using dynamic identifiers
       let matchedAs: 'monthly' | 'yearly' | 'none' = 'none';
       let matchMethod: string | null = null;
 
-      // Check monthly identifiers
-      const isMonthlyById = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+      // Check monthly identifiers using dynamic identifiers
+      const isMonthlyById = monthlyIdentifiers.some(id => {
         const idLower = id.toLowerCase();
         return identifierLower === idLower || 
                identifierLower === idLower.replace('$', '') ||
@@ -111,7 +151,7 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
                identifierLower.includes(idLower.replace('$rc_', 'rc_'));
       });
 
-      const isMonthlyByProductId = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+      const isMonthlyByProductId = monthlyIdentifiers.some(id => {
         const idLower = id.toLowerCase();
         // Exact match (most reliable)
         if (productIdLower === idLower) return true;
@@ -129,9 +169,9 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
                                  !productIdLower.includes('year') &&
                                  !productIdLower.includes('annual');
 
-      const isMonthlyByMetadata = pkg.product.subscriptionPeriod === 'P1M' || 
-                                 pkg.product.subscriptionPeriod === 'MONTH' ||
-                                 (pkg.product.subscriptionPeriod && 
+      const isMonthlyByMetadata = pkg.product?.subscriptionPeriod === 'P1M' || 
+                                 pkg.product?.subscriptionPeriod === 'MONTH' ||
+                                 (pkg.product?.subscriptionPeriod && 
                                   pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'));
 
       if (isMonthlyById || isMonthlyByProductId || hasMonthlyKeywords || isMonthlyByMetadata) {
@@ -141,9 +181,9 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
         result.monthlyPackage = pkg;
       }
 
-      // Check yearly identifiers (only if not already matched as monthly)
+      // Check yearly identifiers using dynamic identifiers (only if not already matched as monthly)
       if (matchedAs === 'none') {
-        const isYearlyById = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+        const isYearlyById = yearlyIdentifiers.some(id => {
           const idLower = id.toLowerCase();
           return identifierLower === idLower || 
                  identifierLower === idLower.replace('$', '') ||
@@ -152,7 +192,7 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
                  identifierLower.includes(idLower.replace('$rc_', 'rc_'));
         });
 
-        const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+        const isYearlyByProductId = yearlyIdentifiers.some(id => {
           const idLower = id.toLowerCase();
           // Exact match (most reliable)
           if (productIdLower === idLower) return true;
@@ -168,11 +208,11 @@ export async function verifyRevenueCatPackages(): Promise<PackageVerificationRes
                                   productIdLower.includes('year') ||
                                   productIdLower.includes('annual');
 
-        const isYearlyByMetadata = pkg.product.subscriptionPeriod === 'P1Y' || 
-                                   pkg.product.subscriptionPeriod === 'YEAR' ||
-                                   pkg.product.subscriptionPeriod === 'ANNUAL' ||
-                                   (pkg.product.subscriptionPeriod && 
-                                    pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
+        const isYearlyByMetadata = pkg.product?.subscriptionPeriod === 'P1Y' || 
+                                 pkg.product?.subscriptionPeriod === 'YEAR' ||
+                                 pkg.product?.subscriptionPeriod === 'ANNUAL' ||
+                                 (pkg.product?.subscriptionPeriod && 
+                                  pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
 
         if (isYearlyById || isYearlyByProductId || hasYearlyKeywords || isYearlyByMetadata) {
           matchedAs = 'yearly';

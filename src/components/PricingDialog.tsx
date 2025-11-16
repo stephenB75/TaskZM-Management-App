@@ -322,10 +322,99 @@ export function PricingDialog({
             discount: p?.product?.discount
           }
         })), null, 2));
-        console.log('🔍 Looking for monthly identifiers:', MONTHLY_PACKAGE_IDENTIFIERS);
-        console.log('🔍 Looking for yearly identifiers:', YEARLY_PACKAGE_IDENTIFIERS);
+        
+        // DYNAMIC IDENTIFIER DETECTION: Extract identifiers from RevenueCat packages
+        // This replaces hardcoded identifier lists with actual identifiers from RevenueCat
+        const discoveredIdentifiers = {
+          monthly: {
+            packageIdentifiers: [] as string[],
+            productIds: [] as string[],
+            productTitles: [] as string[]
+          },
+          yearly: {
+            packageIdentifiers: [] as string[],
+            productIds: [] as string[],
+            productTitles: [] as string[]
+          }
+        };
+        
+        // Extract all identifiers from packages for dynamic matching
+        validPackages.forEach((pkg: any) => {
+          if (!pkg) return;
+          
+          const identifier = pkg.identifier || '';
+          const productId = pkg.product?.identifier || '';
+          const productTitle = pkg.product?.title || '';
+          const subscriptionPeriod = pkg.product?.subscriptionPeriod || '';
+          
+          // Determine if this looks like monthly or yearly based on metadata/keywords
+          const identifierLower = identifier.toLowerCase();
+          const productIdLower = productId.toLowerCase();
+          const productTitleLower = productTitle.toLowerCase();
+          
+          const looksMonthly = subscriptionPeriod === 'P1M' || 
+                              subscriptionPeriod === 'MONTH' ||
+                              (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('month')) ||
+                              identifierLower.includes('month') ||
+                              productIdLower.includes('month') ||
+                              productTitleLower.includes('month') ||
+                              (identifierLower.includes('pro') && !identifierLower.includes('year') && !identifierLower.includes('annual'));
+          
+          const looksYearly = subscriptionPeriod === 'P1Y' || 
+                             subscriptionPeriod === 'YEAR' ||
+                             subscriptionPeriod === 'ANNUAL' ||
+                             (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('year')) ||
+                             identifierLower.includes('year') ||
+                             identifierLower.includes('annual') ||
+                             productIdLower.includes('year') ||
+                             productIdLower.includes('annual') ||
+                             productTitleLower.includes('year') ||
+                             productTitleLower.includes('annual');
+          
+          if (looksMonthly && !looksYearly) {
+            if (identifier) discoveredIdentifiers.monthly.packageIdentifiers.push(identifier);
+            if (productId) discoveredIdentifiers.monthly.productIds.push(productId);
+            if (productTitle) discoveredIdentifiers.monthly.productTitles.push(productTitle);
+          } else if (looksYearly) {
+            if (identifier) discoveredIdentifiers.yearly.packageIdentifiers.push(identifier);
+            if (productId) discoveredIdentifiers.yearly.productIds.push(productId);
+            if (productTitle) discoveredIdentifiers.yearly.productTitles.push(productTitle);
+          }
+        });
+        
+        // Combine discovered identifiers with fallback identifiers (for backwards compatibility)
+        const monthlyIdentifiers = [
+          ...new Set([
+            ...discoveredIdentifiers.monthly.packageIdentifiers,
+            ...discoveredIdentifiers.monthly.productIds,
+            ...MONTHLY_PACKAGE_IDENTIFIERS // Keep fallback identifiers
+          ])
+        ];
+        
+        const yearlyIdentifiers = [
+          ...new Set([
+            ...discoveredIdentifiers.yearly.packageIdentifiers,
+            ...discoveredIdentifiers.yearly.productIds,
+            ...YEARLY_PACKAGE_IDENTIFIERS // Keep fallback identifiers
+          ])
+        ];
+        
+        console.log('🔍 Dynamic Identifier Detection:');
+        console.log('   Discovered Monthly Identifiers:', {
+          packageIdentifiers: discoveredIdentifiers.monthly.packageIdentifiers,
+          productIds: discoveredIdentifiers.monthly.productIds,
+          productTitles: discoveredIdentifiers.monthly.productTitles
+        });
+        console.log('   Discovered Yearly Identifiers:', {
+          packageIdentifiers: discoveredIdentifiers.yearly.packageIdentifiers,
+          productIds: discoveredIdentifiers.yearly.productIds,
+          productTitles: discoveredIdentifiers.yearly.productTitles
+        });
+        console.log('   Using Combined Identifiers (discovered + fallback):');
+        console.log('   Monthly:', monthlyIdentifiers);
+        console.log('   Yearly:', yearlyIdentifiers);
 
-        // Find monthly and yearly packages (only from valid packages)
+        // Find monthly and yearly packages using dynamic identifiers
         // Try multiple matching strategies: exact match, case-insensitive, partial match, and product metadata
         let monthlyPkg: any = null;
         let yearlyPkg: any = null;
@@ -344,8 +433,8 @@ export function PricingDialog({
           
           // Check if this is a monthly package
           if (!monthlyPkg) {
-            // Check identifier against monthly list
-            const isMonthlyById = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+            // Check identifier against dynamic monthly list (prioritize discovered identifiers)
+            const isMonthlyById = monthlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
               return identifierLower === idLower || 
                      identifierLower === idLower.replace('$', '') ||
@@ -354,8 +443,8 @@ export function PricingDialog({
                      identifierLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product ID against monthly list (exact match first, then pattern matching)
-            const isMonthlyByProductId = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+            // Check product ID against dynamic monthly list (exact match first, then pattern matching)
+            const isMonthlyByProductId = monthlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
               // Exact match (most reliable)
               if (productIdLower === idLower) return true;
@@ -364,8 +453,13 @@ export function PricingDialog({
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product title/name against monthly list (for cases like "TaskZM PRO PRO")
-            const isMonthlyByProductTitle = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+            // Check product title/name against discovered monthly titles
+            const isMonthlyByProductTitle = discoveredIdentifiers.monthly.productTitles.some(title => {
+              const titleLower = title.toLowerCase();
+              return productTitleLower.includes(titleLower) && 
+                     !productTitleLower.includes('year') &&
+                     !productTitleLower.includes('annual');
+            }) || monthlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
               return productTitleLower.includes(idLower) && 
                      !productTitleLower.includes('year') &&
@@ -407,8 +501,8 @@ export function PricingDialog({
           
           // Check if this is a yearly package
           if (!yearlyPkg) {
-            // Check identifier against yearly list
-            const isYearlyById = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+            // Check identifier against dynamic yearly list (prioritize discovered identifiers)
+            const isYearlyById = yearlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
               return identifierLower === idLower || 
                      identifierLower === idLower.replace('$', '') ||
@@ -417,8 +511,8 @@ export function PricingDialog({
                      identifierLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product ID against yearly list (exact match first, then pattern matching)
-            const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+            // Check product ID against dynamic yearly list (exact match first, then pattern matching)
+            const isYearlyByProductId = yearlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
               // Exact match (most reliable)
               if (productIdLower === idLower) return true;
@@ -427,8 +521,11 @@ export function PricingDialog({
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
-            // Check product title/name against yearly list (for cases like "TaskZM Yearly Yearly")
-            const isYearlyByProductTitle = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+            // Check product title/name against discovered yearly titles
+            const isYearlyByProductTitle = discoveredIdentifiers.yearly.productTitles.some(title => {
+              const titleLower = title.toLowerCase();
+              return productTitleLower.includes(titleLower);
+            }) || yearlyIdentifiers.some(id => {
               const idLower = id.toLowerCase();
               return productTitleLower.includes(idLower);
             });

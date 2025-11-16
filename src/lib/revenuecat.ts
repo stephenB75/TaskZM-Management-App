@@ -343,16 +343,60 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
         // Find the requested package
         // Import identifiers from constants for consistency
         const { MONTHLY_PACKAGE_IDENTIFIERS, YEARLY_PACKAGE_IDENTIFIERS } = await import('./subscription-constants');
+        // Dynamic identifier detection: Extract identifiers from available packages
+        // This replaces hardcoded identifier lists with actual identifiers from RevenueCat
+        const discoveredMonthlyIds: string[] = [];
+        const discoveredYearlyIds: string[] = [];
+        
+        availablePackages.forEach((pkg: any) => {
+          if (!pkg) return;
+          const identifier = pkg.identifier || '';
+          const productId = pkg.product?.identifier || '';
+          const subscriptionPeriod = pkg.product?.subscriptionPeriod || '';
+          const identifierLower = identifier.toLowerCase();
+          const productIdLower = productId.toLowerCase();
+          
+          const looksMonthly = subscriptionPeriod === 'P1M' || 
+                              subscriptionPeriod === 'MONTH' ||
+                              (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('month')) ||
+                              identifierLower.includes('month') ||
+                              productIdLower.includes('month');
+          
+          const looksYearly = subscriptionPeriod === 'P1Y' || 
+                             subscriptionPeriod === 'YEAR' ||
+                             subscriptionPeriod === 'ANNUAL' ||
+                             (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('year')) ||
+                             identifierLower.includes('year') ||
+                             identifierLower.includes('annual') ||
+                             productIdLower.includes('year') ||
+                             productIdLower.includes('annual');
+          
+          if (looksMonthly && !looksYearly) {
+            if (identifier) discoveredMonthlyIds.push(identifier);
+            if (productId) discoveredMonthlyIds.push(productId);
+          } else if (looksYearly) {
+            if (identifier) discoveredYearlyIds.push(identifier);
+            if (productId) discoveredYearlyIds.push(productId);
+          }
+        });
+        
+        // Combine discovered identifiers with fallback identifiers
         const packageIdentifiers = packageType === 'yearly' 
-          ? YEARLY_PACKAGE_IDENTIFIERS
-          : MONTHLY_PACKAGE_IDENTIFIERS;
+          ? [...new Set([...discoveredYearlyIds, ...YEARLY_PACKAGE_IDENTIFIERS])]
+          : [...new Set([...discoveredMonthlyIds, ...MONTHLY_PACKAGE_IDENTIFIERS])];
+        
+        console.log(`🔍 Dynamic package matching for ${packageType}:`, {
+          discovered: packageType === 'yearly' ? discoveredYearlyIds : discoveredMonthlyIds,
+          fallback: packageType === 'yearly' ? YEARLY_PACKAGE_IDENTIFIERS : MONTHLY_PACKAGE_IDENTIFIERS,
+          combined: packageIdentifiers
+        });
         
         // Try exact match first (package identifier, then product ID), then pattern matching
         const selectedPackage = availablePackages.find((pkg: any) => {
-          if (!pkg || !pkg.product) return false;
+          if (!pkg) return false;
           const identifier = pkg.identifier || '';
           const identifierLower = identifier.toLowerCase();
-          const productId = pkg.product.identifier || '';
+          const productId = pkg.product?.identifier || '';
           const productIdLower = productId.toLowerCase();
           
           // Check exact matches on package identifier (with and without $ prefix)
