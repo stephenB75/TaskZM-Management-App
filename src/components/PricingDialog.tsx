@@ -353,14 +353,10 @@ export function PricingDialog({
           }
         };
         
-        // Extract identifiers ONLY from packages with valid product data
-        // This ensures we only use identifiers from packages that actually have pricing info
+        // Extract identifiers from ALL packages (even without product data)
+        // This allows matching by identifier, then we'll check product data when creating offerings
         validPackages.forEach((pkg: any) => {
-          if (!pkg) return;
-          
-          if (!hasValidProductData(pkg)) {
-            return;
-          }
+          if (!pkg || !pkg.identifier) return;
           
           const identifier = pkg.identifier || '';
           const productId = pkg.product?.identifier || '';
@@ -486,24 +482,15 @@ export function PricingDialog({
                                      !productTitleLower.includes('year') &&
                                      !productTitleLower.includes('annual');
             
-            // Only match if we have valid product data OR strong metadata/keyword match
+            // Match by identifier/metadata/keywords (product data check happens later when creating offering)
             const hasValidMatch = isMonthlyByMetadata || 
-                                 (isMonthlyById && hasValidProductData(pkg)) ||
-                                 (isMonthlyByProductId && hasValidProductData(pkg)) ||
-                                 (isMonthlyByProductTitle && hasValidProductData(pkg)) ||
-                                 (hasMonthlyKeywords && hasValidProductData(pkg));
+                                 isMonthlyById ||
+                                 isMonthlyByProductId ||
+                                 isMonthlyByProductTitle ||
+                                 hasMonthlyKeywords;
             
             if (hasValidMatch) {
               monthlyPkg = pkg;
-              console.log('✅ Found monthly package:', {
-                identifier,
-                productId: productId || 'N/A',
-                productTitle: productTitle || 'N/A',
-                priceString: pkg.product?.priceString || 'N/A',
-                hasProduct: !!pkg.product,
-                hasValidProductData: hasValidProductData(pkg),
-                matchedBy: isMonthlyByMetadata ? 'metadata' : isMonthlyById ? 'identifier' : isMonthlyByProductId ? 'productId' : isMonthlyByProductTitle ? 'productTitle' : hasMonthlyKeywords ? 'keywords' : 'unknown'
-              });
             }
           }
           
@@ -548,12 +535,12 @@ export function PricingDialog({
                                       productTitleLower.includes('year') ||
                                       productTitleLower.includes('annual');
             
-            // Only match if we have valid product data OR strong metadata/keyword match
+            // Match by identifier/metadata/keywords (product data check happens later when creating offering)
             const hasValidMatch = isYearlyByMetadata || 
-                                 (isYearlyById && hasValidProductData(pkg)) ||
-                                 (isYearlyByProductId && hasValidProductData(pkg)) ||
-                                 (isYearlyByProductTitle && hasValidProductData(pkg)) ||
-                                 (hasYearlyKeywords && hasValidProductData(pkg));
+                                 isYearlyById ||
+                                 isYearlyByProductId ||
+                                 isYearlyByProductTitle ||
+                                 hasYearlyKeywords;
             
             if (hasValidMatch) {
               yearlyPkg = pkg;
@@ -626,24 +613,24 @@ export function PricingDialog({
           return null;
         };
         
-        // Only create offerings if packages have valid product data from RevenueCat
-        // NO DEFAULTS - if product data is missing, don't set the offering
-        const monthlyPriceString = monthlyPkg && hasValidProductData(monthlyPkg) ? getPriceString(monthlyPkg) : null;
-        const yearlyPriceString = yearlyPkg && hasValidProductData(yearlyPkg) ? getPriceString(yearlyPkg) : null;
+        // Create offerings - use product data if available, otherwise show "Loading..."
+        // This ensures packages are always displayed even if product data is still loading
+        const monthlyPriceString = monthlyPkg ? (hasValidProductData(monthlyPkg) ? getPriceString(monthlyPkg) : null) : null;
+        const yearlyPriceString = yearlyPkg ? (hasValidProductData(yearlyPkg) ? getPriceString(yearlyPkg) : null) : null;
         
-        // Only create offerings if we have valid price strings from RevenueCat
-        const monthlyOffering = monthlyPkg && hasValidProductData(monthlyPkg) && monthlyPriceString ? {
+        // Create offerings if package is found (even without product data - will show "Loading...")
+        const monthlyOffering = monthlyPkg ? {
           price: (monthlyPkg.product?.price?.toString() ?? '0'),
-          priceString: monthlyPriceString, // NO DEFAULT - only use RevenueCat data
+          priceString: monthlyPriceString || 'Loading...', // Show "Loading..." if product data missing
           currencyCode: (monthlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: monthlyPkg.identifier || 'monthly',
           title: (monthlyPkg.product?.title?.trim() || DEFAULT_MONTHLY_TITLE),
           description: (monthlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod),
         } : undefined;
 
-        const yearlyOffering = yearlyPkg && hasValidProductData(yearlyPkg) && yearlyPriceString ? {
+        const yearlyOffering = yearlyPkg ? {
           price: (yearlyPkg.product?.price?.toString() ?? '0'),
-          priceString: yearlyPriceString, // NO DEFAULT - only use RevenueCat data
+          priceString: yearlyPriceString || 'Loading...', // Show "Loading..." if product data missing
           currencyCode: (yearlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: yearlyPkg.identifier || 'yearly',
           title: (yearlyPkg.product?.title?.trim() || DEFAULT_YEARLY_TITLE),
