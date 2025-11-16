@@ -77,7 +77,7 @@ export function PricingDialog({
   // Get user from auth context for RevenueCat configuration
   const { user } = useAuth();
 
-  // Load offerings when dialog opens and refresh periodically
+  // Load offerings when dialog opens
   React.useEffect(() => {
     if (open) {
       // Ensure RevenueCat is configured before loading offerings
@@ -97,16 +97,6 @@ export function PricingDialog({
         loadOfferings();
       };
       ensureConfigured();
-
-      // Refresh offerings every 30 seconds while dialog is open
-      const refreshInterval = setInterval(() => {
-        console.log('🔄 Refreshing offerings from RevenueCat...');
-        loadOfferings();
-      }, 30000);
-
-      return () => {
-        clearInterval(refreshInterval);
-      };
     }
   }, [open, user?.id]);
 
