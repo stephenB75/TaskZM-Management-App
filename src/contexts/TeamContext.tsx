@@ -58,15 +58,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         console.error('Failed to save team members to localStorage:', error);
       }
     } catch (error) {
-      // Log error but don't show toast for 404s (workspace might not exist yet)
+      // Silently handle 404s - they're expected for new workspaces
       const errorMessage = error instanceof Error ? error.message : String(error);
-      // Only log non-404 errors (404s are handled gracefully by returning empty array)
+      // Only log non-404 errors
       if (!errorMessage.includes('404') && !errorMessage.includes('Not found')) {
         console.error('Failed to sync team members:', error);
-      } else {
-        // 404 is expected for new workspaces - silently handle it
-        console.debug('Team members endpoint returned 404 (workspace may not have members yet)');
       }
+      // 404s are expected and handled gracefully - no logging needed
       // Fallback to localStorage if server fails
       try {
         const stored = localStorage.getItem(STORAGE_KEY);

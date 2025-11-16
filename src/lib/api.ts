@@ -519,22 +519,8 @@ export async function getFolders(
     if (!response.ok) {
       // Handle 404 gracefully - workspace might not exist yet or has no folders
       if (response.status === 404) {
-        // Check if it's a workspace not found error vs no folders
-        let errorMessage = 'Unknown error';
-        try {
-          const error = await response.json();
-          errorMessage = error.error || errorMessage;
-        } catch (e) {
-          // Ignore parse errors - 404 might mean no folders exist
-        }
-        
-        // If workspace not found (not just no folders), return empty but log at debug level only
-        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
-          logger.debug('Workspace not found (404) - may need to be created:', workspaceId);
-        } else {
-          // No folders found - this is expected for new workspaces
-          logger.debug('No folders found for workspace (404):', workspaceId);
-        }
+        // Silently handle 404s - they're expected for new workspaces or workspaces without folders
+        // Don't log to console to reduce noise
         return [];
       }
       
@@ -897,21 +883,8 @@ export async function getTeamMembers(workspaceId: string) {
     if (!response.ok) {
       // Handle 404 gracefully - workspace might not exist yet or have no members
       if (response.status === 404) {
-        // Check error message to distinguish between "workspace not found" vs "no members"
-        let errorMessage = '';
-        try {
-          const error = await response.json();
-          errorMessage = error.error || '';
-        } catch (e) {
-          // Ignore parse errors - 404 might mean no members exist
-        }
-        
-        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
-          logger.debug('Workspace not found (404) - may need to be created:', workspaceId);
-        } else {
-          // No members found - this is expected for new workspaces
-          logger.debug('No team members found for workspace (404):', workspaceId);
-        }
+        // Silently handle 404s - they're expected for new workspaces or workspaces without members
+        // Don't log to console to reduce noise
         return [];
       }
       
