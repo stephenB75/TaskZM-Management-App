@@ -161,19 +161,38 @@ export function PricingDialog({
           console.warn('⚠️ Found packages without products:', invalidPackages.map((p: any) => p?.identifier || 'unknown'));
         }
         
+        // Log all package identifiers for debugging
+        console.log('📦 All package identifiers from RevenueCat:', validPackages.map((p: any) => p?.identifier || 'unknown'));
         console.log('📦 All valid packages:', validPackages.map((p: any) => ({
           identifier: p.identifier,
           price: p.product?.priceString || 'N/A',
-          title: p.product?.title || 'N/A'
+          title: p.product?.title || 'N/A',
+          productId: p.product?.identifier || 'N/A'
         })));
+        console.log('🔍 Looking for monthly identifiers:', MONTHLY_PACKAGE_IDENTIFIERS);
+        console.log('🔍 Looking for yearly identifiers:', YEARLY_PACKAGE_IDENTIFIERS);
 
         // Find monthly and yearly packages (only from valid packages)
-        const monthlyPkg = validPackages.find(
-          (pkg: any) => pkg && MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
-        );
-        const yearlyPkg = validPackages.find(
-          (pkg: any) => pkg && YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
-        );
+        // Try exact match first, then case-insensitive match, then partial match
+        const monthlyPkg = validPackages.find((pkg: any) => {
+          if (!pkg) return false;
+          const identifier = pkg.identifier?.toLowerCase() || '';
+          return MONTHLY_PACKAGE_IDENTIFIERS.some(id => 
+            identifier === id.toLowerCase() || 
+            identifier.includes('month') ||
+            (identifier.includes('monthly') && !identifier.includes('year'))
+          );
+        });
+        
+        const yearlyPkg = validPackages.find((pkg: any) => {
+          if (!pkg) return false;
+          const identifier = pkg.identifier?.toLowerCase() || '';
+          return YEARLY_PACKAGE_IDENTIFIERS.some(id => 
+            identifier === id.toLowerCase() || 
+            identifier.includes('year') ||
+            identifier.includes('annual')
+          );
+        });
 
         console.log('📅 Monthly package:', monthlyPkg ? {
           identifier: monthlyPkg.identifier,
@@ -370,6 +389,16 @@ export function PricingDialog({
         return;
       }
 
+      // Check if monthly package is available
+      if (!offerings.monthly) {
+        console.error('❌ Monthly package not available');
+        toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
+          description: 'Monthly subscription is not currently available. Only yearly subscription is available.',
+        });
+        setIsUpgrading(false);
+        return;
+      }
+
       // Check if offerings are available before purchase
       console.log('🔍 Checking if offerings are available...');
       const offeringsCheck = await getOfferings();
@@ -384,6 +413,16 @@ export function PricingDialog({
           console.error('❌ No offerings available after reload');
           toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
             description: SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableCheckDesc,
+          });
+          setIsUpgrading(false);
+          return;
+        }
+        
+        // Re-check monthly package after reload
+        if (!offerings.monthly) {
+          console.error('❌ Monthly package still not available after reload');
+          toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
+            description: 'Monthly subscription is not currently available. Only yearly subscription is available.',
           });
           setIsUpgrading(false);
           return;
@@ -500,6 +539,16 @@ export function PricingDialog({
         return;
       }
 
+      // Check if yearly package is available
+      if (!offerings.yearly) {
+        console.error('❌ Yearly package not available');
+        toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
+          description: 'Yearly subscription is not currently available.',
+        });
+        setIsUpgrading(false);
+        return;
+      }
+
       // Check if offerings are available before purchase
       console.log('🔍 Checking if offerings are available...');
       const offeringsCheck = await getOfferings();
@@ -514,6 +563,16 @@ export function PricingDialog({
           console.error('❌ No offerings available after reload');
           toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
             description: SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableCheckDesc,
+          });
+          setIsUpgrading(false);
+          return;
+        }
+        
+        // Re-check yearly package after reload
+        if (!offerings.yearly) {
+          console.error('❌ Yearly package still not available after reload');
+          toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
+            description: 'Yearly subscription is not currently available.',
           });
           setIsUpgrading(false);
           return;
@@ -693,6 +752,7 @@ export function PricingDialog({
             </motion.div>
 
             {/* Monthly Pro Tier */}
+            {offerings.monthly && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -772,6 +832,7 @@ export function PricingDialog({
                 </Button>
               </div>
             </motion.div>
+            )}
 
             {/* Yearly Pro Tier - Featured */}
             <motion.div

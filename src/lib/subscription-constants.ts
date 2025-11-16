@@ -27,8 +27,30 @@ export const DEFAULT_MONTHLY_TITLE = "Monthly Pro";
 export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 
 // Package identifiers for RevenueCat
-export const MONTHLY_PACKAGE_IDENTIFIERS = ['$rc_monthly', 'monthly'];
-export const YEARLY_PACKAGE_IDENTIFIERS = ['$rc_annual', '$rc_yearly', 'annual', 'yearly'];
+// RevenueCat can use various identifier patterns, so we check for multiple possibilities
+export const MONTHLY_PACKAGE_IDENTIFIERS = [
+  '$rc_monthly', 
+  'monthly', 
+  'monthly_pro', 
+  'pro_monthly',
+  '$rc_monthly_pro',
+  'monthly_subscription',
+  'monthly_plan'
+];
+export const YEARLY_PACKAGE_IDENTIFIERS = [
+  '$rc_annual', 
+  '$rc_yearly', 
+  'annual', 
+  'yearly',
+  'yearly_pro',
+  'pro_yearly',
+  '$rc_annual_pro',
+  '$rc_yearly_pro',
+  'annual_subscription',
+  'yearly_subscription',
+  'annual_plan',
+  'yearly_plan'
+];
 
 // Number of PRO features (for UI display)
 export const PRO_FEATURES_COUNT = 7;

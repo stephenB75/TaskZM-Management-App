@@ -336,18 +336,29 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
         console.log('   Package identifiers:', availablePackages.map((p: any) => p?.identifier || 'unknown'));
         
         // Find the requested package
-        const packageIdentifier = packageType === 'yearly' 
-          ? ['$rc_annual', '$rc_yearly', 'annual', 'yearly']
-          : ['$rc_monthly', 'monthly'];
+        // Import identifiers from constants for consistency
+        const { MONTHLY_PACKAGE_IDENTIFIERS, YEARLY_PACKAGE_IDENTIFIERS } = await import('./subscription-constants');
+        const packageIdentifiers = packageType === 'yearly' 
+          ? YEARLY_PACKAGE_IDENTIFIERS
+          : MONTHLY_PACKAGE_IDENTIFIERS;
         
-        const selectedPackage = availablePackages.find(
-          (pkg: any) => pkg && packageIdentifier.includes(pkg.identifier)
-        );
+        // Try exact match first, then case-insensitive match, then partial match
+        const selectedPackage = availablePackages.find((pkg: any) => {
+          if (!pkg) return false;
+          const identifier = pkg.identifier?.toLowerCase() || '';
+          return packageIdentifiers.some(id => {
+            const idLower = id.toLowerCase();
+            return identifier === idLower || 
+                   identifier.includes(idLower.replace('$rc_', '')) ||
+                   (packageType === 'monthly' && (identifier.includes('month') && !identifier.includes('year'))) ||
+                   (packageType === 'yearly' && (identifier.includes('year') || identifier.includes('annual')));
+          });
+        });
         
         if (!selectedPackage) {
           console.error(`❌ ${packageType} subscription package not found`);
           console.error('   Available package identifiers:', availablePackages.map((p: any) => p?.identifier || 'unknown'));
-          console.error('   Looking for:', packageIdentifier);
+          console.error('   Looking for:', packageIdentifiers);
           throw new Error(`${packageType} subscription package not found. Available packages: ${availablePackages.map((p: any) => p?.identifier || 'unknown').join(', ')}`);
         }
         
