@@ -969,15 +969,20 @@ app.post("/make-server-65e6e67f/subscription", async (c) => {
       if (isUpgradeAttempt) {
         // This is an upgrade - require payment verification
         // Payment verification exists if:
-        // 1. Has subscription store (stripe/app_store/play_store/admin_granted) indicating payment
+        // 1. Has subscription store (stripe/app_store/play_store) indicating payment
         // 2. Has active status from webhook
+        // NOTE: admin_granted is NOT a valid payment source for upgrades (use separate admin endpoint)
+        const validPaymentStores = ['stripe', 'app_store', 'play_store'];
         const hasValidPayment = 
-          subscriptionStore || // Has payment store (set by webhook)
-          subscriptionStatus === 'active'; // Has active status from webhook
+          (subscriptionStore && validPaymentStores.includes(subscriptionStore)) || // Valid payment store
+          (subscriptionStatus === 'active' && subscriptionStore && validPaymentStores.includes(subscriptionStore)); // Active status with valid store
         
         // If no valid payment source, reject the upgrade
         if (!hasValidPayment) {
           console.error(`SECURITY: User ${userId} attempted to upgrade to Pro without payment verification`);
+          console.error(`   Existing tier: ${existingTier}`);
+          console.error(`   Subscription store: ${subscriptionStore || 'none'}`);
+          console.error(`   Subscription status: ${subscriptionStatus || 'none'}`);
           return c.json({ 
             error: 'Payment verification required. Subscription upgrades must be processed through the payment system.',
             code: 'PAYMENT_VERIFICATION_REQUIRED'
@@ -985,7 +990,7 @@ app.post("/make-server-65e6e67f/subscription", async (c) => {
         }
         
         // Log the subscription upgrade for audit
-        console.log(`Subscription upgrade for user ${userId}: Free -> Pro (verified payment source: ${subscriptionStore || 'active status'})`);
+        console.log(`✅ SECURITY: Subscription upgrade verified for user ${userId}: Free -> Pro (payment source: ${subscriptionStore || 'active status'})`);
       } else {
         // Already Pro - allow status updates (renewal, cancellation, etc.)
         console.log(`Subscription update for user ${userId}: Pro tier status update`);
@@ -2101,13 +2106,29 @@ app.post("/make-server-65e6e67f/revenuecat-webhook", async (c) => {
       store: event.event?.store
     });
 
-    // Validate webhook signature (RevenueCat sends this in production)
+    // SECURITY: Validate webhook signature (RevenueCat sends this in production)
     const authHeader = c.req.header('Authorization');
     const expectedToken = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
     
-    if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
-      console.error('Invalid webhook signature');
-      return c.json({ error: 'Unauthorized' }, 401);
+    // Always require webhook secret in production
+    const isProduction = Deno.env.get('ENVIRONMENT') === 'production' || 
+                        !Deno.env.get('ENVIRONMENT') || 
+                        Deno.env.get('ENVIRONMENT') === 'prod';
+    
+    if (isProduction && !expectedToken) {
+      console.error('SECURITY: REVENUECAT_WEBHOOK_SECRET not configured in production');
+      return c.json({ error: 'Webhook authentication not configured' }, 500);
+    }
+    
+    // Validate webhook signature
+    if (expectedToken) {
+      if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
+        console.error('SECURITY: Invalid webhook signature - unauthorized access attempt');
+        return c.json({ error: 'Unauthorized' }, 401);
+      }
+    } else {
+      // In development, log warning but allow (for testing)
+      console.warn('⚠️ REVENUECAT_WEBHOOK_SECRET not set - webhook validation disabled (development only)');
     }
 
     // Extract event data
