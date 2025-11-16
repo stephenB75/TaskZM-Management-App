@@ -4,7 +4,12 @@
  */
 
 import { getPlatform } from './platform';
-import { REVENUECAT_MONTHLY_PRODUCT_ID, REVENUECAT_YEARLY_PRODUCT_ID } from './subscription-constants';
+import { 
+  REVENUECAT_MONTHLY_PRODUCT_ID, 
+  REVENUECAT_YEARLY_PRODUCT_ID,
+  REVENUECAT_MONTHLY_ENTITLEMENT_ID,
+  REVENUECAT_YEARLY_ENTITLEMENT_ID
+} from './subscription-constants';
 
 // Types
 export interface CustomerInfo {
@@ -207,8 +212,11 @@ export async function getSubscriptionStatus(): Promise<'pro' | 'free'> {
         const purchasesInstance = Purchases.getSharedInstance();
         const customerInfo = await purchasesInstance.getCustomerInfo();
         
-        // Check for active 'pro' entitlement
-        const isProActive = customerInfo.entitlements.active.pro !== undefined;
+        // Check for active Pro entitlements (PRO-Monthly or PRO-Yearly)
+        const activeEntitlements = customerInfo.entitlements?.active || {};
+        const isProActive = activeEntitlements[REVENUECAT_MONTHLY_ENTITLEMENT_ID] !== undefined ||
+                          activeEntitlements[REVENUECAT_YEARLY_ENTITLEMENT_ID] !== undefined ||
+                          activeEntitlements['pro'] !== undefined; // Fallback for legacy 'pro' entitlement
         return isProActive ? 'pro' : 'free';
       } catch (importError) {
         console.warn('RevenueCat not available, defaulting to free');
@@ -225,7 +233,11 @@ export async function getSubscriptionStatus(): Promise<'pro' | 'free'> {
       }
       
       const { customerInfo } = await Purchases.getCustomerInfo();
-      const isProActive = customerInfo.entitlements.active.pro !== undefined;
+      // Check for active Pro entitlements (PRO-Monthly or PRO-Yearly)
+      const activeEntitlements = customerInfo.entitlements?.active || {};
+      const isProActive = activeEntitlements[REVENUECAT_MONTHLY_ENTITLEMENT_ID] !== undefined ||
+                         activeEntitlements[REVENUECAT_YEARLY_ENTITLEMENT_ID] !== undefined ||
+                         activeEntitlements['pro'] !== undefined; // Fallback for legacy 'pro' entitlement
       return isProActive ? 'pro' : 'free';
     }
   } catch (error) {
@@ -551,9 +563,12 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
             throw new Error('Purchase completed but no customer information received');
           }
         
-        // Check if purchase was successful
-        const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
-          console.log(`✅ Web ${packageType} purchase result:`, isProActive ? 'SUCCESS' : 'FAILED');
+        // Check if purchase was successful (check for PRO-Monthly or PRO-Yearly entitlements)
+        const activeEntitlements = customerInfo?.entitlements?.active || {};
+        const isProActive = activeEntitlements[REVENUECAT_MONTHLY_ENTITLEMENT_ID] !== undefined ||
+                          activeEntitlements[REVENUECAT_YEARLY_ENTITLEMENT_ID] !== undefined ||
+                          activeEntitlements['pro'] !== undefined; // Fallback for legacy 'pro' entitlement
+        console.log(`✅ Web ${packageType} purchase result:`, isProActive ? 'SUCCESS' : 'FAILED');
           
           if (isProActive) {
             console.log('   ✅ Pro entitlement is now active');
@@ -683,7 +698,11 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
         aPackage: selectedPackage 
       });
       
-      const isProActive = customerInfo.entitlements.active.pro !== undefined;
+      // Check for active Pro entitlements (PRO-Monthly or PRO-Yearly)
+      const activeEntitlements = customerInfo.entitlements?.active || {};
+      const isProActive = activeEntitlements[REVENUECAT_MONTHLY_ENTITLEMENT_ID] !== undefined ||
+                         activeEntitlements[REVENUECAT_YEARLY_ENTITLEMENT_ID] !== undefined ||
+                         activeEntitlements['pro'] !== undefined; // Fallback for legacy 'pro' entitlement
       return isProActive;
     }
   } catch (error: any) {
@@ -718,7 +737,11 @@ export async function restorePurchases(): Promise<boolean> {
         // Get the configured instance
         const purchasesInstance = Purchases.getSharedInstance();
         const customerInfo = await purchasesInstance.getCustomerInfo();
-        const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
+        // Check for active Pro entitlements (PRO-Monthly or PRO-Yearly)
+        const activeEntitlements = customerInfo?.entitlements?.active || {};
+        const isProActive = activeEntitlements[REVENUECAT_MONTHLY_ENTITLEMENT_ID] !== undefined ||
+                           activeEntitlements[REVENUECAT_YEARLY_ENTITLEMENT_ID] !== undefined ||
+                           activeEntitlements['pro'] !== undefined; // Fallback for legacy 'pro' entitlement
         return isProActive;
       } catch (error) {
         console.warn('Failed to restore purchases:', error);

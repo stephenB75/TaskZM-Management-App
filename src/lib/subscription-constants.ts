@@ -31,6 +31,11 @@ export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 export const REVENUECAT_MONTHLY_PRODUCT_ID = "prodb18a767009";
 export const REVENUECAT_YEARLY_PRODUCT_ID = "prod77566b1baf";
 
+// RevenueCat Entitlement Identifiers
+// These are the actual entitlement identifiers configured in RevenueCat dashboard
+export const REVENUECAT_MONTHLY_ENTITLEMENT_ID = "PRO-Monthly";
+export const REVENUECAT_YEARLY_ENTITLEMENT_ID = "PRO-Yearly";
+
 // Minimal fallback identifiers - ONLY used if dynamic detection finds nothing
 // The app primarily uses identifiers dynamically discovered from RevenueCat packages.
 // These minimal fallbacks are kept only as a last resort safety net.
