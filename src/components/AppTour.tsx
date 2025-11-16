@@ -21,6 +21,7 @@ import {
 import { Button } from "./ui/button";
 import { useTheme } from "../contexts/ThemeContext";
 import { cn } from "../lib/utils";
+import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 
 interface AppTourProps {
   run: boolean;
@@ -166,8 +167,8 @@ const tourSteps: TourStep[] = [
       },
       {
         icon: "💎",
-        title: "Pro Feature",
-        description: "$3.99/month",
+        title: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature,
+        description: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(DEFAULT_MONTHLY_PRICE),
       },
     ],
   },
@@ -341,8 +342,8 @@ const tourSteps: TourStep[] = [
       },
       {
         icon: "💎",
-        title: "Pro Feature",
-        description: "$3.99/month",
+        title: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature,
+        description: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(DEFAULT_MONTHLY_PRICE),
       },
     ],
   },

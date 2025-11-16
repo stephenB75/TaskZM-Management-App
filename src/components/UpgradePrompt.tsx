@@ -19,6 +19,7 @@ import {
   Users,
   Calendar,
 } from "lucide-react";
+import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 
 interface UpgradePromptProps {
   open: boolean;
@@ -144,7 +145,7 @@ export function UpgradePrompt({
               <Icon className="w-5 h-5 text-[#D4C5F9]" />
             </div>
             <AlertDialogTitle>
-              Unlock {config.title}
+              {SUBSCRIPTION_UI_TEXT.upgradePrompt.unlock(config.title)}
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription asChild>
@@ -171,23 +172,29 @@ export function UpgradePrompt({
               <div className="bg-[#D4C5F9]/10 border border-[#D4C5F9]/20 rounded-lg p-3">
                 <p className="text-sm">
                   <span className="text-[#D4C5F9]">
-                    ✨ Special Offer:
+                    {SUBSCRIPTION_UI_TEXT.upgradePrompt.specialOffer}
                   </span>{" "}
-                  Get all Pro features for just{" "}
-                  <strong>$3.99/month</strong>
+                  {SUBSCRIPTION_UI_TEXT.upgradePrompt.getProFeatures(DEFAULT_MONTHLY_PRICE).split(DEFAULT_MONTHLY_PRICE).map((part, i, arr) => 
+                    i === arr.length - 1 ? part : (
+                      <React.Fragment key={i}>
+                        {part}
+                        <strong>{DEFAULT_MONTHLY_PRICE}</strong>
+                      </React.Fragment>
+                    )
+                  )}
                 </p>
               </div>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Maybe Later</AlertDialogCancel>
+          <AlertDialogCancel>{SUBSCRIPTION_UI_TEXT.upgradePrompt.maybeLater}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleUpgrade}
             className="bg-[#D4C5F9] hover:bg-[#D4C5F9]/90 text-gray-800"
           >
             <Sparkles className="w-4 h-4 mr-2" />
-            Upgrade to Pro
+            {SUBSCRIPTION_UI_TEXT.upgradePrompt.upgradeToPro}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

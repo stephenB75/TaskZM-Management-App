@@ -245,6 +245,15 @@ export const SUBSCRIPTION_UI_TEXT = {
     connected: (count: number) => `✅ RevenueCat Connected • ${count} package(s) loaded`,
     notConnected: "⚠️ RevenueCat not connected • Using default pricing",
   },
+  upgradePrompt: {
+    unlock: (feature: string) => `Unlock ${feature}`,
+    specialOffer: "✨ Special Offer:",
+    getProFeatures: (price: string) => `Get all Pro features for just ${price}`,
+    maybeLater: "Maybe Later",
+    upgradeToPro: "Upgrade to Pro",
+    proFeature: "Pro Feature",
+    proFeaturePrice: (price: string) => `${price}/month`,
+  },
 } as const;
 
 // Feature definitions
