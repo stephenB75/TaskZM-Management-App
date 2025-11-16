@@ -44,6 +44,7 @@ import {
   FREE_TIER_FEATURES,
   PRO_TIER_FEATURES,
   PRO_FEATURES_LIST,
+  FEATURES_DISPLAY_LIMIT,
 } from "../lib/subscription-constants";
 
 interface PricingDialogProps {
@@ -67,11 +68,6 @@ export function PricingDialog({
     monthly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
     yearly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
   }>({});
-  const [revenueCatStatus, setRevenueCatStatus] = React.useState<{
-    connected: boolean;
-    packagesLoaded: number;
-    lastChecked: string | null;
-  }>({ connected: false, packagesLoaded: 0, lastChecked: null });
   const platform = getPlatform();
 
   // Get user from auth context for RevenueCat configuration
@@ -138,12 +134,6 @@ export function PricingDialog({
         } else {
           console.warn('⚠️  No user ID available for configuration');
         }
-        
-        setRevenueCatStatus({
-          connected: false,
-          packagesLoaded: 0,
-          lastChecked: new Date().toISOString(),
-        });
         return;
       }
       
@@ -352,12 +342,6 @@ export function PricingDialog({
           monthly: monthlyOffering,
           yearly: yearlyOffering,
         });
-
-        setRevenueCatStatus({
-          connected: true,
-          packagesLoaded: rcOfferings.availablePackages.length,
-          lastChecked: new Date().toISOString(),
-        });
         
         // Notify parent component that offerings were updated
         if (onOfferingsUpdated) {
@@ -369,21 +353,11 @@ export function PricingDialog({
         console.warn('   1. No offerings configured in RevenueCat dashboard');
         console.warn('   2. No packages attached to the current offering');
         console.warn('   3. Products not set up in RevenueCat');
-        setRevenueCatStatus({
-          connected: false,
-          packagesLoaded: 0,
-          lastChecked: new Date().toISOString(),
-        });
       }
     } catch (error: any) {
       console.error('❌ Failed to load offerings from RevenueCat:', error);
       console.error('   Error message:', error.message || error);
       console.error('   Error stack:', error.stack);
-      setRevenueCatStatus({
-        connected: false,
-        packagesLoaded: 0,
-        lastChecked: new Date().toISOString(),
-      });
     }
   };
 
@@ -802,18 +776,6 @@ export function PricingDialog({
               </DialogDescription>
             </DialogHeader>
 
-            {/* RevenueCat Connection Status */}
-            <div className={`mt-3 p-2 rounded-lg text-center text-xs ${
-              revenueCatStatus.connected 
-                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200' 
-                : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
-            }`}>
-              {revenueCatStatus.connected ? (
-                <span>{SUBSCRIPTION_UI_TEXT.revenueCat.connected(revenueCatStatus.packagesLoaded)}</span>
-              ) : (
-                <span>{SUBSCRIPTION_UI_TEXT.revenueCat.notConnected}</span>
-              )}
-            </div>
           </div>
 
           {/* Plans Grid - 3 Columns: Free, Monthly Pro, Yearly Pro */}
@@ -905,11 +867,6 @@ export function PricingDialog({
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                       {offerings.monthly?.priceString ?? DEFAULT_MONTHLY_PRICE}
-                      {offerings.monthly?.priceString === DEFAULT_MONTHLY_PRICE && revenueCatStatus.connected && (
-                        <span className="text-xs text-muted-foreground ml-1" title="Using default price - RevenueCat price not available">
-                          *
-                        </span>
-                      )}
                     </span>
                     <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
                   </div>
@@ -922,7 +879,7 @@ export function PricingDialog({
 
                 {/* Features list - compact */}
                 <ul className="space-y-2 mb-4 flex-1">
-                  {proTierFeatures.slice(0, 4).map((feature, index) => (
+                  {proTierFeatures.slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <div className={cn(
                         "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
@@ -941,7 +898,7 @@ export function PricingDialog({
                     </li>
                   ))}
                   <li className="text-xs text-muted-foreground pt-1">
-                    + {proTierFeatures.length - 4} more features
+                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} more features
                   </li>
                 </ul>
 
@@ -1000,11 +957,6 @@ export function PricingDialog({
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                       {offerings.yearly?.priceString ?? DEFAULT_YEARLY_PRICE}
-                      {offerings.yearly?.priceString === DEFAULT_YEARLY_PRICE && revenueCatStatus.connected && (
-                        <span className="text-xs text-muted-foreground ml-1" title="Using default price - RevenueCat price not available">
-                          *
-                        </span>
-                      )}
                     </span>
                     <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
                   </div>
@@ -1027,7 +979,7 @@ export function PricingDialog({
 
                 {/* Features list - compact */}
                 <ul className="space-y-2 mb-4 flex-1">
-                  {proTierFeatures.slice(0, 4).map((feature, index) => (
+                  {proTierFeatures.slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <div className={cn(
                         "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
@@ -1046,7 +998,7 @@ export function PricingDialog({
                     </li>
                   ))}
                   <li className="text-xs text-muted-foreground pt-1">
-                    + {proTierFeatures.length - 4} more features
+                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} more features
                   </li>
                 </ul>
 

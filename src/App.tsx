@@ -130,13 +130,13 @@ function AppContent() {
       const platform = getPlatform();
       
       configureRevenueCat(user.id).catch(error => {
-        // RevenueCat configuration failed - this is expected if not set up yet
-        // App will gracefully fall back to legacy payment flow
-        // Silently handle errors to prevent console noise
-        if (error?.message && !error.message.includes('checkoutUrls')) {
-          console.debug('RevenueCat configuration skipped:', error.message);
-        }
-      });
+          // RevenueCat configuration failed - this is expected if not set up yet
+          // App will gracefully fall back to legacy payment flow
+          // Silently handle errors to prevent console noise
+          if (error?.message && !error.message.includes('checkoutUrls')) {
+            console.debug('RevenueCat configuration skipped:', error.message);
+          }
+        });
     } else {
       // Reset RevenueCat when user logs out
       resetRevenueCat();

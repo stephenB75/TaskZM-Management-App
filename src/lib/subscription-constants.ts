@@ -62,6 +62,9 @@ export const YEARLY_PACKAGE_IDENTIFIERS = [
 // Number of PRO features (for UI display)
 export const PRO_FEATURES_COUNT = 7;
 
+// Number of features to display in plan cards before showing "+ X more features"
+export const FEATURES_DISPLAY_LIMIT = 4;
+
 // UI Text
 export const SUBSCRIPTION_UI_TEXT = {
   title: "Choose Your Plan",
