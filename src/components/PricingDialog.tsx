@@ -77,15 +77,31 @@ export function PricingDialog({
         identifier: offerings.monthly.identifier,
         priceString: offerings.monthly.priceString,
         title: offerings.monthly.title,
-        available: true
+        available: true,
+        isUsingDefaultPrice: offerings.monthly.priceString === DEFAULT_MONTHLY_PRICE,
+        isUsingDefaultTitle: offerings.monthly.title === DEFAULT_MONTHLY_TITLE,
+        source: 'RevenueCat (if not defaults)'
       } : { available: false },
       yearly: offerings.yearly ? {
         identifier: offerings.yearly.identifier,
         priceString: offerings.yearly.priceString,
         title: offerings.yearly.title,
-        available: true
+        available: true,
+        isUsingDefaultPrice: offerings.yearly.priceString === DEFAULT_YEARLY_PRICE,
+        isUsingDefaultTitle: offerings.yearly.title === DEFAULT_YEARLY_TITLE,
+        source: 'RevenueCat (if not defaults)'
       } : { available: false }
     });
+    
+    // Warn if defaults are being used (this should never happen now)
+    if (offerings.monthly?.priceString === DEFAULT_MONTHLY_PRICE) {
+      console.error('❌ WARNING: Monthly offering is using DEFAULT price! This should not happen.');
+      console.error('   This means RevenueCat product data is missing or invalid.');
+    }
+    if (offerings.yearly?.priceString === DEFAULT_YEARLY_PRICE) {
+      console.error('❌ WARNING: Yearly offering is using DEFAULT price! This should not happen.');
+      console.error('   This means RevenueCat product data is missing or invalid.');
+    }
   }, [offerings]);
   const platform = getPlatform();
 
@@ -574,10 +590,13 @@ export function PricingDialog({
         }
 
         // Set offerings from RevenueCat - this is the source of truth
-        // Handle packages even if product data is missing (use defaults with package identifier)
-        // Helper function to extract price string from product, with fallback logic
-        const getPriceString = (pkg: any, defaultPrice: string): string => {
-          if (!pkg?.product) return defaultPrice;
+        // Only set offerings if we have valid product data from RevenueCat
+        // Helper function to extract price string from product - NO DEFAULTS if product data is missing
+        const getPriceString = (pkg: any): string | null => {
+          if (!pkg?.product) {
+            console.warn('⚠️ Package has no product object:', pkg?.identifier);
+            return null; // Return null instead of default to indicate missing data
+          }
           
           // First try priceString (formatted price from RevenueCat)
           if (pkg.product.priceString && pkg.product.priceString.trim() !== '') {
@@ -605,27 +624,69 @@ export function PricingDialog({
             }
           }
           
-          // Last resort: use default
-          return defaultPrice;
+          // Return null if no valid price data found (don't use defaults)
+          console.warn('⚠️ Package product has no valid price data:', {
+            identifier: pkg?.identifier,
+            hasPriceString: !!pkg.product.priceString,
+            hasPrice: pkg.product.price != null,
+            priceValue: pkg.product.price
+          });
+          return null;
         };
         
-        const monthlyOffering = monthlyPkg ? {
+        // Helper to check if package has valid product data
+        const hasValidProductData = (pkg: any): boolean => {
+          if (!pkg?.product) return false;
+          // Check if product has price data
+          const hasPriceString = pkg.product.priceString && pkg.product.priceString.trim() !== '';
+          const hasPriceAmount = pkg.product.price != null && pkg.product.price !== 0;
+          return hasPriceString || hasPriceAmount;
+        };
+        
+        // Only create offerings if packages have valid product data from RevenueCat
+        // NO DEFAULTS - if product data is missing, don't set the offering
+        const monthlyPriceString = monthlyPkg && hasValidProductData(monthlyPkg) ? getPriceString(monthlyPkg) : null;
+        const yearlyPriceString = yearlyPkg && hasValidProductData(yearlyPkg) ? getPriceString(yearlyPkg) : null;
+        
+        // Only create offerings if we have valid price strings from RevenueCat
+        const monthlyOffering = monthlyPkg && hasValidProductData(monthlyPkg) && monthlyPriceString ? {
           price: (monthlyPkg.product?.price?.toString() ?? '0'),
-          priceString: getPriceString(monthlyPkg, DEFAULT_MONTHLY_PRICE),
+          priceString: monthlyPriceString, // NO DEFAULT - only use RevenueCat data
           currencyCode: (monthlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: monthlyPkg.identifier || 'monthly',
           title: (monthlyPkg.product?.title?.trim() || DEFAULT_MONTHLY_TITLE),
           description: (monthlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod),
         } : undefined;
 
-        const yearlyOffering = yearlyPkg ? {
+        const yearlyOffering = yearlyPkg && hasValidProductData(yearlyPkg) && yearlyPriceString ? {
           price: (yearlyPkg.product?.price?.toString() ?? '0'),
-          priceString: getPriceString(yearlyPkg, DEFAULT_YEARLY_PRICE),
+          priceString: yearlyPriceString, // NO DEFAULT - only use RevenueCat data
           currencyCode: (yearlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: yearlyPkg.identifier || 'yearly',
           title: (yearlyPkg.product?.title?.trim() || DEFAULT_YEARLY_TITLE),
           description: (yearlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod),
         } : undefined;
+        
+        // Log warnings if packages were found but don't have product data
+        if (monthlyPkg && !hasValidProductData(monthlyPkg)) {
+          console.error('❌ Monthly package found but has no valid product data from RevenueCat');
+          console.error('   Package identifier:', monthlyPkg.identifier);
+          console.error('   Product object:', monthlyPkg.product);
+          console.error('   This usually means:');
+          console.error('   1. Product is not linked to package in RevenueCat dashboard');
+          console.error('   2. Product data hasn\'t loaded yet (try refreshing)');
+          console.error('   3. RevenueCat configuration issue');
+        }
+        
+        if (yearlyPkg && !hasValidProductData(yearlyPkg)) {
+          console.error('❌ Yearly package found but has no valid product data from RevenueCat');
+          console.error('   Package identifier:', yearlyPkg.identifier);
+          console.error('   Product object:', yearlyPkg.product);
+          console.error('   This usually means:');
+          console.error('   1. Product is not linked to package in RevenueCat dashboard');
+          console.error('   2. Product data hasn\'t loaded yet (try refreshing)');
+          console.error('   3. RevenueCat configuration issue');
+        }
 
         console.log('============================================================');
         console.log('📊 REVENUECAT DATA RENDERING REPORT');
@@ -718,6 +779,24 @@ export function PricingDialog({
           monthlyOffering || yearlyOffering ? '2 (Free + one Pro)' :
           '1 (Free only)'
         );
+        console.log('============================================================');
+        console.log('🎯 FINAL OFFERINGS STATE BEING SET:');
+        console.log('   Monthly Offering:', monthlyOffering ? {
+          identifier: monthlyOffering.identifier,
+          priceString: monthlyOffering.priceString,
+          title: monthlyOffering.title,
+          source: 'RevenueCat',
+          hasDefaultPrice: monthlyOffering.priceString === DEFAULT_MONTHLY_PRICE,
+          hasDefaultTitle: monthlyOffering.title === DEFAULT_MONTHLY_TITLE
+        } : 'NOT SET (no valid product data)');
+        console.log('   Yearly Offering:', yearlyOffering ? {
+          identifier: yearlyOffering.identifier,
+          priceString: yearlyOffering.priceString,
+          title: yearlyOffering.title,
+          source: 'RevenueCat',
+          hasDefaultPrice: yearlyOffering.priceString === DEFAULT_YEARLY_PRICE,
+          hasDefaultTitle: yearlyOffering.title === DEFAULT_YEARLY_TITLE
+        } : 'NOT SET (no valid product data)');
         console.log('============================================================');
 
         setOfferings({
@@ -1454,7 +1533,7 @@ export function PricingDialog({
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {offerings.monthly?.priceString ?? DEFAULT_MONTHLY_PRICE}
+                      {offerings.monthly?.priceString || 'Loading...'}
                     </span>
                     <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
                   </div>
@@ -1549,7 +1628,7 @@ export function PricingDialog({
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {offerings.yearly?.priceString ?? DEFAULT_YEARLY_PRICE}
+                      {offerings.yearly?.priceString || 'Loading...'}
                     </span>
                     <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
                   </div>
