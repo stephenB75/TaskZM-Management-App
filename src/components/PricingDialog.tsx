@@ -229,37 +229,52 @@ export function PricingDialog({
         } : 'NOT FOUND');
 
         // Set offerings from RevenueCat - this is the source of truth
+        // Only use defaults if RevenueCat data is truly missing (null/undefined), not if it's an empty string
         const monthlyOffering = monthlyPkg && monthlyPkg.product ? {
-          price: monthlyPkg.product.price?.toString() || '0',
-          priceString: monthlyPkg.product.priceString || DEFAULT_MONTHLY_PRICE,
-          currencyCode: monthlyPkg.product.currencyCode || DEFAULT_CURRENCY_CODE,
+          price: (monthlyPkg.product.price?.toString() ?? '0'),
+          priceString: (monthlyPkg.product.priceString ?? DEFAULT_MONTHLY_PRICE),
+          currencyCode: (monthlyPkg.product.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: monthlyPkg.identifier,
-          title: monthlyPkg.product.title || DEFAULT_MONTHLY_TITLE,
-          description: monthlyPkg.product.description || '',
+          title: (monthlyPkg.product.title ?? DEFAULT_MONTHLY_TITLE),
+          description: (monthlyPkg.product.description ?? ''),
         } : undefined;
 
         const yearlyOffering = yearlyPkg && yearlyPkg.product ? {
-          price: yearlyPkg.product.price?.toString() || '0',
-          priceString: yearlyPkg.product.priceString || DEFAULT_YEARLY_PRICE,
-          currencyCode: yearlyPkg.product.currencyCode || DEFAULT_CURRENCY_CODE,
+          price: (yearlyPkg.product.price?.toString() ?? '0'),
+          priceString: (yearlyPkg.product.priceString ?? DEFAULT_YEARLY_PRICE),
+          currencyCode: (yearlyPkg.product.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: yearlyPkg.identifier,
-          title: yearlyPkg.product.title || DEFAULT_YEARLY_TITLE,
-          description: yearlyPkg.product.description || '',
+          title: (yearlyPkg.product.title ?? DEFAULT_YEARLY_TITLE),
+          description: (yearlyPkg.product.description ?? ''),
         } : undefined;
 
         console.log('✅ Setting offerings from RevenueCat:');
-        console.log('   Monthly:', monthlyOffering ? {
-          identifier: monthlyOffering.identifier,
-          priceString: monthlyOffering.priceString,
-          title: monthlyOffering.title,
-          fromRevenueCat: monthlyPkg.product.priceString ? 'YES' : 'NO (using default)'
-        } : 'NOT AVAILABLE');
-        console.log('   Yearly:', yearlyOffering ? {
-          identifier: yearlyOffering.identifier,
-          priceString: yearlyOffering.priceString,
-          title: yearlyOffering.title,
-          fromRevenueCat: yearlyPkg.product.priceString ? 'YES' : 'NO (using default)'
-        } : 'NOT AVAILABLE');
+        if (monthlyOffering) {
+          const fromRC = monthlyPkg?.product?.priceString != null && monthlyPkg.product.priceString !== '';
+          console.log('   Monthly:', {
+            identifier: monthlyOffering.identifier,
+            priceString: monthlyOffering.priceString,
+            title: monthlyOffering.title,
+            fromRevenueCat: fromRC ? 'YES ✅' : 'NO (using default) ⚠️',
+            rawPriceString: monthlyPkg?.product?.priceString || 'null/undefined',
+            rawPrice: monthlyPkg?.product?.price || 'null/undefined',
+          });
+        } else {
+          console.log('   Monthly: NOT AVAILABLE (package not found in RevenueCat)');
+        }
+        if (yearlyOffering) {
+          const fromRC = yearlyPkg?.product?.priceString != null && yearlyPkg.product.priceString !== '';
+          console.log('   Yearly:', {
+            identifier: yearlyOffering.identifier,
+            priceString: yearlyOffering.priceString,
+            title: yearlyOffering.title,
+            fromRevenueCat: fromRC ? 'YES ✅' : 'NO (using default) ⚠️',
+            rawPriceString: yearlyPkg?.product?.priceString || 'null/undefined',
+            rawPrice: yearlyPkg?.product?.price || 'null/undefined',
+          });
+        } else {
+          console.log('   Yearly: NOT AVAILABLE (package not found in RevenueCat)');
+        }
 
         setOfferings({
           monthly: monthlyOffering,
@@ -817,8 +832,8 @@ export function PricingDialog({
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {offerings.monthly?.priceString || DEFAULT_MONTHLY_PRICE}
-                      {!offerings.monthly?.priceString && revenueCatStatus.connected && (
+                      {offerings.monthly?.priceString ?? DEFAULT_MONTHLY_PRICE}
+                      {offerings.monthly?.priceString === DEFAULT_MONTHLY_PRICE && revenueCatStatus.connected && (
                         <span className="text-xs text-muted-foreground ml-1" title="Using default price - RevenueCat price not available">
                           *
                         </span>
@@ -912,8 +927,8 @@ export function PricingDialog({
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {offerings.yearly?.priceString || DEFAULT_YEARLY_PRICE}
-                      {!offerings.yearly?.priceString && revenueCatStatus.connected && (
+                      {offerings.yearly?.priceString ?? DEFAULT_YEARLY_PRICE}
+                      {offerings.yearly?.priceString === DEFAULT_YEARLY_PRICE && revenueCatStatus.connected && (
                         <span className="text-xs text-muted-foreground ml-1" title="Using default price - RevenueCat price not available">
                           *
                         </span>
