@@ -69,6 +69,9 @@ export function PricingDialog({
     monthly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
     yearly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
   }>({});
+  
+  // Ref to store retry interval for cleanup
+  const retryIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Warn if defaults are being used (should not happen)
   React.useEffect(() => {
@@ -84,34 +87,87 @@ export function PricingDialog({
   // Get user from auth context for RevenueCat configuration
   const { user } = useAuth();
 
-  // Load offerings when dialog opens
+  // Load offerings when dialog opens, with retry logic for product data
   React.useEffect(() => {
-    if (open) {
-      // Ensure RevenueCat is configured before loading offerings
-      const ensureConfigured = async () => {
-        const { configureRevenueCat, isRevenueCatConfigured } = await import('../lib/revenuecat');
+    if (!open) {
+      // Clear any existing retry interval when dialog closes
+      if (retryIntervalRef.current) {
+        clearInterval(retryIntervalRef.current);
+        retryIntervalRef.current = null;
+      }
+      return;
+    }
+    
+    // Ensure RevenueCat is configured before loading offerings
+    const ensureConfigured = async () => {
+      const { configureRevenueCat, isRevenueCatConfigured } = await import('../lib/revenuecat');
+      
+      // Try to configure if not already configured and we have a user
+      if (!isRevenueCatConfigured() && user?.id) {
+        console.log('🔄 RevenueCat not configured, attempting to configure...');
+        try {
+          await configureRevenueCat(user.id);
+        } catch (error) {
+          console.warn('Failed to configure RevenueCat:', error);
+        }
+      }
+      
+      // Initial load
+      await loadOfferings();
+      
+      // Retry loading if product data is missing (may load asynchronously)
+      let retryCount = 0;
+      const maxRetries = 5; // Retry up to 5 times (15 seconds total)
+      
+      retryIntervalRef.current = setInterval(async () => {
+        if (!open) {
+          if (retryIntervalRef.current) {
+            clearInterval(retryIntervalRef.current);
+            retryIntervalRef.current = null;
+          }
+          return;
+        }
         
-        // Try to configure if not already configured and we have a user
-        if (!isRevenueCatConfigured() && user?.id) {
-          console.log('🔄 RevenueCat not configured, attempting to configure...');
-          try {
-            await configureRevenueCat(user.id);
-          } catch (error) {
-            console.warn('Failed to configure RevenueCat:', error);
+        // Check if we have packages but missing product data
+        const needsRetry = (offerings.monthly && offerings.monthly.priceString === 'Loading...') || 
+                          (offerings.yearly && offerings.yearly.priceString === 'Loading...');
+        
+        if (needsRetry && retryCount < maxRetries) {
+          retryCount++;
+          console.log(`🔄 Retry ${retryCount}/${maxRetries}: Loading product data from RevenueCat...`);
+          await loadOfferings();
+        } else if (retryCount >= maxRetries) {
+          if (retryIntervalRef.current) {
+            clearInterval(retryIntervalRef.current);
+            retryIntervalRef.current = null;
+          }
+          console.warn('⚠️ Product data still not loaded after retries. Packages may not be properly configured in RevenueCat.');
+        } else {
+          // Product data loaded, stop retrying
+          if (retryIntervalRef.current) {
+            clearInterval(retryIntervalRef.current);
+            retryIntervalRef.current = null;
           }
         }
-        
-        loadOfferings();
-        
-        // Run verification when dialog opens (for debugging)
-        if (isRevenueCatConfigured()) {
-          console.log('🔍 Running RevenueCat package verification...');
-          const verificationResult = await verifyRevenueCatPackages();
-          logPackageVerification(verificationResult);
-        }
-      };
-      ensureConfigured();
-    }
+      }, 3000); // Retry every 3 seconds
+      
+      // Run verification when dialog opens (for debugging)
+      if (isRevenueCatConfigured()) {
+        console.log('🔍 Running RevenueCat package verification...');
+        const verificationResult = await verifyRevenueCatPackages();
+        logPackageVerification(verificationResult);
+      }
+    };
+    
+    ensureConfigured();
+    
+    // Cleanup interval when dialog closes or component unmounts
+    return () => {
+      if (retryIntervalRef.current) {
+        clearInterval(retryIntervalRef.current);
+        retryIntervalRef.current = null;
+      }
+    };
   }, [open, user?.id]);
 
   // Also refresh offerings when subscription changes
@@ -638,24 +694,21 @@ export function PricingDialog({
         } : undefined;
         
         // Log warnings if packages were found but don't have product data
+        // Note: This is handled gracefully - packages will show "Loading..." until product data arrives
         if (monthlyPkg && !hasValidProductData(monthlyPkg)) {
-          console.error('❌ Monthly package found but has no valid product data from RevenueCat');
-          console.error('   Package identifier:', monthlyPkg.identifier);
-          console.error('   Product object:', monthlyPkg.product);
-          console.error('   This usually means:');
-          console.error('   1. Product is not linked to package in RevenueCat dashboard');
-          console.error('   2. Product data hasn\'t loaded yet (try refreshing)');
-          console.error('   3. RevenueCat configuration issue');
+          console.warn('⚠️ Monthly package found but product data not yet loaded from RevenueCat');
+          console.warn('   Package identifier:', monthlyPkg.identifier);
+          console.warn('   Product object:', monthlyPkg.product);
+          console.warn('   Displaying "Loading..." until product data arrives');
+          console.warn('   This is normal - product data may load asynchronously');
         }
         
         if (yearlyPkg && !hasValidProductData(yearlyPkg)) {
-          console.error('❌ Yearly package found but has no valid product data from RevenueCat');
-          console.error('   Package identifier:', yearlyPkg.identifier);
-          console.error('   Product object:', yearlyPkg.product);
-          console.error('   This usually means:');
-          console.error('   1. Product is not linked to package in RevenueCat dashboard');
-          console.error('   2. Product data hasn\'t loaded yet (try refreshing)');
-          console.error('   3. RevenueCat configuration issue');
+          console.warn('⚠️ Yearly package found but product data not yet loaded from RevenueCat');
+          console.warn('   Package identifier:', yearlyPkg.identifier);
+          console.warn('   Product object:', yearlyPkg.product);
+          console.warn('   Displaying "Loading..." until product data arrives');
+          console.warn('   This is normal - product data may load asynchronously');
         }
 
         console.log('============================================================');

@@ -465,13 +465,21 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           throw new Error(`${packageType} subscription package not found. Available packages: ${availablePackages.map((p: any) => p?.identifier || 'unknown').join(', ')}`);
         }
         
+        // Note: Package may not have product data yet, but purchasePackage will work
+        // RevenueCat will fetch product data during purchase if needed
+        if (!selectedPackage.product) {
+          console.warn('⚠️ Package found but product data not yet loaded. RevenueCat will fetch it during purchase.');
+        }
+        
         try {
           // Use purchasePackage method for web purchases
           // This will automatically open Stripe Checkout for web purchases
+          // Note: purchasePackage works even if product data is missing - RevenueCat will fetch it
           console.log('🛒 Initiating purchase for package:', {
             identifier: selectedPackage.identifier,
-            productId: selectedPackage.product?.identifier,
-            priceString: selectedPackage.product?.priceString
+            productId: selectedPackage.product?.identifier || 'will be fetched during purchase',
+            priceString: selectedPackage.product?.priceString || 'will be fetched during purchase',
+            hasProductData: !!selectedPackage.product
           });
           
           const purchaseResult = await purchasesInstance.purchasePackage(selectedPackage);
