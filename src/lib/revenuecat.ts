@@ -547,6 +547,23 @@ export async function getOfferings(): Promise<RevenueCatOffering | null> {
           return null;
         }
         
+        // Log package details for verification
+        console.log('📦 Package details:');
+        currentOffering.availablePackages.forEach((pkg: any, index: number) => {
+          if (pkg && pkg.product) {
+            console.log(`   Package ${index + 1}:`, {
+              identifier: pkg.identifier || 'unknown',
+              productId: pkg.product.identifier || 'unknown',
+              priceString: pkg.product.priceString || 'N/A',
+              price: pkg.product.price || 'N/A',
+              currencyCode: pkg.product.currencyCode || 'N/A',
+              title: pkg.product.title || 'N/A',
+              description: pkg.product.description || 'N/A',
+              subscriptionPeriod: pkg.product.subscriptionPeriod || 'N/A'
+            });
+          }
+        });
+        
         return currentOffering;
       } catch (importError: any) {
         console.error('❌ RevenueCat SDK import failed:', importError);

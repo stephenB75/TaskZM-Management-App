@@ -30,6 +30,7 @@ import {
   restorePurchases,
   getOfferings,
 } from "../lib/revenuecat";
+import { verifyRevenueCatPackages, logPackageVerification } from "../lib/verify-revenuecat-packages";
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
 import {
@@ -91,6 +92,13 @@ export function PricingDialog({
         }
         
         loadOfferings();
+        
+        // Run verification when dialog opens (for debugging)
+        if (isRevenueCatConfigured()) {
+          console.log('🔍 Running RevenueCat package verification...');
+          const verificationResult = await verifyRevenueCatPackages();
+          logPackageVerification(verificationResult);
+        }
       };
       ensureConfigured();
     }
@@ -153,12 +161,32 @@ export function PricingDialog({
         
         // Log all package identifiers for debugging
         console.log('📦 All package identifiers from RevenueCat:', validPackages.map((p: any) => p?.identifier || 'unknown'));
-        console.log('📦 All valid packages:', validPackages.map((p: any) => ({
-          identifier: p.identifier,
+        console.log('📦 All valid packages (FULL DETAILS):', validPackages.map((p: any) => ({
+          identifier: p.identifier || 'unknown',
+          productId: p.product?.identifier || 'unknown',
           price: p.product?.priceString || 'N/A',
+          priceAmount: p.product?.price || 'N/A',
+          currencyCode: p.product?.currencyCode || 'N/A',
           title: p.product?.title || 'N/A',
-          productId: p.product?.identifier || 'N/A'
+          description: p.product?.description || 'N/A',
+          subscriptionPeriod: p.product?.subscriptionPeriod || 'N/A',
+          introPrice: p.product?.introPrice || 'N/A',
+          discount: p.product?.discount || 'N/A'
         })));
+        console.log('📦 RAW PACKAGE DATA (for debugging):', JSON.stringify(validPackages.map((p: any) => ({
+          identifier: p?.identifier,
+          product: {
+            identifier: p?.product?.identifier,
+            priceString: p?.product?.priceString,
+            price: p?.product?.price,
+            currencyCode: p?.product?.currencyCode,
+            title: p?.product?.title,
+            description: p?.product?.description,
+            subscriptionPeriod: p?.product?.subscriptionPeriod,
+            introPrice: p?.product?.introPrice,
+            discount: p?.product?.discount
+          }
+        })), null, 2));
         console.log('🔍 Looking for monthly identifiers:', MONTHLY_PACKAGE_IDENTIFIERS);
         console.log('🔍 Looking for yearly identifiers:', YEARLY_PACKAGE_IDENTIFIERS);
 
@@ -297,8 +325,8 @@ export function PricingDialog({
           priceString: (monthlyPkg.product.priceString ?? DEFAULT_MONTHLY_PRICE),
           currencyCode: (monthlyPkg.product.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: monthlyPkg.identifier,
-          title: (monthlyPkg.product.title ?? DEFAULT_MONTHLY_TITLE),
-          description: (monthlyPkg.product.description ?? ''),
+          title: (monthlyPkg.product.title?.trim() || DEFAULT_MONTHLY_TITLE),
+          description: (monthlyPkg.product.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod),
         } : undefined;
 
         const yearlyOffering = yearlyPkg && yearlyPkg.product ? {
@@ -306,8 +334,8 @@ export function PricingDialog({
           priceString: (yearlyPkg.product.priceString ?? DEFAULT_YEARLY_PRICE),
           currencyCode: (yearlyPkg.product.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: yearlyPkg.identifier,
-          title: (yearlyPkg.product.title ?? DEFAULT_YEARLY_TITLE),
-          description: (yearlyPkg.product.description ?? ''),
+          title: (yearlyPkg.product.title?.trim() || DEFAULT_YEARLY_TITLE),
+          description: (yearlyPkg.product.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod),
         } : undefined;
 
         console.log('✅ Setting offerings from RevenueCat:');
@@ -687,19 +715,105 @@ export function PricingDialog({
           return;
         }
         
-        // Log available packages for debugging
-        console.error('   Available packages from RevenueCat:', freshOfferings.availablePackages.map((p: any) => ({
+        // Log available packages for debugging with full details
+        const availablePackagesInfo = freshOfferings.availablePackages.map((p: any) => ({
           identifier: p?.identifier || 'unknown',
           productId: p?.product?.identifier || 'unknown',
           priceString: p?.product?.priceString || 'N/A',
-          subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A'
-        })));
+          priceAmount: p?.product?.price || 'N/A',
+          currencyCode: p?.product?.currencyCode || 'N/A',
+          subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A',
+          title: p?.product?.title || 'N/A',
+          description: p?.product?.description || 'N/A',
+          introPrice: p?.product?.introPrice || 'N/A',
+          discount: p?.product?.discount || 'N/A'
+        }));
+        console.error('   Available packages from RevenueCat (FULL DETAILS):', availablePackagesInfo);
+        console.error('   RAW PACKAGE DATA:', JSON.stringify(freshOfferings.availablePackages.map((p: any) => ({
+          identifier: p?.identifier,
+          product: {
+            identifier: p?.product?.identifier,
+            priceString: p?.product?.priceString,
+            price: p?.product?.price,
+            currencyCode: p?.product?.currencyCode,
+            title: p?.product?.title,
+            description: p?.product?.description,
+            subscriptionPeriod: p?.product?.subscriptionPeriod,
+            introPrice: p?.product?.introPrice,
+            discount: p?.product?.discount
+          }
+        })), null, 2));
+        
+        // Try to find yearly package in fresh offerings using the same matching logic
+        let foundYearlyPkg: any = null;
+        for (const pkg of freshOfferings.availablePackages) {
+          if (!pkg || !pkg.product) continue;
+          
+          const identifier = pkg.identifier || '';
+          const identifierLower = identifier.toLowerCase();
+          const productId = pkg.product.identifier || '';
+          const productIdLower = productId.toLowerCase();
+          
+          // Check identifier against yearly list
+          const isYearlyById = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+            const idLower = id.toLowerCase();
+            return identifierLower === idLower || 
+                   identifierLower === idLower.replace('$', '') ||
+                   identifierLower === idLower.replace('$rc_', 'rc_') ||
+                   identifierLower.includes(idLower.replace('$', '')) ||
+                   identifierLower.includes(idLower.replace('$rc_', 'rc_'));
+          });
+          
+          // Check product ID against yearly list
+          const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+            const idLower = id.toLowerCase();
+            return productIdLower === idLower || 
+                   productIdLower.includes(idLower.replace('$', '')) ||
+                   productIdLower.includes(idLower.replace('$rc_', 'rc_'));
+          });
+          
+          // Check for yearly/annual keywords
+          const hasYearlyKeywords = identifierLower.includes('year') || 
+                                    identifierLower.includes('annual') ||
+                                    identifierLower.includes('rc_yearly') ||
+                                    identifierLower.includes('rc_annual') ||
+                                    productIdLower.includes('year') ||
+                                    productIdLower.includes('annual');
+          
+          // Check product metadata (billing period)
+          const isYearlyByMetadata = pkg.product.subscriptionPeriod === 'P1Y' || 
+                                    pkg.product.subscriptionPeriod === 'YEAR' ||
+                                    pkg.product.subscriptionPeriod === 'ANNUAL' ||
+                                    (pkg.product.subscriptionPeriod && 
+                                     pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
+          
+          if (isYearlyById || isYearlyByProductId || hasYearlyKeywords || isYearlyByMetadata) {
+            foundYearlyPkg = pkg;
+            console.log('✅ Found yearly package in fresh offerings:', {
+              identifier,
+              productId,
+              priceString: pkg.product.priceString,
+              matchedBy: isYearlyById ? 'identifier' : isYearlyByProductId ? 'productId' : hasYearlyKeywords ? 'keywords' : 'metadata'
+            });
+            break;
+          }
+        }
+        
+        // If we found a yearly package in fresh offerings but state hasn't updated, reload offerings one more time
+        if (foundYearlyPkg && !offerings.yearly) {
+          console.log('   Yearly package found in fresh offerings, reloading state...');
+          await loadOfferings();
+          // Wait a bit for state to update
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
         
         // Check again after reload (state may not have updated yet, so check fresh offerings)
-        if (!offerings.yearly) {
+        if (!offerings.yearly && !foundYearlyPkg) {
           console.error('❌ Yearly package still not available after reload');
           console.error('   This may indicate a package identifier mismatch');
-          console.error('   Check RevenueCat dashboard to ensure package identifiers match:', YEARLY_PACKAGE_IDENTIFIERS);
+          console.error('   Actual package identifier from RevenueCat:', availablePackagesInfo[0]?.identifier || 'N/A');
+          console.error('   Expected identifiers:', YEARLY_PACKAGE_IDENTIFIERS);
+          console.error('   Suggestion: Update package identifier in RevenueCat dashboard to match one of the expected identifiers, or add the actual identifier to YEARLY_PACKAGE_IDENTIFIERS in subscription-constants.ts');
           toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
             description: SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable,
           });
@@ -912,10 +1026,14 @@ export function PricingDialog({
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">{SUBSCRIPTION_UI_TEXT.planCards.monthly.title}</h3>
+                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                        {offerings.monthly?.title ?? SUBSCRIPTION_UI_TEXT.planCards.monthly.title}
+                      </h3>
                       <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-xs md:text-sm text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {offerings.monthly?.description || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod}
+                    </p>
                   </div>
                 </div>
 
@@ -1002,10 +1120,14 @@ export function PricingDialog({
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">{SUBSCRIPTION_UI_TEXT.planCards.yearly.title}</h3>
+                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                        {offerings.yearly?.title ?? SUBSCRIPTION_UI_TEXT.planCards.yearly.title}
+                      </h3>
                       <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
                     </div>
-                    <p className="text-xs md:text-sm text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      {offerings.yearly?.description || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod}
+                    </p>
                   </div>
                 </div>
 
