@@ -95,11 +95,18 @@ export async function configureRevenueCat(userId: string): Promise<void> {
 
       // Validate API key format (should start with 'rc_' or 'rcb_' for web)
       if (!apiKey.startsWith('rc_') && !apiKey.startsWith('rcb_')) {
-        console.warn('⚠️  RevenueCat API key format appears invalid (should start with "rc_" or "rcb_")');
-        console.warn('   Payment mode: SIMULATED (no real charges)');
-        console.warn('   Current key format:', apiKey.substring(0, 5) + '...');
+        console.error('❌ RevenueCat API key format is invalid');
+        console.error('   Expected format: Starts with "rc_" or "rcb_"');
+        console.error('   Current key format:', apiKey.substring(0, Math.min(10, apiKey.length)) + '...');
+        console.error('   For web apps, use a PUBLIC API key (starts with "rcb_")');
+        console.error('   Get your key from: RevenueCat Dashboard → Project Settings → API Keys');
         return;
       }
+      
+      // Log API key info (masked) for debugging
+      const keyPrefix = apiKey.substring(0, 6);
+      const keySuffix = apiKey.length > 10 ? apiKey.substring(apiKey.length - 4) : '****';
+      console.log('🔑 Using RevenueCat API key:', `${keyPrefix}...${keySuffix} (${apiKey.length} chars)`);
       
       // Initialize RevenueCat SDK
       
@@ -454,9 +461,9 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
             console.error('❌ No customerInfo returned from purchase');
             throw new Error('Purchase completed but no customer information received');
           }
-          
-          // Check if purchase was successful
-          const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
+        
+        // Check if purchase was successful
+        const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
           console.log(`✅ Web ${packageType} purchase result:`, isProActive ? 'SUCCESS' : 'FAILED');
           
           if (isProActive) {
@@ -468,7 +475,7 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
             console.warn('   All entitlements:', customerInfo.entitlements);
           }
           
-          return isProActive;
+        return isProActive;
         } catch (purchaseError: any) {
           const errorName = purchaseError?.name || purchaseError?.constructor?.name || 'Unknown';
           const errorMessage = purchaseError?.message || purchaseError?.toString() || String(purchaseError) || 'Unknown error';
@@ -503,6 +510,15 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
             throw new Error(`Network error: ${errorMessage || 'Unable to connect to payment service'}`);
           }
           
+          const isUnauthorized = errorMessage?.toLowerCase().includes('credentials') ||
+                                errorMessage?.toLowerCase().includes('unauthorized') ||
+                                errorMessage?.includes('401') ||
+                                errorCode?.toString().includes('401');
+          
+          if (isUnauthorized) {
+            throw new Error('RevenueCat API key is invalid or expired. Please check your API key in the RevenueCat dashboard and update VITE_REVENUECAT_WEB_PUBLIC_KEY.');
+          }
+          
           const isConfigError = errorMessage?.toLowerCase().includes('not configured') ||
                                errorMessage?.toLowerCase().includes('not available') ||
                                errorMessage?.toLowerCase().includes('api key') ||
@@ -520,7 +536,7 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
         }
       } catch (importError: any) {
         if (importError?.message?.includes('not configured') || importError?.message?.includes('not available')) {
-          throw new Error('RevenueCat SDK not available - using fallback payment method');
+        throw new Error('RevenueCat SDK not available - using fallback payment method');
         }
         throw new Error(`Purchase failed: ${importError?.message || 'Unknown error occurred'}`);
       }
@@ -655,7 +671,36 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
           }
         }
         
-        const offerings = await purchasesInstance.getOfferings();
+        let offerings;
+        try {
+          offerings = await purchasesInstance.getOfferings();
+        } catch (offeringsError: any) {
+          // Check for 401 Unauthorized (credentials issue)
+          const errorMessage = offeringsError?.message || String(offeringsError || '');
+          const errorCode = offeringsError?.code || '';
+          const isUnauthorized = errorMessage.includes('credentials') || 
+                                errorMessage.includes('Unauthorized') ||
+                                errorMessage.includes('401') ||
+                                errorCode === '401' ||
+                                (offeringsError?.response?.status === 401) ||
+                                (offeringsError?.status === 401);
+          
+          if (isUnauthorized) {
+            console.error('❌ RevenueCat API credentials error (401 Unauthorized)');
+            console.error('   This means your API key is invalid, expired, or has incorrect permissions.');
+            console.error('   To fix:');
+            console.error('   1. Go to RevenueCat Dashboard → Project Settings → API Keys');
+            console.error('   2. Verify you are using the correct PUBLIC API key (starts with "rcb_" for web)');
+            console.error('   3. Ensure the API key is for the correct app (app4689b9299f)');
+            console.error('   4. Check that the API key has not been revoked or expired');
+            console.error('   5. Update VITE_REVENUECAT_WEB_PUBLIC_KEY in your environment variables');
+            console.error('   6. Restart your development server or rebuild your app');
+            throw new Error('RevenueCat API key is invalid or expired. Please check your API key in the RevenueCat dashboard and update VITE_REVENUECAT_WEB_PUBLIC_KEY.');
+          }
+          
+          // Re-throw other errors
+          throw offeringsError;
+        }
         
         // Log what we received for verification
         if (forceRefresh && offerings?.current) {
