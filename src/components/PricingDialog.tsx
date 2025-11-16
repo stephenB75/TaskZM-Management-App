@@ -129,8 +129,8 @@ export function PricingDialog({
         }
         
         // Check if we have packages but missing product data
-        const needsRetry = (offerings.monthly && offerings.monthly.priceString === 'Loading...') || 
-                          (offerings.yearly && offerings.yearly.priceString === 'Loading...');
+        const needsRetry = (offerings.monthly && !offerings.monthly.priceString) || 
+                          (offerings.yearly && !offerings.yearly.priceString);
         
         if (needsRetry && retryCount < maxRetries) {
           retryCount++;
@@ -215,17 +215,32 @@ export function PricingDialog({
       
       let rcOfferings = null;
       let attempts = 0;
-      const maxAttempts = 2;
+      const maxAttempts = 5; // Increased to wait for product data
       
       while (attempts < maxAttempts) {
         attempts++;
         if (attempts > 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          console.log(`🔄 Retry ${attempts}/${maxAttempts}: Loading offerings with product data from RevenueCat...`);
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer for product data
         }
         
         rcOfferings = await getOfferings(true);
+        
+        // Check if we have packages with product data
         if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
-          break;
+          const hasProductData = rcOfferings.availablePackages.some((pkg: any) => {
+            if (!pkg?.product || typeof pkg.product !== 'object') return false;
+            const keys = Object.keys(pkg.product);
+            if (keys.length === 0) return false;
+            return pkg.product.identifier || pkg.product.priceString || (pkg.product.price != null && pkg.product.price !== 0);
+          });
+          
+          if (hasProductData || attempts === maxAttempts) {
+            if (hasProductData) {
+              console.log(`✅ Product data loaded after ${attempts} attempt(s)`);
+            }
+            break;
+          }
         }
       }
       
@@ -386,12 +401,25 @@ export function PricingDialog({
         })), null, 2));
         
         // Helper to check if package has valid product data (defined early for use in identifier discovery)
+        // This checks if product object exists and has ANY data (not just price)
         const hasValidProductData = (pkg: any): boolean => {
           if (!pkg?.product) return false;
-          // Check if product has price data
-          const hasPriceString = pkg.product.priceString && pkg.product.priceString.trim() !== '';
+          
+          // Check if product is an object with properties
+          if (typeof pkg.product !== 'object') return false;
+          
+          // Check if product has any enumerable properties
+          const productKeys = Object.keys(pkg.product);
+          if (productKeys.length === 0) return false;
+          
+          // Product has data - check for price information (most important)
+          const hasPriceString = pkg.product.priceString && typeof pkg.product.priceString === 'string' && pkg.product.priceString.trim() !== '';
           const hasPriceAmount = pkg.product.price != null && pkg.product.price !== 0;
-          return hasPriceString || hasPriceAmount;
+          const hasProductId = pkg.product.identifier && typeof pkg.product.identifier === 'string' && pkg.product.identifier.trim() !== '';
+          
+          // If it has product ID, it's valid (price might come later)
+          // If it has price data, it's definitely valid
+          return hasProductId || hasPriceString || hasPriceAmount;
         };
         
         // DYNAMIC IDENTIFIER DETECTION: Extract identifiers from RevenueCat packages
@@ -691,46 +719,52 @@ export function PricingDialog({
           return null;
         };
         
-        // Create offerings - use product data if available, otherwise show "Loading..."
-        // This ensures packages are always displayed even if product data is still loading
-        const monthlyPriceString = monthlyPkg ? (hasValidProductData(monthlyPkg) ? getPriceString(monthlyPkg) : null) : null;
-        const yearlyPriceString = yearlyPkg ? (hasValidProductData(yearlyPkg) ? getPriceString(yearlyPkg) : null) : null;
+        // Create offerings ONLY if we have valid product data from RevenueCat
+        // This ensures prices are always from RevenueCat, not hardcoded
+        const monthlyPriceString = monthlyPkg && hasValidProductData(monthlyPkg) ? getPriceString(monthlyPkg) : null;
+        const yearlyPriceString = yearlyPkg && hasValidProductData(yearlyPkg) ? getPriceString(yearlyPkg) : null;
         
-        // Create offerings if package is found (even without product data - will show "Loading...")
-        const monthlyOffering = monthlyPkg ? {
+        // Only create offerings if we have both package AND price data from RevenueCat
+        const monthlyOffering = monthlyPkg && monthlyPriceString ? {
           price: (monthlyPkg.product?.price?.toString() ?? '0'),
-          priceString: monthlyPriceString || 'Loading...', // Show "Loading..." if product data missing
+          priceString: monthlyPriceString, // Always from RevenueCat
           currencyCode: (monthlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: monthlyPkg.identifier || 'monthly',
           title: (monthlyPkg.product?.title?.trim() || DEFAULT_MONTHLY_TITLE),
           description: (monthlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod),
         } : undefined;
 
-        const yearlyOffering = yearlyPkg ? {
+        const yearlyOffering = yearlyPkg && yearlyPriceString ? {
           price: (yearlyPkg.product?.price?.toString() ?? '0'),
-          priceString: yearlyPriceString || 'Loading...', // Show "Loading..." if product data missing
+          priceString: yearlyPriceString, // Always from RevenueCat
           currencyCode: (yearlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
           identifier: yearlyPkg.identifier || 'yearly',
           title: (yearlyPkg.product?.title?.trim() || DEFAULT_YEARLY_TITLE),
           description: (yearlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod),
         } : undefined;
         
-        // Log warnings if packages were found but don't have product data
-        // Note: This is handled gracefully - packages will show "Loading..." until product data arrives
+        // Log errors if packages were found but don't have product data
+        // Packages will NOT be displayed without product data
         if (monthlyPkg && !hasValidProductData(monthlyPkg)) {
-          console.warn('⚠️ Monthly package found but product data not yet loaded from RevenueCat');
-          console.warn('   Package identifier:', monthlyPkg.identifier);
-          console.warn('   Product object:', monthlyPkg.product);
-          console.warn('   Displaying "Loading..." until product data arrives');
-          console.warn('   This is normal - product data may load asynchronously');
+          console.error('❌ Monthly package found but has NO product data from RevenueCat');
+          console.error('   Package identifier:', monthlyPkg.identifier);
+          console.error('   Product object:', monthlyPkg.product);
+          console.error('   ACTION REQUIRED:');
+          console.error('   1. Go to RevenueCat Dashboard → Products');
+          console.error('   2. Ensure products are created and linked to packages');
+          console.error('   3. Verify Stripe integration is configured');
+          console.error('   4. Check that products have pricing set in Stripe');
         }
         
         if (yearlyPkg && !hasValidProductData(yearlyPkg)) {
-          console.warn('⚠️ Yearly package found but product data not yet loaded from RevenueCat');
-          console.warn('   Package identifier:', yearlyPkg.identifier);
-          console.warn('   Product object:', yearlyPkg.product);
-          console.warn('   Displaying "Loading..." until product data arrives');
-          console.warn('   This is normal - product data may load asynchronously');
+          console.error('❌ Yearly package found but has NO product data from RevenueCat');
+          console.error('   Package identifier:', yearlyPkg.identifier);
+          console.error('   Product object:', yearlyPkg.product);
+          console.error('   ACTION REQUIRED:');
+          console.error('   1. Go to RevenueCat Dashboard → Products');
+          console.error('   2. Ensure products are created and linked to packages');
+          console.error('   3. Verify Stripe integration is configured');
+          console.error('   4. Check that products have pricing set in Stripe');
         }
 
         console.log('============================================================');
@@ -1578,7 +1612,7 @@ export function PricingDialog({
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {offerings.monthly?.priceString || 'Loading...'}
+                      {offerings.monthly?.priceString || '—'}
                     </span>
                     <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
                   </div>
@@ -1673,7 +1707,7 @@ export function PricingDialog({
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {offerings.yearly?.priceString || 'Loading...'}
+                      {offerings.yearly?.priceString || '—'}
                     </span>
                     <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
                   </div>

@@ -465,22 +465,72 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           throw new Error(`${packageType} subscription package not found. Available packages: ${availablePackages.map((p: any) => p?.identifier || 'unknown').join(', ')}`);
         }
         
-        // Note: Package may not have product data yet, but purchasePackage will work
-        // RevenueCat will fetch product data during purchase if needed
-        if (!selectedPackage.product) {
-          console.warn('⚠️ Package found but product data not yet loaded. RevenueCat will fetch it during purchase.');
+        // Validate package has product data before purchase
+        // RevenueCat requires product data to process purchases
+        if (!selectedPackage.product || !selectedPackage.product.identifier) {
+          console.error('❌ Package missing product data - cannot proceed with purchase');
+          console.error('   Package identifier:', selectedPackage.identifier);
+          console.error('   Product object:', selectedPackage.product);
+          console.error('   Attempting to refresh offerings to get product data...');
+          
+          try {
+            // Sync and refresh to get product data
+            await purchasesInstance.syncPurchases();
+            await purchasesInstance.getCustomerInfo();
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Re-fetch offerings
+            const refreshedOfferings = await purchasesInstance.getOfferings();
+            const allRefreshedPackages: any[] = [];
+            
+            if (refreshedOfferings?.current?.availablePackages) {
+              allRefreshedPackages.push(...refreshedOfferings.current.availablePackages);
+            }
+            if (refreshedOfferings?.all) {
+              Object.values(refreshedOfferings.all).forEach((offering: any) => {
+                if (offering?.availablePackages) {
+                  allRefreshedPackages.push(...offering.availablePackages);
+                }
+              });
+            }
+            
+            // Find the same package with product data
+            const refreshedPackage = allRefreshedPackages.find((pkg: any) => 
+              pkg?.identifier === selectedPackage.identifier && 
+              pkg?.product?.identifier
+            );
+            
+            if (refreshedPackage && refreshedPackage.product && refreshedPackage.product.identifier) {
+              console.log('✅ Found package with product data after refresh');
+              selectedPackage = refreshedPackage;
+            } else {
+              throw new Error('Product data is not available. Please ensure products are linked to packages in RevenueCat dashboard.');
+            }
+          } catch (refreshError: any) {
+            console.error('❌ Could not refresh package data:', refreshError);
+            throw new Error('Unable to load product information for purchase. Please check RevenueCat configuration: ensure products are created in Stripe, linked to packages in RevenueCat, and try again.');
+          }
         }
         
         try {
           // Use purchasePackage method for web purchases
           // This will automatically open Stripe Checkout for web purchases
-          // Note: purchasePackage works even if product data is missing - RevenueCat will fetch it
           console.log('🛒 Initiating purchase for package:', {
             identifier: selectedPackage.identifier,
-            productId: selectedPackage.product?.identifier || 'will be fetched during purchase',
-            priceString: selectedPackage.product?.priceString || 'will be fetched during purchase',
-            hasProductData: !!selectedPackage.product
+            productId: selectedPackage.product?.identifier,
+            priceString: selectedPackage.product?.priceString,
+            hasProductData: !!selectedPackage.product,
+            hasProductIdentifier: !!selectedPackage.product?.identifier
           });
+          
+          // Final validation before purchase
+          if (!selectedPackage.identifier) {
+            throw new Error('Invalid package: missing identifier');
+          }
+          
+          if (!selectedPackage.product?.identifier) {
+            throw new Error('Invalid package: missing product identifier. Please ensure products are linked to packages in RevenueCat dashboard.');
+          }
           
           const purchaseResult = await purchasesInstance.purchasePackage(selectedPackage);
           
@@ -727,7 +777,7 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
         // Fetch offerings with retry logic to ensure product data is loaded
         let offerings;
         let retryCount = 0;
-        const maxRetries = 3;
+        const maxRetries = 5; // Increased retries to wait for product data
         let offeringsError: any = null;
         
         while (retryCount < maxRetries) {
@@ -735,21 +785,35 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
             offerings = await purchasesInstance.getOfferings();
             
             // Check if we have packages with product data
-            const hasPackagesWithProductData = offerings?.current?.availablePackages?.some((pkg: any) => 
-              pkg?.product && 
-              (pkg.product.priceString || pkg.product.price)
-            );
+            // Product data is valid if it has product object with identifier OR price data
+            const hasPackagesWithProductData = offerings?.current?.availablePackages?.some((pkg: any) => {
+              if (!pkg?.product) return false;
+              if (typeof pkg.product !== 'object') return false;
+              
+              const productKeys = Object.keys(pkg.product);
+              if (productKeys.length === 0) return false;
+              
+              // Valid if has product identifier OR price data
+              const hasProductId = pkg.product.identifier && typeof pkg.product.identifier === 'string';
+              const hasPriceString = pkg.product.priceString && typeof pkg.product.priceString === 'string' && pkg.product.priceString.trim() !== '';
+              const hasPriceAmount = pkg.product.price != null && pkg.product.price !== 0;
+              
+              return hasProductId || hasPriceString || hasPriceAmount;
+            });
             
             // If we have product data or this is the last retry, break
             if (hasPackagesWithProductData || retryCount === maxRetries - 1) {
+              if (hasPackagesWithProductData) {
+                console.log(`✅ Product data loaded after ${retryCount + 1} attempt(s)`);
+              }
               break;
             }
             
             // Wait before retrying
             retryCount++;
             if (retryCount < maxRetries) {
-              console.log(`🔄 Retry ${retryCount}/${maxRetries}: Waiting for product data to load...`);
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              console.log(`🔄 Retry ${retryCount}/${maxRetries}: Waiting for product data to load from RevenueCat...`);
+              await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay
             }
           } catch (error: any) {
             // If error, store it and break
