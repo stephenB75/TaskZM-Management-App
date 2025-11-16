@@ -913,7 +913,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     className="bg-[#D4C5F9] hover:bg-[#D4C5F9]/90 w-full"
                   >
                     <Sparkles className="w-3 h-3 mr-1.5" />
-                    Upgrade to Pro
+                    {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
                 </div>
               </div>
@@ -1409,7 +1409,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 
                 <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#B4E4CE]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
                   <div className="space-y-2">
-                    <p className="text-sm">Upgrade to Pro to unlock:</p>
+                    <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Smart task scheduling</li>
                       <li>• Respects your category hours</li>
@@ -1422,7 +1422,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     onClick={() => setShowPricingDialog(true)}
                     className="w-full mt-3 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] hover:opacity-90"
                   >
-                    Upgrade to Pro
+                    {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
                 </div>
               </div>
@@ -1624,7 +1624,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 
                 <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#B4E4CE]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
                   <div className="space-y-2">
-                    <p className="text-sm">Upgrade to Pro to unlock:</p>
+                    <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Automatic task rollover at midnight</li>
                       <li>• Optional confirmation before moving tasks</li>
@@ -1636,7 +1636,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     onClick={() => setShowPricingDialog(true)}
                     className="w-full mt-3 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] hover:opacity-90"
                   >
-                    Upgrade to Pro
+                    {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
                 </div>
               </div>
@@ -1703,7 +1703,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 
                 <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#B4E4CE]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
                   <div className="space-y-2">
-                    <p className="text-sm">Upgrade to Pro to unlock:</p>
+                    <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Weekday/weekend hour settings</li>
                       <li>• Category-specific hours (Work, Personal, Projects)</li>
@@ -1715,7 +1715,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     onClick={() => setShowPricingDialog(true)}
                     className="w-full mt-3 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] hover:opacity-90"
                   >
-                    Upgrade to Pro
+                    {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
                 </div>
               </div>

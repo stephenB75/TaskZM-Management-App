@@ -187,6 +187,8 @@ export const SUBSCRIPTION_UI_TEXT = {
       proBadge: "PRO",
     },
     upgradeToPro: "Upgrade to Pro",
+    upgradeToProButton: "Upgrade to Pro",
+    upgradeToProToUnlock: "Upgrade to Pro to unlock:",
     unlockFeatures: (count: number, price: string) => `Unlock all ${count} PRO features for just ${price}/month`,
     viewPlans: "View Plans",
     subscriptionStatusRefreshed: "Subscription status refreshed",
