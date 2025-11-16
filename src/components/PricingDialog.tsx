@@ -457,6 +457,9 @@ export function PricingDialog({
         const monthlyIdentifiers = [...new Set([...discoveredIdentifiers.monthly.packageIdentifiers, ...discoveredIdentifiers.monthly.productIds])];
         const yearlyIdentifiers = [...new Set([...discoveredIdentifiers.yearly.packageIdentifiers, ...discoveredIdentifiers.yearly.productIds])];
         
+        // Import known product IDs for verification
+        const { REVENUECAT_MONTHLY_PRODUCT_ID, REVENUECAT_YEARLY_PRODUCT_ID } = await import('../lib/subscription-constants');
+        
         console.log('🔍 Dynamic Identifier Detection (NO HARDCODED FALLBACKS):');
         console.log('   Discovered Monthly Identifiers from RevenueCat:', {
           packageIdentifiers: discoveredIdentifiers.monthly.packageIdentifiers,
@@ -517,6 +520,9 @@ export function PricingDialog({
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
+            // Also check against known RevenueCat product IDs
+            const matchesKnownMonthlyProductId = productIdLower === REVENUECAT_MONTHLY_PRODUCT_ID.toLowerCase();
+            
             // Priority 3: Check product title/name against discovered RevenueCat titles
             const isMonthlyByProductTitle = discoveredIdentifiers.monthly.productTitles.length > 0 && discoveredIdentifiers.monthly.productTitles.some(title => {
               const titleLower = title.toLowerCase();
@@ -540,6 +546,7 @@ export function PricingDialog({
             const hasValidMatch = isMonthlyByMetadata || 
                                  isMonthlyById ||
                                  isMonthlyByProductId ||
+                                 matchesKnownMonthlyProductId ||
                                  isMonthlyByProductTitle ||
                                  hasMonthlyKeywords;
             
@@ -575,6 +582,9 @@ export function PricingDialog({
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
+            // Also check against known RevenueCat product IDs
+            const matchesKnownYearlyProductId = productIdLower === REVENUECAT_YEARLY_PRODUCT_ID.toLowerCase();
+            
             // Priority 3: Check product title/name against discovered RevenueCat titles
             const isYearlyByProductTitle = discoveredIdentifiers.yearly.productTitles.length > 0 && discoveredIdentifiers.yearly.productTitles.some(title => {
               const titleLower = title.toLowerCase();
@@ -593,6 +603,7 @@ export function PricingDialog({
             const hasValidMatch = isYearlyByMetadata || 
                                  isYearlyById ||
                                  isYearlyByProductId ||
+                                 matchesKnownYearlyProductId ||
                                  isYearlyByProductTitle ||
                                  hasYearlyKeywords;
             

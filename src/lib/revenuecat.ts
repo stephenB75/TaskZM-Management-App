@@ -405,6 +405,15 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           
           if (exactProductIdMatch) return true;
           
+          // Check against known RevenueCat product IDs
+          const { REVENUECAT_MONTHLY_PRODUCT_ID, REVENUECAT_YEARLY_PRODUCT_ID } = await import('./subscription-constants');
+          if (packageType === 'monthly' && productIdLower === REVENUECAT_MONTHLY_PRODUCT_ID.toLowerCase()) {
+            return true;
+          }
+          if (packageType === 'yearly' && productIdLower === REVENUECAT_YEARLY_PRODUCT_ID.toLowerCase()) {
+            return true;
+          }
+          
           // Check product title matching
           const titleMatch = packageIdentifiers.some(id => {
             const idLower = id.toLowerCase();

@@ -26,6 +26,11 @@ export const DEFAULT_CURRENCY_CODE = "USD";
 export const DEFAULT_MONTHLY_TITLE = "Monthly Pro";
 export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 
+// RevenueCat Product IDs (for verification and reference)
+// These are the actual product IDs configured in RevenueCat dashboard
+export const REVENUECAT_MONTHLY_PRODUCT_ID = "prodb18a767009";
+export const REVENUECAT_YEARLY_PRODUCT_ID = "prod77566b1baf";
+
 // Minimal fallback identifiers - ONLY used if dynamic detection finds nothing
 // The app primarily uses identifiers dynamically discovered from RevenueCat packages.
 // These minimal fallbacks are kept only as a last resort safety net.
