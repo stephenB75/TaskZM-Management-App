@@ -19,9 +19,19 @@ import {
 export const DEFAULT_MONTHLY_PRICE = "$3.99";
 export const DEFAULT_YEARLY_PRICE = "$39.99";
 
+// Default currency code
+export const DEFAULT_CURRENCY_CODE = "USD";
+
+// Default plan titles (fallback when RevenueCat product titles are not available)
+export const DEFAULT_MONTHLY_TITLE = "Monthly Pro";
+export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
+
 // Package identifiers for RevenueCat
 export const MONTHLY_PACKAGE_IDENTIFIERS = ['$rc_monthly', 'monthly'];
 export const YEARLY_PACKAGE_IDENTIFIERS = ['$rc_annual', '$rc_yearly', 'annual', 'yearly'];
+
+// Number of PRO features (for UI display)
+export const PRO_FEATURES_COUNT = 7;
 
 // UI Text
 export const SUBSCRIPTION_UI_TEXT = {
@@ -98,6 +108,39 @@ export const SUBSCRIPTION_UI_TEXT = {
       messagePrefix: "You will lose access to all Pro features immediately:",
       messageSuffix: "\n\nThis action cannot be undone. You can upgrade again anytime.",
     },
+  },
+  errors: {
+    paymentProcessingUnavailable: "Payment processing unavailable",
+    paymentProcessingUnavailableDesc: "Unable to process payment. Please contact support or try again later.",
+    subscriptionNotAvailable: "Subscription Not Available",
+    subscriptionNotAvailableDesc: "Subscription packages are not currently available. This may be a configuration issue. Please check RevenueCat dashboard or contact support.",
+    packageNotFound: "Package Not Found",
+    packageNotFoundDesc: "The requested subscription package was not found. Please contact support.",
+    subscriptionNotAvailableCheckDesc: "No subscription packages are currently available. Please check RevenueCat dashboard configuration or try again later.",
+  },
+  settings: {
+    upgradeToPro: "Upgrade to Pro",
+    unlockFeatures: (count: number, price: string) => `Unlock all ${count} PRO features for just ${price}/month`,
+    currentPlan: {
+      pro: "TaskZM Pro",
+      free: "Free Plan",
+    },
+    subscriptionStatusRefreshed: "Subscription status refreshed",
+    subscriptionRefreshFailed: "Failed to refresh subscription",
+    subscriptionWillCancel: "Subscription will cancel at period end",
+    subscriptionWillCancelDesc: "You can reactivate anytime before the end of your billing period.",
+    subscriptionCancelFailed: "Failed to cancel subscription",
+    subscriptionCancelFailedDesc: "Please try again or contact support.",
+    manageSubscription: "Manage Subscription",
+    cancelConfirmation: "Are you sure you want to cancel your subscription? Your Pro features will remain active until the end of your billing period.",
+  },
+  context: {
+    upgradedDevMode: "✅ Upgraded to Pro tier (Development Mode)",
+    upgradeFailed: "Failed to upgrade subscription",
+    subscriptionWillCancelAtPeriodEnd: "Subscription will cancel at period end",
+    cancelFailed: "Failed to cancel subscription",
+    downgradedToFree: "✅ Downgraded to Free tier",
+    downgradeFailed: "Failed to downgrade subscription",
   },
 } as const;
 

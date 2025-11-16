@@ -83,6 +83,7 @@ import {
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
+import { DEFAULT_MONTHLY_PRICE, MONTHLY_PACKAGE_IDENTIFIERS, YEARLY_PACKAGE_IDENTIFIERS, SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -105,6 +106,82 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
+  
+  // RevenueCat pricing state
+  const [currentPricing, setCurrentPricing] = useState<{
+    monthly?: string;
+    yearly?: string;
+    lastUpdated?: string;
+  }>({});
+
+  // Load pricing from RevenueCat
+  useEffect(() => {
+    const loadPricing = async () => {
+      try {
+        const { getOfferings, isRevenueCatConfigured, configureRevenueCat } = await import('../lib/revenuecat');
+        
+        // Ensure RevenueCat is configured
+        if (!isRevenueCatConfigured() && user?.id) {
+          try {
+            await configureRevenueCat(user.id);
+          } catch (error) {
+            console.warn('Failed to configure RevenueCat for pricing:', error);
+            return;
+          }
+        }
+
+        if (!isRevenueCatConfigured()) {
+          // Use default pricing if RevenueCat not configured
+          setCurrentPricing({
+            monthly: DEFAULT_MONTHLY_PRICE,
+            lastUpdated: new Date().toISOString(),
+          });
+          return;
+        }
+
+        const offerings = await getOfferings();
+        if (offerings?.availablePackages && offerings.availablePackages.length > 0) {
+          const validPackages = offerings.availablePackages.filter((p: any) => p && p.product);
+          
+          const monthlyPkg = validPackages.find(
+            (pkg: any) => pkg && MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+          );
+          const yearlyPkg = validPackages.find(
+            (pkg: any) => pkg && YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+          );
+
+          setCurrentPricing({
+            monthly: monthlyPkg?.product?.priceString || DEFAULT_MONTHLY_PRICE,
+            yearly: yearlyPkg?.product?.priceString || undefined,
+            lastUpdated: new Date().toISOString(),
+          });
+        } else {
+          // Fallback to default pricing
+          setCurrentPricing({
+            monthly: DEFAULT_MONTHLY_PRICE,
+            lastUpdated: new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to load pricing from RevenueCat:', error);
+        // Use default pricing on error
+        setCurrentPricing({
+          monthly: DEFAULT_MONTHLY_PRICE,
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    };
+
+    // Load pricing on mount and when subscription changes
+    loadPricing();
+    
+    // Refresh pricing every 60 seconds
+    const refreshInterval = setInterval(loadPricing, 60000);
+    
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, [user?.id, subscription.tier]);
 
   // Helper function to get icon component from icon name
   const getAwardIcon = (iconName: string) => {
@@ -429,7 +506,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     )}
                   </div>
                   <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                    {subscription.tier === 'pro' ? 'TaskZM Pro' : 'Free Plan'}
+                    {subscription.tier === 'pro' ? SUBSCRIPTION_UI_TEXT.settings.currentPlan.pro : SUBSCRIPTION_UI_TEXT.settings.currentPlan.free}
                   </p>
                   {subscription.tier === 'pro' && subscription.startDate && (
                     <p className="text-muted-foreground/70" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
@@ -607,9 +684,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
                       <Sparkles className="text-[#D4C5F9] flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                       <div>
-                        <p className="mb-1" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>Upgrade to Pro</p>
+                        <p className="mb-1" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.upgradeToPro}</p>
                         <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                          Unlock all 7 PRO features for just $3.99/month
+                          {SUBSCRIPTION_UI_TEXT.settings.unlockFeatures(PRO_FEATURES_COUNT, currentPricing.monthly || DEFAULT_MONTHLY_PRICE)}
                         </p>
                       </div>
                     </div>
@@ -657,7 +734,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       }}
                     >
                       <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                      {subscription.tier === 'free' ? 'Upgrade to Pro' : 'Manage Subscription'}
+                      {subscription.tier === 'free' ? SUBSCRIPTION_UI_TEXT.settings.upgradeToPro : SUBSCRIPTION_UI_TEXT.settings.manageSubscription}
                     </Button>
 
                     <div className="flex" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
@@ -668,9 +745,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         onClick={async () => {
                           try {
                             await refreshSubscription();
-                            toast.success('Subscription status refreshed');
+                            toast.success(SUBSCRIPTION_UI_TEXT.settings.subscriptionStatusRefreshed);
                           } catch (error) {
-                            toast.error('Failed to refresh subscription');
+                            toast.error(SUBSCRIPTION_UI_TEXT.settings.subscriptionRefreshFailed);
                           }
                         }}
                         disabled={isSubscriptionLoading}
@@ -685,15 +762,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           size="sm" 
                           className="flex-1 text-muted-foreground hover:text-destructive"
                           onClick={async () => {
-                            if (confirm('Are you sure you want to cancel your subscription? Your Pro features will remain active until the end of your billing period.')) {
+                            if (confirm(SUBSCRIPTION_UI_TEXT.confirmations.cancel.title + '\n\n' + SUBSCRIPTION_UI_TEXT.confirmations.cancel.message)) {
                               try {
                                 await cancelSubscription();
-                                toast.success('Subscription will cancel at period end', {
-                                  description: 'You can reactivate anytime before the end of your billing period.',
+                                toast.success(SUBSCRIPTION_UI_TEXT.settings.subscriptionWillCancel, {
+                                  description: SUBSCRIPTION_UI_TEXT.settings.subscriptionWillCancelDesc,
                                 });
                               } catch (error) {
-                                toast.error('Failed to cancel subscription', {
-                                  description: 'Please try again or contact support.',
+                                toast.error(SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailed, {
+                                  description: SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailedDesc,
                                 });
                               }
                             }
@@ -2393,6 +2470,34 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       <PricingDialog
         open={showPricingDialog}
         onOpenChange={setShowPricingDialog}
+        onOfferingsUpdated={() => {
+          // Refresh pricing when offerings are updated in PricingDialog
+          const refreshPricing = async () => {
+            try {
+              const { getOfferings, isRevenueCatConfigured } = await import('../lib/revenuecat');
+              if (isRevenueCatConfigured()) {
+                const offerings = await getOfferings();
+                if (offerings?.availablePackages && offerings.availablePackages.length > 0) {
+                  const validPackages = offerings.availablePackages.filter((p: any) => p && p.product);
+                  const monthlyPkg = validPackages.find(
+                    (pkg: any) => pkg && MONTHLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+                  );
+                  const yearlyPkg = validPackages.find(
+                    (pkg: any) => pkg && YEARLY_PACKAGE_IDENTIFIERS.includes(pkg.identifier)
+                  );
+                  setCurrentPricing({
+                    monthly: monthlyPkg?.product?.priceString || DEFAULT_MONTHLY_PRICE,
+                    yearly: yearlyPkg?.product?.priceString || undefined,
+                    lastUpdated: new Date().toISOString(),
+                  });
+                }
+              }
+            } catch (error) {
+              console.warn('Failed to refresh pricing after offerings update:', error);
+            }
+          };
+          refreshPricing();
+        }}
       />
 
       {/* Privacy Policy Dialog */}

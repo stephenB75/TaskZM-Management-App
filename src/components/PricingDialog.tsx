@@ -35,6 +35,9 @@ import { cn } from "../lib/utils";
 import {
   DEFAULT_MONTHLY_PRICE,
   DEFAULT_YEARLY_PRICE,
+  DEFAULT_CURRENCY_CODE,
+  DEFAULT_MONTHLY_TITLE,
+  DEFAULT_YEARLY_TITLE,
   MONTHLY_PACKAGE_IDENTIFIERS,
   YEARLY_PACKAGE_IDENTIFIERS,
   SUBSCRIPTION_UI_TEXT,
@@ -46,11 +49,13 @@ import {
 interface PricingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOfferingsUpdated?: () => void;
 }
 
 export function PricingDialog({
   open,
   onOpenChange,
+  onOfferingsUpdated,
 }: PricingDialogProps) {
   const { subscription, upgradeToPro, refreshSubscription, cancelSubscription, downgradeToFree } =
     useSubscription();
@@ -72,7 +77,7 @@ export function PricingDialog({
   // Get user from auth context for RevenueCat configuration
   const { user } = useAuth();
 
-  // Load offerings when dialog opens
+  // Load offerings when dialog opens and refresh periodically
   React.useEffect(() => {
     if (open) {
       // Ensure RevenueCat is configured before loading offerings
@@ -92,8 +97,26 @@ export function PricingDialog({
         loadOfferings();
       };
       ensureConfigured();
+
+      // Refresh offerings every 30 seconds while dialog is open
+      const refreshInterval = setInterval(() => {
+        console.log('🔄 Refreshing offerings from RevenueCat...');
+        loadOfferings();
+      }, 30000);
+
+      return () => {
+        clearInterval(refreshInterval);
+      };
     }
   }, [open, user?.id]);
+
+  // Also refresh offerings when subscription changes
+  React.useEffect(() => {
+    if (open && subscription.tier) {
+      console.log('🔄 Subscription tier changed, refreshing offerings...');
+      loadOfferings();
+    }
+  }, [subscription.tier, open]);
 
   const loadOfferings = async () => {
     try {
@@ -177,17 +200,17 @@ export function PricingDialog({
           monthly: monthlyPkg && monthlyPkg.product ? {
             price: monthlyPkg.product.price?.toString() || '0',
             priceString: monthlyPkg.product.priceString || DEFAULT_MONTHLY_PRICE,
-            currencyCode: monthlyPkg.product.currencyCode || 'USD',
+            currencyCode: monthlyPkg.product.currencyCode || DEFAULT_CURRENCY_CODE,
             identifier: monthlyPkg.identifier,
-            title: monthlyPkg.product.title || 'Monthly Pro',
+            title: monthlyPkg.product.title || DEFAULT_MONTHLY_TITLE,
             description: monthlyPkg.product.description || '',
           } : undefined,
           yearly: yearlyPkg && yearlyPkg.product ? {
             price: yearlyPkg.product.price?.toString() || '0',
             priceString: yearlyPkg.product.priceString || DEFAULT_YEARLY_PRICE,
-            currencyCode: yearlyPkg.product.currencyCode || 'USD',
+            currencyCode: yearlyPkg.product.currencyCode || DEFAULT_CURRENCY_CODE,
             identifier: yearlyPkg.identifier,
-            title: yearlyPkg.product.title || 'Yearly Pro',
+            title: yearlyPkg.product.title || DEFAULT_YEARLY_TITLE,
             description: yearlyPkg.product.description || '',
           } : undefined,
         });
@@ -197,6 +220,11 @@ export function PricingDialog({
           packagesLoaded: rcOfferings.availablePackages.length,
           lastChecked: new Date().toISOString(),
         });
+        
+        // Notify parent component that offerings were updated
+        if (onOfferingsUpdated) {
+          onOfferingsUpdated();
+        }
       } else {
         console.warn('⚠️ RevenueCat returned no packages or empty offerings');
         console.warn('   This could mean:');
@@ -364,8 +392,8 @@ export function PricingDialog({
         const offeringsCheck2 = await getOfferings();
         if (!offeringsCheck2 || !offeringsCheck2.availablePackages || offeringsCheck2.availablePackages.length === 0) {
           console.error('❌ No offerings available after reload');
-          toast.error('Subscription Not Available', {
-            description: 'No subscription packages are currently available. Please check RevenueCat dashboard configuration or try again later.',
+          toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
+            description: SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableCheckDesc,
           });
           setIsUpgrading(false);
           return;
@@ -401,16 +429,16 @@ export function PricingDialog({
           console.error("Payment processing failed in production:", rcError.message);
           
           // Provide specific error messages based on error type
-          let errorTitle = "Payment processing unavailable";
-          let errorDescription = "Unable to process payment. Please contact support or try again later.";
+          let errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailable;
+          let errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailableDesc;
           
           if (rcError.message?.includes("No subscription offerings available") || 
               rcError.message?.includes("No subscription packages available")) {
-            errorTitle = "Subscription Not Available";
-            errorDescription = "Subscription packages are not currently available. This may be a configuration issue. Please check RevenueCat dashboard or contact support.";
+            errorTitle = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable;
+            errorDescription = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc;
           } else if (rcError.message?.includes("subscription package not found")) {
-            errorTitle = "Package Not Found";
-            errorDescription = "The requested subscription package was not found. Please contact support.";
+            errorTitle = SUBSCRIPTION_UI_TEXT.errors.packageNotFound;
+            errorDescription = SUBSCRIPTION_UI_TEXT.errors.packageNotFoundDesc;
           }
           
           toast.error(errorTitle, {
@@ -494,8 +522,8 @@ export function PricingDialog({
         const offeringsCheck2 = await getOfferings();
         if (!offeringsCheck2 || !offeringsCheck2.availablePackages || offeringsCheck2.availablePackages.length === 0) {
           console.error('❌ No offerings available after reload');
-          toast.error('Subscription Not Available', {
-            description: 'No subscription packages are currently available. Please check RevenueCat dashboard configuration or try again later.',
+          toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
+            description: SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableCheckDesc,
           });
           setIsUpgrading(false);
           return;
@@ -531,16 +559,16 @@ export function PricingDialog({
           console.error("Payment processing failed in production:", rcError.message);
           
           // Provide specific error messages based on error type
-          let errorTitle = "Payment processing unavailable";
-          let errorDescription = "Unable to process payment. Please contact support or try again later.";
+          let errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailable;
+          let errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailableDesc;
           
           if (rcError.message?.includes("No subscription offerings available") || 
               rcError.message?.includes("No subscription packages available")) {
-            errorTitle = "Subscription Not Available";
-            errorDescription = "Subscription packages are not currently available. This may be a configuration issue. Please check RevenueCat dashboard or contact support.";
+            errorTitle = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable;
+            errorDescription = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc;
           } else if (rcError.message?.includes("subscription package not found")) {
-            errorTitle = "Package Not Found";
-            errorDescription = "The requested subscription package was not found. Please contact support.";
+            errorTitle = SUBSCRIPTION_UI_TEXT.errors.packageNotFound;
+            errorDescription = SUBSCRIPTION_UI_TEXT.errors.packageNotFoundDesc;
           }
           
           toast.error(errorTitle, {

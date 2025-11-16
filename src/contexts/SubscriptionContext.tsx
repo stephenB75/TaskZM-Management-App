@@ -3,6 +3,7 @@ import type { SubscriptionInfo, SubscriptionTier, SubscriptionFeatures } from '.
 import { useAuth } from './AuthContext';
 import * as api from '../lib/api';
 import { toast } from 'sonner';
+import { SUBSCRIPTION_UI_TEXT } from '../lib/subscription-constants';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo;
@@ -310,11 +311,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setSubscription(newSubscription);
       localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(newSubscription));
       
-      toast.success('✅ Upgraded to Pro tier (Development Mode)');
-      console.log('✅ Upgraded to Pro tier (Development Mode)');
+      toast.success(SUBSCRIPTION_UI_TEXT.context.upgradedDevMode);
+      console.log(SUBSCRIPTION_UI_TEXT.context.upgradedDevMode);
     } catch (error) {
       console.error('Upgrade failed:', error);
-      toast.error('Failed to upgrade subscription');
+      toast.error(SUBSCRIPTION_UI_TEXT.context.upgradeFailed);
       throw error;
     }
   }
@@ -332,11 +333,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setSubscription(updatedSubscription);
       localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(updatedSubscription));
       
-      toast.success('Subscription will cancel at period end');
-      console.log('Subscription will cancel at period end');
+      toast.success(SUBSCRIPTION_UI_TEXT.context.subscriptionWillCancelAtPeriodEnd);
+      console.log(SUBSCRIPTION_UI_TEXT.context.subscriptionWillCancelAtPeriodEnd);
     } catch (error) {
       console.error('Cancellation failed:', error);
-      toast.error('Failed to cancel subscription');
+      toast.error(SUBSCRIPTION_UI_TEXT.context.cancelFailed);
       throw error;
     }
   }
@@ -357,11 +358,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setSubscription(freeSubscription);
       localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(freeSubscription));
       
-      toast.success('✅ Downgraded to Free tier');
-      console.log('✅ Downgraded to Free tier');
+      toast.success(SUBSCRIPTION_UI_TEXT.context.downgradedToFree);
+      console.log(SUBSCRIPTION_UI_TEXT.context.downgradedToFree);
     } catch (error) {
       console.error('Downgrade failed:', error);
-      toast.error('Failed to downgrade subscription');
+      toast.error(SUBSCRIPTION_UI_TEXT.context.downgradeFailed);
       throw error;
     }
   }
