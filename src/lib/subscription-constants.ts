@@ -38,16 +38,22 @@ export const YEARLY_PRODUCT_IDS = [
 // Package identifiers for RevenueCat
 // RevenueCat can use various identifier patterns, so we check for multiple possibilities
 // Note: RevenueCat package identifiers can be with or without the $ prefix
+// Also check product titles/names as RevenueCat may use those as identifiers
 export const MONTHLY_PACKAGE_IDENTIFIERS = [
   '$rc_monthly',  // With $ prefix
   'rc_monthly',   // Without $ prefix (common in RevenueCat)
   'monthly', 
   'monthly_pro', 
   'pro_monthly',
+  'pro',          // Simple "pro" identifier (common in RevenueCat)
+  'PRO',          // Uppercase variant
   '$rc_monthly_pro',
   'rc_monthly_pro',
   'monthly_subscription',
   'monthly_plan',
+  'taskzm pro',   // Product name variants
+  'taskzm_pro',
+  'taskzm-pro',
   ...MONTHLY_PRODUCT_IDS,  // Include product IDs
 ];
 export const YEARLY_PACKAGE_IDENTIFIERS = [
@@ -57,6 +63,7 @@ export const YEARLY_PACKAGE_IDENTIFIERS = [
   'rc_yearly',    // Without $ prefix (common in RevenueCat)
   'annual', 
   'yearly',
+  'Yearly',       // Capitalized variant (from dashboard)
   'yearly_pro',
   'pro_yearly',
   '$rc_annual_pro',
@@ -67,6 +74,9 @@ export const YEARLY_PACKAGE_IDENTIFIERS = [
   'yearly_subscription',
   'annual_plan',
   'yearly_plan',
+  'taskzm yearly', // Product name variants
+  'taskzm_yearly',
+  'taskzm-yearly',
   ...YEARLY_PRODUCT_IDS,  // Include product IDs
 ];
 

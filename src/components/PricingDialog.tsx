@@ -165,43 +165,84 @@ export function PricingDialog({
       
       console.log('🔄 Loading offerings from RevenueCat...');
       
-      // Add a small delay to ensure RevenueCat has time to load product data
-      // Sometimes product data takes a moment to populate after SDK initialization
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       // Force refresh to get latest packages from RevenueCat (bypasses cache)
-      const rcOfferings = await getOfferings(true);
+      // Try multiple times to ensure we get the latest data
+      let rcOfferings = null;
+      let attempts = 0;
+      const maxAttempts = 2;
+      
+      while (attempts < maxAttempts) {
+        attempts++;
+        console.log(`🔄 Fetch attempt ${attempts}/${maxAttempts}...`);
+        
+        // Add delay before retry (not before first attempt)
+        if (attempts > 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        rcOfferings = await getOfferings(true);
+        
+        // Check if we got packages
+        if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
+          console.log(`✅ Got ${rcOfferings.availablePackages.length} packages on attempt ${attempts}`);
+          break;
+        } else {
+          console.warn(`⚠️ No packages found on attempt ${attempts}, retrying...`);
+        }
+      }
       
       if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
         console.log('✅ RevenueCat connected! Packages found:', rcOfferings.availablePackages.length);
         
-        // Filter out packages without products and log them
-        // Check that product exists AND has actual data (not just an empty object)
-        const hasValidProduct = (p: any) => {
-          if (!p || !p.product) return false;
-          // Check if product object has any actual properties (not just an empty object)
-          const productKeys = Object.keys(p.product);
-          return productKeys.length > 0 && (p.product.identifier || p.product.priceString || p.product.price);
+        // Log ALL packages first (before filtering) to see what RevenueCat is actually returning
+        console.log('📦 ALL PACKAGES FROM REVENUECAT (before filtering):');
+        rcOfferings.availablePackages.forEach((p: any, index: number) => {
+          console.log(`   Package ${index + 1}:`, {
+            identifier: p?.identifier || 'N/A',
+            hasProduct: !!p?.product,
+            productType: typeof p?.product,
+            productKeys: p?.product ? Object.keys(p.product) : [],
+            productData: p?.product || 'NO PRODUCT OBJECT'
+          });
+        });
+        
+        // VERY lenient validation: accept ANY package with an identifier
+        // RevenueCat sometimes returns packages with empty product objects that get populated later
+        // We'll match by identifier and use defaults for missing product data
+        const hasValidPackage = (p: any) => {
+          if (!p) return false;
+          // Accept ANY package that has an identifier (even if product is missing or empty)
+          // This allows us to match packages and display them with default pricing
+          return !!p.identifier;
         };
         
-        const validPackages = rcOfferings.availablePackages.filter(hasValidProduct);
-        const invalidPackages = rcOfferings.availablePackages.filter((p: any) => !hasValidProduct(p));
+        const validPackages = rcOfferings.availablePackages.filter(hasValidPackage);
+        const invalidPackages = rcOfferings.availablePackages.filter((p: any) => !hasValidPackage(p));
         
         if (invalidPackages.length > 0) {
-          console.warn('⚠️ Found packages with missing or empty product data:');
+          console.warn('⚠️ Found packages without identifiers (these will be skipped):');
           invalidPackages.forEach((p: any) => {
-            const identifier = p?.identifier || 'unknown';
-            const productKeys = p?.product ? Object.keys(p.product) : [];
-            console.warn(`   - ${identifier}:`, {
+            console.warn('   - Package:', {
+              hasIdentifier: !!p?.identifier,
+              identifier: p?.identifier || 'MISSING',
               hasProduct: !!p?.product,
-              productKeys: productKeys.length > 0 ? productKeys : 'empty object',
-              productData: p?.product || 'missing'
+              productKeys: p?.product ? Object.keys(p.product) : []
             });
           });
-          console.warn('   This usually means:');
-          console.warn('   1. Products are not properly linked to packages in RevenueCat dashboard');
-          console.warn('   2. Product data hasn\'t loaded yet (try refreshing)');
-          console.warn('   3. RevenueCat configuration issue - check your API key and dashboard settings');
+        }
+        
+        // Log packages with empty product objects (these are still valid, just need defaults)
+        const packagesWithEmptyProducts = validPackages.filter((p: any) => {
+          return p.identifier && (!p.product || Object.keys(p.product || {}).length === 0);
+        });
+        
+        if (packagesWithEmptyProducts.length > 0) {
+          console.warn(`⚠️ Found ${packagesWithEmptyProducts.length} package(s) with empty product data (will use defaults):`);
+          packagesWithEmptyProducts.forEach((p: any) => {
+            console.warn(`   - ${p.identifier}: Will use default pricing/title`);
+            console.warn('   This is OK - package will still be displayed and matched by identifier');
+            console.warn('   Product data may populate later, or you may need to link products in RevenueCat dashboard');
+          });
         }
         
         // Log all package identifiers for debugging
@@ -241,13 +282,16 @@ export function PricingDialog({
         let yearlyPkg: any = null;
         
         // First pass: Try exact and case-insensitive matches
+        // Process ALL valid packages, even if they don't have product objects yet
         for (const pkg of validPackages) {
-          if (!pkg || !pkg.product) continue;
+          if (!pkg) continue;
           
           const identifier = pkg.identifier || '';
           const identifierLower = identifier.toLowerCase();
-          const productId = pkg.product.identifier || '';
+          const productId = pkg.product?.identifier || '';
           const productIdLower = productId.toLowerCase();
+          const productTitle = pkg.product?.title || '';
+          const productTitleLower = productTitle.toLowerCase();
           
           // Check if this is a monthly package
           if (!monthlyPkg) {
@@ -271,29 +315,43 @@ export function PricingDialog({
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
+            // Check product title/name against monthly list (for cases like "TaskZM PRO PRO")
+            const isMonthlyByProductTitle = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+              const idLower = id.toLowerCase();
+              return productTitleLower.includes(idLower) && 
+                     !productTitleLower.includes('year') &&
+                     !productTitleLower.includes('annual');
+            });
+            
             // Check for monthly keywords (but not yearly/annual)
             const hasMonthlyKeywords = (identifierLower.includes('month') || 
                                       identifierLower.includes('rc_monthly') ||
                                       productIdLower.includes('month') ||
-                                      productIdLower.includes('rc_monthly')) && 
+                                      productIdLower.includes('rc_monthly') ||
+                                      productTitleLower.includes('month') ||
+                                      productTitleLower.includes('pro')) && 
                                      !identifierLower.includes('year') && 
                                      !identifierLower.includes('annual') &&
                                      !productIdLower.includes('year') &&
-                                     !productIdLower.includes('annual');
+                                     !productIdLower.includes('annual') &&
+                                     !productTitleLower.includes('year') &&
+                                     !productTitleLower.includes('annual');
             
-            // Check product metadata (billing period)
-            const isMonthlyByMetadata = pkg.product.subscriptionPeriod === 'P1M' || 
-                                       pkg.product.subscriptionPeriod === 'MONTH' ||
-                                       (pkg.product.subscriptionPeriod && 
+            // Check product metadata (billing period) - only if product exists
+            const isMonthlyByMetadata = pkg.product?.subscriptionPeriod === 'P1M' || 
+                                       pkg.product?.subscriptionPeriod === 'MONTH' ||
+                                       (pkg.product?.subscriptionPeriod && 
                                         pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'));
             
-            if (isMonthlyById || isMonthlyByProductId || hasMonthlyKeywords || isMonthlyByMetadata) {
+            if (isMonthlyById || isMonthlyByProductId || isMonthlyByProductTitle || hasMonthlyKeywords || isMonthlyByMetadata) {
               monthlyPkg = pkg;
               console.log('✅ Found monthly package:', {
                 identifier,
-                productId,
-                priceString: pkg.product.priceString,
-                matchedBy: isMonthlyById ? 'identifier' : isMonthlyByProductId ? 'productId' : hasMonthlyKeywords ? 'keywords' : 'metadata'
+                productId: productId || 'N/A',
+                productTitle: productTitle || 'N/A',
+                priceString: pkg.product?.priceString || 'N/A',
+                hasProduct: !!pkg.product,
+                matchedBy: isMonthlyById ? 'identifier' : isMonthlyByProductId ? 'productId' : isMonthlyByProductTitle ? 'productTitle' : hasMonthlyKeywords ? 'keywords' : 'metadata'
               });
             }
           }
@@ -320,28 +378,38 @@ export function PricingDialog({
                      productIdLower.includes(idLower.replace('$rc_', 'rc_'));
             });
             
+            // Check product title/name against yearly list (for cases like "TaskZM Yearly Yearly")
+            const isYearlyByProductTitle = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+              const idLower = id.toLowerCase();
+              return productTitleLower.includes(idLower);
+            });
+            
             // Check for yearly/annual keywords
             const hasYearlyKeywords = identifierLower.includes('year') || 
                                       identifierLower.includes('annual') ||
                                       identifierLower.includes('rc_yearly') ||
                                       identifierLower.includes('rc_annual') ||
                                       productIdLower.includes('year') ||
-                                      productIdLower.includes('annual');
+                                      productIdLower.includes('annual') ||
+                                      productTitleLower.includes('year') ||
+                                      productTitleLower.includes('annual');
             
-            // Check product metadata (billing period)
-            const isYearlyByMetadata = pkg.product.subscriptionPeriod === 'P1Y' || 
-                                      pkg.product.subscriptionPeriod === 'YEAR' ||
-                                      pkg.product.subscriptionPeriod === 'ANNUAL' ||
-                                      (pkg.product.subscriptionPeriod && 
+            // Check product metadata (billing period) - only if product exists
+            const isYearlyByMetadata = pkg.product?.subscriptionPeriod === 'P1Y' || 
+                                      pkg.product?.subscriptionPeriod === 'YEAR' ||
+                                      pkg.product?.subscriptionPeriod === 'ANNUAL' ||
+                                      (pkg.product?.subscriptionPeriod && 
                                        pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
             
-            if (isYearlyById || isYearlyByProductId || hasYearlyKeywords || isYearlyByMetadata) {
+            if (isYearlyById || isYearlyByProductId || isYearlyByProductTitle || hasYearlyKeywords || isYearlyByMetadata) {
               yearlyPkg = pkg;
               console.log('✅ Found yearly package:', {
                 identifier,
-                productId,
-                priceString: pkg.product.priceString,
-                matchedBy: isYearlyById ? 'identifier' : isYearlyByProductId ? 'productId' : hasYearlyKeywords ? 'keywords' : 'metadata'
+                productId: productId || 'N/A',
+                productTitle: productTitle || 'N/A',
+                priceString: pkg.product?.priceString || 'N/A',
+                hasProduct: !!pkg.product,
+                matchedBy: isYearlyById ? 'identifier' : isYearlyByProductId ? 'productId' : isYearlyByProductTitle ? 'productTitle' : hasYearlyKeywords ? 'keywords' : 'metadata'
               });
             }
           }
@@ -368,23 +436,23 @@ export function PricingDialog({
         }
 
         // Set offerings from RevenueCat - this is the source of truth
-        // Only use defaults if RevenueCat data is truly missing (null/undefined), not if it's an empty string
-        const monthlyOffering = monthlyPkg && monthlyPkg.product ? {
-          price: (monthlyPkg.product.price?.toString() ?? '0'),
-          priceString: (monthlyPkg.product.priceString ?? DEFAULT_MONTHLY_PRICE),
-          currencyCode: (monthlyPkg.product.currencyCode ?? DEFAULT_CURRENCY_CODE),
-          identifier: monthlyPkg.identifier,
-          title: (monthlyPkg.product.title?.trim() || DEFAULT_MONTHLY_TITLE),
-          description: (monthlyPkg.product.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod),
+        // Handle packages even if product data is missing (use defaults with package identifier)
+        const monthlyOffering = monthlyPkg ? {
+          price: (monthlyPkg.product?.price?.toString() ?? '0'),
+          priceString: (monthlyPkg.product?.priceString ?? DEFAULT_MONTHLY_PRICE),
+          currencyCode: (monthlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
+          identifier: monthlyPkg.identifier || 'monthly',
+          title: (monthlyPkg.product?.title?.trim() || DEFAULT_MONTHLY_TITLE),
+          description: (monthlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod),
         } : undefined;
 
-        const yearlyOffering = yearlyPkg && yearlyPkg.product ? {
-          price: (yearlyPkg.product.price?.toString() ?? '0'),
-          priceString: (yearlyPkg.product.priceString ?? DEFAULT_YEARLY_PRICE),
-          currencyCode: (yearlyPkg.product.currencyCode ?? DEFAULT_CURRENCY_CODE),
-          identifier: yearlyPkg.identifier,
-          title: (yearlyPkg.product.title?.trim() || DEFAULT_YEARLY_TITLE),
-          description: (yearlyPkg.product.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod),
+        const yearlyOffering = yearlyPkg ? {
+          price: (yearlyPkg.product?.price?.toString() ?? '0'),
+          priceString: (yearlyPkg.product?.priceString ?? DEFAULT_YEARLY_PRICE),
+          currencyCode: (yearlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
+          identifier: yearlyPkg.identifier || 'yearly',
+          title: (yearlyPkg.product?.title?.trim() || DEFAULT_YEARLY_TITLE),
+          description: (yearlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod),
         } : undefined;
 
         console.log('============================================================');
@@ -1368,4 +1436,5 @@ export function PricingDialog({
     </Dialog>
   );
 }
+
 
