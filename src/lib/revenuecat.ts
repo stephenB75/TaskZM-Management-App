@@ -4,6 +4,7 @@
  */
 
 import { getPlatform } from './platform';
+import { REVENUECAT_MONTHLY_PRODUCT_ID, REVENUECAT_YEARLY_PRODUCT_ID } from './subscription-constants';
 
 // Types
 export interface CustomerInfo {
@@ -406,7 +407,6 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           if (exactProductIdMatch) return true;
           
           // Check against known RevenueCat product IDs
-          const { REVENUECAT_MONTHLY_PRODUCT_ID, REVENUECAT_YEARLY_PRODUCT_ID } = await import('./subscription-constants');
           if (packageType === 'monthly' && productIdLower === REVENUECAT_MONTHLY_PRODUCT_ID.toLowerCase()) {
             return true;
           }
@@ -551,8 +551,8 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
             throw new Error('Purchase completed but no customer information received');
           }
         
-          // Check if purchase was successful
-          const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
+        // Check if purchase was successful
+        const isProActive = customerInfo?.entitlements?.active?.pro !== undefined;
           console.log(`✅ Web ${packageType} purchase result:`, isProActive ? 'SUCCESS' : 'FAILED');
           
           if (isProActive) {
@@ -564,7 +564,7 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
             console.warn('   All entitlements:', customerInfo.entitlements);
           }
           
-          return isProActive;
+        return isProActive;
         } catch (purchaseError: any) {
           console.error('❌ Purchase error details:', {
             name: purchaseError?.name,
