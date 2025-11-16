@@ -69,6 +69,24 @@ export function PricingDialog({
     monthly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
     yearly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
   }>({});
+
+  // Debug: Log offerings state changes
+  React.useEffect(() => {
+    console.log('🔄 Offerings state updated:', {
+      monthly: offerings.monthly ? {
+        identifier: offerings.monthly.identifier,
+        priceString: offerings.monthly.priceString,
+        title: offerings.monthly.title,
+        available: true
+      } : { available: false },
+      yearly: offerings.yearly ? {
+        identifier: offerings.yearly.identifier,
+        priceString: offerings.yearly.priceString,
+        title: offerings.yearly.title,
+        available: true
+      } : { available: false }
+    });
+  }, [offerings]);
   const platform = getPlatform();
 
   // Get user from auth context for RevenueCat configuration
@@ -369,13 +387,53 @@ export function PricingDialog({
           description: (yearlyPkg.product.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod),
         } : undefined;
 
-        console.log('✅ Setting offerings from RevenueCat:');
+        console.log('============================================================');
+        console.log('📊 REVENUECAT DATA RENDERING REPORT');
+        console.log('============================================================');
+        console.log('\n📦 Raw Package Data from RevenueCat:');
+        console.log('   Total packages received:', validPackages.length);
+        validPackages.forEach((p: any, index: number) => {
+          console.log(`   Package ${index + 1}:`, {
+            identifier: p?.identifier || 'N/A',
+            productId: p?.product?.identifier || 'N/A',
+            productTitle: p?.product?.title || 'N/A',
+            productDescription: p?.product?.description || 'N/A',
+            priceString: p?.product?.priceString || 'N/A',
+            price: p?.product?.price || 'N/A',
+            currencyCode: p?.product?.currencyCode || 'N/A',
+            subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A',
+            hasValidProduct: !!(p?.product && Object.keys(p.product).length > 0)
+          });
+        });
+        
+        console.log('\n🔍 Package Matching Results:');
+        console.log('   Monthly Package Found:', monthlyPkg ? '✅ YES' : '❌ NO');
+        if (monthlyPkg) {
+          console.log('      Identifier:', monthlyPkg.identifier);
+          console.log('      Product ID:', monthlyPkg.product?.identifier);
+          console.log('      Price String:', monthlyPkg.product?.priceString);
+          console.log('      Price:', monthlyPkg.product?.price);
+          console.log('      Title:', monthlyPkg.product?.title);
+        }
+        console.log('   Yearly Package Found:', yearlyPkg ? '✅ YES' : '❌ NO');
+        if (yearlyPkg) {
+          console.log('      Identifier:', yearlyPkg.identifier);
+          console.log('      Product ID:', yearlyPkg.product?.identifier);
+          console.log('      Price String:', yearlyPkg.product?.priceString);
+          console.log('      Price:', yearlyPkg.product?.price);
+          console.log('      Title:', yearlyPkg.product?.title);
+        }
+        
+        console.log('\n✅ Setting offerings from RevenueCat:');
         if (monthlyOffering) {
           const fromRC = monthlyPkg?.product?.priceString != null && monthlyPkg.product.priceString !== '';
-          console.log('   Monthly:', {
+          console.log('   Monthly Offering:', {
             identifier: monthlyOffering.identifier,
             priceString: monthlyOffering.priceString,
+            price: monthlyOffering.price,
+            currencyCode: monthlyOffering.currencyCode,
             title: monthlyOffering.title,
+            description: monthlyOffering.description,
             fromRevenueCat: fromRC ? 'YES ✅' : 'NO (using default) ⚠️',
             rawPriceString: monthlyPkg?.product?.priceString || 'null/undefined',
             rawPrice: monthlyPkg?.product?.price || 'null/undefined',
@@ -385,10 +443,13 @@ export function PricingDialog({
         }
         if (yearlyOffering) {
           const fromRC = yearlyPkg?.product?.priceString != null && yearlyPkg.product.priceString !== '';
-          console.log('   Yearly:', {
+          console.log('   Yearly Offering:', {
             identifier: yearlyOffering.identifier,
             priceString: yearlyOffering.priceString,
+            price: yearlyOffering.price,
+            currencyCode: yearlyOffering.currencyCode,
             title: yearlyOffering.title,
+            description: yearlyOffering.description,
             fromRevenueCat: fromRC ? 'YES ✅' : 'NO (using default) ⚠️',
             rawPriceString: yearlyPkg?.product?.priceString || 'null/undefined',
             rawPrice: yearlyPkg?.product?.price || 'null/undefined',
@@ -396,6 +457,16 @@ export function PricingDialog({
         } else {
           console.log('   Yearly: NOT AVAILABLE (package not found in RevenueCat)');
         }
+
+        console.log('\n🎨 UI Rendering State:');
+        console.log('   Monthly will render:', monthlyOffering ? '✅ YES' : '❌ NO');
+        console.log('   Yearly will render:', yearlyOffering ? '✅ YES' : '❌ NO');
+        console.log('   Grid columns:', 
+          monthlyOffering && yearlyOffering ? '3 (Free, Monthly, Yearly)' :
+          monthlyOffering || yearlyOffering ? '2 (Free + one Pro)' :
+          '1 (Free only)'
+        );
+        console.log('============================================================');
 
         setOfferings({
           monthly: monthlyOffering,
@@ -1008,15 +1079,25 @@ export function PricingDialog({
           </div>
 
           {/* Plans Grid - Responsive: Free, Monthly Pro (if available), Yearly Pro (if available) */}
-          <div className={cn(
-            "grid gap-4 md:gap-5 lg:gap-7 max-w-full",
-            // Show 1 column on mobile, 2-3 columns on desktop based on available plans
-            offerings.monthly && offerings.yearly 
+          {(() => {
+            const hasMonthly = !!offerings.monthly;
+            const hasYearly = !!offerings.yearly;
+            const gridCols = hasMonthly && hasYearly 
               ? "grid-cols-1 md:grid-cols-3"  // All 3 plans: Free, Monthly, Yearly
-              : offerings.monthly || offerings.yearly
+              : hasMonthly || hasYearly
               ? "grid-cols-1 md:grid-cols-2"  // 2 plans: Free + one Pro plan
-              : "grid-cols-1"  // Just Free plan
-          )}>
+              : "grid-cols-1";  // Just Free plan
+            
+            console.log('🎨 UI Grid Layout Decision:');
+            console.log('   Monthly available:', hasMonthly);
+            console.log('   Yearly available:', hasYearly);
+            console.log('   Grid columns:', gridCols);
+            console.log('   Plans to render:', 
+              `Free${hasMonthly ? ' + Monthly' : ''}${hasYearly ? ' + Yearly' : ''}`
+            );
+            
+            return (
+              <div className={cn("grid gap-4 md:gap-5 lg:gap-7 max-w-full", gridCols)}>
             {/* Free Tier - Spacious Design */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -1270,7 +1351,9 @@ export function PricingDialog({
               </div>
             </motion.div>
             )}
-          </div>
+              </div>
+            );
+          })()}
 
           {/* Footer Note - Spacious */}
           <div className="mt-5 md:mt-7 p-3 md:p-4 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg md:rounded-xl border-2 border-[#9B87E8]/30 shadow-lg backdrop-blur-sm">

@@ -559,20 +559,40 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
         
         // Log the full structure to understand what RevenueCat is returning
         if (offerings?.current) {
-          console.log('📋 Current offering structure:', {
-            identifier: offerings.current.identifier,
-            serverDescription: offerings.current.serverDescription,
-            metadata: offerings.current.metadata,
-            packageCount: offerings.current.availablePackages?.length || 0,
-            packages: offerings.current.availablePackages?.map((p: any) => ({
-              identifier: p?.identifier,
-              packageType: p?.packageType,
-              productExists: !!p?.product,
-              productKeys: p?.product ? Object.keys(p.product) : [],
-              productIdentifier: p?.product?.identifier,
-              productPriceString: p?.product?.priceString
-            })) || []
-          });
+          console.log('============================================================');
+          console.log('📋 REVENUECAT RAW OFFERING DATA');
+          console.log('============================================================');
+          console.log('Offering Identifier:', offerings.current.identifier);
+          console.log('Server Description:', offerings.current.serverDescription || 'N/A');
+          console.log('Metadata:', offerings.current.metadata || 'N/A');
+          console.log('Package Count:', offerings.current.availablePackages?.length || 0);
+          console.log('\n📦 All Packages (Full Details):');
+          if (offerings.current.availablePackages && offerings.current.availablePackages.length > 0) {
+            offerings.current.availablePackages.forEach((p: any, index: number) => {
+              console.log(`\n   Package ${index + 1}:`);
+              console.log('      Identifier:', p?.identifier || 'N/A');
+              console.log('      Package Type:', p?.packageType || 'N/A');
+              console.log('      Has Product Object:', !!p?.product);
+              if (p?.product) {
+                const productKeys = Object.keys(p.product);
+                console.log('      Product Keys:', productKeys.length > 0 ? productKeys : 'EMPTY OBJECT');
+                console.log('      Product Identifier:', p.product.identifier || 'N/A');
+                console.log('      Product Title:', p.product.title || 'N/A');
+                console.log('      Product Description:', p.product.description || 'N/A');
+                console.log('      Price String:', p.product.priceString || 'N/A');
+                console.log('      Price (number):', p.product.price || 'N/A');
+                console.log('      Currency Code:', p.product.currencyCode || 'N/A');
+                console.log('      Subscription Period:', p.product.subscriptionPeriod || 'N/A');
+                console.log('      Intro Price:', p.product.introPrice || 'N/A');
+                console.log('      Discount:', p.product.discount || 'N/A');
+              } else {
+                console.log('      ⚠️ Product object is missing or null');
+              }
+            });
+          } else {
+            console.log('   ⚠️ No packages found in offering');
+          }
+          console.log('============================================================');
         }
         
         // Safely return offerings with null checks
