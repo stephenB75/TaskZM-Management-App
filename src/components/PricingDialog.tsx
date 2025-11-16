@@ -173,60 +173,132 @@ export function PricingDialog({
         console.log('🔍 Looking for yearly identifiers:', YEARLY_PACKAGE_IDENTIFIERS);
 
         // Find monthly and yearly packages (only from valid packages)
-        // Try exact match first (with and without $ prefix), then case-insensitive match, then partial match
-        const monthlyPkg = validPackages.find((pkg: any) => {
-          if (!pkg) return false;
-          const identifier = pkg.identifier || '';
-          const identifierLower = identifier.toLowerCase();
-          
-          // Check exact matches (with and without $ prefix)
-          const exactMatch = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
-            const idLower = id.toLowerCase();
-            return identifierLower === idLower || 
-                   identifierLower === idLower.replace('$', '') ||
-                   identifierLower === idLower.replace('$rc_', 'rc_');
-          });
-          
-          if (exactMatch) return true;
-          
-          // Check for monthly keywords (but not yearly)
-          return (identifierLower.includes('month') || identifierLower.includes('rc_monthly')) && 
-                 !identifierLower.includes('year') && 
-                 !identifierLower.includes('annual');
-        });
+        // Try multiple matching strategies: exact match, case-insensitive, partial match, and product metadata
+        let monthlyPkg: any = null;
+        let yearlyPkg: any = null;
         
-        const yearlyPkg = validPackages.find((pkg: any) => {
-          if (!pkg) return false;
+        // First pass: Try exact and case-insensitive matches
+        for (const pkg of validPackages) {
+          if (!pkg || !pkg.product) continue;
+          
           const identifier = pkg.identifier || '';
           const identifierLower = identifier.toLowerCase();
+          const productId = pkg.product.identifier || '';
+          const productIdLower = productId.toLowerCase();
           
-          // Check exact matches (with and without $ prefix)
-          const exactMatch = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
-            const idLower = id.toLowerCase();
-            return identifierLower === idLower || 
-                   identifierLower === idLower.replace('$', '') ||
-                   identifierLower === idLower.replace('$rc_', 'rc_');
-          });
+          // Check if this is a monthly package
+          if (!monthlyPkg) {
+            // Check identifier against monthly list
+            const isMonthlyById = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+              const idLower = id.toLowerCase();
+              return identifierLower === idLower || 
+                     identifierLower === idLower.replace('$', '') ||
+                     identifierLower === idLower.replace('$rc_', 'rc_') ||
+                     identifierLower.includes(idLower.replace('$', '')) ||
+                     identifierLower.includes(idLower.replace('$rc_', 'rc_'));
+            });
+            
+            // Check product ID against monthly list
+            const isMonthlyByProductId = MONTHLY_PACKAGE_IDENTIFIERS.some(id => {
+              const idLower = id.toLowerCase();
+              return productIdLower === idLower || 
+                     productIdLower.includes(idLower.replace('$', '')) ||
+                     productIdLower.includes(idLower.replace('$rc_', 'rc_'));
+            });
+            
+            // Check for monthly keywords (but not yearly/annual)
+            const hasMonthlyKeywords = (identifierLower.includes('month') || 
+                                      identifierLower.includes('rc_monthly') ||
+                                      productIdLower.includes('month') ||
+                                      productIdLower.includes('rc_monthly')) && 
+                                     !identifierLower.includes('year') && 
+                                     !identifierLower.includes('annual') &&
+                                     !productIdLower.includes('year') &&
+                                     !productIdLower.includes('annual');
+            
+            // Check product metadata (billing period)
+            const isMonthlyByMetadata = pkg.product.subscriptionPeriod === 'P1M' || 
+                                       pkg.product.subscriptionPeriod === 'MONTH' ||
+                                       (pkg.product.subscriptionPeriod && 
+                                        pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'));
+            
+            if (isMonthlyById || isMonthlyByProductId || hasMonthlyKeywords || isMonthlyByMetadata) {
+              monthlyPkg = pkg;
+              console.log('✅ Found monthly package:', {
+                identifier,
+                productId,
+                priceString: pkg.product.priceString,
+                matchedBy: isMonthlyById ? 'identifier' : isMonthlyByProductId ? 'productId' : hasMonthlyKeywords ? 'keywords' : 'metadata'
+              });
+            }
+          }
           
-          if (exactMatch) return true;
-          
-          // Check for yearly/annual keywords
-          return identifierLower.includes('year') || 
-                 identifierLower.includes('annual') ||
-                 identifierLower.includes('rc_yearly') ||
-                 identifierLower.includes('rc_annual');
-        });
+          // Check if this is a yearly package
+          if (!yearlyPkg) {
+            // Check identifier against yearly list
+            const isYearlyById = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+              const idLower = id.toLowerCase();
+              return identifierLower === idLower || 
+                     identifierLower === idLower.replace('$', '') ||
+                     identifierLower === idLower.replace('$rc_', 'rc_') ||
+                     identifierLower.includes(idLower.replace('$', '')) ||
+                     identifierLower.includes(idLower.replace('$rc_', 'rc_'));
+            });
+            
+            // Check product ID against yearly list
+            const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
+              const idLower = id.toLowerCase();
+              return productIdLower === idLower || 
+                     productIdLower.includes(idLower.replace('$', '')) ||
+                     productIdLower.includes(idLower.replace('$rc_', 'rc_'));
+            });
+            
+            // Check for yearly/annual keywords
+            const hasYearlyKeywords = identifierLower.includes('year') || 
+                                      identifierLower.includes('annual') ||
+                                      identifierLower.includes('rc_yearly') ||
+                                      identifierLower.includes('rc_annual') ||
+                                      productIdLower.includes('year') ||
+                                      productIdLower.includes('annual');
+            
+            // Check product metadata (billing period)
+            const isYearlyByMetadata = pkg.product.subscriptionPeriod === 'P1Y' || 
+                                      pkg.product.subscriptionPeriod === 'YEAR' ||
+                                      pkg.product.subscriptionPeriod === 'ANNUAL' ||
+                                      (pkg.product.subscriptionPeriod && 
+                                       pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
+            
+            if (isYearlyById || isYearlyByProductId || hasYearlyKeywords || isYearlyByMetadata) {
+              yearlyPkg = pkg;
+              console.log('✅ Found yearly package:', {
+                identifier,
+                productId,
+                priceString: pkg.product.priceString,
+                matchedBy: isYearlyById ? 'identifier' : isYearlyByProductId ? 'productId' : hasYearlyKeywords ? 'keywords' : 'metadata'
+              });
+            }
+          }
+        }
 
-        console.log('📅 Monthly package:', monthlyPkg ? {
-          identifier: monthlyPkg.identifier,
-          price: monthlyPkg.product?.priceString || 'N/A',
-          title: monthlyPkg.product?.title || 'N/A'
-        } : 'NOT FOUND');
-        console.log('📅 Yearly package:', yearlyPkg ? {
-          identifier: yearlyPkg.identifier,
-          price: yearlyPkg.product?.priceString || 'N/A',
-          title: yearlyPkg.product?.title || 'N/A'
-        } : 'NOT FOUND');
+        // Log detailed package information
+        if (!monthlyPkg) {
+          console.warn('⚠️ Monthly package NOT FOUND');
+          console.warn('   Available package identifiers:', validPackages.map((p: any) => ({
+            identifier: p?.identifier || 'unknown',
+            productId: p?.product?.identifier || 'unknown',
+            priceString: p?.product?.priceString || 'N/A',
+            subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A'
+          })));
+        }
+        if (!yearlyPkg) {
+          console.warn('⚠️ Yearly package NOT FOUND');
+          console.warn('   Available package identifiers:', validPackages.map((p: any) => ({
+            identifier: p?.identifier || 'unknown',
+            productId: p?.product?.identifier || 'unknown',
+            priceString: p?.product?.priceString || 'N/A',
+            subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A'
+          })));
+        }
 
         // Set offerings from RevenueCat - this is the source of truth
         // Only use defaults if RevenueCat data is truly missing (null/undefined), not if it's an empty string
