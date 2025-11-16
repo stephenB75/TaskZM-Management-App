@@ -50,6 +50,10 @@ export interface RevenueCatPackage {
 let isConfigured = false;
 let currentUserId: string | null = null;
 
+// Expected RevenueCat App ID for verification
+// This should match the app ID in your RevenueCat dashboard
+const EXPECTED_REVENUECAT_APP_ID = 'app4689b9299f';
+
 /**
  * Configure RevenueCat for the current platform
  * Safe to call multiple times - only configures once per user
@@ -119,7 +123,13 @@ export async function configureRevenueCat(userId: string): Promise<void> {
         return;
       }
       
+      // Log API key info (masked for security)
+      const apiKeyPrefix = apiKey.substring(0, 8);
+      const apiKeySuffix = apiKey.length > 12 ? apiKey.substring(apiKey.length - 4) : '****';
       console.log('📦 RevenueCat API key found, initializing SDK...');
+      console.log(`   API Key: ${apiKeyPrefix}...${apiKeySuffix} (${apiKey.length} chars)`);
+      console.log(`   Expected App ID: ${EXPECTED_REVENUECAT_APP_ID}`);
+      console.log('   ⚠️  Note: Verify in RevenueCat dashboard that this API key belongs to app4689b9299f');
       
       // Try to import and configure RevenueCat
       try {
@@ -159,9 +169,28 @@ export async function configureRevenueCat(userId: string): Promise<void> {
           
           console.log('✅ Purchases instance created:', !!purchasesInstance);
           
+          // Try to get app info from the instance to verify app ID
+          // Note: RevenueCat SDK doesn't directly expose app ID, but we can verify via offerings
           console.log('✅ RevenueCat configured successfully');
           console.log('   Payment processing: ENABLED');
           console.log('   User ID:', userId);
+          console.log(`   Expected App ID: ${EXPECTED_REVENUECAT_APP_ID}`);
+          console.log('   📝 To verify: Check RevenueCat dashboard → Project Settings → API Keys');
+          console.log('      The API key should be associated with app ID: app4689b9299f');
+          
+          // Attempt to verify app ID by fetching offerings (this will confirm the API key is valid)
+          try {
+            const offerings = await purchasesInstance.getOfferings();
+            if (offerings && (offerings.current || Object.keys(offerings.all || {}).length > 0)) {
+              console.log('✅ RevenueCat connection verified - offerings loaded successfully');
+              console.log(`   This confirms the API key is valid and connected to a RevenueCat app`);
+              console.log(`   ⚠️  Manual verification required: Check RevenueCat dashboard to confirm app ID is ${EXPECTED_REVENUECAT_APP_ID}`);
+            }
+          } catch (offeringsError: any) {
+            console.warn('⚠️  Could not verify offerings during configuration:', offeringsError?.message || offeringsError);
+            console.warn('   This is normal if user is not logged in or offerings are not yet available');
+          }
+          
           isConfigured = true;
           currentUserId = userId;
         } catch (configError: any) {
