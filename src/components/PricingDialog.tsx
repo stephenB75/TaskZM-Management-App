@@ -510,12 +510,19 @@ export function PricingDialog({
   const proTierFeatures = PRO_TIER_FEATURES;
 
   const calculateSavings = () => {
+    // Only calculate savings if both monthly and yearly are available
     if (!offerings.monthly || !offerings.yearly) return 0;
-    const monthlyPrice = parseFloat(offerings.monthly.price);
-    const yearlyPrice = parseFloat(offerings.yearly.price);
-    const yearlyEquivalent = monthlyPrice * 12;
-    if (yearlyEquivalent === 0) return 0;
-    return Math.round(((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100);
+    try {
+      const monthlyPrice = parseFloat(offerings.monthly.price || '0');
+      const yearlyPrice = parseFloat(offerings.yearly.price || '0');
+      if (monthlyPrice === 0 || yearlyPrice === 0) return 0;
+      const yearlyEquivalent = monthlyPrice * 12;
+      if (yearlyEquivalent === 0) return 0;
+      return Math.round(((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100);
+    } catch (error) {
+      console.warn('Error calculating savings:', error);
+      return 0;
+    }
   };
 
   const savings = calculateSavings();
@@ -1000,8 +1007,16 @@ export function PricingDialog({
 
           </div>
 
-          {/* Plans Grid - 3 Columns: Free, Monthly Pro, Yearly Pro */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 lg:gap-7 max-w-full">
+          {/* Plans Grid - Responsive: Free, Monthly Pro (if available), Yearly Pro (if available) */}
+          <div className={cn(
+            "grid gap-4 md:gap-5 lg:gap-7 max-w-full",
+            // Show 1 column on mobile, 2-3 columns on desktop based on available plans
+            offerings.monthly && offerings.yearly 
+              ? "grid-cols-1 md:grid-cols-3"  // All 3 plans: Free, Monthly, Yearly
+              : offerings.monthly || offerings.yearly
+              ? "grid-cols-1 md:grid-cols-2"  // 2 plans: Free + one Pro plan
+              : "grid-cols-1"  // Just Free plan
+          )}>
             {/* Free Tier - Spacious Design */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -1152,6 +1167,7 @@ export function PricingDialog({
             )}
 
             {/* Yearly Pro Tier - Featured */}
+            {offerings.yearly && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1195,7 +1211,7 @@ export function PricingDialog({
                       {SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings)}
                     </Badge>
                   )}
-                  {offerings.yearly && offerings.monthly && (
+                  {offerings.yearly && offerings.monthly && parseFloat(offerings.yearly.price || '0') > 0 && (
                     <p className="text-xs md:text-sm font-semibold text-[#9B87E8]">
                       {SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(((parseFloat(offerings.yearly.price) / 12).toFixed(2)))}
                     </p>
@@ -1253,6 +1269,7 @@ export function PricingDialog({
                 </Button>
               </div>
             </motion.div>
+            )}
           </div>
 
           {/* Footer Note - Spacious */}
