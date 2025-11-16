@@ -70,37 +70,13 @@ export function PricingDialog({
     yearly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
   }>({});
 
-  // Debug: Log offerings state changes
+  // Warn if defaults are being used (should not happen)
   React.useEffect(() => {
-    console.log('🔄 Offerings state updated:', {
-      monthly: offerings.monthly ? {
-        identifier: offerings.monthly.identifier,
-        priceString: offerings.monthly.priceString,
-        title: offerings.monthly.title,
-        available: true,
-        isUsingDefaultPrice: offerings.monthly.priceString === DEFAULT_MONTHLY_PRICE,
-        isUsingDefaultTitle: offerings.monthly.title === DEFAULT_MONTHLY_TITLE,
-        source: 'RevenueCat (if not defaults)'
-      } : { available: false },
-      yearly: offerings.yearly ? {
-        identifier: offerings.yearly.identifier,
-        priceString: offerings.yearly.priceString,
-        title: offerings.yearly.title,
-        available: true,
-        isUsingDefaultPrice: offerings.yearly.priceString === DEFAULT_YEARLY_PRICE,
-        isUsingDefaultTitle: offerings.yearly.title === DEFAULT_YEARLY_TITLE,
-        source: 'RevenueCat (if not defaults)'
-      } : { available: false }
-    });
-    
-    // Warn if defaults are being used (this should never happen now)
     if (offerings.monthly?.priceString === DEFAULT_MONTHLY_PRICE) {
-      console.error('❌ WARNING: Monthly offering is using DEFAULT price! This should not happen.');
-      console.error('   This means RevenueCat product data is missing or invalid.');
+      console.error('❌ Monthly offering using default price - RevenueCat product data missing');
     }
     if (offerings.yearly?.priceString === DEFAULT_YEARLY_PRICE) {
-      console.error('❌ WARNING: Yearly offering is using DEFAULT price! This should not happen.');
-      console.error('   This means RevenueCat product data is missing or invalid.');
+      console.error('❌ Yearly offering using default price - RevenueCat product data missing');
     }
   }, [offerings]);
   const platform = getPlatform();
@@ -181,35 +157,23 @@ export function PricingDialog({
       
       console.log('🔄 Loading offerings from RevenueCat...');
       
-      // Force refresh to get latest packages from RevenueCat (bypasses cache)
-      // Try multiple times to ensure we get the latest data
       let rcOfferings = null;
       let attempts = 0;
       const maxAttempts = 2;
       
       while (attempts < maxAttempts) {
         attempts++;
-        console.log(`🔄 Fetch attempt ${attempts}/${maxAttempts}...`);
-        
-        // Add delay before retry (not before first attempt)
         if (attempts > 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
         rcOfferings = await getOfferings(true);
-        
-        // Check if we got packages
         if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
-          console.log(`✅ Got ${rcOfferings.availablePackages.length} packages on attempt ${attempts}`);
           break;
-        } else {
-          console.warn(`⚠️ No packages found on attempt ${attempts}, retrying...`);
         }
       }
       
       if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
-        console.log('✅ RevenueCat connected! Packages found:', rcOfferings.availablePackages.length);
-        console.log('📋 Offering identifier:', rcOfferings.identifier || 'N/A');
         
         // Log ALL packages first (before filtering) to see what RevenueCat is actually returning
         console.log('============================================================');
@@ -394,10 +358,7 @@ export function PricingDialog({
         validPackages.forEach((pkg: any) => {
           if (!pkg) return;
           
-          // Only discover identifiers from packages with valid product data
-          // Packages without product data are likely not properly configured in RevenueCat
           if (!hasValidProductData(pkg)) {
-            console.warn(`⚠️ Skipping identifier discovery for package ${pkg.identifier} - no valid product data`);
             return;
           }
           
@@ -596,15 +557,6 @@ export function PricingDialog({
             
             if (hasValidMatch) {
               yearlyPkg = pkg;
-              console.log('✅ Found yearly package:', {
-                identifier,
-                productId: productId || 'N/A',
-                productTitle: productTitle || 'N/A',
-                priceString: pkg.product?.priceString || 'N/A',
-                hasProduct: !!pkg.product,
-                hasValidProductData: hasValidProductData(pkg),
-                matchedBy: isYearlyByMetadata ? 'metadata' : isYearlyById ? 'identifier' : isYearlyByProductId ? 'productId' : isYearlyByProductTitle ? 'productTitle' : hasYearlyKeywords ? 'keywords' : 'unknown'
-              });
             }
           }
         }
