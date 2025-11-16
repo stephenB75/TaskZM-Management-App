@@ -193,16 +193,34 @@ export function PricingDialog({
       
       if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
         console.log('✅ RevenueCat connected! Packages found:', rcOfferings.availablePackages.length);
+        console.log('📋 Offering identifier:', rcOfferings.identifier || 'N/A');
         
         // Log ALL packages first (before filtering) to see what RevenueCat is actually returning
         console.log('📦 ALL PACKAGES FROM REVENUECAT (before filtering):');
         rcOfferings.availablePackages.forEach((p: any, index: number) => {
+          const identifier = p?.identifier || 'N/A';
+          const hasProduct = !!p?.product;
+          const productKeys = p?.product && typeof p.product === 'object' ? Object.keys(p.product) : [];
+          // Check if product has ANY data (not just specific fields)
+          const hasProductData = hasProduct && productKeys.length > 0;
+          
+          // Log the FULL product object to see what RevenueCat is actually returning
           console.log(`   Package ${index + 1}:`, {
-            identifier: p?.identifier || 'N/A',
-            hasProduct: !!p?.product,
+            identifier,
+            hasIdentifier: !!p?.identifier,
+            hasProduct,
+            hasProductData,
             productType: typeof p?.product,
-            productKeys: p?.product ? Object.keys(p.product) : [],
-            productData: p?.product || 'NO PRODUCT OBJECT'
+            productIsObject: p?.product && typeof p.product === 'object',
+            productKeys: productKeys.length > 0 ? productKeys : (hasProduct ? 'object exists but no enumerable keys' : 'no product'),
+            productIdentifier: p?.product?.identifier || 'N/A',
+            productTitle: p?.product?.title || 'N/A',
+            priceString: p?.product?.priceString || 'N/A',
+            price: p?.product?.price || 'N/A',
+            currencyCode: p?.product?.currencyCode || 'N/A',
+            // Log the entire product object structure
+            fullProductObject: p?.product ? JSON.stringify(p.product, null, 2).substring(0, 200) : 'N/A',
+            willBeProcessed: !!p?.identifier ? 'YES (has identifier)' : 'NO (no identifier)'
           });
         });
         
@@ -233,8 +251,25 @@ export function PricingDialog({
         
         // Log packages with empty product objects (these are still valid, just need defaults)
         const packagesWithEmptyProducts = validPackages.filter((p: any) => {
-          return p.identifier && (!p.product || Object.keys(p.product || {}).length === 0);
+          if (!p.identifier) return false;
+          if (!p.product) return true; // No product object at all
+          if (typeof p.product !== 'object') return true; // Product is not an object
+          const keys = Object.keys(p.product);
+          return keys.length === 0; // Product object exists but has no properties
         });
+        
+        const packagesWithProductData = validPackages.filter((p: any) => {
+          if (!p.identifier) return false;
+          if (!p.product) return false;
+          if (typeof p.product !== 'object') return false;
+          const keys = Object.keys(p.product);
+          return keys.length > 0; // Product has actual data
+        });
+        
+        console.log(`📊 Package Summary:`);
+        console.log(`   Total packages: ${validPackages.length}`);
+        console.log(`   Packages with product data: ${packagesWithProductData.length}`);
+        console.log(`   Packages with empty/missing products: ${packagesWithEmptyProducts.length}`);
         
         if (packagesWithEmptyProducts.length > 0) {
           console.warn(`⚠️ Found ${packagesWithEmptyProducts.length} package(s) with empty product data (will use defaults):`);
@@ -242,6 +277,20 @@ export function PricingDialog({
             console.warn(`   - ${p.identifier}: Will use default pricing/title`);
             console.warn('   This is OK - package will still be displayed and matched by identifier');
             console.warn('   Product data may populate later, or you may need to link products in RevenueCat dashboard');
+          });
+        }
+        
+        if (packagesWithProductData.length > 0) {
+          console.log(`✅ Found ${packagesWithProductData.length} package(s) with product data:`);
+          packagesWithProductData.forEach((p: any) => {
+            console.log(`   - ${p.identifier}:`, {
+              productId: p.product?.identifier || 'N/A',
+              title: p.product?.title || 'N/A',
+              priceString: p.product?.priceString || 'N/A',
+              price: p.product?.price || 'N/A',
+              currencyCode: p.product?.currencyCode || 'N/A',
+              allProductKeys: Object.keys(p.product || {})
+            });
           });
         }
         

@@ -29,6 +29,11 @@ export interface RevenueCatOffering {
   availablePackages: RevenueCatPackage[];
 }
 
+export interface RevenueCatOfferings {
+  current: RevenueCatOffering | null;
+  all: Record<string, RevenueCatOffering>;
+}
+
 export interface RevenueCatPackage {
   identifier: string;
   product: {
@@ -610,30 +615,66 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
         
         const currentOffering = offerings.current as any;
         console.log('✅ Current offering found:', currentOffering.identifier);
-        console.log('📦 Available packages:', currentOffering.availablePackages?.length || 0);
+        console.log('📦 Available packages in current offering:', currentOffering.availablePackages?.length || 0);
         
-        if (!currentOffering.availablePackages || currentOffering.availablePackages.length === 0) {
-          console.warn('⚠️ Current offering has no packages');
-          console.warn('   Check RevenueCat dashboard to ensure packages are attached to the offering');
+        // Check if we should also look at other offerings
+        // Sometimes packages are split across multiple offerings
+        let allPackages = [...(currentOffering.availablePackages || [])];
+        
+        if (offerings.all && Object.keys(offerings.all).length > 1) {
+          console.log('📦 Multiple offerings detected, checking all offerings for packages...');
+          Object.entries(offerings.all).forEach(([key, offering]: [string, any]) => {
+            if (offering && offering.availablePackages && offering.availablePackages.length > 0) {
+              console.log(`   Offering "${key}": ${offering.availablePackages.length} package(s)`);
+              // Add packages from other offerings (avoid duplicates)
+              offering.availablePackages.forEach((pkg: any) => {
+                if (pkg && pkg.identifier) {
+                  const exists = allPackages.some((p: any) => p?.identifier === pkg.identifier);
+                  if (!exists) {
+                    allPackages.push(pkg);
+                    console.log(`      Added package: ${pkg.identifier}`);
+                  }
+                }
+              });
+            }
+          });
+        }
+        
+        if (allPackages.length === 0) {
+          console.warn('⚠️ No packages found in any offering');
+          console.warn('   Check RevenueCat dashboard to ensure packages are attached to offerings');
           return null;
         }
         
+        // Replace availablePackages with combined packages from all offerings
+        currentOffering.availablePackages = allPackages;
+        console.log(`✅ Total packages from all offerings: ${allPackages.length}`);
+        
         // Log package details for verification
-        console.log('📦 Package details:');
+        console.log('📦 Package details from CURRENT offering:');
         let validPackageCount = 0;
         let emptyProductCount = 0;
+        let packagesWithIdentifiers = 0;
+        
         currentOffering.availablePackages.forEach((pkg: any, index: number) => {
           if (!pkg) {
             console.warn(`   Package ${index + 1}: null or undefined`);
             return;
           }
           
+          const hasIdentifier = !!pkg.identifier;
+          if (hasIdentifier) packagesWithIdentifiers++;
+          
           const productKeys = pkg.product ? Object.keys(pkg.product) : [];
-          const hasValidProduct = productKeys.length > 0 && (pkg.product?.identifier || pkg.product?.priceString || pkg.product?.price);
+          // More lenient check: product exists and has ANY properties (not just specific ones)
+          // RevenueCat products can have various structures depending on platform
+          const hasValidProduct = pkg.product && 
+                                  typeof pkg.product === 'object' && 
+                                  productKeys.length > 0;
           
           if (hasValidProduct) {
             validPackageCount++;
-            console.log(`   Package ${index + 1} (VALID):`, {
+            console.log(`   Package ${index + 1} (VALID - has product data):`, {
               identifier: pkg.identifier || 'unknown',
               productId: pkg.product.identifier || 'unknown',
               priceString: pkg.product.priceString || 'N/A',
@@ -643,41 +684,49 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
               description: pkg.product.description || 'N/A',
               subscriptionPeriod: pkg.product.subscriptionPeriod || 'N/A'
             });
-          } else {
+          } else if (hasIdentifier) {
             emptyProductCount++;
-            console.warn(`   Package ${index + 1} (INVALID - empty product):`, {
+            console.warn(`   Package ${index + 1} (HAS IDENTIFIER but empty product - will use defaults):`, {
               identifier: pkg.identifier || 'unknown',
               hasProduct: !!pkg.product,
               productKeys: productKeys.length > 0 ? productKeys : 'empty object',
-              productData: pkg.product || 'missing'
+              note: 'This package will still be processed and matched by identifier'
+            });
+          } else {
+            console.warn(`   Package ${index + 1} (INVALID - no identifier):`, {
+              hasIdentifier: false,
+              hasProduct: !!pkg.product,
+              productKeys: productKeys.length > 0 ? productKeys : 'empty object'
             });
           }
         });
         
-        if (emptyProductCount > 0) {
-          console.error(`❌ Found ${emptyProductCount} package(s) with empty product data`);
-          console.error('   This indicates a RevenueCat configuration issue:');
-          console.error('   1. Products must be created in RevenueCat Dashboard → Products');
-          console.error('   2. Products must be linked to Packages in RevenueCat Dashboard → Packages');
-          console.error('   3. Packages must be added to the current Offering in RevenueCat Dashboard → Offerings');
-          console.error('   4. For Stripe products, ensure the Stripe integration is properly configured');
-          console.error('   5. Product IDs should match:');
-          console.error('      - Monthly: proddf11a9ef49');
-          console.error('      - Yearly: prod40f95d4507');
-          console.error('   Valid packages found:', validPackageCount);
-          console.error('   Empty packages found:', emptyProductCount);
-          
-          // Log which packages are missing product data
-          currentOffering.availablePackages.forEach((pkg: any, index: number) => {
-            if (pkg && pkg.product) {
-              const productKeys = Object.keys(pkg.product);
-              if (productKeys.length === 0 || (!pkg.product.identifier && !pkg.product.priceString && !pkg.product.price)) {
-                console.error(`   - Package "${pkg.identifier}" has empty product data`);
-                console.error(`     Package type: ${pkg.packageType || 'unknown'}`);
-                console.error(`     Product keys: ${productKeys.length > 0 ? productKeys.join(', ') : 'none'}`);
-              }
+        // Check if we should also look at other offerings
+        if (offerings.all && Object.keys(offerings.all).length > 0) {
+          console.log('\n📦 Checking ALL offerings (not just current):');
+          Object.entries(offerings.all).forEach(([key, offering]: [string, any]) => {
+            if (offering && offering.availablePackages && offering.availablePackages.length > 0) {
+              console.log(`   Offering "${key}": ${offering.availablePackages.length} package(s)`);
+              offering.availablePackages.forEach((pkg: any) => {
+                if (pkg && pkg.identifier) {
+                  console.log(`      - ${pkg.identifier} (${pkg.product ? 'has product' : 'no product'})`);
+                }
+              });
             }
           });
+        }
+        
+        if (emptyProductCount > 0) {
+          console.warn(`⚠️ Found ${emptyProductCount} package(s) with empty product data (but they have identifiers)`);
+          console.warn('   These packages will still be processed using default pricing');
+          console.warn('   To fix: Link products to packages in RevenueCat Dashboard → Packages');
+        }
+        
+        if (packagesWithIdentifiers === 0) {
+          console.error('❌ No packages with identifiers found in current offering');
+          console.error('   This indicates a RevenueCat configuration issue');
+        } else {
+          console.log(`✅ Found ${packagesWithIdentifiers} package(s) with identifiers (will be processed)`);
         }
         
         return currentOffering;
