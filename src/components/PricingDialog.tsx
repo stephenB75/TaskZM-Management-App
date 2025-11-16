@@ -211,38 +211,8 @@ export function PricingDialog({
         return;
       }
       
-      console.log('🔄 Loading offerings from RevenueCat...');
-      
-      let rcOfferings = null;
-      let attempts = 0;
-      const maxAttempts = 5; // Increased to wait for product data
-      
-      while (attempts < maxAttempts) {
-        attempts++;
-        if (attempts > 1) {
-          console.log(`🔄 Retry ${attempts}/${maxAttempts}: Loading offerings with product data from RevenueCat...`);
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer for product data
-        }
-        
-        rcOfferings = await getOfferings(true);
-        
-        // Check if we have packages with product data
-        if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
-          const hasProductData = rcOfferings.availablePackages.some((pkg: any) => {
-            if (!pkg?.product || typeof pkg.product !== 'object') return false;
-            const keys = Object.keys(pkg.product);
-            if (keys.length === 0) return false;
-            return pkg.product.identifier || pkg.product.priceString || (pkg.product.price != null && pkg.product.price !== 0);
-          });
-          
-          if (hasProductData || attempts === maxAttempts) {
-            if (hasProductData) {
-              console.log(`✅ Product data loaded after ${attempts} attempt(s)`);
-            }
-            break;
-          }
-        }
-      }
+      // Load offerings from RevenueCat
+      const rcOfferings = await getOfferings(true);
       
       if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
         

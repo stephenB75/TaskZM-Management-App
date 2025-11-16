@@ -753,86 +753,28 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
         const Purchases = (PurchasesModule.default?.Purchases || PurchasesModule.Purchases || PurchasesModule.default || PurchasesModule) as any;
         const purchasesInstance = Purchases.getSharedInstance();
         
-        // Sync customer info to ensure product data is loaded
-        try {
-          await purchasesInstance.syncPurchases();
-        } catch (syncError: any) {
-          // Silently fail - sync is optional
-        }
-        
-        // Force refresh cache if requested
+        // Fetch offerings from RevenueCat
+        // If forceRefresh, sync first to clear cache
         if (forceRefresh) {
           try {
-            // Clear cache by syncing purchases and getting fresh customer info
             await purchasesInstance.syncPurchases();
-            await purchasesInstance.getCustomerInfo();
-            // Add delay to ensure cache is cleared and product data loads
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            console.log('🔄 Force refresh: Cache cleared, fetching fresh offerings from RevenueCat');
+            await new Promise(resolve => setTimeout(resolve, 500));
           } catch (error: any) {
-            console.warn('⚠️ Could not clear cache during force refresh:', error?.message);
+            // Silently fail - sync is optional
           }
         }
         
-        // Fetch offerings with retry logic to ensure product data is loaded
+        // Fetch offerings
         let offerings;
-        let retryCount = 0;
-        const maxRetries = 5; // Increased retries to wait for product data
-        let offeringsError: any = null;
-        
-        while (retryCount < maxRetries) {
-          try {
-            offerings = await purchasesInstance.getOfferings();
-            
-            // Check if we have packages with product data
-            // Product data is valid if it has product object with identifier OR price data
-            const hasPackagesWithProductData = offerings?.current?.availablePackages?.some((pkg: any) => {
-              if (!pkg?.product) return false;
-              if (typeof pkg.product !== 'object') return false;
-              
-              const productKeys = Object.keys(pkg.product);
-              if (productKeys.length === 0) return false;
-              
-              // Valid if has product identifier OR price data
-              const hasProductId = pkg.product.identifier && typeof pkg.product.identifier === 'string';
-              const hasPriceString = pkg.product.priceString && typeof pkg.product.priceString === 'string' && pkg.product.priceString.trim() !== '';
-              const hasPriceAmount = pkg.product.price != null && pkg.product.price !== 0;
-              
-              return hasProductId || hasPriceString || hasPriceAmount;
-            });
-            
-            // If we have product data or this is the last retry, break
-            if (hasPackagesWithProductData || retryCount === maxRetries - 1) {
-              if (hasPackagesWithProductData) {
-                console.log(`✅ Product data loaded after ${retryCount + 1} attempt(s)`);
-              }
-              break;
-            }
-            
-            // Wait before retrying
-            retryCount++;
-            if (retryCount < maxRetries) {
-              console.log(`🔄 Retry ${retryCount}/${maxRetries}: Waiting for product data to load from RevenueCat...`);
-              await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay
-            }
-          } catch (error: any) {
-            // If error, store it and break
-            offeringsError = error;
-            break;
-          }
-        }
-        
-        // Handle errors from getOfferings call
-        if (offeringsError) {
-          // Check for 401 Unauthorized (credentials issue)
-          const errorMessage = offeringsError?.message || String(offeringsError || '');
-          const errorCode = offeringsError?.code || '';
+        try {
+          offerings = await purchasesInstance.getOfferings();
+        } catch (error: any) {
+          const errorMessage = error?.message || String(error || '');
+          const errorCode = error?.code || '';
           const isUnauthorized = errorMessage.includes('credentials') || 
                                 errorMessage.includes('Unauthorized') ||
                                 errorMessage.includes('401') ||
-                                errorCode === '401' ||
-                                (offeringsError?.response?.status === 401) ||
-                                (offeringsError?.status === 401);
+                                errorCode === '401';
           
           if (isUnauthorized) {
             console.error('❌ RevenueCat API credentials error (401 Unauthorized)');
