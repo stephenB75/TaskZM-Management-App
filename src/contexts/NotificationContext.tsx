@@ -109,15 +109,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Update badge count
   const updateBadge = useCallback(() => {
     const count = (() => {
-      if (!settings.showBadge || !settings.enabled) {
+      if (!settings.showBadge) {
         return 0;
       }
 
       const now = new Date();
+      const today = new Date(now);
+      today.setHours(0, 0, 0, 0);
+
       const overdueTasks = tasks.filter(task => {
         if (task.status === 'done' || !task.dueDate) return false;
         const dueDate = new Date(task.dueDate);
-        return dueDate < now;
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate < today;
       });
 
       const dueSoonTasks = tasks.filter(task => {
@@ -127,8 +131,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         return dueDate >= now && dueDate <= reminderTime;
       });
 
-      return (settings.overdueAlerts ? overdueTasks.length : 0) + 
-             (settings.dueDateReminders ? dueSoonTasks.length : 0);
+      const overdueCount = settings.overdueAlerts ? overdueTasks.length : 0;
+      const dueSoonCount = settings.dueDateReminders ? dueSoonTasks.length : 0;
+      const totalCount = overdueCount + dueSoonCount;
+
+      logger.debug('Badge update:', {
+        overdueCount,
+        dueSoonCount,
+        totalCount,
+        showBadge: settings.showBadge,
+        overdueAlerts: settings.overdueAlerts,
+        dueDateReminders: settings.dueDateReminders,
+      });
+
+      return totalCount;
     })();
     
     setBadgeCount(count);
@@ -146,11 +162,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               logger.warn('Failed to set app badge:', err);
             }
           });
+        } else {
+          logger.debug('App badge set successfully:', count);
         }
       } catch (error) {
-        // Silently fail if Badge API is not fully supported
-        logger.debug('Badge API not fully supported:', error);
+        // Log badge API errors for debugging
+        logger.debug('Badge API error:', error);
       }
+    } else {
+      logger.debug('Badge API not available');
     }
   }, [tasks, settings, isBadgeAPIAvailable]);
 
@@ -183,11 +203,33 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // Check for due/overdue tasks and show notifications
   const checkAndNotify = useCallback(() => {
-    if (!settings.enabled || permission !== 'granted' || !user) return;
+    if (!settings.enabled) {
+      logger.debug('Notifications disabled, skipping check');
+      return;
+    }
+
+    if (permission !== 'granted') {
+      logger.debug('Notification permission not granted:', permission);
+      return;
+    }
+
+    if (!user) {
+      logger.debug('No user, skipping notifications');
+      return;
+    }
 
     const now = new Date();
     const notifiedTasksArray = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.notifiedTasks, []);
     const notifiedTasks = new Set(notifiedTasksArray);
+
+    logger.debug('Checking notifications:', {
+      enabled: settings.enabled,
+      permission,
+      hasUser: !!user,
+      totalTasks: tasks.length,
+      overdueAlerts: settings.overdueAlerts,
+      dueDateReminders: settings.dueDateReminders,
+    });
 
     // Check for overdue tasks
     if (settings.overdueAlerts) {
@@ -197,12 +239,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         dueDate.setHours(0, 0, 0, 0);
         const today = new Date(now);
         today.setHours(0, 0, 0, 0);
-        return dueDate < today && !notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
+        const isOverdue = dueDate < today;
+        const alreadyNotified = notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
+        return isOverdue && !alreadyNotified;
       });
+
+      logger.debug('Overdue tasks found:', overdueTasks.length);
 
       overdueTasks.forEach(task => {
         try {
-          new Notification(NOTIFICATION_TITLES.taskOverdue, {
+          const notification = new Notification(NOTIFICATION_TITLES.taskOverdue, {
             body: `${task.title} was due ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}`,
             icon: NOTIFICATION_ICONS.default,
             badge: NOTIFICATION_ICONS.badge,
@@ -210,6 +256,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             requireInteraction: false,
           });
           
+          logger.debug('Notification sent for overdue task:', task.id, task.title);
           notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
         } catch (error) {
           logger.error('Failed to show notification:', error);
@@ -224,8 +271,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const dueSoonTasks = tasks.filter(task => {
         if (task.status === 'done' || !task.dueDate) return false;
         const dueDate = new Date(task.dueDate);
-        return dueDate >= now && dueDate <= reminderTime && !notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
+        const isDueSoon = dueDate >= now && dueDate <= reminderTime;
+        const alreadyNotified = notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
+        return isDueSoon && !alreadyNotified;
       });
+
+      logger.debug('Due soon tasks found:', dueSoonTasks.length);
 
       dueSoonTasks.forEach(task => {
         try {
@@ -235,7 +286,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             ? `${timeUntil} minutes` 
             : `${Math.round(timeUntil / 60)} hours`;
           
-          new Notification(NOTIFICATION_TITLES.taskDueSoon, {
+          const notification = new Notification(NOTIFICATION_TITLES.taskDueSoon, {
             body: `${task.title} is due in ${timeText}`,
             icon: NOTIFICATION_ICONS.default,
             badge: NOTIFICATION_ICONS.badge,
@@ -243,6 +294,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             requireInteraction: false,
           });
           
+          logger.debug('Notification sent for due soon task:', task.id, task.title, timeText);
           notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
         } catch (error) {
           logger.error('Failed to show notification:', error);
