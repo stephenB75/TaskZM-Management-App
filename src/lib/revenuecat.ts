@@ -58,10 +58,24 @@ const EXPECTED_REVENUECAT_APP_ID = 'app4689b9299f';
  * Configure RevenueCat for the current platform
  * Safe to call multiple times - only configures once per user
  */
-export async function configureRevenueCat(userId: string): Promise<void> {
-  if (isConfigured && currentUserId === userId) {
+export async function configureRevenueCat(userId: string, forceReconfigure: boolean = false): Promise<void> {
+  // Check if we need to reconfigure (new user, force flag, or API key changed)
+  const env = (import.meta as any).env || {};
+  const currentApiKey = env.VITE_REVENUECAT_WEB_PUBLIC_KEY;
+  
+  // If already configured for same user and not forcing, check if API key changed
+  if (isConfigured && currentUserId === userId && !forceReconfigure) {
+    // Check if API key has changed (would require reconfiguration)
+    // Note: We can't easily detect this without storing the old key, so we'll reconfigure if forced
     console.log('✅ RevenueCat already configured for user:', userId);
     return;
+  }
+  
+  // If forcing reconfiguration or user changed, reset state
+  if (forceReconfigure || (isConfigured && currentUserId !== userId)) {
+    isConfigured = false;
+    currentUserId = null;
+    console.log('🔄 Resetting RevenueCat configuration...');
   }
 
   const platform = getPlatform();
@@ -107,6 +121,8 @@ export async function configureRevenueCat(userId: string): Promise<void> {
       const keyPrefix = apiKey.substring(0, 6);
       const keySuffix = apiKey.length > 10 ? apiKey.substring(apiKey.length - 4) : '****';
       console.log('🔑 Using RevenueCat API key:', `${keyPrefix}...${keySuffix} (${apiKey.length} chars)`);
+      console.log('   Key type:', apiKey.startsWith('rcb_') ? 'PUBLIC (web)' : apiKey.startsWith('rc_') ? 'PUBLIC (legacy)' : 'UNKNOWN');
+      console.log('   Expected app ID: app4689b9299f');
       
       // Initialize RevenueCat SDK
       
