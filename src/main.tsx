@@ -21,26 +21,38 @@ if (typeof window !== 'undefined') {
         return false;
       }
       
-      // Suppress initialization errors from bundled code (may be from extensions or build artifacts)
+      // Suppress initialization errors ONLY from browser extensions
+      // Don't suppress errors from our own code
       if (message.includes('Cannot access') && message.includes('before initialization')) {
-        // These errors often come from browser extensions or are transient build issues
-        // If it's from our code, we'll see it in development; in production, suppress it
+        // Only suppress if it's clearly from a browser extension
         const isExtensionError = filename.includes('chrome-extension://') || 
-                                filename.includes('contentScript') ||
-                                filename.includes('vendor-') ||
-                                filename.includes('index-') && filename.includes('.js');
+                                filename.includes('moz-extension://') ||
+                                filename.includes('safari-extension://') ||
+                                filename.includes('contentScript.bundle.js') ||
+                                filename.includes('web-client-content-script');
         
-        // In production, these are often false positives from extensions or bundling
-        const isProduction = import.meta.env.PROD;
+        // Also suppress if it's from vendor bundles (third-party code, not ours)
+        const isVendorError = filename.includes('vendor-') && 
+                             !filename.includes('src/') &&
+                             !filename.includes('index.html');
         
-        if (isExtensionError || isProduction) {
+        if (isExtensionError || isVendorError) {
           event.preventDefault();
-          console.debug('Suppressed initialization error (likely from extension or bundling)', {
+          console.debug('Suppressed initialization error (from extension or vendor code)', {
             message,
             filename,
-            isProduction
+            source: isExtensionError ? 'extension' : 'vendor'
           });
           return false;
+        }
+        
+        // For our own code, log a warning but don't suppress
+        // This helps identify real issues in development
+        if (import.meta.env.DEV) {
+          console.warn('Initialization error detected (not suppressed - may indicate a real issue):', {
+            message,
+            filename
+          });
         }
       }
     }
@@ -61,12 +73,16 @@ if (typeof window !== 'undefined') {
         return false;
       }
       
-      // Suppress initialization errors in promise rejections too
+      // Suppress initialization errors in promise rejections ONLY from extensions
       if (message.includes('Cannot access') && message.includes('before initialization')) {
-        const isProduction = import.meta.env.PROD;
-        if (isProduction) {
+        // Only suppress if it's clearly from an extension
+        const isExtensionError = message.includes('chrome-extension://') || 
+                                message.includes('moz-extension://') ||
+                                message.includes('contentScript');
+        
+        if (isExtensionError) {
           event.preventDefault();
-          console.debug('Suppressed initialization error in promise rejection (likely bundling issue)');
+          console.debug('Suppressed initialization error in promise rejection (from extension)');
           return false;
         }
       }
