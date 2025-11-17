@@ -737,22 +737,38 @@ export function PricingDialog({
           console.error('❌ Monthly package found but has NO product data from RevenueCat');
           console.error('   Package identifier:', monthlyPkg.identifier);
           console.error('   Product object:', monthlyPkg.product);
-          console.error('   ACTION REQUIRED:');
-          console.error('   1. Go to RevenueCat Dashboard → Products');
-          console.error('   2. Ensure products are created and linked to packages');
-          console.error('   3. Verify Stripe integration is configured');
-          console.error('   4. Check that products have pricing set in Stripe');
+          console.error('');
+          console.error('🔧 THIS IS A REVENUECAT CONFIGURATION ISSUE - NOT A CODE BUG');
+          console.error('');
+          console.error('   ACTION REQUIRED in RevenueCat Dashboard:');
+          console.error('   1. Go to RevenueCat Dashboard → Offerings');
+          console.error('   2. Click on your current offering');
+          console.error('   3. Click on the package:', monthlyPkg.identifier);
+          console.error('   4. In the "Product" dropdown, select product: prodb18a767009');
+          console.error('   5. Save the changes');
+          console.error('   6. Wait 2-3 minutes for RevenueCat to sync');
+          console.error('   7. Refresh this dialog');
+          console.error('');
+          console.error('   📖 See REVENUECAT_PRODUCT_DATA_FIX.md for detailed instructions');
         }
         
         if (yearlyPkg && !hasValidProductData(yearlyPkg)) {
           console.error('❌ Yearly package found but has NO product data from RevenueCat');
           console.error('   Package identifier:', yearlyPkg.identifier);
           console.error('   Product object:', yearlyPkg.product);
-          console.error('   ACTION REQUIRED:');
-          console.error('   1. Go to RevenueCat Dashboard → Products');
-          console.error('   2. Ensure products are created and linked to packages');
-          console.error('   3. Verify Stripe integration is configured');
-          console.error('   4. Check that products have pricing set in Stripe');
+          console.error('');
+          console.error('🔧 THIS IS A REVENUECAT CONFIGURATION ISSUE - NOT A CODE BUG');
+          console.error('');
+          console.error('   ACTION REQUIRED in RevenueCat Dashboard:');
+          console.error('   1. Go to RevenueCat Dashboard → Offerings');
+          console.error('   2. Click on your current offering');
+          console.error('   3. Click on the package:', yearlyPkg.identifier);
+          console.error('   4. In the "Product" dropdown, select product: prod77566b1baf');
+          console.error('   5. Save the changes');
+          console.error('   6. Wait 2-3 minutes for RevenueCat to sync');
+          console.error('   7. Refresh this dialog');
+          console.error('');
+          console.error('   📖 See REVENUECAT_PRODUCT_DATA_FIX.md for detailed instructions');
         }
 
         console.log('============================================================');

@@ -786,53 +786,136 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
         const purchasesInstance = Purchases.getSharedInstance();
         
         // Fetch offerings from RevenueCat
-        // If forceRefresh, sync first to clear cache
+        // If forceRefresh, sync first to clear cache and force product data load
         if (forceRefresh) {
           try {
+            console.log('🔄 Force refreshing RevenueCat data...');
+            // Multiple sync attempts to ensure product data loads
             await purchasesInstance.syncPurchases();
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await purchasesInstance.getCustomerInfo(); // This can trigger product data refresh
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Longer wait for product data
           } catch (error: any) {
             // Silently fail - sync is optional
+            console.warn('⚠️ Sync failed (non-critical):', error?.message);
           }
         }
         
-        // Fetch offerings
+        // Fetch offerings with retry logic if product data is missing
         let offerings;
-        try {
-          offerings = await purchasesInstance.getOfferings();
-        } catch (error: any) {
-          const errorMessage = error?.message || String(error || '');
-          const errorCode = error?.code || '';
-          const isUnauthorized = errorMessage.includes('credentials') || 
-                                errorMessage.includes('Unauthorized') ||
-                                errorMessage.includes('401') ||
-                                errorCode === '401';
-          
-          if (isUnauthorized) {
-            console.error('❌ RevenueCat API credentials error (401 Unauthorized)');
-            console.error('   This means your API key is invalid, expired, or has incorrect permissions.');
-            console.error('   To fix:');
-            console.error('   1. Go to RevenueCat Dashboard → Project Settings → API Keys');
-            console.error('   2. Verify you are using the correct PUBLIC API key (starts with "rcb_" for web)');
-            console.error('   3. Ensure the API key is for the correct app (app4689b9299f)');
-            console.error('   4. Check that the API key has not been revoked or expired');
-            console.error('   5. Update VITE_REVENUECAT_WEB_PUBLIC_KEY in your environment variables');
-            console.error('   6. Restart your development server or rebuild your app');
-            throw new Error('RevenueCat API key is invalid or expired. Please check your API key in the RevenueCat dashboard and update VITE_REVENUECAT_WEB_PUBLIC_KEY.');
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (retryCount <= maxRetries) {
+          try {
+            offerings = await purchasesInstance.getOfferings();
+            
+            // Check if we have packages but they're missing product data
+            const hasPackagesWithoutProductData = offerings?.current?.availablePackages?.some((pkg: any) => 
+              pkg && pkg.identifier && (!pkg.product || !pkg.product.identifier)
+            );
+            
+            // If we have packages without product data and haven't maxed retries, try again
+            if (hasPackagesWithoutProductData && retryCount < maxRetries) {
+              retryCount++;
+              console.log(`🔄 Retry ${retryCount}/${maxRetries}: Packages found but product data missing, attempting to refresh...`);
+              
+              // Try to force refresh product data
+              try {
+                await purchasesInstance.syncPurchases();
+                await purchasesInstance.getCustomerInfo();
+                await new Promise(resolve => setTimeout(resolve, 1500 * retryCount)); // Exponential backoff
+              } catch (syncError) {
+                // Continue anyway
+              }
+              
+              continue; // Retry the getOfferings call
+            }
+            
+            // Success or max retries reached
+            break;
+          } catch (error: any) {
+            // If this is the last retry, handle the error
+            if (retryCount >= maxRetries) {
+              const errorMessage = error?.message || String(error || '');
+              const errorCode = error?.code || '';
+              const isUnauthorized = errorMessage.includes('credentials') || 
+                                    errorMessage.includes('Unauthorized') ||
+                                    errorMessage.includes('401') ||
+                                    errorCode === '401';
+              
+              if (isUnauthorized) {
+                console.error('❌ RevenueCat API credentials error (401 Unauthorized)');
+                console.error('   This means your API key is invalid, expired, or has incorrect permissions.');
+                console.error('   To fix:');
+                console.error('   1. Go to RevenueCat Dashboard → Project Settings → API Keys');
+                console.error('   2. Verify you are using the correct PUBLIC API key (starts with "rcb_" for web)');
+                console.error('   3. Ensure the API key is for the correct app (app4689b9299f)');
+                console.error('   4. Check that the API key has not been revoked or expired');
+                console.error('   5. Update VITE_REVENUECAT_WEB_PUBLIC_KEY in your environment variables');
+                console.error('   6. Restart your development server or rebuild your app');
+                throw new Error('RevenueCat API key is invalid or expired. Please check your API key in the RevenueCat dashboard and update VITE_REVENUECAT_WEB_PUBLIC_KEY.');
+              }
+              
+              // Re-throw other errors
+              throw error;
+            } else {
+              // Retry on error
+              retryCount++;
+              console.warn(`⚠️ getOfferings() error on attempt ${retryCount}, retrying...`, error?.message);
+              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+              continue;
+            }
           }
-          
-          // Re-throw other errors
-          throw error;
         }
         
         // Log what we received for verification
-        if (forceRefresh && offerings?.current) {
-          console.log('✅ Fresh offerings received from RevenueCat:', {
-            offeringId: offerings.current.identifier,
-            packageCount: offerings.current.availablePackages?.length || 0,
-            packageIdentifiers: offerings.current.availablePackages?.map((p: any) => p?.identifier || 'unknown') || [],
-            timestamp: new Date().toISOString()
-          });
+        if (forceRefresh && offerings) {
+          // Log all available offerings
+          const allOfferingIds = offerings.all ? Object.keys(offerings.all) : [];
+          const currentOfferingId = offerings.current?.identifier || 'N/A';
+          
+          console.log('✅ Fresh offerings received from RevenueCat:');
+          console.log('   Current Offering ID:', currentOfferingId);
+          console.log('   All Available Offerings:', allOfferingIds.length > 0 ? allOfferingIds : 'None');
+          
+          // Check for specific yearly offering IDs
+          const expectedYearlyOfferings = ['ofrng3abca1c147', 'ofrng43f4895483'];
+          const foundYearlyOfferings = allOfferingIds.filter(id => expectedYearlyOfferings.includes(id));
+          
+          if (foundYearlyOfferings.length > 0) {
+            console.log('   ✅ Found expected yearly offering(s):', foundYearlyOfferings);
+            foundYearlyOfferings.forEach(offeringId => {
+              const offering = offerings.all?.[offeringId];
+              if (offering) {
+                console.log(`      - ${offeringId}: ${offering.availablePackages?.length || 0} package(s)`);
+              }
+            });
+          } else {
+            console.warn('   ⚠️ Expected yearly offerings not found:', expectedYearlyOfferings);
+            console.warn('      Available offerings:', allOfferingIds);
+          }
+          
+          if (offerings.current) {
+            const packagesWithProductData = offerings.current.availablePackages?.filter((p: any) => 
+              p?.product && p?.product?.identifier
+            ).length || 0;
+            const packagesWithoutProductData = (offerings.current.availablePackages?.length || 0) - packagesWithProductData;
+            
+            console.log('   Current Offering Details:', {
+              offeringId: offerings.current.identifier,
+              packageCount: offerings.current.availablePackages?.length || 0,
+              packagesWithProductData,
+              packagesWithoutProductData,
+              packageIdentifiers: offerings.current.availablePackages?.map((p: any) => p?.identifier || 'unknown') || [],
+              timestamp: new Date().toISOString()
+            });
+            
+            if (packagesWithoutProductData > 0) {
+              console.warn(`   ⚠️ ${packagesWithoutProductData} package(s) are missing product data after ${retryCount + 1} attempt(s)`);
+              console.warn('      This usually means products are not linked to packages in RevenueCat dashboard');
+              console.warn('      ACTION REQUIRED: Link products to packages in RevenueCat Dashboard → Offerings');
+            }
+          }
         }
         
         if (!offerings?.current) {
@@ -843,10 +926,17 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
         const currentOffering = offerings.current as any;
         let allPackages = [...(currentOffering.availablePackages || [])];
         
-        // Combine packages from all offerings
-        if (offerings.all && Object.keys(offerings.all).length > 1) {
-          Object.entries(offerings.all).forEach(([key, offering]: [string, any]) => {
+        // Combine packages from all offerings (including the specific yearly offerings)
+        if (offerings.all && Object.keys(offerings.all).length > 0) {
+          const expectedYearlyOfferings = ['ofrng3abca1c147', 'ofrng43f4895483'];
+          
+          Object.entries(offerings.all).forEach(([offeringId, offering]: [string, any]) => {
             if (offering?.availablePackages) {
+              // Log if we're processing one of the expected yearly offerings
+              if (expectedYearlyOfferings.includes(offeringId)) {
+                console.log(`   📦 Processing yearly offering: ${offeringId} (${offering.availablePackages.length} package(s))`);
+              }
+              
               offering.availablePackages.forEach((pkg: any) => {
                 if (pkg?.identifier && !allPackages.some((p: any) => p?.identifier === pkg.identifier)) {
                   allPackages.push(pkg);

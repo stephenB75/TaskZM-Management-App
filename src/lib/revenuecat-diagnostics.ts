@@ -315,16 +315,31 @@ export async function runRevenueCatDiagnostics(): Promise<FullDiagnosticReport> 
         try {
           const directOfferings = await instance.getOfferings();
           
+          // Check for specific expected offerings
+          const expectedYearlyOfferings = ['ofrng3abca1c147', 'ofrng43f4895483'];
+          const allOfferingIds = directOfferings?.all ? Object.keys(directOfferings.all) : [];
+          const foundYearlyOfferings = allOfferingIds.filter(id => expectedYearlyOfferings.includes(id));
+          
           addResult('direct_sdk_test', 'success', 'Direct SDK call successful', {
             hasCurrent: !!directOfferings?.current,
             hasAll: !!directOfferings?.all,
             currentOfferingId: directOfferings?.current?.identifier || 'N/A',
             currentPackageCount: directOfferings?.current?.availablePackages?.length || 0,
-            allOfferingsCount: directOfferings?.all ? Object.keys(directOfferings.all).length : 0
+            allOfferingsCount: directOfferings?.all ? Object.keys(directOfferings.all).length : 0,
+            allOfferingIds: allOfferingIds,
+            expectedYearlyOfferings: expectedYearlyOfferings,
+            foundYearlyOfferings: foundYearlyOfferings,
+            yearlyOfferingsFound: foundYearlyOfferings.length > 0
           });
           
           if (!directOfferings?.current) {
             recommendations.push('No current offering in RevenueCat. Set a "current" offering in RevenueCat dashboard');
+          }
+          
+          if (foundYearlyOfferings.length === 0) {
+            recommendations.push('Expected yearly offerings (ofrng3abca1c147, ofrng43f4895483) not found. Verify offering IDs in RevenueCat dashboard');
+          } else {
+            console.log(`   ✅ Found ${foundYearlyOfferings.length} expected yearly offering(s):`, foundYearlyOfferings);
           }
         } catch (directError: any) {
           addResult('direct_sdk_test', 'error', 'Direct SDK call failed', {
