@@ -238,9 +238,21 @@ export function PricingDialog({
     if (isLoadingOfferings) return 'Loading…';
     if (!price) return '—';
     // Ensure price is a string and not an object
-    const priceStr = String(price);
-    // Remove any [object Object] artifacts
-    if (priceStr.includes('[object Object]') || priceStr === 'undefined' || priceStr === 'null') {
+    let priceStr = String(price)
+      .replace(/\[object Object\]/g, '')
+      .replace(/NaN/gi, '')
+      .replace(/undefined/gi, '')
+      .replace(/null/gi, '')
+      .trim();
+    
+    // Validate price string is not empty or invalid
+    if (!priceStr || 
+        priceStr === '' || 
+        priceStr === 'NaN' || 
+        priceStr === 'undefined' || 
+        priceStr === 'null' ||
+        priceStr.includes('NaN') ||
+        isNaN(parseFloat(priceStr.replace(/[^0-9.]/g, '')))) {
       console.warn('⚠️ Invalid price string detected:', price);
       return '—';
     }

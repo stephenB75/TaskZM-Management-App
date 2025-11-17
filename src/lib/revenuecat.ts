@@ -310,8 +310,29 @@ export async function getOfferings(): Promise<{
         return null;
       }
       
-      // Ensure priceString is a clean string (remove any object artifacts)
-      priceString = String(priceString).replace(/\[object Object\]/g, '');
+      // Ensure priceString is a clean string (remove any object artifacts and NaN)
+      priceString = String(priceString)
+        .replace(/\[object Object\]/g, '')
+        .replace(/NaN/gi, '')
+        .replace(/undefined/gi, '')
+        .replace(/null/gi, '')
+        .trim();
+
+      // Validate priceString is not empty or invalid
+      if (!priceString || 
+          priceString === '' || 
+          priceString === 'NaN' || 
+          priceString === 'undefined' || 
+          priceString === 'null' ||
+          priceString.includes('NaN') ||
+          isNaN(parseFloat(priceString.replace(/[^0-9.]/g, '')))) {
+        console.warn(`⚠️ ${type} package product has invalid price string:`, {
+          original: product.priceString,
+          cleaned: priceString,
+          product: product,
+        });
+        return null;
+      }
 
       console.log(`✅ ${type} package mapped successfully:`, {
         priceString,
@@ -470,7 +491,7 @@ export async function purchaseProSubscription(
       });
       
     } catch (purchaseError: any) {
-      console.log('📦 Purchase error caught (checking for checkout URL):', {
+      console.log('📦 Purchase error caught (analyzing error):', {
         errorType: typeof purchaseError,
         errorName: purchaseError?.name,
         errorMessage: purchaseError?.message,
@@ -480,7 +501,42 @@ export async function purchaseProSubscription(
         fullError: purchaseError,
       });
       
-      // For Web Billing, RevenueCat may return checkout URL in the error object
+      // FIRST: Check if this is a user cancellation (most common case)
+      // Extract error code early to detect cancellation
+      const errorCode = purchaseError?.code || 
+                       purchaseError?.errorCode || 
+                       purchaseError?.underlyingError?.code ||
+                       purchaseError?.underlyingError?.errorCode;
+      const errorMessage = purchaseError?.message || 
+                          purchaseError?.underlyingError?.message ||
+                          '';
+      const errorString = purchaseError?.toString?.() || String(purchaseError || '');
+      const codeFromString = errorString.match(/code:\s*(\w+)/i)?.[1] || 
+                            errorString.match(/\(code:\s*(\w+)/i)?.[1];
+      const finalErrorCode = errorCode || codeFromString;
+      
+      const isCancelled = 
+        finalErrorCode === 'UserCancelledError' ||
+        finalErrorCode === 'USER_CANCELLED' ||
+        errorCode === 'UserCancelledError' ||
+        errorCode === 'USER_CANCELLED' ||
+        codeFromString === 'UserCancelledError' ||
+        errorString.includes('UserCancelledError') ||
+        errorString.includes('code: UserCancelledError') ||
+        errorMessage.toLowerCase().includes('cancel') ||
+        errorMessage.toLowerCase().includes('user_cancelled') ||
+        errorMessage.toLowerCase().includes('cancelled by user');
+      
+      if (isCancelled) {
+        console.log('ℹ️ Purchase was cancelled by user (this is normal, not an error)');
+        return { 
+          success: false, 
+          error: 'Purchase was cancelled.',
+          cancelled: true,
+        };
+      }
+      
+      // SECOND: Check for checkout URL in error (Web Billing may return checkout URL in error)
       // This is a valid flow - the error contains the redirect URL
       const errorCheckoutUrl = purchaseError?.checkoutUrl || 
                               purchaseError?.checkout_url ||
@@ -510,8 +566,12 @@ export async function purchaseProSubscription(
         };
       }
       
-      // If no checkout URL found, this is a real error
-      console.error('❌ Purchase error without checkout URL - this indicates a configuration issue');
+      // If no checkout URL and not a cancellation, this is a real error
+      console.error('❌ Purchase error without checkout URL or cancellation:', {
+        errorCode: finalErrorCode,
+        errorMessage,
+        errorString: errorString.substring(0, 200),
+      });
       throw purchaseError;
     }
     
