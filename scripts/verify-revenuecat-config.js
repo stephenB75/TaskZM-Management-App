@@ -114,6 +114,15 @@ if (apiKey) {
   } else {
     console.log(`      Status: ✅ Appears to be a real API key`);
   }
+  
+  // Verify against expected key
+  const expectedKey = 'rcb_yptsEebLZbQoBdXImWlxpbgtifLS';
+  if (apiKey === expectedKey) {
+    console.log(`      Verification: ✅ Matches expected key`);
+  } else {
+    console.log(`      Verification: ⚠️  Does NOT match expected key`);
+    console.log(`      Expected: ${expectedKey.substring(0, 10)}...${expectedKey.substring(expectedKey.length - 4)}`);
+  }
 } else {
   console.log('   ❌ API Key not found in .env or .env.local');
   console.log('      Please set VITE_REVENUECAT_WEB_PUBLIC_KEY in your .env file');
