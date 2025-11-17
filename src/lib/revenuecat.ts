@@ -140,17 +140,45 @@ function findPackageByType(
     ? REVENUECAT_MONTHLY_PRODUCT_ID 
     : REVENUECAT_YEARLY_PRODUCT_ID;
   
+  // Expanded keywords to match various identifier formats
+  // RevenueCat packages can have identifiers like: $rc_monthly, rc_monthly, monthly, $monthly, etc.
   const keywords = type === 'monthly' 
-    ? ['month', 'monthly'] 
-    : ['year', 'yearly', 'annual', 'annually'];
+    ? ['month', 'monthly', 'rc_monthly', '$rc_monthly'] 
+    : ['year', 'yearly', 'annual', 'annually', 'rc_yearly', 'rc_annual', '$rc_yearly', '$rc_annual'];
   
-  // Log all available packages for debugging
-  console.log(`🔍 Searching for ${type} package among ${availablePackages.length} packages:`, 
-    availablePackages.map((pkg: any) => ({
-      identifier: pkg?.identifier,
-      productId: pkg?.storeProduct?.identifier || pkg?.rcBillingProduct?.identifier || pkg?.product?.identifier,
-      title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title,
-    }))
+  // Log all available packages for debugging with full details
+  console.log(`🔍 Searching for ${type} package among ${availablePackages.length} packages:`);
+  console.log(`   Expected Product ID: ${productId}`);
+  console.log(`   Expected Keywords: ${keywords.join(', ')}`);
+  console.log(`   Available packages (full details):`, 
+    availablePackages.map((pkg: any) => {
+      const storeProductId = pkg?.storeProduct?.identifier;
+      const rcBillingProductId = pkg?.rcBillingProduct?.identifier;
+      const pkgProductId = pkg?.product?.identifier;
+      const identifier = pkg?.identifier || 'N/A';
+      const identifierLower = identifier.toLowerCase();
+      
+      return {
+        identifier: identifier,
+        identifierLower: identifierLower,
+        productIds: {
+          storeProduct: storeProductId || 'N/A',
+          rcBillingProduct: rcBillingProductId || 'N/A',
+          product: pkgProductId || 'N/A',
+        },
+        title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title || 'N/A',
+        matchesProductId: storeProductId === productId || rcBillingProductId === productId || pkgProductId === productId,
+        matchesKeywords: keywords.some(kw => identifierLower.includes(kw.toLowerCase())),
+        keywordMatches: keywords.filter(kw => identifierLower.includes(kw.toLowerCase())),
+        // Show all possible identifier variations
+        allIdentifiers: {
+          packageIdentifier: identifier,
+          storeProductIdentifier: storeProductId,
+          rcBillingProductIdentifier: rcBillingProductId,
+          productIdentifier: pkgProductId,
+        },
+      };
+    })
   );
   
   // Strategy 1: Match by exact product ID
@@ -167,13 +195,27 @@ function findPackageByType(
   }
   
   // Strategy 2: Match by identifier keywords (case-insensitive)
+  // Check package identifier, product identifiers, and titles
   const byIdentifier = availablePackages.find((pkg: any) => {
-    const identifier = (pkg?.identifier ?? '').toLowerCase();
-    return keywords.some(keyword => identifier.includes(keyword.toLowerCase()));
+    const packageIdentifier = (pkg?.identifier ?? '').toLowerCase();
+    const storeProductId = (pkg?.storeProduct?.identifier ?? '').toLowerCase();
+    const rcBillingProductId = (pkg?.rcBillingProduct?.identifier ?? '').toLowerCase();
+    const productId = (pkg?.product?.identifier ?? '').toLowerCase();
+    
+    // Check all identifier locations
+    return keywords.some(keyword => {
+      const keywordLower = keyword.toLowerCase();
+      return packageIdentifier.includes(keywordLower) ||
+             storeProductId.includes(keywordLower) ||
+             rcBillingProductId.includes(keywordLower) ||
+             productId.includes(keywordLower);
+    });
   });
   
   if (byIdentifier) {
-    console.log(`✅ Found ${type} package by identifier: ${byIdentifier.identifier}`);
+    const matchedIdentifier = byIdentifier.identifier;
+    console.log(`✅ Found ${type} package by identifier: ${matchedIdentifier}`);
+    console.log(`   Matched using identifier pattern from: ${keywords.join(', ')}`);
     return byIdentifier;
   }
   
@@ -202,9 +244,32 @@ function findPackageByType(
   }
   
   // Strategy 5: Try all packages if only one matches the type
+  // BUT: Don't use monthly package for yearly or vice versa
   if (availablePackages.length === 1) {
-    console.log(`⚠️ Only one package available, using it for ${type}`);
-    return availablePackages[0];
+    const singlePackage = availablePackages[0];
+    const singleIdentifier = (singlePackage?.identifier || '').toLowerCase();
+    const singleTitle = (singlePackage?.storeProduct?.title || 
+                        singlePackage?.rcBillingProduct?.title || 
+                        singlePackage?.product?.title || '').toLowerCase();
+    
+    // Check if the single package matches the requested type
+    const isMonthly = singleIdentifier.includes('month') || singleTitle.includes('month');
+    const isYearly = singleIdentifier.includes('year') || 
+                    singleIdentifier.includes('annual') ||
+                    singleTitle.includes('year') ||
+                    singleTitle.includes('annual');
+    
+    if (type === 'monthly' && isMonthly) {
+      console.log(`✅ Only one package available and it matches monthly: ${singlePackage.identifier}`);
+      return singlePackage;
+    } else if (type === 'yearly' && isYearly) {
+      console.log(`✅ Only one package available and it matches yearly: ${singlePackage.identifier}`);
+      return singlePackage;
+    } else {
+      console.warn(`⚠️ Only one package available (${singlePackage.identifier}) but it doesn't match ${type} type`);
+      console.warn(`   Package appears to be: ${isMonthly ? 'monthly' : isYearly ? 'yearly' : 'unknown'}`);
+      return null; // Don't use wrong package type
+    }
   }
   
   console.warn(`⚠️ ${type} package not found. Available packages:`, 
@@ -265,6 +330,12 @@ export async function getOfferings(): Promise<{
           currencyCode: product.currencyCode,
           title: product.title,
           description: product.description,
+          // Web Billing specific properties
+          displayName: product.displayName,
+          localizedPrice: product.localizedPrice,
+          displayPrice: product.displayPrice,
+          // Full product object for debugging
+          fullProduct: product,
         } : null,
       });
 
@@ -277,32 +348,53 @@ export async function getOfferings(): Promise<{
       let priceString: string | null = null;
       
       // First try direct string properties
-      if (typeof product.priceString === 'string') {
+      if (typeof product.priceString === 'string' && product.priceString.trim() !== '') {
         priceString = product.priceString;
-      } else if (typeof product.formattedPrice === 'string') {
+      } else if (typeof product.formattedPrice === 'string' && product.formattedPrice.trim() !== '') {
         priceString = product.formattedPrice;
-      } else if (product.price) {
+      } else if (product.price !== undefined && product.price !== null) {
         // Construct from price and currency
-        const price = typeof product.price === 'number' ? product.price : parseFloat(String(product.price));
-        const currency = product.currencyCode || 'USD';
-        const currencySymbol = currency === 'USD' ? '$' : currency;
-        priceString = `${currencySymbol}${price.toFixed(2)}`;
+        const priceNum = typeof product.price === 'number' 
+          ? product.price 
+          : (typeof product.price === 'string' ? parseFloat(product.price) : parseFloat(String(product.price)));
+        
+        // Only construct if we have a valid number
+        if (!isNaN(priceNum) && isFinite(priceNum) && priceNum > 0) {
+          const currency = product.currencyCode || 'USD';
+          const currencySymbol = currency === 'USD' ? '$' : currency;
+          priceString = `${currencySymbol}${priceNum.toFixed(2)}`;
+        }
       }
       
       // If still no price string, try to extract from object
       if (!priceString && product.priceString) {
         // If priceString is an object, try to extract the value
-        if (typeof product.priceString === 'object') {
+        if (typeof product.priceString === 'object' && product.priceString !== null) {
           const priceObj = product.priceString as any;
-          priceString = priceObj.value || priceObj.amount || priceObj.price || String(priceObj);
-        } else {
-          priceString = String(product.priceString);
+          const extractedPrice = priceObj.value || priceObj.amount || priceObj.price || priceObj.priceString;
+          if (extractedPrice !== undefined && extractedPrice !== null) {
+            const priceNum = typeof extractedPrice === 'number' 
+              ? extractedPrice 
+              : parseFloat(String(extractedPrice));
+            if (!isNaN(priceNum) && isFinite(priceNum) && priceNum > 0) {
+              const currency = priceObj.currencyCode || product.currencyCode || 'USD';
+              const currencySymbol = currency === 'USD' ? '$' : currency;
+              priceString = `${currencySymbol}${priceNum.toFixed(2)}`;
+            } else {
+              priceString = String(extractedPrice);
+            }
+          }
+        } else if (typeof product.priceString === 'string') {
+          priceString = product.priceString;
         }
       }
       
-      // Final fallback: convert to string
-      if (!priceString && product.price) {
-        priceString = String(product.price);
+      // Try other price properties
+      if (!priceString) {
+        const altPrice = product.localizedPrice || product.displayPrice || product.priceDisplay || product.priceString;
+        if (altPrice && typeof altPrice === 'string' && altPrice.trim() !== '') {
+          priceString = altPrice;
+        }
       }
 
       if (!priceString || priceString === 'null' || priceString === 'undefined') {
@@ -311,25 +403,41 @@ export async function getOfferings(): Promise<{
       }
       
       // Ensure priceString is a clean string (remove any object artifacts and NaN)
-      priceString = String(priceString)
-        .replace(/\[object Object\]/g, '')
-        .replace(/NaN/gi, '')
-        .replace(/undefined/gi, '')
-        .replace(/null/gi, '')
-        .trim();
+      if (priceString) {
+        priceString = String(priceString)
+          .replace(/\[object Object\]/g, '')
+          .replace(/NaN/gi, '')
+          .replace(/undefined/gi, '')
+          .replace(/null/gi, '')
+          .trim();
+      }
 
       // Validate priceString is not empty or invalid
+      // Check if it's just a currency symbol without a number
       if (!priceString || 
           priceString === '' || 
           priceString === 'NaN' || 
           priceString === 'undefined' || 
           priceString === 'null' ||
+          priceString === '$' || // Just currency symbol
+          priceString === '€' ||
+          priceString === '£' ||
           priceString.includes('NaN') ||
-          isNaN(parseFloat(priceString.replace(/[^0-9.]/g, '')))) {
+          (priceString.length < 2) || // Too short to be a valid price
+          isNaN(parseFloat(priceString.replace(/[^0-9.]/g, ''))) ||
+          parseFloat(priceString.replace(/[^0-9.]/g, '')) <= 0) {
         console.warn(`⚠️ ${type} package product has invalid price string:`, {
           original: product.priceString,
           cleaned: priceString,
-          product: product,
+          product: {
+            priceString: product.priceString,
+            formattedPrice: product.formattedPrice,
+            price: product.price,
+            currencyCode: product.currencyCode,
+            localizedPrice: product.localizedPrice,
+            displayPrice: product.displayPrice,
+            allKeys: Object.keys(product),
+          },
         });
         return null;
       }
@@ -612,11 +720,22 @@ export async function purchaseProSubscription(
     
     // Verify entitlement was granted
     const entitlements = customerInfo?.entitlements?.active ?? {};
-    const hasProEntitlement = Object.keys(entitlements).some((key) => {
+    const entitlementKeys = Object.keys(entitlements);
+    
+    console.log('🎫 Checking entitlements:', {
+      allEntitlementKeys: entitlementKeys,
+      expectedKeys: ['pro', 'PRO-Monthly', 'PRO-Yearly', 'pro-monthly', 'pro-yearly'],
+    });
+    
+    const hasProEntitlement = entitlementKeys.some((key) => {
       const keyLower = key.toLowerCase();
-      return keyLower.includes('pro') || 
+      const matches = keyLower.includes('pro') || 
              keyLower === 'pro-monthly' || 
              keyLower === 'pro-yearly';
+      if (matches) {
+        console.log(`✅ Found Pro entitlement: ${key}`);
+      }
+      return matches;
     });
 
     if (!hasProEntitlement) {
