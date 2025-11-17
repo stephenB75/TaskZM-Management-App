@@ -3,10 +3,10 @@
  * Handles subscription management through RevenueCat with Stripe as payment provider
  */
 
-import Purchases from '@revenuecat/purchases-js';
+import { Purchases } from '@revenuecat/purchases-js';
 import { DEFAULT_MONTHLY_PRICE, DEFAULT_YEARLY_PRICE } from './subscription-constants';
 
-let purchasesInstance: typeof Purchases | null = null;
+let purchasesInstance: Purchases | null = null;
 let isConfigured = false;
 
 /**
@@ -28,9 +28,9 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
 
     // Initialize or reconfigure
     if (!purchasesInstance || forceReconfigure) {
-      purchasesInstance = await Purchases.configure({
+      purchasesInstance = Purchases.configure({
         apiKey,
-        appUserID: userId,
+        appUserId: userId,
       });
     } else {
       // Update user ID if changed
