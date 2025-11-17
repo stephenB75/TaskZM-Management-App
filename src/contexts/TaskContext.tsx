@@ -2081,14 +2081,25 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }, [rolloverSettings, workspaceId, accessToken]);
 
   // Task Rollover: Check for incomplete tasks from previous days and roll them over
+  // Use a ref to track if we've already checked today to prevent duplicate notifications
+  const rolloverCheckedRef = React.useRef<string>('');
+
   useEffect(() => {
     if (!rolloverSettings.autoRollover || !user) return;
 
-    const checkAndRolloverTasks = () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayString = today.toISOString().split('T')[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayString = today.toISOString().split('T')[0];
 
+    // Check if we've already run rollover today (check both localStorage and ref)
+    const lastCheck = getFromLocalStorage<string>('lastRolloverCheck', '');
+    const hasCheckedToday = lastCheck === todayString || rolloverCheckedRef.current === todayString;
+    
+    if (hasCheckedToday) {
+      return; // Already checked today, don't run again
+    }
+
+    const checkAndRolloverTasks = () => {
       // Find incomplete tasks scheduled for yesterday or earlier
       const tasksToRollover = tasks.filter(task => {
         if (task.status === 'done' || !task.scheduledDate) return false;
@@ -2102,6 +2113,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       });
 
       if (tasksToRollover.length > 0) {
+        // Mark that we've checked today IMMEDIATELY to prevent duplicate notifications
+        rolloverCheckedRef.current = todayString;
+        saveToLocalStorage('lastRolloverCheck', todayString);
+
         if (rolloverSettings.askBeforeRolling) {
           // Show confirmation dialog
           const taskTitles = tasksToRollover.slice(0, 3).map(t => t.title).join(', ');
@@ -2116,8 +2131,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             cancel: {
               label: 'Skip',
               onClick: () => {
-                // Mark that we've checked today
-                saveToLocalStorage('lastRolloverCheck', todayString);
+                // Already marked as checked above, no need to do it again
               },
             },
             duration: TOAST_DURATION_EXTRA_LONG_MS,
@@ -2126,6 +2140,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // Automatically roll over without asking
           performRollover(tasksToRollover, todayString);
         }
+      } else {
+        // No tasks to rollover, but mark that we've checked today
+        rolloverCheckedRef.current = todayString;
+        saveToLocalStorage('lastRolloverCheck', todayString);
       }
     };
 
@@ -2145,23 +2163,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         toast.success(`✅ Rolled over ${rolledCount} task(s) to today`);
       }
       
-      // Mark that we've checked today
+      // Ensure we're marked as checked (should already be set, but double-check)
+      rolloverCheckedRef.current = todayString;
       saveToLocalStorage('lastRolloverCheck', todayString);
     };
 
-    // Check if we've already run rollover today
-    const lastCheck = getFromLocalStorage<string>('lastRolloverCheck', '');
-    const today = new Date().toISOString().split('T')[0];
+    // Run rollover check after a short delay (to allow UI to load)
+    const timer = setTimeout(() => {
+      checkAndRolloverTasks();
+    }, 3000);
     
-    if (lastCheck !== today) {
-      // Run rollover check after a short delay (to allow UI to load)
-      const timer = setTimeout(() => {
-        checkAndRolloverTasks();
-      }, 3000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [tasks, rolloverSettings, user, updateTask]);
+    return () => clearTimeout(timer);
+  }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask]);
 
   // Expose ensureWorkspace for manual triggering
   const ensureWorkspace = useCallback(async (): Promise<string | null> => {
