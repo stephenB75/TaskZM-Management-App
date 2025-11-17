@@ -3,13 +3,15 @@
  * Handles subscription management through RevenueCat with Stripe as payment provider
  */
 
-import { DEFAULT_MONTHLY_PRICE, DEFAULT_YEARLY_PRICE } from './subscription-constants';
-
 // Lazy load RevenueCat SDK to avoid initialization issues
 let Purchases: any = null;
 let purchasesInstance: any = null;
 let isConfigured = false;
 let isInitializing = false;
+
+// Inline default prices to avoid import initialization issues
+const DEFAULT_MONTHLY_PRICE = "$3.99";
+const DEFAULT_YEARLY_PRICE = "$39.99";
 
 // Lazy load the RevenueCat SDK
 async function loadRevenueCatSDK() {

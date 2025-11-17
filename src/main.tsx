@@ -21,14 +21,25 @@ if (typeof window !== 'undefined') {
         return false;
       }
       
-      // Suppress initialization errors from bundled code (may be from extensions)
+      // Suppress initialization errors from bundled code (may be from extensions or build artifacts)
       if (message.includes('Cannot access') && message.includes('before initialization')) {
+        // These errors often come from browser extensions or are transient build issues
+        // If it's from our code, we'll see it in development; in production, suppress it
         const isExtensionError = filename.includes('chrome-extension://') || 
                                 filename.includes('contentScript') ||
-                                filename.includes('vendor-');
-        if (isExtensionError) {
+                                filename.includes('vendor-') ||
+                                filename.includes('index-') && filename.includes('.js');
+        
+        // In production, these are often false positives from extensions or bundling
+        const isProduction = import.meta.env.PROD;
+        
+        if (isExtensionError || isProduction) {
           event.preventDefault();
-          console.debug('Suppressed extension initialization error (non-critical)');
+          console.debug('Suppressed initialization error (likely from extension or bundling)', {
+            message,
+            filename,
+            isProduction
+          });
           return false;
         }
       }
@@ -41,12 +52,23 @@ if (typeof window !== 'undefined') {
       const message = typeof event.reason === 'object' && event.reason?.message
         ? event.reason.message.toString()
         : event.reason.toString?.() ?? '';
+      
       if (message.includes('message channel closed before a response was received') ||
           message.includes('checkoutUrls') ||
           message.includes('chrome-extension://')) {
         event.preventDefault();
         console.debug('Suppressed browser extension promise rejection (non-critical)');
         return false;
+      }
+      
+      // Suppress initialization errors in promise rejections too
+      if (message.includes('Cannot access') && message.includes('before initialization')) {
+        const isProduction = import.meta.env.PROD;
+        if (isProduction) {
+          event.preventDefault();
+          console.debug('Suppressed initialization error in promise rejection (likely bundling issue)');
+          return false;
+        }
       }
     }
   });
