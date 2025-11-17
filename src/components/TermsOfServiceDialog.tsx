@@ -108,7 +108,7 @@ export function TermsOfServiceDialog({
                 </div>
                 <div>
                   <p className="font-medium">
-                    Pro Tier ($3.99/month) includes:
+                    Pro Tier includes:
                   </p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
                     <li>AI Scheduler</li>
