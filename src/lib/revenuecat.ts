@@ -3,11 +3,40 @@
  * Handles subscription management through RevenueCat with Stripe as payment provider
  */
 
-import { Purchases } from '@revenuecat/purchases-js';
 import { DEFAULT_MONTHLY_PRICE, DEFAULT_YEARLY_PRICE } from './subscription-constants';
 
-let purchasesInstance: Purchases | null = null;
+// Lazy load RevenueCat SDK to avoid initialization issues
+let Purchases: any = null;
+let purchasesInstance: any = null;
 let isConfigured = false;
+let isInitializing = false;
+
+// Lazy load the RevenueCat SDK
+async function loadRevenueCatSDK() {
+  if (Purchases) {
+    return Purchases;
+  }
+  
+  if (isInitializing) {
+    // Wait for initialization to complete
+    while (isInitializing) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return Purchases;
+  }
+  
+  isInitializing = true;
+  try {
+    const module = await import('@revenuecat/purchases-js');
+    Purchases = module.Purchases;
+    isInitializing = false;
+    return Purchases;
+  } catch (error) {
+    isInitializing = false;
+    console.error('Failed to load RevenueCat SDK:', error);
+    throw error;
+  }
+}
 
 /**
  * Configure RevenueCat SDK
@@ -26,9 +55,16 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
       return;
     }
 
+    // Lazy load SDK if not already loaded
+    const RC = await loadRevenueCatSDK();
+    
+    if (!RC) {
+      throw new Error('Failed to load RevenueCat SDK');
+    }
+
     // Initialize or reconfigure
     if (!purchasesInstance || forceReconfigure) {
-      purchasesInstance = Purchases.configure({
+      purchasesInstance = RC.configure({
         apiKey,
         appUserId: userId,
       });
@@ -49,7 +85,7 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
  * Check if RevenueCat is configured
  */
 export function isRevenueCatConfigured(): boolean {
-  return isConfigured && purchasesInstance !== null;
+  return isConfigured && purchasesInstance !== null && Purchases !== null;
 }
 
 /**

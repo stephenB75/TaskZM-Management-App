@@ -9,15 +9,28 @@ if (typeof window !== 'undefined') {
     // Suppress Chrome extension async message errors
     if (event.message) {
       const message = event.message.toString();
-      if (message.includes('message channel closed before a response was received')) {
+      const filename = event.filename?.toString() || '';
+      
+      // Suppress Chrome extension errors
+      if (message.includes('message channel closed before a response was received') ||
+          message.includes('checkoutUrls') ||
+          filename.includes('chrome-extension://') ||
+          filename.includes('contentScript.bundle.js')) {
         event.preventDefault();
-        console.debug('Suppressed browser extension message error (non-critical)');
+        console.debug('Suppressed browser extension error (non-critical)');
         return false;
       }
-      if (message.includes('checkoutUrls')) {
-        event.preventDefault();
-        console.debug('Suppressed external checkoutUrls error (non-critical)');
-        return false;
+      
+      // Suppress initialization errors from bundled code (may be from extensions)
+      if (message.includes('Cannot access') && message.includes('before initialization')) {
+        const isExtensionError = filename.includes('chrome-extension://') || 
+                                filename.includes('contentScript') ||
+                                filename.includes('vendor-');
+        if (isExtensionError) {
+          event.preventDefault();
+          console.debug('Suppressed extension initialization error (non-critical)');
+          return false;
+        }
       }
     }
   });
@@ -28,14 +41,11 @@ if (typeof window !== 'undefined') {
       const message = typeof event.reason === 'object' && event.reason?.message
         ? event.reason.message.toString()
         : event.reason.toString?.() ?? '';
-      if (message.includes('message channel closed before a response was received')) {
+      if (message.includes('message channel closed before a response was received') ||
+          message.includes('checkoutUrls') ||
+          message.includes('chrome-extension://')) {
         event.preventDefault();
         console.debug('Suppressed browser extension promise rejection (non-critical)');
-        return false;
-      }
-      if (message.includes('checkoutUrls')) {
-        event.preventDefault();
-        console.debug('Suppressed external checkoutUrls promise rejection (non-critical)');
         return false;
       }
     }
