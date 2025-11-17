@@ -39,8 +39,9 @@ async function loadRevenueCatSDK() {
   isInitializing = true;
   try {
     // Additional safety: check if we're in a valid environment
-    if (typeof import === 'undefined' || typeof import.meta === 'undefined') {
-      console.warn('⚠️ RevenueCat SDK: Dynamic imports not available');
+    // Note: We can't check typeof import (it's a keyword), but we can check import.meta
+    if (typeof import.meta === 'undefined') {
+      console.warn('⚠️ RevenueCat SDK: import.meta not available');
       isInitializing = false;
       return null;
     }
@@ -83,7 +84,7 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
     }
 
     // Safety check: ensure import.meta.env is available
-    if (typeof import === 'undefined' || typeof import.meta === 'undefined' || !import.meta.env) {
+    if (typeof import.meta === 'undefined' || !import.meta.env) {
       console.warn('⚠️ RevenueCat: Environment variables not available');
       return;
     }
