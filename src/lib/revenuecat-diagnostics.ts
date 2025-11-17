@@ -188,7 +188,10 @@ export async function runRevenueCatDiagnostics(): Promise<FullDiagnosticReport> 
     const { getOfferings, isRevenueCatConfigured } = await import('./revenuecat');
     
     if (!isRevenueCatConfigured()) {
-      addResult('offerings_call', 'warning', 'Skipping offerings test - RevenueCat not configured');
+      addResult('offerings_call', 'warning', 'Skipping offerings test - RevenueCat not configured', {
+        reason: 'RevenueCat must be configured before fetching offerings',
+        action: 'Ensure configureRevenueCat() is called on user login'
+      });
     } else {
       try {
         const offerings = await getOfferings(true);
@@ -199,11 +202,20 @@ export async function runRevenueCatDiagnostics(): Promise<FullDiagnosticReport> 
               'No current offering set in RevenueCat dashboard',
               'No packages attached to offering',
               'API key is invalid or expired',
-              'Network connectivity issues'
+              'Network connectivity issues',
+              'RevenueCat service is down'
+            ],
+            troubleshooting: [
+              '1. Go to RevenueCat Dashboard → Offerings',
+              '2. Create an offering if none exists',
+              '3. Set one offering as "current"',
+              '4. Add packages to the offering',
+              '5. Verify API key is correct and active'
             ]
           });
           recommendations.push('Check RevenueCat dashboard: Ensure a "current" offering is set');
           recommendations.push('Check RevenueCat dashboard: Ensure packages are attached to the offering');
+          recommendations.push('Verify API key is correct: RevenueCat Dashboard → Project Settings → API Keys');
         } else {
           const packageCount = offerings.availablePackages?.length || 0;
           addResult('offerings_call', 'success', `getOfferings() returned ${packageCount} package(s)`, {
@@ -367,26 +379,37 @@ export async function runRevenueCatDiagnostics(): Promise<FullDiagnosticReport> 
     recommendations: [...new Set(recommendations)] // Remove duplicates
   };
 
-  // Log summary
+  // Log summary with visual indicators
   console.log('\n' + '='.repeat(60));
-  console.log('📊 DIAGNOSTIC SUMMARY');
+  console.log('📊 REVENUECAT DIAGNOSTIC SUMMARY');
   console.log('='.repeat(60));
-  console.log(`Overall Status: ${overallStatus.toUpperCase()}`);
-  console.log(`API Key: ${summary.apiKeyFound ? '✅ Found' : '❌ Missing'} ${summary.apiKeyValid ? '(Valid)' : '(Invalid)'}`);
-  console.log(`SDK Configured: ${summary.sdkConfigured ? '✅ Yes' : '❌ No'}`);
-  console.log(`SDK Initialized: ${summary.sdkInitialized ? '✅ Yes' : '❌ No'}`);
-  console.log(`Offerings Available: ${summary.offeringsAvailable ? '✅ Yes' : '❌ No'}`);
-  console.log(`Packages Found: ${summary.packagesFound ? '✅ Yes' : '❌ No'}`);
-  console.log(`Product Data Available: ${summary.productDataAvailable ? '✅ Yes' : '❌ No'}`);
-  console.log(`\nErrors: ${errorCount}, Warnings: ${warningCount}`);
+  
+  const statusIcon = overallStatus === 'connected' ? '✅' : overallStatus === 'partial' ? '⚠️' : '❌';
+  console.log(`${statusIcon} Overall Status: ${overallStatus.toUpperCase()}`);
+  console.log('');
+  console.log('Configuration Checks:');
+  console.log(`   API Key: ${summary.apiKeyFound ? '✅ Found' : '❌ Missing'} ${summary.apiKeyValid ? '(Valid Format)' : summary.apiKeyFound ? '(Invalid Format)' : ''}`);
+  console.log(`   SDK Configured: ${summary.sdkConfigured ? '✅ Yes' : '❌ No'}`);
+  console.log(`   SDK Initialized: ${summary.sdkInitialized ? '✅ Yes' : '❌ No'}`);
+  console.log('');
+  console.log('Data Availability:');
+  console.log(`   Offerings Available: ${summary.offeringsAvailable ? '✅ Yes' : '❌ No'}`);
+  console.log(`   Packages Found: ${summary.packagesFound ? '✅ Yes' : '❌ No'}`);
+  console.log(`   Product Data Available: ${summary.productDataAvailable ? '✅ Yes' : '❌ No'}`);
+  console.log('');
+  console.log(`Issue Count: ${errorCount} error(s), ${warningCount} warning(s)`);
   
   if (report.recommendations.length > 0) {
-    console.log('\n💡 RECOMMENDATIONS:');
+    console.log('\n💡 ACTION ITEMS:');
     report.recommendations.forEach((rec, i) => {
       console.log(`   ${i + 1}. ${rec}`);
     });
+  } else {
+    console.log('\n✅ No issues found - all checks passed!');
   }
   
+  console.log('\n' + '='.repeat(60));
+  console.log('💡 TIP: Review detailed results above for specific error messages');
   console.log('='.repeat(60));
 
   return report;

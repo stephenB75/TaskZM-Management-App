@@ -140,16 +140,23 @@ export function PricingDialog({
         }
       }, 3000); // Retry every 3 seconds
       
-      // Run comprehensive diagnostics when dialog opens
-      if (isRevenueCatConfigured()) {
-        console.log('🔍 Running RevenueCat diagnostics...');
-        try {
-          const { runRevenueCatDiagnostics, logDiagnosticReport } = await import('../lib/revenuecat-diagnostics');
-          const diagnosticReport = await runRevenueCatDiagnostics();
-          logDiagnosticReport(diagnosticReport);
-        } catch (diagError) {
-          console.warn('Failed to run diagnostics:', diagError);
+      // Run comprehensive diagnostics when dialog opens (always, even if not configured)
+      console.log('🔍 Running RevenueCat diagnostics...');
+      try {
+        const { runRevenueCatDiagnostics, logDiagnosticReport } = await import('../lib/revenuecat-diagnostics');
+        const diagnosticReport = await runRevenueCatDiagnostics();
+        logDiagnosticReport(diagnosticReport);
+        
+        // If diagnostics show issues, log them prominently
+        if (diagnosticReport.overallStatus === 'failed') {
+          console.error('❌ RevenueCat diagnostics FAILED - see recommendations below');
+        } else if (diagnosticReport.overallStatus === 'partial') {
+          console.warn('⚠️ RevenueCat diagnostics show PARTIAL connection - some issues detected');
         }
+      } catch (diagError: any) {
+        console.error('❌ Failed to run RevenueCat diagnostics:', diagError);
+        console.error('   Error details:', diagError?.message || diagError);
+        console.error('   This may indicate a problem with the diagnostic tool itself');
       }
       
       // Also run package verification
