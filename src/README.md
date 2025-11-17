@@ -79,7 +79,6 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 
 # Payments (Optional - for Pro tier)
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxx
-VITE_REVENUECAT_WEB_PUBLIC_KEY=rc_xxxxx
 ```
 
 **Note:** Environment variables for Railway should be configured in the Railway dashboard, not in `.env`
@@ -91,7 +90,7 @@ VITE_REVENUECAT_WEB_PUBLIC_KEY=rc_xxxxx
 - **Frontend:** React 18 + TypeScript + Tailwind CSS 4.0
 - **Animation:** Motion (Framer Motion)
 - **Backend:** Supabase (Edge Functions + Auth + Database)
-- **Payments:** Stripe + RevenueCat
+- **Payments:** Stripe
 - **Build:** Vite 6
 - **Deployment:** Railway
 

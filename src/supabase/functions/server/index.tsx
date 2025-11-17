@@ -2092,6 +2092,85 @@ app.get("/make-server-65e6e67f/calendar/events/:provider", async (c) => {
 });
 
 // ============================================================================
+// STRIPE CHECKOUT SESSION
+// ============================================================================
+// Create Stripe checkout session for subscription purchases
+
+app.post("/make-server-65e6e67f/create-checkout-session", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    
+    if (!stripeSecretKey) {
+      console.error('Stripe not configured - STRIPE_SECRET_KEY missing');
+      return c.json({ error: 'Payment provider not configured' }, 500);
+    }
+
+    const { priceId } = await c.req.json();
+    
+    if (!priceId || (priceId !== 'monthly' && priceId !== 'yearly')) {
+      return c.json({ error: 'Invalid price ID. Must be "monthly" or "yearly"' }, 400);
+    }
+
+    // Map priceId to Stripe Price ID from environment variables
+    // These should be set in your environment: STRIPE_PRICE_ID_MONTHLY and STRIPE_PRICE_ID_YEARLY
+    const monthlyPriceId = Deno.env.get('STRIPE_PRICE_ID_MONTHLY');
+    const yearlyPriceId = Deno.env.get('STRIPE_PRICE_ID_YEARLY');
+    
+    const selectedPriceId = priceId === 'monthly' ? monthlyPriceId : yearlyPriceId;
+    
+    if (!selectedPriceId) {
+      console.error(`Stripe price ID not configured for ${priceId} subscription`);
+      return c.json({ 
+        error: `Subscription pricing not configured. Please set STRIPE_PRICE_ID_${priceId.toUpperCase()} in environment variables.` 
+      }, 500);
+    }
+
+    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
+    
+    // Create Stripe checkout session
+    const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${stripeSecretKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        'mode': 'subscription',
+        'payment_method_types[]': 'card',
+        'line_items[0][price]': selectedPriceId,
+        'line_items[0][quantity]': '1',
+        'customer_email': '', // Will be collected in checkout form
+        'success_url': `${appUrl}/settings?session_id={CHECKOUT_SESSION_ID}`,
+        'cancel_url': `${appUrl}/settings?canceled=true`,
+        'metadata[userId]': userId,
+        'metadata[priceId]': priceId,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Stripe checkout session error:', error);
+      return c.json({ error: 'Failed to create checkout session' }, 500);
+    }
+
+    const session = await response.json();
+    
+    return c.json({ 
+      url: session.url,
+      sessionId: session.id
+    });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// ============================================================================
 // STRIPE WEBHOOK (if needed in the future)
 // ============================================================================
 // Stripe webhook endpoint can be added here for handling Stripe subscription events

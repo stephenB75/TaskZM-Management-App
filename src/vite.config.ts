@@ -12,7 +12,6 @@ export default defineConfig(({ mode }) => {
   if (mode === 'development') {
     console.log('🔍 Vite envDir:', envDir);
     console.log('🔍 Loaded VITE_ variables:', Object.keys(env).filter(key => key.startsWith('VITE_')));
-    console.log('🔍 RevenueCat key loaded:', !!env.VITE_REVENUECAT_WEB_PUBLIC_KEY);
   }
 
   return {
