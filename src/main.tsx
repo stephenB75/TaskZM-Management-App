@@ -319,24 +319,48 @@ if (isNative) {
 }
 
 // Safe root element access with error handling
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  console.error('Root element not found! Make sure index.html has a <div id="root"></div> element.');
-  // Create root element if it doesn't exist (fallback)
-  const fallbackRoot = document.createElement('div');
-  fallbackRoot.id = 'root';
-  document.body.appendChild(fallbackRoot);
-  ReactDOM.createRoot(fallbackRoot).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-} else {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+// Wrap entire app initialization in try-catch to prevent crashes
+try {
+  const rootElement = document.getElementById('root');
+  if (!rootElement) {
+    console.error('Root element not found! Make sure index.html has a <div id="root"></div> element.');
+    // Create root element if it doesn't exist (fallback)
+    const fallbackRoot = document.createElement('div');
+    fallbackRoot.id = 'root';
+    document.body.appendChild(fallbackRoot);
+    ReactDOM.createRoot(fallbackRoot).render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  } else {
+    ReactDOM.createRoot(rootElement).render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  }
+} catch (error) {
+  console.error('Fatal error during app initialization:', error);
+  // Show a user-friendly error message
+  const rootElement = document.getElementById('root') || document.body;
+  rootElement.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; font-family: system-ui, -apple-system, sans-serif;">
+      <div style="max-width: 500px; text-align: center;">
+        <h1 style="color: #ef4444; margin-bottom: 1rem;">Application Error</h1>
+        <p style="color: #6b7280; margin-bottom: 1.5rem;">
+          The application failed to initialize. Please refresh the page.
+        </p>
+        <button 
+          onclick="window.location.reload()" 
+          style="background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-size: 1rem;"
+        >
+          Refresh Page
+        </button>
+        ${import.meta.env.DEV ? `<pre style="margin-top: 2rem; padding: 1rem; background: #f3f4f6; border-radius: 0.5rem; text-align: left; overflow: auto; font-size: 0.875rem;">${error instanceof Error ? error.stack : String(error)}</pre>` : ''}
+      </div>
+    </div>
+  `;
 }
 
 // Additional fallback: Hide splash after React renders (web only)

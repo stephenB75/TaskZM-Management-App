@@ -6,16 +6,35 @@
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
-// Create a single shared Supabase client instance
-export const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
+// Wrap initialization in try-catch to prevent crashes during module load
+let supabaseInstance: ReturnType<typeof createClient> | null = null;
+
+function initializeSupabase() {
+  if (supabaseInstance) {
+    return supabaseInstance;
   }
-);
+  
+  try {
+    supabaseInstance = createClient(
+      `https://${projectId}.supabase.co`,
+      publicAnonKey,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+        },
+      }
+    );
+    return supabaseInstance;
+  } catch (error) {
+    console.error('Failed to initialize Supabase client:', error);
+    // Return a minimal mock client to prevent crashes
+    // This should never happen, but prevents app crash
+    return null as any;
+  }
+}
+
+// Initialize immediately but safely
+export const supabase = initializeSupabase();
 

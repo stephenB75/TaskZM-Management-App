@@ -30,26 +30,34 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Check if this is a known initialization error from vendor code
-    const isKnownVendorError = 
-      error.message.includes("Cannot access 'D' before initialization") ||
-      error.message.includes("Cannot access 'O' before initialization") ||
-      (error.message.includes('Cannot access') && error.message.includes('before initialization') && 
-       errorInfo.componentStack?.includes('vendor-'));
+    // Check if this is a known initialization error
+    const isInitializationError = 
+      error.message.includes("Cannot access") && 
+      error.message.includes("before initialization");
     
-    if (isKnownVendorError) {
-      // This is likely a vendor bundle issue, not our code
-      // Log but don't show error UI - app should continue
-      console.warn('ErrorBoundary: Suppressed known vendor initialization error', {
+    if (isInitializationError) {
+      // This is an initialization error - could be from vendor or our code
+      // Try to recover by forcing a page reload after a short delay
+      console.error('ErrorBoundary: Initialization error detected, attempting recovery', {
         error: error.message,
         componentStack: errorInfo.componentStack
       });
-      // Reset error state to allow app to continue
+      
+      // Set error state to show error UI
       this.setState({
-        hasError: false,
-        error: null,
-        errorInfo: null,
+        error,
+        errorInfo,
       });
+      
+      // Attempt automatic recovery after 2 seconds
+      setTimeout(() => {
+        try {
+          window.location.reload();
+        } catch (reloadError) {
+          console.error('Failed to reload page:', reloadError);
+        }
+      }, 2000);
+      
       return;
     }
     
