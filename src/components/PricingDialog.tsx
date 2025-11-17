@@ -62,13 +62,13 @@ export function PricingDialog({
   }>({
     monthly: {
       priceString: DEFAULT_MONTHLY_PRICE,
-      title: SUBSCRIPTION_UI_TEXT.monthly.title,
-      description: SUBSCRIPTION_UI_TEXT.monthly.description,
+      title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
+      description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
     },
     yearly: {
       priceString: DEFAULT_YEARLY_PRICE,
-      title: SUBSCRIPTION_UI_TEXT.yearly.title,
-      description: SUBSCRIPTION_UI_TEXT.yearly.description,
+      title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
+      description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
     },
   });
 
@@ -132,6 +132,10 @@ export function PricingDialog({
       setIsDowngrading(false);
     }
   };
+
+  // Use static pricing from constants - define before using in calculations
+  const monthlyOffering = offerings.monthly!;
+  const yearlyOffering = offerings.yearly!;
 
   const calculateSavings = () => {
     // Calculate savings between monthly and yearly
@@ -209,10 +213,6 @@ export function PricingDialog({
 
   const freeTierFeatures = FREE_TIER_FEATURES;
   const proTierFeatures = PRO_TIER_FEATURES;
-
-  // Use static pricing from constants
-  const monthlyOffering = offerings.monthly!;
-  const yearlyOffering = offerings.yearly!;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
