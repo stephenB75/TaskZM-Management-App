@@ -15,7 +15,28 @@ if (typeof window !== 'undefined') {
       console.debug('Suppressed GoTrueClient warning (using shared client)', args);
       return;
     }
+    // Suppress preload warnings from extensions
+    if (message.includes('was preloaded using link preload but not used') ||
+        message.includes('rokt-icons.woff')) {
+      console.debug('Suppressed extension preload warning', args);
+      return;
+    }
     originalWarn.apply(console, args);
+  };
+
+  // Suppress CSP violations from extensions
+  const originalError = console.error;
+  console.error = (...args: any[]) => {
+    const message = args[0]?.toString() || '';
+    // Suppress CSP violations from extensions
+    if (message.includes('violates the following Content Security Policy') &&
+        (message.includes('roktinternal.com') || 
+         message.includes('chrome-extension://') ||
+         message.includes('moz-extension://'))) {
+      console.debug('Suppressed extension CSP violation', args);
+      return;
+    }
+    originalError.apply(console, args);
   };
 
   window.addEventListener('error', (event) => {
@@ -27,10 +48,17 @@ if (typeof window !== 'undefined') {
       // Suppress Chrome extension errors
       if (message.includes('message channel closed before a response was received') ||
           message.includes('checkoutUrls') ||
+          message.includes('ERR_FILE_NOT_FOUND') && filename.includes('chrome-extension://') ||
+          message.includes('Failed to execute') && message.includes('MutationObserver') ||
           filename.includes('chrome-extension://') ||
-          filename.includes('contentScript.bundle.js')) {
+          filename.includes('contentScript.bundle.js') ||
+          filename.includes('content.js') ||
+          filename.includes('web-client-content-script.js')) {
         event.preventDefault();
-        console.debug('Suppressed browser extension error (non-critical)');
+        console.debug('Suppressed browser extension error (non-critical)', {
+          message: message.substring(0, 100),
+          filename: filename.substring(0, 100)
+        });
         return false;
       }
       
@@ -78,20 +106,35 @@ if (typeof window !== 'undefined') {
         ? event.reason.message.toString()
         : event.reason.toString?.() ?? '';
       
+      const stack = typeof event.reason === 'object' && event.reason?.stack
+        ? event.reason.stack.toString()
+        : '';
+      
+      // Suppress extension-related promise rejections
       if (message.includes('message channel closed before a response was received') ||
           message.includes('checkoutUrls') ||
-          message.includes('chrome-extension://')) {
+          message.includes('chrome-extension://') ||
+          message.includes('moz-extension://') ||
+          message.includes('ERR_FILE_NOT_FOUND') ||
+          message.includes('Failed to execute') && message.includes('MutationObserver') ||
+          stack.includes('content.js') ||
+          stack.includes('contentScript') ||
+          stack.includes('web-client-content-script')) {
         event.preventDefault();
-        console.debug('Suppressed browser extension promise rejection (non-critical)');
+        console.debug('Suppressed browser extension promise rejection (non-critical)', {
+          message: message.substring(0, 100)
+        });
         return false;
       }
       
       // Suppress initialization errors in promise rejections ONLY from extensions
       if (message.includes('Cannot access') && message.includes('before initialization')) {
-        // Only suppress if it's clearly from an extension
+        // Only suppress if it's clearly from an extension or vendor code
         const isExtensionError = message.includes('chrome-extension://') || 
                                 message.includes('moz-extension://') ||
-                                message.includes('contentScript');
+                                message.includes('contentScript') ||
+                                stack.includes('content.js') ||
+                                stack.includes('contentScript');
         
         if (isExtensionError) {
           event.preventDefault();
