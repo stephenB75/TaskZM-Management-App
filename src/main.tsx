@@ -15,6 +15,16 @@ if (typeof window !== 'undefined') {
       console.debug('Suppressed GoTrueClient warning (using shared client)', args);
       return;
     }
+    // Suppress RevenueCat "No available adapters" warning for Web Billing
+    // This is expected on web - Web Billing doesn't use adapters (it's a hosted checkout)
+    if (message.includes('No available adapters') ||
+        message.includes('no available adapters')) {
+      // Only suppress in production - log in dev for debugging
+      if (import.meta.env.DEV) {
+        console.debug('Suppressed RevenueCat adapter warning (expected for Web Billing on web platform)', args);
+      }
+      return;
+    }
     // Suppress preload warnings from extensions
     if (message.includes('was preloaded using link preload but not used') ||
         message.includes('rokt-icons.woff')) {
