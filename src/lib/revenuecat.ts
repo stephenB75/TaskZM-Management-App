@@ -119,7 +119,16 @@ function findPackageByType(
   
   const keywords = type === 'monthly' 
     ? ['month', 'monthly'] 
-    : ['year', 'yearly', 'annual'];
+    : ['year', 'yearly', 'annual', 'annually'];
+  
+  // Log all available packages for debugging
+  console.log(`🔍 Searching for ${type} package among ${availablePackages.length} packages:`, 
+    availablePackages.map((pkg: any) => ({
+      identifier: pkg?.identifier,
+      productId: pkg?.storeProduct?.identifier || pkg?.rcBillingProduct?.identifier || pkg?.product?.identifier,
+      title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title,
+    }))
+  );
   
   // Strategy 1: Match by exact product ID
   const byProductId = availablePackages.find((pkg: any) => {
@@ -130,14 +139,14 @@ function findPackageByType(
   });
   
   if (byProductId) {
-    console.log(`✅ Found ${type} package by product ID: ${productId}`);
+    console.log(`✅ Found ${type} package by product ID: ${productId}`, byProductId.identifier);
     return byProductId;
   }
   
-  // Strategy 2: Match by identifier keywords
+  // Strategy 2: Match by identifier keywords (case-insensitive)
   const byIdentifier = availablePackages.find((pkg: any) => {
     const identifier = (pkg?.identifier ?? '').toLowerCase();
-    return keywords.some(keyword => identifier.includes(keyword));
+    return keywords.some(keyword => identifier.includes(keyword.toLowerCase()));
   });
   
   if (byIdentifier) {
@@ -145,7 +154,20 @@ function findPackageByType(
     return byIdentifier;
   }
   
-  // Strategy 3: Use offering shortcuts (monthly/annual properties)
+  // Strategy 3: Match by product title keywords
+  const byTitle = availablePackages.find((pkg: any) => {
+    const title = (pkg?.storeProduct?.title ?? 
+                   pkg?.rcBillingProduct?.title ?? 
+                   pkg?.product?.title ?? '').toLowerCase();
+    return keywords.some(keyword => title.includes(keyword.toLowerCase()));
+  });
+  
+  if (byTitle) {
+    console.log(`✅ Found ${type} package by title: ${byTitle.storeProduct?.title || byTitle.rcBillingProduct?.title}`);
+    return byTitle;
+  }
+  
+  // Strategy 4: Use offering shortcuts (monthly/annual properties)
   if (type === 'monthly' && offerings?.current?.monthly) {
     console.log('✅ Found monthly package via offering.monthly');
     return offerings.current.monthly;
@@ -156,7 +178,14 @@ function findPackageByType(
     return offerings.current.annual;
   }
   
-  console.warn(`⚠️ ${type} package not found`);
+  // Strategy 5: Try all packages if only one matches the type
+  if (availablePackages.length === 1) {
+    console.log(`⚠️ Only one package available, using it for ${type}`);
+    return availablePackages[0];
+  }
+  
+  console.warn(`⚠️ ${type} package not found. Available packages:`, 
+    availablePackages.map((p: any) => p?.identifier).join(', '));
   return null;
 }
 
@@ -266,9 +295,45 @@ export async function purchaseProSubscription(
       price: selectedPackage.storeProduct?.priceString || selectedPackage.rcBillingProduct?.priceString,
     });
 
+    // Check if package has a checkout URL before purchasing (web/Stripe Checkout)
+    const checkoutUrl = selectedPackage.checkoutUrl || 
+                       selectedPackage.checkout_url ||
+                       selectedPackage.storeProduct?.checkoutUrl ||
+                       selectedPackage.rcBillingProduct?.checkoutUrl;
+    
+    if (checkoutUrl) {
+      console.log('🔗 Package has checkout URL, redirecting to Stripe Checkout:', checkoutUrl);
+      window.location.href = checkoutUrl;
+      return { 
+        success: true, 
+        error: 'Redirecting to payment...' 
+      };
+    }
+
     // Purchase the package
-    // Note: On web, RevenueCat uses Stripe Checkout, which opens in a new window/tab
-    const { customerInfo, productIdentifier } = await purchasesInstance.purchasePackage(selectedPackage);
+    // On web, RevenueCat should handle Stripe Checkout automatically
+    console.log('🛒 Calling purchasePackage...');
+    const purchaseResult = await purchasesInstance.purchasePackage(selectedPackage);
+    
+    console.log('📦 Purchase result:', {
+      hasCustomerInfo: !!purchaseResult?.customerInfo,
+      hasCheckoutUrl: !!(purchaseResult?.checkoutUrl || purchaseResult?.checkout_url),
+      keys: Object.keys(purchaseResult || {}),
+    });
+    
+    // Check if there's a checkout URL in the response (for web/Stripe Checkout)
+    const resultCheckoutUrl = purchaseResult?.checkoutUrl || purchaseResult?.checkout_url;
+    if (resultCheckoutUrl) {
+      console.log('🔗 Opening Stripe Checkout from purchase result:', resultCheckoutUrl);
+      window.location.href = resultCheckoutUrl;
+      return { 
+        success: true, 
+        error: 'Redirecting to payment...' 
+      };
+    }
+    
+    // If no checkout URL, the purchase may have completed synchronously
+    const customerInfo = purchaseResult?.customerInfo || purchaseResult;
     
     // Verify entitlement was granted
     const entitlements = customerInfo?.entitlements?.active ?? {};
@@ -294,10 +359,33 @@ export async function purchaseProSubscription(
     
   } catch (error: any) {
     console.error('❌ RevenueCat purchase error:', error);
+    console.error('❌ Error details:', {
+      message: error?.message,
+      code: error?.code,
+      underlyingError: error?.underlyingError,
+      checkoutUrl: error?.checkoutUrl || error?.checkout_url,
+      keys: Object.keys(error || {}),
+    });
+    
+    // Check if error contains a checkout URL (some SDKs return checkout URL in error)
+    const errorCheckoutUrl = error?.checkoutUrl || 
+                            error?.checkout_url || 
+                            error?.underlyingError?.checkoutUrl ||
+                            error?.underlyingError?.checkout_url;
+    
+    if (errorCheckoutUrl) {
+      console.log('🔗 Error contains checkout URL, redirecting:', errorCheckoutUrl);
+      window.location.href = errorCheckoutUrl;
+      return { 
+        success: true, 
+        error: 'Redirecting to payment...' 
+      };
+    }
     
     // Extract detailed error information
     const errorMessage = error?.message || 
                         error?.underlyingErrorMessage || 
+                        error?.underlyingError?.message ||
                         error?.toString() || 
                         'Purchase failed';
     
@@ -320,6 +408,14 @@ export async function purchaseProSubscription(
       return { 
         success: false, 
         error: 'Payment failed. Please check your payment method and try again.' 
+      };
+    }
+    
+    // Check for "No available adapters" error (Stripe Checkout not configured)
+    if (errorMessage.includes('adapter') || errorMessage.includes('checkout')) {
+      return { 
+        success: false, 
+        error: 'Payment system not configured. Please contact support.' 
       };
     }
     
