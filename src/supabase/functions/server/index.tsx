@@ -956,7 +956,7 @@ app.post("/make-server-65e6e67f/subscription", async (c) => {
     const subscription = await c.req.json();
 
     // SECURITY: Validate payment for Pro upgrades
-    // If upgrading to Pro, verify payment was made through RevenueCat webhook
+    // If upgrading to Pro, verify payment was made through Stripe
     if (subscription.tier === 'pro') {
       // Check if there's a valid payment source (webhook data)
       const existingTier = await kv.get(`user:${userId}:tier`);
@@ -1006,8 +1006,8 @@ app.post("/make-server-65e6e67f/subscription", async (c) => {
     // Legacy format (for existing code)
     await kv.set(`user_${userId}_subscription`, subscription);
     
-    // Webhook format (for RevenueCat sync)
-    // Only update if tier is being set (don't overwrite webhook data unnecessarily)
+    // Subscription data format
+    // Only update if tier is being set
     if (subscription.tier) {
       // If upgrading to Pro, ensure we have payment verification
       if (subscription.tier === 'pro') {
@@ -2092,214 +2092,9 @@ app.get("/make-server-65e6e67f/calendar/events/:provider", async (c) => {
 });
 
 // ============================================================================
-// REVENUECAT SUBSCRIPTION WEBHOOK
+// STRIPE WEBHOOK (if needed in the future)
 // ============================================================================
-// Handles subscription events from all platforms (web/Stripe, iOS/Apple, Android/Google Play)
-
-app.post("/make-server-65e6e67f/revenuecat-webhook", async (c) => {
-  try {
-    const event = await c.req.json();
-    
-    console.log('RevenueCat webhook received:', {
-      type: event.event?.type,
-      userId: event.event?.app_user_id,
-      store: event.event?.store
-    });
-
-    // SECURITY: Validate webhook signature (RevenueCat sends this in production)
-    const authHeader = c.req.header('Authorization');
-    const expectedToken = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
-    
-    // Always require webhook secret in production
-    const isProduction = Deno.env.get('ENVIRONMENT') === 'production' || 
-                        !Deno.env.get('ENVIRONMENT') || 
-                        Deno.env.get('ENVIRONMENT') === 'prod';
-    
-    if (isProduction && !expectedToken) {
-      console.error('SECURITY: REVENUECAT_WEBHOOK_SECRET not configured in production');
-      return c.json({ error: 'Webhook authentication not configured' }, 500);
-    }
-    
-    // Validate webhook signature
-    if (expectedToken) {
-      if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
-        console.error('SECURITY: Invalid webhook signature - unauthorized access attempt');
-        return c.json({ error: 'Unauthorized' }, 401);
-      }
-    } else {
-      // In development, log warning but allow (for testing)
-      console.warn('⚠️ REVENUECAT_WEBHOOK_SECRET not set - webhook validation disabled (development only)');
-    }
-
-    // Extract event data
-    const eventType = event.event?.type;
-    const userId = event.event?.app_user_id;
-    const store = event.event?.store; // 'app_store', 'play_store', 'stripe', etc.
-    const productId = event.event?.product_id;
-    const purchaseDate = event.event?.purchased_at_ms;
-    const expirationDate = event.event?.expiration_at_ms;
-
-    if (!userId) {
-      console.error('No user ID in webhook event');
-      return c.json({ error: 'Missing user ID' }, 400);
-    }
-
-    // Process event based on type
-    switch (eventType) {
-      case 'INITIAL_PURCHASE':
-        console.log(`User ${userId} subscribed via ${store}`);
-        const startDateISO = purchaseDate ? new Date(purchaseDate).toISOString() : new Date().toISOString();
-        const expiresAtISO = expirationDate ? new Date(expirationDate).toISOString() : null;
-        
-        // Store in webhook format
-        await kv.set(`user:${userId}:tier`, 'pro');
-        await kv.set(`user:${userId}:subscription_store`, store);
-        await kv.set(`user:${userId}:subscription_product`, productId);
-        await kv.set(`user:${userId}:subscription_start`, startDateISO);
-        await kv.set(`user:${userId}:subscription_status`, 'active');
-        if (expiresAtISO) {
-          await kv.set(`user:${userId}:subscription_expires_at`, expiresAtISO);
-        }
-        
-        // Store Stripe customer ID if this is from Stripe
-        // RevenueCat webhook may have customer_id in different locations:
-        // 1. event.event.customer_id (direct)
-        // 2. event.event.subscriber_attributes.$stripeCustomerId
-        // 3. event.event.transaction_id (we'd need to query Stripe with this)
-        if (store === 'stripe') {
-          let stripeCustomerId = null;
-          
-          // Check direct customer_id field
-          if (event.event?.customer_id) {
-            stripeCustomerId = event.event.customer_id;
-          }
-          // Check subscriber attributes
-          else if (event.event?.subscriber_attributes?.$stripeCustomerId?.value) {
-            stripeCustomerId = event.event.subscriber_attributes.$stripeCustomerId.value;
-          }
-          // Check entitlements for transaction info
-          else if (event.event?.entitlements) {
-            const entitlements = Object.values(event.event.entitlements);
-            for (const entitlement of entitlements) {
-              if (entitlement.latest_transaction?.customer_id) {
-                stripeCustomerId = entitlement.latest_transaction.customer_id;
-                break;
-              }
-            }
-          }
-          
-          if (stripeCustomerId) {
-            await kv.set(`user:${userId}:stripe_customer_id`, stripeCustomerId);
-            console.log(`Stored Stripe customer ID for user ${userId}: ${stripeCustomerId}`);
-          } else {
-            console.warn(`Stripe subscription for user ${userId} but no customer_id found in webhook. Will query RevenueCat API when needed.`);
-            // Log webhook structure for debugging
-            console.log('Webhook event structure:', JSON.stringify(event.event, null, 2));
-          }
-        }
-        
-        // Sync to legacy format for compatibility
-        await kv.set(`user_${userId}_subscription`, {
-          tier: 'pro',
-          status: 'active',
-          startDate: startDateISO,
-          endDate: expiresAtISO,
-          cancelAtPeriodEnd: false,
-        });
-        break;
-
-      case 'RENEWAL':
-        console.log(`User ${userId} subscription renewed via ${store}`);
-        const renewedDateISO = purchaseDate ? new Date(purchaseDate).toISOString() : new Date().toISOString();
-        const renewedExpiresAtISO = expirationDate ? new Date(expirationDate).toISOString() : null;
-        
-        await kv.set(`user:${userId}:tier`, 'pro');
-        await kv.set(`user:${userId}:subscription_status`, 'active');
-        await kv.set(`user:${userId}:subscription_renewed`, renewedDateISO);
-        if (renewedExpiresAtISO) {
-          await kv.set(`user:${userId}:subscription_expires_at`, renewedExpiresAtISO);
-        }
-        
-        // Sync to legacy format
-        const legacySub = await kv.get(`user_${userId}_subscription`) || {};
-        await kv.set(`user_${userId}_subscription`, {
-          ...legacySub,
-          tier: 'pro',
-          status: 'active',
-          endDate: renewedExpiresAtISO || legacySub.endDate,
-          cancelAtPeriodEnd: false,
-        });
-        break;
-
-      case 'CANCELLATION':
-        console.log(`User ${userId} cancelled subscription on ${store}`);
-        // Keep Pro until expiration
-        const cancelledDateISO = new Date().toISOString();
-        const cancelledExpiresAtISO = expirationDate ? new Date(expirationDate).toISOString() : null;
-        
-        await kv.set(`user:${userId}:subscription_status`, 'cancelled');
-        await kv.set(`user:${userId}:subscription_cancelled_at`, cancelledDateISO);
-        if (cancelledExpiresAtISO) {
-          await kv.set(`user:${userId}:subscription_expires_at`, cancelledExpiresAtISO);
-        }
-        
-        // Sync to legacy format
-        const cancelledLegacySub = await kv.get(`user_${userId}_subscription`) || {};
-        await kv.set(`user_${userId}_subscription`, {
-          ...cancelledLegacySub,
-          status: 'active', // Keep status as active until expiration
-          endDate: cancelledExpiresAtISO || cancelledLegacySub.endDate,
-          cancelAtPeriodEnd: true,
-        });
-        break;
-
-      case 'UNCANCELLATION':
-        console.log(`User ${userId} reactivated subscription on ${store}`);
-        await kv.set(`user:${userId}:tier`, 'pro');
-        await kv.set(`user:${userId}:subscription_status`, 'active');
-        await kv.del(`user:${userId}:subscription_cancelled_at`);
-        break;
-
-      case 'EXPIRATION':
-        console.log(`User ${userId} subscription expired on ${store}`);
-        const expiredDateISO = new Date().toISOString();
-        
-        await kv.set(`user:${userId}:tier`, 'free');
-        await kv.set(`user:${userId}:subscription_status`, 'expired');
-        await kv.set(`user:${userId}:subscription_expired_at`, expiredDateISO);
-        
-        // Sync to legacy format
-        await kv.set(`user_${userId}_subscription`, {
-          tier: 'free',
-          status: 'expired',
-          startDate: null,
-          endDate: expiredDateISO,
-          cancelAtPeriodEnd: false,
-        });
-        break;
-
-      case 'BILLING_ISSUE':
-        console.log(`Billing issue for user ${userId} on ${store}`);
-        await kv.set(`user:${userId}:subscription_status`, 'billing_issue');
-        await kv.set(`user:${userId}:billing_issue_at`, new Date().toISOString());
-        // Don't downgrade immediately, give grace period
-        break;
-
-      case 'PRODUCT_CHANGE':
-        console.log(`User ${userId} changed subscription product on ${store}`);
-        await kv.set(`user:${userId}:subscription_product`, productId);
-        break;
-
-      default:
-        console.log(`Unhandled RevenueCat event type: ${eventType}`);
-    }
-
-    return c.json({ received: true });
-  } catch (error) {
-    console.error('RevenueCat webhook error:', error);
-    return c.json({ error: String(error) }, 500);
-  }
-});
+// Stripe webhook endpoint can be added here for handling Stripe subscription events
 
 // Get user subscription status (for frontend queries)
 app.get("/make-server-65e6e67f/subscription-status", async (c) => {
@@ -2371,127 +2166,14 @@ app.post("/make-server-65e6e67f/create-billing-portal", async (c) => {
     // Get user's Stripe customer ID from KV store
     let stripeCustomerId = await kv.get(`user:${userId}:stripe_customer_id`);
     
-    // If customer ID not stored, query RevenueCat API to find active subscription
+    // If customer ID not stored, check subscription data from database
     if (!stripeCustomerId) {
-      try {
-        const revenueCatSecretKey = Deno.env.get('REVENUECAT_SECRET_KEY');
-        if (!revenueCatSecretKey) {
-          console.error('RevenueCat secret key not configured');
-          return c.json({ error: 'Payment provider not fully configured' }, 500);
-        }
-        
-        // Get customer info from RevenueCat API - this is the source of truth
-        const rcResponse = await fetch(`https://api.revenuecat.com/v1/subscribers/${userId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${revenueCatSecretKey}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (rcResponse.ok) {
-          const customerInfo = await rcResponse.json();
-          
-          if (customerInfo.subscriber) {
-            const subscriber = customerInfo.subscriber;
-            
-            // Check if user has active entitlements (active subscription)
-            const entitlements = subscriber.entitlements ? Object.values(subscriber.entitlements) : [];
-            const hasActiveEntitlement = entitlements.some((entitlement: any) => 
-              entitlement.is_active === true || entitlement.will_renew === true
-            );
-            
-            if (!hasActiveEntitlement) {
-              console.log(`User ${userId} has no active entitlements in RevenueCat`);
-              return c.json({ error: 'No active subscription found. Please subscribe to Pro to access billing management.' }, 404);
-            }
-            
-            // Check if subscription is from Stripe store
-            const hasStripeStore = entitlements.some((entitlement: any) => 
-              entitlement.store === 'stripe' || 
-              (entitlement.latest_transaction && entitlement.latest_transaction.store === 'stripe')
-            );
-            
-            if (!hasStripeStore) {
-              // Check all transactions for Stripe
-              let foundStripe = false;
-              for (const entitlement of entitlements) {
-                if (entitlement.all_transactions) {
-                  for (const trans of entitlement.all_transactions) {
-                    if (trans.store === 'stripe') {
-                      foundStripe = true;
-                      break;
-                    }
-                  }
-                }
-                if (foundStripe) break;
-              }
-              
-              if (!foundStripe) {
-                const storeTypes = entitlements.map((e: any) => e.store || e.latest_transaction?.store).filter(Boolean);
-                const uniqueStores = [...new Set(storeTypes)];
-                console.log(`User ${userId} has subscription but not from Stripe. Store types: ${uniqueStores.join(', ')}`);
-                return c.json({ 
-                  error: 'Your subscription is not managed through Stripe. Please manage it through the platform where you purchased it.',
-                  store: uniqueStores[0] || 'unknown'
-                }, 400);
-              }
-            }
-            
-            // Check subscriber attributes for Stripe customer ID
-            // RevenueCat typically stores this as $stripeCustomerId attribute
-            if (subscriber.subscriber_attributes?.$stripeCustomerId?.value) {
-              stripeCustomerId = subscriber.subscriber_attributes.$stripeCustomerId.value;
-            } else {
-              // Check entitlements for Stripe store transactions
-              for (const entitlement of entitlements) {
-                if (entitlement.store === 'stripe' && entitlement.latest_transaction) {
-                  // Check if transaction has customer_id
-                  const transaction = entitlement.latest_transaction;
-                  if (transaction.customer_id) {
-                    stripeCustomerId = transaction.customer_id;
-                    break;
-                  }
-                }
-                // Also check all_transactions for Stripe store
-                if (entitlement.store === 'stripe' && entitlement.all_transactions) {
-                  for (const trans of entitlement.all_transactions) {
-                    if (trans.customer_id) {
-                      stripeCustomerId = trans.customer_id;
-                      break;
-                    }
-                  }
-                  if (stripeCustomerId) break;
-                }
-              }
-            }
-            
-            if (stripeCustomerId) {
-              // Store it for future use (so we don't need to query RevenueCat every time)
-              await kv.set(`user:${userId}:stripe_customer_id`, stripeCustomerId);
-              // Also update subscription store if not set
-              const currentStore = await kv.get(`user:${userId}:subscription_store`);
-              if (!currentStore) {
-                await kv.set(`user:${userId}:subscription_store`, 'stripe');
-              }
-              console.log(`Retrieved and stored Stripe customer ID from RevenueCat for user ${userId}: ${stripeCustomerId}`);
-            } else {
-              console.warn(`RevenueCat customer info found but no Stripe customer ID for user ${userId}`);
-              // Log the structure for debugging
-              console.log('RevenueCat subscriber structure:', JSON.stringify(subscriber, null, 2));
-              return c.json({ error: 'Unable to retrieve Stripe customer information. Your subscription may not be linked to Stripe. Please contact support for assistance.' }, 404);
-            }
-          } else {
-            return c.json({ error: 'No subscription account found. Please subscribe to Pro to access billing management.' }, 404);
-          }
-        } else {
-          const errorText = await rcResponse.text();
-          console.error('RevenueCat API error:', errorText);
-          return c.json({ error: 'Unable to verify subscription. Please try again or contact support.' }, 500);
-        }
-      } catch (rcError) {
-        console.error('Error querying RevenueCat for customer:', rcError);
-        return c.json({ error: 'Unable to verify subscription. Please try again later.' }, 500);
+      // Check if user has an active subscription in the database
+      const subscriptionData = await kv.get(`user_${userId}_subscription`);
+      if (subscriptionData && subscriptionData.tier === 'pro' && subscriptionData.status === 'active') {
+        // User has Pro subscription but no Stripe customer ID stored
+        // This might be from a different payment method or needs to be set up
+        console.warn(`User ${userId} has Pro subscription but no Stripe customer ID stored`);
       }
     }
     
