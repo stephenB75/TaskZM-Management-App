@@ -44,7 +44,6 @@ import { DocumentHead } from './components/DocumentHead';
 import { useAIScheduler, type SchedulePlan } from './hooks/useAIScheduler';
 import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
-import { configureRevenueCat, resetRevenueCat } from './lib/revenuecat';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
@@ -105,17 +104,9 @@ function AppContent() {
         console.log('%c✨ TaskZM v1.0.1 - Baseline Reset ✨', 'font-size: 16px; font-weight: bold; color: #9D87C3;');
         console.log('%cℹ️  Payment System Status:', 'font-weight: bold; color: #4A90E2;');
         
-        // Check if RevenueCat API key is configured
-        const apiKey = (import.meta as any).env?.VITE_REVENUECAT_WEB_PUBLIC_KEY;
-        if (apiKey && apiKey !== 'dev_mode_placeholder' && apiKey.trim() !== '' && (apiKey.startsWith('rc_') || apiKey.startsWith('rcb_'))) {
-          console.log('  • RevenueCat: API key found ✅');
-          console.log('  • Mode: Production (real payments enabled)');
-          console.log('  • RevenueCat will configure automatically on login');
-        } else {
-          console.log('  • RevenueCat: API key not found');
-          console.log('  • Mode: Development (simulated payments)');
-          console.log('  • To enable real payments: Add VITE_REVENUECAT_WEB_PUBLIC_KEY to .env');
-        }
+        // Payment system status
+        console.log('  • Payment System: Stripe integration');
+        console.log('  • Mode: Production (real payments via Stripe)');
         
         window?.sessionStorage?.setItem('taskzm_session_info_shown', 'true');
       }
@@ -124,24 +115,6 @@ function AppContent() {
     }
   }, []);
 
-  // Initialize RevenueCat when user logs in
-  useEffect(() => {
-    if (user?.id) {
-      const platform = getPlatform();
-      
-      configureRevenueCat(user.id).catch(error => {
-          // RevenueCat configuration failed - this is expected if not set up yet
-          // App will gracefully fall back to legacy payment flow
-          // Silently handle errors to prevent console noise
-          if (error?.message && !error.message.includes('checkoutUrls')) {
-            console.debug('RevenueCat configuration skipped:', error.message);
-          }
-        });
-    } else {
-      // Reset RevenueCat when user logs out
-      resetRevenueCat();
-    }
-  }, [user?.id]);
 
   // Set default view to 'today' on mobile when app loads/refreshes
   useEffect(() => {

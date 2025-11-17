@@ -15,40 +15,16 @@ import {
   Users,
 } from "lucide-react";
 
-// Default pricing (fallback when RevenueCat is not available)
+// Default pricing
 export const DEFAULT_MONTHLY_PRICE = "$3.99";
 export const DEFAULT_YEARLY_PRICE = "$39.99";
 
 // Default currency code
 export const DEFAULT_CURRENCY_CODE = "USD";
 
-// Default plan titles (fallback when RevenueCat product titles are not available)
+// Default plan titles
 export const DEFAULT_MONTHLY_TITLE = "Monthly Pro";
 export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
-
-// RevenueCat Product IDs (for verification and reference)
-// These are the actual product IDs configured in RevenueCat dashboard
-export const REVENUECAT_MONTHLY_PRODUCT_ID = "prodb18a767009";
-export const REVENUECAT_YEARLY_PRODUCT_ID = "prod77566b1baf";
-
-// RevenueCat Entitlement Identifiers
-// These are the actual entitlement identifiers configured in RevenueCat dashboard
-export const REVENUECAT_MONTHLY_ENTITLEMENT_ID = "PRO-Monthly";
-export const REVENUECAT_YEARLY_ENTITLEMENT_ID = "PRO-Yearly";
-
-// Minimal fallback identifiers - ONLY used if dynamic detection finds nothing
-// The app primarily uses identifiers dynamically discovered from RevenueCat packages.
-// These minimal fallbacks are kept only as a last resort safety net.
-export const MONTHLY_PACKAGE_IDENTIFIERS = [
-  '$rc_monthly',  // Most common RevenueCat monthly pattern
-  'monthly',      // Simple keyword fallback
-];
-export const YEARLY_PACKAGE_IDENTIFIERS = [
-  '$rc_annual',   // Most common RevenueCat yearly pattern
-  '$rc_yearly',   // Alternative RevenueCat yearly pattern
-  'yearly',       // Simple keyword fallback
-  'annual',       // Alternative keyword fallback
-];
 
 // Number of PRO features (for UI display)
 export const PRO_FEATURES_COUNT = 7;
@@ -144,12 +120,12 @@ export const SUBSCRIPTION_UI_TEXT = {
     paymentProcessingUnavailable: "Payment processing unavailable",
     paymentProcessingUnavailableDesc: "Unable to process payment. Please contact support or try again later.",
     paymentFormError: "Payment Form Error",
-    paymentFormErrorDesc: "Unable to open or interact with the payment form. Please check: 1) Stripe is properly configured in RevenueCat dashboard, 2) Your browser allows popups/modals, 3) No browser extensions are blocking the payment form. If the issue persists, try a different browser or check the browser console for errors.",
+    paymentFormErrorDesc: "Unable to open or interact with the payment form. Please check: 1) Stripe is properly configured, 2) Your browser allows popups/modals, 3) No browser extensions are blocking the payment form. If the issue persists, try a different browser or check the browser console for errors.",
     subscriptionNotAvailable: "Subscription Not Available",
-    subscriptionNotAvailableDesc: "Subscription packages are not currently available. This may be a configuration issue. Please check RevenueCat dashboard or contact support.",
+    subscriptionNotAvailableDesc: "Subscription packages are not currently available. This may be a configuration issue. Please contact support.",
     packageNotFound: "Package Not Found",
     packageNotFoundDesc: "The requested subscription package was not found. Please contact support.",
-    subscriptionNotAvailableCheckDesc: "No subscription packages are currently available. Please check RevenueCat dashboard configuration or try again later.",
+    subscriptionNotAvailableCheckDesc: "No subscription packages are currently available. Please try again later or contact support.",
   },
   settings: {
     sectionTitle: "Subscription",
@@ -250,10 +226,6 @@ export const SUBSCRIPTION_UI_TEXT = {
     failedDesc: "Please try again or contact support.",
     monthlyNotAvailable: "Monthly subscription is not currently available. Only yearly subscription is available.",
     yearlyNotAvailable: "Yearly subscription is not currently available.",
-  },
-  revenueCat: {
-    connected: (count: number) => `✅ RevenueCat Connected • ${count} package(s) loaded`,
-    notConnected: "⚠️ RevenueCat not connected • Using default pricing",
   },
   upgradePrompt: {
     unlock: (feature: string) => `Unlock ${feature}`,

@@ -83,7 +83,7 @@ import {
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
-import { MONTHLY_PACKAGE_IDENTIFIERS, YEARLY_PACKAGE_IDENTIFIERS, SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT, PRICING_REFRESH_INTERVAL } from '../lib/subscription-constants';
+import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT, DEFAULT_MONTHLY_PRICE, DEFAULT_YEARLY_PRICE } from '../lib/subscription-constants';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -107,232 +107,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
   
-  // RevenueCat pricing state
+  // Pricing state (using default pricing)
   const [currentPricing, setCurrentPricing] = useState<{
     monthly?: string;
     yearly?: string;
     lastUpdated?: string;
-  }>({});
-
-  // Load pricing from RevenueCat
-  useEffect(() => {
-    const loadPricing = async () => {
-      try {
-        const { getOfferings, isRevenueCatConfigured, configureRevenueCat } = await import('../lib/revenuecat');
-        
-        // Ensure RevenueCat is configured
-        if (!isRevenueCatConfigured() && user?.id) {
-          try {
-            await configureRevenueCat(user.id);
-          } catch (error) {
-            console.warn('Failed to configure RevenueCat for pricing:', error);
-            return;
-          }
-        }
-
-        if (!isRevenueCatConfigured()) {
-          // Don't set pricing if RevenueCat not configured
-          setCurrentPricing({
-            monthly: undefined,
-            yearly: undefined,
-            lastUpdated: new Date().toISOString(),
-          });
-          return;
-        }
-
-        // Force refresh to get latest packages from RevenueCat
-        const offerings = await getOfferings(true);
-        if (offerings?.availablePackages && offerings.availablePackages.length > 0) {
-          // Filter for packages with valid product data (not just empty objects)
-          const hasValidProduct = (p: any) => {
-            if (!p || !p.product) return false;
-            const productKeys = Object.keys(p.product);
-            return productKeys.length > 0 && (p.product.identifier || p.product.priceString || p.product.price);
-          };
-          const validPackages = offerings.availablePackages.filter(hasValidProduct);
-          
-          // Dynamic identifier detection: Extract identifiers from RevenueCat packages
-          const discoveredMonthlyIds: string[] = [];
-          const discoveredYearlyIds: string[] = [];
-          
-          validPackages.forEach((pkg: any) => {
-            if (!pkg) return;
-            const identifier = pkg.identifier || '';
-            const productId = pkg.product?.identifier || '';
-            const subscriptionPeriod = pkg.product?.subscriptionPeriod || '';
-            const identifierLower = identifier.toLowerCase();
-            const productIdLower = productId.toLowerCase();
-            
-            const looksMonthly = subscriptionPeriod === 'P1M' || 
-                                subscriptionPeriod === 'MONTH' ||
-                                (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('month')) ||
-                                identifierLower.includes('month') ||
-                                productIdLower.includes('month');
-            
-            const looksYearly = subscriptionPeriod === 'P1Y' || 
-                               subscriptionPeriod === 'YEAR' ||
-                               subscriptionPeriod === 'ANNUAL' ||
-                               (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('year')) ||
-                               identifierLower.includes('year') ||
-                               identifierLower.includes('annual') ||
-                               productIdLower.includes('year') ||
-                               productIdLower.includes('annual');
-            
-            if (looksMonthly && !looksYearly) {
-              if (identifier) discoveredMonthlyIds.push(identifier);
-              if (productId) discoveredMonthlyIds.push(productId);
-            } else if (looksYearly) {
-              if (identifier) discoveredYearlyIds.push(identifier);
-              if (productId) discoveredYearlyIds.push(productId);
-            }
-          });
-          
-          // Prioritize discovered identifiers, only use fallbacks if nothing was discovered
-          const monthlyIdentifiers = discoveredMonthlyIds.length > 0 
-            ? discoveredMonthlyIds 
-            : MONTHLY_PACKAGE_IDENTIFIERS;
-          const yearlyIdentifiers = discoveredYearlyIds.length > 0 
-            ? discoveredYearlyIds 
-            : YEARLY_PACKAGE_IDENTIFIERS;
-          
-          // Use the same robust matching logic as PricingDialog with dynamic identifiers
-          let monthlyPkg: any = null;
-          let yearlyPkg: any = null;
-          
-          for (const pkg of validPackages) {
-            if (!pkg) continue;
-            
-            const identifier = pkg.identifier || '';
-            const identifierLower = identifier.toLowerCase();
-            const productId = pkg.product?.identifier || '';
-            const productIdLower = productId.toLowerCase();
-            
-            // Check if this is a monthly package
-            if (!monthlyPkg) {
-              const isMonthlyById = monthlyIdentifiers.some(id => {
-                const idLower = id.toLowerCase();
-                return identifierLower === idLower || 
-                       identifierLower === idLower.replace('$', '') ||
-                       identifierLower === idLower.replace('$rc_', 'rc_') ||
-                       identifierLower.includes(idLower.replace('$', '')) ||
-                       identifierLower.includes(idLower.replace('$rc_', 'rc_'));
-              });
-              
-              const isMonthlyByProductId = monthlyIdentifiers.some(id => {
-                const idLower = id.toLowerCase();
-                // Exact match (most reliable)
-                if (productIdLower === idLower) return true;
-                // Pattern matching for package identifiers
-                return productIdLower.includes(idLower.replace('$', '')) ||
-                       productIdLower.includes(idLower.replace('$rc_', 'rc_'));
-              });
-              
-              const hasMonthlyKeywords = (identifierLower.includes('month') || 
-                                        identifierLower.includes('rc_monthly') ||
-                                        productIdLower.includes('month') ||
-                                        productIdLower.includes('rc_monthly')) && 
-                                       !identifierLower.includes('year') && 
-                                       !identifierLower.includes('annual') &&
-                                       !productIdLower.includes('year') &&
-                                       !productIdLower.includes('annual');
-              
-              const isMonthlyByMetadata = pkg.product?.subscriptionPeriod === 'P1M' || 
-                                         pkg.product?.subscriptionPeriod === 'MONTH' ||
-                                         (pkg.product?.subscriptionPeriod && 
-                                          pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'));
-              
-              if (isMonthlyById || isMonthlyByProductId || hasMonthlyKeywords || isMonthlyByMetadata) {
-                monthlyPkg = pkg;
-              }
-            }
-            
-            // Check if this is a yearly package
-            if (!yearlyPkg) {
-              const isYearlyById = yearlyIdentifiers.some(id => {
-                const idLower = id.toLowerCase();
-                return identifierLower === idLower || 
-                       identifierLower === idLower.replace('$', '') ||
-                       identifierLower === idLower.replace('$rc_', 'rc_') ||
-                       identifierLower.includes(idLower.replace('$', '')) ||
-                       identifierLower.includes(idLower.replace('$rc_', 'rc_'));
-              });
-              
-              const isYearlyByProductId = yearlyIdentifiers.some(id => {
-                const idLower = id.toLowerCase();
-                // Exact match (most reliable)
-                if (productIdLower === idLower) return true;
-                // Pattern matching for package identifiers
-                return productIdLower.includes(idLower.replace('$', '')) ||
-                       productIdLower.includes(idLower.replace('$rc_', 'rc_'));
-              });
-              
-              const hasYearlyKeywords = identifierLower.includes('year') || 
-                                       identifierLower.includes('annual') ||
-                                       identifierLower.includes('rc_yearly') ||
-                                       identifierLower.includes('rc_annual') ||
-                                       productIdLower.includes('year') ||
-                                       productIdLower.includes('annual');
-              
-              const isYearlyByMetadata = pkg.product?.subscriptionPeriod === 'P1Y' || 
-                                       pkg.product?.subscriptionPeriod === 'YEAR' ||
-                                       pkg.product?.subscriptionPeriod === 'ANNUAL' ||
-                                       (pkg.product?.subscriptionPeriod && 
-                                        pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
-              
-              if (isYearlyById || isYearlyByProductId || hasYearlyKeywords || isYearlyByMetadata) {
-                yearlyPkg = pkg;
-              }
-            }
-          }
-
-          // Only set pricing if we have valid data from RevenueCat (no defaults)
-          setCurrentPricing({
-            monthly: monthlyPkg?.product?.priceString ?? undefined,
-            yearly: yearlyPkg?.product?.priceString ?? undefined,
-            lastUpdated: new Date().toISOString(),
-          });
-          
-          // Log pricing source for debugging
-          if (monthlyPkg?.product?.priceString) {
-            console.log('✅ Monthly pricing loaded from RevenueCat:', monthlyPkg.product.priceString);
-          } else {
-            console.warn('⚠️ Monthly pricing not found in RevenueCat - product data missing');
-          }
-          if (yearlyPkg?.product?.priceString) {
-            console.log('✅ Yearly pricing loaded from RevenueCat:', yearlyPkg.product.priceString);
-          } else if (yearlyPkg) {
-            console.warn('⚠️ Yearly pricing not found in RevenueCat - product data missing');
-          }
-        } else {
-          // No offerings available - don't set default pricing
-          setCurrentPricing({
-            monthly: undefined,
-            yearly: undefined,
-            lastUpdated: new Date().toISOString(),
-          });
-          console.warn('⚠️ No RevenueCat offerings available');
-        }
-      } catch (error) {
-        console.warn('Failed to load pricing from RevenueCat:', error);
-        // Don't use default pricing on error - leave undefined
-        setCurrentPricing({
-          monthly: undefined,
-          yearly: undefined,
-          lastUpdated: new Date().toISOString(),
-        });
-      }
-    };
-
-    // Load pricing on mount and when subscription changes
-    loadPricing();
-    
-    // Refresh pricing periodically
-    const refreshInterval = setInterval(loadPricing, PRICING_REFRESH_INTERVAL);
-    
-    return () => {
-      clearInterval(refreshInterval);
-    };
-  }, [user?.id, subscription.tier]);
+  }>({
+    monthly: DEFAULT_MONTHLY_PRICE,
+    yearly: DEFAULT_YEARLY_PRICE,
+    lastUpdated: new Date().toISOString(),
+  });
 
   // Helper function to get icon component from icon name
   const getAwardIcon = (iconName: string) => {
@@ -879,8 +663,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       size="sm" 
                       className="w-full"
                       onClick={() => {
-                        // Open PricingDialog to show RevenueCat subscription options
-                        // This will connect to Stripe for web purchases via RevenueCat
+                        // Open PricingDialog to show subscription options
                         setShowPricingDialog(true);
                       }}
                     >
@@ -2622,43 +2405,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         open={showPricingDialog}
         onOpenChange={setShowPricingDialog}
         onOfferingsUpdated={() => {
-          // Refresh pricing when offerings are updated in PricingDialog
-          const refreshPricing = async () => {
-            try {
-              const { getOfferings, isRevenueCatConfigured } = await import('../lib/revenuecat');
-              if (isRevenueCatConfigured()) {
-                const offerings = await getOfferings();
-                if (offerings?.availablePackages && offerings.availablePackages.length > 0) {
-                  const validPackages = offerings.availablePackages.filter((p: any) => p && p.product);
-                  // Use keyword-based matching instead of hardcoded identifiers
-                  const monthlyPkg = validPackages.find(
-                    (pkg: any) => pkg && (
-                      pkg.identifier?.toLowerCase().includes('month') ||
-                      pkg.product?.identifier?.toLowerCase().includes('month') ||
-                      (pkg.product?.subscriptionPeriod && pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'))
-                    ) && !pkg.identifier?.toLowerCase().includes('year') && !pkg.identifier?.toLowerCase().includes('annual')
-                  );
-                  const yearlyPkg = validPackages.find(
-                    (pkg: any) => pkg && (
-                      pkg.identifier?.toLowerCase().includes('year') ||
-                      pkg.identifier?.toLowerCase().includes('annual') ||
-                      pkg.product?.identifier?.toLowerCase().includes('year') ||
-                      pkg.product?.identifier?.toLowerCase().includes('annual') ||
-                      (pkg.product?.subscriptionPeriod && pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'))
-                    )
-                  );
-                  setCurrentPricing({
-                    monthly: monthlyPkg?.product?.priceString || undefined,
-                    yearly: yearlyPkg?.product?.priceString || undefined,
-                    lastUpdated: new Date().toISOString(),
-                  });
-                }
-              }
-            } catch (error) {
-              console.warn('Failed to refresh pricing after offerings update:', error);
-            }
-          };
-          refreshPricing();
+          // Pricing is now static, no need to refresh
         }}
       />
 
