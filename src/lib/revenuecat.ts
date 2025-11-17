@@ -412,6 +412,8 @@ export async function purchaseProSubscription(
                        selectedPackage.storeProduct?.checkoutUrl ||
                        selectedPackage.rcBillingProduct?.checkoutUrl;
     
+    // For Web Billing, checkout URL might not be available until purchasePackage is called
+    // RevenueCat Web Billing generates checkout URLs dynamically during purchase
     console.log('🔍 Pre-purchase checkout URL check:', {
       hasCheckoutUrl: !!checkoutUrl,
       checkoutUrl,
@@ -419,6 +421,7 @@ export async function purchaseProSubscription(
       packageHasCheckout_url: !!selectedPackage.checkout_url,
       storeProductHasCheckoutUrl: !!selectedPackage.storeProduct?.checkoutUrl,
       rcBillingProductHasCheckoutUrl: !!selectedPackage.rcBillingProduct?.checkoutUrl,
+      note: 'For Web Billing, checkout URL is typically generated during purchasePackage call',
     });
     
     if (checkoutUrl) {
@@ -431,27 +434,55 @@ export async function purchaseProSubscription(
     }
 
     // Purchase the package
-    // On web, RevenueCat should handle Stripe Checkout automatically
-    // If Stripe adapter is configured, purchasePackage should return a checkout URL or redirect
-    console.log('🛒 Calling purchasePackage...', {
+    // For RevenueCat Web Billing, purchasePackage will either:
+    // 1. Return a checkout URL in the result (success case)
+    // 2. Throw an error with a checkout URL (some SDK versions)
+    // 3. Return customerInfo if payment completed synchronously (unlikely for Web Billing)
+    console.log('🛒 Calling purchasePackage for Web Billing...', {
       packageIdentifier: selectedPackage.identifier,
       hasStoreProduct: !!selectedPackage.storeProduct,
       hasRcBillingProduct: !!selectedPackage.rcBillingProduct,
       platform: 'web',
+      billingType: 'Web Billing (Stripe hosted checkout)',
     });
     
     let purchaseResult;
     try {
+      // For Web Billing, this call should generate a checkout URL
       purchaseResult = await purchasesInstance.purchasePackage(selectedPackage);
+      
+      console.log('📦 Purchase result (success path):', {
+        type: typeof purchaseResult,
+        isPromise: purchaseResult instanceof Promise,
+        keys: Object.keys(purchaseResult || {}),
+        hasCustomerInfo: !!purchaseResult?.customerInfo,
+        hasCheckoutUrl: !!(purchaseResult?.checkoutUrl || purchaseResult?.checkout_url),
+        fullResult: purchaseResult,
+      });
+      
     } catch (purchaseError: any) {
-      // Check if error contains checkout URL (RevenueCat may return checkout URL in error for web)
+      console.log('📦 Purchase error caught (checking for checkout URL):', {
+        errorType: typeof purchaseError,
+        errorName: purchaseError?.name,
+        errorMessage: purchaseError?.message,
+        errorKeys: Object.keys(purchaseError || {}),
+        hasCheckoutUrl: !!(purchaseError?.checkoutUrl || purchaseError?.checkout_url),
+        hasUnderlyingError: !!purchaseError?.underlyingError,
+        fullError: purchaseError,
+      });
+      
+      // For Web Billing, RevenueCat may return checkout URL in the error object
+      // This is a valid flow - the error contains the redirect URL
       const errorCheckoutUrl = purchaseError?.checkoutUrl || 
                               purchaseError?.checkout_url ||
                               purchaseError?.underlyingError?.checkoutUrl ||
-                              purchaseError?.underlyingError?.checkout_url;
+                              purchaseError?.underlyingError?.checkout_url ||
+                              purchaseError?.checkoutSessionUrl ||
+                              purchaseError?.url;
       
       if (errorCheckoutUrl) {
-        console.log('🔗 Purchase error contains checkout URL (this is expected for web/Stripe):', errorCheckoutUrl);
+        console.log('✅ Found checkout URL in error (Web Billing flow):', errorCheckoutUrl);
+        console.log('🔗 Redirecting to Stripe Checkout...');
         window.location.href = errorCheckoutUrl;
         return { 
           success: true, 
@@ -459,7 +490,19 @@ export async function purchaseProSubscription(
         };
       }
       
-      // Re-throw if no checkout URL in error
+      // Check if error message contains a URL (sometimes it's in the message)
+      const urlMatch = purchaseError?.message?.match(/https?:\/\/[^\s]+/);
+      if (urlMatch && urlMatch[0]) {
+        console.log('✅ Found checkout URL in error message:', urlMatch[0]);
+        window.location.href = urlMatch[0];
+        return { 
+          success: true, 
+          error: 'Redirecting to payment...' 
+        };
+      }
+      
+      // If no checkout URL found, this is a real error
+      console.error('❌ Purchase error without checkout URL - this indicates a configuration issue');
       throw purchaseError;
     }
     
@@ -471,16 +514,29 @@ export async function purchaseProSubscription(
       fullResult: purchaseResult,
     });
     
-    // Check if there's a checkout URL in the response (for web/Stripe Checkout)
-    const resultCheckoutUrl = purchaseResult?.checkoutUrl || purchaseResult?.checkout_url;
+    // Check if there's a checkout URL in the response (for Web Billing/Stripe Checkout)
+    // RevenueCat Web Billing may return checkout URL in various properties
+    const resultCheckoutUrl = purchaseResult?.checkoutUrl || 
+                              purchaseResult?.checkout_url ||
+                              purchaseResult?.checkoutSessionUrl ||
+                              purchaseResult?.url ||
+                              purchaseResult?.redirectUrl ||
+                              purchaseResult?.redirect_url;
+    
     if (resultCheckoutUrl) {
-      console.log('🔗 Opening Stripe Checkout from purchase result:', resultCheckoutUrl);
+      console.log('✅ Found checkout URL in purchase result (Web Billing):', resultCheckoutUrl);
+      console.log('🔗 Redirecting to Stripe Checkout...');
       window.location.href = resultCheckoutUrl;
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
       };
     }
+    
+    // If no checkout URL, this is unexpected for Web Billing
+    // Web Billing should always redirect to Stripe Checkout
+    console.warn('⚠️ Purchase result has no checkout URL - unexpected for Web Billing');
+    console.warn('⚠️ This might indicate Web Billing configuration issue');
     
     // If no checkout URL, the purchase may have completed synchronously
     const customerInfo = purchaseResult?.customerInfo || purchaseResult;
@@ -580,15 +636,27 @@ export async function purchaseProSubscription(
       };
     }
     
-    // Check if error contains a checkout URL (some SDKs return checkout URL in error)
+    // Check if error contains a checkout URL (Web Billing may return checkout URL in error)
+    // RevenueCat Web Billing can return checkout URLs in various error properties
     const errorCheckoutUrl = error?.checkoutUrl || 
                             error?.checkout_url || 
+                            error?.checkoutSessionUrl ||
+                            error?.url ||
+                            error?.redirectUrl ||
+                            error?.redirect_url ||
                             error?.underlyingError?.checkoutUrl ||
-                            error?.underlyingError?.checkout_url;
+                            error?.underlyingError?.checkout_url ||
+                            error?.underlyingError?.checkoutSessionUrl ||
+                            error?.underlyingError?.url;
     
-    if (errorCheckoutUrl) {
-      console.log('🔗 Error contains checkout URL, redirecting:', errorCheckoutUrl);
-      window.location.href = errorCheckoutUrl;
+    // Also check error message for URLs (sometimes it's embedded in the message)
+    const errorMessageUrl = errorMessage?.match(/https?:\/\/[^\s]+/)?.[0];
+    const finalCheckoutUrl = errorCheckoutUrl || errorMessageUrl;
+    
+    if (finalCheckoutUrl) {
+      console.log('✅ Found checkout URL in error (Web Billing redirect):', finalCheckoutUrl);
+      console.log('🔗 Redirecting to Stripe Checkout...');
+      window.location.href = finalCheckoutUrl;
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
