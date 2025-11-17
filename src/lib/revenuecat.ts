@@ -81,7 +81,7 @@ export async function getOfferings(forceRefresh = false): Promise<{
       return { monthly: null, yearly: null };
     }
 
-    const packages = offerings.current.availablePackages;
+    const packages = offerings.current?.availablePackages;
     
     if (!packages || packages.length === 0) {
       console.warn('⚠️ Current offering has no packages');
@@ -161,7 +161,11 @@ export async function purchaseProSubscription(
       throw new Error('No subscription offerings available');
     }
 
-    const packages = offerings.current.availablePackages;
+    const packages = offerings.current?.availablePackages;
+    
+    if (!packages || packages.length === 0) {
+      throw new Error('No packages available in current offering');
+    }
     
     // Find the requested package
     let selectedPackage: any = null;
@@ -203,9 +207,10 @@ export async function purchaseProSubscription(
     const { customerInfo } = await purchasesInstance.purchasePackage(selectedPackage);
     
     // Check if purchase was successful
-    const hasActiveEntitlement = customerInfo.entitlements.active['pro'] || 
-                                  customerInfo.entitlements.active['PRO-Monthly'] ||
-                                  customerInfo.entitlements.active['PRO-Yearly'];
+    const hasActiveEntitlement = 
+      customerInfo.entitlements?.active?.['pro'] ||
+      customerInfo.entitlements?.active?.['PRO-Monthly'] ||
+      customerInfo.entitlements?.active?.['PRO-Yearly'];
 
     if (hasActiveEntitlement) {
       return { success: true };
@@ -259,22 +264,24 @@ export async function getSubscriptionStatus(): Promise<{
     
     // Check for active entitlements
     const hasProEntitlement = 
-      customerInfo.entitlements.active['pro'] ||
-      customerInfo.entitlements.active['PRO-Monthly'] ||
-      customerInfo.entitlements.active['PRO-Yearly'];
+      customerInfo.entitlements?.active?.['pro'] ||
+      customerInfo.entitlements?.active?.['PRO-Monthly'] ||
+      customerInfo.entitlements?.active?.['PRO-Yearly'];
 
     if (hasProEntitlement) {
-      const entitlement = customerInfo.entitlements.active['pro'] ||
-                         customerInfo.entitlements.active['PRO-Monthly'] ||
-                         customerInfo.entitlements.active['PRO-Yearly'];
+      const entitlement = customerInfo.entitlements?.active?.['pro'] ||
+                         customerInfo.entitlements?.active?.['PRO-Monthly'] ||
+                         customerInfo.entitlements?.active?.['PRO-Yearly'];
       
-      return {
-        tier: 'pro',
-        status: entitlement.willRenew ? 'active' : 'cancelled',
-        startDate: entitlement.latestPurchaseDate || null,
-        endDate: entitlement.expirationDate || null,
-        cancelAtPeriodEnd: !entitlement.willRenew,
-      };
+      if (entitlement) {
+        return {
+          tier: 'pro',
+          status: entitlement.willRenew ? 'active' : 'cancelled',
+          startDate: entitlement.latestPurchaseDate ? entitlement.latestPurchaseDate.toISOString() : null,
+          endDate: entitlement.expirationDate ? entitlement.expirationDate.toISOString() : null,
+          cancelAtPeriodEnd: !entitlement.willRenew,
+        };
+      }
     }
 
     return {
@@ -309,9 +316,9 @@ export async function restorePurchases(): Promise<{ success: boolean; error?: st
     
     // Check if restore was successful
     const hasActiveEntitlement = 
-      customerInfo.entitlements.active['pro'] ||
-      customerInfo.entitlements.active['PRO-Monthly'] ||
-      customerInfo.entitlements.active['PRO-Yearly'];
+      customerInfo.entitlements?.active?.['pro'] ||
+      customerInfo.entitlements?.active?.['PRO-Monthly'] ||
+      customerInfo.entitlements?.active?.['PRO-Yearly'];
 
     if (hasActiveEntitlement) {
       return { success: true };
@@ -340,9 +347,9 @@ export async function openCustomerPortal(): Promise<string | null> {
     
     // Check if user has a subscription managed by RevenueCat/Stripe
     const hasStripeSubscription = 
-      customerInfo.entitlements.active['pro']?.store === 'stripe' ||
-      customerInfo.entitlements.active['PRO-Monthly']?.store === 'stripe' ||
-      customerInfo.entitlements.active['PRO-Yearly']?.store === 'stripe';
+      customerInfo.entitlements?.active?.['pro']?.store === 'stripe' ||
+      customerInfo.entitlements?.active?.['PRO-Monthly']?.store === 'stripe' ||
+      customerInfo.entitlements?.active?.['PRO-Yearly']?.store === 'stripe';
 
     if (!hasStripeSubscription) {
       throw new Error('No Stripe subscription found. Subscription may be managed through App Store or Play Store.');
