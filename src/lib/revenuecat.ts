@@ -72,9 +72,23 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
     purchasesInstance = Purchases.configure({
       apiKey,
       appUserId: userId,
+      // Note: Stripe adapter configuration is done in RevenueCat dashboard
+      // The "No available adapters" error means Stripe is not configured in RevenueCat dashboard
     });
     isConfigured = true;
     console.log('✅ RevenueCat configured');
+    
+    // Verify configuration by checking if we can get offerings
+    // This will help detect adapter issues early
+    try {
+      const testOfferings = await purchasesInstance.getOfferings();
+      console.log('✅ RevenueCat configuration verified, offerings accessible');
+    } catch (testError: any) {
+      const errorMsg = testError?.message || String(testError || '');
+      if (errorMsg.includes('adapter') || errorMsg.includes('No available')) {
+        console.warn('⚠️ RevenueCat configured but Stripe adapter not available. Please configure Stripe in RevenueCat dashboard.');
+      }
+    }
   } catch (error) {
     console.error('❌ RevenueCat configuration error:', error);
     purchasesInstance = null;
@@ -250,17 +264,45 @@ export async function getOfferings(): Promise<{
         return null;
       }
 
-      // Try multiple price string locations
-      const priceString = product.priceString ?? 
-                         product.formattedPrice ?? 
-                         product.price ? 
-                           (product.currencyCode ? `${product.currencyCode} ${product.price}` : `$${product.price}`) : 
-                         null;
+      // Try multiple price string locations and ensure it's a string
+      let priceString: string | null = null;
+      
+      // First try direct string properties
+      if (typeof product.priceString === 'string') {
+        priceString = product.priceString;
+      } else if (typeof product.formattedPrice === 'string') {
+        priceString = product.formattedPrice;
+      } else if (product.price) {
+        // Construct from price and currency
+        const price = typeof product.price === 'number' ? product.price : parseFloat(String(product.price));
+        const currency = product.currencyCode || 'USD';
+        const currencySymbol = currency === 'USD' ? '$' : currency;
+        priceString = `${currencySymbol}${price.toFixed(2)}`;
+      }
+      
+      // If still no price string, try to extract from object
+      if (!priceString && product.priceString) {
+        // If priceString is an object, try to extract the value
+        if (typeof product.priceString === 'object') {
+          const priceObj = product.priceString as any;
+          priceString = priceObj.value || priceObj.amount || priceObj.price || String(priceObj);
+        } else {
+          priceString = String(product.priceString);
+        }
+      }
+      
+      // Final fallback: convert to string
+      if (!priceString && product.price) {
+        priceString = String(product.price);
+      }
 
-      if (!priceString) {
-        console.warn(`⚠️ ${type} package product has no price string:`, product);
+      if (!priceString || priceString === 'null' || priceString === 'undefined') {
+        console.warn(`⚠️ ${type} package product has no valid price string:`, product);
         return null;
       }
+      
+      // Ensure priceString is a clean string (remove any object artifacts)
+      priceString = String(priceString).replace(/\[object Object\]/g, '');
 
       console.log(`✅ ${type} package mapped successfully:`, {
         priceString,
@@ -530,14 +572,15 @@ export async function purchaseProSubscription(
       };
     }
     
-    // Check for configuration errors
+    // Check for configuration errors (Stripe adapter not configured)
     if (errorMessage.toLowerCase().includes('adapter') || 
+        errorMessage.toLowerCase().includes('no available adapters') ||
         errorMessage.toLowerCase().includes('checkout') ||
         errorMessage.toLowerCase().includes('not configured') ||
         errorCode === 'ConfigurationError') {
       return { 
         success: false, 
-        error: 'Payment system not configured. Please contact support.' 
+        error: 'Stripe payment adapter is not configured in RevenueCat. Please contact support or check RevenueCat dashboard settings.' 
       };
     }
     

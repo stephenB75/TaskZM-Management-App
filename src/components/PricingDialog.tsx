@@ -234,7 +234,18 @@ export function PricingDialog({
       setOfferingsError(null);
     }
   }, [monthlyOffering, yearlyOffering, offeringsError]);
-  const formatPrice = (price: string) => (isLoadingOfferings ? 'Loading…' : price);
+  const formatPrice = (price: string | undefined) => {
+    if (isLoadingOfferings) return 'Loading…';
+    if (!price) return '—';
+    // Ensure price is a string and not an object
+    const priceStr = String(price);
+    // Remove any [object Object] artifacts
+    if (priceStr.includes('[object Object]') || priceStr === 'undefined' || priceStr === 'null') {
+      console.warn('⚠️ Invalid price string detected:', price);
+      return '—';
+    }
+    return priceStr;
+  };
   const formatDescription = (description: string) =>
     isLoadingOfferings ? 'Fetching latest pricing…' : description;
 
