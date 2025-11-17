@@ -285,6 +285,15 @@ export function PricingDialog({
       const result = await purchaseProSubscription('monthly');
       
       if (!result.success) {
+        // Don't show error toast for user cancellation - it's not an error
+        if ((result as any).cancelled || 
+            result.error?.toLowerCase().includes('cancelled') || 
+            result.error?.toLowerCase().includes('cancel')) {
+          // User cancelled - just close dialog silently (no error message)
+          console.log('ℹ️ Purchase cancelled by user');
+          onOpenChange(false);
+          return;
+        }
         throw new Error(result.error || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc);
       }
 
@@ -327,6 +336,15 @@ export function PricingDialog({
       const result = await purchaseProSubscription('yearly');
       
       if (!result.success) {
+        // Don't show error toast for user cancellation - it's not an error
+        if ((result as any).cancelled || 
+            result.error?.toLowerCase().includes('cancelled') || 
+            result.error?.toLowerCase().includes('cancel')) {
+          // User cancelled - just close dialog silently (no error message)
+          console.log('ℹ️ Purchase cancelled by user');
+          onOpenChange(false);
+          return;
+        }
         throw new Error(result.error || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc);
       }
 

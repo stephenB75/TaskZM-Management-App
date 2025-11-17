@@ -401,6 +401,9 @@ export async function purchaseProSubscription(
       identifier: selectedPackage.identifier,
       productId: selectedPackage.storeProduct?.identifier || selectedPackage.rcBillingProduct?.identifier,
       price: selectedPackage.storeProduct?.priceString || selectedPackage.rcBillingProduct?.priceString,
+      packageKeys: Object.keys(selectedPackage || {}),
+      storeProductKeys: Object.keys(selectedPackage.storeProduct || {}),
+      rcBillingProductKeys: Object.keys(selectedPackage.rcBillingProduct || {}),
     });
 
     // Check if package has a checkout URL before purchasing (web/Stripe Checkout)
@@ -408,6 +411,15 @@ export async function purchaseProSubscription(
                        selectedPackage.checkout_url ||
                        selectedPackage.storeProduct?.checkoutUrl ||
                        selectedPackage.rcBillingProduct?.checkoutUrl;
+    
+    console.log('🔍 Pre-purchase checkout URL check:', {
+      hasCheckoutUrl: !!checkoutUrl,
+      checkoutUrl,
+      packageHasCheckoutUrl: !!selectedPackage.checkoutUrl,
+      packageHasCheckout_url: !!selectedPackage.checkout_url,
+      storeProductHasCheckoutUrl: !!selectedPackage.storeProduct?.checkoutUrl,
+      rcBillingProductHasCheckoutUrl: !!selectedPackage.rcBillingProduct?.checkoutUrl,
+    });
     
     if (checkoutUrl) {
       console.log('🔗 Package has checkout URL, redirecting to Stripe Checkout:', checkoutUrl);
@@ -420,13 +432,43 @@ export async function purchaseProSubscription(
 
     // Purchase the package
     // On web, RevenueCat should handle Stripe Checkout automatically
-    console.log('🛒 Calling purchasePackage...');
-    const purchaseResult = await purchasesInstance.purchasePackage(selectedPackage);
+    // If Stripe adapter is configured, purchasePackage should return a checkout URL or redirect
+    console.log('🛒 Calling purchasePackage...', {
+      packageIdentifier: selectedPackage.identifier,
+      hasStoreProduct: !!selectedPackage.storeProduct,
+      hasRcBillingProduct: !!selectedPackage.rcBillingProduct,
+      platform: 'web',
+    });
     
-    console.log('📦 Purchase result:', {
+    let purchaseResult;
+    try {
+      purchaseResult = await purchasesInstance.purchasePackage(selectedPackage);
+    } catch (purchaseError: any) {
+      // Check if error contains checkout URL (RevenueCat may return checkout URL in error for web)
+      const errorCheckoutUrl = purchaseError?.checkoutUrl || 
+                              purchaseError?.checkout_url ||
+                              purchaseError?.underlyingError?.checkoutUrl ||
+                              purchaseError?.underlyingError?.checkout_url;
+      
+      if (errorCheckoutUrl) {
+        console.log('🔗 Purchase error contains checkout URL (this is expected for web/Stripe):', errorCheckoutUrl);
+        window.location.href = errorCheckoutUrl;
+        return { 
+          success: true, 
+          error: 'Redirecting to payment...' 
+        };
+      }
+      
+      // Re-throw if no checkout URL in error
+      throw purchaseError;
+    }
+    
+    console.log('📦 Purchase result received:', {
       hasCustomerInfo: !!purchaseResult?.customerInfo,
       hasCheckoutUrl: !!(purchaseResult?.checkoutUrl || purchaseResult?.checkout_url),
+      checkoutUrl: purchaseResult?.checkoutUrl || purchaseResult?.checkout_url,
       keys: Object.keys(purchaseResult || {}),
+      fullResult: purchaseResult,
     });
     
     // Check if there's a checkout URL in the response (for web/Stripe Checkout)
@@ -528,10 +570,13 @@ export async function purchaseProSubscription(
       (errorMessage === '' && (finalErrorCode === 'UserCancelledError' || errorCode === 'UserCancelledError'));
     
     if (isCancelled) {
-      console.log('ℹ️ Purchase was cancelled by user');
+      console.log('ℹ️ Purchase was cancelled by user (this is normal, not an error)');
+      // Return success: false but with a specific cancellation flag
+      // The UI will handle this gracefully without showing an error
       return { 
         success: false, 
-        error: 'Purchase was cancelled.' 
+        error: 'Purchase was cancelled.',
+        cancelled: true, // Flag to indicate this is a cancellation, not an error
       };
     }
     
