@@ -391,9 +391,60 @@ export function DashboardView({
   panelOpen = false,
   panelKey,
 }: DashboardViewProps) {
-  const { tasks, updateTask } = useTasks();
-  const { hasFeature } = useSubscription();
-  const { rescheduleDay, rescheduleWeek, rescheduleMonth, getScheduledTasksForDay, getScheduledTasksForWeek, getScheduledTasksForMonth } = useAIScheduler();
+  // Hooks must be called unconditionally - handle errors gracefully
+  let tasksContext;
+  let subscriptionContext;
+  let aiSchedulerContext;
+  
+  try {
+    tasksContext = useTasks();
+  } catch (error) {
+    console.error('Error accessing TaskContext:', error);
+    tasksContext = { tasks: [], updateTask: undefined };
+  }
+
+  try {
+    subscriptionContext = useSubscription();
+  } catch (error) {
+    console.error('Error accessing SubscriptionContext:', error);
+    subscriptionContext = { hasFeature: () => false };
+  }
+
+  try {
+    aiSchedulerContext = useAIScheduler();
+  } catch (error) {
+    console.error('Error accessing AIScheduler hook:', error);
+    aiSchedulerContext = {
+      rescheduleDay: undefined,
+      rescheduleWeek: undefined,
+      rescheduleMonth: undefined,
+      getScheduledTasksForDay: undefined,
+      getScheduledTasksForWeek: undefined,
+      getScheduledTasksForMonth: undefined,
+    };
+  }
+
+  // Extract values with safe defaults
+  const tasks = tasksContext?.tasks || [];
+  const updateTask = tasksContext?.updateTask;
+  const hasFeature = subscriptionContext?.hasFeature;
+  const rescheduleDay = aiSchedulerContext?.rescheduleDay;
+  const rescheduleWeek = aiSchedulerContext?.rescheduleWeek;
+  const rescheduleMonth = aiSchedulerContext?.rescheduleMonth;
+  const getScheduledTasksForDay = aiSchedulerContext?.getScheduledTasksForDay;
+  const getScheduledTasksForWeek = aiSchedulerContext?.getScheduledTasksForWeek;
+  const getScheduledTasksForMonth = aiSchedulerContext?.getScheduledTasksForMonth;
+
+  // Safe wrapper for hasFeature
+  const safeHasFeature = (feature: keyof import('../types').SubscriptionFeatures): boolean => {
+    if (!hasFeature) return false;
+    try {
+      return hasFeature(feature);
+    } catch (error) {
+      console.error('Error checking feature:', feature, error);
+      return false;
+    }
+  };
   const [viewMode, setViewMode] = useState<"week" | "month">(
     "week",
   );
@@ -468,7 +519,7 @@ export function DashboardView({
 
   const handleScheduleUnscheduledTasks = () => {
     // Check if user has access to AI Scheduler feature
-    if (!hasFeature('aiScheduler')) {
+    if (!safeHasFeature('aiScheduler')) {
       toast.error('AI Scheduler is a Pro feature', {
         description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
       });
@@ -615,6 +666,10 @@ export function DashboardView({
 
   const confirmScheduling = () => {
     schedulePlan.forEach(({ task, scheduledDate }) => {
+      if (!updateTask) {
+        console.error('updateTask is not available');
+        return;
+      }
       updateTask(task.id, {
         scheduledDate: scheduledDate.toISOString(),
       });
@@ -645,7 +700,7 @@ export function DashboardView({
 
   const handleRandomReschedule = async (type: "day" | "week" | "month", selectedDate?: Date) => {
     // Check if user has access to AI Scheduler feature
-    if (!hasFeature('aiScheduler')) {
+    if (!safeHasFeature('aiScheduler')) {
       toast.error('Re-schedule is a Pro feature', {
         description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
       });
@@ -681,7 +736,7 @@ export function DashboardView({
           const targetDate = new Date(selectedDate);
           targetDate.setHours(0, 0, 0, 0);
           
-          taskCount = getScheduledTasksForDay(targetDate).length;
+          taskCount = getScheduledTasksForDay ? getScheduledTasksForDay(targetDate).length : 0;
           if (taskCount === 0) {
             toast.info("No tasks found", {
               description: `No scheduled tasks found for ${targetDate.toLocaleDateString()}`,
@@ -691,6 +746,9 @@ export function DashboardView({
             return;
           }
           
+          if (!rescheduleDay) {
+            throw new Error('rescheduleDay is not available');
+          }
           result = await rescheduleDay(targetDate);
           description = `Rescheduled ${result?.scheduled?.length || 0} task${(result?.scheduled?.length || 0) === 1 ? '' : 's'} for ${targetDate.toLocaleDateString()}`;
         } else if (type === "week") {
@@ -701,7 +759,7 @@ export function DashboardView({
           monday.setDate(diff);
           monday.setHours(0, 0, 0, 0);
           
-          taskCount = getScheduledTasksForWeek(monday).length;
+          taskCount = getScheduledTasksForWeek ? getScheduledTasksForWeek(monday).length : 0;
           if (taskCount === 0) {
             toast.info("No tasks found", {
               description: `No scheduled tasks found for the week starting ${monday.toLocaleDateString()}`,
@@ -711,6 +769,9 @@ export function DashboardView({
             return;
           }
           
+          if (!rescheduleWeek) {
+            throw new Error('rescheduleWeek is not available');
+          }
           result = await rescheduleWeek(monday);
           description = `Rescheduled ${result?.scheduled?.length || 0} task${(result?.scheduled?.length || 0) === 1 ? '' : 's'} for the week starting ${monday.toLocaleDateString()}`;
         } else {
@@ -719,7 +780,7 @@ export function DashboardView({
           targetMonth.setDate(1);
           targetMonth.setHours(0, 0, 0, 0);
           
-          taskCount = getScheduledTasksForMonth(targetMonth).length;
+          taskCount = getScheduledTasksForMonth ? getScheduledTasksForMonth(targetMonth).length : 0;
           if (taskCount === 0) {
             toast.info("No tasks found", {
               description: `No scheduled tasks found for ${targetMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
@@ -729,6 +790,9 @@ export function DashboardView({
             return;
           }
           
+          if (!rescheduleMonth) {
+            throw new Error('rescheduleMonth is not available');
+          }
           result = await rescheduleMonth(targetMonth);
           description = `Rescheduled ${result?.scheduled?.length || 0} task${(result?.scheduled?.length || 0) === 1 ? '' : 's'} for ${targetMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
         }
@@ -865,7 +929,7 @@ export function DashboardView({
                 size="sm"
                 onClick={() => {
                   // Check if user has access to AI Scheduler feature
-                  if (!hasFeature('aiScheduler')) {
+                  if (!safeHasFeature('aiScheduler')) {
                     toast.error('Re-schedule is a Pro feature', {
                       description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
                     });
