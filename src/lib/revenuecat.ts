@@ -53,6 +53,9 @@ export interface RevenueCatPackage {
 }
 
 // Configuration state
+// NOTE: RevenueCat SDK manages its own internal state and does NOT use localStorage
+// The SDK stores data in its own internal cache (not accessible via localStorage)
+// Subscription status is always fetched via API calls (getCustomerInfo())
 let isConfigured = false;
 let currentUserId: string | null = null;
 

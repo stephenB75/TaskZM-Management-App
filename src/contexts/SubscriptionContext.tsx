@@ -52,6 +52,10 @@ const getFeatures = (tier: SubscriptionTier): SubscriptionFeatures => {
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
+  
+  // Initial state: Default to free tier (safe default)
+  // NOTE: Actual subscription data comes from RevenueCat (source of truth)
+  // This is only a default until RevenueCat/backend data is loaded
   const [subscription, setSubscription] = useState<SubscriptionInfo>({
     tier: 'free',
     status: 'active',
@@ -62,9 +66,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Normalize subscription data to ensure all fields exist
+  // NOTE: Defaults are only used if data is missing - actual data comes from RevenueCat
   const normalizeSubscription = (data: any): SubscriptionInfo => {
     return {
-      tier: data?.tier || 'free',
+      tier: data?.tier || 'free', // Default to free if no data (RevenueCat is source of truth)
       status: data?.status || 'active',
       startDate: data?.startDate || null,
       endDate: data?.endDate || null,
@@ -79,6 +84,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     if (!user || !accessToken) return;
     try {
       setIsLoading(true);
+      
+      // DATA SOURCE PRIORITY:
+      // 1. RevenueCat SDK (source of truth) - checks entitlements via getCustomerInfo()
+      // 2. Backend database (synced from RevenueCat)
+      // 3. localStorage (cache only, last resort for offline)
+      // 
+      // RevenueCat SDK does NOT use localStorage - it manages its own internal state
+      // localStorage is only used by our app as a cache/fallback
       
       // First, try to get subscription status from RevenueCat (source of truth)
       let rcStatus: 'pro' | 'free' | null = null;
@@ -176,10 +189,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       if (serverSubscription) {
         const normalized = normalizeSubscription(serverSubscription);
         setSubscription(normalized);
-        // Also save to localStorage for offline access
+        // Cache in localStorage for offline access (NOT source of truth)
         localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(normalized));
       } else {
-        // Fallback to localStorage if server fails
+        // Fallback to localStorage cache if server fails (last resort)
+        // NOTE: This is cache only - RevenueCat is still source of truth
         const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
         if (stored) {
           try {
@@ -192,20 +206,22 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.warn('Failed to load subscription from server, using fallback:', error);
-      // Fallback to localStorage on error
+      console.warn('Failed to load subscription from server, using localStorage cache:', error);
+      // Fallback to localStorage cache on error (last resort)
+      // NOTE: localStorage is cache only - RevenueCat remains source of truth
       try {
         const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
         if (stored) {
           const parsed = JSON.parse(stored);
           setSubscription(normalizeSubscription(parsed));
         } else {
-          // If no stored data, use default free tier
+          // If no stored cache, use default free tier (safe default)
+          // Will be updated when RevenueCat/backend becomes available
           setSubscription(normalizeSubscription(null));
         }
       } catch (e) {
-        console.warn('Failed to load from localStorage, using default:', e);
-        // Last resort: use default free tier
+        console.warn('Failed to load from localStorage cache, using default:', e);
+        // Last resort: use default free tier (safe default)
         setSubscription(normalizeSubscription(null));
       }
     } finally {
