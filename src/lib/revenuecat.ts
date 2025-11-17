@@ -495,10 +495,9 @@ export async function purchaseProSubscription(packageType: 'monthly' | 'yearly' 
           console.error('   Attempting to refresh offerings to get product data...');
           
           try {
-            // Sync and refresh to get product data
-            await purchasesInstance.syncPurchases();
+            // Refresh to get product data (syncPurchases is native-only, not available on web)
             await purchasesInstance.getCustomerInfo();
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
             // Re-fetch offerings
             const refreshedOfferings = await purchasesInstance.getOfferings();
@@ -786,17 +785,16 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
         const purchasesInstance = Purchases.getSharedInstance();
         
         // Fetch offerings from RevenueCat
-        // If forceRefresh, sync first to clear cache and force product data load
+        // If forceRefresh, refresh customer info to clear cache and force product data load
         if (forceRefresh) {
           try {
             console.log('🔄 Force refreshing RevenueCat data...');
-            // Multiple sync attempts to ensure product data loads
-            await purchasesInstance.syncPurchases();
+            // For web, use getCustomerInfo to refresh data (syncPurchases is native-only)
             await purchasesInstance.getCustomerInfo(); // This can trigger product data refresh
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Longer wait for product data
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait for product data
           } catch (error: any) {
-            // Silently fail - sync is optional
-            console.warn('⚠️ Sync failed (non-critical):', error?.message);
+            // Silently fail - refresh is optional
+            console.warn('⚠️ Refresh failed (non-critical):', error?.message);
           }
         }
         
@@ -819,12 +817,11 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
               retryCount++;
               console.log(`🔄 Retry ${retryCount}/${maxRetries}: Packages found but product data missing, attempting to refresh...`);
               
-              // Try to force refresh product data
+              // Try to force refresh product data (syncPurchases is native-only, not available on web)
               try {
-                await purchasesInstance.syncPurchases();
                 await purchasesInstance.getCustomerInfo();
-                await new Promise(resolve => setTimeout(resolve, 1500 * retryCount)); // Exponential backoff
-              } catch (syncError) {
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+              } catch (refreshError) {
                 // Continue anyway
               }
               

@@ -158,7 +158,7 @@ export async function runRevenueCatDiagnostics(): Promise<FullDiagnosticReport> 
         } else {
           addResult('sdk_instance', 'success', 'SDK instance retrieved successfully', {
             hasGetOfferings: typeof instance.getOfferings === 'function',
-            hasSyncPurchases: typeof instance.syncPurchases === 'function',
+            hasSyncPurchases: typeof instance.syncPurchases === 'function', // Note: Only available on native platforms, not web
             hasGetCustomerInfo: typeof instance.getCustomerInfo === 'function'
           });
         }
