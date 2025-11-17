@@ -1,13 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./src/index.html",
-    "./src/App.tsx",
-    "./src/main.tsx",
-    "./src/components/**/*.{js,ts,jsx,tsx}",
-    "./src/contexts/**/*.{js,ts,jsx,tsx}",
-    "./src/hooks/**/*.{js,ts,jsx,tsx}",
-    "./src/lib/**/*.{js,ts,jsx,tsx}",
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   safelist: [
     'from-[#B4E4FF]/90',
