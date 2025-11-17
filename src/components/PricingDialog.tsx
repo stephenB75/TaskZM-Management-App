@@ -29,21 +29,20 @@ import {
   purchaseProSubscription,
   restorePurchases,
   getOfferings,
+  configureRevenueCat,
+  isRevenueCatConfigured,
 } from "../lib/revenuecat";
 import { verifyRevenueCatPackages, logPackageVerification } from "../lib/verify-revenuecat-packages";
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
 import {
-  DEFAULT_CURRENCY_CODE,
-  DEFAULT_MONTHLY_TITLE,
-  DEFAULT_YEARLY_TITLE,
-  MONTHLY_PACKAGE_IDENTIFIERS,
-  YEARLY_PACKAGE_IDENTIFIERS,
   SUBSCRIPTION_UI_TEXT,
   FREE_TIER_FEATURES,
   PRO_TIER_FEATURES,
   PRO_FEATURES_LIST,
   FEATURES_DISPLAY_LIMIT,
+  REVENUECAT_MONTHLY_PRODUCT_ID,
+  REVENUECAT_YEARLY_PRODUCT_ID,
 } from "../lib/subscription-constants";
 
 interface PricingDialogProps {
@@ -63,606 +62,102 @@ export function PricingDialog({
   const [isRestoring, setIsRestoring] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [isDowngrading, setIsDowngrading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
   const [offerings, setOfferings] = React.useState<{
     monthly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
     yearly?: { price: string; priceString: string; currencyCode: string; identifier: string; title: string; description: string };
   }>({});
-  
-  // Ref to store retry interval for cleanup
-  const retryIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const platform = getPlatform();
-
-  // Get user from auth context for RevenueCat configuration
   const { user } = useAuth();
 
-  // Load offerings when dialog opens, with retry logic for product data
+  // Load offerings when dialog opens - clean and direct connection to RevenueCat
   React.useEffect(() => {
     if (!open) {
-      // Clear any existing retry interval when dialog closes
-      if (retryIntervalRef.current) {
-        clearInterval(retryIntervalRef.current);
-        retryIntervalRef.current = null;
-      }
       return;
     }
-    
-    // Ensure RevenueCat is configured before loading offerings
-    const ensureConfigured = async () => {
-      const { configureRevenueCat, isRevenueCatConfigured } = await import('../lib/revenuecat');
-      
-      // Try to configure if not already configured and we have a user
-      if (!isRevenueCatConfigured() && user?.id) {
-        console.log('🔄 RevenueCat not configured, attempting to configure...');
-        try {
-          await configureRevenueCat(user.id);
-        } catch (error) {
-          console.warn('Failed to configure RevenueCat:', error);
+
+    const loadOfferings = async () => {
+      setIsLoading(true);
+      try {
+        // Ensure RevenueCat is configured
+        if (!isRevenueCatConfigured() && user?.id) {
+          console.log('🔄 Configuring RevenueCat...');
+          await configureRevenueCat(user.id, true); // Force reconfigure
         }
-      }
-      
-      // Initial load
-      await loadOfferings();
-      
-      // Retry loading if product data is missing (may load asynchronously)
-      let retryCount = 0;
-      const maxRetries = 5; // Retry up to 5 times (15 seconds total)
-      
-      retryIntervalRef.current = setInterval(async () => {
-        if (!open) {
-          if (retryIntervalRef.current) {
-            clearInterval(retryIntervalRef.current);
-            retryIntervalRef.current = null;
-          }
+
+        if (!isRevenueCatConfigured()) {
+          console.warn('⚠️ RevenueCat not configured');
+          setOfferings({});
+          setIsLoading(false);
           return;
         }
-        
-        // Check if we have packages but missing product data
-        const needsRetry = (offerings.monthly && !offerings.monthly.priceString) || 
-                          (offerings.yearly && !offerings.yearly.priceString);
-        
-        if (needsRetry && retryCount < maxRetries) {
-          retryCount++;
-          console.log(`🔄 Retry ${retryCount}/${maxRetries}: Loading product data from RevenueCat...`);
-          await loadOfferings();
-        } else if (retryCount >= maxRetries) {
-          if (retryIntervalRef.current) {
-            clearInterval(retryIntervalRef.current);
-            retryIntervalRef.current = null;
-          }
-          console.warn('⚠️ Product data still not loaded after retries. Packages may not be properly configured in RevenueCat.');
-        } else {
-          // Product data loaded, stop retrying
-          if (retryIntervalRef.current) {
-            clearInterval(retryIntervalRef.current);
-            retryIntervalRef.current = null;
-          }
-        }
-      }, 3000); // Retry every 3 seconds
-      
-      // Run comprehensive diagnostics when dialog opens (always, even if not configured)
-      console.log('🔍 Running RevenueCat diagnostics...');
-      try {
-        const { runRevenueCatDiagnostics, logDiagnosticReport } = await import('../lib/revenuecat-diagnostics');
-        const diagnosticReport = await runRevenueCatDiagnostics();
-        logDiagnosticReport(diagnosticReport);
-        
-        // If diagnostics show issues, log them prominently
-        if (diagnosticReport.overallStatus === 'failed') {
-          console.error('❌ RevenueCat diagnostics FAILED - see recommendations below');
-        } else if (diagnosticReport.overallStatus === 'partial') {
-          console.warn('⚠️ RevenueCat diagnostics show PARTIAL connection - some issues detected');
-        }
-      } catch (diagError: any) {
-        console.error('❌ Failed to run RevenueCat diagnostics:', diagError);
-        console.error('   Error details:', diagError?.message || diagError);
-        console.error('   This may indicate a problem with the diagnostic tool itself');
-      }
-      
-      // Also run package verification
-      if (isRevenueCatConfigured()) {
-        console.log('🔍 Running RevenueCat package verification...');
-        const verificationResult = await verifyRevenueCatPackages();
-        logPackageVerification(verificationResult);
-      }
-    };
-    
-    ensureConfigured();
-    
-    // Cleanup interval when dialog closes or component unmounts
-    return () => {
-      if (retryIntervalRef.current) {
-        clearInterval(retryIntervalRef.current);
-        retryIntervalRef.current = null;
-      }
-    };
-  }, [open, user?.id]);
 
-  // Also refresh offerings when subscription changes
-  React.useEffect(() => {
-    if (open && subscription.tier) {
-      console.log('🔄 Subscription tier changed, refreshing offerings...');
-      loadOfferings();
-    }
-  }, [subscription.tier, open]);
+        // Get offerings directly from RevenueCat
+        console.log('📦 Loading offerings from RevenueCat...');
+        const rcOfferings = await getOfferings(true);
 
-  const loadOfferings = async () => {
-    try {
-      // Check if RevenueCat is configured first
-      const { isRevenueCatConfigured, getCurrentUserId } = await import('../lib/revenuecat');
-      
-      const configured = isRevenueCatConfigured();
-      const userId = getCurrentUserId();
-      
-      console.log('🔍 RevenueCat Status Check:');
-      console.log('   isConfigured:', configured);
-      console.log('   currentUserId:', userId);
-      console.log('   currentUser:', user?.id);
-      
-      if (!configured) {
-        console.log('ℹ️  RevenueCat not configured yet');
-        console.log('   Configuration should happen automatically on login');
-        console.log('   Attempting to configure now...');
-        
-        // Try to configure if we have a user
-        if (user?.id) {
-          const { configureRevenueCat } = await import('../lib/revenuecat');
-          try {
-            await configureRevenueCat(user.id);
-            console.log('✅ Configuration attempt completed');
-          } catch (configError) {
-            console.error('❌ Configuration failed:', configError);
-          }
-        } else {
-          console.warn('⚠️  No user ID available for configuration');
+        if (!rcOfferings?.availablePackages || rcOfferings.availablePackages.length === 0) {
+          console.warn('⚠️ No packages available from RevenueCat');
+          setOfferings({});
+          setIsLoading(false);
+          return;
         }
-        return;
-      }
-      
-      // Load offerings from RevenueCat
-      const rcOfferings = await getOfferings(true);
-      
-      if (rcOfferings?.availablePackages && rcOfferings.availablePackages.length > 0) {
-        
-        // Log ALL packages first (before filtering) to see what RevenueCat is actually returning
-        console.log('============================================================');
-        console.log('📦 REVENUECAT PACKAGES - RAW DATA FROM API');
-        console.log('============================================================');
-        console.log('Total packages returned by RevenueCat:', rcOfferings.availablePackages.length);
-        console.log('These are the ACTUAL identifiers from RevenueCat (NOT hardcoded):');
-        const allIdentifiers: string[] = [];
-        rcOfferings.availablePackages.forEach((p: any, index: number) => {
-          const identifier = p?.identifier || 'N/A';
-          if (identifier !== 'N/A') {
-            allIdentifiers.push(identifier);
-          }
-          const hasProduct = !!p?.product;
-          const productKeys = p?.product && typeof p.product === 'object' ? Object.keys(p.product) : [];
-          // Check if product has ANY data (not just specific fields)
-          const hasProductData = hasProduct && productKeys.length > 0;
-          
-          // Log the FULL product object to see what RevenueCat is actually returning
-          console.log(`\n   📦 Package ${index + 1} from RevenueCat:`, {
-            identifier: identifier,
-            identifierSource: '✅ FROM REVENUECAT API (not hardcoded)',
-            hasIdentifier: !!p?.identifier,
-            hasProduct,
-            hasProductData,
-            productType: typeof p?.product,
-            productIsObject: p?.product && typeof p.product === 'object',
-            productKeys: productKeys.length > 0 ? productKeys : (hasProduct ? 'object exists but no enumerable keys' : 'no product'),
-            productIdentifier: p?.product?.identifier || 'N/A',
-            productTitle: p?.product?.title || 'N/A',
-            priceString: p?.product?.priceString || 'N/A',
-            price: p?.product?.price || 'N/A',
-            currencyCode: p?.product?.currencyCode || 'N/A',
-            subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A',
-            // Log the entire product object structure
-            fullProductObject: p?.product ? JSON.stringify(p.product, null, 2).substring(0, 300) : 'N/A',
-            willBeProcessed: !!p?.identifier ? 'YES (has identifier)' : 'NO (no identifier)'
-          });
-        });
-        
-        console.log('\n📋 SUMMARY: All package identifiers from RevenueCat:');
-        console.log('   Identifiers:', allIdentifiers.length > 0 ? allIdentifiers : 'NONE');
-        console.log('   ✅ These are the ACTUAL identifiers returned by RevenueCat API');
-        console.log('   ✅ NOT hardcoded - these come directly from RevenueCat dashboard');
-        if (allIdentifiers.some(id => id.includes('monthly') || id.includes('rc_monthly'))) {
-          console.log('   ✅ Found monthly package identifier in RevenueCat response');
-        } else {
-          console.log('   ⚠️ Monthly package identifier NOT found in RevenueCat response');
-        }
-        if (allIdentifiers.some(id => id.includes('annual') || id.includes('yearly') || id.includes('rc_annual') || id.includes('rc_yearly'))) {
-          console.log('   ✅ Found yearly package identifier in RevenueCat response');
-        } else {
-          console.log('   ⚠️ Yearly package identifier NOT found in RevenueCat response');
-        }
-        console.log('============================================================');
-        
-        // VERY lenient validation: accept ANY package with an identifier
-        // RevenueCat sometimes returns packages with empty product objects that get populated later
-        // We'll match by identifier, but packages will only be displayed if they have valid product data from RevenueCat
-        const hasValidPackage = (p: any) => {
-          if (!p) return false;
-          // Accept ANY package that has an identifier (even if product is missing or empty)
-          // This allows us to match packages, but they will only be displayed if they have valid product data from RevenueCat
-          return !!p.identifier;
-        };
-        
-        const validPackages = rcOfferings.availablePackages.filter(hasValidPackage);
-        const invalidPackages = rcOfferings.availablePackages.filter((p: any) => !hasValidPackage(p));
-        
-        if (invalidPackages.length > 0) {
-          console.warn('⚠️ Found packages without identifiers (these will be skipped):');
-          invalidPackages.forEach((p: any) => {
-            console.warn('   - Package:', {
-              hasIdentifier: !!p?.identifier,
-              identifier: p?.identifier || 'MISSING',
-              hasProduct: !!p?.product,
-              productKeys: p?.product ? Object.keys(p.product) : []
-            });
-          });
-        }
-        
-        // Log packages with empty product objects (these are still valid, just need defaults)
-        const packagesWithEmptyProducts = validPackages.filter((p: any) => {
-          if (!p.identifier) return false;
-          if (!p.product) return true; // No product object at all
-          if (typeof p.product !== 'object') return true; // Product is not an object
-          const keys = Object.keys(p.product);
-          return keys.length === 0; // Product object exists but has no properties
-        });
-        
-        const packagesWithProductData = validPackages.filter((p: any) => {
-          if (!p.identifier) return false;
-          if (!p.product) return false;
-          if (typeof p.product !== 'object') return false;
-          const keys = Object.keys(p.product);
-          return keys.length > 0; // Product has actual data
-        });
-        
-        console.log(`📊 Package Summary:`);
-        console.log(`   Total packages: ${validPackages.length}`);
-        console.log(`   Packages with product data: ${packagesWithProductData.length}`);
-        console.log(`   Packages with empty/missing products: ${packagesWithEmptyProducts.length}`);
-        
-        if (packagesWithEmptyProducts.length > 0) {
-          console.warn(`⚠️ Found ${packagesWithEmptyProducts.length} package(s) with empty product data (will NOT be displayed):`);
-          packagesWithEmptyProducts.forEach((p: any) => {
-            console.warn(`   - ${p.identifier}: Missing product data from RevenueCat`);
-            console.warn('   ACTION REQUIRED: Link products to packages in RevenueCat dashboard');
-          });
-        }
-        
-        if (packagesWithProductData.length > 0) {
-          console.log(`✅ Found ${packagesWithProductData.length} package(s) with product data:`);
-          packagesWithProductData.forEach((p: any) => {
-            console.log(`   - ${p.identifier}:`, {
-              productId: p.product?.identifier || 'N/A',
-              title: p.product?.title || 'N/A',
-              priceString: p.product?.priceString || 'N/A',
-              price: p.product?.price || 'N/A',
-              currencyCode: p.product?.currencyCode || 'N/A',
-              allProductKeys: Object.keys(p.product || {})
-            });
-          });
-        }
-        
-        // Log all package identifiers for debugging
-        console.log('📦 All package identifiers from RevenueCat:', validPackages.map((p: any) => p?.identifier || 'unknown'));
-        console.log('📦 All valid packages (FULL DETAILS):', validPackages.map((p: any) => ({
-          identifier: p.identifier || 'unknown',
-          productId: p.product?.identifier || 'unknown',
-          price: p.product?.priceString || 'N/A',
-          priceAmount: p.product?.price || 'N/A',
-          currencyCode: p.product?.currencyCode || 'N/A',
-          title: p.product?.title || 'N/A',
-          description: p.product?.description || 'N/A',
-          subscriptionPeriod: p.product?.subscriptionPeriod || 'N/A',
-          introPrice: p.product?.introPrice || 'N/A',
-          discount: p.product?.discount || 'N/A'
-        })));
-        console.log('📦 RAW PACKAGE DATA (for debugging):', JSON.stringify(validPackages.map((p: any) => ({
-          identifier: p?.identifier,
-          product: {
-            identifier: p?.product?.identifier,
-            priceString: p?.product?.priceString,
-            price: p?.product?.price,
-            currencyCode: p?.product?.currencyCode,
-            title: p?.product?.title,
-            description: p?.product?.description,
-            subscriptionPeriod: p?.product?.subscriptionPeriod,
-            introPrice: p?.product?.introPrice,
-            discount: p?.product?.discount
-          }
-        })), null, 2));
-        
-        // Helper to check if package has valid product data (defined early for use in identifier discovery)
-        // This checks if product object exists and has ANY data (not just price)
-        const hasValidProductData = (pkg: any): boolean => {
-          if (!pkg?.product) return false;
-          
-          // Check if product is an object with properties
-          if (typeof pkg.product !== 'object') return false;
-          
-          // Check if product has any enumerable properties
-          const productKeys = Object.keys(pkg.product);
-          if (productKeys.length === 0) return false;
-          
-          // Product has data - check for price information (most important)
-          const hasPriceString = pkg.product.priceString && typeof pkg.product.priceString === 'string' && pkg.product.priceString.trim() !== '';
-          const hasPriceAmount = pkg.product.price != null && pkg.product.price !== 0;
-          const hasProductId = pkg.product.identifier && typeof pkg.product.identifier === 'string' && pkg.product.identifier.trim() !== '';
-          
-          // If it has product ID, it's valid (price might come later)
-          // If it has price data, it's definitely valid
-          return hasProductId || hasPriceString || hasPriceAmount;
-        };
-        
-        // DYNAMIC IDENTIFIER DETECTION: Extract identifiers from RevenueCat packages
-        // This replaces hardcoded identifier lists with actual identifiers from RevenueCat
-        const discoveredIdentifiers = {
-          monthly: {
-            packageIdentifiers: [] as string[],
-            productIds: [] as string[],
-            productTitles: [] as string[]
-          },
-          yearly: {
-            packageIdentifiers: [] as string[],
-            productIds: [] as string[],
-            productTitles: [] as string[]
-          }
-        };
-        
-        // Extract identifiers from ALL packages (even without product data)
-        // This allows matching by identifier, then we'll check product data when creating offerings
-        validPackages.forEach((pkg: any) => {
-          if (!pkg || !pkg.identifier) return;
-          
-          const identifier = pkg.identifier || '';
-          const productId = pkg.product?.identifier || '';
-          const productTitle = pkg.product?.title || '';
-          const subscriptionPeriod = pkg.product?.subscriptionPeriod || '';
-          
-          // Determine if this looks like monthly or yearly based on metadata/keywords
-          const identifierLower = identifier.toLowerCase();
-          const productIdLower = productId.toLowerCase();
-          const productTitleLower = productTitle.toLowerCase();
-          
-          const looksMonthly = subscriptionPeriod === 'P1M' || 
-                              subscriptionPeriod === 'MONTH' ||
-                              (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('month')) ||
-                              identifierLower.includes('month') ||
-                              productIdLower.includes('month') ||
-                              productTitleLower.includes('month') ||
-                              (identifierLower.includes('pro') && !identifierLower.includes('year') && !identifierLower.includes('annual'));
-          
-          const looksYearly = subscriptionPeriod === 'P1Y' || 
-                             subscriptionPeriod === 'YEAR' ||
-                             subscriptionPeriod === 'ANNUAL' ||
-                             (subscriptionPeriod && subscriptionPeriod.toString().toLowerCase().includes('year')) ||
-                             identifierLower.includes('year') ||
-                             identifierLower.includes('annual') ||
-                             productIdLower.includes('year') ||
-                             productIdLower.includes('annual') ||
-                             productTitleLower.includes('year') ||
-                             productTitleLower.includes('annual');
-          
-          if (looksMonthly && !looksYearly) {
-            if (identifier) discoveredIdentifiers.monthly.packageIdentifiers.push(identifier);
-            if (productId) discoveredIdentifiers.monthly.productIds.push(productId);
-            if (productTitle) discoveredIdentifiers.monthly.productTitles.push(productTitle);
-          } else if (looksYearly) {
-            if (identifier) discoveredIdentifiers.yearly.packageIdentifiers.push(identifier);
-            if (productId) discoveredIdentifiers.yearly.productIds.push(productId);
-            if (productTitle) discoveredIdentifiers.yearly.productTitles.push(productTitle);
-          }
-        });
-        
-        // Use ONLY discovered identifiers from RevenueCat - NO hardcoded fallbacks
-        // This ensures we only match packages that RevenueCat actually returns
-        const monthlyIdentifiers = [...new Set([...discoveredIdentifiers.monthly.packageIdentifiers, ...discoveredIdentifiers.monthly.productIds])];
-        const yearlyIdentifiers = [...new Set([...discoveredIdentifiers.yearly.packageIdentifiers, ...discoveredIdentifiers.yearly.productIds])];
-        
-        // Import known product IDs for verification
-        const { REVENUECAT_MONTHLY_PRODUCT_ID, REVENUECAT_YEARLY_PRODUCT_ID } = await import('../lib/subscription-constants');
-        
-        console.log('🔍 Dynamic Identifier Detection (NO HARDCODED FALLBACKS):');
-        console.log('   Discovered Monthly Identifiers from RevenueCat:', {
-          packageIdentifiers: discoveredIdentifiers.monthly.packageIdentifiers,
-          productIds: discoveredIdentifiers.monthly.productIds,
-          productTitles: discoveredIdentifiers.monthly.productTitles,
-          total: monthlyIdentifiers.length
-        });
-        console.log('   Discovered Yearly Identifiers from RevenueCat:', {
-          packageIdentifiers: discoveredIdentifiers.yearly.packageIdentifiers,
-          productIds: discoveredIdentifiers.yearly.productIds,
-          productTitles: discoveredIdentifiers.yearly.productTitles,
-          total: yearlyIdentifiers.length
-        });
-        console.log('   Using ONLY RevenueCat identifiers (no hardcoded fallbacks):');
-        console.log('   Monthly:', monthlyIdentifiers.length > 0 ? monthlyIdentifiers : 'NONE (will match by metadata/keywords only)');
-        console.log('   Yearly:', yearlyIdentifiers.length > 0 ? yearlyIdentifiers : 'NONE (will match by metadata/keywords only)');
 
-        // Find monthly and yearly packages using dynamic identifiers
-        // Try multiple matching strategies: exact match, case-insensitive, partial match, and product metadata
+        // Find monthly and yearly packages by product ID (most reliable)
         let monthlyPkg: any = null;
         let yearlyPkg: any = null;
-        
-        // First pass: Try exact and case-insensitive matches
-        // Process ALL valid packages, even if they don't have product objects yet
-        for (const pkg of validPackages) {
-          if (!pkg) continue;
+
+        for (const pkg of rcOfferings.availablePackages) {
+          if (!pkg?.product?.identifier) continue;
+
+          const productId = pkg.product.identifier.toLowerCase();
           
-          const identifier = pkg.identifier || '';
-          const identifierLower = identifier.toLowerCase();
-          const productId = pkg.product?.identifier || '';
-          const productIdLower = productId.toLowerCase();
-          const productTitle = pkg.product?.title || '';
-          const productTitleLower = productTitle.toLowerCase();
-          
-          // Check if this is a monthly package
-          // Match ONLY based on actual RevenueCat package data, not hardcoded identifiers
-          if (!monthlyPkg) {
-            // Priority 1: Check product metadata (billing period) - most reliable if product exists
-            const isMonthlyByMetadata = pkg.product?.subscriptionPeriod === 'P1M' || 
-                                       pkg.product?.subscriptionPeriod === 'MONTH' ||
-                                       (pkg.product?.subscriptionPeriod && 
-                                        pkg.product.subscriptionPeriod.toString().toLowerCase().includes('month'));
-            
-            // Priority 2: Check identifier/product ID against discovered RevenueCat identifiers (not hardcoded)
-            const isMonthlyById = monthlyIdentifiers.length > 0 && monthlyIdentifiers.some(id => {
-              const idLower = id.toLowerCase();
-              return identifierLower === idLower || 
-                     identifierLower === idLower.replace('$', '') ||
-                     identifierLower === idLower.replace('$rc_', 'rc_') ||
-                     identifierLower.includes(idLower.replace('$', '')) ||
-                     identifierLower.includes(idLower.replace('$rc_', 'rc_'));
-            });
-            
-            const isMonthlyByProductId = monthlyIdentifiers.length > 0 && monthlyIdentifiers.some(id => {
-              const idLower = id.toLowerCase();
-              if (productIdLower === idLower) return true;
-              return productIdLower.includes(idLower.replace('$', '')) ||
-                     productIdLower.includes(idLower.replace('$rc_', 'rc_'));
-            });
-            
-            // Also check against known RevenueCat product IDs
-            const matchesKnownMonthlyProductId = productIdLower === REVENUECAT_MONTHLY_PRODUCT_ID.toLowerCase();
-            
-            // Priority 3: Check product title/name against discovered RevenueCat titles
-            const isMonthlyByProductTitle = discoveredIdentifiers.monthly.productTitles.length > 0 && discoveredIdentifiers.monthly.productTitles.some(title => {
-              const titleLower = title.toLowerCase();
-              return productTitleLower.includes(titleLower) && 
-                     !productTitleLower.includes('year') &&
-                     !productTitleLower.includes('annual');
-            });
-            
-            // Priority 4: Check for monthly keywords in actual package data (not hardcoded patterns)
-            const hasMonthlyKeywords = (identifierLower.includes('month') || 
-                                      productIdLower.includes('month') ||
-                                      productTitleLower.includes('month')) && 
-                                     !identifierLower.includes('year') && 
-                                     !identifierLower.includes('annual') &&
-                                     !productIdLower.includes('year') &&
-                                     !productIdLower.includes('annual') &&
-                                     !productTitleLower.includes('year') &&
-                                     !productTitleLower.includes('annual');
-            
-            // Match by identifier/metadata/keywords (product data check happens later when creating offering)
-            const hasValidMatch = isMonthlyByMetadata || 
-                                 isMonthlyById ||
-                                 isMonthlyByProductId ||
-                                 matchesKnownMonthlyProductId ||
-                                 isMonthlyByProductTitle ||
-                                 hasMonthlyKeywords;
-            
-            if (hasValidMatch) {
+          // Match by exact product ID
+          if (productId === REVENUECAT_MONTHLY_PRODUCT_ID.toLowerCase()) {
+            monthlyPkg = pkg;
+          } else if (productId === REVENUECAT_YEARLY_PRODUCT_ID.toLowerCase()) {
+            yearlyPkg = pkg;
+          }
+        }
+
+        // If not found by product ID, try identifier matching
+        if (!monthlyPkg || !yearlyPkg) {
+          for (const pkg of rcOfferings.availablePackages) {
+            if (!pkg?.identifier || !pkg?.product) continue;
+
+            const identifier = pkg.identifier.toLowerCase();
+            const hasMonthlyKeywords = identifier.includes('month') || identifier.includes('rc_monthly');
+            const hasYearlyKeywords = identifier.includes('year') || identifier.includes('annual') || identifier.includes('rc_yearly') || identifier.includes('rc_annual');
+
+            // Check subscription period metadata
+            const subscriptionPeriod = pkg.product.subscriptionPeriod?.toString().toLowerCase() || '';
+            const isMonthlyPeriod = subscriptionPeriod.includes('month') && !subscriptionPeriod.includes('year');
+            const isYearlyPeriod = subscriptionPeriod.includes('year') || subscriptionPeriod.includes('annual');
+
+            if (!monthlyPkg && (hasMonthlyKeywords || isMonthlyPeriod)) {
               monthlyPkg = pkg;
             }
-          }
-          
-          // Check if this is a yearly package
-          // Match ONLY based on actual RevenueCat package data, not hardcoded identifiers
-          if (!yearlyPkg) {
-            // Priority 1: Check product metadata (billing period) - most reliable if product exists
-            const isYearlyByMetadata = pkg.product?.subscriptionPeriod === 'P1Y' || 
-                                      pkg.product?.subscriptionPeriod === 'YEAR' ||
-                                      pkg.product?.subscriptionPeriod === 'ANNUAL' ||
-                                      (pkg.product?.subscriptionPeriod && 
-                                       pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
-            
-            // Priority 2: Check identifier/product ID against discovered RevenueCat identifiers (not hardcoded)
-            const isYearlyById = yearlyIdentifiers.length > 0 && yearlyIdentifiers.some(id => {
-              const idLower = id.toLowerCase();
-              return identifierLower === idLower || 
-                     identifierLower === idLower.replace('$', '') ||
-                     identifierLower === idLower.replace('$rc_', 'rc_') ||
-                     identifierLower.includes(idLower.replace('$', '')) ||
-                     identifierLower.includes(idLower.replace('$rc_', 'rc_'));
-            });
-            
-            const isYearlyByProductId = yearlyIdentifiers.length > 0 && yearlyIdentifiers.some(id => {
-              const idLower = id.toLowerCase();
-              if (productIdLower === idLower) return true;
-              return productIdLower.includes(idLower.replace('$', '')) ||
-                     productIdLower.includes(idLower.replace('$rc_', 'rc_'));
-            });
-            
-            // Also check against known RevenueCat product IDs
-            const matchesKnownYearlyProductId = productIdLower === REVENUECAT_YEARLY_PRODUCT_ID.toLowerCase();
-            
-            // Priority 3: Check product title/name against discovered RevenueCat titles
-            const isYearlyByProductTitle = discoveredIdentifiers.yearly.productTitles.length > 0 && discoveredIdentifiers.yearly.productTitles.some(title => {
-              const titleLower = title.toLowerCase();
-              return productTitleLower.includes(titleLower);
-            });
-            
-            // Priority 4: Check for yearly/annual keywords in actual package data (not hardcoded patterns)
-            const hasYearlyKeywords = identifierLower.includes('year') || 
-                                      identifierLower.includes('annual') ||
-                                      productIdLower.includes('year') ||
-                                      productIdLower.includes('annual') ||
-                                      productTitleLower.includes('year') ||
-                                      productTitleLower.includes('annual');
-            
-            // Match by identifier/metadata/keywords (product data check happens later when creating offering)
-            const hasValidMatch = isYearlyByMetadata || 
-                                 isYearlyById ||
-                                 isYearlyByProductId ||
-                                 matchesKnownYearlyProductId ||
-                                 isYearlyByProductTitle ||
-                                 hasYearlyKeywords;
-            
-            if (hasValidMatch) {
+            if (!yearlyPkg && (hasYearlyKeywords || isYearlyPeriod)) {
               yearlyPkg = pkg;
             }
           }
         }
 
-        // Log detailed package information
-        if (!monthlyPkg) {
-          console.warn('⚠️ Monthly package NOT FOUND');
-          console.warn('   Available package identifiers:', validPackages.map((p: any) => ({
-            identifier: p?.identifier || 'unknown',
-            productId: p?.product?.identifier || 'unknown',
-            priceString: p?.product?.priceString || 'N/A',
-            subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A'
-          })));
-        }
-        if (!yearlyPkg) {
-          console.warn('⚠️ Yearly package NOT FOUND');
-          console.warn('   Available package identifiers:', validPackages.map((p: any) => ({
-            identifier: p?.identifier || 'unknown',
-            productId: p?.product?.identifier || 'unknown',
-            priceString: p?.product?.priceString || 'N/A',
-            subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A'
-          })));
-        }
-
-        // Set offerings from RevenueCat - this is the source of truth
-        // Only set offerings if we have valid product data from RevenueCat
-        // Helper function to extract price string from product - NO DEFAULTS if product data is missing
+        // Extract price string from product data
         const getPriceString = (pkg: any): string | null => {
-          if (!pkg?.product) {
-            console.warn('⚠️ Package has no product object:', pkg?.identifier);
-            return null; // Return null instead of default to indicate missing data
-          }
+          if (!pkg?.product) return null;
           
-          // First try priceString (formatted price from RevenueCat) - this is the most reliable
+          // Use priceString if available
           if (pkg.product.priceString && typeof pkg.product.priceString === 'string' && pkg.product.priceString.trim() !== '') {
-            const priceStr = pkg.product.priceString.trim();
-            console.log(`✅ Using priceString from RevenueCat for ${pkg.identifier}: ${priceStr}`);
-            return priceStr;
+            return pkg.product.priceString.trim();
           }
           
-          // If priceString is empty, try to format from price amount
-          // Note: price is usually in cents for Stripe, but RevenueCat may return it differently
+          // Format from price amount if available
           if (pkg.product.price != null && pkg.product.price !== 0) {
-            const currencyCode = pkg.product.currencyCode || DEFAULT_CURRENCY_CODE;
+            const currencyCode = pkg.product.currencyCode || 'USD';
             let priceAmount: number;
             
-            // Handle different price formats
             if (typeof pkg.product.price === 'number') {
               priceAmount = pkg.product.price;
             } else if (typeof pkg.product.price === 'string') {
@@ -671,263 +166,109 @@ export function PricingDialog({
               priceAmount = parseFloat(String(pkg.product.price));
             }
             
-            // Check if price is in cents (Stripe format) - if > 100, likely in cents
-            // RevenueCat usually returns price in the smallest currency unit (cents for USD)
             if (!isNaN(priceAmount) && priceAmount > 0) {
-              // Convert from cents to dollars if needed (for USD and similar currencies)
+              // Convert from cents if needed
               const isLikelyInCents = currencyCode === 'USD' && priceAmount > 100;
               const displayAmount = isLikelyInCents ? priceAmount / 100 : priceAmount;
               
-              // Format price with currency
               try {
-                const formatted = new Intl.NumberFormat('en-US', {
+                return new Intl.NumberFormat('en-US', {
                   style: 'currency',
                   currency: currencyCode,
                 }).format(displayAmount);
-                console.log(`✅ Formatted price from amount for ${pkg.identifier}: ${formatted} (from ${priceAmount} ${isLikelyInCents ? 'cents' : currencyCode})`);
-                return formatted;
               } catch (e) {
-                // Fallback to simple formatting if Intl fails
-                const formatted = `${currencyCode === 'USD' ? '$' : currencyCode} ${displayAmount.toFixed(2)}`;
-                console.log(`✅ Formatted price (fallback) for ${pkg.identifier}: ${formatted}`);
-                return formatted;
+                return `${currencyCode === 'USD' ? '$' : currencyCode} ${displayAmount.toFixed(2)}`;
               }
             }
           }
           
-          // Return null if no valid price data found (don't use defaults)
-          console.warn('⚠️ Package product has no valid price data:', {
-            identifier: pkg?.identifier,
-            hasPriceString: !!pkg.product.priceString,
-            priceStringValue: pkg.product.priceString,
-            hasPrice: pkg.product.price != null,
-            priceValue: pkg.product.price,
-            currencyCode: pkg.product.currencyCode
-          });
           return null;
         };
-        
-        // Create offerings ONLY if we have valid product data from RevenueCat
-        // This ensures prices are always from RevenueCat, not hardcoded
-        const monthlyPriceString = monthlyPkg && hasValidProductData(monthlyPkg) ? getPriceString(monthlyPkg) : null;
-        const yearlyPriceString = yearlyPkg && hasValidProductData(yearlyPkg) ? getPriceString(yearlyPkg) : null;
-        
-        // Only create offerings if we have both package AND price data from RevenueCat
-        const monthlyOffering = monthlyPkg && monthlyPriceString ? {
+
+        // Create offerings only if we have valid product data
+        const monthlyPriceString = monthlyPkg ? getPriceString(monthlyPkg) : null;
+        const yearlyPriceString = yearlyPkg ? getPriceString(yearlyPkg) : null;
+
+        // Only create offerings if we have ALL required data from RevenueCat
+        const monthlyOffering = monthlyPkg && monthlyPriceString && monthlyPkg.product?.title ? {
           price: (monthlyPkg.product?.price?.toString() ?? '0'),
-          priceString: monthlyPriceString, // Always from RevenueCat
-          currencyCode: (monthlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
+          priceString: monthlyPriceString,
+          currencyCode: monthlyPkg.product?.currencyCode || 'USD',
           identifier: monthlyPkg.identifier || 'monthly',
-          title: (monthlyPkg.product?.title?.trim() || DEFAULT_MONTHLY_TITLE),
-          description: (monthlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod),
+          title: monthlyPkg.product.title.trim(),
+          description: monthlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
         } : undefined;
 
-        const yearlyOffering = yearlyPkg && yearlyPriceString ? {
+        const yearlyOffering = yearlyPkg && yearlyPriceString && yearlyPkg.product?.title ? {
           price: (yearlyPkg.product?.price?.toString() ?? '0'),
-          priceString: yearlyPriceString, // Always from RevenueCat
-          currencyCode: (yearlyPkg.product?.currencyCode ?? DEFAULT_CURRENCY_CODE),
+          priceString: yearlyPriceString,
+          currencyCode: yearlyPkg.product?.currencyCode || 'USD',
           identifier: yearlyPkg.identifier || 'yearly',
-          title: (yearlyPkg.product?.title?.trim() || DEFAULT_YEARLY_TITLE),
-          description: (yearlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod),
+          title: yearlyPkg.product.title.trim(),
+          description: yearlyPkg.product?.description?.trim() || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
         } : undefined;
-        
-        // Log errors if packages were found but don't have product data
-        // Packages will NOT be displayed without product data
-        if (monthlyPkg && !hasValidProductData(monthlyPkg)) {
-          console.error('❌ Monthly package found but has NO product data from RevenueCat');
-          console.error('   Package identifier:', monthlyPkg.identifier);
-          console.error('   Product object:', monthlyPkg.product);
-          console.error('');
-          console.error('🔧 THIS IS A REVENUECAT CONFIGURATION ISSUE - NOT A CODE BUG');
-          console.error('');
-          console.error('   ACTION REQUIRED in RevenueCat Dashboard:');
-          console.error('   1. Go to RevenueCat Dashboard → Offerings');
-          console.error('   2. Click on your current offering');
-          console.error('   3. Click on the package:', monthlyPkg.identifier);
-          console.error('   4. In the "Product" dropdown, select product: prodb18a767009');
-          console.error('   5. Save the changes');
-          console.error('   6. Wait 2-3 minutes for RevenueCat to sync');
-          console.error('   7. Refresh this dialog');
-          console.error('');
-          console.error('   📖 See REVENUECAT_PRODUCT_DATA_FIX.md for detailed instructions');
-        }
-        
-        if (yearlyPkg && !hasValidProductData(yearlyPkg)) {
-          console.error('❌ Yearly package found but has NO product data from RevenueCat');
-          console.error('   Package identifier:', yearlyPkg.identifier);
-          console.error('   Product object:', yearlyPkg.product);
-          console.error('');
-          console.error('🔧 THIS IS A REVENUECAT CONFIGURATION ISSUE - NOT A CODE BUG');
-          console.error('');
-          console.error('   ACTION REQUIRED in RevenueCat Dashboard:');
-          console.error('   1. Go to RevenueCat Dashboard → Offerings');
-          console.error('   2. Click on your current offering');
-          console.error('   3. Click on the package:', yearlyPkg.identifier);
-          console.error('   4. In the "Product" dropdown, select product: prod77566b1baf');
-          console.error('   5. Save the changes');
-          console.error('   6. Wait 2-3 minutes for RevenueCat to sync');
-          console.error('   7. Refresh this dialog');
-          console.error('');
-          console.error('   📖 See REVENUECAT_PRODUCT_DATA_FIX.md for detailed instructions');
-        }
 
-        console.log('============================================================');
-        console.log('📊 REVENUECAT DATA RENDERING REPORT');
-        console.log('============================================================');
-        console.log('\n📦 Raw Package Data from RevenueCat:');
-        console.log('   Total packages received:', validPackages.length);
-        validPackages.forEach((p: any, index: number) => {
-          console.log(`   Package ${index + 1}:`, {
-            identifier: p?.identifier || 'N/A',
-            productId: p?.product?.identifier || 'N/A',
-            productTitle: p?.product?.title || 'N/A',
-            productDescription: p?.product?.description || 'N/A',
-            priceString: p?.product?.priceString || 'N/A',
-            price: p?.product?.price || 'N/A',
-            currencyCode: p?.product?.currencyCode || 'N/A',
-            subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A',
-            hasValidProduct: !!(p?.product && Object.keys(p.product).length > 0)
-          });
-        });
-        
-        console.log('\n🔍 Package Matching Results:');
-        console.log('   Monthly Package Found:', monthlyPkg ? '✅ YES' : '❌ NO');
-        if (monthlyPkg) {
-          console.log('      Identifier:', monthlyPkg.identifier);
-          console.log('      Product ID:', monthlyPkg.product?.identifier);
-          console.log('      Price String:', monthlyPkg.product?.priceString);
-          console.log('      Price:', monthlyPkg.product?.price);
-          console.log('      Title:', monthlyPkg.product?.title);
+        // Log results
+        if (monthlyPkg && !monthlyOffering) {
+          console.warn('⚠️ Monthly package found but missing product data:', monthlyPkg.identifier);
         }
-        console.log('   Yearly Package Found:', yearlyPkg ? '✅ YES' : '❌ NO');
-        if (yearlyPkg) {
-          console.log('      Identifier:', yearlyPkg.identifier);
-          console.log('      Product ID:', yearlyPkg.product?.identifier);
-          console.log('      Price String:', yearlyPkg.product?.priceString);
-          console.log('      Price:', yearlyPkg.product?.price);
-          console.log('      Title:', yearlyPkg.product?.title);
+        if (yearlyPkg && !yearlyOffering) {
+          console.warn('⚠️ Yearly package found but missing product data:', yearlyPkg.identifier);
         }
-        
-        console.log('\n✅ Setting offerings from RevenueCat:');
-        if (monthlyOffering) {
-          const hasPriceString = monthlyPkg?.product?.priceString != null && monthlyPkg.product.priceString.trim() !== '';
-          const hasPriceAmount = monthlyPkg?.product?.price != null && monthlyPkg.product.price !== 0;
-          const fromRC = hasPriceString || hasPriceAmount;
-          console.log('   Monthly Offering:', {
-            identifier: monthlyOffering.identifier,
-            priceString: monthlyOffering.priceString,
-            price: monthlyOffering.price,
-            currencyCode: monthlyOffering.currencyCode,
-            title: monthlyOffering.title,
-            description: monthlyOffering.description,
-            fromRevenueCat: fromRC ? '✅ YES' : '❌ NO (missing product data)',
-            source: hasPriceString ? 'priceString' : hasPriceAmount ? 'price (formatted)' : 'default'
-          });
-          console.log('   Raw product data:', {
-            priceString: monthlyPkg?.product?.priceString || 'N/A',
-            price: monthlyPkg?.product?.price || 'N/A',
-            currencyCode: monthlyPkg?.product?.currencyCode || 'N/A'
-          });
-        } else {
-          console.log('   Monthly: NOT AVAILABLE (package not found in RevenueCat)');
-        }
-        if (yearlyOffering) {
-          const hasPriceString = yearlyPkg?.product?.priceString != null && yearlyPkg.product.priceString.trim() !== '';
-          const hasPriceAmount = yearlyPkg?.product?.price != null && yearlyPkg.product.price !== 0;
-          const fromRC = hasPriceString || hasPriceAmount;
-          console.log('   Yearly Offering:', {
-            identifier: yearlyOffering.identifier,
-            priceString: yearlyOffering.priceString,
-            price: yearlyOffering.price,
-            currencyCode: yearlyOffering.currencyCode,
-            title: yearlyOffering.title,
-            description: yearlyOffering.description,
-            fromRevenueCat: fromRC ? '✅ YES' : '❌ NO (missing product data)',
-            source: hasPriceString ? 'priceString' : hasPriceAmount ? 'price (formatted)' : 'default'
-          });
-          console.log('   Raw product data:', {
-            priceString: yearlyPkg?.product?.priceString || 'N/A',
-            price: yearlyPkg?.product?.price || 'N/A',
-            currencyCode: yearlyPkg?.product?.currencyCode || 'N/A'
-          });
-        } else {
-          console.log('   Yearly: NOT AVAILABLE (package not found in RevenueCat)');
-        }
-
-        console.log('\n🎨 UI Rendering State:');
-        console.log('   Monthly will render:', monthlyOffering ? '✅ YES' : '❌ NO');
-        console.log('   Yearly will render:', yearlyOffering ? '✅ YES' : '❌ NO');
-        console.log('   Grid columns:', 
-          monthlyOffering && yearlyOffering ? '3 (Free, Monthly, Yearly)' :
-          monthlyOffering || yearlyOffering ? '2 (Free + one Pro)' :
-          '1 (Free only)'
-        );
-        console.log('============================================================');
-        console.log('🎯 FINAL OFFERINGS STATE BEING SET:');
-        console.log('   Monthly Offering:', monthlyOffering ? {
-          identifier: monthlyOffering.identifier,
-          priceString: monthlyOffering.priceString,
-          title: monthlyOffering.title,
-          source: 'RevenueCat',
-          hasValidPrice: !!monthlyOffering.priceString && monthlyOffering.priceString !== '—',
-          hasValidTitle: !!monthlyOffering.title && monthlyOffering.title !== DEFAULT_MONTHLY_TITLE
-        } : 'NOT SET (no valid product data)');
-        console.log('   Yearly Offering:', yearlyOffering ? {
-          identifier: yearlyOffering.identifier,
-          priceString: yearlyOffering.priceString,
-          title: yearlyOffering.title,
-          source: 'RevenueCat',
-          hasValidPrice: !!yearlyOffering.priceString && yearlyOffering.priceString !== '—',
-          hasValidTitle: !!yearlyOffering.title && yearlyOffering.title !== DEFAULT_YEARLY_TITLE
-        } : 'NOT SET (no valid product data)');
-        console.log('============================================================');
 
         setOfferings({
           monthly: monthlyOffering,
           yearly: yearlyOffering,
         });
-        
-        // Notify parent component that offerings were updated
+
         if (onOfferingsUpdated) {
           onOfferingsUpdated();
         }
-      } else {
-        console.warn('⚠️ RevenueCat returned no packages or empty offerings');
-        console.warn('   This could mean:');
-        console.warn('   1. No offerings configured in RevenueCat dashboard');
-        console.warn('   2. No packages attached to the current offering');
-        console.warn('   3. Products not set up in RevenueCat');
-      }
-    } catch (error: any) {
-      console.error('❌ Failed to load offerings from RevenueCat:', error);
-      console.error('   Error message:', error.message || error);
-      console.error('   Error stack:', error.stack);
-    }
-  };
 
+        console.log('✅ Offerings loaded:', {
+          monthly: monthlyOffering ? '✅' : '❌',
+          yearly: yearlyOffering ? '✅' : '❌',
+        });
+
+      } catch (error: any) {
+        console.error('❌ Failed to load offerings:', error);
+        setOfferings({});
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOfferings();
+
+    // Run diagnostics
+    if (isRevenueCatConfigured()) {
+      console.log('🔍 Running RevenueCat diagnostics...');
+      import('../lib/revenuecat-diagnostics').then(({ runRevenueCatDiagnostics, logDiagnosticReport }) => {
+        runRevenueCatDiagnostics().then(report => {
+          logDiagnosticReport(report);
+        }).catch(err => console.warn('Diagnostics failed:', err));
+      }).catch(() => {});
+
+      verifyRevenueCatPackages().then(result => {
+        logPackageVerification(result);
+      }).catch(() => {});
+    }
+  }, [open, user?.id]);
 
   const handleRestore = async () => {
     try {
       setIsRestoring(true);
-      console.log(SUBSCRIPTION_UI_TEXT.messages.restoringPurchases);
-
       const success = await restorePurchases();
-
       if (success) {
-        toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored, {
-          description: SUBSCRIPTION_UI_TEXT.messages.subscriptionRestoredDesc,
-        });
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored);
         await refreshSubscription();
         onOpenChange(false);
       } else {
-        toast.info(SUBSCRIPTION_UI_TEXT.messages.noActiveSubscription, {
-          description: SUBSCRIPTION_UI_TEXT.messages.noActiveSubscriptionDesc,
-        });
+        toast.info(SUBSCRIPTION_UI_TEXT.messages.noActiveSubscription);
       }
     } catch (error: any) {
-      console.error("Restore error:", error);
       toast.error(SUBSCRIPTION_UI_TEXT.messages.restoreFailed, {
-        description: error.message || SUBSCRIPTION_UI_TEXT.messages.restoreFailedDesc,
+        description: error.message,
       });
     } finally {
       setIsRestoring(false);
@@ -935,26 +276,19 @@ export function PricingDialog({
   };
 
   const handleCancel = async () => {
-    // Show confirmation dialog
     const confirmed = window.confirm(
       `${SUBSCRIPTION_UI_TEXT.confirmations.cancel.title}\n\n${SUBSCRIPTION_UI_TEXT.confirmations.cancel.message}`
     );
-
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setIsCancelling(true);
       await cancelSubscription();
       await refreshSubscription();
-      toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionCancelled, {
-        description: SUBSCRIPTION_UI_TEXT.messages.subscriptionCancelledDesc,
-      });
+      toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionCancelled);
     } catch (error: any) {
-      console.error("Cancel error:", error);
       toast.error(SUBSCRIPTION_UI_TEXT.messages.cancelFailed, {
-        description: error.message || SUBSCRIPTION_UI_TEXT.messages.cancelFailedDesc,
+        description: error.message,
       });
     } finally {
       setIsCancelling(false);
@@ -962,40 +296,28 @@ export function PricingDialog({
   };
 
   const handleDowngrade = async () => {
-    // Show confirmation dialog
     const featuresList = PRO_FEATURES_LIST.map(f => `• ${f}`).join('\n');
     const confirmed = window.confirm(
       `${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.title}\n\n${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.messagePrefix}\n${featuresList}${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.messageSuffix}`
     );
-
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setIsDowngrading(true);
       await downgradeToFree();
       await refreshSubscription();
-      toast.success(SUBSCRIPTION_UI_TEXT.messages.downgradeSuccess, {
-        description: SUBSCRIPTION_UI_TEXT.messages.downgradeSuccessDesc,
-      });
+      toast.success(SUBSCRIPTION_UI_TEXT.messages.downgradeSuccess);
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Downgrade error:", error);
       toast.error(SUBSCRIPTION_UI_TEXT.messages.downgradeFailed, {
-        description: error.message || SUBSCRIPTION_UI_TEXT.messages.downgradeFailedDesc,
+        description: error.message,
       });
     } finally {
       setIsDowngrading(false);
     }
   };
 
-  // Use feature definitions from constants
-  const freeTierFeatures = FREE_TIER_FEATURES;
-  const proTierFeatures = PRO_TIER_FEATURES;
-
   const calculateSavings = () => {
-    // Only calculate savings if both monthly and yearly are available
     if (!offerings.monthly || !offerings.yearly) return 0;
     try {
       const monthlyPrice = parseFloat(offerings.monthly.price || '0');
@@ -1004,8 +326,7 @@ export function PricingDialog({
       const yearlyEquivalent = monthlyPrice * 12;
       if (yearlyEquivalent === 0) return 0;
       return Math.round(((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100);
-    } catch (error) {
-      console.warn('Error calculating savings:', error);
+    } catch {
       return 0;
     }
   };
@@ -1013,487 +334,64 @@ export function PricingDialog({
   const savings = calculateSavings();
 
   const handleUpgradeMonthly = async () => {
+    if (!offerings.monthly) {
+      toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound);
+      return;
+    }
+
     try {
       setIsUpgrading(true);
-      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
-      const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-
-      // Ensure RevenueCat is configured before attempting purchase
-      const { isRevenueCatConfigured, configureRevenueCat, getOfferings } = await import('../lib/revenuecat');
-      
-      if (!isRevenueCatConfigured() && user?.id) {
-        console.log('🔄 RevenueCat not configured, configuring before purchase...');
-        try {
-          await configureRevenueCat(user.id);
-          console.log('✅ RevenueCat configured, proceeding with purchase...');
-        } catch (configError: any) {
-          console.error('❌ Failed to configure RevenueCat:', configError);
-          toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
-            description: SUBSCRIPTION_UI_TEXT.configuration.initializationFailed,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-      } else if (!isRevenueCatConfigured()) {
-        console.error('❌ RevenueCat not configured and no user ID available');
-        toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
-          description: SUBSCRIPTION_UI_TEXT.configuration.loginRequired,
-        });
-        setIsUpgrading(false);
-        return;
-      }
-
-      // Check if monthly package is available
-      if (!offerings.monthly) {
-        console.error('❌ Monthly package not available');
-        toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-          description: SUBSCRIPTION_UI_TEXT.upgrade.monthlyNotAvailable,
-        });
-        setIsUpgrading(false);
-        return;
-      }
-
-      // Check if offerings are available before purchase
-      console.log('🔍 Checking if offerings are available...');
-        const offeringsCheck = await getOfferings(true);
-      if (!offeringsCheck || !offeringsCheck.availablePackages || offeringsCheck.availablePackages.length === 0) {
-        console.warn('⚠️ No offerings found, attempting to reload...');
-        // Try reloading offerings
-        await loadOfferings();
-        
-        // Check again after reload
-        const offeringsCheck2 = await getOfferings(true);
-        if (!offeringsCheck2 || !offeringsCheck2.availablePackages || offeringsCheck2.availablePackages.length === 0) {
-          console.error('❌ No offerings available after reload');
-          toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
-            description: SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableCheckDesc,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-        
-        // Re-check monthly package after reload
-        if (!offerings.monthly) {
-          console.error('❌ Monthly package still not available after reload');
-          toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-            description: SUBSCRIPTION_UI_TEXT.upgrade.monthlyNotAvailable,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-      }
-
-      try {
-        console.log(`Attempting monthly purchase on ${platform.platform}`);
-        const success = await purchaseProSubscription('monthly');
-        
-        if (success) {
-          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess, {
-            description: SUBSCRIPTION_UI_TEXT.messages.upgradeSuccessDesc,
-          });
-          await refreshSubscription();
-          setIsUpgrading(false);
-          onOpenChange(false);
-          return;
-        } else {
-          toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed, {
-            description: SUBSCRIPTION_UI_TEXT.messages.paymentFailedDesc,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-      } catch (rcError: any) {
-        if (rcError.message?.includes("cancelled") || rcError.userCancelled) {
-          setIsUpgrading(false);
-          return;
-        }
-
-        if (isProduction) {
-          console.error("Payment processing failed in production:", rcError.message);
-          
-          // Provide specific error messages based on error type
-          let errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailable;
-          let errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailableDesc;
-          
-          // Check for checkout/payment form specific errors
-          if (rcError.message?.toLowerCase().includes("checkout") || 
-              rcError.message?.toLowerCase().includes("stripe") ||
-              rcError.message?.toLowerCase().includes("payment form") ||
-              rcError.message?.toLowerCase().includes("unable to open")) {
-            errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentFormError;
-            errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentFormErrorDesc;
-          } else if (rcError.message?.includes("No subscription offerings available") || 
-              rcError.message?.includes("No subscription packages available")) {
-            errorTitle = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable;
-            errorDescription = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc;
-          } else if (rcError.message?.includes("subscription package not found")) {
-            errorTitle = SUBSCRIPTION_UI_TEXT.errors.packageNotFound;
-            errorDescription = SUBSCRIPTION_UI_TEXT.errors.packageNotFoundDesc;
-          }
-          
-          toast.error(errorTitle, {
-            description: errorDescription,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-
-        if (isDevelopment) {
-          console.log("→ Using simulated upgrade for development (monthly)");
-          try {
-            await upgradeToPro();
-            toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode, {
-              description: SUBSCRIPTION_UI_TEXT.messages.upgradeDevModeDesc,
-            });
-            setIsUpgrading(false);
-            onOpenChange(false);
-            return;
-          } catch (upgradeError) {
-            console.error("Development upgrade failed:", upgradeError);
-            setIsUpgrading(false);
-            throw upgradeError;
-          }
-        }
-
-        toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
-          description: rcError.message || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc,
-        });
-        setIsUpgrading(false);
+      const success = await purchaseProSubscription('monthly');
+      if (success) {
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
+        await refreshSubscription();
+        onOpenChange(false);
+      } else {
+        toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed);
       }
     } catch (error: any) {
-      console.error("Monthly upgrade error:", error);
+      if (error.userCancelled) return;
       toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
-        description: error.message || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc,
+        description: error.message,
       });
+    } finally {
       setIsUpgrading(false);
     }
   };
 
   const handleUpgradeYearly = async () => {
+    if (!offerings.yearly) {
+      toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound);
+      return;
+    }
+
     try {
       setIsUpgrading(true);
-      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
-      const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-
-      // Ensure RevenueCat is configured before attempting purchase
-      const { isRevenueCatConfigured, configureRevenueCat, getOfferings } = await import('../lib/revenuecat');
-      
-      if (!isRevenueCatConfigured() && user?.id) {
-        console.log('🔄 RevenueCat not configured, configuring before purchase...');
-        try {
-          await configureRevenueCat(user.id);
-          console.log('✅ RevenueCat configured, proceeding with purchase...');
-        } catch (configError: any) {
-          console.error('❌ Failed to configure RevenueCat:', configError);
-          toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
-            description: SUBSCRIPTION_UI_TEXT.configuration.initializationFailed,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-      } else if (!isRevenueCatConfigured()) {
-        console.error('❌ RevenueCat not configured and no user ID available');
-        toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
-          description: SUBSCRIPTION_UI_TEXT.configuration.loginRequired,
-        });
-        setIsUpgrading(false);
-        return;
-      }
-
-      // Check if yearly package is available
-      if (!offerings.yearly) {
-        console.error('❌ Yearly package not available');
-        console.error('   Current offerings state:', {
-          monthly: offerings.monthly ? {
-            identifier: offerings.monthly.identifier,
-            priceString: offerings.monthly.priceString
-          } : 'NOT AVAILABLE',
-          yearly: offerings.yearly ? {
-            identifier: offerings.yearly.identifier,
-            priceString: offerings.yearly.priceString
-          } : 'NOT AVAILABLE'
-        });
-        
-        // Check if RevenueCat is configured
-        const { isRevenueCatConfigured } = await import('../lib/revenuecat');
-        if (!isRevenueCatConfigured()) {
-          console.error('   RevenueCat is not configured');
-          toast.error(SUBSCRIPTION_UI_TEXT.configuration.errorTitle, {
-            description: SUBSCRIPTION_UI_TEXT.configuration.initializationFailed,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-        
-        console.error('   Attempting to reload offerings to check for yearly package...');
-        
-        // Try reloading offerings one more time
-        await loadOfferings();
-        
-        // Get fresh offerings directly from RevenueCat to verify
-        const freshOfferings = await getOfferings(true);
-        if (!freshOfferings?.availablePackages || freshOfferings.availablePackages.length === 0) {
-          console.error('❌ No packages available from RevenueCat');
-          console.error('   This usually means:');
-          console.error('   1. No offerings configured in RevenueCat dashboard');
-          console.error('   2. No packages attached to the current offering');
-          console.error('   3. Products not set up in RevenueCat');
-          toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
-            description: SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableCheckDesc,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-        
-        // Log available packages for debugging with full details
-        const availablePackagesInfo = freshOfferings.availablePackages.map((p: any) => ({
-          identifier: p?.identifier || 'unknown',
-          productId: p?.product?.identifier || 'unknown',
-          priceString: p?.product?.priceString || 'N/A',
-          priceAmount: p?.product?.price || 'N/A',
-          currencyCode: p?.product?.currencyCode || 'N/A',
-          subscriptionPeriod: p?.product?.subscriptionPeriod || 'N/A',
-          title: p?.product?.title || 'N/A',
-          description: p?.product?.description || 'N/A',
-          introPrice: p?.product?.introPrice || 'N/A',
-          discount: p?.product?.discount || 'N/A'
-        }));
-        console.error('   Available packages from RevenueCat (FULL DETAILS):', availablePackagesInfo);
-        console.error('   RAW PACKAGE DATA:', JSON.stringify(freshOfferings.availablePackages.map((p: any) => ({
-          identifier: p?.identifier,
-          product: {
-            identifier: p?.product?.identifier,
-            priceString: p?.product?.priceString,
-            price: p?.product?.price,
-            currencyCode: p?.product?.currencyCode,
-            title: p?.product?.title,
-            description: p?.product?.description,
-            subscriptionPeriod: p?.product?.subscriptionPeriod,
-            introPrice: p?.product?.introPrice,
-            discount: p?.product?.discount
-          }
-        })), null, 2));
-        
-        // Try to find yearly package in fresh offerings using the same matching logic
-        // Filter for packages with valid product data first
-        const hasValidProduct = (p: any) => {
-          if (!p || !p.product) return false;
-          const productKeys = Object.keys(p.product);
-          return productKeys.length > 0 && (p.product.identifier || p.product.priceString || p.product.price);
-        };
-        
-        const validFreshPackages = freshOfferings.availablePackages.filter(hasValidProduct);
-        
-        if (validFreshPackages.length === 0) {
-          console.error('❌ No packages with valid product data found');
-          console.error('   All packages have empty product objects');
-          console.error('   This indicates a RevenueCat configuration issue');
-          console.error('   Please check:');
-          console.error('   1. Products are linked to packages in RevenueCat dashboard');
-          console.error('   2. Products have pricing configured');
-          console.error('   3. API key has correct permissions');
-        }
-        
-        let foundYearlyPkg: any = null;
-        for (const pkg of validFreshPackages) {
-          if (!pkg || !pkg.product) continue;
-          
-          const identifier = pkg.identifier || '';
-          const identifierLower = identifier.toLowerCase();
-          const productId = pkg.product.identifier || '';
-          const productIdLower = productId.toLowerCase();
-          
-          // Check identifier against yearly list
-          const isYearlyById = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
-            const idLower = id.toLowerCase();
-            return identifierLower === idLower || 
-                   identifierLower === idLower.replace('$', '') ||
-                   identifierLower === idLower.replace('$rc_', 'rc_') ||
-                   identifierLower.includes(idLower.replace('$', '')) ||
-                   identifierLower.includes(idLower.replace('$rc_', 'rc_'));
-          });
-          
-          // Check product ID against yearly list (exact match first, then pattern matching)
-          const isYearlyByProductId = YEARLY_PACKAGE_IDENTIFIERS.some(id => {
-            const idLower = id.toLowerCase();
-            // Exact match (most reliable)
-            if (productIdLower === idLower) return true;
-            // Pattern matching for package identifiers
-            return productIdLower.includes(idLower.replace('$', '')) ||
-                   productIdLower.includes(idLower.replace('$rc_', 'rc_'));
-          });
-          
-          // Check for yearly/annual keywords
-          const hasYearlyKeywords = identifierLower.includes('year') || 
-                                    identifierLower.includes('annual') ||
-                                    identifierLower.includes('rc_yearly') ||
-                                    identifierLower.includes('rc_annual') ||
-                                    productIdLower.includes('year') ||
-                                    productIdLower.includes('annual');
-          
-          // Check product metadata (billing period)
-          const isYearlyByMetadata = pkg.product.subscriptionPeriod === 'P1Y' || 
-                                    pkg.product.subscriptionPeriod === 'YEAR' ||
-                                    pkg.product.subscriptionPeriod === 'ANNUAL' ||
-                                    (pkg.product.subscriptionPeriod && 
-                                     pkg.product.subscriptionPeriod.toString().toLowerCase().includes('year'));
-          
-          if (isYearlyById || isYearlyByProductId || hasYearlyKeywords || isYearlyByMetadata) {
-            foundYearlyPkg = pkg;
-            console.log('✅ Found yearly package in fresh offerings:', {
-              identifier,
-              productId,
-              priceString: pkg.product.priceString,
-              matchedBy: isYearlyById ? 'identifier' : isYearlyByProductId ? 'productId' : hasYearlyKeywords ? 'keywords' : 'metadata'
-            });
-            break;
-          }
-        }
-        
-        // If we found a yearly package in fresh offerings but state hasn't updated, reload offerings one more time
-        if (foundYearlyPkg && !offerings.yearly) {
-          console.log('   Yearly package found in fresh offerings, reloading state...');
-          await loadOfferings();
-          // Wait a bit for state to update
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        // Check again after reload (state may not have updated yet, so check fresh offerings)
-        if (!offerings.yearly && !foundYearlyPkg) {
-          console.error('❌ Yearly package still not available after reload');
-          console.error('   This may indicate a package identifier mismatch');
-          console.error('   Actual package identifier from RevenueCat:', availablePackagesInfo[0]?.identifier || 'N/A');
-          console.error('   Expected identifiers:', YEARLY_PACKAGE_IDENTIFIERS);
-          console.error('   Suggestion: Update package identifier in RevenueCat dashboard to match one of the expected identifiers, or add the actual identifier to YEARLY_PACKAGE_IDENTIFIERS in subscription-constants.ts');
-          toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-            description: SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-      }
-
-      // Check if offerings are available before purchase
-      console.log('🔍 Checking if offerings are available...');
-        const offeringsCheck = await getOfferings(true);
-      if (!offeringsCheck || !offeringsCheck.availablePackages || offeringsCheck.availablePackages.length === 0) {
-        console.warn('⚠️ No offerings found, attempting to reload...');
-        // Try reloading offerings
-        await loadOfferings();
-        
-        // Check again after reload
-        const offeringsCheck2 = await getOfferings(true);
-        if (!offeringsCheck2 || !offeringsCheck2.availablePackages || offeringsCheck2.availablePackages.length === 0) {
-          console.error('❌ No offerings available after reload');
-          toast.error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable, {
-            description: SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableCheckDesc,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-        
-        // Re-check yearly package after reload
-        if (!offerings.yearly) {
-          console.error('❌ Yearly package still not available after reload');
-          toast.error(SUBSCRIPTION_UI_TEXT.errors.packageNotFound, {
-            description: SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-      }
-
-      try {
-        console.log(`Attempting yearly purchase on ${platform.platform}`);
-        const success = await purchaseProSubscription('yearly');
-        
-        if (success) {
-          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess, {
-            description: SUBSCRIPTION_UI_TEXT.messages.upgradeSuccessDesc,
-          });
-          await refreshSubscription();
-          setIsUpgrading(false);
-          onOpenChange(false);
-          return;
-        } else {
-          toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed, {
-            description: SUBSCRIPTION_UI_TEXT.messages.paymentFailedDesc,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-      } catch (rcError: any) {
-        if (rcError.message?.includes("cancelled") || rcError.userCancelled) {
-          setIsUpgrading(false);
-          return;
-        }
-
-        if (isProduction) {
-          console.error("Payment processing failed in production:", rcError.message);
-          
-          // Provide specific error messages based on error type
-          let errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailable;
-          let errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailableDesc;
-          
-          // Check for checkout/payment form specific errors
-          if (rcError.message?.toLowerCase().includes("checkout") || 
-              rcError.message?.toLowerCase().includes("stripe") ||
-              rcError.message?.toLowerCase().includes("payment form") ||
-              rcError.message?.toLowerCase().includes("unable to open")) {
-            errorTitle = SUBSCRIPTION_UI_TEXT.errors.paymentFormError;
-            errorDescription = SUBSCRIPTION_UI_TEXT.errors.paymentFormErrorDesc;
-          } else if (rcError.message?.includes("No subscription offerings available") || 
-              rcError.message?.includes("No subscription packages available")) {
-            errorTitle = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailable;
-            errorDescription = SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc;
-          } else if (rcError.message?.includes("subscription package not found")) {
-            errorTitle = SUBSCRIPTION_UI_TEXT.errors.packageNotFound;
-            errorDescription = SUBSCRIPTION_UI_TEXT.errors.packageNotFoundDesc;
-          }
-          
-          toast.error(errorTitle, {
-            description: errorDescription,
-          });
-          setIsUpgrading(false);
-          return;
-        }
-
-        if (isDevelopment) {
-          console.log("→ Using simulated upgrade for development (yearly)");
-          try {
-            await upgradeToPro();
-            toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode, {
-              description: SUBSCRIPTION_UI_TEXT.messages.upgradeDevModeDesc,
-            });
-            setIsUpgrading(false);
-            onOpenChange(false);
-            return;
-          } catch (upgradeError) {
-            console.error("Development upgrade failed:", upgradeError);
-            setIsUpgrading(false);
-            throw upgradeError;
-          }
-        }
-
-        toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
-          description: rcError.message || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc,
-        });
-        setIsUpgrading(false);
+      const success = await purchaseProSubscription('yearly');
+      if (success) {
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
+        await refreshSubscription();
+        onOpenChange(false);
+      } else {
+        toast.error(SUBSCRIPTION_UI_TEXT.messages.paymentFailed);
       }
     } catch (error: any) {
-      console.error("Yearly upgrade error:", error);
+      if (error.userCancelled) return;
       toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
-        description: error.message || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc,
+        description: error.message,
       });
+    } finally {
       setIsUpgrading(false);
     }
   };
+
+  const freeTierFeatures = FREE_TIER_FEATURES;
+  const proTierFeatures = PRO_TIER_FEATURES;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] lg:max-w-[980px] max-h-[95vh] overflow-y-auto p-0 md:p-0">
         <div className="p-4 md:p-5 lg:p-7 xl:p-8">
-          {/* Header */}
           <div className="mb-5 md:mb-7">
             <DialogHeader className="text-center">
               <DialogTitle className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent mb-2">
@@ -1503,298 +401,280 @@ export function PricingDialog({
                 {SUBSCRIPTION_UI_TEXT.description}
               </DialogDescription>
             </DialogHeader>
-
           </div>
 
-          {/* Plans Grid - Responsive: Free, Monthly Pro (if available), Yearly Pro (if available) */}
-          {(() => {
-            const hasMonthly = !!offerings.monthly;
-            const hasYearly = !!offerings.yearly;
-            const gridCols = hasMonthly && hasYearly 
-              ? "grid-cols-1 md:grid-cols-3"  // All 3 plans: Free, Monthly, Yearly
-              : hasMonthly || hasYearly
-              ? "grid-cols-1 md:grid-cols-2"  // 2 plans: Free + one Pro plan
-              : "grid-cols-1";  // Just Free plan
-            
-            console.log('🎨 UI Grid Layout Decision:');
-            console.log('   Monthly available:', hasMonthly);
-            console.log('   Yearly available:', hasYearly);
-            console.log('   Grid columns:', gridCols);
-            console.log('   Plans to render:', 
-              `Free${hasMonthly ? ' + Monthly' : ''}${hasYearly ? ' + Yearly' : ''}`
-            );
-            
-            return (
-              <div className={cn("grid gap-4 md:gap-5 lg:gap-7 max-w-full", gridCols)}>
-            {/* Free Tier - Spacious Design */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4 }}
-              className="relative border-2 border-gray-200 dark:border-gray-700 rounded-xl md:rounded-2xl p-5 md:p-7 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl flex flex-col"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
-                  <p className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
-                </div>
-                {subscription.tier === "free" && (
-                  <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-xs px-3 py-1 shadow-sm flex-shrink-0">
-                    {SUBSCRIPTION_UI_TEXT.free.button.current}
-                  </Badge>
-                )}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-8 h-8 border-4 border-[#9B87E8] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading subscription plans...</p>
               </div>
-
-              <div className="mb-5">
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">{SUBSCRIPTION_UI_TEXT.free.price}</span>
-                  <span className="text-base md:text-xl text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
-                </div>
-                <p className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.description}</p>
-              </div>
-
-              <ul className="space-y-3 mb-5 flex-1">
-                {freeTierFeatures.map((feature, index) => (
-                  <li
-                    key={index}
-                    className="flex items-start gap-3 group"
-                  >
-                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5 group-hover:scale-110 transition-transform duration-200">
-                      <feature.icon className="w-3 h-3 text-gray-800 dark:text-gray-100" />
-                    </div>
-                    <span className="text-sm md:text-base text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors leading-relaxed">
-                      {feature.text}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                variant="outline"
-                className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm md:text-base py-4 font-semibold transition-all duration-200 hover:scale-[1.01]"
-                disabled={subscription.tier === "free" || isDowngrading}
-                onClick={subscription.tier === "pro" ? handleDowngrade : undefined}
-              >
-                {isDowngrading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                    {SUBSCRIPTION_UI_TEXT.pro.button.downgrading}
-                  </span>
-                ) : subscription.tier === "free" ? (
-                  SUBSCRIPTION_UI_TEXT.free.button.current
-                ) : (
-                  SUBSCRIPTION_UI_TEXT.free.button.downgrade
-                )}
-              </Button>
-            </motion.div>
-
-            {/* Monthly Pro Tier */}
-            {offerings.monthly && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
-              
-              <div className="relative z-10 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                        {offerings.monthly?.title ?? SUBSCRIPTION_UI_TEXT.planCards.monthly.title}
-                      </h3>
-                      <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
-                    </div>
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                      {offerings.monthly?.description || SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {offerings.monthly?.priceString || '—'}
-                    </span>
-                    <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
-                  </div>
-                  {offerings.monthly?.description && (
-                    <p className="text-xs text-muted-foreground mt-1 italic">
-                      {offerings.monthly.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Features list - compact */}
-                <ul className="space-y-2 mb-4 flex-1">
-                  {proTierFeatures.slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <div className={cn(
-                        "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
-                        feature.highlight
-                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
-                          : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
-                      )}>
-                        <feature.icon className={cn(
-                          "w-2.5 h-2.5",
-                          feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
-                        )} />
+            </div>
+          ) : (
+            <>
+              {(() => {
+                const hasMonthly = !!offerings.monthly;
+                const hasYearly = !!offerings.yearly;
+                const gridCols = hasMonthly && hasYearly 
+                  ? "grid-cols-1 md:grid-cols-3"
+                  : hasMonthly || hasYearly
+                  ? "grid-cols-1 md:grid-cols-2"
+                  : "grid-cols-1";
+                
+                return (
+                  <div className={cn("grid gap-4 md:gap-5 lg:gap-7 max-w-full", gridCols)}>
+                    {/* Free Tier */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="relative border-2 border-gray-200 dark:border-gray-700 rounded-xl md:rounded-2xl p-5 md:p-7 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl flex flex-col"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
+                          <p className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
+                        </div>
+                        {subscription.tier === "free" && (
+                          <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-xs px-3 py-1 shadow-sm flex-shrink-0">
+                            {SUBSCRIPTION_UI_TEXT.free.button.current}
+                          </Badge>
+                        )}
                       </div>
-                      <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
-                        {feature.text}
-                      </span>
-                    </li>
-                  ))}
-                  <li className="text-xs text-muted-foreground pt-1">
-                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
-                  </li>
-                </ul>
 
-                <Button
-                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-xs md:text-sm font-bold py-3 md:py-4 hover:scale-[1.01]"
-                  disabled={subscription.tier === "pro" || isUpgrading}
-                  onClick={handleUpgradeMonthly}
-                >
-                  {isUpgrading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      {SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}
-                    </span>
-                  ) : subscription.tier === "pro" ? (
-                    SUBSCRIPTION_UI_TEXT.planCards.monthly.button.current
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <Sparkles className="w-3 h-3" />
-                      {SUBSCRIPTION_UI_TEXT.planCards.monthly.button.upgrade}
-                    </span>
-                  )}
-                </Button>
-              </div>
-            </motion.div>
-            )}
-
-            {/* Yearly Pro Tier - Featured */}
-            {offerings.yearly && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/40 transition-all duration-300 flex flex-col"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-2xl" />
-              
-              {/* Popular Badge */}
-              <div className="absolute top-3 right-3 z-20">
-                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-lg px-2 py-0.5 text-xs font-semibold">
-                  <Crown className="w-2.5 h-2.5 mr-1" />
-                  {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
-                </Badge>
-              </div>
-
-              <div className="relative z-10 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                        {offerings.yearly?.title ?? SUBSCRIPTION_UI_TEXT.planCards.yearly.title}
-                      </h3>
-                      <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
-                    </div>
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                      {offerings.yearly?.description || SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {offerings.yearly?.priceString || '—'}
-                    </span>
-                    <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
-                  </div>
-                  {savings > 0 && (
-                    <Badge className="mb-2 bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-bold px-2 py-0.5">
-                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings)}
-                    </Badge>
-                  )}
-                  {offerings.yearly && offerings.monthly && parseFloat(offerings.yearly.price || '0') > 0 && (
-                    <p className="text-xs md:text-sm font-semibold text-[#9B87E8]">
-                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(((parseFloat(offerings.yearly.price) / 12).toFixed(2)))}
-                    </p>
-                  )}
-                  {offerings.yearly?.description && (
-                    <p className="text-xs text-muted-foreground mt-1 italic">
-                      {offerings.yearly.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Features list - compact */}
-                <ul className="space-y-2 mb-4 flex-1">
-                  {proTierFeatures.slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <div className={cn(
-                        "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
-                        feature.highlight
-                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
-                          : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
-                      )}>
-                        <feature.icon className={cn(
-                          "w-2.5 h-2.5",
-                          feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
-                        )} />
+                      <div className="mb-5">
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <span className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">{SUBSCRIPTION_UI_TEXT.free.price}</span>
+                          <span className="text-base md:text-xl text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
+                        </div>
+                        <p className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.description}</p>
                       </div>
-                      <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
-                        {feature.text}
-                      </span>
-                    </li>
-                  ))}
-                  <li className="text-xs text-muted-foreground pt-1">
-                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
-                  </li>
-                </ul>
 
-                <Button
-                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-xl hover:shadow-2xl transition-all duration-300 text-xs md:text-sm font-bold py-3 md:py-4 hover:scale-[1.01]"
-                  disabled={subscription.tier === "pro" || isUpgrading}
-                  onClick={handleUpgradeYearly}
-                >
-                  {isUpgrading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}
-                    </span>
-                  ) : subscription.tier === "pro" ? (
-                    SUBSCRIPTION_UI_TEXT.planCards.yearly.button.current
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <Sparkles className="w-3 h-3" />
-                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.button.upgrade}
-                    </span>
-                  )}
-                </Button>
-              </div>
-            </motion.div>
-            )}
-              </div>
-            );
-          })()}
+                      <ul className="space-y-3 mb-5 flex-1">
+                        {freeTierFeatures.map((feature, index) => (
+                          <li key={index} className="flex items-start gap-3 group">
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5 group-hover:scale-110 transition-transform duration-200">
+                              <feature.icon className="w-3 h-3 text-gray-800 dark:text-gray-100" />
+                            </div>
+                            <span className="text-sm md:text-base text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors leading-relaxed">
+                              {feature.text}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
 
-          {/* Footer Note - Spacious */}
-          <div className="mt-5 md:mt-7 p-3 md:p-4 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg md:rounded-xl border-2 border-[#9B87E8]/30 shadow-lg backdrop-blur-sm">
-            <p className="text-xs md:text-sm lg:text-base text-center text-gray-700 dark:text-gray-300 leading-relaxed">
-              {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
-              <span className="font-semibold text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
-              {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
-            </p>
-          </div>
+                      <Button
+                        variant="outline"
+                        className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm md:text-base py-4 font-semibold transition-all duration-200 hover:scale-[1.01]"
+                        disabled={subscription.tier === "free" || isDowngrading}
+                        onClick={subscription.tier === "pro" ? handleDowngrade : undefined}
+                      >
+                        {isDowngrading ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                            {SUBSCRIPTION_UI_TEXT.pro.button.downgrading}
+                          </span>
+                        ) : subscription.tier === "free" ? (
+                          SUBSCRIPTION_UI_TEXT.free.button.current
+                        ) : (
+                          SUBSCRIPTION_UI_TEXT.free.button.downgrade
+                        )}
+                      </Button>
+                    </motion.div>
+
+                    {/* Monthly Pro Tier */}
+                    {offerings.monthly && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.1 }}
+                        className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
+                        
+                        <div className="relative z-10 flex flex-col flex-1">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                                  {offerings.monthly.title}
+                                </h3>
+                                <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
+                              </div>
+                              <p className="text-xs md:text-sm text-muted-foreground">
+                                {offerings.monthly.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mb-4">
+                            <div className="flex items-baseline gap-2 mb-2">
+                              <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                                {offerings.monthly.priceString}
+                              </span>
+                              <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
+                            </div>
+                          </div>
+
+                          <ul className="space-y-2 mb-4 flex-1">
+                            {proTierFeatures.slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <div className={cn(
+                                  "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
+                                  feature.highlight
+                                    ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
+                                    : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
+                                )}>
+                                  <feature.icon className={cn(
+                                    "w-2.5 h-2.5",
+                                    feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
+                                  )} />
+                                </div>
+                                <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
+                                  {feature.text}
+                                </span>
+                              </li>
+                            ))}
+                            <li className="text-xs text-muted-foreground pt-1">
+                              + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
+                            </li>
+                          </ul>
+
+                          <Button
+                            className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-xs md:text-sm font-bold py-3 md:py-4 hover:scale-[1.01]"
+                            disabled={subscription.tier === "pro" || isUpgrading}
+                            onClick={handleUpgradeMonthly}
+                          >
+                            {isUpgrading ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                {SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}
+                              </span>
+                            ) : subscription.tier === "pro" ? (
+                              SUBSCRIPTION_UI_TEXT.planCards.monthly.button.current
+                            ) : (
+                              <span className="flex items-center justify-center gap-2">
+                                <Sparkles className="w-3 h-3" />
+                                {SUBSCRIPTION_UI_TEXT.planCards.monthly.button.upgrade}
+                              </span>
+                            )}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Yearly Pro Tier */}
+                    {offerings.yearly && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.2 }}
+                        className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/40 transition-all duration-300 flex flex-col"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-2xl" />
+                        
+                        <div className="absolute top-3 right-3 z-20">
+                          <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-lg px-2 py-0.5 text-xs font-semibold">
+                            <Crown className="w-2.5 h-2.5 mr-1" />
+                            {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
+                          </Badge>
+                        </div>
+
+                        <div className="relative z-10 flex flex-col flex-1">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                                  {offerings.yearly.title}
+                                </h3>
+                                <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
+                              </div>
+                              <p className="text-xs md:text-sm text-muted-foreground">
+                                {offerings.yearly.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mb-4">
+                            <div className="flex items-baseline gap-2 mb-2">
+                              <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                                {offerings.yearly.priceString}
+                              </span>
+                              <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
+                            </div>
+                            {savings > 0 && (
+                              <Badge className="mb-2 bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-bold px-2 py-0.5">
+                                {SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings)}
+                              </Badge>
+                            )}
+                            {offerings.yearly && offerings.monthly && parseFloat(offerings.yearly.price || '0') > 0 && (
+                              <p className="text-xs md:text-sm font-semibold text-[#9B87E8]">
+                                {SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(((parseFloat(offerings.yearly.price) / 12).toFixed(2)))}
+                              </p>
+                            )}
+                          </div>
+
+                          <ul className="space-y-2 mb-4 flex-1">
+                            {proTierFeatures.slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <div className={cn(
+                                  "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
+                                  feature.highlight
+                                    ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
+                                    : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
+                                )}>
+                                  <feature.icon className={cn(
+                                    "w-2.5 h-2.5",
+                                    feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
+                                  )} />
+                                </div>
+                                <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
+                                  {feature.text}
+                                </span>
+                              </li>
+                            ))}
+                            <li className="text-xs text-muted-foreground pt-1">
+                              + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
+                            </li>
+                          </ul>
+
+                          <Button
+                            className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-xl hover:shadow-2xl transition-all duration-300 text-xs md:text-sm font-bold py-3 md:py-4 hover:scale-[1.01]"
+                            disabled={subscription.tier === "pro" || isUpgrading}
+                            onClick={handleUpgradeYearly}
+                          >
+                            {isUpgrading ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                {SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}
+                              </span>
+                            ) : subscription.tier === "pro" ? (
+                              SUBSCRIPTION_UI_TEXT.planCards.yearly.button.current
+                            ) : (
+                              <span className="flex items-center justify-center gap-2">
+                                <Sparkles className="w-3 h-3" />
+                                {SUBSCRIPTION_UI_TEXT.planCards.yearly.button.upgrade}
+                              </span>
+                            )}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className="mt-5 md:mt-7 p-3 md:p-4 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg md:rounded-xl border-2 border-[#9B87E8]/30 shadow-lg backdrop-blur-sm">
+                <p className="text-xs md:text-sm lg:text-base text-center text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
+                  <span className="font-semibold text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
+                  {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-
