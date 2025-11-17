@@ -37,6 +37,7 @@ import {
   DEFAULT_YEARLY_PRICE,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
+import { getOfferings, restorePurchases, configureRevenueCat } from "../lib/revenuecat";
 
 interface PricingDialogProps {
   open: boolean;
@@ -55,29 +56,58 @@ export function PricingDialog({
   const [isRestoring, setIsRestoring] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [isDowngrading, setIsDowngrading] = React.useState(false);
-  // Static pricing from constants
-  const [offerings] = React.useState<{
-    monthly: { priceString: string; title: string; description: string } | null;
-    yearly: { priceString: string; title: string; description: string } | null;
-  }>({
-    monthly: {
-      priceString: DEFAULT_MONTHLY_PRICE,
-      title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
-      description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
-    },
-    yearly: {
-      priceString: DEFAULT_YEARLY_PRICE,
-      title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
-      description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
-    },
-  });
+  const [offerings, setOfferings] = React.useState<{
+    monthly: DialogOffering | null;
+    yearly: DialogOffering | null;
+  }>({ monthly: null, yearly: null });
+  const [isLoadingOfferings, setIsLoadingOfferings] = React.useState(false);
+  const [offeringsError, setOfferingsError] = React.useState<string | null>(null);
 
   const platform = getPlatform();
   const { user } = useAuth();
 
+  const loadOfferings = React.useCallback(async () => {
+    if (!user?.id) return;
+
+    setIsLoadingOfferings(true);
+    setOfferingsError(null);
+    try {
+      await configureRevenueCat(user.id);
+      const rcOfferings = await getOfferings();
+
+      if (!rcOfferings.monthly && !rcOfferings.yearly) {
+        setOfferingsError(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
+      }
+
+      setOfferings(rcOfferings);
+      onOfferingsUpdated?.();
+    } catch (error: any) {
+      console.warn('RevenueCat offerings load failed:', error);
+      setOfferingsError(error?.message || SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
+    } finally {
+      setIsLoadingOfferings(false);
+    }
+  }, [user?.id, onOfferingsUpdated]);
+
+  React.useEffect(() => {
+    if (open && user?.id) {
+      loadOfferings();
+    }
+  }, [open, user?.id, loadOfferings]);
+
   const handleRestore = async () => {
     try {
       setIsRestoring(true);
+      if (!user?.id) {
+        throw new Error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
+      }
+
+      await configureRevenueCat(user.id);
+      const result = await restorePurchases();
+      if (!result.success) {
+        throw new Error(result.error || SUBSCRIPTION_UI_TEXT.messages.restoreFailedDesc);
+      }
+
       // Refresh subscription status from backend
       await refreshSubscription();
       toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored);
@@ -133,9 +163,23 @@ export function PricingDialog({
     }
   };
 
-  // Use static pricing from constants - define before using in calculations
-  const monthlyOffering = offerings.monthly!;
-  const yearlyOffering = offerings.yearly!;
+  const fallbackMonthly: DialogOffering = {
+    priceString: DEFAULT_MONTHLY_PRICE,
+    title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
+    description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
+  };
+
+  const fallbackYearly: DialogOffering = {
+    priceString: DEFAULT_YEARLY_PRICE,
+    title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
+    description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
+  };
+
+  const monthlyOffering = offerings.monthly ?? fallbackMonthly;
+  const yearlyOffering = offerings.yearly ?? fallbackYearly;
+  const formatPrice = (price: string) => (isLoadingOfferings ? 'Loading…' : price);
+  const formatDescription = (description: string) =>
+    isLoadingOfferings ? 'Fetching latest pricing…' : description;
 
   const calculateSavings = () => {
     // Calculate savings between monthly and yearly
@@ -229,6 +273,12 @@ export function PricingDialog({
             </DialogHeader>
           </div>
 
+          {offeringsError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+              {offeringsError}
+            </div>
+          )}
+
           <div className={cn("grid gap-4 md:gap-5 lg:gap-7 max-w-full", "grid-cols-1 md:grid-cols-3")}>
             {/* Free Tier */}
             <motion.div
@@ -308,7 +358,7 @@ export function PricingDialog({
                       <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
                     </div>
                     <p className="text-xs md:text-sm text-muted-foreground">
-                      {monthlyOffering.description}
+                      {formatDescription(monthlyOffering.description)}
                     </p>
                   </div>
                 </div>
@@ -316,7 +366,7 @@ export function PricingDialog({
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {monthlyOffering.priceString}
+                      {formatPrice(monthlyOffering.priceString)}
                     </span>
                     <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
                   </div>
@@ -394,7 +444,7 @@ export function PricingDialog({
                       <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
                     </div>
                     <p className="text-xs md:text-sm text-muted-foreground">
-                      {yearlyOffering.description}
+                      {formatDescription(yearlyOffering.description)}
                     </p>
                   </div>
                 </div>
@@ -402,17 +452,19 @@ export function PricingDialog({
                 <div className="mb-4">
                   <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {yearlyOffering.priceString}
+                      {formatPrice(yearlyOffering.priceString)}
                     </span>
                     <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
                   </div>
                   {savings > 0 && (
                     <Badge className="mb-2 bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-xs font-bold px-2 py-0.5">
-                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings)}
+                      {isLoadingOfferings ? 'Loading…' : SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings)}
                     </Badge>
                   )}
                   <p className="text-xs md:text-sm font-semibold text-[#9B87E8]">
-                    {SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(getYearlyPerMonthPrice())}
+                    {isLoadingOfferings
+                      ? 'Loading…'
+                      : SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(getYearlyPerMonthPrice())}
                   </p>
                 </div>
 

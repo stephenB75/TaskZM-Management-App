@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import * as api from '../lib/api';
 import { toast } from 'sonner';
 import { SUBSCRIPTION_UI_TEXT, SUBSCRIPTION_STORAGE_KEY_PREFIX, SUBSCRIPTION_SYNC_INTERVAL } from '../lib/subscription-constants';
+import { configureRevenueCat, resetRevenueCat, getCustomerInfo as getRevenueCatCustomerInfo, isRevenueCatConfigured } from '../lib/revenuecat';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo;
@@ -80,6 +81,57 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   // Derived features based on tier
   const features = getFeatures(subscription.tier);
 
+  // Configure RevenueCat whenever the user changes
+  useEffect(() => {
+    if (!user?.id) {
+      resetRevenueCat();
+      return;
+    }
+
+    configureRevenueCat(user.id).catch((error) => {
+      console.warn('RevenueCat configuration failed (non-blocking):', error);
+    });
+  }, [user?.id]);
+
+  const mergeSubscriptionWithRevenueCat = useCallback(async (current: SubscriptionInfo): Promise<SubscriptionInfo> => {
+    if (!user?.id) return current;
+
+    try {
+      if (!isRevenueCatConfigured()) {
+        await configureRevenueCat(user.id);
+      }
+
+      if (!isRevenueCatConfigured()) {
+        return current;
+      }
+
+      const customerInfo = await getRevenueCatCustomerInfo();
+      const entitlements = customerInfo?.entitlements?.active;
+      if (!entitlements) return current;
+
+      const proKey = Object.keys(entitlements).find((key) => key.toLowerCase().includes('pro'));
+      if (!proKey) {
+        return current;
+      }
+
+      const entitlement = entitlements[proKey];
+      if (!entitlement) {
+        return current;
+      }
+
+      return {
+        tier: 'pro',
+        status: entitlement.willRenew ? 'active' : 'cancelled',
+        startDate: entitlement.latestPurchaseDate?.toISOString?.() ?? current.startDate,
+        endDate: entitlement.expirationDate?.toISOString?.() ?? current.endDate,
+        cancelAtPeriodEnd: !entitlement.willRenew,
+      };
+    } catch (error) {
+      console.warn('RevenueCat entitlement sync failed:', error);
+      return current;
+    }
+  }, [user?.id]);
+
   const loadSubscription = useCallback(async () => {
     if (!user || !accessToken) return;
     try {
@@ -94,19 +146,22 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       
       if (serverSubscription) {
         const normalized = normalizeSubscription(serverSubscription);
-        setSubscription(normalized);
+        const merged = await mergeSubscriptionWithRevenueCat(normalized);
+        setSubscription(merged);
         // Cache in localStorage for offline access
-        localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(normalized));
+        localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(merged));
       } else {
         // Fallback to localStorage cache if server fails (last resort)
         const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            setSubscription(normalizeSubscription(parsed));
+            const merged = await mergeSubscriptionWithRevenueCat(normalizeSubscription(parsed));
+            setSubscription(merged);
           } catch (parseError) {
             console.warn('Failed to parse stored subscription:', parseError);
-            setSubscription(normalizeSubscription(null));
+            const fallback = await mergeSubscriptionWithRevenueCat(normalizeSubscription(null));
+            setSubscription(fallback);
           }
         }
       }
@@ -117,20 +172,23 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
         if (stored) {
           const parsed = JSON.parse(stored);
-          setSubscription(normalizeSubscription(parsed));
+          const merged = await mergeSubscriptionWithRevenueCat(normalizeSubscription(parsed));
+          setSubscription(merged);
         } else {
           // If no stored cache, use default free tier (safe default)
-          setSubscription(normalizeSubscription(null));
+          const fallback = await mergeSubscriptionWithRevenueCat(normalizeSubscription(null));
+          setSubscription(fallback);
         }
       } catch (e) {
         console.warn('Failed to load from localStorage cache, using default:', e);
         // Last resort: use default free tier (safe default)
-        setSubscription(normalizeSubscription(null));
+        const fallback = await mergeSubscriptionWithRevenueCat(normalizeSubscription(null));
+        setSubscription(fallback);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [user, accessToken]);
+  }, [user, accessToken, mergeSubscriptionWithRevenueCat]);
 
   const refreshSubscription = useCallback(async () => {
     console.log('🔄 Refreshing subscription status from backend...');

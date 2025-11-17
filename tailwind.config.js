@@ -1,41 +1,35 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
-    "./index.html",
-    "./App.tsx",
-    "./main.tsx",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    "./contexts/**/*.{js,ts,jsx,tsx}",
-    "./hooks/**/*.{js,ts,jsx,tsx}",
-    "./lib/**/*.{js,ts,jsx,tsx}",
+    "./src/index.html",
+    "./src/App.tsx",
+    "./src/main.tsx",
+    "./src/components/**/*.{js,ts,jsx,tsx}",
+    "./src/contexts/**/*.{js,ts,jsx,tsx}",
+    "./src/hooks/**/*.{js,ts,jsx,tsx}",
+    "./src/lib/**/*.{js,ts,jsx,tsx}",
   ],
-  // Safelist critical gradient colors used in AuthScreen and App
   safelist: [
-    // AuthScreen gradient overlay colors
     'from-[#B4E4FF]/90',
     'via-[#E0BBE4]/85',
     'to-[#FFDAB9]/90',
     'from-[#FAF9FC]',
     'via-[#F9F7FD]',
     'to-[#F3F0F9]',
-    // AuthScreen animated circles
     'bg-[#98D8C8]/30',
     'bg-[#DDA0DD]/30',
-    // Feature card gradients
     'from-[#B4E4FF]',
     'to-[#98D8C8]',
     'from-[#DDA0DD]',
     'to-[#E0BBE4]',
     'from-[#FFDAB9]',
     'to-[#FFB6C1]',
-    // Glass effect backgrounds
     'bg-white/70',
     'bg-white/80',
     'bg-gray-900/70',
     'bg-gray-900/80',
     'bg-gray-900/95',
     'border-white/50',
-    // blur utilities
     'blur-3xl',
     'backdrop-blur-sm',
     'backdrop-blur-md',
@@ -44,7 +38,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Pastel palette
         'pastel-mint': '#B8E6D5',
         'pastel-lavender': '#E6D5F0',
         'pastel-peach': '#FFD6BA',
@@ -53,8 +46,6 @@ export default {
         'pastel-pink': '#FFD6E8',
         'pastel-yellow': '#FFF4CC',
         'pastel-sage': '#D4E8D4',
-        
-        // Theme colors
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         card: {
@@ -132,4 +123,5 @@ export default {
     },
   },
   plugins: [require('tailwindcss-animate')],
-}
+};
+
