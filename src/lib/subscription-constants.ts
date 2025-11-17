@@ -26,6 +26,10 @@ export const DEFAULT_CURRENCY_CODE = "USD";
 export const DEFAULT_MONTHLY_TITLE = "Monthly Pro";
 export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 
+// RevenueCat Product IDs (from RevenueCat dashboard)
+export const REVENUECAT_MONTHLY_PRODUCT_ID = 'prodb18a767009';
+export const REVENUECAT_YEARLY_PRODUCT_ID = 'prod77566b1baf';
+
 // Number of PRO features (for UI display)
 export const PRO_FEATURES_COUNT = 7;
 

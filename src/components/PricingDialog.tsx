@@ -37,7 +37,7 @@ import {
   DEFAULT_YEARLY_PRICE,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
-import { getOfferings, restorePurchases, configureRevenueCat } from "../lib/revenuecat";
+import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription } from "../lib/revenuecat";
 
 interface PricingDialogProps {
   open: boolean;
@@ -205,19 +205,35 @@ export function PricingDialog({
   const handleUpgradeMonthly = async () => {
     try {
       setIsUpgrading(true);
-      const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-
-      if (isDevelopment) {
-        // Development mode: use simulated upgrade
-        await upgradeToPro();
-        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode);
-        onOpenChange(false);
-      } else {
-        // Production: use backend payment processing (Stripe)
-        await upgradeToPro();
-        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
-        onOpenChange(false);
+      
+      if (!user?.id) {
+        throw new Error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
       }
+
+      // Ensure RevenueCat is configured
+      await configureRevenueCat(user.id);
+      
+      // Purchase through RevenueCat
+      const result = await purchaseProSubscription('monthly');
+      
+      if (!result.success) {
+        throw new Error(result.error || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc);
+      }
+
+      // Refresh subscription status from backend (webhook may have updated it)
+      await refreshSubscription();
+      
+      // Show success message
+      if (result.error) {
+        // Purchase completed but entitlement not immediately available
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess, {
+          description: result.error,
+        });
+      } else {
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
+      }
+      
+      onOpenChange(false);
     } catch (error: any) {
       console.error("Monthly upgrade error:", error);
       toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
@@ -231,19 +247,35 @@ export function PricingDialog({
   const handleUpgradeYearly = async () => {
     try {
       setIsUpgrading(true);
-      const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
-
-      if (isDevelopment) {
-        // Development mode: use simulated upgrade
-        await upgradeToPro();
-        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode);
-        onOpenChange(false);
-      } else {
-        // Production: use backend payment processing (Stripe)
-        await upgradeToPro();
-        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
-        onOpenChange(false);
+      
+      if (!user?.id) {
+        throw new Error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
       }
+
+      // Ensure RevenueCat is configured
+      await configureRevenueCat(user.id);
+      
+      // Purchase through RevenueCat
+      const result = await purchaseProSubscription('yearly');
+      
+      if (!result.success) {
+        throw new Error(result.error || SUBSCRIPTION_UI_TEXT.upgrade.failedDesc);
+      }
+
+      // Refresh subscription status from backend (webhook may have updated it)
+      await refreshSubscription();
+      
+      // Show success message
+      if (result.error) {
+        // Purchase completed but entitlement not immediately available
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess, {
+          description: result.error,
+        });
+      } else {
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
+      }
+      
+      onOpenChange(false);
     } catch (error: any) {
       console.error("Yearly upgrade error:", error);
       toast.error(SUBSCRIPTION_UI_TEXT.upgrade.failed, {
