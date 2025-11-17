@@ -37,7 +37,7 @@ import {
   DEFAULT_YEARLY_PRICE,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
-import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription } from "../lib/revenuecat";
+import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured } from "../lib/revenuecat";
 
 interface PricingDialogProps {
   open: boolean;
@@ -75,15 +75,40 @@ export function PricingDialog({
       await configureRevenueCat(user.id);
       const rcOfferings = await getOfferings();
 
-      if (!rcOfferings.monthly && !rcOfferings.yearly) {
-        setOfferingsError(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
+      // Only show error if RevenueCat is configured but returned no offerings
+      // If RevenueCat is not configured, we'll use fallback pricing (no error)
+      const hasMonthly = rcOfferings.monthly !== null;
+      const hasYearly = rcOfferings.yearly !== null;
+      
+      if (!hasMonthly && !hasYearly) {
+        // Check if RevenueCat is configured
+        if (isRevenueCatConfigured()) {
+          // RevenueCat is configured but returned no offerings - this is an error
+          console.warn('⚠️ RevenueCat configured but no offerings returned');
+          setOfferingsError(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
+        } else {
+          // RevenueCat not configured - use fallbacks silently (this is expected)
+          console.log('ℹ️ RevenueCat not configured, using fallback pricing');
+          setOfferingsError(null);
+        }
+      } else {
+        // We have at least one offering from RevenueCat - clear any errors
+        setOfferingsError(null);
       }
 
       setOfferings(rcOfferings);
       onOfferingsUpdated?.();
     } catch (error: any) {
       console.warn('RevenueCat offerings load failed:', error);
-      setOfferingsError(error?.message || SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
+      // Only set error if it's a critical failure
+      // If RevenueCat is not configured, we'll use fallbacks
+      const errorMessage = error?.message || '';
+      if (!errorMessage.includes('not configured') && !errorMessage.includes('API key')) {
+        setOfferingsError(errorMessage || SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
+      } else {
+        // RevenueCat not configured is not an error - we use fallbacks
+        setOfferingsError(null);
+      }
     } finally {
       setIsLoadingOfferings(false);
     }
@@ -177,6 +202,15 @@ export function PricingDialog({
 
   const monthlyOffering = offerings.monthly ?? fallbackMonthly;
   const yearlyOffering = offerings.yearly ?? fallbackYearly;
+  
+  // Clear error if we have valid offerings available (fallbacks are valid)
+  // This ensures the error doesn't persist when fallback pricing is being used
+  React.useEffect(() => {
+    if (monthlyOffering && yearlyOffering && offeringsError) {
+      // We have both offerings (from RevenueCat or fallbacks) - clear error
+      setOfferingsError(null);
+    }
+  }, [monthlyOffering, yearlyOffering, offeringsError]);
   const formatPrice = (price: string) => (isLoadingOfferings ? 'Loading…' : price);
   const formatDescription = (description: string) =>
     isLoadingOfferings ? 'Fetching latest pricing…' : description;
