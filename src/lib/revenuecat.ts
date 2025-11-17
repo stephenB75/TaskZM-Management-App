@@ -15,27 +15,51 @@ const DEFAULT_YEARLY_PRICE = "$39.99";
 
 // Lazy load the RevenueCat SDK
 async function loadRevenueCatSDK() {
+  // Safety check: only load in browser environment
+  if (typeof window === 'undefined') {
+    console.debug('RevenueCat SDK: Skipping load (not in browser)');
+    return null;
+  }
+
   if (Purchases) {
     return Purchases;
   }
   
   if (isInitializing) {
-    // Wait for initialization to complete
-    while (isInitializing) {
+    // Wait for initialization to complete (with timeout)
+    let waitCount = 0;
+    const maxWait = 50; // 5 seconds max wait
+    while (isInitializing && waitCount < maxWait) {
       await new Promise(resolve => setTimeout(resolve, 100));
+      waitCount++;
     }
     return Purchases;
   }
   
   isInitializing = true;
   try {
+    // Additional safety: check if we're in a valid environment
+    if (typeof import === 'undefined' || typeof import.meta === 'undefined') {
+      console.warn('⚠️ RevenueCat SDK: Dynamic imports not available');
+      isInitializing = false;
+      return null;
+    }
+
     const module = await import('@revenuecat/purchases-js');
+    
+    // Validate the module structure
+    if (!module || typeof module.Purchases !== 'function') {
+      console.error('❌ RevenueCat SDK: Invalid module structure', module);
+      isInitializing = false;
+      return null;
+    }
+    
     Purchases = module.Purchases;
     isInitializing = false;
     return Purchases;
-  } catch (error) {
+  } catch (error: any) {
     isInitializing = false;
-    console.error('Failed to load RevenueCat SDK:', error);
+    console.error('❌ Failed to load RevenueCat SDK:', error);
     // Return null instead of throwing to allow graceful degradation
     return null;
   }
@@ -46,9 +70,21 @@ async function loadRevenueCatSDK() {
  */
 export async function configureRevenueCat(userId: string, forceReconfigure = false): Promise<void> {
   try {
+    // Safety check: only configure in browser environment
+    if (typeof window === 'undefined') {
+      console.debug('RevenueCat: Skipping configuration (not in browser)');
+      return;
+    }
+
     // Validate user ID
     if (!userId || typeof userId !== 'string') {
       console.warn('⚠️ Invalid user ID provided to RevenueCat');
+      return;
+    }
+
+    // Safety check: ensure import.meta.env is available
+    if (typeof import === 'undefined' || typeof import.meta === 'undefined' || !import.meta.env) {
+      console.warn('⚠️ RevenueCat: Environment variables not available');
       return;
     }
 
@@ -73,23 +109,51 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
         return;
       }
 
+      // Validate RC.configure exists and is a function
+      if (typeof RC.configure !== 'function') {
+        console.error('❌ RevenueCat SDK: configure is not a function', RC);
+        return;
+      }
+
       // Initialize or reconfigure
       if (!purchasesInstance || forceReconfigure) {
         try {
+          // Additional validation before calling configure
+          if (!apiKey || typeof apiKey !== 'string') {
+            console.error('❌ RevenueCat: Invalid API key');
+            return;
+          }
+          
           purchasesInstance = RC.configure({
             apiKey,
             appUserId: userId,
           });
+          
+          // Validate the instance was created
+          if (!purchasesInstance) {
+            console.error('❌ RevenueCat: configure returned null/undefined');
+            return;
+          }
+          
           isConfigured = true;
           console.log('✅ RevenueCat configured successfully');
         } catch (configError: any) {
           console.error('❌ RevenueCat configuration error:', configError);
+          // Reset state on error
+          purchasesInstance = null;
+          isConfigured = false;
           // Don't throw - allow app to continue without RevenueCat
           return;
         }
       } else {
         // Update user ID if changed
         try {
+          // Validate logIn method exists
+          if (typeof purchasesInstance.logIn !== 'function') {
+            console.error('❌ RevenueCat: logIn is not a function');
+            return;
+          }
+          
           await purchasesInstance.logIn(userId);
           isConfigured = true;
         } catch (loginError: any) {
@@ -115,6 +179,11 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
  */
 export function isRevenueCatConfigured(): boolean {
   try {
+    // Safety check: only in browser
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    
     return isConfigured && purchasesInstance !== null && Purchases !== null;
   } catch (error) {
     // Safety check - if anything throws, assume not configured
@@ -140,6 +209,11 @@ export async function getOfferings(forceRefresh = false): Promise<{
   } | null;
 }> {
   try {
+    // Safety check: only in browser
+    if (typeof window === 'undefined') {
+      return { monthly: null, yearly: null };
+    }
+
     // Ensure SDK is loaded and configured
     if (!purchasesInstance) {
       // Try to ensure SDK is loaded, but don't configure (that's done separately)
@@ -148,6 +222,12 @@ export async function getOfferings(forceRefresh = false): Promise<{
         console.warn('⚠️ RevenueCat not configured, returning null offerings');
         return { monthly: null, yearly: null };
       }
+    }
+
+    // Validate getOfferings method exists
+    if (typeof purchasesInstance.getOfferings !== 'function') {
+      console.error('❌ RevenueCat: getOfferings is not a function');
+      return { monthly: null, yearly: null };
     }
 
     let offerings;
@@ -233,12 +313,22 @@ export async function purchaseProSubscription(
   packageIdentifier: 'monthly' | 'yearly'
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Safety check: only in browser
+    if (typeof window === 'undefined') {
+      return { success: false, error: 'Not available in this environment' };
+    }
+
     // Ensure SDK is loaded and configured
     if (!purchasesInstance) {
       await loadRevenueCatSDK();
       if (!purchasesInstance) {
         return { success: false, error: 'RevenueCat not configured. Please refresh the page and try again.' };
       }
+    }
+
+    // Validate getOfferings method exists
+    if (typeof purchasesInstance.getOfferings !== 'function') {
+      return { success: false, error: 'RevenueCat SDK not properly initialized' };
     }
 
     let offerings;
@@ -292,6 +382,11 @@ export async function purchaseProSubscription(
 
     if (!selectedPackage) {
       throw new Error(`${packageIdentifier} subscription package not found`);
+    }
+
+    // Validate purchasePackage method exists
+    if (typeof purchasesInstance.purchasePackage !== 'function') {
+      throw new Error('RevenueCat purchase method not available');
     }
 
     // Purchase through RevenueCat (which handles Stripe for web)
@@ -353,7 +448,30 @@ export async function getSubscriptionStatus(): Promise<{
   cancelAtPeriodEnd: boolean;
 }> {
   try {
+    // Safety check: only in browser
+    if (typeof window === 'undefined') {
+      return {
+        tier: 'free',
+        status: 'inactive',
+        startDate: null,
+        endDate: null,
+        cancelAtPeriodEnd: false,
+      };
+    }
+
     if (!purchasesInstance) {
+      return {
+        tier: 'free',
+        status: 'inactive',
+        startDate: null,
+        endDate: null,
+        cancelAtPeriodEnd: false,
+      };
+    }
+
+    // Validate getCustomerInfo method exists
+    if (typeof purchasesInstance.getCustomerInfo !== 'function') {
+      console.error('❌ RevenueCat: getCustomerInfo is not a function');
       return {
         tier: 'free',
         status: 'inactive',
@@ -433,12 +551,22 @@ export async function getSubscriptionStatus(): Promise<{
  */
 export async function restorePurchases(): Promise<{ success: boolean; error?: string }> {
   try {
+    // Safety check: only in browser
+    if (typeof window === 'undefined') {
+      return { success: false, error: 'Not available in this environment' };
+    }
+
     // Ensure SDK is loaded and configured
     if (!purchasesInstance) {
       await loadRevenueCatSDK();
       if (!purchasesInstance) {
         return { success: false, error: 'RevenueCat not configured. Please refresh the page and try again.' };
       }
+    }
+
+    // Validate restorePurchases method exists
+    if (typeof purchasesInstance.restorePurchases !== 'function') {
+      return { success: false, error: 'RevenueCat SDK not properly initialized' };
     }
 
     let restoreResult;
