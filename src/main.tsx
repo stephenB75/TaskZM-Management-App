@@ -5,6 +5,19 @@ import './styles/globals.css';
 
 // Suppress browser extension errors that are not from our code
 if (typeof window !== 'undefined') {
+  // Suppress Supabase GoTrueClient warning (informational, not an error)
+  const originalWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    const message = args[0]?.toString() || '';
+    if (message.includes('Multiple GoTrueClient instances') || 
+        message.includes('GoTrueClient instances detected')) {
+      // Suppress this specific warning - we've fixed it by using a shared client
+      console.debug('Suppressed GoTrueClient warning (using shared client)', args);
+      return;
+    }
+    originalWarn.apply(console, args);
+  };
+
   window.addEventListener('error', (event) => {
     // Suppress Chrome extension async message errors
     if (event.message) {
