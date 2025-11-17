@@ -237,27 +237,37 @@ export function PricingDialog({
     const loadOfferings = async () => {
       setIsLoadingOfferings(true);
       try {
-        if (isRevenueCatConfigured()) {
-          const rcOfferings = await getOfferings(true);
-          setOfferings(rcOfferings);
-          onOfferingsUpdated?.();
-        } else {
-          // Fallback to constants if RevenueCat not configured
-          setOfferings({
-            monthly: {
-              priceString: DEFAULT_MONTHLY_PRICE,
-              title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
-              description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
-              package: null,
-            },
-            yearly: {
-              priceString: DEFAULT_YEARLY_PRICE,
-              title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
-              description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
-              package: null,
-            },
-          });
+        // Always try to load from RevenueCat if available, but fallback gracefully
+        try {
+          if (isRevenueCatConfigured()) {
+            const rcOfferings = await getOfferings(true);
+            // Only use RevenueCat offerings if they have valid data
+            if (rcOfferings.monthly || rcOfferings.yearly) {
+              setOfferings(rcOfferings);
+              onOfferingsUpdated?.();
+              setIsLoadingOfferings(false);
+              return;
+            }
+          }
+        } catch (rcError) {
+          console.warn('RevenueCat offerings failed, using fallback:', rcError);
         }
+        
+        // Fallback to constants if RevenueCat not configured or failed
+        setOfferings({
+          monthly: {
+            priceString: DEFAULT_MONTHLY_PRICE,
+            title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
+            description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
+            package: null,
+          },
+          yearly: {
+            priceString: DEFAULT_YEARLY_PRICE,
+            title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
+            description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
+            package: null,
+          },
+        });
       } catch (error) {
         console.error('Failed to load offerings:', error);
         // Fallback to constants on error

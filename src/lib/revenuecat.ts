@@ -36,7 +36,8 @@ async function loadRevenueCatSDK() {
   } catch (error) {
     isInitializing = false;
     console.error('Failed to load RevenueCat SDK:', error);
-    throw error;
+    // Return null instead of throwing to allow graceful degradation
+    return null;
   }
 }
 
@@ -45,6 +46,12 @@ async function loadRevenueCatSDK() {
  */
 export async function configureRevenueCat(userId: string, forceReconfigure = false): Promise<void> {
   try {
+    // Validate user ID
+    if (!userId || typeof userId !== 'string') {
+      console.warn('⚠️ Invalid user ID provided to RevenueCat');
+      return;
+    }
+
     const apiKey = import.meta.env.VITE_REVENUECAT_WEB_PUBLIC_KEY;
     
     if (!apiKey) {
@@ -53,33 +60,53 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
     }
 
     // Skip reconfiguration if already configured and not forcing
-    if (isConfigured && !forceReconfigure) {
+    if (isConfigured && !forceReconfigure && purchasesInstance) {
       return;
     }
 
     // Lazy load SDK if not already loaded
-    const RC = await loadRevenueCatSDK();
-    
-    if (!RC) {
-      throw new Error('Failed to load RevenueCat SDK');
-    }
+    try {
+      const RC = await loadRevenueCatSDK();
+      
+      if (!RC) {
+        console.error('❌ Failed to load RevenueCat SDK');
+        return;
+      }
 
-    // Initialize or reconfigure
-    if (!purchasesInstance || forceReconfigure) {
-      purchasesInstance = RC.configure({
-        apiKey,
-        appUserId: userId,
-      });
-    } else {
-      // Update user ID if changed
-      await purchasesInstance.logIn(userId);
+      // Initialize or reconfigure
+      if (!purchasesInstance || forceReconfigure) {
+        try {
+          purchasesInstance = RC.configure({
+            apiKey,
+            appUserId: userId,
+          });
+          isConfigured = true;
+          console.log('✅ RevenueCat configured successfully');
+        } catch (configError: any) {
+          console.error('❌ RevenueCat configuration error:', configError);
+          // Don't throw - allow app to continue without RevenueCat
+          return;
+        }
+      } else {
+        // Update user ID if changed
+        try {
+          await purchasesInstance.logIn(userId);
+          isConfigured = true;
+        } catch (loginError: any) {
+          console.error('❌ RevenueCat login error:', loginError);
+          // Don't throw - allow app to continue
+          return;
+        }
+      }
+    } catch (loadError: any) {
+      console.error('❌ Failed to load RevenueCat SDK:', loadError);
+      // Don't throw - allow app to continue without RevenueCat
+      return;
     }
-
-    isConfigured = true;
-    console.log('✅ RevenueCat configured successfully');
   } catch (error: any) {
     console.error('❌ RevenueCat configuration failed:', error);
-    throw error;
+    // Don't throw - allow app to continue without RevenueCat
+    // The app should work in a degraded mode without RevenueCat
   }
 }
 
@@ -87,7 +114,12 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
  * Check if RevenueCat is configured
  */
 export function isRevenueCatConfigured(): boolean {
-  return isConfigured && purchasesInstance !== null && Purchases !== null;
+  try {
+    return isConfigured && purchasesInstance !== null && Purchases !== null;
+  } catch (error) {
+    // Safety check - if anything throws, assume not configured
+    return false;
+  }
 }
 
 /**
@@ -108,13 +140,25 @@ export async function getOfferings(forceRefresh = false): Promise<{
   } | null;
 }> {
   try {
+    // Ensure SDK is loaded and configured
     if (!purchasesInstance) {
-      throw new Error('RevenueCat not configured');
+      // Try to ensure SDK is loaded, but don't configure (that's done separately)
+      await loadRevenueCatSDK();
+      if (!purchasesInstance) {
+        console.warn('⚠️ RevenueCat not configured, returning null offerings');
+        return { monthly: null, yearly: null };
+      }
     }
 
-    const offerings = await purchasesInstance.getOfferings();
+    let offerings;
+    try {
+      offerings = await purchasesInstance.getOfferings();
+    } catch (error: any) {
+      console.error('Failed to get offerings:', error);
+      return { monthly: null, yearly: null };
+    }
     
-    if (!offerings.current) {
+    if (!offerings?.current) {
       console.warn('⚠️ RevenueCat has no current offering');
       return { monthly: null, yearly: null };
     }
@@ -189,13 +233,22 @@ export async function purchaseProSubscription(
   packageIdentifier: 'monthly' | 'yearly'
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Ensure SDK is loaded and configured
     if (!purchasesInstance) {
-      throw new Error('RevenueCat not configured');
+      await loadRevenueCatSDK();
+      if (!purchasesInstance) {
+        return { success: false, error: 'RevenueCat not configured. Please refresh the page and try again.' };
+      }
     }
 
-    const offerings = await purchasesInstance.getOfferings();
+    let offerings;
+    try {
+      offerings = await purchasesInstance.getOfferings();
+    } catch (error: any) {
+      throw new Error(`Failed to load offerings: ${error?.message || 'Unknown error'}`);
+    }
     
-    if (!offerings.current) {
+    if (!offerings?.current) {
       throw new Error('No subscription offerings available');
     }
 
@@ -242,13 +295,25 @@ export async function purchaseProSubscription(
     }
 
     // Purchase through RevenueCat (which handles Stripe for web)
-    const { customerInfo } = await purchasesInstance.purchasePackage(selectedPackage);
+    let purchaseResult;
+    try {
+      purchaseResult = await purchasesInstance.purchasePackage(selectedPackage);
+    } catch (purchaseError: any) {
+      throw purchaseError; // Re-throw to be caught by outer catch
+    }
+    
+    // Handle different return formats from RevenueCat SDK
+    const customerInfo = purchaseResult?.customerInfo || purchaseResult;
+    
+    if (!customerInfo) {
+      throw new Error('Purchase completed but no customer info returned');
+    }
     
     // Check if purchase was successful
     const hasActiveEntitlement = 
-      customerInfo.entitlements?.active?.['pro'] ||
-      customerInfo.entitlements?.active?.['PRO-Monthly'] ||
-      customerInfo.entitlements?.active?.['PRO-Yearly'];
+      customerInfo?.entitlements?.active?.['pro'] ||
+      customerInfo?.entitlements?.active?.['PRO-Monthly'] ||
+      customerInfo?.entitlements?.active?.['PRO-Yearly'];
 
     if (hasActiveEntitlement) {
       return { success: true };
@@ -260,16 +325,16 @@ export async function purchaseProSubscription(
     
     // Extract error message
     let errorMessage = 'Purchase failed';
-    if (error.message) {
+    if (error?.message) {
       errorMessage = error.message;
-    } else if (error.underlyingErrorMessage) {
+    } else if (error?.underlyingErrorMessage) {
       errorMessage = error.underlyingErrorMessage;
     } else if (typeof error === 'string') {
       errorMessage = error;
     }
 
     // Check for user cancellation
-    if (error.userCancelled || errorMessage.toLowerCase().includes('cancel')) {
+    if (error?.userCancelled || errorMessage.toLowerCase().includes('cancel')) {
       errorMessage = 'Purchase was cancelled';
     }
 
@@ -298,7 +363,29 @@ export async function getSubscriptionStatus(): Promise<{
       };
     }
 
-    const customerInfo = await purchasesInstance.getCustomerInfo();
+    let customerInfo;
+    try {
+      customerInfo = await purchasesInstance.getCustomerInfo();
+    } catch (error: any) {
+      console.error('Failed to get customer info:', error);
+      return {
+        tier: 'free',
+        status: 'inactive',
+        startDate: null,
+        endDate: null,
+        cancelAtPeriodEnd: false,
+      };
+    }
+    
+    if (!customerInfo) {
+      return {
+        tier: 'free',
+        status: 'inactive',
+        startDate: null,
+        endDate: null,
+        cancelAtPeriodEnd: false,
+      };
+    }
     
     // Check for active entitlements
     const hasProEntitlement = 
@@ -346,11 +433,31 @@ export async function getSubscriptionStatus(): Promise<{
  */
 export async function restorePurchases(): Promise<{ success: boolean; error?: string }> {
   try {
+    // Ensure SDK is loaded and configured
     if (!purchasesInstance) {
-      throw new Error('RevenueCat not configured');
+      await loadRevenueCatSDK();
+      if (!purchasesInstance) {
+        return { success: false, error: 'RevenueCat not configured. Please refresh the page and try again.' };
+      }
     }
 
-    const customerInfo = await purchasesInstance.restorePurchases();
+    let restoreResult;
+    try {
+      restoreResult = await purchasesInstance.restorePurchases();
+    } catch (error: any) {
+      console.error('Failed to restore purchases:', error);
+      return { 
+        success: false, 
+        error: error?.message || 'Failed to restore purchases' 
+      };
+    }
+    
+    // Handle different return formats from RevenueCat SDK
+    const customerInfo = restoreResult?.customerInfo || restoreResult;
+    
+    if (!customerInfo) {
+      return { success: false, error: 'No customer info returned from restore' };
+    }
     
     // Check if restore was successful
     const hasActiveEntitlement = 
@@ -377,11 +484,25 @@ export async function restorePurchases(): Promise<{ success: boolean; error?: st
  */
 export async function openCustomerPortal(): Promise<string | null> {
   try {
+    // Ensure SDK is loaded and configured
     if (!purchasesInstance) {
-      throw new Error('RevenueCat not configured');
+      await loadRevenueCatSDK();
+      if (!purchasesInstance) {
+        throw new Error('RevenueCat not configured. Please refresh the page and try again.');
+      }
     }
 
-    const customerInfo = await purchasesInstance.getCustomerInfo();
+    let customerInfo;
+    try {
+      customerInfo = await purchasesInstance.getCustomerInfo();
+    } catch (error: any) {
+      console.error('Failed to get customer info:', error);
+      throw new Error('Unable to retrieve customer information');
+    }
+    
+    if (!customerInfo) {
+      throw new Error('Unable to retrieve customer information');
+    }
     
     // Check if user has a subscription managed by RevenueCat/Stripe
     const hasStripeSubscription = 
@@ -409,12 +530,19 @@ export async function openCustomerPortal(): Promise<string | null> {
 export async function resetRevenueCat(): Promise<void> {
   try {
     if (purchasesInstance) {
-      await purchasesInstance.logOut();
+      try {
+        await purchasesInstance.logOut();
+      } catch (logoutError: any) {
+        // Silently handle logout errors - they're non-critical
+        console.debug('RevenueCat logout error (non-critical):', logoutError);
+      }
       purchasesInstance = null;
       isConfigured = false;
     }
+    // Don't reset Purchases class itself - keep it loaded for future use
   } catch (error: any) {
-    console.error('❌ Failed to reset RevenueCat:', error);
+    // Silently handle - reset is best-effort and shouldn't crash the app
+    console.debug('RevenueCat reset error (non-critical):', error);
   }
 }
 
