@@ -119,14 +119,24 @@ export function PricingDialog({
 
   const calculateSavings = () => {
     // Calculate savings between monthly and yearly
-    const monthlyPrice = 3.99;
-    const yearlyPrice = 39.99;
+    // Extract numeric values from price strings (e.g., "$3.99" -> 3.99)
+    const monthlyPriceStr = DEFAULT_MONTHLY_PRICE.replace(/[^0-9.]/g, '');
+    const yearlyPriceStr = DEFAULT_YEARLY_PRICE.replace(/[^0-9.]/g, '');
+    const monthlyPrice = parseFloat(monthlyPriceStr) || 0;
+    const yearlyPrice = parseFloat(yearlyPriceStr) || 0;
     const yearlyEquivalent = monthlyPrice * 12;
     if (yearlyEquivalent === 0) return 0;
     return Math.round(((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100);
   };
 
   const savings = calculateSavings();
+  
+  // Calculate per-month price for yearly plan
+  const getYearlyPerMonthPrice = () => {
+    const yearlyPriceStr = DEFAULT_YEARLY_PRICE.replace(/[^0-9.]/g, '');
+    const yearlyPrice = parseFloat(yearlyPriceStr) || 0;
+    return (yearlyPrice / 12).toFixed(2);
+  };
 
   const handleUpgradeMonthly = async () => {
     try {
@@ -241,7 +251,7 @@ export function PricingDialog({
   const freeTierFeatures = FREE_TIER_FEATURES;
   const proTierFeatures = PRO_TIER_FEATURES;
 
-  // Static pricing (can be moved to backend API later)
+  // Pricing from constants
   const monthlyOffering = {
     priceString: DEFAULT_MONTHLY_PRICE,
     title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
@@ -452,7 +462,7 @@ export function PricingDialog({
                     </Badge>
                   )}
                   <p className="text-xs md:text-sm font-semibold text-[#9B87E8]">
-                    {SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel((39.99 / 12).toFixed(2))}
+                    {SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(getYearlyPerMonthPrice())}
                   </p>
                 </div>
 
