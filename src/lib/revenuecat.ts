@@ -291,16 +291,46 @@ export async function getOfferings(): Promise<{
 
     console.log('📦 RevenueCat offerings received:', {
       hasCurrent: !!offerings?.current,
+      currentOfferingId: offerings?.current?.identifier,
       packageCount: availablePackages.length,
-      packages: availablePackages.map((pkg: any) => ({
-        identifier: pkg?.identifier,
-        hasStoreProduct: !!pkg?.storeProduct,
-        hasRcBillingProduct: !!pkg?.rcBillingProduct,
-        hasProduct: !!pkg?.product,
-        storeProductKeys: pkg?.storeProduct ? Object.keys(pkg.storeProduct) : [],
-        rcBillingProductKeys: pkg?.rcBillingProduct ? Object.keys(pkg.rcBillingProduct) : [],
-      })),
+      allOfferings: offerings?.all ? Object.keys(offerings.all) : [],
+      packages: availablePackages.map((pkg: any) => {
+        const product = pkg?.storeProduct || pkg?.rcBillingProduct || pkg?.product;
+        const priceObj = product?.price;
+        return {
+          identifier: pkg?.identifier,
+          productIds: {
+            storeProduct: pkg?.storeProduct?.identifier || 'N/A',
+            rcBillingProduct: pkg?.rcBillingProduct?.identifier || 'N/A',
+            product: pkg?.product?.identifier || 'N/A',
+          },
+          hasStoreProduct: !!pkg?.storeProduct,
+          hasRcBillingProduct: !!pkg?.rcBillingProduct,
+          hasProduct: !!pkg?.product,
+          priceInfo: {
+            priceString: product?.priceString || 'N/A',
+            formattedPrice: product?.formattedPrice || 'N/A',
+            priceObject: priceObj ? {
+              amount: priceObj.amount,
+              amountMicros: priceObj.amountMicros,
+              currency: priceObj.currency,
+            } : 'N/A',
+            displayName: product?.displayName || 'N/A',
+          },
+          title: product?.title || product?.displayName || 'N/A',
+        };
+      }),
     });
+    
+    // Warn if only one package found when we expect two
+    if (availablePackages.length === 1) {
+      console.warn('⚠️ Only ONE package found in RevenueCat offering, but TWO products exist in dashboard!');
+      console.warn('   This usually means:');
+      console.warn('   1. Only one package is added to the current offering');
+      console.warn('   2. The second package needs to be added to the offering');
+      console.warn('   3. Check RevenueCat Dashboard → Offerings → Current Offering → Packages');
+      console.warn('   4. Both "Monthly Subscription" and "Yearly Subscription" packages must be in the offering');
+    }
 
     // Use the same package finding logic as purchase flow for consistency
     const monthlyPkg = findPackageByType(availablePackages, offerings, 'monthly');
@@ -352,7 +382,26 @@ export async function getOfferings(): Promise<{
         priceString = product.priceString;
       } else if (typeof product.formattedPrice === 'string' && product.formattedPrice.trim() !== '') {
         priceString = product.formattedPrice;
-      } else if (product.price !== undefined && product.price !== null) {
+      } 
+      // Check for Web Billing price object format: {amount: 499, amountMicros: 4990000, currency: 'USD'}
+      else if (product.price && typeof product.price === 'object' && product.price !== null) {
+        const priceObj = product.price as any;
+        if (priceObj.amount !== undefined && priceObj.currency) {
+          // amountMicros is in micros (1/1,000,000 of currency unit), amount is in cents
+          // For USD: amount 499 = $4.99, amountMicros 4990000 = $4.99
+          const amount = priceObj.amountMicros 
+            ? priceObj.amountMicros / 1000000  // Convert micros to dollars
+            : (priceObj.amount / 100);  // Convert cents to dollars
+          
+          if (!isNaN(amount) && isFinite(amount) && amount > 0) {
+            const currency = priceObj.currency || 'USD';
+            const currencySymbol = currency === 'USD' ? '$' : currency;
+            priceString = `${currencySymbol}${amount.toFixed(2)}`;
+          }
+        }
+      }
+      // Fallback: try numeric price
+      else if (product.price !== undefined && product.price !== null) {
         // Construct from price and currency
         const priceNum = typeof product.price === 'number' 
           ? product.price 
@@ -362,7 +411,9 @@ export async function getOfferings(): Promise<{
         if (!isNaN(priceNum) && isFinite(priceNum) && priceNum > 0) {
           const currency = product.currencyCode || 'USD';
           const currencySymbol = currency === 'USD' ? '$' : currency;
-          priceString = `${currencySymbol}${priceNum.toFixed(2)}`;
+          // If price is in cents (like 499), divide by 100
+          const finalPrice = priceNum > 1000 ? priceNum / 100 : priceNum;
+          priceString = `${currencySymbol}${finalPrice.toFixed(2)}`;
         }
       }
       
