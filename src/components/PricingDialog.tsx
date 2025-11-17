@@ -37,7 +37,6 @@ import {
   DEFAULT_YEARLY_PRICE,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
-import { getOfferings, purchaseProSubscription, restorePurchases as rcRestorePurchases, isRevenueCatConfigured } from "../lib/revenuecat";
 
 interface PricingDialogProps {
   open: boolean;
@@ -56,11 +55,22 @@ export function PricingDialog({
   const [isRestoring, setIsRestoring] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [isDowngrading, setIsDowngrading] = React.useState(false);
-  const [offerings, setOfferings] = React.useState<{
-    monthly: { priceString: string; title: string; description: string; package: any } | null;
-    yearly: { priceString: string; title: string; description: string; package: any } | null;
-  }>({ monthly: null, yearly: null });
-  const [isLoadingOfferings, setIsLoadingOfferings] = React.useState(true);
+  // Static pricing from constants
+  const [offerings] = React.useState<{
+    monthly: { priceString: string; title: string; description: string } | null;
+    yearly: { priceString: string; title: string; description: string } | null;
+  }>({
+    monthly: {
+      priceString: DEFAULT_MONTHLY_PRICE,
+      title: SUBSCRIPTION_UI_TEXT.monthly.title,
+      description: SUBSCRIPTION_UI_TEXT.monthly.description,
+    },
+    yearly: {
+      priceString: DEFAULT_YEARLY_PRICE,
+      title: SUBSCRIPTION_UI_TEXT.yearly.title,
+      description: SUBSCRIPTION_UI_TEXT.yearly.description,
+    },
+  });
 
   const platform = getPlatform();
   const { user } = useAuth();
@@ -68,24 +78,10 @@ export function PricingDialog({
   const handleRestore = async () => {
     try {
       setIsRestoring(true);
-      
-      // Restore purchases through RevenueCat
-      if (isRevenueCatConfigured()) {
-        const result = await rcRestorePurchases();
-        if (result.success) {
-          // Refresh subscription status from backend
-          await refreshSubscription();
-          toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored);
-          onOpenChange(false);
-        } else {
-          throw new Error(result.error || 'No active subscription found');
-        }
-      } else {
-        // Fallback: just refresh from backend
-        await refreshSubscription();
-        toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored);
-        onOpenChange(false);
-      }
+      // Refresh subscription status from backend
+      await refreshSubscription();
+      toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored);
+      onOpenChange(false);
     } catch (error: any) {
       toast.error(SUBSCRIPTION_UI_TEXT.messages.restoreFailed, {
         description: error.message,
@@ -161,28 +157,18 @@ export function PricingDialog({
   const handleUpgradeMonthly = async () => {
     try {
       setIsUpgrading(true);
-      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
 
-      if (isProduction && isRevenueCatConfigured()) {
-        // In production, use RevenueCat for purchase (handles Stripe automatically)
-        const result = await purchaseProSubscription('monthly');
-        
-        if (result.success) {
-          // Refresh subscription status from backend
-          await refreshSubscription();
-          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
-          onOpenChange(false);
-        } else {
-          throw new Error(result.error || 'Purchase failed');
-        }
-      } else if (isDevelopment) {
+      if (isDevelopment) {
         // Development mode: use simulated upgrade
         await upgradeToPro();
         toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode);
         onOpenChange(false);
       } else {
-        throw new Error('Payment system not configured. Please refresh the page and try again.');
+        // Production: use backend payment processing (Stripe)
+        await upgradeToPro();
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
+        onOpenChange(false);
       }
     } catch (error: any) {
       console.error("Monthly upgrade error:", error);
@@ -197,28 +183,18 @@ export function PricingDialog({
   const handleUpgradeYearly = async () => {
     try {
       setIsUpgrading(true);
-      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
 
-      if (isProduction && isRevenueCatConfigured()) {
-        // In production, use RevenueCat for purchase (handles Stripe automatically)
-        const result = await purchaseProSubscription('yearly');
-        
-        if (result.success) {
-          // Refresh subscription status from backend
-          await refreshSubscription();
-          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
-          onOpenChange(false);
-        } else {
-          throw new Error(result.error || 'Purchase failed');
-        }
-      } else if (isDevelopment) {
+      if (isDevelopment) {
         // Development mode: use simulated upgrade
         await upgradeToPro();
         toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode);
         onOpenChange(false);
       } else {
-        throw new Error('Payment system not configured. Please refresh the page and try again.');
+        // Production: use backend payment processing (Stripe)
+        await upgradeToPro();
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
+        onOpenChange(false);
       }
     } catch (error: any) {
       console.error("Yearly upgrade error:", error);
@@ -230,84 +206,13 @@ export function PricingDialog({
     }
   };
 
-  // Load offerings from RevenueCat when dialog opens
-  React.useEffect(() => {
-    if (!open || !user) return;
-
-    const loadOfferings = async () => {
-      setIsLoadingOfferings(true);
-      try {
-        // Always try to load from RevenueCat if available, but fallback gracefully
-        try {
-          if (isRevenueCatConfigured()) {
-            const rcOfferings = await getOfferings(true);
-            // Only use RevenueCat offerings if they have valid data
-            if (rcOfferings.monthly || rcOfferings.yearly) {
-              setOfferings(rcOfferings);
-              onOfferingsUpdated?.();
-              setIsLoadingOfferings(false);
-              return;
-            }
-          }
-        } catch (rcError) {
-          console.warn('RevenueCat offerings failed, using fallback:', rcError);
-        }
-        
-        // Fallback to constants if RevenueCat not configured or failed
-        setOfferings({
-          monthly: {
-            priceString: DEFAULT_MONTHLY_PRICE,
-            title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
-            description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
-            package: null,
-          },
-          yearly: {
-            priceString: DEFAULT_YEARLY_PRICE,
-            title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
-            description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
-            package: null,
-          },
-        });
-      } catch (error) {
-        console.error('Failed to load offerings:', error);
-        // Fallback to constants on error
-        setOfferings({
-          monthly: {
-            priceString: DEFAULT_MONTHLY_PRICE,
-            title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
-            description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
-            package: null,
-          },
-          yearly: {
-            priceString: DEFAULT_YEARLY_PRICE,
-            title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
-            description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
-            package: null,
-          },
-        });
-      } finally {
-        setIsLoadingOfferings(false);
-      }
-    };
-
-    loadOfferings();
-  }, [open, user, onOfferingsUpdated]);
 
   const freeTierFeatures = FREE_TIER_FEATURES;
   const proTierFeatures = PRO_TIER_FEATURES;
 
-  // Use RevenueCat offerings or fallback to constants
-  const monthlyOffering = offerings.monthly || {
-    priceString: DEFAULT_MONTHLY_PRICE,
-    title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
-    description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
-  };
-
-  const yearlyOffering = offerings.yearly || {
-    priceString: DEFAULT_YEARLY_PRICE,
-    title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
-    description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
-  };
+  // Use static pricing from constants
+  const monthlyOffering = offerings.monthly!;
+  const yearlyOffering = offerings.yearly!;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
