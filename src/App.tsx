@@ -48,6 +48,7 @@ import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
 import { PANEL_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS } from './lib/layout-constants';
+import { configureRevenueCat, resetRevenueCat } from './lib/revenuecat';
 import './styles/globals.css';
 
 function AppContent() {
@@ -105,8 +106,8 @@ function AppContent() {
         console.log('%cℹ️  Payment System Status:', 'font-weight: bold; color: #4A90E2;');
         
         // Payment system status
-        console.log('  • Payment System: Stripe integration');
-        console.log('  • Mode: Production (real payments via Stripe)');
+        console.log('  • Payment System: RevenueCat + Stripe integration');
+        console.log('  • Mode: Production (real payments via RevenueCat/Stripe)');
         
         window?.sessionStorage?.setItem('taskzm_session_info_shown', 'true');
       }
@@ -133,6 +134,22 @@ function AppContent() {
     hasInitializedView.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
+
+  // Initialize RevenueCat when user logs in
+  useEffect(() => {
+    if (!user || isLoading) {
+      // Reset RevenueCat when user logs out
+      if (!user) {
+        resetRevenueCat().catch(console.error);
+      }
+      return;
+    }
+
+    // Configure RevenueCat with user ID
+    configureRevenueCat(user.id, false).catch((error) => {
+      console.warn('RevenueCat initialization failed (non-critical):', error);
+    });
+  }, [user, isLoading]);
 
   // Auto-start tour only for new signups (not existing users)
   useEffect(() => {

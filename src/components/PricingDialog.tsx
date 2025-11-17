@@ -37,6 +37,7 @@ import {
   DEFAULT_YEARLY_PRICE,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
+import { getOfferings, purchaseProSubscription, restorePurchases as rcRestorePurchases, isRevenueCatConfigured } from "../lib/revenuecat";
 
 interface PricingDialogProps {
   open: boolean;
@@ -55,6 +56,11 @@ export function PricingDialog({
   const [isRestoring, setIsRestoring] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [isDowngrading, setIsDowngrading] = React.useState(false);
+  const [offerings, setOfferings] = React.useState<{
+    monthly: { priceString: string; title: string; description: string; package: any } | null;
+    yearly: { priceString: string; title: string; description: string; package: any } | null;
+  }>({ monthly: null, yearly: null });
+  const [isLoadingOfferings, setIsLoadingOfferings] = React.useState(true);
 
   const platform = getPlatform();
   const { user } = useAuth();
@@ -62,10 +68,24 @@ export function PricingDialog({
   const handleRestore = async () => {
     try {
       setIsRestoring(true);
-      // Restore purchases by refreshing subscription from backend
-      await refreshSubscription();
-      toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored);
-      onOpenChange(false);
+      
+      // Restore purchases through RevenueCat
+      if (isRevenueCatConfigured()) {
+        const result = await rcRestorePurchases();
+        if (result.success) {
+          // Refresh subscription status from backend
+          await refreshSubscription();
+          toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored);
+          onOpenChange(false);
+        } else {
+          throw new Error(result.error || 'No active subscription found');
+        }
+      } else {
+        // Fallback: just refresh from backend
+        await refreshSubscription();
+        toast.success(SUBSCRIPTION_UI_TEXT.messages.subscriptionRestored);
+        onOpenChange(false);
+      }
     } catch (error: any) {
       toast.error(SUBSCRIPTION_UI_TEXT.messages.restoreFailed, {
         description: error.message,
@@ -120,8 +140,8 @@ export function PricingDialog({
   const calculateSavings = () => {
     // Calculate savings between monthly and yearly
     // Extract numeric values from price strings (e.g., "$3.99" -> 3.99)
-    const monthlyPriceStr = DEFAULT_MONTHLY_PRICE.replace(/[^0-9.]/g, '');
-    const yearlyPriceStr = DEFAULT_YEARLY_PRICE.replace(/[^0-9.]/g, '');
+    const monthlyPriceStr = monthlyOffering.priceString.replace(/[^0-9.]/g, '');
+    const yearlyPriceStr = yearlyOffering.priceString.replace(/[^0-9.]/g, '');
     const monthlyPrice = parseFloat(monthlyPriceStr) || 0;
     const yearlyPrice = parseFloat(yearlyPriceStr) || 0;
     const yearlyEquivalent = monthlyPrice * 12;
@@ -133,7 +153,7 @@ export function PricingDialog({
   
   // Calculate per-month price for yearly plan
   const getYearlyPerMonthPrice = () => {
-    const yearlyPriceStr = DEFAULT_YEARLY_PRICE.replace(/[^0-9.]/g, '');
+    const yearlyPriceStr = yearlyOffering.priceString.replace(/[^0-9.]/g, '');
     const yearlyPrice = parseFloat(yearlyPriceStr) || 0;
     return (yearlyPrice / 12).toFixed(2);
   };
@@ -144,44 +164,25 @@ export function PricingDialog({
       const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
 
-      if (isProduction) {
-        // In production, redirect to Stripe checkout
-        try {
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/make-server-65e6e67f/create-checkout-session`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${(await import('../utils/supabase/info')).publicAnonKey}`,
-            },
-            body: JSON.stringify({
-              priceId: 'monthly', // Backend will map this to Stripe price ID
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to create checkout session');
-          }
-
-          const { url } = await response.json();
-          if (url) {
-            window.location.href = url;
-            return;
-          }
-        } catch (error: any) {
-          console.error('Checkout error:', error);
-          toast.error(SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailable, {
-            description: error.message || SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailableDesc,
-          });
-          setIsUpgrading(false);
-          return;
+      if (isProduction && isRevenueCatConfigured()) {
+        // In production, use RevenueCat for purchase (handles Stripe automatically)
+        const result = await purchaseProSubscription('monthly');
+        
+        if (result.success) {
+          // Refresh subscription status from backend
+          await refreshSubscription();
+          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
+          onOpenChange(false);
+        } else {
+          throw new Error(result.error || 'Purchase failed');
         }
-      }
-
-      if (isDevelopment) {
+      } else if (isDevelopment) {
         // Development mode: use simulated upgrade
         await upgradeToPro();
         toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode);
         onOpenChange(false);
+      } else {
+        throw new Error('Payment system not configured. Please refresh the page and try again.');
       }
     } catch (error: any) {
       console.error("Monthly upgrade error:", error);
@@ -199,44 +200,25 @@ export function PricingDialog({
       const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
 
-      if (isProduction) {
-        // In production, redirect to Stripe checkout
-        try {
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/make-server-65e6e67f/create-checkout-session`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${(await import('../utils/supabase/info')).publicAnonKey}`,
-            },
-            body: JSON.stringify({
-              priceId: 'yearly', // Backend will map this to Stripe price ID
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to create checkout session');
-          }
-
-          const { url } = await response.json();
-          if (url) {
-            window.location.href = url;
-            return;
-          }
-        } catch (error: any) {
-          console.error('Checkout error:', error);
-          toast.error(SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailable, {
-            description: error.message || SUBSCRIPTION_UI_TEXT.errors.paymentProcessingUnavailableDesc,
-          });
-          setIsUpgrading(false);
-          return;
+      if (isProduction && isRevenueCatConfigured()) {
+        // In production, use RevenueCat for purchase (handles Stripe automatically)
+        const result = await purchaseProSubscription('yearly');
+        
+        if (result.success) {
+          // Refresh subscription status from backend
+          await refreshSubscription();
+          toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeSuccess);
+          onOpenChange(false);
+        } else {
+          throw new Error(result.error || 'Purchase failed');
         }
-      }
-
-      if (isDevelopment) {
+      } else if (isDevelopment) {
         // Development mode: use simulated upgrade
         await upgradeToPro();
         toast.success(SUBSCRIPTION_UI_TEXT.messages.upgradeDevMode);
         onOpenChange(false);
+      } else {
+        throw new Error('Payment system not configured. Please refresh the page and try again.');
       }
     } catch (error: any) {
       console.error("Yearly upgrade error:", error);
@@ -248,17 +230,70 @@ export function PricingDialog({
     }
   };
 
+  // Load offerings from RevenueCat when dialog opens
+  React.useEffect(() => {
+    if (!open || !user) return;
+
+    const loadOfferings = async () => {
+      setIsLoadingOfferings(true);
+      try {
+        if (isRevenueCatConfigured()) {
+          const rcOfferings = await getOfferings(true);
+          setOfferings(rcOfferings);
+          onOfferingsUpdated?.();
+        } else {
+          // Fallback to constants if RevenueCat not configured
+          setOfferings({
+            monthly: {
+              priceString: DEFAULT_MONTHLY_PRICE,
+              title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
+              description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
+              package: null,
+            },
+            yearly: {
+              priceString: DEFAULT_YEARLY_PRICE,
+              title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
+              description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
+              package: null,
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load offerings:', error);
+        // Fallback to constants on error
+        setOfferings({
+          monthly: {
+            priceString: DEFAULT_MONTHLY_PRICE,
+            title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
+            description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
+            package: null,
+          },
+          yearly: {
+            priceString: DEFAULT_YEARLY_PRICE,
+            title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
+            description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
+            package: null,
+          },
+        });
+      } finally {
+        setIsLoadingOfferings(false);
+      }
+    };
+
+    loadOfferings();
+  }, [open, user, onOfferingsUpdated]);
+
   const freeTierFeatures = FREE_TIER_FEATURES;
   const proTierFeatures = PRO_TIER_FEATURES;
 
-  // Pricing from constants
-  const monthlyOffering = {
+  // Use RevenueCat offerings or fallback to constants
+  const monthlyOffering = offerings.monthly || {
     priceString: DEFAULT_MONTHLY_PRICE,
     title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
     description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
   };
 
-  const yearlyOffering = {
+  const yearlyOffering = offerings.yearly || {
     priceString: DEFAULT_YEARLY_PRICE,
     title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
     description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,

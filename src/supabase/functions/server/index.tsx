@@ -2171,6 +2171,97 @@ app.post("/make-server-65e6e67f/create-checkout-session", async (c) => {
 });
 
 // ============================================================================
+// REVENUECAT WEBHOOK
+// ============================================================================
+// Handle RevenueCat webhook events for subscription updates
+
+app.post("/make-server-65e6e67f/revenuecat-webhook", async (c) => {
+  try {
+    const webhookSecret = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
+    
+    if (!webhookSecret) {
+      console.error('RevenueCat webhook secret not configured');
+      return c.json({ error: 'Webhook not configured' }, 500);
+    }
+
+    const signature = c.req.header('Authorization');
+    
+    // Verify webhook signature (RevenueCat sends Authorization header with secret)
+    if (!signature || signature !== `Bearer ${webhookSecret}`) {
+      console.error('Invalid RevenueCat webhook signature');
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const event = await c.req.json();
+    
+    // Extract user ID from event
+    const userId = event.event?.app_user_id || event.app_user_id;
+    
+    if (!userId) {
+      console.error('No user ID in RevenueCat webhook event');
+      return c.json({ error: 'Missing user ID' }, 400);
+    }
+
+    // Handle different event types
+    const eventType = event.event?.type || event.type;
+    
+    console.log(`📥 RevenueCat webhook: ${eventType} for user ${userId}`);
+
+    // Map RevenueCat entitlements to subscription tier
+    const entitlements = event.event?.entitlements || event.entitlements || {};
+    const hasProEntitlement = 
+      entitlements.active?.['pro'] ||
+      entitlements.active?.['PRO-Monthly'] ||
+      entitlements.active?.['PRO-Yearly'];
+
+    const tier = hasProEntitlement ? 'pro' : 'free';
+    
+    // Get subscription details
+    const subscription = entitlements.active?.['pro'] ||
+                        entitlements.active?.['PRO-Monthly'] ||
+                        entitlements.active?.['PRO-Yearly'];
+
+    const status = subscription?.will_renew ? 'active' : 
+                   subscription?.expires_date ? 'expired' : 'inactive';
+    
+    const startDate = subscription?.purchase_date || null;
+    const endDate = subscription?.expires_date || null;
+    const cancelAtPeriodEnd = !subscription?.will_renew;
+
+    // Determine subscription store (stripe, app_store, play_store)
+    const store = subscription?.store || 'revenuecat';
+
+    // Save subscription data
+    const subscriptionData = {
+      tier,
+      status,
+      startDate,
+      endDate,
+      cancelAtPeriodEnd,
+    };
+
+    // Save in both formats for compatibility
+    await kv.set(`user_${userId}_subscription`, subscriptionData);
+    await kv.set(`user:${userId}:tier`, tier);
+    await kv.set(`user:${userId}:subscription_status`, status);
+    await kv.set(`user:${userId}:subscription_store`, store);
+    if (startDate) {
+      await kv.set(`user:${userId}:subscription_start`, startDate);
+    }
+    if (endDate) {
+      await kv.set(`user:${userId}:subscription_expires_at`, endDate);
+    }
+
+    console.log(`✅ RevenueCat webhook processed: ${eventType} - User ${userId} -> ${tier} (${status})`);
+
+    return c.json({ success: true, event: eventType });
+  } catch (error) {
+    console.error('❌ RevenueCat webhook error:', error);
+    return c.json({ error: String(error) }, 500);
+  }
+});
+
+// ============================================================================
 // STRIPE WEBHOOK (if needed in the future)
 // ============================================================================
 // Stripe webhook endpoint can be added here for handling Stripe subscription events
