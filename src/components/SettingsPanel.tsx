@@ -83,7 +83,7 @@ import {
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
-import { DEFAULT_MONTHLY_PRICE, MONTHLY_PACKAGE_IDENTIFIERS, YEARLY_PACKAGE_IDENTIFIERS, SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT, PRICING_REFRESH_INTERVAL } from '../lib/subscription-constants';
+import { MONTHLY_PACKAGE_IDENTIFIERS, YEARLY_PACKAGE_IDENTIFIERS, SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT, PRICING_REFRESH_INTERVAL } from '../lib/subscription-constants';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -131,9 +131,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         }
 
         if (!isRevenueCatConfigured()) {
-          // Use default pricing if RevenueCat not configured
+          // Don't set pricing if RevenueCat not configured
           setCurrentPricing({
-            monthly: DEFAULT_MONTHLY_PRICE,
+            monthly: undefined,
+            yearly: undefined,
             lastUpdated: new Date().toISOString(),
           });
           return;
@@ -284,34 +285,39 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             }
           }
 
-          // Use nullish coalescing to only use defaults if RevenueCat data is truly missing
+          // Only set pricing if we have valid data from RevenueCat (no defaults)
           setCurrentPricing({
-            monthly: monthlyPkg?.product?.priceString ?? DEFAULT_MONTHLY_PRICE,
+            monthly: monthlyPkg?.product?.priceString ?? undefined,
             yearly: yearlyPkg?.product?.priceString ?? undefined,
             lastUpdated: new Date().toISOString(),
           });
           
           // Log pricing source for debugging
-          if (monthlyPkg) {
+          if (monthlyPkg?.product?.priceString) {
             console.log('✅ Monthly pricing loaded from RevenueCat:', monthlyPkg.product.priceString);
           } else {
-            console.warn('⚠️ Monthly pricing not found, using default:', DEFAULT_MONTHLY_PRICE);
+            console.warn('⚠️ Monthly pricing not found in RevenueCat - product data missing');
           }
-          if (yearlyPkg) {
+          if (yearlyPkg?.product?.priceString) {
             console.log('✅ Yearly pricing loaded from RevenueCat:', yearlyPkg.product.priceString);
+          } else if (yearlyPkg) {
+            console.warn('⚠️ Yearly pricing not found in RevenueCat - product data missing');
           }
         } else {
-          // Fallback to default pricing
+          // No offerings available - don't set default pricing
           setCurrentPricing({
-            monthly: DEFAULT_MONTHLY_PRICE,
+            monthly: undefined,
+            yearly: undefined,
             lastUpdated: new Date().toISOString(),
           });
+          console.warn('⚠️ No RevenueCat offerings available');
         }
       } catch (error) {
         console.warn('Failed to load pricing from RevenueCat:', error);
-        // Use default pricing on error
+        // Don't use default pricing on error - leave undefined
         setCurrentPricing({
-          monthly: DEFAULT_MONTHLY_PRICE,
+          monthly: undefined,
+          yearly: undefined,
           lastUpdated: new Date().toISOString(),
         });
       }
@@ -831,7 +837,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <div>
                         <p className="mb-1" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.upgradeToPro}</p>
                         <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                          {SUBSCRIPTION_UI_TEXT.settings.unlockFeatures(PRO_FEATURES_COUNT, currentPricing.monthly || DEFAULT_MONTHLY_PRICE)}
+                          {SUBSCRIPTION_UI_TEXT.settings.unlockFeatures(PRO_FEATURES_COUNT, currentPricing.monthly || '—')}
                         </p>
                       </div>
                     </div>
@@ -2642,7 +2648,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     )
                   );
                   setCurrentPricing({
-                    monthly: monthlyPkg?.product?.priceString || DEFAULT_MONTHLY_PRICE,
+                    monthly: monthlyPkg?.product?.priceString || undefined,
                     yearly: yearlyPkg?.product?.priceString || undefined,
                     lastUpdated: new Date().toISOString(),
                   });

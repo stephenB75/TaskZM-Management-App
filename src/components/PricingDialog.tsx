@@ -34,8 +34,6 @@ import { verifyRevenueCatPackages, logPackageVerification } from "../lib/verify-
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
 import {
-  DEFAULT_MONTHLY_PRICE,
-  DEFAULT_YEARLY_PRICE,
   DEFAULT_CURRENCY_CODE,
   DEFAULT_MONTHLY_TITLE,
   DEFAULT_YEARLY_TITLE,
@@ -73,15 +71,6 @@ export function PricingDialog({
   // Ref to store retry interval for cleanup
   const retryIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Warn if defaults are being used (should not happen)
-  React.useEffect(() => {
-    if (offerings.monthly?.priceString === DEFAULT_MONTHLY_PRICE) {
-      console.error('❌ Monthly offering using default price - RevenueCat product data missing');
-    }
-    if (offerings.yearly?.priceString === DEFAULT_YEARLY_PRICE) {
-      console.error('❌ Yearly offering using default price - RevenueCat product data missing');
-    }
-  }, [offerings]);
   const platform = getPlatform();
 
   // Get user from auth context for RevenueCat configuration
@@ -273,11 +262,11 @@ export function PricingDialog({
         
         // VERY lenient validation: accept ANY package with an identifier
         // RevenueCat sometimes returns packages with empty product objects that get populated later
-        // We'll match by identifier and use defaults for missing product data
+        // We'll match by identifier, but packages will only be displayed if they have valid product data from RevenueCat
         const hasValidPackage = (p: any) => {
           if (!p) return false;
           // Accept ANY package that has an identifier (even if product is missing or empty)
-          // This allows us to match packages and display them with default pricing
+          // This allows us to match packages, but they will only be displayed if they have valid product data from RevenueCat
           return !!p.identifier;
         };
         
@@ -319,11 +308,10 @@ export function PricingDialog({
         console.log(`   Packages with empty/missing products: ${packagesWithEmptyProducts.length}`);
         
         if (packagesWithEmptyProducts.length > 0) {
-          console.warn(`⚠️ Found ${packagesWithEmptyProducts.length} package(s) with empty product data (will use defaults):`);
+          console.warn(`⚠️ Found ${packagesWithEmptyProducts.length} package(s) with empty product data (will NOT be displayed):`);
           packagesWithEmptyProducts.forEach((p: any) => {
-            console.warn(`   - ${p.identifier}: Will use default pricing/title`);
-            console.warn('   This is OK - package will still be displayed and matched by identifier');
-            console.warn('   Product data may populate later, or you may need to link products in RevenueCat dashboard');
+            console.warn(`   - ${p.identifier}: Missing product data from RevenueCat`);
+            console.warn('   ACTION REQUIRED: Link products to packages in RevenueCat dashboard');
           });
         }
         
@@ -797,7 +785,7 @@ export function PricingDialog({
             currencyCode: monthlyOffering.currencyCode,
             title: monthlyOffering.title,
             description: monthlyOffering.description,
-            fromRevenueCat: fromRC ? '✅ YES' : '⚠️ Using defaults',
+            fromRevenueCat: fromRC ? '✅ YES' : '❌ NO (missing product data)',
             source: hasPriceString ? 'priceString' : hasPriceAmount ? 'price (formatted)' : 'default'
           });
           console.log('   Raw product data:', {
@@ -819,7 +807,7 @@ export function PricingDialog({
             currencyCode: yearlyOffering.currencyCode,
             title: yearlyOffering.title,
             description: yearlyOffering.description,
-            fromRevenueCat: fromRC ? '✅ YES' : '⚠️ Using defaults',
+            fromRevenueCat: fromRC ? '✅ YES' : '❌ NO (missing product data)',
             source: hasPriceString ? 'priceString' : hasPriceAmount ? 'price (formatted)' : 'default'
           });
           console.log('   Raw product data:', {
@@ -846,16 +834,16 @@ export function PricingDialog({
           priceString: monthlyOffering.priceString,
           title: monthlyOffering.title,
           source: 'RevenueCat',
-          hasDefaultPrice: monthlyOffering.priceString === DEFAULT_MONTHLY_PRICE,
-          hasDefaultTitle: monthlyOffering.title === DEFAULT_MONTHLY_TITLE
+          hasValidPrice: !!monthlyOffering.priceString && monthlyOffering.priceString !== '—',
+          hasValidTitle: !!monthlyOffering.title && monthlyOffering.title !== DEFAULT_MONTHLY_TITLE
         } : 'NOT SET (no valid product data)');
         console.log('   Yearly Offering:', yearlyOffering ? {
           identifier: yearlyOffering.identifier,
           priceString: yearlyOffering.priceString,
           title: yearlyOffering.title,
           source: 'RevenueCat',
-          hasDefaultPrice: yearlyOffering.priceString === DEFAULT_YEARLY_PRICE,
-          hasDefaultTitle: yearlyOffering.title === DEFAULT_YEARLY_TITLE
+          hasValidPrice: !!yearlyOffering.priceString && yearlyOffering.priceString !== '—',
+          hasValidTitle: !!yearlyOffering.title && yearlyOffering.title !== DEFAULT_YEARLY_TITLE
         } : 'NOT SET (no valid product data)');
         console.log('============================================================');
 
