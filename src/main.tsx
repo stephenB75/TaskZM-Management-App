@@ -76,9 +76,11 @@ if (typeof window !== 'undefined') {
                                 filename.includes('web-client-content-script');
         
         // Also suppress if it's from vendor bundles (third-party code, not ours)
+        // BUT: If ErrorBoundary caught it, it's a real error that should be shown
         const isVendorError = filename.includes('vendor-') && 
                              !filename.includes('src/') &&
-                             !filename.includes('index.html');
+                             !filename.includes('index.html') &&
+                             !filename.includes('index-'); // Don't suppress our own bundled code
         
         if (isExtensionError || isVendorError) {
           event.preventDefault();
@@ -93,8 +95,19 @@ if (typeof window !== 'undefined') {
           return false;
         }
         
-        // For our own code, log a warning but don't suppress
-        // This helps identify real issues in development
+        // For our own code (index-*.js files), don't suppress - let ErrorBoundary handle it
+        // This helps identify real issues
+        if (filename.includes('index-') && !filename.includes('chrome-extension://')) {
+          // This is from our bundled code - let it through to ErrorBoundary
+          console.error('Initialization error in app code (will be caught by ErrorBoundary):', {
+            message,
+            filename
+          });
+          // Don't suppress - let ErrorBoundary handle it
+          return;
+        }
+        
+        // For other cases, log a warning but don't suppress
         if (import.meta.env.DEV) {
           console.warn('Initialization error detected (not suppressed - may indicate a real issue):', {
             message,

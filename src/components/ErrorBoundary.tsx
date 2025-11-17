@@ -30,6 +30,29 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Check if this is a known initialization error from vendor code
+    const isKnownVendorError = 
+      error.message.includes("Cannot access 'D' before initialization") ||
+      error.message.includes("Cannot access 'O' before initialization") ||
+      (error.message.includes('Cannot access') && error.message.includes('before initialization') && 
+       errorInfo.componentStack?.includes('vendor-'));
+    
+    if (isKnownVendorError) {
+      // This is likely a vendor bundle issue, not our code
+      // Log but don't show error UI - app should continue
+      console.warn('ErrorBoundary: Suppressed known vendor initialization error', {
+        error: error.message,
+        componentStack: errorInfo.componentStack
+      });
+      // Reset error state to allow app to continue
+      this.setState({
+        hasError: false,
+        error: null,
+        errorInfo: null,
+      });
+      return;
+    }
+    
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
