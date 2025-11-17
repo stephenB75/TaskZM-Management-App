@@ -140,7 +140,19 @@ export function PricingDialog({
         }
       }, 3000); // Retry every 3 seconds
       
-      // Run verification when dialog opens (for debugging)
+      // Run comprehensive diagnostics when dialog opens
+      if (isRevenueCatConfigured()) {
+        console.log('🔍 Running RevenueCat diagnostics...');
+        try {
+          const { runRevenueCatDiagnostics, logDiagnosticReport } = await import('../lib/revenuecat-diagnostics');
+          const diagnosticReport = await runRevenueCatDiagnostics();
+          logDiagnosticReport(diagnosticReport);
+        } catch (diagError) {
+          console.warn('Failed to run diagnostics:', diagError);
+        }
+      }
+      
+      // Also run package verification
       if (isRevenueCatConfigured()) {
         console.log('🔍 Running RevenueCat package verification...');
         const verificationResult = await verifyRevenueCatPackages();

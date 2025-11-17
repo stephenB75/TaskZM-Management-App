@@ -822,7 +822,7 @@ export async function getOfferings(forceRefresh: boolean = false): Promise<Reven
           }
           
           // Re-throw other errors
-          throw offeringsError;
+          throw error;
         }
         
         // Log what we received for verification
