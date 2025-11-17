@@ -150,14 +150,24 @@ function AppContent() {
 
     // Configure RevenueCat with user ID (non-blocking)
     // Wrap in try-catch to prevent any unhandled rejections
-    (async () => {
-      try {
-        await configureRevenueCat(user.id, false);
-      } catch (error) {
-        // Silently handle - app should work without RevenueCat
-        console.debug('RevenueCat initialization failed (non-critical):', error);
-      }
-    })();
+    // Use setTimeout to ensure this doesn't block React rendering
+    setTimeout(() => {
+      (async () => {
+        try {
+          // Double-check user is still available
+          if (!user?.id) {
+            return;
+          }
+          await configureRevenueCat(user.id, false);
+        } catch (error) {
+          // Silently handle - app should work without RevenueCat
+          console.debug('RevenueCat initialization failed (non-critical):', error);
+        }
+      })().catch((error) => {
+        // Extra safety: catch any unhandled promise rejections
+        console.debug('RevenueCat initialization promise rejection (non-critical):', error);
+      });
+    }, 0);
   }, [user, isLoading]);
 
   // Auto-start tour only for new signups (not existing users)

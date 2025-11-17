@@ -55,10 +55,13 @@ if (typeof window !== 'undefined') {
           filename.includes('content.js') ||
           filename.includes('web-client-content-script.js')) {
         event.preventDefault();
-        console.debug('Suppressed browser extension error (non-critical)', {
-          message: message.substring(0, 100),
-          filename: filename.substring(0, 100)
-        });
+        // Only log in development - completely silent in production
+        if (import.meta.env.DEV) {
+          console.debug('Suppressed browser extension error (non-critical)', {
+            message: message.substring(0, 100),
+            filename: filename.substring(0, 100)
+          });
+        }
         return false;
       }
       
@@ -79,11 +82,14 @@ if (typeof window !== 'undefined') {
         
         if (isExtensionError || isVendorError) {
           event.preventDefault();
-          console.debug('Suppressed initialization error (from extension or vendor code)', {
-            message,
-            filename,
-            source: isExtensionError ? 'extension' : 'vendor'
-          });
+          // Only log in development - completely silent in production
+          if (import.meta.env.DEV) {
+            console.debug('Suppressed initialization error (from extension or vendor code)', {
+              message,
+              filename,
+              source: isExtensionError ? 'extension' : 'vendor'
+            });
+          }
           return false;
         }
         
@@ -121,9 +127,12 @@ if (typeof window !== 'undefined') {
           stack.includes('contentScript') ||
           stack.includes('web-client-content-script')) {
         event.preventDefault();
-        console.debug('Suppressed browser extension promise rejection (non-critical)', {
-          message: message.substring(0, 100)
-        });
+        // Only log in development - completely silent in production
+        if (import.meta.env.DEV) {
+          console.debug('Suppressed browser extension promise rejection (non-critical)', {
+            message: message.substring(0, 100)
+          });
+        }
         return false;
       }
       
@@ -138,7 +147,10 @@ if (typeof window !== 'undefined') {
         
         if (isExtensionError) {
           event.preventDefault();
-          console.debug('Suppressed initialization error in promise rejection (from extension)');
+          // Only log in development - completely silent in production
+          if (import.meta.env.DEV) {
+            console.debug('Suppressed initialization error in promise rejection (from extension)');
+          }
           return false;
         }
       }
