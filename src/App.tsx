@@ -49,6 +49,7 @@ import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
 import { PANEL_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS } from './lib/layout-constants';
 import { configureRevenueCat, resetRevenueCat } from './lib/revenuecat';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
 function AppContent() {
@@ -536,32 +537,34 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SubscriptionProvider>
-          <TaskProvider>
-            <AwardProvider>
-              <TeamProvider>
-                <CalendarProvider>
-                  <AIProvider>
-                    <NotificationProvider>
-                      <SidebarProvider>
-                        <PomodoroProvider>
-                          <DragDropProvider>
-                            <DocumentHead />
-                            <AppContent />
-                            <Toaster />
-                          </DragDropProvider>
-                        </PomodoroProvider>
-                      </SidebarProvider>
-                    </NotificationProvider>
-                  </AIProvider>
-                </CalendarProvider>
-              </TeamProvider>
-            </AwardProvider>
-          </TaskProvider>
-        </SubscriptionProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <SubscriptionProvider>
+            <TaskProvider>
+              <AwardProvider>
+                <TeamProvider>
+                  <CalendarProvider>
+                    <AIProvider>
+                      <NotificationProvider>
+                        <SidebarProvider>
+                          <PomodoroProvider>
+                            <DragDropProvider>
+                              <DocumentHead />
+                              <AppContent />
+                              <Toaster />
+                            </DragDropProvider>
+                          </PomodoroProvider>
+                        </SidebarProvider>
+                      </NotificationProvider>
+                    </AIProvider>
+                  </CalendarProvider>
+                </TeamProvider>
+              </AwardProvider>
+            </TaskProvider>
+          </SubscriptionProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

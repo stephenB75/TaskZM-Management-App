@@ -173,7 +173,7 @@ export function TaskCard({
             )}
 
             {/* Subtasks Display */}
-            {task.subtasks && task.subtasks.length > 0 && (
+            {task.subtasks && Array.isArray(task.subtasks) && task.subtasks.length > 0 && (
               <div className="space-y-1.5 mb-3">
                 {task.subtasks.slice(0, 3).map((subtask) => (
                   <div 
@@ -206,7 +206,7 @@ export function TaskCard({
             )}
 
             {/* Assignee Display */}
-            {task.assignedTo.length > 0 && (
+            {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 && (
               <div className="flex items-center gap-2 mb-2">
                 {task.assignedTo.slice(0, 3).map(userId => {
                   const member = getTeamMember(userId);

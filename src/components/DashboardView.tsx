@@ -391,38 +391,12 @@ export function DashboardView({
   panelOpen = false,
   panelKey,
 }: DashboardViewProps) {
-  // Hooks must be called unconditionally - handle errors gracefully
-  let tasksContext;
-  let subscriptionContext;
-  let aiSchedulerContext;
-  
-  try {
-    tasksContext = useTasks();
-  } catch (error) {
-    console.error('Error accessing TaskContext:', error);
-    tasksContext = { tasks: [], updateTask: undefined };
-  }
-
-  try {
-    subscriptionContext = useSubscription();
-  } catch (error) {
-    console.error('Error accessing SubscriptionContext:', error);
-    subscriptionContext = { hasFeature: () => false };
-  }
-
-  try {
-    aiSchedulerContext = useAIScheduler();
-  } catch (error) {
-    console.error('Error accessing AIScheduler hook:', error);
-    aiSchedulerContext = {
-      rescheduleDay: undefined,
-      rescheduleWeek: undefined,
-      rescheduleMonth: undefined,
-      getScheduledTasksForDay: undefined,
-      getScheduledTasksForWeek: undefined,
-      getScheduledTasksForMonth: undefined,
-    };
-  }
+  // Hooks must be called unconditionally (React Rules of Hooks)
+  // Context hooks will throw if used outside providers - that's expected
+  // and should be caught by Error Boundary, not try-catch here
+  const tasksContext = useTasks();
+  const subscriptionContext = useSubscription();
+  const aiSchedulerContext = useAIScheduler();
 
   // Extract values with safe defaults
   const tasks = tasksContext?.tasks || [];

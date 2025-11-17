@@ -305,11 +305,26 @@ if (isNative) {
   }, 3000);
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// Safe root element access with error handling
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  console.error('Root element not found! Make sure index.html has a <div id="root"></div> element.');
+  // Create root element if it doesn't exist (fallback)
+  const fallbackRoot = document.createElement('div');
+  fallbackRoot.id = 'root';
+  document.body.appendChild(fallbackRoot);
+  ReactDOM.createRoot(fallbackRoot).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+} else {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
 
 // Additional fallback: Hide splash after React renders (web only)
 if (!isNative) {

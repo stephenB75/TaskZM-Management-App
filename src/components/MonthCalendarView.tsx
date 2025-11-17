@@ -215,11 +215,11 @@ function DroppableDay({
 
         {/* Tasks */}
         <SortableContext
-          items={dayData.tasks.map((t) => t.id)}
+          items={Array.isArray(dayData.tasks) ? dayData.tasks.map((t) => t?.id).filter(Boolean) : []}
           strategy={verticalListSortingStrategy}
         >
           <div className="flex-1 min-h-0 overflow-y-auto space-y-1">
-            {visibleTasks.map((task) => (
+            {(Array.isArray(visibleTasks) ? visibleTasks : []).map((task) => (
               <DraggableMonthTask
                 key={task.id}
                 task={task}
@@ -374,17 +374,49 @@ export function MonthCalendarView({
   };
 
   const getTasksForDate = (date: Date): Task[] => {
-    return tasks
-      .filter((task) => {
-        // Check if task matches this date (either exact match or recurrence pattern)
-        return isDateInRecurrence(task, date);
-      })
-      .sort((a, b) => {
-        // Sort by time - use scheduledDate time for recurring tasks
-        const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
-        const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
-        return timeA - timeB;
-      });
+    // Defensive check: ensure tasks is an array
+    if (!Array.isArray(tasks)) {
+      console.warn('getTasksForDate: tasks is not an array', tasks);
+      return [];
+    }
+
+    try {
+      if (!date || isNaN(date.getTime())) {
+        console.warn('getTasksForDate: Invalid date', date);
+        return [];
+      }
+
+      return tasks
+        .filter((task) => {
+          // Defensive check: ensure task is valid
+          if (!task || typeof task !== 'object') {
+            return false;
+          }
+          try {
+            // Check if task matches this date (either exact match or recurrence pattern)
+            return isDateInRecurrence(task, date);
+          } catch (error) {
+            console.error('Error checking date in recurrence:', error, task);
+            return false;
+          }
+        })
+        .sort((a, b) => {
+          try {
+            // Sort by time - use scheduledDate time for recurring tasks
+            const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
+            const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+            if (isNaN(timeA)) return 1;
+            if (isNaN(timeB)) return -1;
+            return timeA - timeB;
+          } catch (error) {
+            console.error('Error sorting tasks:', error, a, b);
+            return 0;
+          }
+        });
+    } catch (error) {
+      console.error('Error in getTasksForDate:', error);
+      return [];
+    }
   };
 
   const calendarDays = useMemo(() => {
@@ -610,7 +642,7 @@ export function MonthCalendarView({
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Drag tasks between days</span>
             <Badge variant="outline" className="text-xs">
-              {tasks.filter((t) => t.scheduledDate).length}{" "}
+              {Array.isArray(tasks) ? tasks.filter((t) => t?.scheduledDate).length : 0}{" "}
               scheduled
             </Badge>
           </div>

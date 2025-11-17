@@ -47,10 +47,19 @@ export function TodayAgendaView({
   // Get today's tasks
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const allTodayTasks = tasks.filter((task) => {
-    // Check if task matches today (either exact match or recurrence pattern)
-    return isDateInRecurrence(task, today);
-  });
+  const allTodayTasks = Array.isArray(tasks) ? tasks.filter((task) => {
+    // Defensive check: ensure task is valid
+    if (!task || typeof task !== 'object') {
+      return false;
+    }
+    try {
+      // Check if task matches today (either exact match or recurrence pattern)
+      return isDateInRecurrence(task, today);
+    } catch (error) {
+      console.error('Error checking date in recurrence:', error, task);
+      return false;
+    }
+  }) : [];
 
   // Filter out done tasks - they should not appear in Today Agenda
   // Done tasks automatically appear in Archive view
@@ -58,9 +67,16 @@ export function TodayAgendaView({
 
   // Sort incomplete tasks by time
   const todayTasks = incompleteTasks.sort((a, b) => {
-    const timeA = new Date(a.scheduledDate!).getTime();
-    const timeB = new Date(b.scheduledDate!).getTime();
-    return timeA - timeB;
+    try {
+      const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
+      const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+      if (isNaN(timeA)) return 1;
+      if (isNaN(timeB)) return -1;
+      return timeA - timeB;
+    } catch (error) {
+      console.error('Error sorting tasks:', error, a, b);
+      return 0;
+    }
   });
 
   // Auto-scroll to current time on mount and when tasks change

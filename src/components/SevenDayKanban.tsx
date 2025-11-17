@@ -206,17 +206,49 @@ export function SevenDayKanban({
 
   // Get tasks for a specific day
   const getTasksForDay = (dateString: string) => {
-    const checkDate = new Date(dateString + 'T00:00:00');
-    return tasks
-      .filter(task => {
-        // Check if task matches this date (either exact match or recurrence pattern)
-        return isDateInRecurrence(task, checkDate);
-      })
-      .sort((a, b) => {
-        const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
-        const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
-        return timeA - timeB;
-      });
+    // Defensive check: ensure tasks is an array
+    if (!Array.isArray(tasks)) {
+      console.warn('getTasksForDay: tasks is not an array', tasks);
+      return [];
+    }
+
+    try {
+      const checkDate = new Date(dateString + 'T00:00:00');
+      if (isNaN(checkDate.getTime())) {
+        console.warn('getTasksForDay: Invalid date string', dateString);
+        return [];
+      }
+
+      return tasks
+        .filter(task => {
+          // Defensive check: ensure task is valid
+          if (!task || typeof task !== 'object') {
+            return false;
+          }
+          try {
+            // Check if task matches this date (either exact match or recurrence pattern)
+            return isDateInRecurrence(task, checkDate);
+          } catch (error) {
+            console.error('Error checking date in recurrence:', error, task);
+            return false;
+          }
+        })
+        .sort((a, b) => {
+          try {
+            const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
+            const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+            if (isNaN(timeA)) return 1;
+            if (isNaN(timeB)) return -1;
+            return timeA - timeB;
+          } catch (error) {
+            console.error('Error sorting tasks:', error, a, b);
+            return 0;
+          }
+        });
+    } catch (error) {
+      console.error('Error in getTasksForDay:', error);
+      return [];
+    }
   };
 
 
@@ -348,7 +380,7 @@ export function SevenDayKanban({
   if (mobileMode) {
     const currentColumn = weekColumns[mobileDayIndex];
     const dayTasks = getTasksForDay(currentColumn.dateString);
-    const taskIds = dayTasks.map(t => t.id);
+    const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
 
     return (
       <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] md:from-[#F9F7FD] md:via-white md:to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
@@ -415,7 +447,7 @@ export function SevenDayKanban({
                           </Button>
                         </motion.div>
                       ) : (
-                        dayTasks.map((task) => (
+                        (Array.isArray(dayTasks) ? dayTasks : []).map((task) => (
                           <DraggableTaskCard
                             key={task.id}
                             task={task}
@@ -476,7 +508,7 @@ export function SevenDayKanban({
             >
               {weekColumns.map((column, index) => {
                 const dayTasks = getTasksForDay(column.dateString);
-                const taskIds = dayTasks.map(t => t.id);
+                const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
 
                 return (
                   <motion.div
