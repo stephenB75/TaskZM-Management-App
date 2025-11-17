@@ -201,25 +201,91 @@ export async function getOfferings(): Promise<{
     const offerings = await purchasesInstance.getOfferings();
     const availablePackages = offerings?.current?.availablePackages ?? [];
 
+    console.log('📦 RevenueCat offerings received:', {
+      hasCurrent: !!offerings?.current,
+      packageCount: availablePackages.length,
+      packages: availablePackages.map((pkg: any) => ({
+        identifier: pkg?.identifier,
+        hasStoreProduct: !!pkg?.storeProduct,
+        hasRcBillingProduct: !!pkg?.rcBillingProduct,
+        hasProduct: !!pkg?.product,
+        storeProductKeys: pkg?.storeProduct ? Object.keys(pkg.storeProduct) : [],
+        rcBillingProductKeys: pkg?.rcBillingProduct ? Object.keys(pkg.rcBillingProduct) : [],
+      })),
+    });
+
     // Use the same package finding logic as purchase flow for consistency
     const monthlyPkg = findPackageByType(availablePackages, offerings, 'monthly');
     const yearlyPkg = findPackageByType(availablePackages, offerings, 'yearly');
 
-    const mapPackage = (pkg: any, fallbackTitle: string, fallbackDesc: string): OfferingDetails => {
-      if (!pkg) return null;
-      const product = pkg.storeProduct ?? pkg.rcBillingProduct ?? pkg.product ?? null;
-      const priceString = product?.priceString ?? product?.formattedPrice ?? null;
-      if (!priceString) return null;
+    const mapPackage = (pkg: any, type: 'monthly' | 'yearly', fallbackTitle: string, fallbackDesc: string): OfferingDetails => {
+      if (!pkg) {
+        console.warn(`⚠️ ${type} package is null`);
+        return null;
+      }
+
+      // Try multiple product locations and property names
+      const product = pkg.storeProduct ?? 
+                     pkg.rcBillingProduct ?? 
+                     pkg.product ?? 
+                     pkg.billingProduct ??
+                     null;
+
+      console.log(`🔍 Mapping ${type} package:`, {
+        identifier: pkg.identifier,
+        hasProduct: !!product,
+        productKeys: product ? Object.keys(product) : [],
+        productData: product ? {
+          priceString: product.priceString,
+          formattedPrice: product.formattedPrice,
+          price: product.price,
+          currencyCode: product.currencyCode,
+          title: product.title,
+          description: product.description,
+        } : null,
+      });
+
+      if (!product) {
+        console.warn(`⚠️ ${type} package has no product data`);
+        return null;
+      }
+
+      // Try multiple price string locations
+      const priceString = product.priceString ?? 
+                         product.formattedPrice ?? 
+                         product.price ? 
+                           (product.currencyCode ? `${product.currencyCode} ${product.price}` : `$${product.price}`) : 
+                         null;
+
+      if (!priceString) {
+        console.warn(`⚠️ ${type} package product has no price string:`, product);
+        return null;
+      }
+
+      console.log(`✅ ${type} package mapped successfully:`, {
+        priceString,
+        title: product.title ?? fallbackTitle,
+        description: product.description ?? fallbackDesc,
+      });
+
       return {
         priceString,
-        title: product?.title ?? fallbackTitle,
-        description: product?.description ?? fallbackDesc,
+        title: product.title ?? fallbackTitle,
+        description: product.description ?? fallbackDesc,
       };
     };
 
+    const monthlyOffering = mapPackage(monthlyPkg, 'monthly', 'Monthly Plan', 'Billed monthly');
+    const yearlyOffering = mapPackage(yearlyPkg, 'yearly', 'Yearly Plan', 'Billed annually');
+
+    console.log('📊 Final offerings:', {
+      monthly: monthlyOffering ? { priceString: monthlyOffering.priceString, title: monthlyOffering.title } : null,
+      yearly: yearlyOffering ? { priceString: yearlyOffering.priceString, title: yearlyOffering.title } : null,
+    });
+
     return {
-      monthly: mapPackage(monthlyPkg, 'Monthly Plan', 'Billed monthly'),
-      yearly: mapPackage(yearlyPkg, 'Yearly Plan', 'Billed annually'),
+      monthly: monthlyOffering,
+      yearly: yearlyOffering,
     };
   } catch (error) {
     console.error('❌ Failed to fetch RevenueCat offerings:', error);
@@ -359,13 +425,73 @@ export async function purchaseProSubscription(
     
   } catch (error: any) {
     console.error('❌ RevenueCat purchase error:', error);
+    
+    // Extract error information from various possible structures
+    // RevenueCat errors can have different structures, so we check multiple places
+    const errorCode = error?.code || 
+                     error?.errorCode || 
+                     error?.underlyingError?.code ||
+                     error?.underlyingError?.errorCode ||
+                     (error?.toString?.()?.match(/code:\s*(\w+)/i)?.[1]);
+    
+    const errorMessage = error?.message || 
+                        error?.underlyingErrorMessage || 
+                        error?.underlyingError?.message ||
+                        (typeof error === 'string' ? error : '') ||
+                        error?.toString?.() || 
+                        'Purchase failed';
+    
+    const errorName = error?.name || 
+                     error?.constructor?.name ||
+                     error?.underlyingError?.name ||
+                     (error?.toString?.()?.match(/PurchasesError|(\w+Error)/)?.[0]);
+    
+    // Try to extract code from error string representation
+    // RevenueCat errors often show as "PurchasesError(code: UserCancelledError, message: )"
+    const errorString = error?.toString?.() || String(error || '');
+    const codeFromString = errorString.match(/code:\s*(\w+)/i)?.[1] || 
+                          errorString.match(/\(code:\s*(\w+)/i)?.[1];
+    
+    const finalErrorCode = errorCode || codeFromString;
+    
+    // Log detailed error information for debugging
     console.error('❌ Error details:', {
-      message: error?.message,
-      code: error?.code,
+      name: errorName,
+      message: errorMessage,
+      code: errorCode,
+      codeFromString,
+      finalErrorCode,
+      errorCode: error?.errorCode,
       underlyingError: error?.underlyingError,
       checkoutUrl: error?.checkoutUrl || error?.checkout_url,
+      errorString,
       keys: Object.keys(error || {}),
+      stringified: JSON.stringify(error, Object.getOwnPropertyNames(error)),
     });
+    
+    // Check for user cancellation (most common case)
+    // RevenueCat uses "UserCancelledError" as the code
+    const isCancelled = 
+      finalErrorCode === 'UserCancelledError' ||
+      finalErrorCode === 'USER_CANCELLED' ||
+      errorCode === 'UserCancelledError' ||
+      errorCode === 'USER_CANCELLED' ||
+      codeFromString === 'UserCancelledError' ||
+      errorName === 'UserCancelledError' ||
+      errorString.includes('UserCancelledError') ||
+      errorString.includes('code: UserCancelledError') ||
+      errorMessage.toLowerCase().includes('cancel') ||
+      errorMessage.toLowerCase().includes('user_cancelled') ||
+      errorMessage.toLowerCase().includes('cancelled by user') ||
+      (errorMessage === '' && (finalErrorCode === 'UserCancelledError' || errorCode === 'UserCancelledError'));
+    
+    if (isCancelled) {
+      console.log('ℹ️ Purchase was cancelled by user');
+      return { 
+        success: false, 
+        error: 'Purchase was cancelled.' 
+      };
+    }
     
     // Check if error contains a checkout URL (some SDKs return checkout URL in error)
     const errorCheckoutUrl = error?.checkoutUrl || 
@@ -382,46 +508,62 @@ export async function purchaseProSubscription(
       };
     }
     
-    // Extract detailed error information
-    const errorMessage = error?.message || 
-                        error?.underlyingErrorMessage || 
-                        error?.underlyingError?.message ||
-                        error?.toString() || 
-                        'Purchase failed';
-    
-    // Check for specific error types
-    if (errorMessage.includes('cancel') || errorMessage.includes('user_cancelled')) {
-      return { 
-        success: false, 
-        error: 'Purchase was cancelled.' 
-      };
-    }
-    
-    if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    // Check for network errors
+    if (errorMessage.toLowerCase().includes('network') || 
+        errorMessage.toLowerCase().includes('fetch') ||
+        errorMessage.toLowerCase().includes('connection') ||
+        errorCode === 'NetworkError') {
       return { 
         success: false, 
         error: 'Network error. Please check your connection and try again.' 
       };
     }
     
-    if (errorMessage.includes('payment') || errorMessage.includes('card')) {
+    // Check for payment errors
+    if (errorMessage.toLowerCase().includes('payment') || 
+        errorMessage.toLowerCase().includes('card') ||
+        errorMessage.toLowerCase().includes('declined') ||
+        errorCode === 'PaymentError') {
       return { 
         success: false, 
         error: 'Payment failed. Please check your payment method and try again.' 
       };
     }
     
-    // Check for "No available adapters" error (Stripe Checkout not configured)
-    if (errorMessage.includes('adapter') || errorMessage.includes('checkout')) {
+    // Check for configuration errors
+    if (errorMessage.toLowerCase().includes('adapter') || 
+        errorMessage.toLowerCase().includes('checkout') ||
+        errorMessage.toLowerCase().includes('not configured') ||
+        errorCode === 'ConfigurationError') {
       return { 
         success: false, 
         error: 'Payment system not configured. Please contact support.' 
       };
     }
     
+    // Check for product/package errors
+    if (errorMessage.toLowerCase().includes('package') ||
+        errorMessage.toLowerCase().includes('product') ||
+        errorMessage.toLowerCase().includes('not found') ||
+        errorCode === 'ProductNotAvailableError') {
+      return { 
+        success: false, 
+        error: 'Subscription package not available. Please try again or contact support.' 
+      };
+    }
+    
+    // Generic error with code if available
+    if (errorCode && errorMessage) {
+      return { 
+        success: false, 
+        error: `${errorMessage} (Code: ${errorCode})` 
+      };
+    }
+    
+    // Fallback to generic message
     return { 
       success: false, 
-      error: errorMessage 
+      error: errorMessage || 'Purchase failed. Please try again.' 
     };
   }
 }

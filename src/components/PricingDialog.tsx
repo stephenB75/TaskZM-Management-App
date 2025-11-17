@@ -75,6 +75,12 @@ export function PricingDialog({
       await configureRevenueCat(user.id);
       const rcOfferings = await getOfferings();
 
+      console.log('📥 Offerings loaded in PricingDialog:', {
+        monthly: rcOfferings.monthly ? { priceString: rcOfferings.monthly.priceString, title: rcOfferings.monthly.title } : null,
+        yearly: rcOfferings.yearly ? { priceString: rcOfferings.yearly.priceString, title: rcOfferings.yearly.title } : null,
+        isRCConfigured: isRevenueCatConfigured(),
+      });
+
       // Only show error if RevenueCat is configured but returned no offerings
       // If RevenueCat is not configured, we'll use fallback pricing (no error)
       const hasMonthly = rcOfferings.monthly !== null;
@@ -93,6 +99,7 @@ export function PricingDialog({
         }
       } else {
         // We have at least one offering from RevenueCat - clear any errors
+        console.log(`✅ Offerings loaded: ${hasMonthly ? 'monthly' : ''} ${hasYearly ? 'yearly' : ''}`);
         setOfferingsError(null);
       }
 
@@ -202,6 +209,22 @@ export function PricingDialog({
 
   const monthlyOffering = offerings.monthly ?? fallbackMonthly;
   const yearlyOffering = offerings.yearly ?? fallbackYearly;
+  
+  // Log which offerings are being used (RevenueCat or fallback)
+  React.useEffect(() => {
+    const usingRCMonthly = offerings.monthly !== null;
+    const usingRCYearly = offerings.yearly !== null;
+    console.log('💰 Current offerings in UI:', {
+      monthly: {
+        source: usingRCMonthly ? 'RevenueCat' : 'Fallback',
+        priceString: monthlyOffering.priceString,
+      },
+      yearly: {
+        source: usingRCYearly ? 'RevenueCat' : 'Fallback',
+        priceString: yearlyOffering.priceString,
+      },
+    });
+  }, [offerings, monthlyOffering, yearlyOffering]);
   
   // Clear error if we have valid offerings available (fallbacks are valid)
   // This ensures the error doesn't persist when fallback pricing is being used
