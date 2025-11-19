@@ -135,8 +135,7 @@ export function AuthScreen() {
 
   // Features Carousel State
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
-  const featuresPerPageMobile = 6; // 2 rows x 3 columns for mobile
-  const featuresPerPageDesktop = 4; // 2 rows x 2 columns for desktop
+  const featuresPerPage = 6; // 2 rows x 3 columns for both mobile and desktop
 
   // Password strength
   const passwordStrength = getPasswordStrength(signUpPassword);
@@ -346,12 +345,8 @@ export function AuthScreen() {
 
   // Auto-scroll carousel
   React.useEffect(() => {
-    const getFeaturesPerPage = () => {
-      return window.innerWidth >= 1024 ? featuresPerPageDesktop : featuresPerPageMobile;
-    };
-    
-    const totalPages = Math.ceil(MARKETING_FEATURES.length / getFeaturesPerPage());
-    if (MARKETING_FEATURES.length <= getFeaturesPerPage()) return;
+    const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+    if (MARKETING_FEATURES.length <= featuresPerPage) return;
     
     const interval = setInterval(() => {
       setCurrentFeatureIndex((prev) =>
@@ -490,44 +485,34 @@ export function AuthScreen() {
                   14 Smart Features
                 </h3>
                 {/* Navigation Controls */}
-                {(() => {
-                  const totalPagesMobile = Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile);
-                  const totalPagesDesktop = Math.ceil(MARKETING_FEATURES.length / featuresPerPageDesktop);
-                  const hasMultiplePages = totalPagesMobile > 1 || totalPagesDesktop > 1;
-                  
-                  if (!hasMultiplePages) return null;
-                  
-                  return (
-                    <div className="flex items-center gap-0.5">
-                      <button
-                        onClick={() => {
-                          setCurrentFeatureIndex((prev) => {
-                            const isDesktop = window.innerWidth >= 1024;
-                            const totalPages = isDesktop ? totalPagesDesktop : totalPagesMobile;
-                            return prev === 0 ? totalPages - 1 : prev - 1;
-                          });
-                        }}
-                        className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
-                        aria-label="Previous features"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setCurrentFeatureIndex((prev) => {
-                            const isDesktop = window.innerWidth >= 1024;
-                            const totalPages = isDesktop ? totalPagesDesktop : totalPagesMobile;
-                            return prev === totalPages - 1 ? 0 : prev + 1;
-                          });
-                        }}
-                        className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
-                        aria-label="Next features"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                      </button>
-                    </div>
-                  );
-                })()}
+                {MARKETING_FEATURES.length > featuresPerPage && (
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      onClick={() => {
+                        setCurrentFeatureIndex((prev) => {
+                          const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+                          return prev === 0 ? totalPages - 1 : prev - 1;
+                        });
+                      }}
+                      className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
+                      aria-label="Previous features"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentFeatureIndex((prev) => {
+                          const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+                          return prev === totalPages - 1 ? 0 : prev + 1;
+                        });
+                      }}
+                      className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
+                      aria-label="Next features"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Carousel Container with Gradient Fade - Half height on desktop */}
@@ -544,23 +529,21 @@ export function AuthScreen() {
                     }}
                     transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    {/* Mobile: 3 columns (6 features per page), Desktop: 2 columns (4 features per page) */}
-                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile) }).map((_, pageIndex) => {
-                      const startIdx = pageIndex * featuresPerPageMobile;
-                      const endIdx = startIdx + featuresPerPageMobile;
-                      const pageFeatures = MARKETING_FEATURES.slice(startIdx, endIdx);
+                    {/* 3 columns (6 features per page) for both mobile and desktop */}
+                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => {
+                      const startIdx = pageIndex * featuresPerPage;
+                      const endIdx = startIdx + featuresPerPage;
+                      const pageFeatures = MARKETETING_FEATURES.slice(startIdx, endIdx);
                       
                       return (
                         <div
                           key={pageIndex}
-                          className="grid grid-cols-3 lg:grid-cols-2 gap-x-2.5 sm:gap-x-3 gap-y-2.5 sm:gap-y-3 min-w-full flex-shrink-0 px-1"
+                          className="grid grid-cols-3 gap-x-2.5 sm:gap-x-3 gap-y-2.5 sm:gap-y-3 min-w-full flex-shrink-0 px-1"
                         >
-                          {pageFeatures.map(({ icon: Icon, title }, featureIndex) => (
+                          {pageFeatures.map(({ icon: Icon, title }) => (
                             <motion.div
                               key={title}
-                              className={`flex flex-col items-center gap-1.5 text-center group ${
-                                featureIndex >= featuresPerPageDesktop ? 'lg:hidden' : ''
-                              }`}
+                              className="flex flex-col items-center gap-1.5 text-center group"
                               whileHover={{ scale: 1.08, y: -2 }}
                               transition={{ duration: 0.2 }}
                             >
@@ -584,22 +567,20 @@ export function AuthScreen() {
                 
                 {/* Enhanced Dots Indicator - Smaller on Mobile */}
                 {(() => {
-                  const totalPagesMobile = Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile);
-                  const totalPagesDesktop = Math.ceil(MARKETING_FEATURES.length / featuresPerPageDesktop);
-                  const maxPages = Math.max(totalPagesMobile, totalPagesDesktop);
+                  const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
                   
-                  if (maxPages <= 1) return null;
+                  if (totalPages <= 1) return null;
                   
                   return (
-                    <div className="flex items-center justify-center gap-0.5 lg:gap-1.5 pt-1.5 lg:pt-2 lg:flex-shrink-0">
-                      {Array.from({ length: maxPages }).map((_, index) => (
+                    <div className="flex items-center justify-center gap-0.5 lg:gap-1 pt-1.5 lg:pt-2 lg:flex-shrink-0">
+                      {Array.from({ length: totalPages }).map((_, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentFeatureIndex(index)}
                           className={`rounded-full transition-all duration-300 ${
                             index === currentFeatureIndex
-                              ? "w-2.5 h-1 lg:w-6 lg:h-1.5 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9] shadow-sm"
-                              : "w-1 h-1 lg:w-1.5 lg:h-1.5 bg-gray-300/60 dark:bg-gray-600/60 hover:bg-gray-400/80 dark:hover:bg-gray-500/80"
+                              ? "w-1.5 h-0.5 lg:w-3 lg:h-1 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9]"
+                              : "w-0.5 h-0.5 lg:w-1 lg:h-1 bg-gray-400/40 dark:bg-gray-500/40 hover:bg-gray-500/60 dark:hover:bg-gray-400/60"
                           }`}
                           aria-label={`Go to page ${index + 1}`}
                         />
