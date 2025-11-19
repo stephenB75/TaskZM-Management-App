@@ -417,73 +417,71 @@ export function AuthScreen() {
 
       {/* Main Content */}
       <motion.div
-        className="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:py-8"
+        className="relative z-10 w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:py-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start lg:items-center">
+        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 items-start lg:items-center">
           {/* Left Side - Branding & Features */}
           <motion.div
-            className="order-2 lg:order-1 text-center lg:text-left space-y-2.5 sm:space-y-3 w-full"
+            className="order-2 lg:order-1 text-center lg:text-left space-y-2 sm:space-y-2.5 w-full"
             variants={itemVariants}
           >
-            <motion.div className="space-y-2 sm:space-y-2.5" variants={logoVariants}>
+            <motion.div className="space-y-1.5 sm:space-y-2" variants={logoVariants}>
               <motion.div
-                className="inline-flex items-center gap-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-2 py-0.5 sm:py-1 rounded-full shadow border border-white/50"
+                className="inline-flex items-center gap-1 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-white/50"
                 whileHover={{ scale: 1.05 }}
               >
-                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7B68EE]" />
-                <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-700 dark:text-gray-200">
-                  Neurodivergent-friendly workflow
+                <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#7B68EE]" />
+                <span className="text-[8px] sm:text-[9px] text-gray-700 dark:text-gray-200">
+                  Neurodivergent-friendly
                 </span>
               </motion.div>
 
-              <div className="flex flex-col items-center lg:items-start gap-1">
+              <div className="flex flex-col items-center lg:items-start gap-0.5">
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
-                  className="w-[100px] sm:w-[130px] md:w-[160px] lg:w-[180px]"
+                  className="w-[80px] sm:w-[100px] md:w-[140px] lg:w-[160px]"
                   whileHover={{ scale: 1.02 }}
                 />
-                <p className="text-[11px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-200 text-center lg:text-left px-2 sm:px-0 max-w-md">
-                  Your calm, organized task companion—free forever, upgrade when you need more.
+                <p className="text-[9px] sm:text-[10px] text-gray-700 dark:text-gray-200 text-center lg:text-left px-2 sm:px-0 max-w-md">
+                  Your calm, organized task companion
                 </p>
               </div>
             </motion.div>
 
+            {/* Features Card - Using App Theme Colors */}
             <motion.div
-              className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-lg border border-white/70 dark:border-gray-700/50 px-2.5 py-2.5 sm:px-3 sm:py-3 shadow-lg max-h-[280px] sm:max-h-[320px] overflow-y-auto"
+              className="bg-gradient-to-br from-[#B4E4FF]/80 via-[#E0BBE4]/75 to-[#FFDAB9]/80 dark:from-[#1a1a2e]/90 dark:via-[#16213e]/90 dark:to-[#0f3460]/90 backdrop-blur-sm rounded-lg border border-white/50 dark:border-gray-700/50 px-2 py-2 sm:px-2.5 sm:py-2.5 shadow-lg"
               variants={itemVariants}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-2 text-left sticky top-0 bg-white/95 dark:bg-gray-900/95 pb-2 -mx-2.5 sm:-mx-3 px-2.5 sm:px-3 z-10">
+              <div className="flex items-center justify-between gap-1.5 mb-1.5 text-left">
                 <div>
-                  <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">
-                    Everything you need
-                  </p>
-                  <h3 className="text-[10px] sm:text-xs font-semibold text-gray-900 dark:text-gray-100">
-                    14 smart features
+                  <h3 className="text-[9px] sm:text-[10px] font-semibold text-gray-900 dark:text-gray-100">
+                    14 Smart Features
                   </h3>
                 </div>
-                <Badge className="self-start sm:self-auto bg-[#D4C5F9] text-gray-800 border-0 text-[8px] sm:text-[9px] px-1.5 py-0.5">No credit card</Badge>
+                <Badge className="bg-[#D4C5F9]/90 text-gray-800 border-0 text-[7px] sm:text-[8px] px-1 py-0">Free</Badge>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1 sm:gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1">
                 {MARKETING_FEATURES.map(({ icon: Icon, title, subtitle }) => (
                   <motion.div
                     key={title}
-                    className="flex items-center gap-1 bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/60 rounded px-1.5 py-1 sm:py-1.5 shadow-sm hover:shadow transition-shadow"
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-0.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-white/50 dark:border-gray-700/40 rounded px-1 py-0.5 shadow-sm hover:shadow transition-all"
+                    whileHover={{ scale: 1.03 }}
+                    transition={{ duration: 0.15 }}
                   >
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <Icon className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" />
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Icon className="w-1.5 h-1.5 sm:w-2 sm:h-2 text-white" />
                     </div>
                     <div className="min-w-0 flex-1 text-left">
-                      <h3 className="text-[8px] sm:text-[9px] text-gray-900 dark:text-white font-medium leading-tight truncate">
+                      <h3 className="text-[7px] sm:text-[8px] text-gray-900 dark:text-white font-medium leading-tight truncate">
                         {title}
                       </h3>
-                      <p className="text-[7px] sm:text-[8px] text-gray-600 dark:text-gray-400 leading-tight truncate">
+                      <p className="text-[6px] sm:text-[7px] text-gray-600 dark:text-gray-400 leading-tight truncate hidden sm:block">
                         {subtitle}
                       </p>
                     </div>
@@ -504,10 +502,10 @@ export function AuthScreen() {
                 onValueChange={setActiveTab}
                 className="w-full"
               >
-                <CardHeader className="space-y-2 pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
-                  <CardTitle className="text-center text-base sm:text-lg">
+                <CardHeader className="space-y-1.5 pb-2 sm:pb-3 px-3 sm:px-4 pt-3 sm:pt-4">
+                  <CardTitle className="text-center text-sm sm:text-base">
                     <motion.div
-                      className="inline-flex items-center gap-1.5 sm:gap-2"
+                      className="inline-flex items-center gap-1 sm:gap-1.5"
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ delay: 0.4 }}
@@ -527,7 +525,7 @@ export function AuthScreen() {
                       <span>Welcome to TaskZM!</span>
                     </motion.div>
                   </CardTitle>
-                  <CardDescription className="text-center text-[11px] sm:text-xs px-2 sm:px-0">
+                  <CardDescription className="text-center text-[10px] sm:text-[11px] px-1 sm:px-0">
                     {activeTab === "signin" ? (
                       <motion.span
                         key="signin-desc"
@@ -535,8 +533,7 @@ export function AuthScreen() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        Sign in to access your personalized task
-                        dashboard
+                        Sign in to access your task dashboard
                       </motion.span>
                     ) : (
                       <motion.span
@@ -545,37 +542,36 @@ export function AuthScreen() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        Create your free account and start
-                        organizing today
+                        Create your free account and start organizing
                       </motion.span>
                     )}
                   </CardDescription>
-                  <TabsList className="!flex w-full !h-10 sm:!h-12 md:!h-14 !p-1 !gap-1 sm:!gap-1.5 bg-gradient-to-r from-[#E8F5F1] to-[#F3E8FF] dark:from-gray-800 dark:to-purple-900/50 !rounded-lg">
+                  <TabsList className="!flex w-full !h-8 sm:!h-10 !p-0.5 !gap-0.5 sm:!gap-1 bg-gradient-to-r from-[#E8F5F1] to-[#F3E8FF] dark:from-gray-800 dark:to-purple-900/50 !rounded-lg">
                     <TabsTrigger
                       value="signin"
-                      className="!flex-1 !h-auto !py-2 sm:!py-2.5 md:!py-3 !px-2 sm:!px-3 md:!px-4 text-[11px] sm:text-xs md:text-sm"
+                      className="!flex-1 !h-auto !py-1.5 sm:!py-2 !px-2 sm:!px-3 text-[10px] sm:text-xs"
                     >
                       Sign In
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="!flex-1 !h-auto !py-2 sm:!py-2.5 md:!py-3 !px-2 sm:!px-3 md:!px-4 text-[11px] sm:text-xs md:text-sm"
+                      className="!flex-1 !h-auto !py-1.5 sm:!py-2 !px-2 sm:!px-3 text-[10px] sm:text-xs"
                     >
                       Sign Up
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>
 
-                <CardContent className="pb-4 sm:pb-5 pt-2 px-4 sm:px-6">
+                <CardContent className="pb-3 sm:pb-4 pt-1.5 px-3 sm:px-4">
                   <TabsContent value="signin" className="mt-0">
                     <motion.form
                       onSubmit={handleSignIn}
-                      className="space-y-2.5 sm:space-y-3"
+                      className="space-y-2 sm:space-y-2.5"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="space-y-0.5 sm:space-y-1">
                         <Label htmlFor="signin-email" className="text-xs sm:text-sm">
                           Email
                         </Label>
@@ -594,13 +590,13 @@ export function AuthScreen() {
                               }
                             }}
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
                           />
                           <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         </div>
                       </div>
 
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="space-y-0.5 sm:space-y-1">
                         <div className="flex items-center justify-between">
                           <Label
                             htmlFor="signin-password"
@@ -626,7 +622,7 @@ export function AuthScreen() {
                               setSignInPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
                           />
                           <button
                             type="button"
@@ -661,11 +657,11 @@ export function AuthScreen() {
                       <motion.div
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        className="pt-0.5 sm:pt-1"
+                        className="pt-0.5"
                       >
                         <Button
                           type="submit"
-                          className="w-full h-10 sm:h-11 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-xs sm:text-sm"
+                          className="w-full h-9 sm:h-10 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs"
                           disabled={isLoading}
                         >
                           {isLoading ? (
@@ -706,7 +702,7 @@ export function AuthScreen() {
                           type="button"
                           onClick={handleDemoSignIn}
                           variant="outline"
-                          className="w-full h-10 sm:h-11 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-xs sm:text-sm"
+                          className="w-full h-9 sm:h-10 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-[11px] sm:text-xs"
                           disabled={isLoading}
                         >
                           <Sparkles className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -719,12 +715,12 @@ export function AuthScreen() {
                   <TabsContent value="signup" className="mt-0">
                     <motion.form
                       onSubmit={handleSignUp}
-                      className="space-y-2.5 sm:space-y-3"
+                      className="space-y-2 sm:space-y-2.5"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="space-y-0.5 sm:space-y-1">
                         <Label
                           htmlFor="signup-name"
                           className="text-xs sm:text-sm"
@@ -740,11 +736,11 @@ export function AuthScreen() {
                             setSignUpName(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95"
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm"
                         />
                       </div>
 
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="space-y-0.5 sm:space-y-1">
                         <Label
                           htmlFor="signup-email"
                           className="text-xs sm:text-sm"
@@ -771,7 +767,7 @@ export function AuthScreen() {
                               }
                             }}
                             required
-                            className={`border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10 ${
+                            className={`border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10 ${
                               emailError ? 'border-red-500' : ''
                             }`}
                           />
@@ -793,7 +789,7 @@ export function AuthScreen() {
                         )}
                       </div>
 
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="space-y-0.5 sm:space-y-1">
                         <Label
                           htmlFor="signup-password"
                           className="text-xs sm:text-sm"
@@ -810,7 +806,7 @@ export function AuthScreen() {
                               setSignUpPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
                           />
                           <button
                             type="button"
@@ -864,7 +860,7 @@ export function AuthScreen() {
                         )}
                       </div>
 
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="space-y-0.5 sm:space-y-1">
                         <Label
                           htmlFor="signup-confirm-password"
                           className="text-xs sm:text-sm"
@@ -883,7 +879,7 @@ export function AuthScreen() {
                               )
                             }
                             required
-                            className={`border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10 ${
+                            className={`border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10 ${
                               signUpConfirmPassword && !passwordsMatch ? 'border-red-500' : ''
                             } ${
                               signUpConfirmPassword && passwordsMatch ? 'border-green-500' : ''
@@ -955,11 +951,11 @@ export function AuthScreen() {
                       <motion.div
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        className="pt-0.5 sm:pt-1"
+                        className="pt-0.5"
                       >
                         <Button
                           type="submit"
-                          className="w-full h-10 sm:h-11 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-xs sm:text-sm"
+                          className="w-full h-9 sm:h-10 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs"
                           disabled={isLoading}
                         >
                           {isLoading ? (
