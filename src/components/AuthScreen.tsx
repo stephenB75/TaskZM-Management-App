@@ -533,7 +533,7 @@ export function AuthScreen() {
                     {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => {
                       const startIdx = pageIndex * featuresPerPage;
                       const endIdx = startIdx + featuresPerPage;
-                      const pageFeatures = MARKETETING_FEATURES.slice(startIdx, endIdx);
+                      const pageFeatures = MARKETING_FEATURES.slice(startIdx, endIdx);
                       
                       return (
                         <div
