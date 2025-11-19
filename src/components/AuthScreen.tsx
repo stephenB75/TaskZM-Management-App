@@ -135,7 +135,8 @@ export function AuthScreen() {
 
   // Features Carousel State
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
-  const featuresPerPage = 6; // 2 rows x 3 columns
+  const featuresPerPageMobile = 6; // 2 rows x 3 columns for mobile
+  const featuresPerPageDesktop = 4; // 2 rows x 2 columns for desktop
 
   // Password strength
   const passwordStrength = getPasswordStrength(signUpPassword);
@@ -345,11 +346,16 @@ export function AuthScreen() {
 
   // Auto-scroll carousel
   React.useEffect(() => {
-    if (MARKETING_FEATURES.length <= featuresPerPage) return;
+    const getFeaturesPerPage = () => {
+      return window.innerWidth >= 1024 ? featuresPerPageDesktop : featuresPerPageMobile;
+    };
+    
+    const totalPages = Math.ceil(MARKETING_FEATURES.length / getFeaturesPerPage());
+    if (MARKETING_FEATURES.length <= getFeaturesPerPage()) return;
     
     const interval = setInterval(() => {
       setCurrentFeatureIndex((prev) =>
-        prev === Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 ? 0 : prev + 1
+        prev === totalPages - 1 ? 0 : prev + 1
       );
     }, 4000); // Change slide every 4 seconds
 
@@ -445,10 +451,10 @@ export function AuthScreen() {
         <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 items-start lg:items-center">
           {/* Left Side - Branding & Features */}
           <motion.div
-            className="order-2 lg:order-1 text-center lg:text-left space-y-2 sm:space-y-2.5 w-full"
+            className="order-2 lg:order-1 text-center space-y-2 sm:space-y-2.5 w-full"
             variants={itemVariants}
           >
-            <motion.div className="space-y-1.5 sm:space-y-2" variants={logoVariants}>
+            <motion.div className="space-y-1.5 sm:space-y-2 flex flex-col items-center" variants={logoVariants}>
               <motion.div
                 className="inline-flex items-center gap-1 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-white/50"
                 whileHover={{ scale: 1.05 }}
@@ -459,14 +465,14 @@ export function AuthScreen() {
                 </span>
               </motion.div>
 
-              <div className="flex flex-col items-center lg:items-start gap-0.5">
+              <div className="flex flex-col items-center gap-0.5">
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
                   className="w-[80px] sm:w-[100px] md:w-[140px] lg:w-[160px]"
                   whileHover={{ scale: 1.02 }}
                 />
-                <p className="text-[9px] sm:text-[10px] text-gray-700 dark:text-gray-200 text-center lg:text-left px-2 sm:px-0 max-w-md">
+                <p className="text-[9px] sm:text-[10px] text-gray-700 dark:text-gray-200 text-center px-2 sm:px-0 max-w-md">
                   Your calm, organized task companion
                 </p>
               </div>
@@ -488,32 +494,44 @@ export function AuthScreen() {
                   </Badge>
                 </div>
                 {/* Navigation Controls */}
-                {MARKETING_FEATURES.length > featuresPerPage && (
-                  <div className="flex items-center gap-0.5">
-                    <button
-                      onClick={() => {
-                        setCurrentFeatureIndex((prev) =>
-                          prev === 0 ? Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 : prev - 1
-                        );
-                      }}
-                      className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
-                      aria-label="Previous features"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setCurrentFeatureIndex((prev) =>
-                          prev === Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 ? 0 : prev + 1
-                        );
-                      }}
-                      className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
-                      aria-label="Next features"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                    </button>
-                  </div>
-                )}
+                {(() => {
+                  const totalPagesMobile = Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile);
+                  const totalPagesDesktop = Math.ceil(MARKETING_FEATURES.length / featuresPerPageDesktop);
+                  const hasMultiplePages = totalPagesMobile > 1 || totalPagesDesktop > 1;
+                  
+                  if (!hasMultiplePages) return null;
+                  
+                  return (
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        onClick={() => {
+                          setCurrentFeatureIndex((prev) => {
+                            const isDesktop = window.innerWidth >= 1024;
+                            const totalPages = isDesktop ? totalPagesDesktop : totalPagesMobile;
+                            return prev === 0 ? totalPages - 1 : prev - 1;
+                          });
+                        }}
+                        className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
+                        aria-label="Previous features"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCurrentFeatureIndex((prev) => {
+                            const isDesktop = window.innerWidth >= 1024;
+                            const totalPages = isDesktop ? totalPagesDesktop : totalPagesMobile;
+                            return prev === totalPages - 1 ? 0 : prev + 1;
+                          });
+                        }}
+                        className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
+                        aria-label="Next features"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Carousel Container with Gradient Fade */}
@@ -530,21 +548,26 @@ export function AuthScreen() {
                     }}
                     transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => (
-                      <div
-                        key={pageIndex}
-                        className="grid grid-cols-3 gap-x-2.5 sm:gap-x-3 gap-y-2.5 sm:gap-y-3 min-w-full flex-shrink-0 px-1"
-                      >
-                        {MARKETING_FEATURES.slice(
-                          pageIndex * featuresPerPage,
-                          pageIndex * featuresPerPage + featuresPerPage
-                        ).map(({ icon: Icon, title }) => (
-                          <motion.div
-                            key={title}
-                            className="flex flex-col items-center gap-1.5 text-center group"
-                            whileHover={{ scale: 1.08, y: -2 }}
-                            transition={{ duration: 0.2 }}
-                          >
+                    {/* Mobile: 3 columns (6 features per page), Desktop: 2 columns (4 features per page) */}
+                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile) }).map((_, pageIndex) => {
+                      const startIdx = pageIndex * featuresPerPageMobile;
+                      const endIdx = startIdx + featuresPerPageMobile;
+                      const pageFeatures = MARKETING_FEATURES.slice(startIdx, endIdx);
+                      
+                      return (
+                        <div
+                          key={pageIndex}
+                          className="grid grid-cols-3 lg:grid-cols-2 gap-x-2.5 sm:gap-x-3 gap-y-2.5 sm:gap-y-3 min-w-full flex-shrink-0 px-1"
+                        >
+                          {pageFeatures.map(({ icon: Icon, title }, featureIndex) => (
+                            <motion.div
+                              key={title}
+                              className={`flex flex-col items-center gap-1.5 text-center group ${
+                                featureIndex >= featuresPerPageDesktop ? 'lg:hidden' : ''
+                              }`}
+                              whileHover={{ scale: 1.08, y: -2 }}
+                              transition={{ duration: 0.2 }}
+                            >
                             <div className="relative">
                               <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow border-2 border-white/60 dark:border-gray-700/50">
                                 <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white drop-shadow-lg" />
@@ -555,31 +578,40 @@ export function AuthScreen() {
                             <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-semibold leading-tight px-0.5">
                               {title}
                             </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    ))}
+                            </motion.div>
+                          ))}
+                        </div>
+                      );
+                    })}
                   </motion.div>
                 </div>
               </div>
 
-              {/* Enhanced Dots Indicator */}
-              {MARKETING_FEATURES.length > featuresPerPage && (
-                <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                  {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentFeatureIndex(index)}
-                      className={`rounded-full transition-all duration-300 ${
-                        index === currentFeatureIndex
-                          ? "w-6 h-1.5 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9] shadow-sm"
-                          : "w-1.5 h-1.5 bg-gray-300/60 dark:bg-gray-600/60 hover:bg-gray-400/80 dark:hover:bg-gray-500/80"
-                      }`}
-                      aria-label={`Go to page ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
+              {/* Enhanced Dots Indicator - Smaller on Mobile */}
+              {(() => {
+                const totalPagesMobile = Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile);
+                const totalPagesDesktop = Math.ceil(MARKETING_FEATURES.length / featuresPerPageDesktop);
+                const maxPages = Math.max(totalPagesMobile, totalPagesDesktop);
+                
+                if (maxPages <= 1) return null;
+                
+                return (
+                  <div className="flex items-center justify-center gap-0.5 lg:gap-1.5 mt-1.5">
+                    {Array.from({ length: maxPages }).map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentFeatureIndex(index)}
+                        className={`rounded-full transition-all duration-300 ${
+                          index === currentFeatureIndex
+                            ? "w-2.5 h-1 lg:w-6 lg:h-1.5 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9] shadow-sm"
+                            : "w-1 h-1 lg:w-1.5 lg:h-1.5 bg-gray-300/60 dark:bg-gray-600/60 hover:bg-gray-400/80 dark:hover:bg-gray-500/80"
+                        }`}
+                        aria-label={`Go to page ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </motion.div>
           </motion.div>
 
