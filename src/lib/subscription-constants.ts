@@ -197,25 +197,30 @@ export const SUBSCRIPTION_UI_TEXT = {
     hookError: "useSubscription must be used within a SubscriptionProvider",
   },
   planCards: {
+    loading: "Loading pricing...",
     monthly: {
       title: "Pro Monthly",
       billingPeriod: "Billed monthly",
+      notAvailable: "Monthly subscription not available",
       button: {
         processing: "Processing...",
         current: "Current Plan",
         upgrade: "Upgrade Monthly",
+        switch: "Switch to Monthly",
       },
     },
     yearly: {
       title: "Pro Yearly",
       billingPeriod: "Billed annually",
       badge: "Best Value",
+      notAvailable: "Yearly subscription not available",
       savingsLabel: (percent: number) => `Save ${percent}%`,
       perMonthLabel: (price: string) => `$${price} per month`,
       button: {
         processing: "Processing...",
         current: "Current Plan",
         upgrade: "Upgrade Yearly",
+        switch: "Switch to Yearly",
       },
     },
     priceUnits: {

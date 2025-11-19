@@ -268,12 +268,12 @@ export function PricingDialog({
         source: 'RevenueCat',
       });
       
-      // Warn if yearly price seems incorrect
+      // Warn if yearly price seems incorrect (too low or invalid)
       if (isNaN(yearlyPriceNum) || yearlyPriceNum <= 0 || yearlyPriceNum < 10) {
         console.warn('⚠️ Yearly subscription price may be incorrect:', {
           priceString: yearlyOffering.priceString,
           numericValue: yearlyPriceNum,
-          expected: 'Should be around $47.99',
+          note: 'Price seems unusually low. Verify RevenueCat configuration.',
         });
       }
     }
@@ -484,7 +484,7 @@ export function PricingDialog({
                 </div>
                 {subscription.tier === "free" && (
                   <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-[9px] md:text-[10px] px-1.5 py-0.5 shadow-sm flex-shrink-0 ml-1.5">
-                    Current Plan
+                    {SUBSCRIPTION_UI_TEXT.free.button.current}
                   </Badge>
                 )}
               </div>
@@ -527,7 +527,7 @@ export function PricingDialog({
                     <span className="text-[10px] md:text-[11px]">{SUBSCRIPTION_UI_TEXT.pro.button.downgrading}</span>
                   </span>
                 ) : subscription.tier === "free" ? (
-                  "Current Plan"
+                  SUBSCRIPTION_UI_TEXT.free.button.current
                 ) : (
                   SUBSCRIPTION_UI_TEXT.free.button.downgrade
                 )}
@@ -552,7 +552,7 @@ export function PricingDialog({
                 {subscription.tier === "pro" && subscription.billingPeriod === "monthly" && (
                   <div className="absolute top-1.5 right-1.5 z-20">
                     <Badge className="bg-[#9B87E8] text-white border-0 shadow-md px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium">
-                      Current Plan
+                      {SUBSCRIPTION_UI_TEXT.pro.button.current}
                     </Badge>
                   </div>
                 )}
@@ -618,9 +618,9 @@ export function PricingDialog({
                       <span className="text-[10px] md:text-[11px]">{SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}</span>
                     </span>
                   ) : subscription.tier === "pro" && subscription.billingPeriod === "monthly" ? (
-                    "Current Plan"
+                    SUBSCRIPTION_UI_TEXT.pro.button.current
                   ) : subscription.tier === "pro" ? (
-                    "Switch to Monthly"
+                    SUBSCRIPTION_UI_TEXT.planCards.monthly.button.switch
                   ) : (
                     <span className="flex items-center justify-center gap-1.5">
                       <Sparkles className="w-2.5 h-2.5" />
@@ -639,7 +639,7 @@ export function PricingDialog({
               >
                 <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-4">
                   <p className="text-[11px] md:text-xs text-muted-foreground text-center">
-                    {isLoadingOfferings ? 'Loading pricing...' : 'Monthly subscription not available'}
+                    {isLoadingOfferings ? SUBSCRIPTION_UI_TEXT.planCards.loading : SUBSCRIPTION_UI_TEXT.planCards.monthly.notAvailable}
                   </p>
                 </div>
               </motion.div>
@@ -663,7 +663,7 @@ export function PricingDialog({
               <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5">
                 {subscription.tier === "pro" && subscription.billingPeriod === "yearly" && (
                   <Badge className="bg-[#9B87E8] text-white border-0 shadow-md px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium mb-0.5">
-                    Current Plan
+                    {SUBSCRIPTION_UI_TEXT.pro.button.current}
                   </Badge>
                 )}
                 <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-md px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium">
@@ -759,9 +759,9 @@ export function PricingDialog({
                       <span className="text-[10px] md:text-[11px]">{SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}</span>
                     </span>
                   ) : subscription.tier === "pro" && subscription.billingPeriod === "yearly" ? (
-                    "Current Plan"
+                    SUBSCRIPTION_UI_TEXT.pro.button.current
                   ) : subscription.tier === "pro" ? (
-                    "Switch to Yearly"
+                    SUBSCRIPTION_UI_TEXT.planCards.yearly.button.switch
                   ) : (
                     <span className="flex items-center justify-center gap-1.5">
                       <Sparkles className="w-2.5 h-2.5" />
@@ -780,7 +780,7 @@ export function PricingDialog({
               >
                 <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-4">
                   <p className="text-[11px] md:text-xs text-muted-foreground text-center">
-                    {isLoadingOfferings ? 'Loading pricing...' : 'Yearly subscription not available'}
+                    {isLoadingOfferings ? SUBSCRIPTION_UI_TEXT.planCards.loading : SUBSCRIPTION_UI_TEXT.planCards.yearly.notAvailable}
                   </p>
                 </div>
               </motion.div>
