@@ -472,29 +472,34 @@ export function AuthScreen() {
               </div>
             </motion.div>
 
-            {/* Features Carousel */}
+            {/* Features Carousel - Redesigned */}
             <motion.div
-              className="space-y-1.5"
+              className="space-y-2"
               variants={itemVariants}
             >
-              <div className="flex items-center justify-center lg:justify-start gap-2 mb-1.5">
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  14 Smart Features
-                </h3>
-                <Badge className="bg-[#D4C5F9]/90 text-gray-800 border-0 text-[9px] sm:text-[10px] px-1.5 py-0.5">Free</Badge>
-                {/* Inline Navigation Controls */}
+              {/* Header with Controls */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    14 Smart Features
+                  </h3>
+                  <Badge className="bg-gradient-to-r from-[#D4C5F9] to-[#B4E4FF] text-gray-800 border-0 text-[8px] sm:text-[9px] px-1.5 py-0.5 shadow-sm">
+                    Free
+                  </Badge>
+                </div>
+                {/* Navigation Controls */}
                 {MARKETING_FEATURES.length > featuresPerPage && (
-                  <div className="flex items-center gap-1 ml-auto">
+                  <div className="flex items-center gap-0.5">
                     <button
                       onClick={() => {
                         setCurrentFeatureIndex((prev) =>
                           prev === 0 ? Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 : prev - 1
                         );
                       }}
-                      className="p-0.5 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded transition-colors"
+                      className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
                       aria-label="Previous features"
                     >
-                      <ChevronLeft className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                      <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
                     </button>
                     <button
                       onClick={() => {
@@ -502,63 +507,73 @@ export function AuthScreen() {
                           prev === Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 ? 0 : prev + 1
                         );
                       }}
-                      className="p-0.5 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded transition-colors"
+                      className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
                       aria-label="Next features"
                     >
-                      <ChevronRight className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Carousel Container */}
-              <div className="overflow-hidden min-h-[70px] sm:min-h-[80px]">
-                <motion.div
-                  className="flex"
-                  animate={{
-                    x: `-${currentFeatureIndex * 100}%`,
-                  }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                >
-                  {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => (
-                    <div
-                      key={pageIndex}
-                      className="grid grid-cols-3 gap-x-3 sm:gap-x-4 gap-y-2.5 sm:gap-y-3 min-w-full flex-shrink-0"
-                    >
-                      {MARKETING_FEATURES.slice(
-                        pageIndex * featuresPerPage,
-                        pageIndex * featuresPerPage + featuresPerPage
-                      ).map(({ icon: Icon, title }) => (
-                        <motion.div
-                          key={title}
-                          className="flex items-center gap-1.5 sm:gap-2"
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.15 }}
-                        >
-                          <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#7B68EE] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0 shadow-lg border-2 border-white dark:border-gray-600">
-                            <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white drop-shadow-md" />
-                          </div>
-                          <span className="text-[10px] sm:text-[11px] md:text-xs text-gray-900 dark:text-white font-semibold leading-tight">
-                            {title}
-                          </span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  ))}
-                </motion.div>
+              {/* Carousel Container with Gradient Fade */}
+              <div className="relative overflow-hidden rounded-lg">
+                {/* Gradient Fade Edges */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+                
+                <div className="overflow-hidden min-h-[75px] sm:min-h-[85px]">
+                  <motion.div
+                    className="flex"
+                    animate={{
+                      x: `-${currentFeatureIndex * 100}%`,
+                    }}
+                    transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                  >
+                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => (
+                      <div
+                        key={pageIndex}
+                        className="grid grid-cols-3 gap-x-2.5 sm:gap-x-3 gap-y-2.5 sm:gap-y-3 min-w-full flex-shrink-0 px-1"
+                      >
+                        {MARKETING_FEATURES.slice(
+                          pageIndex * featuresPerPage,
+                          pageIndex * featuresPerPage + featuresPerPage
+                        ).map(({ icon: Icon, title }) => (
+                          <motion.div
+                            key={title}
+                            className="flex flex-col items-center gap-1.5 text-center group"
+                            whileHover={{ scale: 1.08, y: -2 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <div className="relative">
+                              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow border-2 border-white/60 dark:border-gray-700/50">
+                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white drop-shadow-lg" />
+                              </div>
+                              {/* Glow effect on hover */}
+                              <div className="absolute inset-0 bg-gradient-to-br from-[#7B68EE]/30 to-[#D4C5F9]/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
+                            </div>
+                            <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-semibold leading-tight px-0.5">
+                              {title}
+                            </span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    ))}
+                  </motion.div>
+                </div>
               </div>
 
-              {/* Dots Indicator - Below Carousel */}
+              {/* Enhanced Dots Indicator */}
               {MARKETING_FEATURES.length > featuresPerPage && (
-                <div className="flex items-center justify-center gap-1 mt-1">
+                <div className="flex items-center justify-center gap-1.5 mt-1.5">
                   {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentFeatureIndex(index)}
-                      className={`h-1 rounded-full transition-all ${
+                      className={`rounded-full transition-all duration-300 ${
                         index === currentFeatureIndex
-                          ? "w-4 bg-[#7B68EE]"
-                          : "w-1 bg-gray-400/50 dark:bg-gray-500/50"
+                          ? "w-6 h-1.5 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9] shadow-sm"
+                          : "w-1.5 h-1.5 bg-gray-300/60 dark:bg-gray-600/60 hover:bg-gray-400/80 dark:hover:bg-gray-500/80"
                       }`}
                       aria-label={`Go to page ${index + 1}`}
                     />
