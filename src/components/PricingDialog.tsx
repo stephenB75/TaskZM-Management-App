@@ -35,8 +35,6 @@ import {
   PRO_MONTHLY_FEATURES_LIST,
   PRO_YEARLY_FEATURES_LIST,
   FEATURES_DISPLAY_LIMIT,
-  DEFAULT_MONTHLY_PRICE,
-  DEFAULT_YEARLY_PRICE,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
 import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured } from "../lib/revenuecat";
@@ -89,41 +87,35 @@ export function PricingDialog({
         isRCConfigured: isRevenueCatConfigured(),
       });
 
-      // Only show error if RevenueCat is configured but returned no offerings
-      // If RevenueCat is not configured, we'll use fallback pricing (no error)
+      // Require RevenueCat to be configured and return offerings
       const hasMonthly = rcOfferings.monthly !== null;
       const hasYearly = rcOfferings.yearly !== null;
       
       if (!hasMonthly && !hasYearly) {
-        // Check if RevenueCat is configured
-        if (isRevenueCatConfigured()) {
-          // RevenueCat is configured but returned no offerings - this is an error
-          console.warn('⚠️ RevenueCat configured but no offerings returned');
-          setOfferingsError(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
-        } else {
-          // RevenueCat not configured - use fallbacks silently (this is expected)
-          console.log('ℹ️ RevenueCat not configured, using fallback pricing');
-          setOfferingsError(null);
-        }
+        // RevenueCat must be configured and return offerings
+        console.warn('⚠️ RevenueCat configured but no offerings returned');
+        setOfferingsError(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
+      } else if (!hasMonthly) {
+        // Only yearly available
+        console.warn('⚠️ Only yearly subscription available');
+        setOfferingsError(SUBSCRIPTION_UI_TEXT.upgrade.monthlyNotAvailable);
+      } else if (!hasYearly) {
+        // Only monthly available
+        console.warn('⚠️ Only monthly subscription available');
+        setOfferingsError(SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable);
       } else {
-        // We have at least one offering from RevenueCat - clear any errors
-        console.log(`✅ Offerings loaded: ${hasMonthly ? 'monthly' : ''} ${hasYearly ? 'yearly' : ''}`);
+        // We have both offerings from RevenueCat - clear any errors
+        console.log('✅ Both offerings loaded from RevenueCat');
         setOfferingsError(null);
       }
 
       setOfferings(rcOfferings);
       onOfferingsUpdated?.();
     } catch (error: any) {
-      console.warn('RevenueCat offerings load failed:', error);
-      // Only set error if it's a critical failure
-      // If RevenueCat is not configured, we'll use fallbacks
-      const errorMessage = error?.message || '';
-      if (!errorMessage.includes('not configured') && !errorMessage.includes('API key')) {
-        setOfferingsError(errorMessage || SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
-      } else {
-        // RevenueCat not configured is not an error - we use fallbacks
-        setOfferingsError(null);
-      }
+      console.error('RevenueCat offerings load failed:', error);
+      // All RevenueCat errors are critical - we require RevenueCat pricing
+      const errorMessage = error?.message || SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc;
+      setOfferingsError(errorMessage);
     } finally {
       setIsLoadingOfferings(false);
     }
@@ -205,60 +197,38 @@ export function PricingDialog({
     }
   };
 
-  const fallbackMonthly: DialogOffering = {
-    priceString: DEFAULT_MONTHLY_PRICE,
-    title: SUBSCRIPTION_UI_TEXT.planCards.monthly.title,
-    description: SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod,
-  };
-
-  const fallbackYearly: DialogOffering = {
-    priceString: DEFAULT_YEARLY_PRICE,
-    title: SUBSCRIPTION_UI_TEXT.planCards.yearly.title,
-    description: SUBSCRIPTION_UI_TEXT.planCards.yearly.billingPeriod,
-  };
-
-  const monthlyOffering = offerings.monthly ?? fallbackMonthly;
-  const yearlyOffering = offerings.yearly ?? fallbackYearly;
+  // Only use RevenueCat offerings - no fallbacks
+  const monthlyOffering = offerings.monthly;
+  const yearlyOffering = offerings.yearly;
   
-  // Log which offerings are being used (RevenueCat or fallback)
+  // Log RevenueCat offerings
   React.useEffect(() => {
-    const usingRCMonthly = offerings.monthly !== null;
-    const usingRCYearly = offerings.yearly !== null;
-    const yearlyPriceNum = parseFloat(yearlyOffering.priceString.replace(/[^0-9.]/g, ''));
-    console.log('💰 Current offerings in UI:', {
-      monthly: {
-        source: usingRCMonthly ? 'RevenueCat' : 'Fallback',
-        priceString: monthlyOffering.priceString,
-        title: monthlyOffering.title,
-      },
-      yearly: {
-        source: usingRCYearly ? 'RevenueCat' : 'Fallback',
-        priceString: yearlyOffering.priceString,
-        title: yearlyOffering.title,
-        numericValue: yearlyPriceNum,
-        isValid: !isNaN(yearlyPriceNum) && yearlyPriceNum > 0,
-        perMonth: (yearlyPriceNum / 12).toFixed(2),
-      },
-    });
-    
-    // Warn if yearly price seems incorrect
-    if (usingRCYearly && (isNaN(yearlyPriceNum) || yearlyPriceNum <= 0 || yearlyPriceNum < 10)) {
-      console.warn('⚠️ Yearly subscription price may be incorrect:', {
-        priceString: yearlyOffering.priceString,
-        numericValue: yearlyPriceNum,
-        expected: 'Should be around $47.99',
+    if (monthlyOffering && yearlyOffering) {
+      const yearlyPriceNum = parseFloat(yearlyOffering.priceString.replace(/[^0-9.]/g, ''));
+      console.log('💰 RevenueCat offerings in UI:', {
+        monthly: {
+          priceString: monthlyOffering.priceString,
+          title: monthlyOffering.title,
+        },
+        yearly: {
+          priceString: yearlyOffering.priceString,
+          title: yearlyOffering.title,
+          numericValue: yearlyPriceNum,
+          isValid: !isNaN(yearlyPriceNum) && yearlyPriceNum > 0,
+          perMonth: (yearlyPriceNum / 12).toFixed(2),
+        },
       });
+      
+      // Warn if yearly price seems incorrect
+      if (isNaN(yearlyPriceNum) || yearlyPriceNum <= 0 || yearlyPriceNum < 10) {
+        console.warn('⚠️ Yearly subscription price may be incorrect:', {
+          priceString: yearlyOffering.priceString,
+          numericValue: yearlyPriceNum,
+          expected: 'Should be around $47.99',
+        });
+      }
     }
-  }, [offerings, monthlyOffering, yearlyOffering]);
-  
-  // Clear error if we have valid offerings available (fallbacks are valid)
-  // This ensures the error doesn't persist when fallback pricing is being used
-  React.useEffect(() => {
-    if (monthlyOffering && yearlyOffering && offeringsError) {
-      // We have both offerings (from RevenueCat or fallbacks) - clear error
-      setOfferingsError(null);
-    }
-  }, [monthlyOffering, yearlyOffering, offeringsError]);
+  }, [monthlyOffering, yearlyOffering]);
   const formatPrice = (price: string | undefined) => {
     if (isLoadingOfferings) return 'Loading…';
     if (!price) return '—';
@@ -287,6 +257,7 @@ export function PricingDialog({
     isLoadingOfferings ? 'Fetching latest pricing…' : description;
 
   const calculateSavings = () => {
+    if (!monthlyOffering || !yearlyOffering) return 0;
     // Calculate savings between monthly and yearly
     // Extract numeric values from price strings (e.g., "$3.99" -> 3.99)
     const monthlyPriceStr = monthlyOffering.priceString.replace(/[^0-9.]/g, '');
@@ -496,37 +467,38 @@ export function PricingDialog({
             </motion.div>
 
             {/* Monthly Pro Tier */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
-              
-              <div className="relative z-10 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                        {monthlyOffering.title}
-                      </h3>
-                      <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
+            {monthlyOffering ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-xl hover:shadow-[#9B87E8]/30 transition-all duration-300 flex flex-col"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-2xl" />
+                
+                <div className="relative z-10 flex flex-col flex-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                          {monthlyOffering.title}
+                        </h3>
+                        <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-[#9B87E8] animate-pulse" />
+                      </div>
+                      <p className="text-xs md:text-sm text-muted-foreground">
+                        {formatDescription(monthlyOffering.description)}
+                      </p>
                     </div>
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                      {formatDescription(monthlyOffering.description)}
-                    </p>
                   </div>
-                </div>
 
-                <div className="mb-4">
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {formatPrice(monthlyOffering.priceString)}
-                    </span>
-                    <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
+                  <div className="mb-4">
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                        {formatPrice(monthlyOffering.priceString)}
+                      </span>
+                      <span className="text-sm md:text-base text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
+                    </div>
                   </div>
-                </div>
 
                 <ul className="space-y-2 mb-4 flex-1">
                   {monthlyProFeatures.filter(f => !f.isHeader).slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
@@ -575,14 +547,29 @@ export function PricingDialog({
                 </Button>
               </div>
             </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="relative border-2 border-gray-300 dark:border-gray-600 rounded-xl md:rounded-2xl p-4 md:p-5 bg-gray-50 dark:bg-gray-800 overflow-hidden flex flex-col opacity-50"
+              >
+                <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-8">
+                  <p className="text-sm text-muted-foreground text-center">
+                    {isLoadingOfferings ? 'Loading pricing...' : 'Monthly subscription not available'}
+                  </p>
+                </div>
+              </motion.div>
+            )}
 
             {/* Yearly Pro Tier */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/40 transition-all duration-300 flex flex-col"
-            >
+            {yearlyOffering ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="relative border-2 border-[#9B87E8] rounded-xl md:rounded-2xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-2xl hover:shadow-[#9B87E8]/40 transition-all duration-300 flex flex-col"
+              >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-2xl" />
               
               <div className="absolute top-3 right-3 z-20">
@@ -687,6 +674,20 @@ export function PricingDialog({
                 </Button>
               </div>
             </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="relative border-2 border-gray-300 dark:border-gray-600 rounded-xl md:rounded-2xl p-4 md:p-5 bg-gray-50 dark:bg-gray-800 overflow-hidden flex flex-col opacity-50"
+              >
+                <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-8">
+                  <p className="text-sm text-muted-foreground text-center">
+                    {isLoadingOfferings ? 'Loading pricing...' : 'Yearly subscription not available'}
+                  </p>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           <div className="mt-5 md:mt-7 p-3 md:p-4 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg md:rounded-xl border-2 border-[#9B87E8]/30 shadow-lg backdrop-blur-sm">
