@@ -453,37 +453,37 @@ export function AuthScreen() {
             </motion.div>
 
             <motion.div
-              className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-xl border-2 border-white/70 dark:border-gray-700/50 px-3 py-3 sm:px-4 sm:py-4 shadow-xl"
+              className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-lg border border-white/70 dark:border-gray-700/50 px-2.5 py-2.5 sm:px-3 sm:py-3 shadow-lg max-h-[280px] sm:max-h-[320px] overflow-y-auto"
               variants={itemVariants}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-2 text-left sticky top-0 bg-white/95 dark:bg-gray-900/95 pb-2 -mx-2.5 sm:-mx-3 px-2.5 sm:px-3 z-10">
                 <div>
-                  <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                  <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">
                     Everything you need
                   </p>
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    14 smart features included
+                  <h3 className="text-[10px] sm:text-xs font-semibold text-gray-900 dark:text-gray-100">
+                    14 smart features
                   </h3>
                 </div>
-                <Badge className="self-start sm:self-auto bg-[#D4C5F9] text-gray-800 border-0 text-[9px] sm:text-[10px] px-2 py-0.5">No credit card</Badge>
+                <Badge className="self-start sm:self-auto bg-[#D4C5F9] text-gray-800 border-0 text-[8px] sm:text-[9px] px-1.5 py-0.5">No credit card</Badge>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1 sm:gap-1.5">
                 {MARKETING_FEATURES.map(({ icon: Icon, title, subtitle }) => (
                   <motion.div
                     key={title}
-                    className="flex items-center gap-1 bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/60 rounded-md px-1.5 py-1.5 sm:px-2 sm:py-1.5 shadow-sm hover:shadow transition-shadow"
-                    whileHover={{ scale: 1.03, y: -1 }}
+                    className="flex items-center gap-1 bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/60 rounded px-1.5 py-1 sm:py-1.5 shadow-sm hover:shadow transition-shadow"
+                    whileHover={{ scale: 1.02, y: -1 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Icon className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" />
                     </div>
                     <div className="min-w-0 flex-1 text-left">
-                      <h3 className="text-[9px] sm:text-[10px] text-gray-900 dark:text-white font-medium leading-tight truncate">
+                      <h3 className="text-[8px] sm:text-[9px] text-gray-900 dark:text-white font-medium leading-tight truncate">
                         {title}
                       </h3>
-                      <p className="text-[8px] sm:text-[9px] text-gray-600 dark:text-gray-400 leading-tight truncate">
+                      <p className="text-[7px] sm:text-[8px] text-gray-600 dark:text-gray-400 leading-tight truncate">
                         {subtitle}
                       </p>
                     </div>
