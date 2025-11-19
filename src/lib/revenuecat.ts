@@ -152,8 +152,8 @@ function findPackageByType(
   console.log(`   Expected Product ID: ${productId}`);
   console.log(`   Expected Keywords: ${keywords.join(', ')}`);
   
-  // Special check for rc_annual and prod77566b1baf connection
-  if (type === 'yearly' && productId === 'prod77566b1baf') {
+  // Special check for rc_annual and yearly product ID connection
+  if (type === 'yearly' && productId === REVENUECAT_YEARLY_PRODUCT_ID) {
     console.log(`   🔗 Checking for rc_annual identifier matching product ID: ${productId}`);
   }
   
@@ -196,8 +196,8 @@ function findPackageByType(
     })
   );
   
-  // Log confirmation if rc_annual matches prod77566b1baf
-  if (type === 'yearly' && productId === 'prod77566b1baf') {
+  // Log confirmation if rc_annual matches yearly product ID
+  if (type === 'yearly' && productId === REVENUECAT_YEARLY_PRODUCT_ID) {
     const rcAnnualPackage = availablePackages.find((pkg: any) => {
       const identifier = (pkg?.identifier || '').toLowerCase();
       return identifier === 'rc_annual' || identifier === '$rc_annual';
@@ -221,7 +221,7 @@ function findPackageByType(
       });
       
       if (matchesProductId) {
-        console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${productId} (prod77566b1baf)`);
+        console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${productId} (${REVENUECAT_YEARLY_PRODUCT_ID})`);
       } else {
         console.warn(`⚠️ WARNING: rc_annual identifier found but product ID doesn't match ${productId}`);
         console.warn(`   Package has product IDs:`, {
@@ -284,9 +284,9 @@ function findPackageByType(
     
     console.log(`✅ Found ${type} package by product ID: ${productId}`, byProductId.identifier);
     
-    // Confirm rc_annual matches prod77566b1baf
-    if (type === 'yearly' && productId === 'prod77566b1baf' && isRcAnnual) {
-      console.log(`✅ CONFIRMED: rc_annual identifier matches product ID prod77566b1baf`);
+    // Confirm rc_annual matches yearly product ID
+    if (type === 'yearly' && productId === REVENUECAT_YEARLY_PRODUCT_ID && isRcAnnual) {
+      console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${REVENUECAT_YEARLY_PRODUCT_ID}`);
       console.log(`   Package identifier: ${byProductId.identifier}`);
       console.log(`   Product ID: ${productId}`);
     }
@@ -370,8 +370,8 @@ function findPackageByType(
       console.log('✅ CONFIRMED: Yearly subscription is using identifier "rc_annual"');
       
       // Verify it matches the expected product ID
-      if (packageProductId === productId && productId === 'prod77566b1baf') {
-        console.log(`✅ CONFIRMED: rc_annual identifier matches product ID prod77566b1baf`);
+      if (packageProductId === productId && productId === REVENUECAT_YEARLY_PRODUCT_ID) {
+        console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${REVENUECAT_YEARLY_PRODUCT_ID}`);
         console.log(`   Package identifier: ${matchedIdentifier}`);
         console.log(`   Package product ID: ${packageProductId}`);
         console.log(`   Expected product ID: ${productId}`);
@@ -514,8 +514,8 @@ export async function getOfferings(): Promise<{
       console.log(`✅ Found rc_annual package in offering "${rcAnnualOfferingKey}":`, {
         packageIdentifier: rcAnnualPkg?.identifier,
         productId: productId,
-        expectedProductId: 'prod77566b1baf',
-        matchesExpected: productId === 'prod77566b1baf',
+        expectedProductId: REVENUECAT_YEARLY_PRODUCT_ID,
+        matchesExpected: productId === REVENUECAT_YEARLY_PRODUCT_ID,
         price: rcAnnualPkg?.storeProduct?.priceString || rcAnnualPkg?.rcBillingProduct?.priceString || 'N/A',
         allProductIds: {
           storeProduct: rcAnnualPkg?.storeProduct?.identifier,
@@ -524,15 +524,15 @@ export async function getOfferings(): Promise<{
         },
       });
       
-      if (productId === 'prod77566b1baf') {
-        console.log(`✅ CONFIRMED: rc_annual package has correct product ID (prod77566b1baf)`);
+      if (productId === REVENUECAT_YEARLY_PRODUCT_ID) {
+        console.log(`✅ CONFIRMED: rc_annual package has correct product ID (${REVENUECAT_YEARLY_PRODUCT_ID})`);
       } else {
         console.warn(`⚠️ WARNING: rc_annual package has different product ID than expected`);
         console.warn(`   Package product ID: ${productId}`);
-        console.warn(`   Expected product ID: prod77566b1baf`);
+        console.warn(`   Expected product ID: ${REVENUECAT_YEARLY_PRODUCT_ID}`);
         console.warn(`   → This might be a configuration issue in RevenueCat Dashboard`);
-        console.warn(`   → The package identifier "rc_annual" should be linked to product "prod77566b1baf"`);
-        console.warn(`   → Check RevenueCat Dashboard → Products → Find product "prod77566b1baf"`);
+        console.warn(`   → The package identifier "rc_annual" should be linked to product "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
+        console.warn(`   → Check RevenueCat Dashboard → Products → Find product "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
         console.warn(`   → Then check Packages → Ensure "rc_annual" package uses this product`);
       }
     } else {
@@ -600,8 +600,8 @@ export async function getOfferings(): Promise<{
       console.warn('');
       console.warn('   📋 SPECIFIC INSTRUCTIONS FOR YEARLY PACKAGE:');
       console.warn('   - The yearly package should have identifier: "rc_annual" (or "$rc_annual")');
-      console.warn('   - The yearly package should use product ID: "prod77566b1baf"');
-      console.warn('   - Go to RevenueCat Dashboard → Products → Find product "prod77566b1baf"');
+      console.warn(`   - The yearly package should use product ID: "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
+      console.warn(`   - Go to RevenueCat Dashboard → Products → Find product "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
       console.warn('   - Create a package with identifier "rc_annual" for this product');
       console.warn('   - Add this package to your Current Offering');
     }
@@ -692,7 +692,7 @@ export async function getOfferings(): Promise<{
         console.warn('⚠️ Yearly package (rc_annual) was found in another offering, but not in the current offering!');
         console.warn('   → You need to add the "rc_annual" package to your Current Offering');
         console.warn('   → RevenueCat Dashboard → Offerings → Current Offering → Add Package');
-        console.warn('   → Select the package with identifier "rc_annual" and product ID "prod77566b1baf"');
+        console.warn(`   → Select the package with identifier "rc_annual" and product ID "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
       }
     }
 

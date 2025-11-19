@@ -32,7 +32,7 @@ export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 
 // RevenueCat Product IDs (from RevenueCat dashboard)
 export const REVENUECAT_MONTHLY_PRODUCT_ID = 'prodb18a767009';
-export const REVENUECAT_YEARLY_PRODUCT_ID = 'prod77566b1baf';
+export const REVENUECAT_YEARLY_PRODUCT_ID = 'prod7fa9c154cb';
 
 // Number of PRO features (for UI display)
 export const PRO_FEATURES_COUNT = 7;
