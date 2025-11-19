@@ -999,45 +999,48 @@ export function AuthScreen() {
                 <div className="flex items-center justify-center gap-2.5 sm:gap-3">
                   {/* App Store Badge */}
                   <motion.div
-                    className="relative flex items-center gap-2 bg-gradient-to-br from-[#000000] to-[#1a1a1a] rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 cursor-not-allowed opacity-70 shadow-lg border border-gray-800/50"
-                    whileHover={{ scale: 1.03, opacity: 0.8 }}
+                    className="flex items-center gap-2.5 bg-black rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 cursor-not-allowed opacity-70 hover:opacity-80 transition-opacity"
+                    whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
                   >
+                    {/* Apple Logo */}
                     <svg
                       className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0"
                       viewBox="0 0 24 24"
-                      fill="none"
+                      fill="white"
                     >
-                      <path
-                        d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 2.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
-                        fill="white"
-                      />
+                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 2.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                     </svg>
                     <div className="flex flex-col leading-tight">
-                      <span className="text-[9px] sm:text-[10px] text-white/80 font-medium">Download on the</span>
-                      <span className="text-[11px] sm:text-xs font-bold text-white">App Store</span>
+                      <span className="text-[9px] sm:text-[10px] text-white uppercase tracking-wide">Download on the</span>
+                      <span className="text-[11px] sm:text-xs font-semibold text-white">App Store</span>
                     </div>
                   </motion.div>
 
                   {/* Google Play Badge */}
                   <motion.div
-                    className="relative flex items-center gap-2 bg-gradient-to-br from-[#01875f] to-[#00a862] rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 cursor-not-allowed opacity-70 shadow-lg border border-green-700/50"
-                    whileHover={{ scale: 1.03, opacity: 0.8 }}
+                    className="flex items-center gap-2.5 bg-black rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 cursor-not-allowed opacity-70 hover:opacity-80 transition-opacity"
+                    whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
                   >
+                    {/* Google Play Logo - Colorful triangular play button */}
                     <svg
                       className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0"
                       viewBox="0 0 24 24"
                       fill="none"
                     >
-                      <path
-                        d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.25,14.5L13.69,12L17.25,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"
-                        fill="white"
-                      />
+                      {/* Blue triangle */}
+                      <path d="M1.5 1.5L1.5 22.5L13.5 12L1.5 1.5Z" fill="#4285F4" />
+                      {/* Green triangle */}
+                      <path d="M13.5 12L1.5 22.5L13.5 22.5L22.5 12L13.5 12Z" fill="#34A853" />
+                      {/* Yellow triangle */}
+                      <path d="M13.5 12L22.5 12L13.5 1.5L13.5 12Z" fill="#FBBC04" />
+                      {/* Red triangle */}
+                      <path d="M1.5 1.5L13.5 1.5L13.5 12L1.5 1.5Z" fill="#EA4335" />
                     </svg>
                     <div className="flex flex-col leading-tight">
-                      <span className="text-[9px] sm:text-[10px] text-white/90 font-medium">Get it on</span>
-                      <span className="text-[11px] sm:text-xs font-bold text-white">Google Play</span>
+                      <span className="text-[9px] sm:text-[10px] text-white uppercase tracking-wide">GET IT ON</span>
+                      <span className="text-[11px] sm:text-xs font-semibold text-white">Google Play</span>
                     </div>
                   </motion.div>
                 </div>
