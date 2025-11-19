@@ -422,13 +422,13 @@ export function AuthScreen() {
         initial="hidden"
         animate="visible"
       >
-        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-4 sm:gap-6 items-start">
+        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start lg:items-center">
           {/* Left Side - Branding & Features */}
           <motion.div
-            className="order-2 lg:order-1 text-center lg:text-left space-y-3 sm:space-y-4 w-full"
+            className="order-2 lg:order-1 text-center lg:text-left space-y-2.5 sm:space-y-3 w-full"
             variants={itemVariants}
           >
-            <motion.div className="space-y-2" variants={logoVariants}>
+            <motion.div className="space-y-2 sm:space-y-2.5" variants={logoVariants}>
               <motion.div
                 className="inline-flex items-center gap-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-2 py-0.5 sm:py-1 rounded-full shadow border border-white/50"
                 whileHover={{ scale: 1.05 }}
@@ -443,47 +443,47 @@ export function AuthScreen() {
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
-                  className="w-[110px] sm:w-[150px] md:w-[180px]"
+                  className="w-[100px] sm:w-[130px] md:w-[160px] lg:w-[180px]"
                   whileHover={{ scale: 1.02 }}
                 />
-                <p className="text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-200 text-center lg:text-left px-2 sm:px-0">
+                <p className="text-[11px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-200 text-center lg:text-left px-2 sm:px-0 max-w-md">
                   Your calm, organized task companion—free forever, upgrade when you need more.
                 </p>
               </div>
             </motion.div>
 
             <motion.div
-              className="bg-white/85 dark:bg-gray-900/80 backdrop-blur rounded-2xl border border-white/60 px-3 py-3 sm:px-4 sm:py-4 max-h-[360px] sm:max-h-none overflow-y-auto shadow-lg"
+              className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-xl border-2 border-white/70 dark:border-gray-700/50 px-3 py-3 sm:px-4 sm:py-4 shadow-xl"
               variants={itemVariants}
             >
-              <div className="flex items-center justify-between mb-3 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 text-left">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
-                    Everything you need to stay on track
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                    Everything you need
                   </p>
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">
-                    14 smart features included in Free + Pro
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    14 smart features included
                   </h3>
                 </div>
-                <Badge className="hidden sm:inline-flex bg-[#D4C5F9] text-gray-800 border-0">No credit card</Badge>
+                <Badge className="self-start sm:self-auto bg-[#D4C5F9] text-gray-800 border-0 text-[9px] sm:text-[10px] px-2 py-0.5">No credit card</Badge>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1.5 sm:gap-2">
                 {MARKETING_FEATURES.map(({ icon: Icon, title, subtitle }) => (
                   <motion.div
                     key={title}
-                    className="flex items-center gap-1.5 bg-white dark:bg-gray-900/70 border border-gray-100/70 dark:border-gray-700/60 rounded-lg px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-sm"
-                    whileHover={{ scale: 1.02, y: -1 }}
+                    className="flex items-center gap-1 bg-white dark:bg-gray-800/80 border border-gray-200/80 dark:border-gray-700/60 rounded-md px-1.5 py-1.5 sm:px-2 sm:py-1.5 shadow-sm hover:shadow transition-shadow"
+                    whileHover={{ scale: 1.03, y: -1 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                     </div>
                     <div className="min-w-0 flex-1 text-left">
-                      <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-semibold leading-tight">
+                      <h3 className="text-[9px] sm:text-[10px] text-gray-900 dark:text-white font-medium leading-tight truncate">
                         {title}
                       </h3>
-                      <p className="text-[9px] text-gray-600 dark:text-gray-400 leading-tight">
+                      <p className="text-[8px] sm:text-[9px] text-gray-600 dark:text-gray-400 leading-tight truncate">
                         {subtitle}
                       </p>
                     </div>
@@ -594,7 +594,7 @@ export function AuthScreen() {
                               }
                             }}
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
                           />
                           <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         </div>
@@ -626,7 +626,7 @@ export function AuthScreen() {
                               setSignInPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
                           />
                           <button
                             type="button"
@@ -810,7 +810,7 @@ export function AuthScreen() {
                               setSignUpPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white/95 dark:bg-gray-800/95 pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-9 sm:h-10 text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
                           />
                           <button
                             type="button"
