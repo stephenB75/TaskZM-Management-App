@@ -16,11 +16,16 @@ import {
   Lock,
   AlertCircle,
   CheckCircle,
+  Brain,
+  Repeat,
+  Shield,
+  Activity,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Checkbox } from "./ui/checkbox";
+import { Badge } from "./ui/badge";
 import {
   Card,
   CardContent,
@@ -75,6 +80,29 @@ function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 
 
   return { strength, score, feedback };
 }
+
+interface FeatureCard {
+  icon: typeof Calendar;
+  title: string;
+  subtitle: string;
+}
+
+const MARKETING_FEATURES: FeatureCard[] = [
+  { icon: Calendar, title: "7-Day Kanban", subtitle: "Visual weekly planning" },
+  { icon: Calendar, title: "Month Planner", subtitle: "Zoomed-out focus" },
+  { icon: Clock, title: "Time Blocking", subtitle: "Smart agenda view" },
+  { icon: Zap, title: "AI Scheduler", subtitle: "Smart planning in seconds" },
+  { icon: Brain, title: "AI Insights", subtitle: "Weekly summaries" },
+  { icon: BarChart3, title: "Analytics", subtitle: "Trends & tracking" },
+  { icon: Timer, title: "Pomodoro + Stats", subtitle: "Deep work focus" },
+  { icon: Users, title: "Team Collaboration", subtitle: "Unlimited members" },
+  { icon: Tag, title: "Folders + Tags", subtitle: "Organize everything" },
+  { icon: Trophy, title: "23 Awards", subtitle: "Motivational streaks" },
+  { icon: Sparkles, title: "Smart Templates", subtitle: "Reusable flows" },
+  { icon: Repeat, title: "Recurring Tasks", subtitle: "Automation built-in" },
+  { icon: Shield, title: "Privacy-first", subtitle: "Encrypted & secure" },
+  { icon: Activity, title: "Live Sync", subtitle: "Realtime updates" },
+];
 
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
@@ -394,236 +422,83 @@ export function AuthScreen() {
         initial="hidden"
         animate="visible"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 items-start lg:items-center">
+        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-4 sm:gap-6 items-start">
           {/* Left Side - Branding & Features */}
           <motion.div
-            className="text-center lg:text-left space-y-2 sm:space-y-3"
+            className="order-2 lg:order-1 text-center lg:text-left space-y-3 sm:space-y-4 w-full"
             variants={itemVariants}
           >
-            {/* Logo & Tagline */}
-            <motion.div
-              className="space-y-1 sm:space-y-2"
-              variants={logoVariants}
-            >
+            <motion.div className="space-y-2" variants={logoVariants}>
               <motion.div
-                className="inline-flex items-center gap-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-2 py-0.5 sm:py-1 rounded-full shadow-lg border border-white/50"
+                className="inline-flex items-center gap-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-2 py-0.5 sm:py-1 rounded-full shadow border border-white/50"
                 whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.2 }}
               >
                 <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#7B68EE]" />
                 <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-700 dark:text-gray-200">
-                  Neurodivergent-Friendly
+                  Neurodivergent-friendly workflow
                 </span>
               </motion.div>
 
-              <div className="flex flex-col items-center lg:items-start gap-0.5 sm:gap-1">
+              <div className="flex flex-col items-center lg:items-start gap-1">
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
-                  className="w-[100px] sm:w-[140px] md:w-[160px] lg:w-[200px]"
+                  className="w-[110px] sm:w-[150px] md:w-[180px]"
                   whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.2 }}
                 />
-
                 <p className="text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-200 text-center lg:text-left px-2 sm:px-0">
-                  Your Calm, Organized Task Companion
+                  Your calm, organized task companion—free forever, upgrade when you need more.
                 </p>
               </div>
             </motion.div>
 
-            {/* Feature Highlights - More Compact for Mobile */}
             <motion.div
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1 sm:gap-1.5 max-w-2xl mx-auto lg:mx-0 pt-1 sm:pt-2"
+              className="bg-white/85 dark:bg-gray-900/80 backdrop-blur rounded-2xl border border-white/60 px-3 py-3 sm:px-4 sm:py-4 max-h-[360px] sm:max-h-none overflow-y-auto shadow-lg"
               variants={itemVariants}
             >
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#B4E4FF] to-[#98D8C8] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    7-Day Kanban
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Visual planning
+              <div className="flex items-center justify-between mb-3 text-left">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                    Everything you need to stay on track
                   </p>
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">
+                    14 smart features included in Free + Pro
+                  </h3>
                 </div>
-              </motion.div>
+                <Badge className="hidden sm:inline-flex bg-[#D4C5F9] text-gray-800 border-0">No credit card</Badge>
+              </div>
 
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#DDA0DD] to-[#E0BBE4] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    Time Blocking
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Today Agenda
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#FFDAB9] to-[#FFB6C1] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    AI Scheduler
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Smart planning
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#98D8C8] to-[#B4E4FF] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <BarChart3 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    Analytics
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Track progress
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#E0BBE4] to-[#DDA0DD] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Timer className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    Pomodoro
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Focus mode
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#FFB6C1] to-[#FFDAB9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    23 Awards
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Achievements
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#DDA0DD] to-[#E0BBE4] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Tag className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    Folders
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Organize
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#FFB6C1] to-[#FFDAB9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    Alerts
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Smart
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#98D8C8] to-[#B4E4FF] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    Team
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Collaborate
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-1.5 sm:p-2 rounded-md border border-white/50 shadow-md"
-                whileHover={{ scale: 1.02, y: -1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#B4E4FF] to-[#C9E4F7] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                    Calendar
-                  </h3>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-gray-400 leading-tight hidden sm:block">
-                    Sync
-                  </p>
-                </div>
-              </motion.div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
+                {MARKETING_FEATURES.map(({ icon: Icon, title, subtitle }) => (
+                  <motion.div
+                    key={title}
+                    className="flex items-center gap-1.5 bg-white dark:bg-gray-900/70 border border-gray-100/70 dark:border-gray-700/60 rounded-lg px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-sm"
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1 text-left">
+                      <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-semibold leading-tight">
+                        {title}
+                      </h3>
+                      <p className="text-[9px] text-gray-600 dark:text-gray-400 leading-tight">
+                        {subtitle}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
           </motion.div>
 
           {/* Right Side - Auth Card */}
           <motion.div
             variants={cardVariants}
-            className="flex items-center justify-center"
+            className="order-1 lg:order-2 flex items-center justify-center w-full"
           >
-            <Card className="w-full max-w-md shadow-2xl border-2 border-white/60 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95">
+            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
