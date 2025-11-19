@@ -20,6 +20,8 @@ import {
   Repeat,
   Shield,
   Activity,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -129,6 +131,10 @@ export function AuthScreen() {
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  // Features Carousel State
+  const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
+  const featuresPerPage = 6; // 2 rows x 3 columns
 
   // Password strength
   const passwordStrength = getPasswordStrength(signUpPassword);
@@ -336,6 +342,19 @@ export function AuthScreen() {
     }
   }, []);
 
+  // Auto-scroll carousel
+  React.useEffect(() => {
+    if (MARKETING_FEATURES.length <= featuresPerPage) return;
+    
+    const interval = setInterval(() => {
+      setCurrentFeatureIndex((prev) =>
+        prev === Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 ? 0 : prev + 1
+      );
+    }, 4000); // Change slide every 4 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -452,7 +471,7 @@ export function AuthScreen() {
               </div>
             </motion.div>
 
-            {/* Features - No Background Box, Larger Text */}
+            {/* Features Carousel */}
             <motion.div
               className="space-y-1.5"
               variants={itemVariants}
@@ -464,22 +483,89 @@ export function AuthScreen() {
                 <Badge className="bg-[#D4C5F9]/90 text-gray-800 border-0 text-[9px] sm:text-[10px] px-1.5 py-0.5">Free</Badge>
               </div>
 
-              <div className="grid grid-cols-3 gap-x-3 sm:gap-x-4 gap-y-2 sm:gap-y-2.5">
-                {MARKETING_FEATURES.map(({ icon: Icon, title }) => (
+              <div className="relative">
+                {/* Carousel Container */}
+                <div className="overflow-hidden min-h-[60px] sm:min-h-[70px]">
                   <motion.div
-                    key={title}
-                    className="flex items-center gap-1.5 sm:gap-2"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.15 }}
+                    className="flex"
+                    animate={{
+                      x: `-${currentFeatureIndex * 100}%`,
+                    }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
                   >
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#7B68EE] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0 shadow-md border-2 border-white/50 dark:border-gray-700/30">
-                      <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white drop-shadow-sm" />
-                    </div>
-                    <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                      {title}
-                    </span>
+                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => (
+                      <div
+                        key={pageIndex}
+                        className="grid grid-cols-3 gap-x-3 sm:gap-x-4 gap-y-2 sm:gap-y-2.5 min-w-full flex-shrink-0"
+                      >
+                        {MARKETING_FEATURES.slice(
+                          pageIndex * featuresPerPage,
+                          pageIndex * featuresPerPage + featuresPerPage
+                        ).map(({ icon: Icon, title }) => (
+                          <motion.div
+                            key={title}
+                            className="flex items-center gap-1.5 sm:gap-2"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#7B68EE] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0 shadow-md border-2 border-white/50 dark:border-gray-700/30">
+                              <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white drop-shadow-sm" />
+                            </div>
+                            <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-medium leading-tight">
+                              {title}
+                            </span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    ))}
                   </motion.div>
-                ))}
+                </div>
+
+                {/* Navigation Arrows */}
+                {MARKETING_FEATURES.length > featuresPerPage && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setCurrentFeatureIndex((prev) =>
+                          prev === 0 ? Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 : prev - 1
+                        );
+                      }}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full p-1 shadow-md hover:bg-white dark:hover:bg-gray-700 transition-colors z-10"
+                      aria-label="Previous features"
+                    >
+                      <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 text-gray-700 dark:text-gray-200" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentFeatureIndex((prev) =>
+                          prev === Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 ? 0 : prev + 1
+                        );
+                      }}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full p-1 shadow-md hover:bg-white dark:hover:bg-gray-700 transition-colors z-10"
+                      aria-label="Next features"
+                    >
+                      <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-700 dark:text-gray-200" />
+                    </button>
+                  </>
+                )}
+
+                {/* Dots Indicator */}
+                {MARKETING_FEATURES.length > featuresPerPage && (
+                  <div className="flex items-center justify-center gap-1.5 mt-2">
+                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentFeatureIndex(index)}
+                        className={`h-1.5 rounded-full transition-all ${
+                          index === currentFeatureIndex
+                            ? "w-6 bg-[#7B68EE]"
+                            : "w-1.5 bg-gray-300 dark:bg-gray-600"
+                        }`}
+                        aria-label={`Go to page ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>
