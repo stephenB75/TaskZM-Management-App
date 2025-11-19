@@ -377,9 +377,9 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center overflow-y-auto lg:overflow-hidden">
+    <div className="min-h-screen relative flex items-start lg:items-center justify-center py-4 sm:py-6 lg:py-0">
       {/* Background Image with Overlay */}
-      <div className="absolute inset-0 z-0">
+      <div className="fixed inset-0 z-0">
         <ImageWithFallback
           src="https://images.unsplash.com/photo-1544654262-e295983be0f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwZGVzayUyMG9yZ2FuaXplZHxlbnwxfHx8fDE3NjE2MTM4MDh8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
           alt="Minimalist organized workspace background"
@@ -498,7 +498,7 @@ export function AuthScreen() {
             variants={cardVariants}
             className="order-1 lg:order-2 flex items-center justify-center w-full"
           >
-            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 max-h-[90vh] lg:max-h-none overflow-y-auto lg:overflow-visible">
+            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
@@ -992,46 +992,52 @@ export function AuthScreen() {
               </Tabs>
               
               {/* App Store Badges */}
-              <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
-                <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-2 sm:mb-3">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
+                <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-3">
                   Mobile apps coming soon
                 </p>
-                <div className="flex items-center justify-center gap-2 sm:gap-3">
+                <div className="flex items-center justify-center gap-2.5 sm:gap-3">
                   {/* App Store Badge */}
                   <motion.div
-                    className="flex items-center gap-1.5 bg-black dark:bg-gray-800 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 cursor-not-allowed opacity-60"
-                    whileHover={{ scale: 1.02 }}
+                    className="relative flex items-center gap-2 bg-gradient-to-br from-[#000000] to-[#1a1a1a] rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 cursor-not-allowed opacity-70 shadow-lg border border-gray-800/50"
+                    whileHover={{ scale: 1.03, opacity: 0.8 }}
                     transition={{ duration: 0.2 }}
                   >
                     <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5"
+                      className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0"
                       viewBox="0 0 24 24"
-                      fill="white"
+                      fill="none"
                     >
-                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 2.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                      <path
+                        d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 2.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
+                        fill="white"
+                      />
                     </svg>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] sm:text-[9px] text-white/70 leading-tight">Download on the</span>
-                      <span className="text-[10px] sm:text-xs font-semibold text-white leading-tight">App Store</span>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[9px] sm:text-[10px] text-white/80 font-medium">Download on the</span>
+                      <span className="text-[11px] sm:text-xs font-bold text-white">App Store</span>
                     </div>
                   </motion.div>
 
                   {/* Google Play Badge */}
                   <motion.div
-                    className="flex items-center gap-1.5 bg-black dark:bg-gray-800 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 cursor-not-allowed opacity-60"
-                    whileHover={{ scale: 1.02 }}
+                    className="relative flex items-center gap-2 bg-gradient-to-br from-[#01875f] to-[#00a862] rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 cursor-not-allowed opacity-70 shadow-lg border border-green-700/50"
+                    whileHover={{ scale: 1.03, opacity: 0.8 }}
                     transition={{ duration: 0.2 }}
                   >
                     <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5"
+                      className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0"
                       viewBox="0 0 24 24"
-                      fill="white"
+                      fill="none"
                     >
-                      <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.25,14.5L13.69,12L17.25,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
+                      <path
+                        d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.25,14.5L13.69,12L17.25,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"
+                        fill="white"
+                      />
                     </svg>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] sm:text-[9px] text-white/70 leading-tight">Get it on</span>
-                      <span className="text-[10px] sm:text-xs font-semibold text-white leading-tight">Google Play</span>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[9px] sm:text-[10px] text-white/90 font-medium">Get it on</span>
+                      <span className="text-[11px] sm:text-xs font-bold text-white">Google Play</span>
                     </div>
                   </motion.div>
                 </div>
