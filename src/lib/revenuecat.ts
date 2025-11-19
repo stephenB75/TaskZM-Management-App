@@ -142,6 +142,7 @@ function findPackageByType(
   
   // Expanded keywords to match various identifier formats
   // RevenueCat packages can have identifiers like: $rc_monthly, rc_monthly, monthly, $monthly, etc.
+  // Also supports formats like "Yearly Subscription - ofrng3abca1c147" (contains "yearly")
   const keywords = type === 'monthly' 
     ? ['month', 'monthly', 'rc_monthly', '$rc_monthly'] 
     : ['year', 'yearly', 'annual', 'annually', 'rc_yearly', 'rc_annual', '$rc_yearly', '$rc_annual'];
