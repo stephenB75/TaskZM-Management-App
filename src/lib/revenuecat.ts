@@ -495,9 +495,19 @@ export async function getOfferings(): Promise<{
       }
 
       console.log(`✅ ${type} package mapped successfully:`, {
+        identifier: pkg.identifier,
         priceString,
         title: product.title ?? fallbackTitle,
         description: product.description ?? fallbackDesc,
+        priceSource: (() => {
+          if (typeof product.priceString === 'string' && product.priceString.trim() !== '') return 'priceString';
+          if (typeof product.formattedPrice === 'string' && product.formattedPrice.trim() !== '') return 'formattedPrice';
+          if (product.price && typeof product.price === 'object') return 'price.amountMicros/amount';
+          if (product.price !== undefined && product.price !== null) return 'price (numeric)';
+          if (product.localizedPrice) return 'localizedPrice';
+          if (product.displayPrice) return 'displayPrice';
+          return 'unknown';
+        })(),
       });
 
       return {
@@ -511,9 +521,37 @@ export async function getOfferings(): Promise<{
     const yearlyOffering = mapPackage(yearlyPkg, 'yearly', 'Yearly Plan', 'Billed annually');
 
     console.log('📊 Final offerings:', {
-      monthly: monthlyOffering ? { priceString: monthlyOffering.priceString, title: monthlyOffering.title } : null,
-      yearly: yearlyOffering ? { priceString: yearlyOffering.priceString, title: yearlyOffering.title } : null,
+      monthly: monthlyOffering ? { 
+        priceString: monthlyOffering.priceString, 
+        title: monthlyOffering.title,
+        description: monthlyOffering.description,
+      } : null,
+      yearly: yearlyOffering ? { 
+        priceString: yearlyOffering.priceString, 
+        title: yearlyOffering.title,
+        description: yearlyOffering.description,
+      } : null,
     });
+    
+    // Additional validation for yearly offering
+    if (yearlyOffering) {
+      const yearlyPriceNum = parseFloat(yearlyOffering.priceString.replace(/[^0-9.]/g, ''));
+      console.log('✅ Yearly subscription price validation:', {
+        priceString: yearlyOffering.priceString,
+        numericValue: yearlyPriceNum,
+        isValid: !isNaN(yearlyPriceNum) && yearlyPriceNum > 0,
+        expectedRange: 'Should be around $47.99 based on dashboard',
+      });
+      
+      if (isNaN(yearlyPriceNum) || yearlyPriceNum <= 0) {
+        console.error('❌ Yearly subscription price is invalid!', {
+          priceString: yearlyOffering.priceString,
+          numericValue: yearlyPriceNum,
+        });
+      }
+    } else {
+      console.warn('⚠️ Yearly offering is null - check if yearly package was found');
+    }
 
     return {
       monthly: monthlyOffering,

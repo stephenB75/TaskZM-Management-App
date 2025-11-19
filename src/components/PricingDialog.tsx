@@ -39,6 +39,12 @@ import {
 import * as api from "../lib/api";
 import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured } from "../lib/revenuecat";
 
+interface DialogOffering {
+  priceString: string;
+  title: string;
+  description: string;
+}
+
 interface PricingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -214,16 +220,31 @@ export function PricingDialog({
   React.useEffect(() => {
     const usingRCMonthly = offerings.monthly !== null;
     const usingRCYearly = offerings.yearly !== null;
+    const yearlyPriceNum = parseFloat(yearlyOffering.priceString.replace(/[^0-9.]/g, ''));
     console.log('💰 Current offerings in UI:', {
       monthly: {
         source: usingRCMonthly ? 'RevenueCat' : 'Fallback',
         priceString: monthlyOffering.priceString,
+        title: monthlyOffering.title,
       },
       yearly: {
         source: usingRCYearly ? 'RevenueCat' : 'Fallback',
         priceString: yearlyOffering.priceString,
+        title: yearlyOffering.title,
+        numericValue: yearlyPriceNum,
+        isValid: !isNaN(yearlyPriceNum) && yearlyPriceNum > 0,
+        perMonth: (yearlyPriceNum / 12).toFixed(2),
       },
     });
+    
+    // Warn if yearly price seems incorrect
+    if (usingRCYearly && (isNaN(yearlyPriceNum) || yearlyPriceNum <= 0 || yearlyPriceNum < 10)) {
+      console.warn('⚠️ Yearly subscription price may be incorrect:', {
+        priceString: yearlyOffering.priceString,
+        numericValue: yearlyPriceNum,
+        expected: 'Should be around $47.99',
+      });
+    }
   }, [offerings, monthlyOffering, yearlyOffering]);
   
   // Clear error if we have valid offerings available (fallbacks are valid)
