@@ -82,10 +82,30 @@ export function PricingDialog({
       const rcOfferings = await getOfferings();
 
       console.log('📥 Offerings loaded in PricingDialog:', {
-        monthly: rcOfferings.monthly ? { priceString: rcOfferings.monthly.priceString, title: rcOfferings.monthly.title } : null,
-        yearly: rcOfferings.yearly ? { priceString: rcOfferings.yearly.priceString, title: rcOfferings.yearly.title } : null,
+        monthly: rcOfferings.monthly ? { 
+          priceString: rcOfferings.monthly.priceString, 
+          title: rcOfferings.monthly.title,
+          description: rcOfferings.monthly.description,
+        } : null,
+        yearly: rcOfferings.yearly ? { 
+          priceString: rcOfferings.yearly.priceString, 
+          title: rcOfferings.yearly.title,
+          description: rcOfferings.yearly.description,
+        } : null,
         isRCConfigured: isRevenueCatConfigured(),
       });
+      
+      // Log yearly subscription details specifically
+      if (rcOfferings.yearly) {
+        const yearlyPriceNum = parseFloat(rcOfferings.yearly.priceString.replace(/[^0-9.]/g, ''));
+        console.log('📅 Yearly subscription from RevenueCat:', {
+          title: rcOfferings.yearly.title,
+          priceString: rcOfferings.yearly.priceString,
+          numericValue: yearlyPriceNum,
+          perMonth: (yearlyPriceNum / 12).toFixed(2),
+          description: rcOfferings.yearly.description,
+        });
+      }
 
       // Require RevenueCat to be configured and return offerings
       const hasMonthly = rcOfferings.monthly !== null;
@@ -201,22 +221,18 @@ export function PricingDialog({
   const monthlyOffering = offerings.monthly;
   const yearlyOffering = offerings.yearly;
   
-  // Log RevenueCat offerings
+  // Log RevenueCat offerings and verify yearly subscription
   React.useEffect(() => {
-    if (monthlyOffering && yearlyOffering) {
+    if (yearlyOffering) {
       const yearlyPriceNum = parseFloat(yearlyOffering.priceString.replace(/[^0-9.]/g, ''));
-      console.log('💰 RevenueCat offerings in UI:', {
-        monthly: {
-          priceString: monthlyOffering.priceString,
-          title: monthlyOffering.title,
-        },
-        yearly: {
-          priceString: yearlyOffering.priceString,
-          title: yearlyOffering.title,
-          numericValue: yearlyPriceNum,
-          isValid: !isNaN(yearlyPriceNum) && yearlyPriceNum > 0,
-          perMonth: (yearlyPriceNum / 12).toFixed(2),
-        },
+      console.log('💰 Yearly subscription from RevenueCat (UI):', {
+        title: yearlyOffering.title,
+        priceString: yearlyOffering.priceString,
+        description: yearlyOffering.description,
+        numericValue: yearlyPriceNum,
+        isValid: !isNaN(yearlyPriceNum) && yearlyPriceNum > 0,
+        perMonth: (yearlyPriceNum / 12).toFixed(2),
+        source: 'RevenueCat',
       });
       
       // Warn if yearly price seems incorrect
@@ -227,6 +243,15 @@ export function PricingDialog({
           expected: 'Should be around $47.99',
         });
       }
+    }
+    
+    if (monthlyOffering) {
+      console.log('💰 Monthly subscription from RevenueCat (UI):', {
+        title: monthlyOffering.title,
+        priceString: monthlyOffering.priceString,
+        description: monthlyOffering.description,
+        source: 'RevenueCat',
+      });
     }
   }, [monthlyOffering, yearlyOffering]);
   const formatPrice = (price: string | undefined) => {
@@ -501,7 +526,7 @@ export function PricingDialog({
                   </div>
 
                 <ul className="space-y-1.5 mb-3 flex-1 min-h-0 overflow-y-auto">
-                  {monthlyProFeatures.filter(f => !f.isHeader).slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
+                  {monthlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
                     <li key={index} className="flex items-start gap-1.5">
                       <div className={cn(
                         "flex-shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center mt-0.5",
@@ -519,11 +544,6 @@ export function PricingDialog({
                       </span>
                     </li>
                   ))}
-                  {monthlyProFeatures.filter(f => !f.isHeader).length > FEATURES_DISPLAY_LIMIT && (
-                    <li className="text-[10px] text-muted-foreground pt-0.5">
-                      + {monthlyProFeatures.filter(f => !f.isHeader).length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
-                    </li>
-                  )}
                 </ul>
 
                 <Button

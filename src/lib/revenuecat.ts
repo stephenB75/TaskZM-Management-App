@@ -213,20 +213,40 @@ function findPackageByType(
     });
     
     if (matches) {
+      const matchedKeywords = keywords.filter(kw => {
+        const kwLower = kw.toLowerCase();
+        return packageIdentifier.includes(kwLower) ||
+               storeProductId.includes(kwLower) ||
+               rcBillingProductId.includes(kwLower) ||
+               productId.includes(kwLower);
+      });
+      
       console.log(`🔍 ${type} package candidate found by identifier:`, {
         packageIdentifier: pkg?.identifier,
         packageIdentifierLower: packageIdentifier,
         storeProductId: pkg?.storeProduct?.identifier,
         rcBillingProductId: pkg?.rcBillingProduct?.identifier,
         productId: pkg?.product?.identifier,
-        matchedKeywords: keywords.filter(kw => {
-          const kwLower = kw.toLowerCase();
-          return packageIdentifier.includes(kwLower) ||
-                 storeProductId.includes(kwLower) ||
-                 rcBillingProductId.includes(kwLower) ||
-                 productId.includes(kwLower);
-        }),
+        matchedKeywords: matchedKeywords,
+        isRcAnnual: matchedKeywords.some(kw => kw.toLowerCase() === 'rc_annual') || 
+                   packageIdentifier === 'rc_annual' ||
+                   storeProductId === 'rc_annual' ||
+                   rcBillingProductId === 'rc_annual' ||
+                   productId === 'rc_annual',
       });
+      
+      // Special confirmation for rc_annual
+      if (type === 'yearly' && (matchedKeywords.some(kw => kw.toLowerCase() === 'rc_annual') || 
+                                packageIdentifier === 'rc_annual' ||
+                                storeProductId === 'rc_annual' ||
+                                rcBillingProductId === 'rc_annual' ||
+                                productId === 'rc_annual')) {
+        console.log('✅ CONFIRMED: Yearly subscription package is using identifier "rc_annual"');
+        console.log('   Package identifier:', pkg?.identifier);
+        console.log('   Store Product ID:', pkg?.storeProduct?.identifier);
+        console.log('   RC Billing Product ID:', pkg?.rcBillingProduct?.identifier);
+        console.log('   Product ID:', pkg?.product?.identifier);
+      }
     }
     
     return matches;
@@ -234,8 +254,13 @@ function findPackageByType(
   
   if (byIdentifier) {
     const matchedIdentifier = byIdentifier.identifier;
+    const isRcAnnual = matchedIdentifier?.toLowerCase() === 'rc_annual' || 
+                       matchedIdentifier?.toLowerCase() === '$rc_annual';
     console.log(`✅ Found ${type} package by identifier: ${matchedIdentifier}`);
     console.log(`   Matched using identifier pattern from: ${keywords.join(', ')}`);
+    if (type === 'yearly' && isRcAnnual) {
+      console.log('✅ CONFIRMED: Yearly subscription is using identifier "rc_annual"');
+    }
     return byIdentifier;
   }
   
