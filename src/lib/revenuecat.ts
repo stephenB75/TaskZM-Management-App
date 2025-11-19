@@ -151,6 +151,12 @@ function findPackageByType(
   console.log(`🔍 Searching for ${type} package among ${availablePackages.length} packages:`);
   console.log(`   Expected Product ID: ${productId}`);
   console.log(`   Expected Keywords: ${keywords.join(', ')}`);
+  
+  // Special check for rc_annual and prod77566b1baf connection
+  if (type === 'yearly' && productId === 'prod77566b1baf') {
+    console.log(`   🔗 Checking for rc_annual identifier matching product ID: ${productId}`);
+  }
+  
   console.log(`   Available packages (full details):`, 
     availablePackages.map((pkg: any) => {
       const storeProductId = pkg?.storeProduct?.identifier;
@@ -158,6 +164,11 @@ function findPackageByType(
       const pkgProductId = pkg?.product?.identifier;
       const identifier = pkg?.identifier || 'N/A';
       const identifierLower = identifier.toLowerCase();
+      
+      // Check if this package has rc_annual identifier and matches the expected product ID
+      const isRcAnnual = identifierLower === 'rc_annual' || identifierLower === '$rc_annual';
+      const matchesExpectedProductId = storeProductId === productId || rcBillingProductId === productId || pkgProductId === productId;
+      const isRcAnnualWithCorrectProduct = isRcAnnual && matchesExpectedProductId;
       
       return {
         identifier: identifier,
@@ -168,9 +179,12 @@ function findPackageByType(
           product: pkgProductId || 'N/A',
         },
         title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title || 'N/A',
-        matchesProductId: storeProductId === productId || rcBillingProductId === productId || pkgProductId === productId,
+        matchesProductId: matchesExpectedProductId,
         matchesKeywords: keywords.some(kw => identifierLower.includes(kw.toLowerCase())),
         keywordMatches: keywords.filter(kw => identifierLower.includes(kw.toLowerCase())),
+        // Special verification for rc_annual
+        isRcAnnual: isRcAnnual,
+        isRcAnnualWithCorrectProduct: isRcAnnualWithCorrectProduct,
         // Show all possible identifier variations
         allIdentifiers: {
           packageIdentifier: identifier,
@@ -182,6 +196,45 @@ function findPackageByType(
     })
   );
   
+  // Log confirmation if rc_annual matches prod77566b1baf
+  if (type === 'yearly' && productId === 'prod77566b1baf') {
+    const rcAnnualPackage = availablePackages.find((pkg: any) => {
+      const identifier = (pkg?.identifier || '').toLowerCase();
+      return identifier === 'rc_annual' || identifier === '$rc_annual';
+    });
+    
+    if (rcAnnualPackage) {
+      const storeProductId = rcAnnualPackage?.storeProduct?.identifier;
+      const rcBillingProductId = rcAnnualPackage?.rcBillingProduct?.identifier;
+      const pkgProductId = rcAnnualPackage?.product?.identifier;
+      const matchesProductId = storeProductId === productId || rcBillingProductId === productId || pkgProductId === productId;
+      
+      console.log(`🔗 Found package with rc_annual identifier:`, {
+        packageIdentifier: rcAnnualPackage.identifier,
+        productIds: {
+          storeProduct: storeProductId,
+          rcBillingProduct: rcBillingProductId,
+          product: pkgProductId,
+        },
+        expectedProductId: productId,
+        matchesExpectedProductId: matchesProductId,
+      });
+      
+      if (matchesProductId) {
+        console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${productId} (prod77566b1baf)`);
+      } else {
+        console.warn(`⚠️ WARNING: rc_annual identifier found but product ID doesn't match ${productId}`);
+        console.warn(`   Package has product IDs:`, {
+          storeProduct: storeProductId,
+          rcBillingProduct: rcBillingProductId,
+          product: pkgProductId,
+        });
+      }
+    } else {
+      console.log(`ℹ️ No package with rc_annual identifier found in available packages`);
+    }
+  }
+  
   // Strategy 1: Match by exact product ID
   const byProductId = availablePackages.find((pkg: any) => {
     const pkgProductId = pkg?.storeProduct?.identifier ?? 
@@ -191,7 +244,18 @@ function findPackageByType(
   });
   
   if (byProductId) {
+    const packageIdentifier = byProductId.identifier?.toLowerCase() || '';
+    const isRcAnnual = packageIdentifier === 'rc_annual' || packageIdentifier === '$rc_annual';
+    
     console.log(`✅ Found ${type} package by product ID: ${productId}`, byProductId.identifier);
+    
+    // Confirm rc_annual matches prod77566b1baf
+    if (type === 'yearly' && productId === 'prod77566b1baf' && isRcAnnual) {
+      console.log(`✅ CONFIRMED: rc_annual identifier matches product ID prod77566b1baf`);
+      console.log(`   Package identifier: ${byProductId.identifier}`);
+      console.log(`   Product ID: ${productId}`);
+    }
+    
     return byProductId;
   }
   
@@ -256,11 +320,33 @@ function findPackageByType(
     const matchedIdentifier = byIdentifier.identifier;
     const isRcAnnual = matchedIdentifier?.toLowerCase() === 'rc_annual' || 
                        matchedIdentifier?.toLowerCase() === '$rc_annual';
+    
+    // Get the product ID from the matched package
+    const packageProductId = byIdentifier?.storeProduct?.identifier ?? 
+                            byIdentifier?.rcBillingProduct?.identifier ?? 
+                            byIdentifier?.product?.identifier ?? '';
+    
     console.log(`✅ Found ${type} package by identifier: ${matchedIdentifier}`);
     console.log(`   Matched using identifier pattern from: ${keywords.join(', ')}`);
+    console.log(`   Package product ID: ${packageProductId}`);
+    console.log(`   Expected product ID: ${productId}`);
+    
     if (type === 'yearly' && isRcAnnual) {
       console.log('✅ CONFIRMED: Yearly subscription is using identifier "rc_annual"');
+      
+      // Verify it matches the expected product ID
+      if (packageProductId === productId && productId === 'prod77566b1baf') {
+        console.log(`✅ CONFIRMED: rc_annual identifier matches product ID prod77566b1baf`);
+        console.log(`   Package identifier: ${matchedIdentifier}`);
+        console.log(`   Package product ID: ${packageProductId}`);
+        console.log(`   Expected product ID: ${productId}`);
+      } else if (packageProductId && packageProductId !== productId) {
+        console.warn(`⚠️ WARNING: rc_annual package has different product ID than expected`);
+        console.warn(`   Package product ID: ${packageProductId}`);
+        console.warn(`   Expected product ID: ${productId}`);
+      }
     }
+    
     return byIdentifier;
   }
   
