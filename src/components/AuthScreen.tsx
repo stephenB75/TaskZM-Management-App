@@ -486,14 +486,9 @@ export function AuthScreen() {
             >
               {/* Header with Controls */}
               <div className="flex items-center justify-between gap-2 lg:flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    14 Smart Features
-                  </h3>
-                  <Badge className="bg-gradient-to-r from-[#D4C5F9] to-[#B4E4FF] text-gray-800 border-0 text-[8px] sm:text-[9px] px-1.5 py-0.5 shadow-sm">
-                    Free
-                  </Badge>
-                </div>
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  14 Smart Features
+                </h3>
                 {/* Navigation Controls */}
                 {(() => {
                   const totalPagesMobile = Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile);
