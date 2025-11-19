@@ -588,7 +588,7 @@ export function AuthScreen() {
             variants={cardVariants}
             className="order-1 lg:order-2 flex items-center justify-center w-full"
           >
-            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95">
+            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
