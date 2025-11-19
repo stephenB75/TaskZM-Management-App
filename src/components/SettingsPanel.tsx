@@ -338,75 +338,80 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
             }}
           >
-            <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-border/40 bg-muted/30 px-4 py-5 flex flex-col items-center md:items-start gap-3">
+            <div className="space-y-5">
+              <div className="flex flex-col lg:flex-row gap-4 items-start">
+                <div className="flex flex-1 items-start gap-4 w-full min-w-0">
                   <div 
-                    className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center text-primary font-semibold shadow-inner"
-                    style={{ 
-                      width: SETTINGS_PANEL_AVATAR_SIZE, 
-                      height: SETTINGS_PANEL_AVATAR_SIZE,
-                      fontSize: '1.6rem'
-                    }}
+                    className="rounded-2xl border border-border/40 bg-muted/30 px-5 py-4 flex flex-col items-center sm:flex-row sm:items-center gap-4 w-full"
                   >
-                    {getInitials(user?.name)}
-                  </div>
-                  <div className="text-center md:text-left space-y-1">
-                    <div className="text-base font-semibold text-foreground">{user?.name || '—'}</div>
-                    <div className="text-sm text-muted-foreground">{user?.email || '—'}</div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 justify-center md:justify-start text-[11px]">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                      {subscription.tier === 'pro' ? 'Pro Member' : 'Free Member'}
-                    </Badge>
-                    {subscription.status && (
-                      <Badge variant="outline" className="text-muted-foreground border-muted">
-                        Status: {subscription.status}
-                      </Badge>
-                    )}
+                    <div 
+                      className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center text-primary font-semibold shadow-inner"
+                      style={{ 
+                        width: SETTINGS_PANEL_AVATAR_SIZE, 
+                        height: SETTINGS_PANEL_AVATAR_SIZE,
+                        fontSize: '1.6rem'
+                      }}
+                    >
+                      {getInitials(user?.name)}
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1 text-center sm:text-left">
+                      <div className="text-base font-semibold text-foreground truncate">{user?.name || '—'}</div>
+                      <div className="text-sm text-muted-foreground truncate">{user?.email || '—'}</div>
+                      <div className="flex flex-wrap gap-2 justify-center sm:justify-start text-[11px]">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                          {subscription.tier === 'pro' ? 'Pro Member' : 'Free Member'}
+                        </Badge>
+                        {subscription.status && (
+                          <Badge variant="outline" className="text-muted-foreground border-muted">
+                            Status: {subscription.status}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
+                <div className="flex gap-2 w-full lg:w-auto justify-end">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={handleUpdateProfile} 
+                    disabled={isUpdatingProfile || profileName.trim() === user?.name}
+                    className="flex-1 lg:flex-none min-w-[120px]"
+                  >
+                    {isUpdatingProfile ? 'Saving…' : 'Save Profile'}
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={handleSignOut} 
+                    className="flex-1 lg:flex-none min-w-[120px]"
+                  >
+                    <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                    Sign Out
+                  </Button>
+                </div>
+              </div>
 
-                <div className="md:col-span-2 space-y-4">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
-                      <Input 
-                        id="name" 
-                        value={profileName} 
-                        onChange={(e) => setProfileName(e.target.value)}
-                        placeholder="Enter your name"
-                        style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
-                      <Input 
-                        id="email" 
-                        value={user?.email || ''} 
-                        disabled 
-                        className="bg-muted/40"
-                        style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-                    {profileName.trim() !== user?.name && (
-                      <Button 
-                        size="sm" 
-                        onClick={handleUpdateProfile} 
-                        disabled={isUpdatingProfile || !profileName.trim()}
-                        className="sm:w-fit"
-                      >
-                        {isUpdatingProfile ? 'Saving…' : 'Save Profile'}
-                      </Button>
-                    )}
-                    <Button variant="destructive" size="sm" onClick={handleSignOut} className="sm:w-fit">
-                      <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                      Sign Out
-                    </Button>
-                  </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
+                  <Input 
+                    id="name" 
+                    value={profileName} 
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Enter your name"
+                    style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
+                  <Input 
+                    id="email" 
+                    value={user?.email || ''} 
+                    disabled 
+                    className="bg-muted/40"
+                    style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
+                  />
                 </div>
               </div>
             </div>

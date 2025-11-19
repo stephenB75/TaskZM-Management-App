@@ -773,6 +773,7 @@ export async function getSubscription() {
       startDate: subscription.startDate || null,
       endDate: subscription.endDate || null,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
+      billingPeriod: subscription.billingPeriod || null,
     };
   }
   

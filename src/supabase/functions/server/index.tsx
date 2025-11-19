@@ -924,6 +924,7 @@ app.get("/make-server-65e6e67f/subscription", async (c) => {
     const store = await kv.get(`user:${userId}:subscription_store`);
     const startDate = await kv.get(`user:${userId}:subscription_start`);
     const expiresAt = await kv.get(`user:${userId}:subscription_expires_at`);
+    const billingPeriod = await kv.get(`user:${userId}:billing_period`);
     const cancelAtPeriodEnd = status === 'cancelled' && expiresAt && new Date(expiresAt) > new Date();
 
     // Also check legacy format for backwards compatibility
@@ -936,6 +937,7 @@ app.get("/make-server-65e6e67f/subscription", async (c) => {
       startDate: startDate || legacySubscription?.startDate || null,
       endDate: expiresAt || legacySubscription?.endDate || null,
       cancelAtPeriodEnd: cancelAtPeriodEnd || legacySubscription?.cancelAtPeriodEnd || false,
+      billingPeriod: billingPeriod || legacySubscription?.billingPeriod || null,
     };
 
     return c.json({ subscription });
@@ -1029,6 +1031,9 @@ app.post("/make-server-65e6e67f/subscription", async (c) => {
     }
     if (subscription.endDate) {
       await kv.set(`user:${userId}:subscription_expires_at`, subscription.endDate);
+    }
+    if (subscription.billingPeriod) {
+      await kv.set(`user:${userId}:billing_period`, subscription.billingPeriod);
     }
 
     return c.json({ subscription });
