@@ -432,13 +432,13 @@ export async function getOfferings(): Promise<{
     
     // Validate specific offering ID for yearly pricing
     const YEARLY_OFFERING_ID = 'ofrng3abca1c147';
-    const yearlyOffering = offerings?.all?.[YEARLY_OFFERING_ID];
+    const yearlyOfferingValidation = offerings?.all?.[YEARLY_OFFERING_ID];
     
-    if (yearlyOffering) {
+    if (yearlyOfferingValidation) {
       console.log(`✅ Found offering "${YEARLY_OFFERING_ID}" in RevenueCat:`, {
-        identifier: yearlyOffering.identifier,
-        packageCount: yearlyOffering.availablePackages?.length || 0,
-        packages: yearlyOffering.availablePackages?.map((pkg: any) => ({
+        identifier: yearlyOfferingValidation.identifier,
+        packageCount: yearlyOfferingValidation.availablePackages?.length || 0,
+        packages: yearlyOfferingValidation.availablePackages?.map((pkg: any) => ({
           identifier: pkg?.identifier,
           productId: pkg?.storeProduct?.identifier || pkg?.rcBillingProduct?.identifier || pkg?.product?.identifier,
           title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title,
@@ -446,13 +446,13 @@ export async function getOfferings(): Promise<{
       });
       
       // Check if this offering has rc_annual package
-      const hasRcAnnual = yearlyOffering.availablePackages?.some((pkg: any) => {
+      const hasRcAnnual = yearlyOfferingValidation.availablePackages?.some((pkg: any) => {
         const identifier = (pkg?.identifier || '').toLowerCase();
         return identifier === 'rc_annual' || identifier === '$rc_annual';
       });
       
       if (hasRcAnnual) {
-        const rcAnnualPkg = yearlyOffering.availablePackages?.find((pkg: any) => {
+        const rcAnnualPkg = yearlyOfferingValidation.availablePackages?.find((pkg: any) => {
           const identifier = (pkg?.identifier || '').toLowerCase();
           return identifier === 'rc_annual' || identifier === '$rc_annual';
         });
@@ -478,7 +478,7 @@ export async function getOfferings(): Promise<{
         }
       } else {
         console.warn(`⚠️ Offering "${YEARLY_OFFERING_ID}" does NOT contain rc_annual package`);
-        console.warn(`   Packages in this offering:`, yearlyOffering.availablePackages?.map((p: any) => p?.identifier) || []);
+        console.warn(`   Packages in this offering:`, yearlyOfferingValidation.availablePackages?.map((p: any) => p?.identifier) || []);
       }
     } else {
       console.warn(`⚠️ Offering "${YEARLY_OFFERING_ID}" not found in RevenueCat offerings`);
@@ -491,7 +491,7 @@ export async function getOfferings(): Promise<{
       packageCount: availablePackages.length,
       allOfferings: offerings?.all ? Object.keys(offerings.all) : [],
       yearlyOfferingId: YEARLY_OFFERING_ID,
-      hasYearlyOffering: !!yearlyOffering,
+      hasYearlyOffering: !!yearlyOfferingValidation,
       packages: availablePackages.map((pkg: any) => {
         const product = pkg?.storeProduct || pkg?.rcBillingProduct || pkg?.product;
         const priceObj = product?.price;
