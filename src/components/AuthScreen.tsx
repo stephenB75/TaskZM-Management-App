@@ -481,59 +481,19 @@ export function AuthScreen() {
                   14 Smart Features
                 </h3>
                 <Badge className="bg-[#D4C5F9]/90 text-gray-800 border-0 text-[9px] sm:text-[10px] px-1.5 py-0.5">Free</Badge>
-              </div>
-
-              <div className="relative">
-                {/* Carousel Container */}
-                <div className="overflow-hidden min-h-[60px] sm:min-h-[70px]">
-                  <motion.div
-                    className="flex"
-                    animate={{
-                      x: `-${currentFeatureIndex * 100}%`,
-                    }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => (
-                      <div
-                        key={pageIndex}
-                        className="grid grid-cols-3 gap-x-3 sm:gap-x-4 gap-y-2 sm:gap-y-2.5 min-w-full flex-shrink-0"
-                      >
-                        {MARKETING_FEATURES.slice(
-                          pageIndex * featuresPerPage,
-                          pageIndex * featuresPerPage + featuresPerPage
-                        ).map(({ icon: Icon, title }) => (
-                          <motion.div
-                            key={title}
-                            className="flex items-center gap-1.5 sm:gap-2"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.15 }}
-                          >
-                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#7B68EE] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0 shadow-md border-2 border-white/50 dark:border-gray-700/30">
-                              <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white drop-shadow-sm" />
-                            </div>
-                            <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-medium leading-tight">
-                              {title}
-                            </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    ))}
-                  </motion.div>
-                </div>
-
-                {/* Navigation Arrows */}
+                {/* Inline Navigation Controls */}
                 {MARKETING_FEATURES.length > featuresPerPage && (
-                  <>
+                  <div className="flex items-center gap-1 ml-auto">
                     <button
                       onClick={() => {
                         setCurrentFeatureIndex((prev) =>
                           prev === 0 ? Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 : prev - 1
                         );
                       }}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 sm:-translate-x-1.5 bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm rounded-full p-0.5 hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors z-10"
+                      className="p-0.5 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded transition-colors"
                       aria-label="Previous features"
                     >
-                      <ChevronLeft className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-gray-600 dark:text-gray-400" />
+                      <ChevronLeft className="w-3 h-3 text-gray-600 dark:text-gray-400" />
                     </button>
                     <button
                       onClick={() => {
@@ -541,32 +501,69 @@ export function AuthScreen() {
                           prev === Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 ? 0 : prev + 1
                         );
                       }}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 sm:translate-x-1.5 bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm rounded-full p-0.5 hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors z-10"
+                      className="p-0.5 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded transition-colors"
                       aria-label="Next features"
                     >
-                      <ChevronRight className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-gray-600 dark:text-gray-400" />
+                      <ChevronRight className="w-3 h-3 text-gray-600 dark:text-gray-400" />
                     </button>
-                  </>
-                )}
-
-                {/* Dots Indicator */}
-                {MARKETING_FEATURES.length > featuresPerPage && (
-                  <div className="flex items-center justify-center gap-1 mt-1.5">
-                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentFeatureIndex(index)}
-                        className={`h-1 rounded-full transition-all ${
-                          index === currentFeatureIndex
-                            ? "w-3 bg-[#7B68EE]/70"
-                            : "w-1 bg-gray-400/40 dark:bg-gray-500/40"
-                        }`}
-                        aria-label={`Go to page ${index + 1}`}
-                      />
-                    ))}
                   </div>
                 )}
               </div>
+
+              {/* Carousel Container */}
+              <div className="overflow-hidden min-h-[70px] sm:min-h-[80px]">
+                <motion.div
+                  className="flex"
+                  animate={{
+                    x: `-${currentFeatureIndex * 100}%`,
+                  }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => (
+                    <div
+                      key={pageIndex}
+                      className="grid grid-cols-3 gap-x-3 sm:gap-x-4 gap-y-2.5 sm:gap-y-3 min-w-full flex-shrink-0"
+                    >
+                      {MARKETING_FEATURES.slice(
+                        pageIndex * featuresPerPage,
+                        pageIndex * featuresPerPage + featuresPerPage
+                      ).map(({ icon: Icon, title }) => (
+                        <motion.div
+                          key={title}
+                          className="flex items-center gap-1.5 sm:gap-2"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.15 }}
+                        >
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-[#7B68EE] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0 shadow-lg border-2 border-white dark:border-gray-600">
+                            <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white drop-shadow-md" />
+                          </div>
+                          <span className="text-[10px] sm:text-[11px] md:text-xs text-gray-900 dark:text-white font-semibold leading-tight">
+                            {title}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ))}
+                </motion.div>
+              </div>
+
+              {/* Dots Indicator - Below Carousel */}
+              {MARKETING_FEATURES.length > featuresPerPage && (
+                <div className="flex items-center justify-center gap-1 mt-1">
+                  {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentFeatureIndex(index)}
+                      className={`h-1 rounded-full transition-all ${
+                        index === currentFeatureIndex
+                          ? "w-4 bg-[#7B68EE]"
+                          : "w-1 bg-gray-400/50 dark:bg-gray-500/50"
+                      }`}
+                      aria-label={`Go to page ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
             </motion.div>
           </motion.div>
 
