@@ -204,13 +204,32 @@ function findPackageByType(
     const productId = (pkg?.product?.identifier ?? '').toLowerCase();
     
     // Check all identifier locations
-    return keywords.some(keyword => {
+    const matches = keywords.some(keyword => {
       const keywordLower = keyword.toLowerCase();
       return packageIdentifier.includes(keywordLower) ||
              storeProductId.includes(keywordLower) ||
              rcBillingProductId.includes(keywordLower) ||
              productId.includes(keywordLower);
     });
+    
+    if (matches) {
+      console.log(`🔍 ${type} package candidate found by identifier:`, {
+        packageIdentifier: pkg?.identifier,
+        packageIdentifierLower: packageIdentifier,
+        storeProductId: pkg?.storeProduct?.identifier,
+        rcBillingProductId: pkg?.rcBillingProduct?.identifier,
+        productId: pkg?.product?.identifier,
+        matchedKeywords: keywords.filter(kw => {
+          const kwLower = kw.toLowerCase();
+          return packageIdentifier.includes(kwLower) ||
+                 storeProductId.includes(kwLower) ||
+                 rcBillingProductId.includes(kwLower) ||
+                 productId.includes(kwLower);
+        }),
+      });
+    }
+    
+    return matches;
   });
   
   if (byIdentifier) {
@@ -225,7 +244,17 @@ function findPackageByType(
     const title = (pkg?.storeProduct?.title ?? 
                    pkg?.rcBillingProduct?.title ?? 
                    pkg?.product?.title ?? '').toLowerCase();
-    return keywords.some(keyword => title.includes(keyword.toLowerCase()));
+    const matches = keywords.some(keyword => title.includes(keyword.toLowerCase()));
+    
+    if (matches) {
+      console.log(`🔍 ${type} package candidate found by title:`, {
+        title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title,
+        titleLower: title,
+        matchedKeywords: keywords.filter(kw => title.includes(kw.toLowerCase())),
+      });
+    }
+    
+    return matches;
   });
   
   if (byTitle) {
@@ -336,6 +365,24 @@ export async function getOfferings(): Promise<{
     // Use the same package finding logic as purchase flow for consistency
     const monthlyPkg = findPackageByType(availablePackages, offerings, 'monthly');
     const yearlyPkg = findPackageByType(availablePackages, offerings, 'yearly');
+
+    // Log package finding results
+    console.log('📦 Package finding results:', {
+      monthly: monthlyPkg ? {
+        identifier: monthlyPkg.identifier,
+        found: true,
+      } : { found: false },
+      yearly: yearlyPkg ? {
+        identifier: yearlyPkg.identifier,
+        found: true,
+      } : { 
+        found: false,
+        availablePackages: availablePackages.map((p: any) => ({
+          identifier: p.identifier,
+          title: p.storeProduct?.title || p.rcBillingProduct?.title || p.product?.title,
+        })),
+      },
+    });
 
     const mapPackage = (pkg: any, type: 'monthly' | 'yearly', fallbackTitle: string, fallbackDesc: string): OfferingDetails => {
       if (!pkg) {
@@ -519,6 +566,23 @@ export async function getOfferings(): Promise<{
 
     const monthlyOffering = mapPackage(monthlyPkg, 'monthly', 'Monthly Plan', 'Billed monthly');
     const yearlyOffering = mapPackage(yearlyPkg, 'yearly', 'Yearly Plan', 'Billed annually');
+
+    // Log detailed results
+    console.log('📊 Package mapping results:', {
+      monthly: {
+        packageFound: !!monthlyPkg,
+        offeringMapped: !!monthlyOffering,
+        priceString: monthlyOffering?.priceString || 'N/A',
+      },
+      yearly: {
+        packageFound: !!yearlyPkg,
+        offeringMapped: !!yearlyOffering,
+        priceString: yearlyOffering?.priceString || 'N/A',
+        reason: !yearlyPkg ? 'Package not found by findPackageByType' : 
+                !yearlyOffering ? 'Package found but mapPackage returned null (likely invalid price)' : 
+                'Success',
+      },
+    });
 
     console.log('📊 Final offerings:', {
       monthly: monthlyOffering ? { 
