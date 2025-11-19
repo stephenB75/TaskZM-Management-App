@@ -338,64 +338,97 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
             }}
           >
-            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_LARGE }}>
-              <div 
-                className="rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-primary font-semibold shadow-sm"
-                style={{ 
-                  width: SETTINGS_PANEL_AVATAR_SIZE, 
-                  height: SETTINGS_PANEL_AVATAR_SIZE,
-                  fontSize: '1.5rem'
-                }}
-              >
-                {getInitials(user?.name)}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                <div 
+                  className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center text-primary font-semibold shadow-inner"
+                  style={{ 
+                    width: SETTINGS_PANEL_AVATAR_SIZE, 
+                    height: SETTINGS_PANEL_AVATAR_SIZE,
+                    fontSize: '1.6rem'
+                  }}
+                >
+                  {getInitials(user?.name)}
+                </div>
+                <div className="flex-1 text-center sm:text-left space-y-1">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-base font-semibold text-foreground">{user?.name || '—'}</span>
+                    <span className="text-sm text-muted-foreground">{user?.email || '—'}</span>
+                  </div>
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-2 text-xs">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                      {subscription.tier === 'pro' ? 'Pro Member' : 'Free Member'}
+                    </Badge>
+                    {subscription.status && (
+                      <Badge variant="outline" className="text-muted-foreground border-muted">
+                        Status: {subscription.status}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="hidden sm:flex flex-col gap-2 min-w-[140px]">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleUpdateProfile} 
+                    disabled={isUpdatingProfile || profileName.trim() === user?.name}
+                  >
+                    {isUpdatingProfile ? 'Saving…' : 'Save Profile'}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleSignOut} className="w-full">
+                    <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                    Sign Out
+                  </Button>
+                </div>
               </div>
-              <div className="flex-1" style={{ gap: SETTINGS_PANEL_SPACING_XSMALL }}>
-                <div style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}>{user?.name}</div>
-                <div className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{user?.email}</div>
+
+              <Separator />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
+                  <Input 
+                    id="name" 
+                    value={profileName} 
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Enter your name"
+                    style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
+                  <Input 
+                    id="email" 
+                    value={user?.email || ''} 
+                    disabled 
+                    className="bg-muted/40"
+                    style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
+                  />
+                </div>
+              </div>
+
+              {profileName.trim() !== user?.name && (
+                <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                  <Button 
+                    size="sm" 
+                    onClick={handleUpdateProfile} 
+                    disabled={isUpdatingProfile || !profileName.trim()}
+                    className="sm:w-fit"
+                  >
+                    {isUpdatingProfile ? 'Saving…' : 'Save Changes'}
+                  </Button>
+                </div>
+              )}
+
+              <Separator className="sm:hidden" />
+
+              <div className="sm:hidden flex flex-col gap-2">
+                <Button variant="destructive" size="sm" onClick={handleSignOut} className="w-full">
+                  <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                  Sign Out
+                </Button>
               </div>
             </div>
-            
-            <Separator />
-            
-            <div style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
-              <div style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                <Label htmlFor="name" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>Name</Label>
-                <Input 
-                  id="name" 
-                  value={profileName} 
-                  onChange={(e) => setProfileName(e.target.value)}
-                  placeholder="Enter your name"
-                  style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
-                />
-              </div>
-              <div style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                <Label htmlFor="email" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>Email</Label>
-                <Input 
-                  id="email" 
-                  value={user?.email || ''} 
-                  disabled 
-                  style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
-                />
-              </div>
-            </div>
-
-            {profileName.trim() !== user?.name && (
-              <Button 
-                size="sm" 
-                onClick={handleUpdateProfile} 
-                disabled={isUpdatingProfile || !profileName.trim()}
-                className="w-full"
-              >
-                {isUpdatingProfile ? 'Saving...' : 'Save Changes'}
-              </Button>
-            )}
-
-            <Separator />
-
-            <Button variant="destructive" size="sm" onClick={handleSignOut} className="w-full">
-              <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-              Sign Out
-            </Button>
           </AccordionContent>
         </AccordionItem>
 
