@@ -27,6 +27,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Checkbox } from "./ui/checkbox";
+import { Switch } from "./ui/switch";
 import { Badge } from "./ui/badge";
 import {
   Card,
@@ -638,11 +639,11 @@ export function AuthScreen() {
                   </TabsList>
                 </CardHeader>
 
-                <CardContent className="pb-3 sm:pb-4 pt-1.5 px-3 sm:px-4">
+                <CardContent className="pb-2.5 sm:pb-3 pt-1.5 px-3 sm:px-4">
                   <TabsContent value="signin" className="mt-0">
                     <motion.form
                       onSubmit={handleSignIn}
-                      className="space-y-2 sm:space-y-2.5"
+                      className="space-y-1.5 sm:space-y-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
@@ -716,24 +717,23 @@ export function AuthScreen() {
                       </div>
 
                       {/* Remember Me */}
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="remember-me"
-                          checked={rememberMe}
-                          onCheckedChange={(checked) => setRememberMe(checked === true)}
-                        />
+                      <div className="flex items-center justify-between gap-2">
                         <Label
                           htmlFor="remember-me"
                           className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer"
                         >
                           Remember me
                         </Label>
+                        <Switch
+                          id="remember-me"
+                          checked={rememberMe}
+                          onCheckedChange={(checked) => setRememberMe(checked)}
+                        />
                       </div>
 
                       <motion.div
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        className="pt-0.5"
                       >
                         <Button
                           type="submit"
@@ -758,7 +758,7 @@ export function AuthScreen() {
                       </motion.div>
 
                       {/* Divider */}
-                      <div className="relative py-1.5 sm:py-2">
+                      <div className="relative py-1">
                         <div className="absolute inset-0 flex items-center">
                           <span className="w-full border-t border-gray-300 dark:border-gray-600" />
                         </div>
@@ -791,7 +791,7 @@ export function AuthScreen() {
                   <TabsContent value="signup" className="mt-0">
                     <motion.form
                       onSubmit={handleSignUp}
-                      className="space-y-2 sm:space-y-2.5"
+                      className="space-y-1.5 sm:space-y-2"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
