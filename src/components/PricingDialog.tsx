@@ -48,7 +48,7 @@ interface DialogOffering {
 interface PricingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onOfferingsUpdated?: () => void;
+  onOfferingsUpdated?: (pricing: { monthly?: string | null; yearly?: string | null; timestamp: string }) => void;
 }
 
 export function PricingDialog({
@@ -143,7 +143,11 @@ export function PricingDialog({
       }
 
       setOfferings(rcOfferings);
-      onOfferingsUpdated?.();
+      onOfferingsUpdated?.({
+        monthly: rcOfferings.monthly?.priceString ?? null,
+        yearly: rcOfferings.yearly?.priceString ?? null,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error: any) {
       console.error('RevenueCat offerings load failed:', error);
       // All RevenueCat errors are critical - we require RevenueCat pricing

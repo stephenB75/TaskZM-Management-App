@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Moon, Sun, Monitor, User, LogOut, Calendar, Tag, Sparkles, 
   Bell, Clock, RotateCcw, Briefcase, CreditCard, Info, RefreshCw, Trophy, Award, Lock, Compass,
@@ -84,6 +84,7 @@ import {
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT, DEFAULT_MONTHLY_PRICE, DEFAULT_YEARLY_PRICE } from '../lib/subscription-constants';
+import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -109,14 +110,46 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   
   // Pricing state (using default pricing)
   const [currentPricing, setCurrentPricing] = useState<{
-    monthly?: string;
-    yearly?: string;
+    monthly?: string | null;
+    yearly?: string | null;
     lastUpdated?: string;
   }>({
     monthly: DEFAULT_MONTHLY_PRICE,
     yearly: DEFAULT_YEARLY_PRICE,
     lastUpdated: new Date().toISOString(),
   });
+
+  const handlePricingUpdate = useCallback((pricing: { monthly?: string | null; yearly?: string | null; timestamp?: string }) => {
+    setCurrentPricing({
+      monthly: pricing.monthly ?? DEFAULT_MONTHLY_PRICE,
+      yearly: pricing.yearly ?? DEFAULT_YEARLY_PRICE,
+      lastUpdated: pricing.timestamp || new Date().toISOString(),
+    });
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchPricing() {
+      try {
+        if (!user?.id) return;
+        await configureRevenueCat(user.id);
+        if (!isRevenueCatConfigured()) return;
+        const offerings = await getOfferings();
+        if (!isMounted) return;
+        handlePricingUpdate({
+          monthly: offerings.monthly?.priceString ?? null,
+          yearly: offerings.yearly?.priceString ?? null,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.warn('SettingsPanel pricing fetch failed:', error);
+      }
+    }
+    fetchPricing();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, handlePricingUpdate]);
 
   // Helper function to get icon component from icon name
   const getAwardIcon = (iconName: string) => {
@@ -2446,9 +2479,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       <PricingDialog
         open={showPricingDialog}
         onOpenChange={setShowPricingDialog}
-        onOfferingsUpdated={() => {
-          // Pricing is now static, no need to refresh
-        }}
+        onOfferingsUpdated={handlePricingUpdate}
       />
 
       {/* Privacy Policy Dialog */}
