@@ -448,13 +448,14 @@ export function AuthScreen() {
         initial="hidden"
         animate="visible"
       >
-        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 items-start lg:items-center">
+        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 items-start lg:items-stretch">
           {/* Left Side - Branding & Features */}
           <motion.div
-            className="order-2 lg:order-1 text-center space-y-2 sm:space-y-2.5 w-full"
+            className="order-2 lg:order-1 text-center w-full lg:flex lg:flex-col lg:justify-center lg:h-full"
             variants={itemVariants}
           >
-            <motion.div className="space-y-1.5 sm:space-y-2 flex flex-col items-center" variants={logoVariants}>
+            {/* Branding Section */}
+            <motion.div className="space-y-1.5 sm:space-y-2 flex flex-col items-center mb-2 sm:mb-2.5 lg:mb-3 lg:flex-shrink-0" variants={logoVariants}>
               <motion.div
                 className="inline-flex items-center gap-1 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-white/50"
                 whileHover={{ scale: 1.05 }}
@@ -478,13 +479,13 @@ export function AuthScreen() {
               </div>
             </motion.div>
 
-            {/* Features Carousel - Redesigned */}
+            {/* Features Carousel - Half height on desktop */}
             <motion.div
-              className="space-y-2"
+              className="space-y-2 lg:flex-1 lg:flex lg:flex-col lg:max-h-[280px] lg:min-h-0"
               variants={itemVariants}
             >
               {/* Header with Controls */}
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 lg:flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
                     14 Smart Features
@@ -534,13 +535,13 @@ export function AuthScreen() {
                 })()}
               </div>
 
-              {/* Carousel Container with Gradient Fade */}
-              <div className="relative overflow-hidden rounded-lg">
+              {/* Carousel Container with Gradient Fade - Half height on desktop */}
+              <div className="relative overflow-hidden rounded-lg lg:flex-1 lg:min-h-0">
                 {/* Gradient Fade Edges */}
                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
                 <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
                 
-                <div className="overflow-hidden min-h-[75px] sm:min-h-[85px]">
+                <div className="overflow-hidden min-h-[75px] sm:min-h-[85px] lg:h-full lg:flex lg:items-center">
                   <motion.div
                     className="flex"
                     animate={{
@@ -585,33 +586,33 @@ export function AuthScreen() {
                     })}
                   </motion.div>
                 </div>
+                
+                {/* Enhanced Dots Indicator - Smaller on Mobile */}
+                {(() => {
+                  const totalPagesMobile = Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile);
+                  const totalPagesDesktop = Math.ceil(MARKETING_FEATURES.length / featuresPerPageDesktop);
+                  const maxPages = Math.max(totalPagesMobile, totalPagesDesktop);
+                  
+                  if (maxPages <= 1) return null;
+                  
+                  return (
+                    <div className="flex items-center justify-center gap-0.5 lg:gap-1.5 pt-1.5 lg:pt-2 lg:flex-shrink-0">
+                      {Array.from({ length: maxPages }).map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentFeatureIndex(index)}
+                          className={`rounded-full transition-all duration-300 ${
+                            index === currentFeatureIndex
+                              ? "w-2.5 h-1 lg:w-6 lg:h-1.5 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9] shadow-sm"
+                              : "w-1 h-1 lg:w-1.5 lg:h-1.5 bg-gray-300/60 dark:bg-gray-600/60 hover:bg-gray-400/80 dark:hover:bg-gray-500/80"
+                          }`}
+                          aria-label={`Go to page ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
-
-              {/* Enhanced Dots Indicator - Smaller on Mobile */}
-              {(() => {
-                const totalPagesMobile = Math.ceil(MARKETING_FEATURES.length / featuresPerPageMobile);
-                const totalPagesDesktop = Math.ceil(MARKETING_FEATURES.length / featuresPerPageDesktop);
-                const maxPages = Math.max(totalPagesMobile, totalPagesDesktop);
-                
-                if (maxPages <= 1) return null;
-                
-                return (
-                  <div className="flex items-center justify-center gap-0.5 lg:gap-1.5 mt-1.5">
-                    {Array.from({ length: maxPages }).map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentFeatureIndex(index)}
-                        className={`rounded-full transition-all duration-300 ${
-                          index === currentFeatureIndex
-                            ? "w-2.5 h-1 lg:w-6 lg:h-1.5 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9] shadow-sm"
-                            : "w-1 h-1 lg:w-1.5 lg:h-1.5 bg-gray-300/60 dark:bg-gray-600/60 hover:bg-gray-400/80 dark:hover:bg-gray-500/80"
-                        }`}
-                        aria-label={`Go to page ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                );
-              })()}
             </motion.div>
           </motion.div>
 
