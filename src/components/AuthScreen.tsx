@@ -452,39 +452,32 @@ export function AuthScreen() {
               </div>
             </motion.div>
 
-            {/* Features Card - Using App Theme Colors */}
+            {/* Features Card - Minimal Design Without Background Boxes */}
             <motion.div
-              className="bg-gradient-to-br from-[#B4E4FF]/80 via-[#E0BBE4]/75 to-[#FFDAB9]/80 dark:from-[#1a1a2e]/90 dark:via-[#16213e]/90 dark:to-[#0f3460]/90 backdrop-blur-sm rounded-lg border border-white/50 dark:border-gray-700/50 px-2 py-2 sm:px-2.5 sm:py-2.5 shadow-lg"
+              className="bg-gradient-to-br from-[#B4E4FF]/60 via-[#E0BBE4]/55 to-[#FFDAB9]/60 dark:from-[#1a1a2e]/80 dark:via-[#16213e]/80 dark:to-[#0f3460]/80 backdrop-blur-sm rounded-lg border border-white/40 dark:border-gray-700/40 px-2 py-1.5 sm:px-2.5 sm:py-2 shadow-md"
               variants={itemVariants}
             >
-              <div className="flex items-center justify-between gap-1.5 mb-1.5 text-left">
-                <div>
-                  <h3 className="text-[9px] sm:text-[10px] font-semibold text-gray-900 dark:text-gray-100">
-                    14 Smart Features
-                  </h3>
-                </div>
+              <div className="flex items-center justify-between gap-1.5 mb-1 text-left">
+                <h3 className="text-[9px] sm:text-[10px] font-semibold text-gray-900 dark:text-gray-100">
+                  14 Smart Features
+                </h3>
                 <Badge className="bg-[#D4C5F9]/90 text-gray-800 border-0 text-[7px] sm:text-[8px] px-1 py-0">Free</Badge>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-1">
-                {MARKETING_FEATURES.map(({ icon: Icon, title, subtitle }) => (
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-1.5 sm:gap-2">
+                {MARKETING_FEATURES.map(({ icon: Icon, title }) => (
                   <motion.div
                     key={title}
-                    className="flex items-center gap-0.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-white/50 dark:border-gray-700/40 rounded px-1 py-0.5 shadow-sm hover:shadow transition-all"
-                    whileHover={{ scale: 1.03 }}
+                    className="flex flex-col items-center gap-0.5 text-center"
+                    whileHover={{ scale: 1.05 }}
                     transition={{ duration: 0.15 }}
                   >
-                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <Icon className="w-1.5 h-1.5 sm:w-2 sm:h-2 text-white" />
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                     </div>
-                    <div className="min-w-0 flex-1 text-left">
-                      <h3 className="text-[7px] sm:text-[8px] text-gray-900 dark:text-white font-medium leading-tight truncate">
-                        {title}
-                      </h3>
-                      <p className="text-[6px] sm:text-[7px] text-gray-600 dark:text-gray-400 leading-tight truncate hidden sm:block">
-                        {subtitle}
-                      </p>
-                    </div>
+                    <span className="text-[7px] sm:text-[8px] text-gray-900 dark:text-white font-medium leading-tight">
+                      {title}
+                    </span>
                   </motion.div>
                 ))}
               </div>
