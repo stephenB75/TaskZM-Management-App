@@ -58,6 +58,19 @@ export function PricingDialog({
 }: PricingDialogProps) {
   const { subscription, upgradeToPro, refreshSubscription, cancelSubscription, downgradeToFree } =
     useSubscription();
+  
+  // Debug: Log subscription state to help identify current plan
+  React.useEffect(() => {
+    console.log('📋 PricingDialog - Current subscription state:', {
+      tier: subscription.tier,
+      billingPeriod: subscription.billingPeriod,
+      status: subscription.status,
+      isFree: subscription.tier === 'free',
+      isMonthlyPro: subscription.tier === 'pro' && subscription.billingPeriod === 'monthly',
+      isYearlyPro: subscription.tier === 'pro' && subscription.billingPeriod === 'yearly',
+    });
+  }, [subscription]);
+  
   const [isUpgrading, setIsUpgrading] = React.useState(false);
   const [isRestoring, setIsRestoring] = React.useState(false);
   const [isCancelling, setIsCancelling] = React.useState(false);
@@ -437,7 +450,12 @@ export function PricingDialog({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
-              className="relative border-2 border-gray-200 dark:border-gray-700 rounded-lg md:rounded-xl p-4 md:p-5 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-md hover:shadow-lg flex flex-col"
+              className={cn(
+                "relative border-2 rounded-lg md:rounded-xl p-4 md:p-5 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-md hover:shadow-lg flex flex-col",
+                subscription.tier === "free"
+                  ? "border-[#B8E6D5] ring-2 ring-[#B8E6D5]/50 dark:border-[#5A8A7A] dark:ring-[#5A8A7A]/50"
+                  : "border-gray-200 dark:border-gray-700"
+              )}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
@@ -446,7 +464,7 @@ export function PricingDialog({
                 </div>
                 {subscription.tier === "free" && (
                   <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-[10px] md:text-xs px-2 py-0.5 shadow-sm flex-shrink-0 ml-2">
-                    {SUBSCRIPTION_UI_TEXT.free.button.current}
+                    Current Plan
                   </Badge>
                 )}
               </div>
@@ -474,7 +492,12 @@ export function PricingDialog({
 
               <Button
                 variant="outline"
-                className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs md:text-sm py-2 font-semibold transition-all duration-200"
+                className={cn(
+                  "w-full border-2 text-xs md:text-sm py-2 font-semibold transition-all duration-200",
+                  subscription.tier === "free"
+                    ? "border-[#B8E6D5] bg-[#B8E6D5]/10 text-gray-700 dark:text-gray-300 cursor-default"
+                    : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                )}
                 disabled={subscription.tier === "free" || isDowngrading}
                 onClick={subscription.tier === "pro" ? handleDowngrade : undefined}
               >
@@ -484,7 +507,7 @@ export function PricingDialog({
                     {SUBSCRIPTION_UI_TEXT.pro.button.downgrading}
                   </span>
                 ) : subscription.tier === "free" ? (
-                  SUBSCRIPTION_UI_TEXT.free.button.current
+                  "Current Plan"
                 ) : (
                   SUBSCRIPTION_UI_TEXT.free.button.downgrade
                 )}
