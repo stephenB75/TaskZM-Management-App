@@ -464,23 +464,20 @@ export function AuthScreen() {
                 <Badge className="bg-[#D4C5F9]/90 text-gray-800 border-0 text-[9px] sm:text-[10px] px-1.5 py-0.5">Free</Badge>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-2 sm:gap-x-3 gap-y-1.5">
-                {MARKETING_FEATURES.map(({ icon: Icon, title }, index) => (
+              <div className="grid grid-cols-3 gap-x-3 sm:gap-x-4 gap-y-2 sm:gap-y-2.5">
+                {MARKETING_FEATURES.map(({ icon: Icon, title }) => (
                   <motion.div
                     key={title}
-                    className="flex items-center gap-1.5"
+                    className="flex items-center gap-1.5 sm:gap-2"
                     whileHover={{ scale: 1.05 }}
                     transition={{ duration: 0.15 }}
                   >
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" />
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#7B68EE] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0 shadow-md border-2 border-white/50 dark:border-gray-700/30">
+                      <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white drop-shadow-sm" />
                     </div>
-                    <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-medium whitespace-nowrap">
+                    <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-medium leading-tight">
                       {title}
                     </span>
-                    {index < MARKETING_FEATURES.length - 1 && (
-                      <span className="text-gray-400 dark:text-gray-600 text-[8px] sm:text-[9px] hidden sm:inline">•</span>
-                    )}
                   </motion.div>
                 ))}
               </div>
