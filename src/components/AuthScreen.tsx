@@ -452,32 +452,35 @@ export function AuthScreen() {
               </div>
             </motion.div>
 
-            {/* Features Card - Minimal Design Without Background Boxes */}
+            {/* Features - No Background Box, Larger Text */}
             <motion.div
-              className="bg-gradient-to-br from-[#B4E4FF]/60 via-[#E0BBE4]/55 to-[#FFDAB9]/60 dark:from-[#1a1a2e]/80 dark:via-[#16213e]/80 dark:to-[#0f3460]/80 backdrop-blur-sm rounded-lg border border-white/40 dark:border-gray-700/40 px-2 py-1.5 sm:px-2.5 sm:py-2 shadow-md"
+              className="space-y-1.5"
               variants={itemVariants}
             >
-              <div className="flex items-center justify-between gap-1.5 mb-1 text-left">
-                <h3 className="text-[9px] sm:text-[10px] font-semibold text-gray-900 dark:text-gray-100">
+              <div className="flex items-center justify-center lg:justify-start gap-2 mb-1.5">
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
                   14 Smart Features
                 </h3>
-                <Badge className="bg-[#D4C5F9]/90 text-gray-800 border-0 text-[7px] sm:text-[8px] px-1 py-0">Free</Badge>
+                <Badge className="bg-[#D4C5F9]/90 text-gray-800 border-0 text-[9px] sm:text-[10px] px-1.5 py-0.5">Free</Badge>
               </div>
 
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-1.5 sm:gap-2">
-                {MARKETING_FEATURES.map(({ icon: Icon, title }) => (
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-2 sm:gap-x-3 gap-y-1.5">
+                {MARKETING_FEATURES.map(({ icon: Icon, title }, index) => (
                   <motion.div
                     key={title}
-                    className="flex flex-col items-center gap-0.5 text-center"
+                    className="flex items-center gap-1.5"
                     whileHover={{ scale: 1.05 }}
                     transition={{ duration: 0.15 }}
                   >
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-[#B4E4FF] to-[#D4C5F9] rounded-full flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" />
                     </div>
-                    <span className="text-[7px] sm:text-[8px] text-gray-900 dark:text-white font-medium leading-tight">
+                    <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-medium whitespace-nowrap">
                       {title}
                     </span>
+                    {index < MARKETING_FEATURES.length - 1 && (
+                      <span className="text-gray-400 dark:text-gray-600 text-[8px] sm:text-[9px] hidden sm:inline">•</span>
+                    )}
                   </motion.div>
                 ))}
               </div>
