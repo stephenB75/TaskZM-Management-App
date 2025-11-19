@@ -93,29 +93,48 @@ export function TermsOfServiceDialog({
                 4. Subscription Plans
               </h3>
               <p className="text-muted-foreground leading-relaxed mb-2">
-                TaskZM offers Free and Pro subscription tiers:
+                TaskZM offers Free, Pro Monthly, and Pro Yearly subscription tiers:
               </p>
-              <div className="space-y-2 ml-2">
+              <div className="space-y-3 ml-2">
                 <div>
                   <p className="font-medium">
-                    Free Tier includes:
+                    Free Tier ($0/month) includes:
                   </p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
                     <li>Unlimited tasks</li>
-                    <li>Integrated calendar</li>
-                    <li>Custom tags</li>
+                    <li>7-Day Kanban & Month View</li>
+                    <li>Custom Tags & Organization</li>
+                    <li>Limited AI Scheduler (3 suggestions per week)</li>
+                    <li>Basic Pomodoro Timer (no history/stats)</li>
+                    <li>Basic calendar view (read-only, no sync)</li>
                   </ul>
                 </div>
                 <div>
                   <p className="font-medium">
-                    Pro Tier includes:
+                    Pro Monthly ($4.99/month) includes:
                   </p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
-                    <li>AI Scheduler</li>
-                    <li>Task Hours (Weekday/Weekend)</li>
-                    <li>Analytics Dashboard</li>
-                    <li>Unlimited Projects</li>
-                    <li>Task Rollover</li>
+                    <li>Everything in Free</li>
+                    <li>Unlimited AI Scheduler</li>
+                    <li>Full Calendar Sync (Google, Outlook, Apple - bidirectional)</li>
+                    <li>Task Hours & Time Tracking</li>
+                    <li>Auto Task Rollover</li>
+                    <li>Advanced Pomodoro (history, stats, custom intervals)</li>
+                    <li>Analytics Dashboard (30-day history)</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-medium">
+                    Pro Yearly ($47.99/year = $3.99/month) includes:
+                  </p>
+                  <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                    <li>Everything in Pro Monthly</li>
+                    <li>Team Collaboration (unlimited team members)</li>
+                    <li>Unlimited Analytics History</li>
+                    <li>Recurring Tasks (daily, weekly, monthly patterns)</li>
+                    <li>Task Templates (save and reuse task patterns)</li>
+                    <li>Task Dependencies (link related tasks)</li>
+                    <li>Multiple Workspaces (organize by department/project)</li>
                   </ul>
                 </div>
               </div>
@@ -128,7 +147,7 @@ export function TermsOfServiceDialog({
                 5. Payment Terms
               </h3>
               <p className="text-muted-foreground leading-relaxed mb-2">
-                Pro subscriptions are billed monthly. You agree
+                Pro subscriptions are available as Monthly ($4.99/month) or Yearly ($47.99/year, billed annually). You agree
                 to:
               </p>
               <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
@@ -220,12 +239,16 @@ export function TermsOfServiceDialog({
               <h3 className="font-semibold mb-2">
                 10. AI Features
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed mb-2">
                 AI scheduling recommendations are provided as
                 suggestions only. We do not guarantee the
                 accuracy or suitability of AI-generated
                 schedules. You are responsible for reviewing and
                 adjusting AI recommendations to fit your needs.
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Free tier users are limited to 3 AI scheduling suggestions per week. 
+                This limit resets weekly on Monday. Pro subscribers have unlimited AI scheduling.
               </p>
             </section>
 

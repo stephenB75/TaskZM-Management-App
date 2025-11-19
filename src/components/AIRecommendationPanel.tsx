@@ -62,7 +62,7 @@ interface AIRecommendationPanelProps {
 export function AIRecommendationPanel({
   onClose,
 }: AIRecommendationPanelProps) {
-  const { hasFeature } = useSubscription();
+  const { hasFeature, features } = useSubscription();
   const { settings: aiSettings } = useAI();
   const {
     generateSchedulePlan,
@@ -98,6 +98,27 @@ export function AIRecommendationPanel({
         description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
       });
       return;
+    }
+
+    // Check AI scheduler usage limit for free tier
+    if (features.aiSchedulerLimit !== undefined) {
+      const { hasReachedLimit, getRemainingCount, incrementAIUsage } = require('../lib/ai-scheduler-usage');
+      if (hasReachedLimit(features.aiSchedulerLimit)) {
+        const remaining = getRemainingCount(features.aiSchedulerLimit);
+        toast.error('AI Scheduler limit reached', {
+          description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} AI suggestions this week. Upgrade to Pro for unlimited AI scheduling.`,
+          action: {
+            label: 'Upgrade',
+            onClick: () => {
+              // Trigger upgrade prompt
+              window.dispatchEvent(new CustomEvent('show-pricing-dialog'));
+            },
+          },
+        });
+        return;
+      }
+      // Increment usage before scheduling
+      incrementAIUsage();
     }
 
     const result = generateSchedulePlan();

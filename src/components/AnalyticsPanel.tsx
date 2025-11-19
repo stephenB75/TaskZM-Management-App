@@ -39,6 +39,7 @@ import {
   Area,
 } from "recharts";
 import { useTasks } from "../contexts/TaskContext";
+import { useSubscription } from "../contexts/SubscriptionContext";
 import { motion } from "motion/react";
 import {
   COLOR_PRIMARY,
@@ -176,6 +177,13 @@ function MetricCard({
 
 export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   const { tasks, projects } = useTasks();
+  const { features } = useSubscription();
+
+  // Calculate date range limit
+  const dateRangeLimit = features?.analyticsDaysLimit;
+  const maxDate = dateRangeLimit 
+    ? new Date(Date.now() - (dateRangeLimit - 1) * 24 * 60 * 60 * 1000) // dateRangeLimit days ago
+    : null; // null means unlimited
 
   const analytics = useMemo(() => {
     if (!Array.isArray(tasks)) {
@@ -197,27 +205,43 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       };
     }
 
+    // Filter tasks by date range limit if set
+    const filteredTasks = maxDate 
+      ? tasks.filter((t) => {
+          try {
+            const taskDate = t.updatedAt ? new Date(t.updatedAt) : (t.createdAt ? new Date(t.createdAt) : null);
+            if (!taskDate || isNaN(taskDate.getTime())) return true; // Include if no date
+            return taskDate >= maxDate;
+          } catch {
+            return true; // Include if date parsing fails
+          }
+        })
+      : tasks;
+
     // Time tracking
-    const totalTimeTracked = tasks.reduce((acc, task) => acc + (task.actualTime || 0), 0);
-    const tasksWithTime = tasks.filter((t) => t.actualTime && t.actualTime > 0);
+    const totalTimeTracked = filteredTasks.reduce((acc, task) => acc + (task.actualTime || 0), 0);
+    const tasksWithTime = filteredTasks.filter((t) => t.actualTime && t.actualTime > 0);
     const avgTimePerTask = tasksWithTime.length > 0
       ? tasksWithTime.reduce((acc, t) => acc + (t.actualTime || 0), 0) / tasksWithTime.length
       : 0;
 
-    // Last 7 days time tracking
-    const last7DaysTime = Array.from({ length: 7 }, (_, i) => {
+    // Last 7 days time tracking (or up to dateRangeLimit if set)
+    const daysToShow = dateRangeLimit && dateRangeLimit < 7 ? dateRangeLimit : 7;
+    const last7DaysTime = Array.from({ length: daysToShow }, (_, i) => {
       const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
+      date.setDate(date.getDate() - (daysToShow - 1 - i));
       date.setHours(0, 0, 0, 0);
       return date;
     });
 
     const timeTrackingTrend = last7DaysTime.map((date) => {
-      const tasksUpdatedThisDay = tasks.filter((t) => {
+      const tasksUpdatedThisDay = filteredTasks.filter((t) => {
         if (!t.actualTime || t.actualTime <= 0 || !t.updatedAt) return false;
         try {
           const updatedDate = new Date(t.updatedAt);
           if (isNaN(updatedDate.getTime())) return false;
+          // Apply date range limit if set
+          if (maxDate && updatedDate < maxDate) return false;
           updatedDate.setHours(0, 0, 0, 0);
           return updatedDate.getTime() === date.getTime();
         } catch {
@@ -236,7 +260,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     const startOfWeek = new Date();
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
-    const tasksTrackedThisWeek = tasks.filter((t) => {
+    const tasksTrackedThisWeek = filteredTasks.filter((t) => {
       if (!t.actualTime || t.actualTime <= 0 || !t.updatedAt) return false;
       try {
         const updatedDate = new Date(t.updatedAt);
@@ -249,11 +273,11 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     });
     const weeklyTimeTracked = tasksTrackedThisWeek.reduce((acc, t) => acc + (t.actualTime || 0), 0);
 
-    // Completion metrics
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter((t) => t.status === "done").length;
-    const inProgressTasks = tasks.filter((t) => t.status === "in-progress").length;
-    const todoTasks = tasks.filter((t) => t.status === "todo").length;
+    // Completion metrics (using filtered tasks)
+    const totalTasks = filteredTasks.length;
+    const completedTasks = filteredTasks.filter((t) => t.status === "done").length;
+    const inProgressTasks = filteredTasks.filter((t) => t.status === "in-progress").length;
+    const todoTasks = filteredTasks.filter((t) => t.status === "todo").length;
     const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
     // Status distribution for pie chart
@@ -263,9 +287,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       { name: 'Todo', value: todoTasks, color: COLOR_INFO },
     ].filter(item => item.value > 0);
 
-    // Time patterns
+    // Time patterns (using filtered tasks)
     const hourCounts = new Array(24).fill(0);
-    tasks.filter((t) => t.completedAt).forEach((task) => {
+    filteredTasks.filter((t) => t.completedAt).forEach((task) => {
       try {
         if (task.completedAt) {
           const completedDate = new Date(task.completedAt);
@@ -295,9 +319,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       peakHour,
     };
 
-    // Task types
+    // Task types (using filtered tasks)
     const typeCount: Record<string, number> = {};
-    tasks.forEach((task) => {
+    filteredTasks.forEach((task) => {
       task.tags?.forEach((tag) => {
         typeCount[tag] = (typeCount[tag] || 0) + 1;
       });
@@ -318,7 +342,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     const taskPerDayProgress = last7Days.map((date) => {
       const nextDay = new Date(date);
       nextDay.setDate(nextDay.getDate() + 1);
-      const completed = tasks.filter((t) => {
+      const completed = filteredTasks.filter((t) => {
         if (!t.completedAt) return false;
         try {
           const completedDate = new Date(t.completedAt);
@@ -329,7 +353,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         }
       }).length;
 
-      const created = tasks.filter((t) => {
+      const created = filteredTasks.filter((t) => {
         if (!t.createdAt) return false;
         try {
           const createdDate = new Date(t.createdAt);
@@ -347,12 +371,12 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       };
     });
 
-    // Project progress
+    // Project progress (using filtered tasks)
     const projectProgress = Array.isArray(projects) && projects.length > 0
       ? projects
           .map((project) => {
             if (!project || !project.id) return null;
-            const projectTasks = tasks.filter((t) => t.projectId === project.id);
+            const projectTasks = filteredTasks.filter((t) => t.projectId === project.id);
             const totalProjectTasks = projectTasks.length;
             const completedProjectTasks = projectTasks.filter((t) => t.status === "done").length;
             const projectCompletionRate = totalProjectTasks > 0
@@ -371,8 +395,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           .slice(0, 5)
       : [];
 
-    // Avg completion time
-    const completedWithDates = tasks.filter((t) => {
+    // Avg completion time (using filtered tasks)
+    const completedWithDates = filteredTasks.filter((t) => {
       if (!t.completedAt || !t.createdAt) return false;
       try {
         const created = new Date(t.createdAt);

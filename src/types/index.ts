@@ -265,6 +265,7 @@ export interface SubscriptionInfo {
   startDate: string | null;
   endDate: string | null;
   cancelAtPeriodEnd: boolean;
+  billingPeriod?: 'monthly' | 'yearly' | null; // Track billing period for Pro tier
 }
 
 // Award Types
@@ -305,4 +306,13 @@ export interface SubscriptionFeatures {
   pomodoroTimer: boolean;
   teamFeatures: boolean;
   calendarSync: boolean;
+  // Feature limits (optional - undefined means unlimited)
+  aiSchedulerLimit?: number; // 3 for free, undefined (unlimited) for pro
+  analyticsDaysLimit?: number; // null/undefined for free, 30 for monthly, undefined (unlimited) for yearly
+  teamMembersLimit?: number; // 0 for free/monthly, undefined (unlimited) for yearly
+  // Yearly-only features
+  recurringTasks?: boolean; // true for yearly, false otherwise
+  taskTemplates?: boolean; // true for yearly, false otherwise
+  taskDependencies?: boolean; // true for yearly, false otherwise
+  multipleWorkspaces?: boolean; // true for yearly, false otherwise
 }

@@ -19,20 +19,30 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
-// Feature matrix based on tier
-const getFeatures = (tier: SubscriptionTier): SubscriptionFeatures => {
+// Feature matrix based on tier and billing period
+const getFeatures = (tier: SubscriptionTier, billingPeriod?: 'monthly' | 'yearly' | null): SubscriptionFeatures => {
   if (tier === 'pro') {
+    const isYearly = billingPeriod === 'yearly';
+    
     return {
       unlimitedTasks: true,
       calendar: true, // Deprecated - using calendarSync
       customTags: true,
       aiScheduler: true,
+      aiSchedulerLimit: undefined, // Unlimited for pro
       taskHours: true,
       analytics: true,
+      analyticsDaysLimit: isYearly ? undefined : 30, // Unlimited for yearly, 30 days for monthly
       taskRollover: true,
-      pomodoroTimer: true,
-      teamFeatures: true,
+      pomodoroTimer: true, // Advanced for pro
+      teamFeatures: isYearly, // Only for yearly
+      teamMembersLimit: isYearly ? undefined : 0, // Unlimited for yearly, 0 for monthly
       calendarSync: true,
+      // Yearly-only features
+      recurringTasks: isYearly,
+      taskTemplates: isYearly,
+      taskDependencies: isYearly,
+      multipleWorkspaces: isYearly,
     };
   }
   
@@ -41,13 +51,21 @@ const getFeatures = (tier: SubscriptionTier): SubscriptionFeatures => {
     unlimitedTasks: true,
     calendar: false, // FIXED: Was incorrectly true
     customTags: true,
-    aiScheduler: false,
+    aiScheduler: true, // Limited - 3/week
+    aiSchedulerLimit: 3, // 3 suggestions per week
     taskHours: false,
     analytics: false,
+    analyticsDaysLimit: undefined, // No analytics for free
     taskRollover: false,
-    pomodoroTimer: false,
+    pomodoroTimer: true, // Basic - no history/stats
     teamFeatures: false,
+    teamMembersLimit: 0,
     calendarSync: false,
+    // Yearly-only features - all false for free
+    recurringTasks: false,
+    taskTemplates: false,
+    taskDependencies: false,
+    multipleWorkspaces: false,
   };
 };
 
@@ -75,11 +93,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       startDate: data?.startDate || null,
       endDate: data?.endDate || null,
       cancelAtPeriodEnd: data?.cancelAtPeriodEnd || false,
+      billingPeriod: data?.billingPeriod || null, // monthly, yearly, or null
     };
   };
 
-  // Derived features based on tier
-  const features = getFeatures(subscription.tier);
+  // Derived features based on tier and billing period
+  const features = getFeatures(subscription.tier, subscription.billingPeriod);
 
   // Configure RevenueCat whenever the user changes
   useEffect(() => {
@@ -119,12 +138,50 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         return current;
       }
 
+      // Determine billing period from product identifier
+      // Check active subscriptions to see if it's monthly or yearly
+      let billingPeriod: 'monthly' | 'yearly' | null = current.billingPeriod || null;
+      
+      // Try to detect from product identifier in active subscriptions
+      const activeSubscriptions = customerInfo?.activeSubscriptions || {};
+      const productIdentifiers = Object.keys(activeSubscriptions);
+      
+      for (const productId of productIdentifiers) {
+        if (productId === REVENUECAT_YEARLY_PRODUCT_ID) {
+          billingPeriod = 'yearly';
+          break;
+        } else if (productId === REVENUECAT_MONTHLY_PRODUCT_ID) {
+          billingPeriod = 'monthly';
+          break;
+        }
+      }
+      
+      // Fallback: check if product identifier contains "yearly" or "annual"
+      if (!billingPeriod) {
+        const allProductIds = [
+          ...productIdentifiers,
+          ...Object.values(activeSubscriptions).map((sub: any) => sub.productIdentifier).filter(Boolean),
+        ];
+        
+        for (const productId of allProductIds) {
+          const productIdLower = String(productId).toLowerCase();
+          if (productIdLower.includes('yearly') || productIdLower.includes('annual') || productIdLower.includes('year')) {
+            billingPeriod = 'yearly';
+            break;
+          } else if (productIdLower.includes('monthly') || productIdLower.includes('month')) {
+            billingPeriod = 'monthly';
+            break;
+          }
+        }
+      }
+
       return {
         tier: 'pro',
         status: entitlement.willRenew ? 'active' : 'cancelled',
         startDate: entitlement.latestPurchaseDate?.toISOString?.() ?? current.startDate,
         endDate: entitlement.expirationDate?.toISOString?.() ?? current.endDate,
         cancelAtPeriodEnd: !entitlement.willRenew,
+        billingPeriod: billingPeriod,
       };
     } catch (error) {
       console.warn('RevenueCat entitlement sync failed:', error);

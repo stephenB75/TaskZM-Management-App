@@ -402,6 +402,7 @@ export function DashboardView({
   const tasks = tasksContext?.tasks || [];
   const updateTask = tasksContext?.updateTask;
   const hasFeature = subscriptionContext?.hasFeature;
+  const features = subscriptionContext?.features;
   const rescheduleDay = aiSchedulerContext?.rescheduleDay;
   const rescheduleWeek = aiSchedulerContext?.rescheduleWeek;
   const rescheduleMonth = aiSchedulerContext?.rescheduleMonth;
@@ -498,6 +499,26 @@ export function DashboardView({
         description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
       });
       return;
+    }
+
+    // Check AI scheduler usage limit for free tier
+    if (features?.aiSchedulerLimit !== undefined) {
+      const { hasReachedLimit, incrementAIUsage } = require('../lib/ai-scheduler-usage');
+      if (hasReachedLimit(features.aiSchedulerLimit)) {
+        toast.error('AI Scheduler limit reached', {
+          description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} AI suggestions this week. Upgrade to Pro for unlimited AI scheduling.`,
+          action: {
+            label: 'Upgrade',
+            onClick: () => {
+              // This will be handled by parent component
+              window.dispatchEvent(new CustomEvent('show-pricing-dialog'));
+            },
+          },
+        });
+        return;
+      }
+      // Increment usage before scheduling
+      incrementAIUsage();
     }
 
     const unscheduledTasks = tasks.filter(

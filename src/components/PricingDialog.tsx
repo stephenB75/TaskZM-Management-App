@@ -30,8 +30,10 @@ import { cn } from "../lib/utils";
 import {
   SUBSCRIPTION_UI_TEXT,
   FREE_TIER_FEATURES,
-  PRO_TIER_FEATURES,
-  PRO_FEATURES_LIST,
+  PRO_MONTHLY_FEATURES,
+  PRO_YEARLY_FEATURES,
+  PRO_MONTHLY_FEATURES_LIST,
+  PRO_YEARLY_FEATURES_LIST,
   FEATURES_DISPLAY_LIMIT,
   DEFAULT_MONTHLY_PRICE,
   DEFAULT_YEARLY_PRICE,
@@ -180,7 +182,9 @@ export function PricingDialog({
   };
 
   const handleDowngrade = async () => {
-    const featuresList = PRO_FEATURES_LIST.map(f => `• ${f}`).join('\n');
+    // Use appropriate feature list based on current subscription
+    const isYearly = subscription.billingPeriod === 'yearly';
+    const featuresList = (isYearly ? PRO_YEARLY_FEATURES_LIST : PRO_MONTHLY_FEATURES_LIST).map(f => `• ${f}`).join('\n');
     const confirmed = window.confirm(
       `${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.title}\n\n${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.messagePrefix}\n${featuresList}${SUBSCRIPTION_UI_TEXT.confirmations.downgrade.messageSuffix}`
     );
@@ -407,7 +411,8 @@ export function PricingDialog({
 
 
   const freeTierFeatures = FREE_TIER_FEATURES;
-  const proTierFeatures = PRO_TIER_FEATURES;
+  const monthlyProFeatures = PRO_MONTHLY_FEATURES;
+  const yearlyProFeatures = PRO_YEARLY_FEATURES;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -524,7 +529,7 @@ export function PricingDialog({
                 </div>
 
                 <ul className="space-y-2 mb-4 flex-1">
-                  {proTierFeatures.slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
+                  {monthlyProFeatures.filter(f => !f.isHeader).slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <div className={cn(
                         "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
@@ -542,9 +547,11 @@ export function PricingDialog({
                       </span>
                     </li>
                   ))}
-                  <li className="text-xs text-muted-foreground pt-1">
-                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
-                  </li>
+                  {monthlyProFeatures.filter(f => !f.isHeader).length > FEATURES_DISPLAY_LIMIT && (
+                    <li className="text-xs text-muted-foreground pt-1">
+                      + {monthlyProFeatures.filter(f => !f.isHeader).length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
+                    </li>
+                  )}
                 </ul>
 
                 <Button
@@ -620,8 +627,9 @@ export function PricingDialog({
                 </div>
 
                 <ul className="space-y-2 mb-4 flex-1">
-                  {proTierFeatures.slice(0, FEATURES_DISPLAY_LIMIT).map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2">
+                  {/* Show Monthly features first, then Yearly-exclusive features */}
+                  {monthlyProFeatures.filter(f => !f.isHeader).slice(0, 3).map((feature, index) => (
+                    <li key={`monthly-${index}`} className="flex items-start gap-2">
                       <div className={cn(
                         "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
                         feature.highlight
@@ -638,9 +646,24 @@ export function PricingDialog({
                       </span>
                     </li>
                   ))}
-                  <li className="text-xs text-muted-foreground pt-1">
-                    + {proTierFeatures.length - FEATURES_DISPLAY_LIMIT} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
-                  </li>
+                  {yearlyProFeatures.filter(f => !f.isHeader).slice(0, 3).map((feature, index) => (
+                    <li key={`yearly-${index}`} className="flex items-start gap-2">
+                      <div className={cn(
+                        "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5",
+                        "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
+                      )}>
+                        <feature.icon className="w-2.5 h-2.5 text-white" />
+                      </div>
+                      <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-semibold">
+                        {feature.text}
+                      </span>
+                    </li>
+                  ))}
+                  {(monthlyProFeatures.filter(f => !f.isHeader).length + yearlyProFeatures.filter(f => !f.isHeader).length) > 6 && (
+                    <li className="text-xs text-muted-foreground pt-1">
+                      + {(monthlyProFeatures.filter(f => !f.isHeader).length + yearlyProFeatures.filter(f => !f.isHeader).length) - 6} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
+                    </li>
+                  )}
                 </ul>
 
                 <Button

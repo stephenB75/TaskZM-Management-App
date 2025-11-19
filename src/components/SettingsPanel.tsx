@@ -441,11 +441,25 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     )}
                   </div>
                   <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                    {subscription.tier === 'pro' ? SUBSCRIPTION_UI_TEXT.settings.currentPlan.pro : SUBSCRIPTION_UI_TEXT.settings.currentPlan.free}
+                    {subscription.tier === 'pro' 
+                      ? `${SUBSCRIPTION_UI_TEXT.settings.currentPlan.pro}${subscription.billingPeriod ? ` (${subscription.billingPeriod === 'monthly' ? 'Monthly' : 'Yearly'})` : ''}`
+                      : SUBSCRIPTION_UI_TEXT.settings.currentPlan.free}
                   </p>
                   {subscription.tier === 'pro' && subscription.startDate && (
                     <p className="text-muted-foreground/70" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.subscriptionDetails.started} {new Date(subscription.startDate).toLocaleDateString()}
+                    </p>
+                  )}
+                  {/* Show feature limits for free tier */}
+                  {subscription.tier === 'free' && features.aiSchedulerLimit !== undefined && (
+                    <p className="text-muted-foreground/70" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
+                      AI Scheduler: {features.aiSchedulerLimit} suggestions/week
+                    </p>
+                  )}
+                  {/* Show feature limits for monthly pro */}
+                  {subscription.tier === 'pro' && subscription.billingPeriod === 'monthly' && features.analyticsDaysLimit !== undefined && (
+                    <p className="text-muted-foreground/70" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
+                      Analytics: {features.analyticsDaysLimit}-day history
                     </p>
                   )}
                 </div>
@@ -500,6 +514,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     )}
                     <span className={features.aiScheduler ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.aiScheduler}
+                      {features.aiSchedulerLimit !== undefined && (
+                        <span className="text-muted-foreground/70"> ({features.aiSchedulerLimit}/week)</span>
+                      )}
                     </span>
                     {!features.aiScheduler && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
@@ -534,6 +551,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     )}
                     <span className={features.analytics ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.analytics}
+                      {features.analyticsDaysLimit !== undefined && (
+                        <span className="text-muted-foreground/70"> ({features.analyticsDaysLimit}-day history)</span>
+                      )}
+                      {features.analytics && features.analyticsDaysLimit === undefined && (
+                        <span className="text-muted-foreground/70"> (Unlimited)</span>
+                      )}
                     </span>
                     {!features.analytics && (
                       <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>

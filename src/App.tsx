@@ -56,7 +56,7 @@ function AppContent() {
   useDemoActivity(); // Track demo user activity on app interactions
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { settings: aiSettings } = useAI();
-  const { hasFeature } = useSubscription();
+  const { hasFeature, features } = useSubscription();
   const isMobile = useIsMobile();
   
   // Initialize view: 'today' on mobile, 'dashboard' on desktop
@@ -255,6 +255,25 @@ function AppContent() {
       setUpgradeFeature('aiScheduler');
       setShowUpgradePrompt(true);
       return;
+    }
+
+    // Check AI scheduler usage limit for free tier
+    if (features.aiSchedulerLimit !== undefined) {
+      const { hasReachedLimit, getRemainingCount, incrementAIUsage } = await import('./lib/ai-scheduler-usage');
+      if (hasReachedLimit(features.aiSchedulerLimit)) {
+        toast.error('AI Scheduler limit reached', {
+          description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} AI suggestions this week. Upgrade to Pro for unlimited AI scheduling.`,
+          action: {
+            label: 'Upgrade',
+            onClick: () => {
+              setShowPricingDialog(true);
+            },
+          },
+        });
+        return;
+      }
+      // Increment usage before scheduling
+      incrementAIUsage();
     }
 
     // Check if AI scheduling is enabled

@@ -13,6 +13,10 @@ import {
   RotateCcw,
   Timer,
   Users,
+  Repeat,
+  FileText,
+  Link,
+  FolderTree,
 } from "lucide-react";
 
 // Default pricing
@@ -263,31 +267,36 @@ export const FREE_TIER_FEATURES: FeatureDefinition[] = [
     text: "Custom Tags & Organization",
     included: true,
   },
+  {
+    icon: Sparkles,
+    text: "Limited AI Scheduler (3 suggestions/week)",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: Timer,
+    text: "Basic Pomodoro Timer",
+    included: true,
+  },
 ];
 
-export const PRO_TIER_FEATURES: FeatureDefinition[] = [
+export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
   { icon: Check, text: "Everything in Free", included: true, isHeader: true },
   {
     icon: Sparkles,
-    text: "AI Scheduler",
+    text: "Unlimited AI Scheduler",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: Calendar,
+    text: "Full Calendar Sync (Google, Outlook, Apple)",
     included: true,
     highlight: true,
   },
   {
     icon: Zap,
     text: "Task Hours & Time Tracking",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: BarChart3,
-    text: "Analytics Dashboard",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: Calendar,
-    text: "Calendar Sync (Google, Outlook, Apple)",
     included: true,
     highlight: true,
   },
@@ -299,26 +308,84 @@ export const PRO_TIER_FEATURES: FeatureDefinition[] = [
   },
   {
     icon: Timer,
-    text: "Pomodoro Timer",
+    text: "Advanced Pomodoro (history, stats, custom intervals)",
     included: true,
     highlight: true,
   },
   {
-    icon: Users,
-    text: "Team Collaboration",
+    icon: BarChart3,
+    text: "Analytics Dashboard (30-day history)",
     included: true,
     highlight: true,
   },
 ];
 
-// Pro features list for downgrade confirmation
-export const PRO_FEATURES_LIST = [
-  "AI Scheduler",
-  "Task Hours & Time Tracking",
-  "Analytics Dashboard",
-  "Calendar Sync",
-  "Auto Task Rollover",
-  "Pomodoro Timer",
-  "Team Collaboration",
+export const PRO_YEARLY_FEATURES: FeatureDefinition[] = [
+  { icon: Check, text: "Everything in Pro Monthly", included: true, isHeader: true },
+  {
+    icon: Users,
+    text: "Team Collaboration (unlimited members)",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: BarChart3,
+    text: "Unlimited Analytics History",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: Repeat,
+    text: "Recurring Tasks (daily, weekly, monthly)",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: FileText,
+    text: "Task Templates (save and reuse patterns)",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: Link,
+    text: "Task Dependencies (link related tasks)",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: FolderTree,
+    text: "Multiple Workspaces (organize by department/project)",
+    included: true,
+    highlight: true,
+  },
 ];
+
+// Legacy: Keep PRO_TIER_FEATURES for backward compatibility (combines Monthly + Yearly)
+export const PRO_TIER_FEATURES: FeatureDefinition[] = [
+  ...PRO_MONTHLY_FEATURES,
+  ...PRO_YEARLY_FEATURES.filter(f => !f.isHeader),
+];
+
+// Pro features list for downgrade confirmation
+export const PRO_MONTHLY_FEATURES_LIST = [
+  "Unlimited AI Scheduler",
+  "Full Calendar Sync",
+  "Task Hours & Time Tracking",
+  "Auto Task Rollover",
+  "Advanced Pomodoro Timer",
+  "Analytics Dashboard (30-day history)",
+];
+
+export const PRO_YEARLY_FEATURES_LIST = [
+  ...PRO_MONTHLY_FEATURES_LIST,
+  "Team Collaboration (unlimited members)",
+  "Unlimited Analytics History",
+  "Recurring Tasks",
+  "Task Templates",
+  "Task Dependencies",
+  "Multiple Workspaces",
+];
+
+// Legacy: Keep for backward compatibility
+export const PRO_FEATURES_LIST = PRO_YEARLY_FEATURES_LIST;
 
