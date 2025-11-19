@@ -530,10 +530,10 @@ export function AuthScreen() {
                           prev === 0 ? Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 : prev - 1
                         );
                       }}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full p-1 shadow-md hover:bg-white dark:hover:bg-gray-700 transition-colors z-10"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 sm:-translate-x-1.5 bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm rounded-full p-0.5 hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors z-10"
                       aria-label="Previous features"
                     >
-                      <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 text-gray-700 dark:text-gray-200" />
+                      <ChevronLeft className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-gray-600 dark:text-gray-400" />
                     </button>
                     <button
                       onClick={() => {
@@ -541,25 +541,25 @@ export function AuthScreen() {
                           prev === Math.ceil(MARKETING_FEATURES.length / featuresPerPage) - 1 ? 0 : prev + 1
                         );
                       }}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full p-1 shadow-md hover:bg-white dark:hover:bg-gray-700 transition-colors z-10"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 sm:translate-x-1.5 bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm rounded-full p-0.5 hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors z-10"
                       aria-label="Next features"
                     >
-                      <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-700 dark:text-gray-200" />
+                      <ChevronRight className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-gray-600 dark:text-gray-400" />
                     </button>
                   </>
                 )}
 
                 {/* Dots Indicator */}
                 {MARKETING_FEATURES.length > featuresPerPage && (
-                  <div className="flex items-center justify-center gap-1.5 mt-2">
+                  <div className="flex items-center justify-center gap-1 mt-1.5">
                     {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentFeatureIndex(index)}
-                        className={`h-1.5 rounded-full transition-all ${
+                        className={`h-1 rounded-full transition-all ${
                           index === currentFeatureIndex
-                            ? "w-6 bg-[#7B68EE]"
-                            : "w-1.5 bg-gray-300 dark:bg-gray-600"
+                            ? "w-3 bg-[#7B68EE]/70"
+                            : "w-1 bg-gray-400/40 dark:bg-gray-500/40"
                         }`}
                         aria-label={`Go to page ${index + 1}`}
                       />
