@@ -497,13 +497,26 @@ export function PricingDialog({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
-                className="relative border-2 border-[#9B87E8] rounded-lg md:rounded-xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col"
+                className={cn(
+                  "relative border-2 rounded-lg md:rounded-xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col",
+                  subscription.tier === "pro" && subscription.billingPeriod === "monthly"
+                    ? "border-[#9B87E8] ring-2 ring-[#9B87E8]/50"
+                    : "border-[#9B87E8]"
+                )}
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-xl" />
                 
+                {subscription.tier === "pro" && subscription.billingPeriod === "monthly" && (
+                  <div className="absolute top-2 right-2 z-20">
+                    <Badge className="bg-[#9B87E8] text-white border-0 shadow-md px-2 py-0.5 text-[10px] md:text-xs font-semibold">
+                      Current Plan
+                    </Badge>
+                  </div>
+                )}
+                
                 <div className="relative z-10 flex flex-col flex-1 min-h-0">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-8">
                       <div className="flex items-center gap-1.5 mb-1">
                         <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                           {monthlyOffering.title}
@@ -547,8 +560,13 @@ export function PricingDialog({
                 </ul>
 
                 <Button
-                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-md hover:shadow-lg transition-all duration-300 text-xs md:text-sm font-bold py-2"
-                  disabled={subscription.tier === "pro" || isUpgrading}
+                  className={cn(
+                    "w-full shadow-md hover:shadow-lg transition-all duration-300 text-xs md:text-sm font-bold py-2",
+                    subscription.tier === "pro" && subscription.billingPeriod === "monthly"
+                      ? "bg-[#9B87E8] text-white hover:bg-[#8B77D8] cursor-default"
+                      : "bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white"
+                  )}
+                  disabled={(subscription.tier === "pro" && subscription.billingPeriod === "monthly") || isUpgrading}
                   onClick={handleUpgradeMonthly}
                 >
                   {isUpgrading ? (
@@ -556,8 +574,10 @@ export function PricingDialog({
                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       {SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}
                     </span>
+                  ) : subscription.tier === "pro" && subscription.billingPeriod === "monthly" ? (
+                    "Current Plan"
                   ) : subscription.tier === "pro" ? (
-                    SUBSCRIPTION_UI_TEXT.planCards.monthly.button.current
+                    "Switch to Monthly"
                   ) : (
                     <span className="flex items-center justify-center gap-2">
                       <Sparkles className="w-3 h-3" />
@@ -588,11 +608,21 @@ export function PricingDialog({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className="relative border-2 border-[#9B87E8] rounded-lg md:rounded-xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col"
+                className={cn(
+                  "relative border-2 rounded-lg md:rounded-xl p-4 md:p-5 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col",
+                  subscription.tier === "pro" && subscription.billingPeriod === "yearly"
+                    ? "border-[#9B87E8] ring-2 ring-[#9B87E8]/50"
+                    : "border-[#9B87E8]"
+                )}
               >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-xl" />
               
-              <div className="absolute top-2 right-2 z-20">
+              <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">
+                {subscription.tier === "pro" && subscription.billingPeriod === "yearly" && (
+                  <Badge className="bg-[#9B87E8] text-white border-0 shadow-md px-1.5 py-0.5 text-[10px] md:text-xs font-semibold mb-1">
+                    Current Plan
+                  </Badge>
+                )}
                 <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-md px-1.5 py-0.5 text-[10px] md:text-xs font-semibold">
                   <Crown className="w-2 h-2 md:w-2.5 md:h-2.5 mr-0.5" />
                   {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
@@ -636,8 +666,8 @@ export function PricingDialog({
                 </div>
 
                 <ul className="space-y-1.5 mb-3 flex-1 min-h-0 overflow-y-auto">
-                  {/* Show Monthly features first, then Yearly-exclusive features */}
-                  {monthlyProFeatures.filter(f => !f.isHeader).slice(0, 3).map((feature, index) => (
+                  {/* Show all Monthly features first, then all Yearly-exclusive features */}
+                  {monthlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
                     <li key={`monthly-${index}`} className="flex items-start gap-1.5">
                       <div className={cn(
                         "flex-shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center mt-0.5",
@@ -655,7 +685,7 @@ export function PricingDialog({
                       </span>
                     </li>
                   ))}
-                  {yearlyProFeatures.filter(f => !f.isHeader).slice(0, 3).map((feature, index) => (
+                  {yearlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
                     <li key={`yearly-${index}`} className="flex items-start gap-1.5">
                       <div className={cn(
                         "flex-shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center mt-0.5",
@@ -668,16 +698,16 @@ export function PricingDialog({
                       </span>
                     </li>
                   ))}
-                  {(monthlyProFeatures.filter(f => !f.isHeader).length + yearlyProFeatures.filter(f => !f.isHeader).length) > 6 && (
-                    <li className="text-[10px] text-muted-foreground pt-0.5">
-                      + {(monthlyProFeatures.filter(f => !f.isHeader).length + yearlyProFeatures.filter(f => !f.isHeader).length) - 6} {SUBSCRIPTION_UI_TEXT.planCards.moreFeaturesLabel}
-                    </li>
-                  )}
                 </ul>
 
                 <Button
-                  className="w-full bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white shadow-md hover:shadow-lg transition-all duration-300 text-xs md:text-sm font-bold py-2"
-                  disabled={subscription.tier === "pro" || isUpgrading}
+                  className={cn(
+                    "w-full shadow-md hover:shadow-lg transition-all duration-300 text-xs md:text-sm font-bold py-2",
+                    subscription.tier === "pro" && subscription.billingPeriod === "yearly"
+                      ? "bg-[#9B87E8] text-white hover:bg-[#8B77D8] cursor-default"
+                      : "bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white"
+                  )}
+                  disabled={(subscription.tier === "pro" && subscription.billingPeriod === "yearly") || isUpgrading}
                   onClick={handleUpgradeYearly}
                 >
                   {isUpgrading ? (
@@ -685,8 +715,10 @@ export function PricingDialog({
                       <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       {SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}
                     </span>
+                  ) : subscription.tier === "pro" && subscription.billingPeriod === "yearly" ? (
+                    "Current Plan"
                   ) : subscription.tier === "pro" ? (
-                    SUBSCRIPTION_UI_TEXT.planCards.yearly.button.current
+                    "Switch to Yearly"
                   ) : (
                     <span className="flex items-center justify-center gap-2">
                       <Sparkles className="w-3 h-3" />
