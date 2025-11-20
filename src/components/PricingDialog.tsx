@@ -319,7 +319,7 @@ export function PricingDialog({
     isLoadingOfferings ? 'Fetching latest pricing…' : description;
 
   const calculateSavings = () => {
-    if (!monthlyOffering || !yearlyOffering) return 0;
+    if (!monthlyOffering || !yearlyOffering) return { percent: 0, amount: 0 };
     
     try {
       // Extract numeric values from price strings (e.g., "$3.99" -> 3.99, "€3,99" -> 3.99)
@@ -354,8 +354,11 @@ export function PricingDialog({
           monthlyParsed: monthlyPrice,
           yearlyParsed: yearlyPrice,
         });
-        return 0;
+        return { percent: 0, amount: 0 };
       }
+      
+      // Calculate savings amount (dollar amount saved)
+      const savingsAmount = yearlyEquivalent - yearlyPrice;
       
       // Calculate savings percentage: ((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100
       const savingsPercent = ((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100;
@@ -366,15 +369,16 @@ export function PricingDialog({
         monthlyPrice,
         yearlyPrice,
         yearlyEquivalent,
+        savingsAmount: savingsAmount.toFixed(2),
         savingsPercent: savingsPercent.toFixed(2) + '%',
         rounded: rounded + '%',
       });
       
       // Return 0 if savings is negative (yearly is more expensive, which shouldn't happen)
-      return rounded > 0 ? rounded : 0;
+      return rounded > 0 ? { percent: rounded, amount: savingsAmount } : { percent: 0, amount: 0 };
     } catch (error) {
       console.error('❌ Error calculating savings:', error);
-      return 0;
+      return { percent: 0, amount: 0 };
     }
   };
 
@@ -746,9 +750,9 @@ export function PricingDialog({
                     <span className="text-[10px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
                   </div>
                   <div className="flex items-center gap-1 flex-wrap">
-                    {savings > 0 && (
+                    {savings.percent > 0 && (
                       <Badge className="bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-[9px] md:text-[10px] font-medium px-1 py-0.5">
-                        {isLoadingOfferings ? 'Loading…' : SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings)}
+                        {isLoadingOfferings ? 'Loading…' : SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings.percent, savings.amount)}
                       </Badge>
                     )}
                     <p className="text-[10px] md:text-xs font-medium text-[#9B87E8]">

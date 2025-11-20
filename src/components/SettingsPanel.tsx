@@ -83,7 +83,7 @@ import {
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
-import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT, DEFAULT_MONTHLY_PRICE, DEFAULT_YEARLY_PRICE } from '../lib/subscription-constants';
+import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 
 interface SettingsPanelProps {
@@ -108,21 +108,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
   
-  // Pricing state (using default pricing)
+  // Pricing state (dynamically fetched from RevenueCat)
   const [currentPricing, setCurrentPricing] = useState<{
     monthly?: string | null;
     yearly?: string | null;
     lastUpdated?: string;
   }>({
-    monthly: DEFAULT_MONTHLY_PRICE,
-    yearly: DEFAULT_YEARLY_PRICE,
+    monthly: null,
+    yearly: null,
     lastUpdated: new Date().toISOString(),
   });
 
   const handlePricingUpdate = useCallback((pricing: { monthly?: string | null; yearly?: string | null; timestamp?: string }) => {
     setCurrentPricing({
-      monthly: pricing.monthly ?? DEFAULT_MONTHLY_PRICE,
-      yearly: pricing.yearly ?? DEFAULT_YEARLY_PRICE,
+      monthly: pricing.monthly ?? null,
+      yearly: pricing.yearly ?? null,
       lastUpdated: pricing.timestamp || new Date().toISOString(),
     });
   }, []);

@@ -214,7 +214,12 @@ export const SUBSCRIPTION_UI_TEXT = {
       billingPeriod: "Billed annually",
       badge: "Best Value",
       notAvailable: "Yearly subscription not available",
-      savingsLabel: (percent: number) => `Save ${percent}%`,
+      savingsLabel: (percent: number, amount?: number) => {
+        if (amount !== undefined && amount > 0) {
+          return `Save ${percent}% ($${amount.toFixed(2)})`;
+        }
+        return `Save ${percent}%`;
+      },
       perMonthLabel: (price: string) => `$${price} per month`,
       button: {
         processing: "Processing...",
