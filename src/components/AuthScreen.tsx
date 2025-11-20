@@ -1080,7 +1080,7 @@ export function AuthScreen() {
                               ⏳
                             </motion.div>
                           ) : (
-                            {AUTH_UI_TEXT.signUp.button}
+                            AUTH_UI_TEXT.signUp.button
                           )}
                         </Button>
                       </motion.div>
