@@ -339,7 +339,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* User Profile */}
         <AccordionItem 
           value="user-profile" 
-          className="border rounded-lg bg-card md:my-4"
+          className="border rounded-lg bg-muted/40 dark:bg-muted/20 md:my-4"
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -457,7 +457,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Subscription */}
         <AccordionItem 
           value="subscription" 
-          className="border rounded-lg bg-card md:my-4"
+          className="border rounded-lg bg-muted/40 dark:bg-muted/20 md:my-4"
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -800,7 +800,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Calendar Integration */}
-        <AccordionItem value="calendar" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4" data-tour="calendar-integration">
+        <AccordionItem value="calendar" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-muted/40 dark:bg-muted/20 my-2 sm:my-1.5 md:my-4" data-tour="calendar-integration">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-primary" />
@@ -933,7 +933,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Notifications */}
-        <AccordionItem value="notifications" className="border rounded-lg px-3 md:px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="notifications" className="border rounded-lg px-3 md:px-4 py-2 sm:py-0 md:py-0 bg-muted/40 dark:bg-muted/20 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-3 md:py-4">
             <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
               <Bell className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
@@ -1249,7 +1249,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Tags Management */}
-        <AccordionItem value="tags" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="tags" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-muted/40 dark:bg-muted/20 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Tag className="w-5 h-5 text-primary" />
@@ -1310,7 +1310,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* AI Settings */}
-        <AccordionItem value="ai-settings" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="ai-settings" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-muted/40 dark:bg-muted/20 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Sparkles className="w-5 h-5 text-primary" />
@@ -1453,7 +1453,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Date, Time & Theme */}
-        <AccordionItem value="datetime" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="datetime" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-muted/40 dark:bg-muted/20 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-primary" />
@@ -1525,7 +1525,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Task Rollover */}
-        <AccordionItem value="rollover" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="rollover" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-muted/40 dark:bg-muted/20 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <RotateCcw className="w-5 h-5 text-primary" />
@@ -1604,7 +1604,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Task Category Hours */}
-        <AccordionItem value="hours" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="hours" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-muted/40 dark:bg-muted/20 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Briefcase className="w-5 h-5 text-primary" />
@@ -1947,7 +1947,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Awards & Achievements */}
-        <AccordionItem value="awards" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4" data-tour="awards-section">
+        <AccordionItem value="awards" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-muted/40 dark:bg-muted/20 my-2 sm:my-1.5 md:my-4" data-tour="awards-section">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Trophy className="w-5 h-5 text-primary" />
