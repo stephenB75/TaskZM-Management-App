@@ -457,7 +457,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Subscription */}
         <AccordionItem 
           value="subscription" 
-          className="border rounded-lg bg-gradient-to-br from-[#D4C5F9]/30 to-[#C9E4F7]/30 dark:from-purple-900/20 dark:to-blue-900/20 md:my-4"
+          className="border rounded-lg bg-gradient-to-br from-white/80 to-[#F3E8FF]/60 dark:from-gray-800/50 dark:to-gray-700/50 md:my-4"
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -550,22 +550,22 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div className="grid gap-2">
                   {/* Unlimited Tasks - Available for all */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
-                    <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                    <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.unlimitedTasks}</span>
                   </div>
 
                   {/* Custom Tags - Available for all */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
-                    <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                    <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.customTags}</span>
                   </div>
 
                   {/* AI Scheduler - PRO only */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.aiScheduler ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     )}
                     <span className={features.aiScheduler ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.aiScheduler}
@@ -583,9 +583,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Task Hours - PRO only */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.taskHours ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     )}
                     <span className={features.taskHours ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.taskHours}
@@ -600,9 +600,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Analytics - PRO only */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.analytics ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     )}
                     <span className={features.analytics ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.analytics}
@@ -623,9 +623,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Pomodoro Timer - PRO only */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.pomodoroTimer ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     )}
                     <span className={features.pomodoroTimer ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.pomodoroTimer}
@@ -640,9 +640,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Team Features - PRO only */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.teamFeatures ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     )}
                     <span className={features.teamFeatures ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.teamCollaboration}
@@ -657,9 +657,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Calendar Sync - PRO only */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.calendarSync ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     )}
                     <span className={features.calendarSync ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.calendarSync}
@@ -674,9 +674,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Task Rollover - PRO only */}
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.taskRollover ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-[#B5E8D3]" />
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-muted-foreground/40" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     )}
                     <span className={features.taskRollover ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.autoTaskRollover}
