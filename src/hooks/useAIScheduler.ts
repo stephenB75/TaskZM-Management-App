@@ -93,7 +93,7 @@ export function useAIScheduler() {
     };
   };
 
-  const generateSchedulePlan = (tasksToSchedule?: Task[]): ScheduleResult => {
+  const generateSchedulePlan = (tasksToSchedule?: Task[], dateRange?: { startDate: Date; endDate: Date }): ScheduleResult => {
     const unscheduledTasks = tasksToSchedule || getUnscheduledTasks();
     
     if (unscheduledTasks.length === 0) {
@@ -286,9 +286,28 @@ export function useAIScheduler() {
     const plan: SchedulePlan[] = [];
     const exceedsLimit: Task[] = [];
     const daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }> = [];
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0); // Start of day, no default time
+    
+    // Determine start date: use provided dateRange start, or default to today (not tomorrow)
+    // For rescheduling, we want to schedule within the selected period starting from the beginning
+    const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today;
+    })();
+    
+    // Determine end date: use provided dateRange end, or default to 14 days ahead
+    const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
+      const future = new Date(startDate);
+      future.setDate(future.getDate() + 14);
+      return future;
+    })();
+    
+    // Ensure end date is at end of day
+    endDate.setHours(23, 59, 59, 999);
+    
+    // Use startDate as the base for scheduling (not tomorrow)
+    // This ensures rescheduling starts from the beginning of the selected period
+    const tomorrow = startDate;
     
     const MAX_HOURS_PER_DAY = 5;
     
@@ -351,17 +370,19 @@ export function useAIScheduler() {
     
     sortedTasks.forEach((task) => {
       // Determine scheduling based on priority and status (if priority-based scheduling is enabled)
+      // When rescheduling within a date range, prefer earlier dates and only push forward if necessary
       let daysToAdd = 0;
       let reason = '';
       
       if (aiSettings.priorityBasedScheduling) {
         // Priority-based scheduling logic
+        // For rescheduling, start from the beginning of the date range
         if (task.status === 'in-progress') {
           daysToAdd = 0;
           reason = 'In-progress - scheduled ASAP';
         } else if (task.priority === 'urgent') {
           daysToAdd = 0;
-          reason = 'Urgent priority - scheduled for tomorrow';
+          reason = 'Urgent priority - scheduled first';
         } else if (task.priority === 'high') {
           daysToAdd = tasksScheduledToday >= maxTasksPerDay ? 1 : 0;
           reason = daysToAdd === 0 ? 'High priority - scheduled soon' : 'High priority - next available slot';
@@ -374,6 +395,7 @@ export function useAIScheduler() {
         }
       } else {
         // Simple sequential scheduling without priority consideration
+        // For rescheduling, distribute tasks evenly across the date range
         daysToAdd = Math.floor(tasksScheduledToday / maxTasksPerDay);
         reason = 'Scheduled in next available slot';
       }
@@ -381,14 +403,22 @@ export function useAIScheduler() {
       // Check if task has a due date and adjust if needed
       if (task.dueDate) {
         const dueDate = new Date(task.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
         const suggestedDate = new Date(tomorrow);
         suggestedDate.setDate(suggestedDate.getDate() + daysToAdd);
         
         // If suggested date is after due date, schedule closer to due date
+        // But respect the date range constraint
         if (suggestedDate > dueDate) {
-          const daysDiff = Math.max(0, Math.floor((dueDate.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24)) - 1);
-          daysToAdd = Math.max(0, daysDiff);
-          reason = 'Due date approaching - prioritized';
+          const daysDiff = Math.max(0, Math.floor((dueDate.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24)));
+          const newDaysToAdd = Math.max(0, daysDiff);
+          
+          // Only adjust if the new date is within the allowed range
+          if (!dateRange || (new Date(tomorrow.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) >= startDate && 
+                             new Date(tomorrow.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) <= endDate)) {
+            daysToAdd = newDaysToAdd;
+            reason = 'Due date approaching - prioritized';
+          }
         }
       }
       
@@ -427,20 +457,31 @@ export function useAIScheduler() {
       // Find the next available day that has space for this task (within 5-hour limit)
       let foundDay = false;
       let finalDaysToAdd = daysToAdd;
-      const maxDaysToSearch = 14; // Search up to 2 weeks ahead
+      // Calculate max days to search based on date range or default to 14 days
+      const maxDaysToSearch = dateRange 
+        ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 14;
       let daysSearched = 0;
       
-      // Keep searching for a day with enough space
+      // Keep searching for a day with enough space within the date range
       while (daysSearched < maxDaysToSearch && !foundDay) {
         const testDate = new Date(tomorrow);
         testDate.setDate(testDate.getDate() + finalDaysToAdd);
+        
+        // Check if testDate is within the allowed date range
+        if (dateRange && (testDate < startDate || testDate > endDate)) {
+          // Date is outside the allowed range, try next day
+          finalDaysToAdd++;
+          daysSearched++;
+          continue;
+        }
         
         // Check if this day has space for the task (within 5-hour limit)
         if (!wouldExceedLimit(testDate, taskHours)) {
           // Found a day with space - use it
           foundDay = true;
         } else {
-          // This day is full, try the next day
+          // This day is full, try the next day (but only if within date range)
           finalDaysToAdd++;
           daysSearched++;
         }
@@ -750,8 +791,22 @@ export function useAIScheduler() {
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
-      // Generate new schedule for these specific tasks
-      const result = generateSchedulePlan(tasksForReschedule);
+      // Create date range for the selected day (start and end of the same day)
+      // Use the selected date, not tomorrow - allows rescheduling today's tasks
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      // If the selected date is today or in the past, use today as the start
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (startOfDay < today) {
+        startOfDay.setTime(today.getTime());
+      }
+      
+      // Generate new schedule for these specific tasks, constrained to the selected day
+      const result = generateSchedulePlan(tasksForReschedule, { startDate: startOfDay, endDate: endOfDay });
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
         for (const { task, scheduledDate } of result.scheduled) {
@@ -790,8 +845,15 @@ export function useAIScheduler() {
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
-      // Generate new schedule for these specific tasks
-      const result = generateSchedulePlan(tasksForReschedule);
+      // Create date range for the selected week (Monday to Sunday)
+      const weekStart = new Date(startDate);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6); // 7 days including start
+      weekEnd.setHours(23, 59, 59, 999);
+      
+      // Generate new schedule for these specific tasks, constrained to the selected week
+      const result = generateSchedulePlan(tasksForReschedule, { startDate: weekStart, endDate: weekEnd });
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
         for (const { task, scheduledDate } of result.scheduled) {
@@ -830,8 +892,14 @@ export function useAIScheduler() {
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
-      // Generate new schedule for these specific tasks
-      const result = generateSchedulePlan(tasksForReschedule);
+      // Create date range for the selected month (first day to last day of month)
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      monthEnd.setHours(23, 59, 59, 999);
+      
+      // Generate new schedule for these specific tasks, constrained to the selected month
+      const result = generateSchedulePlan(tasksForReschedule, { startDate: monthStart, endDate: monthEnd });
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
         for (const { task, scheduledDate } of result.scheduled) {
