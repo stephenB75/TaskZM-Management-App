@@ -1964,7 +1964,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               }
               return prev;
             });
-            return;
+            throw new Error('Workspace not available');
           }
           currentWorkspaceId = validWorkspaceId;
         }
@@ -2022,6 +2022,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         } else {
           toast.error('Folder deletion failed, will sync when online');
         }
+        // Re-throw error so UI can handle it
+        throw error;
       }
     } else {
       // No workspace/auth - already deleted locally above

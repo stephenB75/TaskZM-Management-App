@@ -197,10 +197,16 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
     setIsDeleting(true);
     try {
       await deleteFolder(folderToDelete.id);
+      // Success - close dialog
       setFolderToDelete(null);
     } catch (error) {
       logger.error("Error deleting folder:", error);
-      toast.error("Failed to delete folder");
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Error toast is already shown by deleteFolder, but we can add more context if needed
+      if (!errorMessage.includes('Workspace not found') && !errorMessage.includes('Folder deletion failed')) {
+        toast.error("Failed to delete folder. Please try again.");
+      }
+      // Don't close dialog on error so user can try again or cancel
     } finally {
       setIsDeleting(false);
     }
