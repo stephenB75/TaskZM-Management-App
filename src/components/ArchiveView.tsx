@@ -362,7 +362,7 @@ export function ArchiveView() {
                               {task.description && (
                                 <div 
                                   className={cn(
-                                    "text-[10px] text-muted-foreground line-clamp-4 break-words opacity-60 leading-tight",
+                                    "text-[10px] text-muted-foreground line-clamp-4 break-words opacity-60 leading-tight px-1.5",
                                     // Rich text formatting styles - only apply if HTML is present
                                     // Note: Rich text editor font size changes will override this base size via inline styles
                                     hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",

@@ -570,7 +570,7 @@ export function AIRecommendationPanel({
                             </div>
                           </div>
                           {task.description && (
-                            <p className="text-[10px] text-muted-foreground mb-2 line-clamp-1">
+                            <p className="text-[10px] text-muted-foreground mb-2 line-clamp-1 px-1.5">
                               {task.description}
                             </p>
                           )}

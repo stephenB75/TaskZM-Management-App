@@ -372,7 +372,7 @@ export function DraggableTodayAgendaTask({
             {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
               <div 
                 className={cn(
-                  "text-gray-500 leading-snug break-words text-[10px]",
+                  "text-gray-500 leading-snug break-words text-[10px] px-1.5",
                   // For exactly 1 hour (60 minutes), show 2 lines; for longer tasks, show 4 lines
                   task.estimatedTime === 60 ? "line-clamp-2" : "line-clamp-4",
                   // Rich text formatting styles - only apply if HTML is present
