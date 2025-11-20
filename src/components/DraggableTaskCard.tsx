@@ -325,7 +325,14 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {/* Row 1: Time + Priority Badge + Tag + Duration + Tracking Badge (mobile) (left) + Checkbox (right) */}
           <div className={cn("flex items-center justify-between", isMobile ? "gap-1" : "gap-2")}>
-            <div className={cn("flex items-center flex-1 min-w-0", isMobile ? "gap-1" : "gap-1.5")}>
+            <div
+              className={cn(
+                "flex items-center flex-1 min-w-0 flex-wrap",
+                isMobile ? "gap-1" : "gap-1.5",
+                // Ensure badges don't collide with the completion button
+                isMobile ? "pr-2" : "pr-4"
+              )}
+            >
               {/* Scheduled Time with AM/PM */}
               {formatTimeAMPM(
                 task.scheduledDate || task.dueDate,
