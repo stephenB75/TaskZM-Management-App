@@ -578,15 +578,15 @@ export function AuthScreen() {
                   if (totalPages <= 1) return null;
                   
                   return (
-                    <div className="flex items-center justify-center gap-0.5 lg:gap-1 pt-1.5 lg:pt-2 lg:flex-shrink-0">
+                    <div className="flex items-center justify-center gap-0.5 lg:gap-1 pt-1 lg:pt-2 lg:flex-shrink-0">
                       {Array.from({ length: totalPages }).map((_, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentFeatureIndex(index)}
                           className={`rounded-full transition-all duration-300 ${
                             index === currentFeatureIndex
-                              ? "w-1 h-0.5 lg:w-3 lg:h-1 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9]"
-                              : "w-0.5 h-0.5 lg:w-1 lg:h-1 bg-gray-400/30 dark:bg-gray-500/30 hover:bg-gray-500/50 dark:hover:bg-gray-400/50"
+                              ? "w-1 h-0.5 lg:w-3 lg:h-1 bg-gradient-to-r from-[#7B68EE]/60 to-[#D4C5F9]/60 opacity-70"
+                              : "w-0.5 h-0.5 lg:w-1 lg:h-1 bg-gray-400/10 dark:bg-gray-500/10 hover:bg-gray-500/20 dark:hover:bg-gray-400/20 opacity-30"
                           }`}
                           aria-label={`Go to page ${index + 1}`}
                         />
@@ -603,7 +603,7 @@ export function AuthScreen() {
             variants={cardVariants}
             className="order-1 lg:order-2 flex items-center justify-center w-full"
           >
-            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95 mb-4 sm:mb-6 lg:mb-0">
+            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95 mb-4 sm:mb-6 lg:mb-0 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] lg:max-h-none overflow-y-auto lg:overflow-visible">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
@@ -782,7 +782,7 @@ export function AuthScreen() {
                               ⏳
                             </motion.div>
                           ) : (
-                            {AUTH_UI_TEXT.signIn.button}
+                            AUTH_UI_TEXT.signIn.button
                           )}
                         </Button>
                       </motion.div>
