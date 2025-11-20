@@ -211,11 +211,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     if (permission !== 'granted') {
       logger.debug('Notification permission not granted:', permission);
+      logger.warn('Notifications enabled but permission not granted. Current permission:', permission);
       return;
     }
 
     if (!user) {
       logger.debug('No user, skipping notifications');
+      return;
+    }
+
+    // Verify Notification API is available
+    if (!('Notification' in window)) {
+      logger.error('Notification API not available in this browser');
       return;
     }
 
@@ -232,6 +239,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       dueDateReminders: settings.dueDateReminders,
     });
 
+    // Track notification counts
+    let overdueCount = 0;
+    let dueSoonCount = 0;
+
     // Check for overdue tasks
     if (settings.overdueAlerts) {
       const overdueTasks = tasks.filter(task => {
@@ -246,6 +257,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
 
       logger.debug('Overdue tasks found:', overdueTasks.length);
+      overdueCount = overdueTasks.length;
 
       overdueTasks.forEach(task => {
         try {
@@ -258,10 +270,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             requireInteraction: false,
           });
           
+          // Handle notification click - focus the app window
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+          
+          // Auto-close notification after 5 seconds
+          setTimeout(() => {
+            notification.close();
+          }, 5000);
+          
           logger.debug('Notification sent for overdue task:', task.id, task.title);
           notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
         } catch (error) {
           logger.error('Failed to show notification:', error);
+          toast.error('Failed to show notification. Please check your browser settings.');
         }
       });
     }
@@ -279,6 +303,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
 
       logger.debug('Due soon tasks found:', dueSoonTasks.length);
+      dueSoonCount = dueSoonTasks.length;
 
       dueSoonTasks.forEach(task => {
         try {
@@ -296,10 +321,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             requireInteraction: false,
           });
           
+          // Handle notification click - focus the app window
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+          
+          // Auto-close notification after 5 seconds
+          setTimeout(() => {
+            notification.close();
+          }, 5000);
+          
           logger.debug('Notification sent for due soon task:', task.id, task.title, timeText);
           notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
         } catch (error) {
           logger.error('Failed to show notification:', error);
+          toast.error('Failed to show notification. Please check your browser settings.');
         }
       });
     }
@@ -325,6 +362,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.notifiedTasks, Array.from(cleanedTasks));
+    
+    // Log summary
+    const totalNotifications = overdueCount + dueSoonCount;
+    if (totalNotifications > 0) {
+      logger.info(`Notification check complete: ${totalNotifications} notification(s) sent`, {
+        overdue: overdueCount,
+        dueSoon: dueSoonCount,
+      });
+    } else {
+      logger.debug('Notification check complete: No notifications needed');
+    }
   }, [tasks, settings, permission, user]);
 
   // Update badge when tasks or settings change
