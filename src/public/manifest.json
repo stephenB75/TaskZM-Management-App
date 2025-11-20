@@ -1,7 +1,7 @@
 {
   "name": "TaskZM - Neurodivergent-Friendly Task Manager",
   "short_name": "TaskZM",
-  "description": "Enterprise-level task management with AI-assisted planning, optimized for neurodivergent users",
+  "description": "TaskZM: A comprehensive neurodivergent-friendly task management application with AI-assisted planning, calendar integration, and analytics.",
   "start_url": "/",
   "display": "standalone",
   "_comment_colors": "Note: Colors are hardcoded in manifest.json. Constants are defined in src/lib/layout-constants.ts: APP_BACKGROUND_COLOR and APP_THEME_COLOR_SECONDARY",
