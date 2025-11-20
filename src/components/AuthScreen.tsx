@@ -485,49 +485,49 @@ export function AuthScreen() {
               className="space-y-2 lg:flex-1 lg:flex lg:flex-col lg:max-h-[280px] lg:min-h-0"
               variants={itemVariants}
             >
-              {/* Header with Controls */}
-              <div className="flex items-center justify-between gap-2 lg:flex-shrink-0">
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {AUTH_UI_TEXT.featuresHeader}
-                </h3>
-                {/* Navigation Controls */}
-                {MARKETING_FEATURES.length > featuresPerPage && (
-                  <div className="flex items-center gap-0.5">
-                    <button
-                      onClick={() => {
-                        setCurrentFeatureIndex((prev) => {
-                          const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
-                          return prev === 0 ? totalPages - 1 : prev - 1;
-                        });
-                      }}
-                      className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
-                      aria-label="Previous features"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setCurrentFeatureIndex((prev) => {
-                          const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
-                          return prev === totalPages - 1 ? 0 : prev + 1;
-                        });
-                      }}
-                      className="p-1 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 rounded-full transition-all hover:scale-110"
-                      aria-label="Next features"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {/* Carousel Container with Gradient Fade - Half height on desktop */}
               <div className="relative overflow-hidden rounded-lg lg:flex-1 lg:min-h-0">
+                {/* Static Title - Centered above features */}
+                <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-center pt-1 pb-1.5">
+                  <h3 className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent">
+                    {AUTH_UI_TEXT.featuresHeader}
+                  </h3>
+                  {/* Navigation Controls - Positioned on the right */}
+                  {MARKETING_FEATURES.length > featuresPerPage && (
+                    <div className="absolute right-2 flex items-center gap-0.5">
+                      <button
+                        onClick={() => {
+                          setCurrentFeatureIndex((prev) => {
+                            const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+                            return prev === 0 ? totalPages - 1 : prev - 1;
+                          });
+                        }}
+                        className="p-1 hover:bg-white/20 dark:hover:bg-gray-800/20 rounded-full transition-all hover:scale-110"
+                        aria-label="Previous features"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCurrentFeatureIndex((prev) => {
+                            const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+                            return prev === totalPages - 1 ? 0 : prev + 1;
+                          });
+                        }}
+                        className="p-1 hover:bg-white/20 dark:hover:bg-gray-800/20 rounded-full transition-all hover:scale-110"
+                        aria-label="Next features"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {/* Gradient Fade Edges */}
                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
                 <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
                 
-                <div className="overflow-hidden min-h-[75px] sm:min-h-[85px] lg:h-full lg:flex lg:items-center">
+                <div className="overflow-hidden min-h-[75px] sm:min-h-[85px] lg:h-full lg:flex lg:items-center pt-6 sm:pt-7">
                   <motion.div
                     className="flex"
                     animate={{
@@ -570,30 +570,6 @@ export function AuthScreen() {
                     })}
                   </motion.div>
                 </div>
-                
-                {/* Enhanced Dots Indicator - Smaller on Mobile */}
-                {(() => {
-                  const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
-                  
-                  if (totalPages <= 1) return null;
-                  
-                  return (
-                    <div className="flex items-center justify-center gap-0.5 lg:gap-1 pt-1 lg:pt-2 lg:flex-shrink-0">
-                      {Array.from({ length: totalPages }).map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentFeatureIndex(index)}
-                          className={`rounded-full transition-all duration-300 ${
-                            index === currentFeatureIndex
-                              ? "w-1 h-0.5 lg:w-3 lg:h-1 bg-gradient-to-r from-[#7B68EE]/60 to-[#D4C5F9]/60 opacity-70"
-                              : "w-0.5 h-0.5 lg:w-1 lg:h-1 bg-gray-400/10 dark:bg-gray-500/10 hover:bg-gray-500/20 dark:hover:bg-gray-400/20 opacity-30"
-                          }`}
-                          aria-label={`Go to page ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  );
-                })()}
               </div>
             </motion.div>
           </motion.div>
