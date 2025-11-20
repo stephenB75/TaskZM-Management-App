@@ -398,7 +398,7 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-start lg:items-center justify-center py-4 sm:py-6 lg:py-0">
+    <div className="min-h-screen relative flex items-start lg:items-center justify-center py-4 sm:py-6 lg:py-0 pb-6 sm:pb-8 lg:pb-0">
       {/* Background Image with Overlay */}
       <div className="fixed inset-0 z-0">
         <ImageWithFallback
@@ -438,7 +438,7 @@ export function AuthScreen() {
 
       {/* Main Content */}
       <motion.div
-        className="relative z-10 w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:py-6"
+        className="relative z-10 w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:py-6 pb-4 sm:pb-6 lg:pb-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -579,8 +579,8 @@ export function AuthScreen() {
                           onClick={() => setCurrentFeatureIndex(index)}
                           className={`rounded-full transition-all duration-300 ${
                             index === currentFeatureIndex
-                              ? "w-1.5 h-0.5 lg:w-3 lg:h-1 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9]"
-                              : "w-0.5 h-0.5 lg:w-1 lg:h-1 bg-gray-400/40 dark:bg-gray-500/40 hover:bg-gray-500/60 dark:hover:bg-gray-400/60"
+                              ? "w-1 h-0.5 lg:w-3 lg:h-1 bg-gradient-to-r from-[#7B68EE] to-[#D4C5F9]"
+                              : "w-0.5 h-0.5 lg:w-1 lg:h-1 bg-gray-400/30 dark:bg-gray-500/30 hover:bg-gray-500/50 dark:hover:bg-gray-400/50"
                           }`}
                           aria-label={`Go to page ${index + 1}`}
                         />
@@ -597,7 +597,7 @@ export function AuthScreen() {
             variants={cardVariants}
             className="order-1 lg:order-2 flex items-center justify-center w-full"
           >
-            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95">
+            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95 mb-4 sm:mb-6 lg:mb-0">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
@@ -1088,7 +1088,7 @@ export function AuthScreen() {
               </Tabs>
               
               {/* App Store Badges */}
-              <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
+              <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
                 <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-3">
                   Mobile apps coming soon
                 </p>
