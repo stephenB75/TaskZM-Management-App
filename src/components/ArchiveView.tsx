@@ -362,7 +362,7 @@ export function ArchiveView() {
                               {task.description && (
                                 <div 
                                   className={cn(
-                                    "text-[10px] text-muted-foreground line-clamp-2 opacity-60 leading-tight",
+                                    "text-[10px] text-muted-foreground line-clamp-4 break-words opacity-60 leading-tight",
                                     // Rich text formatting styles - only apply if HTML is present
                                     // Note: Rich text editor font size changes will override this base size via inline styles
                                     hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -372,7 +372,7 @@ export function ArchiveView() {
                                     hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
                                     hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
                                     hasHTMLTags(task.description) && "[&_li]:ml-1",
-                                    hasHTMLTags(task.description) && "[&_p]:my-0.5"
+                                    hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words"
                                   )}
                                   {...(hasHTMLTags(task.description) 
                                     ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }

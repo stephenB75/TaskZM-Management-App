@@ -372,8 +372,7 @@ export function DraggableTodayAgendaTask({
             {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
               <div 
                 className={cn(
-                  "text-gray-500 leading-snug break-words text-[10px]",
-                  (task.estimatedTime && task.estimatedTime <= 30) ? "line-clamp-2" : "line-clamp-4",
+                  "text-gray-500 leading-snug break-words text-[10px] line-clamp-4",
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -384,7 +383,7 @@ export function DraggableTodayAgendaTask({
                   hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5",
                   hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
                   hasHTMLTags(task.description) && "[&_li]:ml-1",
-                  hasHTMLTags(task.description) && "[&_p]:my-0.5",
+                  hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words",
                   hasHTMLTags(task.description) && "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
                 )}
                 {...(hasHTMLTags(task.description) 

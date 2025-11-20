@@ -467,7 +467,7 @@ export function InboxView() {
                               {task.description && (
                                 <div 
                                   className={cn(
-                                    "text-[10px] text-muted-foreground mb-2 line-clamp-2",
+                                    "text-[10px] text-muted-foreground mb-2 line-clamp-4 break-words",
                                     // Rich text formatting styles - only apply if HTML is present
                                     // Note: Rich text editor font size changes will override this base size via inline styles
                                     hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -477,7 +477,7 @@ export function InboxView() {
                                     hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
                                     hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
                                     hasHTMLTags(task.description) && "[&_li]:ml-1",
-                                    hasHTMLTags(task.description) && "[&_p]:my-0.5"
+                                    hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words"
                                   )}
                                   {...(hasHTMLTags(task.description) 
                                     ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
