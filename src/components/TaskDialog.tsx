@@ -79,6 +79,7 @@ import { toast } from "sonner";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
+import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from "../lib/daily-hours-utils";
 import type {
   Task,
   TaskPriority,
@@ -944,6 +945,41 @@ export function TaskDialog({
             description: 'Please choose a different time slot.',
           });
           return;
+        }
+      }
+      
+      // Check 5-hour daily limit if scheduling for today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const scheduledDateOnly = new Date(scheduledDateTime);
+      scheduledDateOnly.setHours(0, 0, 0, 0);
+      
+      if (scheduledDateOnly.getTime() === today.getTime()) {
+        // Create a temporary task object for limit checking
+        const tempTask: Task = {
+          ...(task || {}),
+          id: taskId || 'temp',
+          estimatedTime: totalMinutes > 0 ? totalMinutes : null,
+        } as Task;
+        
+        const limitCheck = checkDailyLimit(scheduledDateOnly, tempTask, tasks);
+        const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours);
+        
+        if (limitCheck.wouldExceed) {
+          // Would exceed limit - prevent and show error
+          toast.error('Daily limit exceeded', {
+            description: `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
+            duration: 5000,
+          });
+          return;
+        }
+        
+        if (warningLevel === 'warning') {
+          // Close to limit - show warning but allow
+          toast.warning('Approaching daily limit', {
+            description: `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`,
+            duration: 4000,
+          });
         }
       }
     }

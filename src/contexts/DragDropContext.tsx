@@ -4,6 +4,7 @@ import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
 import { isTaskBlocked, getIncompleteDependencies } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
+import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -188,7 +189,28 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         }
       }
 
-      // No conflict, proceed with update
+      // Check 5-hour daily limit before scheduling
+      const limitCheck = checkDailyLimit(today, task, tasks);
+      const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours);
+      
+      if (limitCheck.wouldExceed) {
+        // Would exceed limit - prevent and show error
+        toast.error('Daily limit exceeded', {
+          description: `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
+          duration: 5000,
+        });
+        return;
+      }
+      
+      if (warningLevel === 'warning') {
+        // Close to limit - show warning but allow
+        toast.warning('Approaching daily limit', {
+          description: `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`,
+          duration: 4000,
+        });
+      }
+
+      // No conflict and within limit, proceed with update
       updateTask(taskId, {
         scheduledDate: today.toISOString(),
       });
