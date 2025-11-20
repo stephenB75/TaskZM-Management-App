@@ -1075,26 +1075,42 @@ app.delete("/make-server-65e6e67f/cleanup-demo-user", async (c) => {
       const allKeys = await kv.getByPrefix(`workspace_${workspaceId}_`);
       console.log(`  🗑️  Found ${allKeys.length} workspace keys to delete`);
       
+      let deletedWorkspaceKeys = 0;
       for (const item of allKeys) {
-        await kv.del(item.key);
+        try {
+          await kv.del(item.key);
+          deletedWorkspaceKeys++;
+        } catch (e) {
+          console.warn(`  ⚠️  Failed to delete workspace key ${item.key}: ${e}`);
+        }
       }
       
       // Delete workspace reference
-      await kv.del(`user_${userId}_workspace`);
+      try {
+        await kv.del(`user_${userId}_workspace`);
+        deletedWorkspaceKeys++;
+      } catch (e) {
+        console.warn(`  ⚠️  Failed to delete workspace reference: ${e}`);
+      }
+      
+      console.log(`  ✅ Deleted ${deletedWorkspaceKeys}/${allKeys.length + 1} workspace keys`);
     }
 
-    // 2. Delete user-specific data (including login timestamp)
+    // 2. Delete user-specific data (including login timestamp and activity tracking)
     console.log(`  👤 Deleting user data for: ${userId}`);
     const userKeys = await kv.getByPrefix(`user_${userId}_`);
     console.log(`  🗑️  Found ${userKeys.length} user keys to delete`);
     
+    let deletedUserKeys = 0;
     for (const item of userKeys) {
-      await kv.del(item.key);
+      try {
+        await kv.del(item.key);
+        deletedUserKeys++;
+      } catch (e) {
+        console.warn(`  ⚠️  Failed to delete key ${item.key}: ${e}`);
+      }
     }
-    
-    // Explicitly delete login timestamp and activity timestamp if they exist
-    await kv.del(`user_${userId}_demo_login_time`);
-    await kv.del(`user_${userId}_demo_last_activity`);
+    console.log(`  ✅ Deleted ${deletedUserKeys}/${userKeys.length} user keys`);
 
     // 3. Delete calendar tokens if any
     try {
@@ -1107,19 +1123,45 @@ app.delete("/make-server-65e6e67f/cleanup-demo-user", async (c) => {
 
     // 4. Delete the user from Supabase Auth
     console.log(`  🔐 Deleting user from Supabase Auth: ${userId}`);
+    let authDeleteSuccess = true;
     const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
     
     if (deleteError) {
       console.error('  ⚠️  Failed to delete user from Auth:', deleteError);
+      authDeleteSuccess = false;
       // Continue anyway - KV data is already cleaned
     }
 
-    console.log(`✅ Demo user cleanup completed: ${userId}`);
+    // 5. Verify cleanup completion
+    console.log(`  🔍 Verifying cleanup completion...`);
+    const verification = await cleanupUtils.verifyUserCleanup(userId);
+    
+    if (verification.remainingKeys.length > 0) {
+      console.warn(`  ⚠️  Warning: ${verification.remainingKeys.length} keys still remain after cleanup`);
+      console.warn(`  Remaining keys: ${verification.remainingKeys.slice(0, 5).join(', ')}${verification.remainingKeys.length > 5 ? '...' : ''}`);
+    } else {
+      console.log(`  ✅ Verification passed: All user data cleaned`);
+    }
+
+    const cleanupStatus = {
+      kvDataCleaned: verification.isClean,
+      authUserDeleted: authDeleteSuccess,
+      remainingKeys: verification.remainingKeys,
+    };
+
+    if (cleanupStatus.kvDataCleaned && cleanupStatus.authUserDeleted) {
+      console.log(`✅ Demo user cleanup completed successfully: ${userId}`);
+    } else {
+      console.warn(`⚠️  Demo user cleanup completed with warnings: ${userId}`, cleanupStatus);
+    }
 
     return c.json({ 
-      success: true, 
-      message: 'Demo user and all associated data deleted successfully',
+      success: cleanupStatus.kvDataCleaned && cleanupStatus.authUserDeleted,
+      message: cleanupStatus.kvDataCleaned && cleanupStatus.authUserDeleted
+        ? 'Demo user and all associated data deleted successfully'
+        : 'Demo user cleanup completed with some warnings',
       deletedWorkspace: workspaceId,
+      verification: cleanupStatus,
     });
   } catch (error) {
     console.error('Error cleaning up demo user:', error);
@@ -1268,8 +1310,15 @@ app.post("/make-server-65e6e67f/demo/cleanup-inactive", async (c) => {
           if (!loginTimeStr) {
             // No activity or login time - clean up
             console.log(`  🗑️  Cleaning up demo user ${userId} (no activity recorded)`);
-            await cleanupDemoUser(userId);
-            cleanedCount++;
+            const result = await cleanupDemoUser(userId);
+            if (result.success) {
+              cleanedCount++;
+            } else {
+              errors.push(`User ${userId}: ${result.errors.join('; ')}`);
+              if (result.verification && !result.verification.isClean) {
+                console.warn(`  ⚠️  User ${userId} cleanup incomplete: ${result.verification.remainingKeys.length} keys remaining`);
+              }
+            }
             continue;
           }
           
@@ -1279,8 +1328,15 @@ app.post("/make-server-65e6e67f/demo/cleanup-inactive", async (c) => {
           
           if (inactiveMs > maxInactiveMs) {
             console.log(`  🗑️  Cleaning up inactive demo user ${userId} (${Math.round(inactiveMs / 60000)} minutes inactive)`);
-            await cleanupDemoUser(userId);
-            cleanedCount++;
+            const result = await cleanupDemoUser(userId);
+            if (result.success) {
+              cleanedCount++;
+            } else {
+              errors.push(`User ${userId}: ${result.errors.join('; ')}`);
+              if (result.verification && !result.verification.isClean) {
+                console.warn(`  ⚠️  User ${userId} cleanup incomplete: ${result.verification.remainingKeys.length} keys remaining`);
+              }
+            }
           }
         } else {
           const lastActivity = parseInt(lastActivityStr);
@@ -1288,23 +1344,43 @@ app.post("/make-server-65e6e67f/demo/cleanup-inactive", async (c) => {
           
           if (inactiveMs > maxInactiveMs) {
             console.log(`  🗑️  Cleaning up inactive demo user ${userId} (${Math.round(inactiveMs / 60000)} minutes inactive)`);
-            await cleanupDemoUser(userId);
-            cleanedCount++;
+            const result = await cleanupDemoUser(userId);
+            if (result.success) {
+              cleanedCount++;
+            } else {
+              errors.push(`User ${userId}: ${result.errors.join('; ')}`);
+              if (result.verification && !result.verification.isClean) {
+                console.warn(`  ⚠️  User ${userId} cleanup incomplete: ${result.verification.remainingKeys.length} keys remaining`);
+              }
+            }
           }
         }
       } catch (error) {
         const errorMsg = `Failed to cleanup demo user ${userId}: ${error}`;
         console.error(`  ❌ ${errorMsg}`);
         errors.push(errorMsg);
+        // Log full error details for debugging
+        if (error instanceof Error) {
+          console.error(`  Error details: ${error.message}`, error.stack);
+        }
       }
     }
 
-    console.log(`✅ Cleanup completed: ${cleanedCount} demo users cleaned up`);
+    const successRate = demoUserIds.length > 0 
+      ? ((cleanedCount / demoUserIds.length) * 100).toFixed(1)
+      : '100';
+    
+    console.log(`✅ Cleanup completed: ${cleanedCount}/${demoUserIds.length} demo users cleaned up (${successRate}% success rate)`);
+    
+    if (errors.length > 0) {
+      console.warn(`⚠️  ${errors.length} error(s) encountered during cleanup`);
+    }
 
     return c.json({
-      success: true,
+      success: errors.length === 0,
       cleanedCount,
       totalChecked: demoUserIds.length,
+      successRate: `${successRate}%`,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
@@ -1314,41 +1390,82 @@ app.post("/make-server-65e6e67f/demo/cleanup-inactive", async (c) => {
 });
 
 // Helper function to cleanup a single demo user
-async function cleanupDemoUser(userId: string) {
+async function cleanupDemoUser(userId: string): Promise<{
+  success: boolean;
+  errors: string[];
+  verification?: { isClean: boolean; remainingKeys: string[] };
+}> {
   const supabase = getSupabaseClient();
+  const errors: string[] = [];
   
-  // Get user's workspace
-  const workspaceId = await kv.get(`user_${userId}_workspace`);
-  
-  if (workspaceId) {
-    // Delete all workspace-related data
-    const allKeys = await kv.getByPrefix(`workspace_${workspaceId}_`);
-    for (const item of allKeys) {
-      await kv.del(item.key);
+  try {
+    // Get user's workspace
+    const workspaceId = await kv.get(`user_${userId}_workspace`);
+    
+    if (workspaceId) {
+      try {
+        // Delete all workspace-related data
+        const allKeys = await kv.getByPrefix(`workspace_${workspaceId}_`);
+        for (const item of allKeys) {
+          try {
+            await kv.del(item.key);
+          } catch (e) {
+            errors.push(`Failed to delete workspace key ${item.key}: ${e}`);
+          }
+        }
+        await kv.del(`user_${userId}_workspace`);
+      } catch (e) {
+        errors.push(`Failed to delete workspace ${workspaceId}: ${e}`);
+      }
     }
-    await kv.del(`user_${userId}_workspace`);
-  }
 
-  // Delete user-specific data
-  const userKeys = await kv.getByPrefix(`user_${userId}_`);
-  for (const item of userKeys) {
-    await kv.del(item.key);
-  }
+    // Delete user-specific data
+    try {
+      const userKeys = await kv.getByPrefix(`user_${userId}_`);
+      for (const item of userKeys) {
+        try {
+          await kv.del(item.key);
+        } catch (e) {
+          errors.push(`Failed to delete user key ${item.key}: ${e}`);
+        }
+      }
+    } catch (e) {
+      errors.push(`Failed to delete user data: ${e}`);
+    }
 
-  // Delete calendar tokens
-  try {
-    await kv.del(`calendar_tokens_${userId}_google`);
-    await kv.del(`calendar_tokens_${userId}_outlook`);
-    await kv.del(`calendar_tokens_${userId}_apple`);
+    // Delete calendar tokens
+    try {
+      await kv.del(`calendar_tokens_${userId}_google`);
+      await kv.del(`calendar_tokens_${userId}_outlook`);
+      await kv.del(`calendar_tokens_${userId}_apple`);
+    } catch (e) {
+      // Calendar tokens might not exist - not an error
+    }
+
+    // Delete the user from Supabase Auth
+    try {
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+      if (deleteError) {
+        errors.push(`Failed to delete user from Auth: ${deleteError.message}`);
+      }
+    } catch (e) {
+      errors.push(`Failed to delete user from Auth: ${e}`);
+    }
+
+    // Verify cleanup
+    const verification = await cleanupUtils.verifyUserCleanup(userId);
+    
+    return {
+      success: errors.length === 0 && verification.isClean,
+      errors,
+      verification,
+    };
   } catch (e) {
-    // Calendar tokens might not exist
-  }
-
-  // Delete the user from Supabase Auth
-  try {
-    await supabase.auth.admin.deleteUser(userId);
-  } catch (e) {
-    console.warn(`  ⚠️  Failed to delete user from Auth: ${e}`);
+    errors.push(`General cleanup error: ${e}`);
+    return {
+      success: false,
+      errors,
+    };
   }
 }
 
