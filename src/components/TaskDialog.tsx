@@ -901,7 +901,7 @@ export function TaskDialog({
       tags: taskTags,
       subtasks,
       estimatedTime: totalMinutes > 0 ? totalMinutes : null,
-      notes: notes.trim(),
+      notes: notes, // Preserve HTML formatting from RichTextEditor
       dependencies,
       recurrence: recurrenceConfig,
       assignedTo,
@@ -2606,13 +2606,12 @@ export function TaskDialog({
                   {/* Notes */}
                   <div className="space-y-2">
                     <Label htmlFor="notes" className="text-sm font-semibold">Notes</Label>
-                    <Textarea
-                      id="notes"
+                    <RichTextEditor
                       value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Additional notes..."
-                      rows={3}
-                      className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20 resize-none"
+                      onChange={setNotes}
+                      placeholder="Additional notes... (Press Enter for new paragraphs)"
+                      rows={4}
+                      className="bg-white dark:bg-gray-800/80"
                     />
                   </div>
 

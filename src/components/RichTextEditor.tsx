@@ -54,7 +54,18 @@ export function RichTextEditor({
   // Initialize editor content
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '';
+      // If value is plain text without HTML tags, wrap it in paragraph tags
+      if (value && !value.trim().match(/^<[^>]+>/)) {
+        // Plain text - wrap in paragraph tags for proper formatting
+        const paragraphs = value.split('\n').filter(p => p.trim());
+        if (paragraphs.length > 0) {
+          editorRef.current.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+        } else {
+          editorRef.current.innerHTML = '';
+        }
+      } else {
+        editorRef.current.innerHTML = value || '';
+      }
     }
   }, [value]);
 
@@ -331,6 +342,19 @@ export function RichTextEditor({
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
+        {/* Paragraph Format */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => formatText('paragraph')}
+          title="Paragraph (Press Enter for new paragraph)"
+        >
+          <Pilcrow className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-5 bg-border mx-1" />
+        
         {/* Indentation */}
         <Button
           type="button"
@@ -439,7 +463,8 @@ export function RichTextEditor({
           "[&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1 [&_ol]:space-y-1 [&_ol]:block",
           "[&_li]:ml-2 [&_li]:leading-relaxed [&_li]:block",
           // Paragraph and indentation styling
-          "[&_p]:my-1 [&_p]:leading-relaxed [&_p]:block",
+          "[&_p]:my-2 [&_p]:leading-relaxed [&_p]:block [&_p:empty]:hidden",
+          "[&_p+p]:mt-2",
           "[&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-3 [&_blockquote]:ml-2 [&_blockquote]:italic [&_blockquote]:my-1",
           // Code styling
           "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block",
