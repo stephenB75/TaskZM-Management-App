@@ -9,7 +9,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTodayAgendaTask } from "./DraggableTodayAgendaTask";
 import { Confetti } from "./Confetti";
-import { cn, prepareTaskForDialog } from "../lib/utils";
+import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "sonner";
 import type { Task } from "../types";
@@ -383,9 +383,27 @@ export function TodayAgendaView({
                             </div>
                             <div className="flex items-start gap-1.5 mt-1.5">
                               <StickyNote className="w-3 h-3 text-primary/60 mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-                                {nextUpTask.notes}
-                              </p>
+                              <div 
+                                className={cn(
+                                  "text-xs text-muted-foreground leading-relaxed flex-1",
+                                  // Rich text formatting styles - only apply if HTML is present
+                                  hasHTMLTags(nextUpTask.notes) && "[&_strong]:font-bold [&_b]:font-bold",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_em]:italic [&_i]:italic",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_u]:underline",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_s]:line-through [&_strike]:line-through",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800 [&_mark]:px-0.5 [&_mark]:rounded",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5 [&_ul]:space-y-1",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5 [&_ol]:space-y-1",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_li]:ml-1 [&_li]:leading-relaxed",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_p]:my-1 [&_p]:leading-relaxed [&_p]:block [&_p:empty]:hidden",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_p+p]:mt-2",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block"
+                                )}
+                                {...(hasHTMLTags(nextUpTask.notes) 
+                                  ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(nextUpTask.notes) } }
+                                  : { children: nextUpTask.notes }
+                                )}
+                              />
                             </div>
                           </div>
                         </div>
