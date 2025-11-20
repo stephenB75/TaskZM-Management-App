@@ -152,8 +152,9 @@ export function TaskCard({
             {task.description && (
               <div 
                 className={cn(
-                  "text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2",
+                  "text-[10px] text-gray-600 dark:text-gray-400 line-clamp-2 mb-2",
                   // Rich text formatting styles - only apply if HTML is present
+                  // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
                   hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
                   hasHTMLTags(task.description) && "[&_u]:underline",

@@ -1199,7 +1199,9 @@ export function DashboardView({
                           {task.description && (
                             <div 
                               className={cn(
-                                "text-xs text-muted-foreground mb-2 line-clamp-1",
+                                "text-[10px] text-muted-foreground mb-2 line-clamp-1",
+                                // Rich text formatting styles - only apply if HTML is present
+                                // Note: Rich text editor font size changes will override this base size via inline styles
                                 hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
                                 hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
                                 hasHTMLTags(task.description) && "[&_u]:underline",

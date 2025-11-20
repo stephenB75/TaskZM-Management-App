@@ -430,10 +430,10 @@ export const DraggableTaskCard = React.forwardRef<
           {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
             <div 
               className={cn(
-                "text-gray-500 leading-snug break-words",
-                isMobile ? "text-[10px]" : "text-xs",
+                "text-gray-500 leading-snug break-words text-[10px]",
                 (task.estimatedTime && task.estimatedTime <= 30) ? "line-clamp-2" : "line-clamp-4",
                 // Rich text formatting styles - only apply if HTML is present
+                // Note: Rich text editor font size changes will override this base size via inline styles
                 hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
                 hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
                 hasHTMLTags(task.description) && "[&_u]:underline",
