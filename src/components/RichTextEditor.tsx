@@ -15,7 +15,11 @@ import {
   Plus,
   Code,
   Indent,
-  Outdent
+  Outdent,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
@@ -190,6 +194,18 @@ export function RichTextEditor({
         // Convert current block to paragraph with proper formatting
         execCommand('formatBlock', '<p>');
         break;
+      case 'alignLeft':
+        execCommand('justifyLeft');
+        break;
+      case 'alignCenter':
+        execCommand('justifyCenter');
+        break;
+      case 'alignRight':
+        execCommand('justifyRight');
+        break;
+      case 'alignJustify':
+        execCommand('justifyFull');
+        break;
       case 'clear':
         // Remove all formatting from selection
         execCommand('removeFormat');
@@ -216,6 +232,14 @@ export function RichTextEditor({
           return document.queryCommandState('insertUnorderedList');
         case 'numbered':
           return document.queryCommandState('insertOrderedList');
+        case 'alignLeft':
+          return document.queryCommandState('justifyLeft');
+        case 'alignCenter':
+          return document.queryCommandState('justifyCenter');
+        case 'alignRight':
+          return document.queryCommandState('justifyRight');
+        case 'alignJustify':
+          return document.queryCommandState('justifyFull');
         default:
           return false;
       }
@@ -342,6 +366,61 @@ export function RichTextEditor({
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
+        {/* Text Alignment */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "h-7 w-7 p-0",
+            isFormatActive('alignLeft') && "bg-primary/10 text-primary"
+          )}
+          onClick={() => formatText('alignLeft')}
+          title="Align Left"
+        >
+          <AlignLeft className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "h-7 w-7 p-0",
+            isFormatActive('alignCenter') && "bg-primary/10 text-primary"
+          )}
+          onClick={() => formatText('alignCenter')}
+          title="Align Center"
+        >
+          <AlignCenter className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "h-7 w-7 p-0",
+            isFormatActive('alignRight') && "bg-primary/10 text-primary"
+          )}
+          onClick={() => formatText('alignRight')}
+          title="Align Right"
+        >
+          <AlignRight className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "h-7 w-7 p-0",
+            isFormatActive('alignJustify') && "bg-primary/10 text-primary"
+          )}
+          onClick={() => formatText('alignJustify')}
+          title="Justify"
+        >
+          <AlignJustify className="w-4 h-4" />
+        </Button>
+        <div className="w-px h-5 bg-border mx-1" />
+        
         {/* Paragraph Format */}
         <Button
           type="button"
@@ -465,6 +544,15 @@ export function RichTextEditor({
           // Paragraph and indentation styling
           "[&_p]:my-2 [&_p]:leading-relaxed [&_p]:block [&_p:empty]:hidden",
           "[&_p+p]:mt-2",
+          // Text alignment support - preserve alignment styles
+          "[&_p[style*='text-align:left']]:text-left",
+          "[&_p[style*='text-align:center']]:text-center",
+          "[&_p[style*='text-align:right']]:text-right",
+          "[&_p[style*='text-align:justify']]:text-justify",
+          "[&_div[style*='text-align:left']]:text-left",
+          "[&_div[style*='text-align:center']]:text-center",
+          "[&_div[style*='text-align:right']]:text-right",
+          "[&_div[style*='text-align:justify']]:text-justify",
           "[&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-3 [&_blockquote]:ml-2 [&_blockquote]:italic [&_blockquote]:my-1",
           // Code styling
           "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block",

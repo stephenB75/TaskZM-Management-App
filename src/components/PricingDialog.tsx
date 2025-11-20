@@ -320,15 +320,62 @@ export function PricingDialog({
 
   const calculateSavings = () => {
     if (!monthlyOffering || !yearlyOffering) return 0;
-    // Calculate savings between monthly and yearly
-    // Extract numeric values from price strings (e.g., "$3.99" -> 3.99)
-    const monthlyPriceStr = monthlyOffering.priceString.replace(/[^0-9.]/g, '');
-    const yearlyPriceStr = yearlyOffering.priceString.replace(/[^0-9.]/g, '');
-    const monthlyPrice = parseFloat(monthlyPriceStr) || 0;
-    const yearlyPrice = parseFloat(yearlyPriceStr) || 0;
-    const yearlyEquivalent = monthlyPrice * 12;
-    if (yearlyEquivalent === 0) return 0;
-    return Math.round(((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100);
+    
+    try {
+      // Extract numeric values from price strings (e.g., "$3.99" -> 3.99, "€3,99" -> 3.99)
+      // Handle various formats: "$3.99", "3.99", "$3,99.00", etc.
+      const extractPrice = (priceStr: string): number => {
+        if (!priceStr) return 0;
+        // Remove all non-numeric characters except decimal point
+        let cleaned = priceStr.replace(/[^\d.]/g, '');
+        // Handle comma as decimal separator (European format)
+        if (cleaned.includes(',') && !cleaned.includes('.')) {
+          cleaned = cleaned.replace(',', '.');
+        }
+        // If both comma and period exist, assume period is decimal and comma is thousands
+        if (cleaned.includes(',') && cleaned.includes('.')) {
+          cleaned = cleaned.replace(/,/g, '');
+        }
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) || parsed <= 0 ? 0 : parsed;
+      };
+      
+      const monthlyPrice = extractPrice(monthlyOffering.priceString);
+      const yearlyPrice = extractPrice(yearlyOffering.priceString);
+      
+      // Calculate what 12 months of monthly subscription would cost
+      const yearlyEquivalent = monthlyPrice * 12;
+      
+      // If we don't have valid prices, return 0
+      if (yearlyEquivalent === 0 || yearlyPrice === 0) {
+        console.warn('⚠️ Cannot calculate savings: invalid prices', {
+          monthly: monthlyOffering.priceString,
+          yearly: yearlyOffering.priceString,
+          monthlyParsed: monthlyPrice,
+          yearlyParsed: yearlyPrice,
+        });
+        return 0;
+      }
+      
+      // Calculate savings percentage: ((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100
+      const savingsPercent = ((yearlyEquivalent - yearlyPrice) / yearlyEquivalent) * 100;
+      const rounded = Math.round(savingsPercent);
+      
+      // Log for debugging
+      console.log('💰 Savings calculation:', {
+        monthlyPrice,
+        yearlyPrice,
+        yearlyEquivalent,
+        savingsPercent: savingsPercent.toFixed(2) + '%',
+        rounded: rounded + '%',
+      });
+      
+      // Return 0 if savings is negative (yearly is more expensive, which shouldn't happen)
+      return rounded > 0 ? rounded : 0;
+    } catch (error) {
+      console.error('❌ Error calculating savings:', error);
+      return 0;
+    }
   };
 
   const savings = calculateSavings();
