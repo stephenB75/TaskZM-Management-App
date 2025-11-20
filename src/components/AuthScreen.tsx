@@ -57,25 +57,31 @@ import { PrivacyPolicyDialog } from "./PrivacyPolicyDialog";
 import { TermsOfServiceDialog } from "./TermsOfServiceDialog";
 import taskzmLogo from "../assets/taskzm-logo.png";
 import { supabase } from '../lib/supabase-client';
+import { 
+  DEMO_ACCOUNT_CONFIG, 
+  AUTH_UI_TEXT, 
+  AUTH_CONFIG,
+  AUTH_BACKGROUND_IMAGE 
+} from '../lib/auth-constants';
 
 // Password strength calculation
 function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 'strong'; score: number; feedback: string[] } {
   let score = 0;
   const feedback: string[] = [];
 
-  if (password.length >= 8) score += 1;
-  else feedback.push('At least 8 characters');
+  if (password.length >= AUTH_CONFIG.passwordStrongLength) score += 1;
+  else feedback.push(AUTH_UI_TEXT.passwordStrength.feedback.minLength);
 
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
-  else feedback.push('Mix of uppercase and lowercase');
+  else feedback.push(AUTH_UI_TEXT.passwordStrength.feedback.caseMix);
 
   if (/\d/.test(password)) score += 1;
-  else feedback.push('Include numbers');
+  else feedback.push(AUTH_UI_TEXT.passwordStrength.feedback.numbers);
 
   if (/[^a-zA-Z0-9]/.test(password)) score += 1;
-  else feedback.push('Include special characters');
+  else feedback.push(AUTH_UI_TEXT.passwordStrength.feedback.specialChars);
 
-  if (password.length >= 12) score += 1;
+  if (password.length >= AUTH_CONFIG.passwordVeryStrongLength) score += 1;
 
   let strength: 'weak' | 'medium' | 'strong' = 'weak';
   if (score >= 4) strength = 'strong';
@@ -135,7 +141,7 @@ export function AuthScreen() {
 
   // Features Carousel State
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
-  const featuresPerPage = 6; // 2 rows x 3 columns for both mobile and desktop
+  const featuresPerPage = AUTH_CONFIG.featuresPerPage;
 
   // Password strength
   const passwordStrength = getPasswordStrength(signUpPassword);
@@ -146,7 +152,7 @@ export function AuthScreen() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       if (isSignUp) {
-        setEmailError("Please enter a valid email address");
+        setEmailError(AUTH_UI_TEXT.validation.emailRequired);
       }
       return false;
     }
@@ -160,12 +166,12 @@ export function AuthScreen() {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotPasswordEmail) {
-      toast.error("Please enter your email address");
+      toast.error(AUTH_UI_TEXT.validation.emailRequired);
       return;
     }
 
     if (!validateEmail(forgotPasswordEmail, false)) {
-      toast.error("Please enter a valid email address");
+      toast.error(AUTH_UI_TEXT.validation.emailRequired);
       return;
     }
 
@@ -179,13 +185,13 @@ export function AuthScreen() {
         throw error;
       }
 
-      toast.success("Password reset email sent! Check your inbox.", {
-        duration: 5000,
+      toast.success(AUTH_UI_TEXT.forgotPassword.successMessage, {
+        duration: AUTH_CONFIG.toastDuration,
       });
       setShowForgotPasswordDialog(false);
       setForgotPasswordEmail("");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to send reset email";
+      const errorMessage = error instanceof Error ? error.message : AUTH_UI_TEXT.forgotPassword.errorMessage;
       toast.error(errorMessage);
     } finally {
       setIsSendingReset(false);
@@ -229,7 +235,7 @@ export function AuthScreen() {
           {
             duration: 6000,
             action: {
-              label: "Reset Password",
+              label: AUTH_UI_TEXT.forgotPassword.title,
               onClick: () => {
                 setForgotPasswordEmail(signInEmail);
                 setShowForgotPasswordDialog(true);
@@ -248,23 +254,23 @@ export function AuthScreen() {
   const handleDemoSignIn = async () => {
     setIsLoading(true);
     // Create a demo account with timestamp to ensure uniqueness
-    const demoEmail = `demo_${Date.now()}@taskzm.app`;
-    const demoPassword = "demo123456";
-    const demoName = "Demo User";
+    const demoEmail = `${DEMO_ACCOUNT_CONFIG.emailPrefix}${Date.now()}${DEMO_ACCOUNT_CONFIG.emailDomain}`;
+    const demoPassword = DEMO_ACCOUNT_CONFIG.password;
+    const demoName = DEMO_ACCOUNT_CONFIG.name;
 
     try {
       // First try to create the demo account - pass isDemo=true flag
       await signUp(demoEmail, demoPassword, demoName, true);
       toast.success(
-        "🎉 Demo account created! Explore TaskZM!",
+        AUTH_UI_TEXT.demo.successMessage,
         {
-          duration: 4000,
+          duration: AUTH_CONFIG.toastDuration,
         },
       );
     } catch (error) {
       console.error("Demo account creation error:", error);
       toast.error(
-        "Failed to create demo account. Please try signing up manually.",
+        AUTH_UI_TEXT.demo.errorMessage,
       );
     } finally {
       setIsLoading(false);
@@ -279,22 +285,22 @@ export function AuthScreen() {
     }
 
     if (!acceptedTerms) {
-      toast.error("Please accept the Terms of Service and Privacy Policy");
+      toast.error(AUTH_UI_TEXT.validation.termsRequired);
       return;
     }
 
     if (signUpPassword !== signUpConfirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error(AUTH_UI_TEXT.validation.passwordsNoMatch);
       return;
     }
 
-    if (signUpPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (signUpPassword.length < AUTH_CONFIG.passwordMinLength) {
+      toast.error(AUTH_UI_TEXT.validation.passwordTooShort);
       return;
     }
 
-    if (passwordStrength.strength === 'weak' && signUpPassword.length < 8) {
-      toast.error("Password is too weak. Please use a stronger password.");
+    if (passwordStrength.strength === 'weak' && signUpPassword.length < AUTH_CONFIG.passwordStrongLength) {
+      toast.error(AUTH_UI_TEXT.validation.passwordTooWeak);
       return;
     }
 
@@ -303,16 +309,16 @@ export function AuthScreen() {
     try {
       await signUp(signUpEmail, signUpPassword, signUpName);
       toast.success(
-        "🎉 Welcome to TaskZM! Your account is ready!",
+        AUTH_UI_TEXT.signUp.successMessage,
         {
-          duration: 4000,
+          duration: AUTH_CONFIG.toastDuration,
         },
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to create account";
+          : AUTH_UI_TEXT.error.accountCreationFailed;
 
       // Check if user already exists
       if (
@@ -402,8 +408,8 @@ export function AuthScreen() {
       {/* Background Image with Overlay */}
       <div className="fixed inset-0 z-0">
         <ImageWithFallback
-          src="https://images.unsplash.com/photo-1544654262-e295983be0f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwZGVzayUyMG9yZ2FuaXplZHxlbnwxfHx8fDE3NjE2MTM4MDh8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-          alt="Minimalist organized workspace background"
+          src={AUTH_BACKGROUND_IMAGE.url}
+          alt={AUTH_BACKGROUND_IMAGE.alt}
           className="w-full h-full object-cover"
         />
         {/* Gradient overlay for better readability and pastel tones */}
@@ -457,7 +463,7 @@ export function AuthScreen() {
               >
                 <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#7B68EE]" />
                 <span className="text-[8px] sm:text-[9px] text-gray-700 dark:text-gray-200">
-                  Neurodivergent-friendly
+                  {AUTH_UI_TEXT.neurodivergentBadge}
                 </span>
               </motion.div>
 
@@ -469,7 +475,7 @@ export function AuthScreen() {
                   whileHover={{ scale: 1.02 }}
                 />
                 <p className="text-[9px] sm:text-[10px] text-gray-700 dark:text-gray-200 text-center px-2 sm:px-0 max-w-md">
-                  Your calm, organized task companion
+                  {AUTH_UI_TEXT.tagline}
                 </p>
               </div>
             </motion.div>
@@ -482,7 +488,7 @@ export function AuthScreen() {
               {/* Header with Controls */}
               <div className="flex items-center justify-between gap-2 lg:flex-shrink-0">
                 <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  14 Smart Features
+                  {AUTH_UI_TEXT.featuresHeader}
                 </h3>
                 {/* Navigation Controls */}
                 {MARKETING_FEATURES.length > featuresPerPage && (
@@ -623,7 +629,7 @@ export function AuthScreen() {
                       >
                         👋
                       </motion.div>
-                      <span>Welcome to TaskZM!</span>
+                      <span>{AUTH_UI_TEXT.welcomeMessage}</span>
                     </motion.div>
                   </CardTitle>
                   <CardDescription className="text-center text-[10px] sm:text-[11px] px-1 sm:px-0">
@@ -634,7 +640,7 @@ export function AuthScreen() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        Sign in to access your task dashboard
+                        {AUTH_UI_TEXT.signIn.description}
                       </motion.span>
                     ) : (
                       <motion.span
@@ -643,7 +649,7 @@ export function AuthScreen() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        Create your free account and start organizing
+                        {AUTH_UI_TEXT.signUp.description}
                       </motion.span>
                     )}
                   </CardDescription>
@@ -652,13 +658,13 @@ export function AuthScreen() {
                       value="signin"
                       className="!flex-1 !h-auto !py-1.5 sm:!py-2 !px-2 sm:!px-3 text-[10px] sm:text-xs"
                     >
-                      Sign In
+                      {AUTH_UI_TEXT.signIn.title}
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
                       className="!flex-1 !h-auto !py-1.5 sm:!py-2 !px-2 sm:!px-3 text-[10px] sm:text-xs"
                     >
-                      Sign Up
+                      {AUTH_UI_TEXT.signUp.title}
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>
@@ -674,13 +680,13 @@ export function AuthScreen() {
                     >
                       <div className="space-y-0.5 sm:space-y-1">
                         <Label htmlFor="signin-email" className="text-xs sm:text-sm">
-                          Email
+                          {AUTH_UI_TEXT.signIn.emailLabel}
                         </Label>
                         <div className="relative">
                           <Input
                             id="signin-email"
                             type="email"
-                            placeholder="you@example.com"
+                            placeholder={AUTH_UI_TEXT.signIn.emailPlaceholder}
                             value={signInEmail}
                             onChange={(e) =>
                               setSignInEmail(e.target.value)
@@ -703,14 +709,14 @@ export function AuthScreen() {
                             htmlFor="signin-password"
                             className="text-xs sm:text-sm"
                           >
-                            Password
+                            {AUTH_UI_TEXT.signIn.passwordLabel}
                           </Label>
                           <button
                             type="button"
                             onClick={() => setShowForgotPasswordDialog(true)}
                             className="text-[10px] sm:text-xs text-[#7B68EE] hover:text-[#6A5ACD] transition-colors"
                           >
-                            Forgot password?
+                            {AUTH_UI_TEXT.signIn.forgotPassword}
                           </button>
                         </div>
                         <div className="relative">
@@ -746,7 +752,7 @@ export function AuthScreen() {
                           htmlFor="remember-me"
                           className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer"
                         >
-                          Remember me
+                          {AUTH_UI_TEXT.signIn.rememberMe}
                         </Label>
                         <Switch
                           id="remember-me"
@@ -776,7 +782,7 @@ export function AuthScreen() {
                               ⏳
                             </motion.div>
                           ) : (
-                            "Sign In"
+                            {AUTH_UI_TEXT.signIn.button}
                           )}
                         </Button>
                       </motion.div>
@@ -788,7 +794,7 @@ export function AuthScreen() {
                         </div>
                         <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
                           <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">
-                            Or
+                            {AUTH_UI_TEXT.or}
                           </span>
                         </div>
                       </div>
@@ -806,7 +812,7 @@ export function AuthScreen() {
                           disabled={isLoading}
                         >
                           <Sparkles className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          Try Demo Account
+                          {AUTH_UI_TEXT.demo.button}
                         </Button>
                       </motion.div>
                     </motion.form>
@@ -825,12 +831,12 @@ export function AuthScreen() {
                           htmlFor="signup-name"
                           className="text-xs sm:text-sm"
                         >
-                          Name
+                          {AUTH_UI_TEXT.signUp.nameLabel}
                         </Label>
                         <Input
                           id="signup-name"
                           type="text"
-                          placeholder="Your Name"
+                          placeholder={AUTH_UI_TEXT.signUp.namePlaceholder}
                           value={signUpName}
                           onChange={(e) =>
                             setSignUpName(e.target.value)
@@ -845,13 +851,13 @@ export function AuthScreen() {
                           htmlFor="signup-email"
                           className="text-xs sm:text-sm"
                         >
-                          Email
+                          {AUTH_UI_TEXT.signUp.emailLabel}
                         </Label>
                         <div className="relative">
                           <Input
                             id="signup-email"
                             type="email"
-                            placeholder="you@example.com"
+                            placeholder={AUTH_UI_TEXT.signUp.emailPlaceholder}
                             value={signUpEmail}
                             onChange={(e) => {
                               setSignUpEmail(e.target.value);
@@ -894,7 +900,7 @@ export function AuthScreen() {
                           htmlFor="signup-password"
                           className="text-xs sm:text-sm"
                         >
-                          Password
+                          {AUTH_UI_TEXT.signUp.passwordLabel}
                         </Label>
                         <div className="relative">
                           <Input
@@ -943,7 +949,11 @@ export function AuthScreen() {
                                   ? 'text-yellow-500'
                                   : 'text-green-500'
                               }`}>
-                                {passwordStrength.strength.toUpperCase()}
+                                {passwordStrength.strength === 'weak' 
+                                  ? AUTH_UI_TEXT.passwordStrength.weak
+                                  : passwordStrength.strength === 'medium'
+                                  ? AUTH_UI_TEXT.passwordStrength.medium
+                                  : AUTH_UI_TEXT.passwordStrength.strong}
                               </span>
                             </div>
                             {passwordStrength.feedback.length > 0 && passwordStrength.strength !== 'strong' && (
@@ -965,7 +975,7 @@ export function AuthScreen() {
                           htmlFor="signup-confirm-password"
                           className="text-xs sm:text-sm"
                         >
-                          Confirm Password
+                          {AUTH_UI_TEXT.signUp.confirmPasswordLabel}
                         </Label>
                         <div className="relative">
                           <Input
@@ -1005,12 +1015,12 @@ export function AuthScreen() {
                             {passwordsMatch ? (
                               <>
                                 <CheckCircle className="w-3 h-3" />
-                                Passwords match
+                                {AUTH_UI_TEXT.validation.passwordsNoMatch.replace('do not match', 'match')}
                               </>
                             ) : (
                               <>
                                 <AlertCircle className="w-3 h-3" />
-                                Passwords do not match
+                                {AUTH_UI_TEXT.validation.passwordsNoMatch}
                               </>
                             )}
                           </p>
@@ -1029,7 +1039,7 @@ export function AuthScreen() {
                           htmlFor="accept-terms"
                           className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer leading-tight"
                         >
-                          I agree to the{" "}
+                          {AUTH_UI_TEXT.signUp.acceptTerms.split('Terms of Service')[0]}
                           <button
                             type="button"
                             onClick={() => setShowTermsDialog(true)}
@@ -1070,7 +1080,7 @@ export function AuthScreen() {
                               ⏳
                             </motion.div>
                           ) : (
-                            "Create Account"
+                            {AUTH_UI_TEXT.signUp.button}
                           )}
                         </Button>
                       </motion.div>
@@ -1090,7 +1100,7 @@ export function AuthScreen() {
               {/* App Store Badges */}
               <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
                 <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-3">
-                  Mobile apps coming soon
+                  {AUTH_UI_TEXT.mobileApps.comingSoon}
                 </p>
                 <div className="flex items-center justify-center gap-3 sm:gap-4">
                   {/* App Store Badge */}
@@ -1295,20 +1305,20 @@ export function AuthScreen() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lock className="w-5 h-5 text-[#7B68EE]" />
-              Reset Password
+              {AUTH_UI_TEXT.forgotPassword.title}
             </DialogTitle>
             <DialogDescription>
-              Enter your email address and we'll send you a link to reset your password.
+              {AUTH_UI_TEXT.forgotPassword.description}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="reset-email">Email</Label>
+              <Label htmlFor="reset-email">{AUTH_UI_TEXT.forgotPassword.emailLabel}</Label>
               <div className="relative">
                 <Input
                   id="reset-email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={AUTH_UI_TEXT.signIn.emailPlaceholder}
                   value={forgotPasswordEmail}
                   onChange={(e) => setForgotPasswordEmail(e.target.value)}
                   required
@@ -1327,14 +1337,14 @@ export function AuthScreen() {
                 }}
                 disabled={isSendingReset}
               >
-                Cancel
+                {AUTH_UI_TEXT.forgotPassword.backToSignIn}
               </Button>
               <Button
                 type="submit"
                 disabled={isSendingReset || !forgotPasswordEmail}
                 className="bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6]"
               >
-                {isSendingReset ? "Sending..." : "Send Reset Link"}
+                {isSendingReset ? AUTH_UI_TEXT.loading : AUTH_UI_TEXT.forgotPassword.button}
               </Button>
             </div>
           </form>
