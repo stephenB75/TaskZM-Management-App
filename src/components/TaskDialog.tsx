@@ -917,6 +917,18 @@ export function TaskDialog({
       const taskDuration = totalMinutes > 0 ? totalMinutes : 30; // Default to 30 minutes
       const taskId = task?.id || null;
       
+      // Check if user is actually changing the scheduled time
+      // If editing an existing task, compare with original scheduled time
+      let timeHasChanged = true; // Default to true for new tasks
+      if (task && task.scheduledDate) {
+        const originalScheduledTime = new Date(task.scheduledDate);
+        // Compare times (ignore milliseconds)
+        const originalTime = originalScheduledTime.getTime();
+        const newTime = scheduledDateTime.getTime();
+        // Consider times equal if within 1 minute (to account for rounding)
+        timeHasChanged = Math.abs(newTime - originalTime) > 60 * 1000;
+      }
+      
       // Create temporary task for category hours check
       const tempTask: Task = {
         ...(task || {}),
@@ -935,9 +947,9 @@ export function TaskDialog({
       scheduledDateOnly.setHours(0, 0, 0, 0);
       const isToday = scheduledDateOnly.getTime() === today.getTime();
       
-      // If scheduling for today and time is in the past, find next available slot
+      // If scheduling for today and time is in the past, only suggest alternative if time has changed
       let finalScheduledTime = scheduledDateTime;
-      if (isToday && scheduledDateTime.getTime() < now.getTime()) {
+      if (isToday && scheduledDateTime.getTime() < now.getTime() && timeHasChanged) {
         const alternativeTime = findNextAvailableSlot(
           taskId,
           now,
@@ -963,53 +975,62 @@ export function TaskDialog({
           });
           return;
         }
+      } else if (isToday && scheduledDateTime.getTime() < now.getTime() && !timeHasChanged) {
+        // Time hasn't changed but is in the past - this is okay for existing tasks
+        // Just proceed with the update (user might be editing other properties)
+        finalScheduledTime = scheduledDateTime;
       }
       
-      const conflictingTask = checkTimeConflict(
-        taskId,
-        scheduledDateTime,
-        taskDuration,
-        tasks
-      );
-
-      if (conflictingTask) {
-        // Find next available slot
-        const alternativeTime = findNextAvailableSlot(
+      // Only check for conflicts if time has changed
+      // If time hasn't changed, the task is already at this time slot, so no conflict check needed
+      if (timeHasChanged) {
+        const conflictingTask = checkTimeConflict(
           taskId,
           scheduledDateTime,
           taskDuration,
-          tasks,
-          {
-            ensureAfterCurrentTime: isToday,
-            categoryHours: categoryHours,
-          }
+          tasks
         );
-        
-        // Only show dialog if alternative time is different and valid
-        if (alternativeTime.getTime() !== scheduledDateTime.getTime() && alternativeTime.getHours() < 24) {
-          // Store the pending task data and show dialog
-          setPendingTaskData({
-            taskData,
-            requestedTime: scheduledDateTime,
-            alternativeTime,
-          });
-          setConflictDialogOpen(true);
-          return; // Don't submit yet
-        } else {
-          // No valid alternative found, show error
-          const reason = isToday && scheduledDateTime.getTime() < now.getTime()
-            ? 'Selected time is in the past. Please choose a time after the current time.'
-            : 'Time slot is already taken or outside category hours. Please choose a different time slot.';
-          toast.error('Time slot unavailable', {
-            description: reason,
-          });
-          return;
+
+        if (conflictingTask) {
+          // Find next available slot
+          const alternativeTime = findNextAvailableSlot(
+            taskId,
+            scheduledDateTime,
+            taskDuration,
+            tasks,
+            {
+              ensureAfterCurrentTime: isToday,
+              categoryHours: categoryHours,
+            }
+          );
+          
+          // Only show dialog if alternative time is different and valid
+          if (alternativeTime.getTime() !== scheduledDateTime.getTime() && alternativeTime.getHours() < 24) {
+            // Store the pending task data and show dialog
+            setPendingTaskData({
+              taskData,
+              requestedTime: scheduledDateTime,
+              alternativeTime,
+            });
+            setConflictDialogOpen(true);
+            return; // Don't submit yet
+          } else {
+            // No valid alternative found, show error
+            const reason = isToday && scheduledDateTime.getTime() < now.getTime()
+              ? 'Selected time is in the past. Please choose a time after the current time.'
+              : 'Time slot is already taken or outside category hours. Please choose a different time slot.';
+            toast.error('Time slot unavailable', {
+              description: reason,
+            });
+            return;
+          }
         }
       }
       
       finalScheduledTime = scheduledDateTime;
       
       // Check 5-hour daily limit if scheduling for today
+      // Only check if time has changed OR if estimated time has changed (which affects daily hours)
       if (isToday) {
         // Check if this is an existing task that's already scheduled for today
         const isExistingTaskOnToday = task && task.scheduledDate && 
@@ -1019,58 +1040,81 @@ export function TaskDialog({
             return existingDate.getTime() === today.getTime();
           })();
         
-        // Create a temporary task object for limit checking
-        const tempTaskForLimit: Task = {
-          ...(task || {}),
-          id: taskId || 'temp',
-          estimatedTime: totalMinutes > 0 ? totalMinutes : null,
-        } as Task;
+        // Check if estimated time has changed
+        const estimatedTimeHasChanged = task 
+          ? (task.estimatedTime || 0) !== totalMinutes
+          : true; // New task, so it's a change
         
-        const limitCheck = checkDailyLimit(scheduledDateOnly, tempTaskForLimit, tasks);
-        const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours);
-        
-        if (limitCheck.wouldExceed) {
-          // Would exceed limit - try to find a slot that fits
-          const alternativeTime = findNextAvailableSlot(
-            taskId,
-            finalScheduledTime,
-            taskDuration,
-            tasks,
-            {
-              ensureAfterCurrentTime: isToday,
-              categoryHours: categoryHours,
-            }
-          );
+        // Only check daily limit if time has changed OR estimated time has changed
+        // If neither changed, the task is already accounted for in daily hours
+        if (timeHasChanged || estimatedTimeHasChanged) {
+          // Create a temporary task object for limit checking
+          const tempTaskForLimit: Task = {
+            ...(task || {}),
+            id: taskId || 'temp',
+            estimatedTime: totalMinutes > 0 ? totalMinutes : null,
+          } as Task;
           
-          // Check if alternative time would also exceed limit
-          const altLimitCheck = checkDailyLimit(alternativeTime, tempTaskForLimit, tasks);
-          if (altLimitCheck.wouldExceed) {
-            const message = isExistingTaskOnToday 
-              ? `Updating this task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Task: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`
-              : `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`;
-            
-            toast.error('Daily limit exceeded', {
-              description: message,
-              duration: 5000,
-            });
-            return;
+          const limitCheck = checkDailyLimit(scheduledDateOnly, tempTaskForLimit, tasks);
+          const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours);
+          
+          if (limitCheck.wouldExceed) {
+            // Only suggest alternative time if time has changed
+            // If only estimated time changed, show error but don't relocate
+            if (timeHasChanged) {
+              // Would exceed limit - try to find a slot that fits
+              const alternativeTime = findNextAvailableSlot(
+                taskId,
+                finalScheduledTime,
+                taskDuration,
+                tasks,
+                {
+                  ensureAfterCurrentTime: isToday,
+                  categoryHours: categoryHours,
+                }
+              );
+              
+              // Check if alternative time would also exceed limit
+              const altLimitCheck = checkDailyLimit(alternativeTime, tempTaskForLimit, tasks);
+              if (altLimitCheck.wouldExceed) {
+                const message = isExistingTaskOnToday 
+                  ? `Updating this task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Task: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`
+                  : `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`;
+                
+                toast.error('Daily limit exceeded', {
+                  description: message,
+                  duration: 5000,
+                });
+                return;
+              }
+              
+              // Use alternative time that fits within limit
+              finalScheduledTime = alternativeTime;
+              taskData.scheduledDate = finalScheduledTime.toISOString();
+            } else {
+              // Only estimated time changed, but would exceed limit
+              // Don't relocate, just show error
+              const message = `Updating this task's duration would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Task: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`;
+              
+              toast.error('Daily limit exceeded', {
+                description: message,
+                duration: 5000,
+              });
+              return;
+            }
           }
           
-          // Use alternative time that fits within limit
-          finalScheduledTime = alternativeTime;
-          taskData.scheduledDate = finalScheduledTime.toISOString();
-        }
-        
-        if (warningLevel === 'warning' && !limitCheck.wouldExceed) {
-          // Close to limit - show warning but allow
-          const message = isExistingTaskOnToday
-            ? `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Updating this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`
-            : `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`;
-          
-          toast.warning('Approaching daily limit', {
-            description: message,
-            duration: 4000,
-          });
+          if (warningLevel === 'warning' && !limitCheck.wouldExceed) {
+            // Close to limit - show warning but allow
+            const message = isExistingTaskOnToday
+              ? `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Updating this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`
+              : `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`;
+            
+            toast.warning('Approaching daily limit', {
+              description: message,
+              duration: 4000,
+            });
+          }
         }
       }
     }
