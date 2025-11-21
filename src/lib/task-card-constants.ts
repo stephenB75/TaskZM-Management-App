@@ -146,18 +146,18 @@ export const TASK_CARD_HEIGHT_CONFIG = {
   },
   baseHeights: {
     short: {
-      base: 80,
-      withTracking: 114,
-      withAssigned: 114,
-      withBoth: 126,
-      compact: 72,
+      base: 60, // Reduced from 80 - minimal height for title, badges, time
+      withTracking: 80, // Reduced from 114 - tracking badge + minimal bottom space
+      withAssigned: 80, // Reduced from 114 - assigned users + minimal bottom space
+      withBoth: 90, // Reduced from 126 - both components + minimal bottom space
+      compact: 56, // Reduced from 72 - absolute minimum for content
     },
     medium: {
-      min: 100,
-      compact: 84,
+      min: 80, // Reduced from 100 - minimum with components
+      compact: 64, // Reduced from 84 - compact without components
     },
     long: {
-      base: 160,
+      base: 120, // Reduced from 160 - base for title, badges, time (description added separately)
     },
   },
   scalingFactors: {

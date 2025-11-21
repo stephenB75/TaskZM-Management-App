@@ -286,10 +286,8 @@ export const DraggableTaskCard = React.forwardRef<
         const totalHeight = durationBasedHeight + totalPadding;
         
         // Ensure minimum height accounts for content + padding
-        // For tasks without components, ensure minimum height properly represents duration
-        const minRequiredHeight = hasAnyComponents
-          ? effectiveBaseHeight + totalPadding
-          : Math.max(effectiveBaseHeight + totalPadding, minBaseHeightForContent + totalPadding + (duration - 15) * scalingFactor);
+        // Use baseHeight (which already accounts for components) as minimum
+        const minRequiredHeight = baseHeight + totalPadding;
         
         return Math.min(Math.max(totalHeight, minRequiredHeight), maxHeight);
       } else if (duration >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
@@ -308,14 +306,14 @@ export const DraggableTaskCard = React.forwardRef<
           const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
           // Reduce bottom padding when assigned users are present and no subtasks to eliminate white space
           const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
-            ? TASK_CARD_CALCULATIONS.padding.description.bottom.noGap 
-            : TASK_CARD_CALCULATIONS.padding.description.bottom.standard;
+            ? 0 // mb-0 when assigned users follow directly
+            : 4; // Reduced from standard (6px) to minimize white space
           const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
           baseHeight += descriptionHeight;
         } else {
-          // If no description, still need space for the time duration display
-          // Add minimal padding for time display area
-          baseHeight += 4; // Further reduced from 6px to minimize white space
+          // If no description, still need minimal space for the time duration display
+          // Reduced to minimize white space
+          baseHeight += 2; // Minimal space for time display
         }
         
         // Add extra height for assigned users (only if present)
@@ -323,8 +321,8 @@ export const DraggableTaskCard = React.forwardRef<
         if (hasAssignedUsers) {
           // If description exists and no subtasks, reduce spacing since description has mb-0
           const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
-            ? TASK_CARD_CALCULATIONS.padding.assignedUsers.noGap 
-            : TASK_CARD_CALCULATIONS.padding.assignedUsers.standard;
+            ? 16 // Reduced from noGap (20px) to minimize white space
+            : 20; // Reduced from standard (24px) to minimize white space
           baseHeight += assignedUsersSpacing;
         }
         
@@ -336,20 +334,10 @@ export const DraggableTaskCard = React.forwardRef<
           baseHeight += subtaskHeight;
         }
         
-        // If no additional components (assigned users, subtasks), ensure height accounts for duration
-        // Duration-based scaling should still apply
-        // This ensures the card height scales with task duration for visual time-blocking
-        const hasAnyComponents = hasAssignedUsers || hasSubtasks;
-        const minBaseHeightForContent = 140; // Minimum height for title, badges, time display, and description area
-        
-        // If no components and baseHeight is too small, use minimum content height
-        const effectiveBaseHeight = !hasAnyComponents && baseHeight < minBaseHeightForContent
-          ? minBaseHeightForContent
-          : baseHeight;
-        
         // Duration-based scaling: scale from 60 minutes (threshold for long tasks)
+        // Base height already accounts for description and components, so use it directly
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.long;
-        const durationBasedHeight = effectiveBaseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
+        const durationBasedHeight = baseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
         
         // Account for actual padding being applied via CSS classes
         // Long tasks: px-2 py-2 pb-2 (mobile) or md:px-3 md:py-2 md:pb-2 (desktop) - no components
@@ -364,10 +352,8 @@ export const DraggableTaskCard = React.forwardRef<
         const totalHeight = durationBasedHeight + totalPadding;
         
         // Ensure minimum height is at least the base + padding
-        // For tasks without components, ensure minimum height properly represents duration
-        const minRequiredHeight = hasAnyComponents
-          ? effectiveBaseHeight + totalPadding
-          : Math.max(effectiveBaseHeight + totalPadding, minBaseHeightForContent + totalPadding + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute);
+        // Base height already accounts for all components, so use it directly
+        const minRequiredHeight = baseHeight + totalPadding;
         
         return Math.min(
           Math.max(totalHeight, minRequiredHeight),
@@ -385,7 +371,7 @@ export const DraggableTaskCard = React.forwardRef<
         
         // Add extra height for assigned users (only if present)
         if (hasAssignedUsers) {
-          minHeight += 24;
+          minHeight += 20; // Reduced from 24px to minimize white space
         }
         
         // Add extra height for subtasks (only if present, reduced spacing)
@@ -395,20 +381,12 @@ export const DraggableTaskCard = React.forwardRef<
           minHeight += subtaskHeight;
         }
         
-        // If no additional components, ensure minimum base height accounts for content
-        const hasAnyComponents = hasAssignedUsers || hasSubtasks;
-        const minBaseHeightForContent = 80; // Minimum height for title, badges, and time display
-        
-        // If no components and minHeight is too small, use minimum content height
-        const effectiveBaseHeight = !hasAnyComponents && minHeight < minBaseHeightForContent
-          ? minBaseHeightForContent
-          : minHeight;
-        
         // Duration-based scaling ensures visual time-blocking representation
         // Borders adjust proportionally with duration - no conflicts
         // Scale from 45 minutes (threshold for medium tasks)
+        // minHeight already accounts for components, so use it directly
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.medium;
-        const durationBasedHeight = effectiveBaseHeight + (duration - 45) * pixelsPerMinute;
+        const durationBasedHeight = minHeight + (duration - 45) * pixelsPerMinute;
         
         // Account for actual padding being applied via CSS classes
         // Base padding from TASK_CARD_SPACING: py-1.5 (mobile) = 6px top + 6px bottom = 12px
@@ -427,10 +405,8 @@ export const DraggableTaskCard = React.forwardRef<
         const totalHeight = durationBasedHeight + totalPadding;
         
         // Ensure minimum height accounts for time display and padding
-        // For tasks without components, ensure minimum height properly represents duration
-        const minRequiredHeight = hasAnyComponents
-          ? effectiveBaseHeight + totalPadding
-          : Math.max(effectiveBaseHeight + totalPadding, minBaseHeightForContent + totalPadding + (duration - 45) * pixelsPerMinute);
+        // minHeight already accounts for components, so use it directly
+        const minRequiredHeight = minHeight + totalPadding;
         
         return Math.min(
           Math.max(totalHeight, minRequiredHeight),
