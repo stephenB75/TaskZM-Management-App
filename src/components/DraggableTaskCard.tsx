@@ -171,7 +171,10 @@ export const DraggableTaskCard = React.forwardRef<
         // Add height for badge wrapping
         baseHeight += badgeWrapHeight;
         
-        // Add height for components
+        // Check if any additional components are active
+        const hasActiveComponents = hasPomodoro || hasTrackedTimeFull || hasAssignedUsers || hasPomodoroTimer || hasSubtasks;
+        
+        // Add height for components (only if present)
         if (isMobile) {
           let calculatedBaseHeight = baseHeight;
           if (hasPomodoro || hasTrackedTimeFull) {
@@ -220,17 +223,26 @@ export const DraggableTaskCard = React.forwardRef<
           baseHeight = calculatedBaseHeight;
         }
         
+        // Duration-based scaling
         const scalingFactor = TASK_CARD_HEIGHT_CONFIG.scalingFactors.short;
-        const calculatedHeight = baseHeight + (duration - 15) * scalingFactor;
-        return Math.min(Math.max(calculatedHeight, baseHeight), maxHeight);
+        const durationBasedHeight = baseHeight + (duration - 15) * scalingFactor;
+        
+        // If no active components, ensure minimum height accounts for time display and bottom padding
+        const minRequiredHeight = hasActiveComponents 
+          ? baseHeight 
+          : baseHeight + 8; // Add bottom padding for time display if no components
+        
+        return Math.min(Math.max(durationBasedHeight, minRequiredHeight), maxHeight);
       } else if (duration >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
         // Enhanced sizing for tasks 1 hour or more: more space for descriptions
+        // Base height: title + badges + time display
         let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base;
         
         // Add height for badge wrapping
         baseHeight += badgeWrapHeight;
         
         // Add extra height for description (full height, no line clamp)
+        // Description is always shown for tasks >= 60 minutes if it exists
         if (hasDescription) {
           // Estimate description height based on content length
           // Average ~50 characters per line, ~16px line height for 12px font
@@ -238,47 +250,66 @@ export const DraggableTaskCard = React.forwardRef<
           const lineHeight = 16; // Approximate line height for 12px font
           const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 12; // Minimum 4 lines, add padding (mb-3 = 12px)
           baseHeight += descriptionHeight;
+        } else {
+          // If no description, still need space for the time duration display
+          // Add minimal padding for time display area
+          baseHeight += 8;
         }
         
-        // Add extra height for assigned users
+        // Add extra height for assigned users (only if present)
         if (hasAssignedUsers) {
           baseHeight += 24; // Height for assigned users row
         }
         
-        // Add extra height for subtasks
+        // Add extra height for subtasks (only if present)
         if (hasSubtasks) {
           const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
           baseHeight += subtaskHeight;
         }
         
+        // If no additional components (assigned users, subtasks), ensure height accounts for duration
+        // Duration-based scaling should still apply
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.long;
-        const calculatedHeight = baseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
+        const durationBasedHeight = baseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
+        
+        // Ensure minimum height is at least the base + description bottom padding
+        const minRequiredHeight = hasDescription 
+          ? baseHeight 
+          : baseHeight + 12; // Add bottom padding if no description
+        
         return Math.min(
-          Math.max(calculatedHeight, baseHeight),
+          Math.max(durationBasedHeight, minRequiredHeight),
           maxHeight,
         );
       } else {
         // Standard sizing for medium tasks (45-59 mins)
+        // No description shown for these tasks, so height is based on duration + active components
         let minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
         
         // Add height for badge wrapping
         minHeight += badgeWrapHeight;
         
-        // Add extra height for assigned users
+        // Add extra height for assigned users (only if present)
         if (hasAssignedUsers) {
           minHeight += 24;
         }
         
-        // Add extra height for subtasks
+        // Add extra height for subtasks (only if present)
         if (hasSubtasks) {
           const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
           minHeight += subtaskHeight;
         }
         
+        // If no additional components, height should be based on duration
+        // Duration-based scaling
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.medium;
-        const calculatedHeight = minHeight + duration * pixelsPerMinute;
+        const durationBasedHeight = minHeight + duration * pixelsPerMinute;
+        
+        // Ensure minimum height accounts for time display and bottom padding
+        const minRequiredHeight = minHeight + 8; // Bottom padding for time display
+        
         return Math.min(
-          Math.max(calculatedHeight, minHeight),
+          Math.max(durationBasedHeight, minRequiredHeight),
           maxHeight,
         );
       }

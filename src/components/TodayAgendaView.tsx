@@ -224,19 +224,30 @@ export function TodayAgendaView({
       // Add height for badge wrapping
       baseHeight += badgeWrapHeight;
       
-      // Add extra height for assigned users
+      // Check if any additional components are active
+      const hasActiveComponents = hasAssignedUsers || hasSubtasks;
+      
+      // Add extra height for assigned users (only if present)
       if (hasAssignedUsers) {
         baseHeight += 24;
       }
       
-      // Add extra height for subtasks
+      // Add extra height for subtasks (only if present)
       if (hasSubtasks) {
         const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
         baseHeight += subtaskHeight;
       }
       
+      // Duration-based scaling
       const scalingFactor = 0.8; // Reduced scaling for shorter tasks
-      return Math.max(baseHeight, baseHeight + (minutes - 15) * scalingFactor);
+      const durationBasedHeight = baseHeight + (minutes - 15) * scalingFactor;
+      
+      // If no active components, ensure minimum height accounts for time display and bottom padding
+      const minRequiredHeight = hasActiveComponents 
+        ? baseHeight 
+        : baseHeight + 8; // Add bottom padding for time display if no components
+      
+      return Math.max(durationBasedHeight, minRequiredHeight);
     } else if (minutes >= 60) {
       // Enhanced sizing for tasks 1 hour or more: more space for descriptions
       let baseHeight = 140;
@@ -245,6 +256,7 @@ export function TodayAgendaView({
       baseHeight += badgeWrapHeight;
       
       // Add extra height for description (full height, no line clamp)
+      // Description is always shown for tasks >= 60 minutes if it exists
       if (hasDescription) {
         // Estimate description height based on content length
         // Average ~50 characters per line, ~16px line height for 12px font
@@ -252,40 +264,59 @@ export function TodayAgendaView({
         const lineHeight = 16; // Approximate line height for 12px font
         const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 12; // Minimum 4 lines, add padding (mb-3 = 12px)
         baseHeight += descriptionHeight;
+      } else {
+        // If no description, still need space for the time duration display
+        // Add minimal padding for time display area
+        baseHeight += 8;
       }
       
-      // Add extra height for assigned users
+      // Add extra height for assigned users (only if present)
       if (hasAssignedUsers) {
         baseHeight += 24;
       }
       
-      // Add extra height for subtasks
+      // Add extra height for subtasks (only if present)
       if (hasSubtasks) {
         const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
         baseHeight += subtaskHeight;
       }
       
+      // Duration-based scaling
       const scalingFactor = 2.0; // More generous scaling for longer tasks
-      return Math.max(baseHeight, baseHeight + (minutes - 60) * scalingFactor);
+      const durationBasedHeight = baseHeight + (minutes - 60) * scalingFactor;
+      
+      // Ensure minimum height accounts for description bottom padding
+      const minRequiredHeight = hasDescription 
+        ? baseHeight 
+        : baseHeight + 12; // Add bottom padding if no description
+      
+      return Math.max(durationBasedHeight, minRequiredHeight);
     } else {
       // Standard sizing for medium tasks (45-59 mins)
+      // No description shown for these tasks, so height is based on duration + active components
       let minHeight = 80;
       
       // Add height for badge wrapping
       minHeight += badgeWrapHeight;
       
-      // Add extra height for assigned users
+      // Add extra height for assigned users (only if present)
       if (hasAssignedUsers) {
         minHeight += 24;
       }
       
-      // Add extra height for subtasks
+      // Add extra height for subtasks (only if present)
       if (hasSubtasks) {
         const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
         minHeight += subtaskHeight;
       }
       
-      return Math.max(minHeight, minutes * 1.5);
+      // Duration-based height calculation
+      const durationBasedHeight = minutes * 1.5;
+      
+      // Ensure minimum height accounts for time display and bottom padding
+      const minRequiredHeight = minHeight + 8; // Bottom padding for time display
+      
+      return Math.max(durationBasedHeight, minRequiredHeight);
     }
   };
 
