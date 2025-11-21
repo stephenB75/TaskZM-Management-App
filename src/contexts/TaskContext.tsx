@@ -123,7 +123,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Start with idle interval (10 minutes)
+  const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Start with idle interval (2 minutes)
   const syncLockRef = useRef<boolean>(false); // Prevent concurrent sync operations
   
   // Activity tracking for adaptive polling
@@ -896,14 +896,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       lastActivityRef.current = Date.now();
       if (!isActiveRef.current) {
         isActiveRef.current = true;
-        // Switch to active interval (2 minutes)
+        // Switch to active interval (30 seconds)
         setSyncInterval(WORKSPACE_SYNC_INTERVAL_ACTIVE_MS);
-        logger.debug('User activity detected, switching to active sync interval (2 min)');
+        logger.debug('User activity detected, switching to active sync interval (30 sec)');
       }
     };
 
-    // Track user activity
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    // Track user activity - improved for mobile devices
+    const events = [
+      'mousedown', 'mousemove', 'keypress', 'scroll', 
+      'touchstart', 'touchmove', 'touchend', 'click',
+      'pointerdown', 'pointermove', 'pointerup' // Pointer events work on both desktop and mobile
+    ];
     events.forEach(event => {
       document.addEventListener(event, handleActivity, { passive: true });
     });
@@ -913,9 +917,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const timeSinceActivity = Date.now() - lastActivityRef.current;
       if (timeSinceActivity > WORKSPACE_ACTIVITY_TIMEOUT_MS && isActiveRef.current) {
         isActiveRef.current = false;
-        // Switch to idle interval (10 minutes)
+        // Switch to idle interval (2 minutes)
         setSyncInterval(WORKSPACE_SYNC_INTERVAL_IDLE_MS);
-        logger.debug('User inactive, switching to idle sync interval (10 min)');
+        logger.debug('User inactive, switching to idle sync interval (2 min)');
       }
     }, 60000); // Check every minute
 
@@ -958,9 +962,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Debounce helper to prevent multiple rapid syncs
   const lastEventSyncRef = useRef<number>(0);
-  const DEBOUNCE_INTERVAL = 120000; // Only sync once per 2 minutes from events (increased from 1 minute)
+  const DEBOUNCE_INTERVAL = 10000; // Only sync once per 10 seconds from events - reduced for better cross-device sync
   const lastFullSyncRef = useRef<number>(0);
-  const FULL_SYNC_INTERVAL = 300000; // Full sync (all resources) every 5 minutes
+  const FULL_SYNC_INTERVAL = 60000; // Full sync (all resources) every 1 minute - reduced for better cross-device sync
 
   const debouncedSync = useCallback(async (fullSync: boolean = false) => {
     if (!workspaceId || !accessToken) return;
@@ -1119,6 +1123,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await api.saveTask(validWorkspaceId, newTask);
         // Reload from server to get the authoritative version
         await loadTasksFromServer(validWorkspaceId);
+        // Trigger immediate sync to notify other devices (debounced)
+        debouncedSync(false);
         toast.success('Task created');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1138,6 +1144,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               // Retry saving with valid workspace ID
               await api.saveTask(validWorkspaceId, newTask);
               await loadTasksFromServer(validWorkspaceId);
+              // Trigger immediate sync to notify other devices (debounced)
+              debouncedSync(false);
               toast.success('Task created');
               return;
             } else {
@@ -1327,6 +1335,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         
         // Reload from server to get the authoritative version
         await loadTasksFromServer(validWorkspaceId);
+        // Trigger immediate sync to notify other devices (debounced)
+        debouncedSync(false);
         
         if (nextOccurrenceTask) {
           toast.success('Next occurrence created', {
@@ -1354,6 +1364,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 await api.saveTask(validWorkspaceId, nextOccurrenceTask);
               }
               await loadTasksFromServer(validWorkspaceId);
+              // Trigger immediate sync to notify other devices (debounced)
+              debouncedSync(false);
               if (nextOccurrenceTask) {
                 toast.success('Next occurrence created', {
                   description: `Task "${nextOccurrenceTask.title}" scheduled for ${new Date(nextOccurrenceTask.scheduledDate!).toLocaleDateString()}`,
@@ -1414,6 +1426,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await api.deleteTask(workspaceId, taskId);
         // Reload from server to get the authoritative version
         await loadTasksFromServer(workspaceId);
+        // Trigger immediate sync to notify other devices (debounced)
+        debouncedSync(false);
         toast.success('Task deleted');
       } catch (error) {
         logger.error('Failed to delete task from server:', error);
