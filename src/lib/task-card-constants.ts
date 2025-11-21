@@ -158,12 +158,14 @@ export const TASK_CARD_HEIGHT_CONFIG = {
     },
     long: {
       base: 120, // Reduced from 160 - base for title, badges, time (description added separately)
+      baseWithComponents: 210, // Base height for 1-hour tasks (includes base + components)
+      incrementPerHour: 200, // Additional height per hour beyond the first hour
     },
   },
   scalingFactors: {
     short: 0.9,
     medium: 1.2,
-    long: 2.0,
+    long: 2.0, // Legacy - kept for backward compatibility, but using incrementPerHour instead
   },
   heightMultiplier: 1.247, // For timeline view
 } as const;

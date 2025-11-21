@@ -13,9 +13,29 @@ import { DroppableColumn } from './DroppableColumn';
 import { cn, prepareTaskForDialog } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
+import { logger } from '../lib/logger';
+import {
+  KANBAN_DAY_COLORS,
+  KANBAN_BACKGROUND_GRADIENTS,
+  KANBAN_COLUMN_DIMENSIONS,
+  KANBAN_ANIMATION,
+  KANBAN_ZOOM,
+  KANBAN_SCROLL,
+  KANBAN_TIME,
+  KANBAN_MOBILE,
+  KANBAN_DESKTOP,
+  KANBAN_TEXT_SIZES,
+  KANBAN_SPACING,
+} from '../lib/kanban-constants';
 import type { Task } from '../types';
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+
+// Helper function to get day colors
+const getDayColors = (dayName: string) => {
+  const dayKey = dayName.toLowerCase() as keyof typeof KANBAN_DAY_COLORS;
+  return KANBAN_DAY_COLORS[dayKey] || KANBAN_DAY_COLORS.monday;
+};
 
 interface DayColumn {
   date: Date;
@@ -70,7 +90,7 @@ export function SevenDayKanban({
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1 + (currentWeekOffset * 7));
 
-    return Array.from({ length: 7 }, (_, i) => {
+    return Array.from({ length: KANBAN_TIME.daysInWeek }, (_, i) => {
       const date = new Date(tomorrow);
       date.setDate(tomorrow.getDate() + i);
       
@@ -88,7 +108,7 @@ export function SevenDayKanban({
         dayName,
         dateString: date.toISOString().split('T')[0],
         isToday,
-        isWeekend: dayOfWeek === 0 || dayOfWeek === 6, // Saturday or Sunday
+        isWeekend: dayOfWeek === 0 || dayOfWeek === 6, // Saturday (0) or Sunday (6)
       };
     });
   };
@@ -158,11 +178,11 @@ export function SevenDayKanban({
       }
       
       // Calculate zoom scale if tallest column exceeds viewport
-      // Add padding (60px total: 30px top + 30px bottom) to prevent edge clipping
+      // Add padding to prevent edge clipping
       if (maxColumnHeight > viewportHeight) {
-        const scale = (viewportHeight - 60) / maxColumnHeight;
-        // Clamp scale between 0.35 and 1.0 (don't zoom out too much, but allow more zoom if needed)
-        const clampedScale = Math.max(0.35, Math.min(1.0, scale));
+        const scale = (viewportHeight - KANBAN_ZOOM.padding) / maxColumnHeight;
+        // Clamp scale between min and max
+        const clampedScale = Math.max(KANBAN_ZOOM.minScale, Math.min(KANBAN_ZOOM.maxScale, scale));
         setZoomScale(clampedScale);
       } else {
         // No zoom needed if content fits
@@ -175,12 +195,12 @@ export function SevenDayKanban({
       if (resizeTimeoutId) {
         clearTimeout(resizeTimeoutId);
       }
-      resizeTimeoutId = setTimeout(calculateZoom, 100);
+      resizeTimeoutId = setTimeout(calculateZoom, KANBAN_ZOOM.resizeDebounce);
     };
     
     // Calculate zoom on mount and when tasks change
     // Use a longer delay to ensure DOM is fully rendered and animations are complete
-    timeoutId = setTimeout(calculateZoom, 200);
+    timeoutId = setTimeout(calculateZoom, KANBAN_ZOOM.calculateDelay);
     
     // Recalculate on window resize and container resize
     const resizeObserver = new ResizeObserver(handleResize);
@@ -208,14 +228,14 @@ export function SevenDayKanban({
   const getTasksForDay = (dateString: string) => {
     // Defensive check: ensure tasks is an array
     if (!Array.isArray(tasks)) {
-      console.warn('getTasksForDay: tasks is not an array', tasks);
+      logger.warn('getTasksForDay: tasks is not an array', tasks);
       return [];
     }
 
     try {
       const checkDate = new Date(dateString + 'T00:00:00');
       if (isNaN(checkDate.getTime())) {
-        console.warn('getTasksForDay: Invalid date string', dateString);
+        logger.warn('getTasksForDay: Invalid date string', dateString);
         return [];
       }
 
@@ -229,7 +249,7 @@ export function SevenDayKanban({
             // Check if task matches this date (either exact match or recurrence pattern)
             return isDateInRecurrence(task, checkDate);
           } catch (error) {
-            console.error('Error checking date in recurrence:', error, task);
+            logger.error('Error checking date in recurrence:', error, task);
             return false;
           }
         })
@@ -241,12 +261,12 @@ export function SevenDayKanban({
             if (isNaN(timeB)) return -1;
             return timeA - timeB;
           } catch (error) {
-            console.error('Error sorting tasks:', error, a, b);
+            logger.error('Error sorting tasks:', error, a, b);
             return 0;
           }
         });
     } catch (error) {
-      console.error('Error in getTasksForDay:', error);
+      logger.error('Error in getTasksForDay:', error);
       return [];
     }
   };
@@ -254,28 +274,28 @@ export function SevenDayKanban({
 
 
   const handleTaskClick = (task: Task) => {
-    console.log('handleTaskClick called with task:', task);
+    logger.info('handleTaskClick called with task:', task);
     try {
       if (!task || !task.id) {
-        console.error('Invalid task passed to handleTaskClick:', task);
+        logger.error('Invalid task passed to handleTaskClick:', task);
         toast.error('Invalid task data');
         return;
       }
       
       const safeTask = prepareTaskForDialog(task);
       if (!safeTask) {
-        console.error('prepareTaskForDialog returned null for task:', task);
+        logger.error('prepareTaskForDialog returned null for task:', task);
         toast.error('Invalid task data');
         return;
       }
       
-      console.log('Setting selected task and opening dialog:', safeTask);
+      logger.info('Setting selected task and opening dialog:', safeTask);
       // Set both states together - React will batch these updates
       setSelectedTask(safeTask);
       setDialogOpen(true);
-      console.log('State updated: selectedTask set, dialogOpen set to true');
+      logger.info('State updated: selectedTask set, dialogOpen set to true');
     } catch (error) {
-      console.error('Error opening task:', error, task);
+      logger.error('Error opening task:', error, task);
       toast.error('Failed to open task');
     }
   };
@@ -296,7 +316,7 @@ export function SevenDayKanban({
       return undefined;
     }
     
-    const date = new Date(year, month - 1, day, 9, 0, 0, 0);
+    const date = new Date(year, month - 1, day, KANBAN_TIME.defaultHour, 0, 0, 0);
     
     // Validate the created date
     if (isNaN(date.getTime())) {
@@ -348,7 +368,7 @@ export function SevenDayKanban({
     if (!container) return;
     
     const x = e.pageX - container.offsetLeft;
-    const walk = (x - startX) * 0.8; // Reduced scroll speed multiplier for smoother scrolling
+    const walk = (x - startX) * KANBAN_SCROLL.speedMultiplier;
     
     // Use requestAnimationFrame for smoother scrolling
     if (scrollAnimationRef.current) {
@@ -383,7 +403,12 @@ export function SevenDayKanban({
     const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
 
     return (
-      <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] md:from-[#F9F7FD] md:via-white md:to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800">
+      <div 
+        className="h-full flex flex-col dark:from-gray-800 dark:via-gray-900 dark:to-gray-800"
+        style={{
+          backgroundImage: `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
+        }}
+      >
 
         {/* Mobile Single Column */}
         <div className="flex-1 overflow-hidden px-4 pt-2 pb-24 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
@@ -464,11 +489,10 @@ export function SevenDayKanban({
         </div>
 
         {/* Task Dialog */}
-        {console.log('SevenDayKanban mobile: dialogOpen=', dialogOpen, 'selectedTask=', selectedTask?.id)}
         <TaskDialog
           open={dialogOpen}
           onClose={() => {
-            console.log('SevenDayKanban mobile: TaskDialog onClose called');
+            logger.info('SevenDayKanban mobile: TaskDialog onClose called');
             setDialogOpen(false);
             setSelectedTask(null);
             setSelectedDate(null);
@@ -482,7 +506,13 @@ export function SevenDayKanban({
 
   // Desktop multi-column view
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] md:from-[#F9F7FD] md:via-white md:to-[#F3F0F9] dark:from-gray-800 dark:via-gray-900 dark:to-gray-800" data-tour="kanban">
+    <div 
+      className="h-full flex flex-col dark:from-gray-800 dark:via-gray-900 dark:to-gray-800" 
+      data-tour="kanban"
+      style={{
+        backgroundImage: `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.desktop.from}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.via}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.to})`,
+      }}
+    >
       
       {/* Week View - Kanban Board */}
         <div className="flex-1 overflow-hidden">
@@ -503,7 +533,7 @@ export function SevenDayKanban({
               style={{
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
                 transformOrigin: 'top left',
-                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: KANBAN_ANIMATION.transformTransition,
               }}
             >
               {weekColumns.map((column, index) => {
@@ -514,45 +544,49 @@ export function SevenDayKanban({
                   <motion.div
                     key={column.dateString}
                     className={cn(
-                      'min-w-[280px] w-[280px] flex flex-col rounded-2xl overflow-hidden soft-shadow',
-                      column.isWeekend 
-                        ? 'bg-gradient-to-b from-[#E6D5F0]/50 to-[#E1D4F0]/50' 
-                        : 'bg-white/80 dark:bg-gray-800/80'
+                      'flex flex-col rounded-2xl overflow-hidden soft-shadow',
+                      !column.isWeekend && 'bg-white/80 dark:bg-gray-800/80'
                     )}
-                    initial={{ opacity: 0, y: 20 }}
+                    style={{
+                      minWidth: `${KANBAN_COLUMN_DIMENSIONS.width}px`,
+                      width: `${KANBAN_COLUMN_DIMENSIONS.width}px`,
+                      ...(column.isWeekend && {
+                        backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
+                      }),
+                    }}
+                    initial={{ opacity: 0, y: KANBAN_ANIMATION.initialY }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ 
-                      duration: 0.4, 
-                      delay: index * 0.06,
-                      ease: [0.25, 0.8, 0.25, 1]
+                      duration: KANBAN_ANIMATION.duration, 
+                      delay: index * KANBAN_ANIMATION.delayPerColumn,
+                      ease: KANBAN_ANIMATION.easing
                     }}
                   >
                     {/* Column Header */}
-                    <div className={cn(
-                      'p-1.5 sm:p-2 border-b backdrop-blur-sm',
-                      // Monday - Mint Green
-                      column.dayName === 'Monday' && 'bg-gradient-to-r from-[#B4E4CE]/80 via-[#A8DCC4]/70 to-[#9FD9BF]/80 border-[#7BC9A5]/30',
-                      // Tuesday - Sky Blue
-                      column.dayName === 'Tuesday' && 'bg-gradient-to-r from-[#C9E4F7]/80 via-[#B3D9F2]/70 to-[#A8DAFF]/80 border-[#7BC8FF]/30',
-                      // Wednesday - Lavender
-                      column.dayName === 'Wednesday' && 'bg-gradient-to-r from-[#E6D5F0]/80 via-[#D4C5F9]/70 to-[#C7B8EA]/80 border-[#B8A4E6]/30',
-                      // Thursday - Peach
-                      column.dayName === 'Thursday' && 'bg-gradient-to-r from-[#FFD6BA]/80 via-[#FFC9A3]/70 to-[#FFB88C]/80 border-[#FFA875]/30',
-                      // Friday - Lilac/Pink
-                      column.dayName === 'Friday' && 'bg-gradient-to-r from-[#F4D9F4]/80 via-[#E8C5E8]/70 to-[#DFB8DF]/80 border-[#D4A6D4]/30',
-                      // Saturday - Soft Rose
-                      column.dayName === 'Saturday' && 'bg-gradient-to-r from-[#FFD9E8]/80 via-[#FFC9DD]/70 to-[#FFB5D5]/80 border-[#FFA0CC]/30',
-                      // Sunday - Soft Yellow/Cream
-                      column.dayName === 'Sunday' && 'bg-gradient-to-r from-[#FFF9E3]/80 via-[#FFF4D1]/70 to-[#FFEFC0]/80 border-[#FFE8A0]/30',
-                      // Today overlay - add ring for emphasis
-                      column.isToday && 'ring-2 ring-[#7B68EE]/40 ring-inset'
-                    )}>
+                    <div 
+                      className={cn(
+                        'p-1.5 sm:p-2 border-b backdrop-blur-sm',
+                        column.isToday && 'ring-2 ring-inset'
+                      )}
+                      style={{
+                        ...(column.isToday && {
+                          ringColor: `${KANBAN_DAY_COLORS.today.ring}${Math.round(KANBAN_DAY_COLORS.today.ringOpacity * 2.55).toString(16).padStart(2, '0')}`,
+                        }),
+                        ...(getDayColors(column.dayName).header && {
+                          backgroundImage: `linear-gradient(to right, ${getDayColors(column.dayName).header.from}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.via}${Math.round(70 * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.to}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')})`,
+                          borderColor: `${getDayColors(column.dayName).header.border}${Math.round(getDayColors(column.dayName).header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`,
+                        }),
+                      }}
+                    >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className={cn(
-                            'uppercase text-xs sm:text-sm tracking-wider mb-0.5 sm:mb-1 font-bold',
-                            column.isToday ? 'text-[#7B68EE] drop-shadow-sm' : 'text-gray-700'
-                          )}>
+                          <h3 
+                            className={cn(
+                              'uppercase text-xs sm:text-sm tracking-wider mb-0.5 sm:mb-1 font-bold',
+                              !column.isToday && 'text-gray-700'
+                            )}
+                            style={column.isToday ? { color: KANBAN_DAY_COLORS.today.text } : undefined}
+                          >
                             {column.dayName.substring(0, 3)} {column.date.getDate()}
                           </h3>
                         </div>
@@ -571,23 +605,12 @@ export function SevenDayKanban({
                     {/* Task List - Droppable Zone */}
                     <DroppableColumn id={column.dateString} className="flex-1">
                       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                        <div className={cn(
-                          "p-2 sm:p-3 space-y-2 h-full",
-                          // Monday - Mint Green background
-                          column.dayName === 'Monday' && 'bg-[#B4E4CE]/20',
-                          // Tuesday - Sky Blue background
-                          column.dayName === 'Tuesday' && 'bg-[#C9E4F7]/20',
-                          // Wednesday - Lavender background
-                          column.dayName === 'Wednesday' && 'bg-[#E6D5F0]/20',
-                          // Thursday - Peach background
-                          column.dayName === 'Thursday' && 'bg-[#FFD6BA]/20',
-                          // Friday - Lilac/Pink background
-                          column.dayName === 'Friday' && 'bg-[#F4D9F4]/20',
-                          // Saturday - Soft Rose background
-                          column.dayName === 'Saturday' && 'bg-[#FFD9E8]/20',
-                          // Sunday - Soft Yellow/Cream background
-                          column.dayName === 'Sunday' && 'bg-[#FFF9E3]/20'
-                        )}>
+                        <div 
+                          className="p-2 sm:p-3 space-y-2 h-full"
+                          style={{
+                            backgroundColor: `${getDayColors(column.dayName).background}${Math.round(getDayColors(column.dayName).backgroundOpacity * 2.55).toString(16).padStart(2, '0')}`,
+                          }}
+                        >
                           <AnimatePresence mode="popLayout">
                             {dayTasks.length === 0 ? (
                               <motion.div
@@ -632,11 +655,10 @@ export function SevenDayKanban({
           </div>
 
         {/* Task Dialog */}
-        {console.log('SevenDayKanban desktop: dialogOpen=', dialogOpen, 'selectedTask=', selectedTask?.id)}
         <TaskDialog
           open={dialogOpen}
           onClose={() => {
-            console.log('SevenDayKanban desktop: TaskDialog onClose called');
+            logger.info('SevenDayKanban desktop: TaskDialog onClose called');
             setDialogOpen(false);
             setSelectedTask(null);
             setSelectedDate(null);

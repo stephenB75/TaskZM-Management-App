@@ -293,12 +293,15 @@ export const DraggableTaskCard = React.forwardRef<
         
         return Math.min(Math.max(totalHeight, minRequiredHeight), maxHeight);
       } else if (duration >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
-        // Enhanced sizing for tasks 1 hour or more: more space for descriptions
-        // Base height: title + badges + time display
-        let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base;
+        // Enhanced sizing for tasks 1 hour or more
+        // New height system: 210px base for 1 hour, +200px per additional hour
+        // Height is uniform for tasks with same duration and same active components
+        
+        // Calculate all component contributions to ensure uniform height
+        let componentHeight = 0;
         
         // Add height for badge wrapping
-        baseHeight += badgeWrapHeight;
+        componentHeight += badgeWrapHeight;
         
         // Add extra height for description (full height, no line clamp)
         // Description is always shown for tasks >= 60 minutes if it exists
@@ -307,31 +310,26 @@ export const DraggableTaskCard = React.forwardRef<
           const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
           const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
           // Match CSS margin: mb-0 (0px) when assigned users present and no subtasks, mb-1.5 (6px) otherwise
-          // This ensures height calculation matches actual CSS rendering
           const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
             ? 0 // mb-0 when assigned users follow directly (matches CSS)
             : 6; // mb-1.5 = 6px when subtasks present or no assigned users (matches CSS)
           const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
-          baseHeight += descriptionHeight;
+          componentHeight += descriptionHeight;
         } else {
           // If no description, still need minimal space for the time duration display
-          // Reduced to minimize white space
-          baseHeight += 2; // Minimal space for time display
+          componentHeight += 2; // Minimal space for time display
         }
         
         // Add extra height for assigned users (only if present)
-        // When description is present and no subtasks, assigned users are positioned closer (no gap)
         if (hasAssignedUsers) {
           // If description exists and no subtasks, reduce spacing since description has mb-0
           const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
-            ? 16 // Reduced from noGap (20px) to minimize white space
-            : 20; // Reduced from standard (24px) to minimize white space
-          baseHeight += assignedUsersSpacing;
+            ? 16 // Reduced spacing when description has mb-0
+            : 20; // Standard spacing
+          componentHeight += assignedUsersSpacing;
         }
         
         // Add extra height for subtasks (only if present)
-        // Subtasks follow description directly (description mb-1.5 = 6px provides spacing)
-        // No additional top padding needed for subtasks (pt-0)
         if (hasSubtasks) {
           const subtaskCount = Math.min(task.subtasks.length, 3);
           // Subtask height: ~14px per item, spacing: 2px between items on mobile (space-y-0.5), 4px on desktop (space-y-1)
@@ -339,29 +337,45 @@ export const DraggableTaskCard = React.forwardRef<
           const subtaskSpacing = isMobile ? 2 : 4; // space-y-0.5 (2px) on mobile, space-y-1 (4px) on desktop
           const subtaskHeight = subtaskCount * subtaskItemHeight + 
             (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
-          baseHeight += subtaskHeight;
+          componentHeight += subtaskHeight;
         }
         
-        // Duration-based scaling: scale from 60 minutes (threshold for long tasks)
-        // Base height already accounts for description and components, so use it directly
-        const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.long;
-        const durationBasedHeight = baseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
+        // Base card structure (title, badges, time) - approximately 120px
+        const baseCardStructure = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base;
+        
+        // Standard component height for 1-hour task (210px - 120px base = 90px for components)
+        // This ensures 1-hour tasks with standard components = 210px
+        const standardComponentHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents - baseCardStructure;
+        
+        // Calculate the actual component height vs standard
+        // This ensures uniform height for tasks with same components
+        const componentAdjustment = componentHeight - standardComponentHeight;
+        
+        // Base height for 1 hour: 210px (includes base + standard components)
+        // Adjust based on actual components present
+        const oneHourBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents + componentAdjustment;
+        
+        // Calculate additional hours beyond the first hour (60 minutes)
+        // Each additional hour adds 200px
+        const hours = duration / 60;
+        const additionalHours = Math.floor(hours - 1); // Hours beyond the first hour
+        const additionalHeight = additionalHours > 0 ? additionalHours * TASK_CARD_HEIGHT_CONFIG.baseHeights.long.incrementPerHour : 0;
+        
+        // Total content height = 1-hour base + additional hours
+        const contentHeight = oneHourBaseHeight + additionalHeight;
         
         // Account for actual padding being applied via CSS classes
-        // Long tasks: px-2 py-2 pb-2 (mobile) or md:px-3 md:py-2 md:pb-2 (desktop) - no components
-        // Long tasks with components: px-2 py-2 pb-3 (mobile) or md:px-3 md:py-2 md:pb-4 (desktop)
         const topPadding = TASK_CARD_CALCULATIONS.padding.long.top;
         const bottomPadding = hasAnyComponents
           ? (isMobile ? TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.desktop)
           : TASK_CARD_CALCULATIONS.padding.long.bottom.noComponents;
         const totalPadding = topPadding + bottomPadding;
         
-        // Total height = content (duration-based) + padding
-        const totalHeight = durationBasedHeight + totalPadding;
+        // Total height = content + padding
+        const totalHeight = contentHeight + totalPadding;
         
-        // Ensure minimum height is at least the base + padding
-        // Base height already accounts for all components, so use it directly
-        const minRequiredHeight = baseHeight + totalPadding;
+        // Ensure minimum height accounts for all components
+        const minRequiredHeight = oneHourBaseHeight + totalPadding;
         
         return Math.min(
           Math.max(totalHeight, minRequiredHeight),
