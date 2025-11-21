@@ -118,18 +118,45 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const today = new Date(now);
       today.setHours(0, 0, 0, 0);
 
+      // Check tasks with dueDate OR scheduledDate
       const overdueTasks = tasks.filter(task => {
-        if (task.status === 'done' || !task.dueDate) return false;
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate < today;
+        if (task.status === 'done') return false;
+        
+        // Check dueDate first
+        if (task.dueDate) {
+          const dueDate = new Date(task.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          if (dueDate < today) return true;
+        }
+        
+        // Check scheduledDate if no dueDate
+        if (task.scheduledDate && !task.dueDate) {
+          const scheduledDate = new Date(task.scheduledDate);
+          scheduledDate.setHours(0, 0, 0, 0);
+          if (scheduledDate < today) return true;
+        }
+        
+        return false;
       });
 
       const dueSoonTasks = tasks.filter(task => {
-        if (task.status === 'done' || !task.dueDate) return false;
-        const dueDate = new Date(task.dueDate);
+        if (task.status === 'done') return false;
+        
         const reminderTime = new Date(now.getTime() + settings.reminderTime * 60 * 1000);
-        return dueDate >= now && dueDate <= reminderTime;
+        
+        // Check dueDate first
+        if (task.dueDate) {
+          const dueDate = new Date(task.dueDate);
+          return dueDate >= now && dueDate <= reminderTime;
+        }
+        
+        // Check scheduledDate if no dueDate
+        if (task.scheduledDate && !task.dueDate) {
+          const scheduledDate = new Date(task.scheduledDate);
+          return scheduledDate >= now && scheduledDate <= reminderTime;
+        }
+        
+        return false;
       });
 
       const overdueCount = settings.overdueAlerts ? overdueTasks.length : 0;
@@ -155,17 +182,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // but works better when installed
     if (isBadgeAPIAvailable()) {
       try {
-        const badgePromise = (navigator as any).setAppBadge(count);
-        if (badgePromise && typeof badgePromise.catch === 'function') {
-          badgePromise.catch((err: Error) => {
+        // Use Promise.resolve to handle both sync and async badge APIs
+        const badgePromise = Promise.resolve((navigator as any).setAppBadge(count));
+        badgePromise
+          .then(() => {
+            logger.debug('App badge set successfully:', count);
+          })
+          .catch((err: Error) => {
             // Only log if it's not a known limitation (e.g., browser doesn't support badges)
             if (err.name !== 'NotSupportedError' && err.name !== 'TypeError') {
               logger.warn('Failed to set app badge:', err);
+            } else {
+              logger.debug('Badge API not supported:', err.name);
             }
           });
-        } else {
-          logger.debug('App badge set successfully:', count);
-        }
       } catch (error) {
         // Log badge API errors for debugging
         logger.debug('Badge API error:', error);
@@ -186,9 +216,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         setBadgeCount(0);
         if (isBadgeAPIAvailable()) {
           try {
-            (navigator as any).setAppBadge(0).catch((err: Error) => {
-              logger.debug('Failed to clear app badge:', err);
-            });
+            Promise.resolve((navigator as any).setAppBadge(0))
+              .then(() => {
+                logger.debug('App badge cleared successfully');
+              })
+              .catch((err: Error) => {
+                logger.debug('Failed to clear app badge:', err);
+              });
           } catch (error) {
             logger.debug('Badge API not available:', error);
           }
@@ -377,7 +411,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // Update badge when tasks or settings change
   useEffect(() => {
-    updateBadge();
+    // Small delay to ensure task status updates are complete
+    const timeoutId = setTimeout(() => {
+      updateBadge();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [tasks, settings, updateBadge]);
 
   // Update badge when app becomes visible (handles tab switching, app focus)
