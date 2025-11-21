@@ -134,33 +134,47 @@ export const DraggableTaskCard = React.forwardRef<
     };
 
     // Calculate card height based on duration (visual time-blocking)
-    // For tasks < 45 mins: more compact sizing to fit all elements comfortably
-    // For tasks 45-59 mins: standard sizing
-    // For tasks >= 60 mins: enhanced sizing to accommodate descriptions and all elements
+    // Auto-adjusts for: badge wrapping, assigned users, tracking, descriptions
     const getCardHeight = () => {
       const duration = task.estimatedTime || TASK_CARD_HEIGHT_CONFIG.defaultDuration;
       const maxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight;
       
+      // Count badges that will be displayed in the top row
+      const hasTime = !!(task.scheduledDate || task.dueDate);
+      const hasPriority = true; // Always shown
+      const hasTag = task.tags && task.tags.length > 0;
+      const hasDuration = !!task.estimatedTime;
+      const hasTracking = task.estimatedTime && task.estimatedTime < 45 && hasFeature("pomodoroTimer") && timerState.isRunning;
+      const hasTrackedTime = task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning;
+      
+      // Estimate if badges will wrap to second line
+      // Approximate badge widths: time (60px), priority (50px), tag (60px), duration (40px), tracking (80px)
+      // Available width: ~280px on mobile, ~400px on desktop (accounting for checkbox and padding)
+      const badgeCount = [hasTime, hasPriority, hasTag, hasDuration, hasTracking || hasTrackedTime].filter(Boolean).length;
+      const estimatedBadgeWidth = badgeCount * 60; // Average badge width
+      const availableWidth = isMobile ? 240 : 360; // Account for padding and checkbox
+      const badgesWillWrap = estimatedBadgeWidth > availableWidth;
+      const badgeWrapHeight = badgesWillWrap ? 24 : 0; // Extra height if badges wrap (one line height)
+      
+      const hasPomodoro = hasFeature("pomodoroTimer") && timerState.isRunning;
+      const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
+      const hasTrackedTimeFull = task.actualTime && task.actualTime > 0;
+      const hasPomodoroTimer = hasFeature("pomodoroTimer");
+      const hasDescription = task.description && task.estimatedTime && task.estimatedTime >= 60;
+      const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+      
       if (duration < TASK_CARD_HEIGHT_CONFIG.thresholds.short) {
         // Compact sizing for shorter tasks: base height + minimal scaling
-        // Ensures all elements (title, badges, pomodoro, assigned users, etc.) fit comfortably
-        // Auto-adjusts base height when pomodoro timer is running or users are assigned
+        // Auto-adjusts for badge wrapping, assigned users, tracking, and subtasks
         let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base;
-        const hasPomodoro = hasFeature("pomodoroTimer") && timerState.isRunning;
-        const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
-        const hasTrackedTime = task.actualTime && task.actualTime > 0;
-        const hasPomodoroTimer = hasFeature("pomodoroTimer");
         
-        // Auto-adjust base height based on components present
-        // Mobile only: increase border height by 20% to fit all components
-        // Additional 10% increase when ALL components are active (tracking + assigned users + subtasks)
-        const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+        // Add height for badge wrapping
+        baseHeight += badgeWrapHeight;
+        
+        // Add height for components
         if (isMobile) {
-          // Mobile: tracking badge at top, bottom row has assigned users + pomodoro timer
-          // Increase border height by 20% to accommodate all components comfortably
-          // Additional 10% when all components are active
-          let calculatedBaseHeight = 0;
-          if (hasPomodoro || hasTrackedTime) {
+          let calculatedBaseHeight = baseHeight;
+          if (hasPomodoro || hasTrackedTimeFull) {
             // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
             calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer 
               ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth 
@@ -175,39 +189,35 @@ export const DraggableTaskCard = React.forwardRef<
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.mobileBase;
           }
           
-          // Add 10% increase when ALL components are active (tracking + assigned users + subtasks)
-          if ((hasPomodoro || hasTrackedTime) && hasAssignedUsers && hasSubtasks) {
-            baseHeight = Math.round(calculatedBaseHeight * 1.1);
-          } else {
-            baseHeight = calculatedBaseHeight;
+          // Add extra height for subtasks
+          if (hasSubtasks) {
+            const subtaskHeight = Math.min(task.subtasks.length, 3) * 16; // ~16px per subtask, max 3 visible
+            calculatedBaseHeight += subtaskHeight;
           }
+          
+          baseHeight = calculatedBaseHeight;
         } else {
-          // Desktop: apply same rules as mobile for tasks < 45 mins
-          // Tracking badge at top, bottom row has assigned users + pomodoro timer
-          // Increase border height by 20% to accommodate all components comfortably
-          // Additional 10% when all components are active
-          let calculatedBaseHeight = 0;
-          if (hasPomodoro || hasTrackedTime) {
-            // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
+          // Desktop: apply same rules as mobile
+          let calculatedBaseHeight = baseHeight;
+          if (hasPomodoro || hasTrackedTimeFull) {
             calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer 
               ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth 
               : TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking;
           } else if (hasAssignedUsers && hasPomodoroTimer) {
-            // Both assigned users and pomodoro timer in bottom row
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth;
           } else if (hasAssignedUsers || hasPomodoroTimer) {
-            // One of assigned users or pomodoro timer in bottom row
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned;
           } else {
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.mobileBase;
           }
           
-          // Add 10% increase when ALL components are active (tracking + assigned users + subtasks)
-          if ((hasPomodoro || hasTrackedTime) && hasAssignedUsers && hasSubtasks) {
-            baseHeight = Math.round(calculatedBaseHeight * 1.1);
-          } else {
-            baseHeight = calculatedBaseHeight;
+          // Add extra height for subtasks
+          if (hasSubtasks) {
+            const subtaskHeight = Math.min(task.subtasks.length, 3) * 16; // ~16px per subtask, max 3 visible
+            calculatedBaseHeight += subtaskHeight;
           }
+          
+          baseHeight = calculatedBaseHeight;
         }
         
         const scalingFactor = TASK_CARD_HEIGHT_CONFIG.scalingFactors.short;
@@ -215,7 +225,30 @@ export const DraggableTaskCard = React.forwardRef<
         return Math.min(Math.max(calculatedHeight, baseHeight), maxHeight);
       } else if (duration >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
         // Enhanced sizing for tasks 1 hour or more: more space for descriptions
-        const baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base;
+        let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base;
+        
+        // Add height for badge wrapping
+        baseHeight += badgeWrapHeight;
+        
+        // Add extra height for description (line-clamp-2 or line-clamp-4)
+        if (hasDescription) {
+          const descriptionLines = duration === 60 ? 2 : 4;
+          const lineHeight = 14; // Approximate line height for 10px font
+          const descriptionHeight = descriptionLines * lineHeight + 12; // Add padding (mb-3 = 12px)
+          baseHeight += descriptionHeight;
+        }
+        
+        // Add extra height for assigned users
+        if (hasAssignedUsers) {
+          baseHeight += 24; // Height for assigned users row
+        }
+        
+        // Add extra height for subtasks
+        if (hasSubtasks) {
+          const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+          baseHeight += subtaskHeight;
+        }
+        
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.long;
         const calculatedHeight = baseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
         return Math.min(
@@ -224,7 +257,22 @@ export const DraggableTaskCard = React.forwardRef<
         );
       } else {
         // Standard sizing for medium tasks (45-59 mins)
-        const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
+        let minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
+        
+        // Add height for badge wrapping
+        minHeight += badgeWrapHeight;
+        
+        // Add extra height for assigned users
+        if (hasAssignedUsers) {
+          minHeight += 24;
+        }
+        
+        // Add extra height for subtasks
+        if (hasSubtasks) {
+          const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+          minHeight += subtaskHeight;
+        }
+        
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.medium;
         const calculatedHeight = minHeight + duration * pixelsPerMinute;
         return Math.min(
@@ -311,7 +359,6 @@ export const DraggableTaskCard = React.forwardRef<
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
             )}
           style={{
-            height: `${cardHeight}px`,
             minHeight: `${cardHeight}px`,
           }}
           onClick={(e) => {

@@ -258,7 +258,6 @@ export function DraggableTodayAgendaTask({
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
             )}
             style={{
-              height: `${getTaskHeight(task) * 1.247}px`,
               minHeight: `${getTaskHeight(task) * 1.247}px`,
             }}
             onClick={(e) => {

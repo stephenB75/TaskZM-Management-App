@@ -195,29 +195,95 @@ export function TodayAgendaView({
   };
 
   // Calculate height based on task duration
-  // For tasks < 45 mins: more compact sizing to fit all elements comfortably
-  // For tasks 45-59 mins: standard sizing
-  // For tasks >= 60 mins: enhanced sizing to accommodate descriptions and all elements
+  // Auto-adjusts for: badge wrapping, assigned users, tracking, descriptions
   const getTaskHeight = (task: Task) => {
     const minutes = task.estimatedTime || 30; // Default to 30 minutes if not set
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    
+    // Count badges that will be displayed in the top row
+    const hasTime = !!(task.scheduledDate || task.dueDate);
+    const hasPriority = true; // Always shown
+    const hasTag = task.tags && task.tags.length > 0;
+    const hasDuration = !!task.estimatedTime;
+    
+    // Estimate if badges will wrap to second line
+    const badgeCount = [hasTime, hasPriority, hasTag, hasDuration].filter(Boolean).length;
+    const estimatedBadgeWidth = badgeCount * 60; // Average badge width
+    const availableWidth = isMobile ? 240 : 360; // Account for padding and checkbox
+    const badgesWillWrap = estimatedBadgeWidth > availableWidth;
+    const badgeWrapHeight = badgesWillWrap ? 24 : 0; // Extra height if badges wrap
+    
+    const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
+    const hasDescription = task.description && task.estimatedTime && task.estimatedTime >= 60;
+    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     
     if (minutes < 45) {
       // Compact sizing for shorter tasks: base height + minimal scaling
-      // Ensures all elements (title, badges, pomodoro, etc.) fit comfortably
-      // Mobile only: increase border height by 20% to fit all components
-      // Check if mobile viewport (lg breakpoint is 1024px)
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-      const baseHeight = isMobile ? 72 : 60; // Base height (+20% for mobile border only)
+      let baseHeight = isMobile ? 72 : 60;
+      
+      // Add height for badge wrapping
+      baseHeight += badgeWrapHeight;
+      
+      // Add extra height for assigned users
+      if (hasAssignedUsers) {
+        baseHeight += 24;
+      }
+      
+      // Add extra height for subtasks
+      if (hasSubtasks) {
+        const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+        baseHeight += subtaskHeight;
+      }
+      
       const scalingFactor = 0.8; // Reduced scaling for shorter tasks
       return Math.max(baseHeight, baseHeight + (minutes - 15) * scalingFactor);
     } else if (minutes >= 60) {
       // Enhanced sizing for tasks 1 hour or more: more space for descriptions
-      const baseHeight = 140; // Increased base height for descriptions and all elements
+      let baseHeight = 140;
+      
+      // Add height for badge wrapping
+      baseHeight += badgeWrapHeight;
+      
+      // Add extra height for description
+      if (hasDescription) {
+        const descriptionLines = minutes === 60 ? 2 : 4;
+        const lineHeight = 14; // Approximate line height for 10px font
+        const descriptionHeight = descriptionLines * lineHeight + 12; // Add padding (mb-3 = 12px)
+        baseHeight += descriptionHeight;
+      }
+      
+      // Add extra height for assigned users
+      if (hasAssignedUsers) {
+        baseHeight += 24;
+      }
+      
+      // Add extra height for subtasks
+      if (hasSubtasks) {
+        const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+        baseHeight += subtaskHeight;
+      }
+      
       const scalingFactor = 2.0; // More generous scaling for longer tasks
       return Math.max(baseHeight, baseHeight + (minutes - 60) * scalingFactor);
     } else {
       // Standard sizing for medium tasks (45-59 mins)
-      return Math.max(80, minutes * 1.5);
+      let minHeight = 80;
+      
+      // Add height for badge wrapping
+      minHeight += badgeWrapHeight;
+      
+      // Add extra height for assigned users
+      if (hasAssignedUsers) {
+        minHeight += 24;
+      }
+      
+      // Add extra height for subtasks
+      if (hasSubtasks) {
+        const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+        minHeight += subtaskHeight;
+      }
+      
+      return Math.max(minHeight, minutes * 1.5);
     }
   };
 
