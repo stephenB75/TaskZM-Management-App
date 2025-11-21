@@ -262,7 +262,7 @@ export function TodayAgendaView({
         // Average ~50 characters per line, ~16px line height for 12px font
         const estimatedLines = task.description ? Math.ceil(task.description.length / 50) : 4;
         const lineHeight = 16; // Approximate line height for 12px font
-        const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 12; // Minimum 4 lines, add padding (mb-3 = 12px)
+        const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 6; // Minimum 4 lines, add padding (mb-1.5 = 6px, reduced from mb-3)
         baseHeight += descriptionHeight;
       } else {
         // If no description, still need space for the time duration display

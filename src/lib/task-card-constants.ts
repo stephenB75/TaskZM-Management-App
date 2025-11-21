@@ -181,7 +181,7 @@ export const TASK_CARD_SPACING = {
     mobile: 'gap-1 px-1 mb-1',
     desktop: 'gap-1.5 px-1 mb-1',
   },
-  description: 'px-1.5 py-1 mt-0.5 mb-3',
+  description: 'px-1.5 py-1 mt-0.5 mb-1.5',
   bottomPadding: {
     mobile: {
       standard: 'pb-6',
@@ -194,8 +194,8 @@ export const TASK_CARD_SPACING = {
     },
   },
   longTask: {
-    mobile: 'py-2.5 pb-10 space-y-2',
-    desktop: 'md:py-3.5 md:pb-12 md:space-y-2.5',
+    mobile: 'py-2.5 pb-8 space-y-1.5',
+    desktop: 'md:py-3 md:pb-8 md:space-y-1.5',
   },
   compact: {
     mobile: 'py-1 space-y-1',

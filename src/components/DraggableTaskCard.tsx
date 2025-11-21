@@ -248,12 +248,12 @@ export const DraggableTaskCard = React.forwardRef<
           // Average ~50 characters per line, ~16px line height for 12px font
           const estimatedLines = task.description ? Math.ceil(task.description.length / 50) : 4;
           const lineHeight = 16; // Approximate line height for 12px font
-          const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 12; // Minimum 4 lines, add padding (mb-3 = 12px)
+          const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 6; // Minimum 4 lines, add padding (mb-1.5 = 6px, reduced from mb-3)
           baseHeight += descriptionHeight;
         } else {
           // If no description, still need space for the time duration display
           // Add minimal padding for time display area
-          baseHeight += 8;
+          baseHeight += 6; // Reduced from 8px to minimize white space
         }
         
         // Add extra height for assigned users (only if present)
@@ -388,8 +388,9 @@ export const DraggableTaskCard = React.forwardRef<
                 ? "py-1 space-y-1" // More space when components present
                 : "py-1.5 space-y-1", // Standard compact with adequate spacing
               // Enhanced padding for tasks 1 hour or more to accommodate descriptions
-              task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3.5 md:pb-12 md:space-y-2.5",
-              task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
+              // Reduced padding when all components are active to minimize white space
+              task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3 md:pb-8 md:space-y-1.5",
+              task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-8 space-y-1.5",
             )}
           style={{
             minHeight: `${cardHeight}px`,
@@ -555,7 +556,11 @@ export const DraggableTaskCard = React.forwardRef<
 
           {/* Subtasks Display */}
           {task.subtasks && task.subtasks.length > 0 && (
-            <div className={cn("pt-1", isMobile ? "space-y-0.5" : "space-y-1")}>
+            <div className={cn(
+              // Reduce top padding when description is present (all components active)
+              task.description && task.estimatedTime && task.estimatedTime >= 60 ? "pt-0.5" : "pt-1",
+              isMobile ? "space-y-0.5" : "space-y-1"
+            )}>
               {task.subtasks.slice(0, 3).map((subtask) => (
                 <div
                   key={subtask.id}
@@ -595,7 +600,14 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
           {task.estimatedTime && task.estimatedTime < 45 ? (
             // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
-            <div className={cn("flex items-center justify-between border-t border-gray-200/50", isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5")}>
+            // Reduced spacing when all components are active
+            <div className={cn(
+              "flex items-center justify-between border-t border-gray-200/50",
+              // Check if subtasks are present to reduce spacing
+              task.subtasks && task.subtasks.length > 0
+                ? isMobile ? "gap-1.5 mt-1.5 pt-1.5" : "gap-2 mt-2 pt-2"
+                : isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5"
+            )}>
               {/* Left: Assigned Users */}
               <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
                 {task.assignedTo && task.assignedTo.length > 0 && (
