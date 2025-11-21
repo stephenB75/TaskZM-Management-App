@@ -76,56 +76,93 @@ export function NotificationsPanel() {
     const now = new Date();
     const newNotifications: NotificationItem[] = [];
 
-    // Overdue tasks
+    // Overdue tasks (check both dueDate and scheduledDate)
     if (settings.overdueAlerts) {
       tasks
         .filter(task => {
-          if (task.status === 'done' || !task.dueDate) return false;
-          const dueDate = new Date(task.dueDate);
-          dueDate.setHours(0, 0, 0, 0);
-          const today = new Date(now);
-          today.setHours(0, 0, 0, 0);
-          return dueDate < today;
+          if (task.status === 'done') return false;
+          
+          // Check dueDate first
+          if (task.dueDate) {
+            const dueDate = new Date(task.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+            return dueDate < today;
+          }
+          
+          // Check scheduledDate if no dueDate
+          if (task.scheduledDate) {
+            const scheduledDate = new Date(task.scheduledDate);
+            scheduledDate.setHours(0, 0, 0, 0);
+            const today = new Date(now);
+            today.setHours(0, 0, 0, 0);
+            return scheduledDate < today;
+          }
+          
+          return false;
         })
         .forEach(task => {
-          const dueDateText = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '';
+          // Use dueDate if available, otherwise use scheduledDate
+          const dateToUse = task.dueDate || task.scheduledDate;
+          const dateText = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
+          const notificationId = `overdue_${task.id}`;
+          
           newNotifications.push({
-            id: `overdue_${task.id}`,
+            id: notificationId,
             type: NOTIFICATION_TYPES.taskOverdue as NotificationItem['type'],
             title: NOTIFICATION_TITLES.taskOverdue,
-            message: NOTIFICATION_MESSAGES.taskWasDue(task.title, dueDateText),
-            timestamp: new Date(task.dueDate || now),
-            read: readNotifications.has(`overdue_${task.id}`),
+            message: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
+            timestamp: new Date(dateToUse || now),
+            read: readNotifications.has(notificationId),
             taskId: task.id,
             priority: task.priority,
           });
         });
     }
 
-    // Tasks due soon
+    // Tasks due soon (check both dueDate and scheduledDate)
     if (settings.dueDateReminders) {
       const reminderTime = new Date(now.getTime() + settings.reminderTime * 60 * 1000);
       
       tasks
         .filter(task => {
-          if (task.status === 'done' || !task.dueDate) return false;
-          const dueDate = new Date(task.dueDate);
-          return dueDate >= now && dueDate <= reminderTime;
+          if (task.status === 'done') return false;
+          
+          // Check dueDate first
+          if (task.dueDate) {
+            const dueDate = new Date(task.dueDate);
+            return dueDate >= now && dueDate <= reminderTime;
+          }
+          
+          // Check scheduledDate if no dueDate
+          if (task.scheduledDate) {
+            const scheduledDate = new Date(task.scheduledDate);
+            return scheduledDate >= now && scheduledDate <= reminderTime;
+          }
+          
+          return false;
         })
         .forEach(task => {
-          const dueDate = new Date(task.dueDate!);
-          const timeUntil = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60));
+          // Use dueDate if available, otherwise use scheduledDate
+          const dateToUse = task.dueDate || task.scheduledDate;
+          if (!dateToUse) return;
+          
+          const targetDate = new Date(dateToUse);
+          const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
           const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold
             ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
             : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
           
+          const notificationId = `due-soon_${task.id}`;
+          
           newNotifications.push({
-            id: `due-soon_${task.id}`,
+            id: notificationId,
             type: NOTIFICATION_TYPES.taskDueSoon as NotificationItem['type'],
             title: NOTIFICATION_TITLES.taskDueSoon,
             message: NOTIFICATION_MESSAGES.taskDueIn(task.title, timeText),
-            timestamp: dueDate,
-            read: readNotifications.has(`due-soon_${task.id}`),
+            timestamp: targetDate,
+            read: readNotifications.has(notificationId),
             taskId: task.id,
             priority: task.priority,
           });
@@ -181,6 +218,18 @@ export function NotificationsPanel() {
 
     // Sort by timestamp (newest first)
     newNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    
+    // Debug logging to help diagnose notification panel issues
+    if (newNotifications.length > 0) {
+      console.debug('NotificationsPanel: Generated notifications', {
+        total: newNotifications.length,
+        overdue: newNotifications.filter(n => n.type === 'task-overdue').length,
+        dueSoon: newNotifications.filter(n => n.type === 'task-due-soon').length,
+        pomodoro: newNotifications.filter(n => n.type === 'pomodoro-complete').length,
+        unread: newNotifications.filter(n => !n.read).length,
+      });
+    }
+    
     setNotifications(newNotifications);
   }, [tasks, settings, readNotifications, getTimerState, lastSeenSessions]);
 

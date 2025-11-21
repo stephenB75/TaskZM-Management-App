@@ -277,15 +277,27 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     let overdueCount = 0;
     let dueSoonCount = 0;
 
-    // Check for overdue tasks
+    // Check for overdue tasks (check both dueDate and scheduledDate)
     if (settings.overdueAlerts) {
       const overdueTasks = tasks.filter(task => {
-        if (task.status === 'done' || !task.dueDate) return false;
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
+        if (task.status === 'done') return false;
+        
+        let targetDate: Date | null = null;
+        
+        // Check dueDate first
+        if (task.dueDate) {
+          targetDate = new Date(task.dueDate);
+        } else if (task.scheduledDate) {
+          // Check scheduledDate if no dueDate
+          targetDate = new Date(task.scheduledDate);
+        }
+        
+        if (!targetDate) return false;
+        
+        targetDate.setHours(0, 0, 0, 0);
         const today = new Date(now);
         today.setHours(0, 0, 0, 0);
-        const isOverdue = dueDate < today;
+        const isOverdue = targetDate < today;
         const alreadyNotified = notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
         return isOverdue && !alreadyNotified;
       });
@@ -295,9 +307,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       overdueTasks.forEach(task => {
         try {
-          const dueDateText = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '';
+          // Use dueDate if available, otherwise use scheduledDate
+          const dateToUse = task.dueDate || task.scheduledDate;
+          const dateText = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
           const notification = new Notification(NOTIFICATION_TITLES.taskOverdue, {
-            body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dueDateText),
+            body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
             icon: NOTIFICATION_ICONS.default,
             badge: NOTIFICATION_ICONS.badge,
             tag: `${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`,
@@ -324,14 +338,26 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // Check for tasks due soon
+    // Check for tasks due soon (check both dueDate and scheduledDate)
     if (settings.dueDateReminders) {
       const reminderTime = new Date(now.getTime() + settings.reminderTime * 60 * 1000);
       
       const dueSoonTasks = tasks.filter(task => {
-        if (task.status === 'done' || !task.dueDate) return false;
-        const dueDate = new Date(task.dueDate);
-        const isDueSoon = dueDate >= now && dueDate <= reminderTime;
+        if (task.status === 'done') return false;
+        
+        let targetDate: Date | null = null;
+        
+        // Check dueDate first
+        if (task.dueDate) {
+          targetDate = new Date(task.dueDate);
+        } else if (task.scheduledDate) {
+          // Check scheduledDate if no dueDate
+          targetDate = new Date(task.scheduledDate);
+        }
+        
+        if (!targetDate) return false;
+        
+        const isDueSoon = targetDate >= now && targetDate <= reminderTime;
         const alreadyNotified = notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
         return isDueSoon && !alreadyNotified;
       });
@@ -341,8 +367,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       dueSoonTasks.forEach(task => {
         try {
-          const dueDate = new Date(task.dueDate!);
-          const timeUntil = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60));
+          // Use dueDate if available, otherwise use scheduledDate
+          const dateToUse = task.dueDate || task.scheduledDate;
+          if (!dateToUse) return;
+          
+          const targetDate = new Date(dateToUse);
+          const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
           const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
             ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
             : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
@@ -388,8 +418,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           return; // Don't add to cleanedTasks (removes it)
         }
         
-        // Keep if task still exists and is not done
-        if (task && task.dueDate) {
+        // Keep if task still exists and is not done (check both dueDate and scheduledDate)
+        if (task && (task.dueDate || task.scheduledDate)) {
           cleanedTasks.add(taskKey);
         }
       }
