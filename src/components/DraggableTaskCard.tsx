@@ -253,7 +253,7 @@ export const DraggableTaskCard = React.forwardRef<
         } else {
           // If no description, still need space for the time duration display
           // Add minimal padding for time display area
-          baseHeight += 6; // Reduced from 8px to minimize white space
+          baseHeight += 4; // Further reduced from 6px to minimize white space
         }
         
         // Add extra height for assigned users (only if present)
@@ -261,9 +261,10 @@ export const DraggableTaskCard = React.forwardRef<
           baseHeight += 24; // Height for assigned users row
         }
         
-        // Add extra height for subtasks (only if present)
+        // Add extra height for subtasks (only if present, reduced spacing)
         if (hasSubtasks) {
-          const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+          const subtaskCount = Math.min(task.subtasks.length, 3);
+          const subtaskHeight = subtaskCount * 14 + (subtaskCount > 1 ? (subtaskCount - 1) * 2 : 0); // ~14px per subtask + 2px spacing between
           baseHeight += subtaskHeight;
         }
         
@@ -275,7 +276,7 @@ export const DraggableTaskCard = React.forwardRef<
         // Ensure minimum height is at least the base + description bottom padding
         const minRequiredHeight = hasDescription 
           ? baseHeight 
-          : baseHeight + 12; // Add bottom padding if no description
+          : baseHeight + 8; // Reduced from 12px to minimize white space
         
         return Math.min(
           Math.max(durationBasedHeight, minRequiredHeight),
@@ -294,9 +295,10 @@ export const DraggableTaskCard = React.forwardRef<
           minHeight += 24;
         }
         
-        // Add extra height for subtasks (only if present)
+        // Add extra height for subtasks (only if present, reduced spacing)
         if (hasSubtasks) {
-          const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+          const subtaskCount = Math.min(task.subtasks.length, 3);
+          const subtaskHeight = subtaskCount * 14 + (subtaskCount > 1 ? (subtaskCount - 1) * 2 : 0); // ~14px per subtask + 2px spacing between
           minHeight += subtaskHeight;
         }
         
@@ -306,7 +308,7 @@ export const DraggableTaskCard = React.forwardRef<
         const durationBasedHeight = minHeight + duration * pixelsPerMinute;
         
         // Ensure minimum height accounts for time display and bottom padding
-        const minRequiredHeight = minHeight + 8; // Bottom padding for time display
+        const minRequiredHeight = minHeight + 6; // Reduced from 8px to minimize white space
         
         return Math.min(
           Math.max(durationBasedHeight, minRequiredHeight),
@@ -561,21 +563,35 @@ export const DraggableTaskCard = React.forwardRef<
               task.description && task.estimatedTime && task.estimatedTime >= 60 ? "pt-0.5" : "pt-1",
               isMobile ? "space-y-0.5" : "space-y-1"
             )}>
-              {task.subtasks.slice(0, 3).map((subtask) => (
-                <div
-                  key={subtask.id}
-                  className={cn("flex items-center", isMobile ? "gap-1" : "gap-1.5")}
-                  onClick={(e) => e.stopPropagation()}
-                >
+              {task.subtasks.slice(0, 3).map((subtask) => {
+                const handleSubtaskToggle = async (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  const updatedSubtasks = task.subtasks.map((st) =>
+                    st.id === subtask.id
+                      ? { ...st, completed: !st.completed }
+                      : st
+                  );
+                  await updateTask(task.id, { subtasks: updatedSubtasks });
+                };
+
+                return (
                   <div
+                    key={subtask.id}
                     className={cn(
-                      "rounded-sm border flex-shrink-0",
-                      isMobile ? "w-2 h-2" : "w-2.5 h-2.5",
-                      subtask.completed
-                        ? "bg-primary border-primary"
-                        : "border-gray-300",
+                      "flex items-center cursor-pointer hover:opacity-80 transition-opacity",
+                      isMobile ? "gap-1" : "gap-1.5"
                     )}
-                  />
+                    onClick={handleSubtaskToggle}
+                  >
+                    <div
+                      className={cn(
+                        "rounded-sm border flex-shrink-0 transition-colors",
+                        isMobile ? "w-2 h-2" : "w-2.5 h-2.5",
+                        subtask.completed
+                          ? "bg-primary border-primary"
+                          : "border-gray-300 hover:border-primary/50",
+                      )}
+                    />
                     <span
                       className={cn(
                         "leading-tight",
@@ -588,7 +604,8 @@ export const DraggableTaskCard = React.forwardRef<
                       {subtask.title}
                     </span>
                   </div>
-                ))}
+                );
+              })}
                 {task.subtasks.length > 3 && (
                   <div className={cn("text-gray-400", isMobile ? `${TASK_CARD_FONT_SIZES.subtask.mobile} pl-3` : `${TASK_CARD_FONT_SIZES.subtask.desktop} pl-4`)}>
                     {TASK_CARD_TEXT.moreSubtasks(task.subtasks.length - 3)}
@@ -605,7 +622,7 @@ export const DraggableTaskCard = React.forwardRef<
               "flex items-center justify-between border-t border-gray-200/50",
               // Check if subtasks are present to reduce spacing
               task.subtasks && task.subtasks.length > 0
-                ? isMobile ? "gap-1.5 mt-1.5 pt-1.5" : "gap-2 mt-2 pt-2"
+                ? isMobile ? "gap-1.5 mt-1 pt-1" : "gap-2 mt-1.5 pt-1.5"
                 : isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5"
             )}>
               {/* Left: Assigned Users */}

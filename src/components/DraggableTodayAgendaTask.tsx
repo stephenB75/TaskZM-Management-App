@@ -399,34 +399,49 @@ export function DraggableTodayAgendaTask({
             {/* Subtasks Display */}
             {task.subtasks && task.subtasks.length > 0 && (
               <div className={cn("pt-1", isMobile ? "space-y-0.5" : "space-y-1")}>
-                {task.subtasks.slice(0, 3).map((subtask) => (
-                  <div
-                    key={subtask.id}
-                    className={cn("flex items-center", isMobile ? "gap-1" : "gap-1.5")}
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                {task.subtasks.slice(0, 3).map((subtask) => {
+                  const handleSubtaskToggle = async (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    const updatedSubtasks = task.subtasks.map((st) =>
+                      st.id === subtask.id
+                        ? { ...st, completed: !st.completed }
+                        : st
+                    );
+                    await updateTask(task.id, { subtasks: updatedSubtasks });
+                  };
+
+                  return (
                     <div
+                      key={subtask.id}
                       className={cn(
-                        "rounded-sm border flex-shrink-0",
-                        isMobile ? "w-2 h-2" : "w-2.5 h-2.5",
-                        subtask.completed
-                          ? "bg-primary border-primary"
-                          : "border-gray-300",
+                        "flex items-center cursor-pointer hover:opacity-80 transition-opacity",
+                        isMobile ? "gap-1" : "gap-1.5"
                       )}
-                    />
-                    <span
-                      className={cn(
-                        "leading-tight",
-                        isMobile ? "text-[9px]" : "text-[10px]",
-                        subtask.completed
-                          ? "text-gray-400 line-through"
-                          : "text-gray-600",
-                      )}
+                      onClick={handleSubtaskToggle}
                     >
-                      {subtask.title}
-                    </span>
-                  </div>
-                ))}
+                      <div
+                        className={cn(
+                          "rounded-sm border flex-shrink-0 transition-colors",
+                          isMobile ? "w-2 h-2" : "w-2.5 h-2.5",
+                          subtask.completed
+                            ? "bg-primary border-primary"
+                            : "border-gray-300 hover:border-primary/50",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "leading-tight",
+                          isMobile ? "text-[9px]" : "text-[10px]",
+                          subtask.completed
+                            ? "text-gray-400 line-through"
+                            : "text-gray-600",
+                        )}
+                      >
+                        {subtask.title}
+                      </span>
+                    </div>
+                  );
+                })}
                 {task.subtasks.length > 3 && (
                   <div className={cn("text-gray-400", isMobile ? "text-[9px] pl-3" : "text-[10px] pl-4")}>
                     +{task.subtasks.length - 3} more
