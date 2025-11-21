@@ -17,6 +17,22 @@ import { usePomodoro } from "../contexts/PomodoroContext";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { useIsMobile } from "./ui/use-mobile";
 import type { Task } from "../types";
+import {
+  TASK_CARD_PRIORITY_COLORS,
+  TASK_CARD_TAG_COLORS,
+  TASK_CARD_THEME_COLORS,
+  TASK_CARD_FONT_SIZES,
+  TASK_CARD_ICON_SIZES,
+  TASK_CARD_BADGE_SIZES,
+  TASK_CARD_HEIGHT_CONFIG,
+  TASK_CARD_SPACING,
+  TASK_CARD_TEXT,
+  TASK_CARD_SHADOWS,
+  TASK_CARD_BORDERS,
+  TASK_CARD_BACKGROUNDS,
+  TASK_CARD_WIDTHS,
+  TASK_CARD_LINE_CLAMP,
+} from "../lib/task-card-constants";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -86,35 +102,13 @@ export const DraggableTaskCard = React.forwardRef<
     const getPriorityLineColor = (
       priority: Task["priority"],
     ) => {
-      switch (priority) {
-        case "urgent":
-          return "#EF4444"; // Red
-        case "high":
-          return "#F97316"; // Orange
-        case "medium":
-          return "#3B82F6"; // Blue
-        case "low":
-          return "#9CA3AF"; // Grey
-        default:
-          return "#E5E7EB";
-      }
+      return TASK_CARD_PRIORITY_COLORS[priority]?.line || TASK_CARD_PRIORITY_COLORS.default.line;
     };
 
     const getPriorityBadgeColor = (
       priority: Task["priority"],
     ) => {
-      switch (priority) {
-        case "urgent":
-          return "bg-red-50 text-red-700 border-red-200";
-        case "high":
-          return "bg-orange-50 text-orange-700 border-orange-200";
-        case "medium":
-          return "bg-blue-50 text-blue-700 border-blue-200";
-        case "low":
-          return "bg-gray-50 text-gray-700 border-gray-200";
-        default:
-          return "bg-gray-50 text-gray-600 border-gray-200";
-      }
+      return TASK_CARD_PRIORITY_COLORS[priority]?.badge || TASK_CARD_PRIORITY_COLORS.default.badge;
     };
 
     // Format duration display
@@ -144,14 +138,14 @@ export const DraggableTaskCard = React.forwardRef<
     // For tasks 45-59 mins: standard sizing
     // For tasks >= 60 mins: enhanced sizing to accommodate descriptions and all elements
     const getCardHeight = () => {
-      const duration = task.estimatedTime || 30; // Default 30 min
-      const maxHeight = 600; // Increased max height for longer tasks
+      const duration = task.estimatedTime || TASK_CARD_HEIGHT_CONFIG.defaultDuration;
+      const maxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight;
       
-      if (duration < 45) {
+      if (duration < TASK_CARD_HEIGHT_CONFIG.thresholds.short) {
         // Compact sizing for shorter tasks: base height + minimal scaling
         // Ensures all elements (title, badges, pomodoro, assigned users, etc.) fit comfortably
         // Auto-adjusts base height when pomodoro timer is running or users are assigned
-        let baseHeight = 80; // Base height for essential elements
+        let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base;
         const hasPomodoro = hasFeature("pomodoroTimer") && timerState.isRunning;
         const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
         const hasTrackedTime = task.actualTime && task.actualTime > 0;
@@ -168,15 +162,17 @@ export const DraggableTaskCard = React.forwardRef<
           let calculatedBaseHeight = 0;
           if (hasPomodoro || hasTrackedTime) {
             // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
-            calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer ? 126 : 114; // Extra space for all components (+20% border height)
+            calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer 
+              ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth 
+              : TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking;
           } else if (hasAssignedUsers && hasPomodoroTimer) {
             // Both assigned users and pomodoro timer in bottom row
-            calculatedBaseHeight = 120; // Space for both bottom row components (+20% border height)
+            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth;
           } else if (hasAssignedUsers || hasPomodoroTimer) {
             // One of assigned users or pomodoro timer in bottom row
-            calculatedBaseHeight = 114; // Space for one bottom row component (+20% border height)
+            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned;
           } else {
-            calculatedBaseHeight = 108; // Base space for essential elements only (+20% border height)
+            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.mobileBase;
           }
           
           // Add 10% increase when ALL components are active (tracking + assigned users + subtasks)
@@ -193,15 +189,17 @@ export const DraggableTaskCard = React.forwardRef<
           let calculatedBaseHeight = 0;
           if (hasPomodoro || hasTrackedTime) {
             // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
-            calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer ? 126 : 114; // Extra space for all components (+20% border height)
+            calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer 
+              ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth 
+              : TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking;
           } else if (hasAssignedUsers && hasPomodoroTimer) {
             // Both assigned users and pomodoro timer in bottom row
-            calculatedBaseHeight = 120; // Space for both bottom row components (+20% border height)
+            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth;
           } else if (hasAssignedUsers || hasPomodoroTimer) {
             // One of assigned users or pomodoro timer in bottom row
-            calculatedBaseHeight = 114; // Space for one bottom row component (+20% border height)
+            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned;
           } else {
-            calculatedBaseHeight = 108; // Base space for essential elements only (+20% border height)
+            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.mobileBase;
           }
           
           // Add 10% increase when ALL components are active (tracking + assigned users + subtasks)
@@ -212,22 +210,22 @@ export const DraggableTaskCard = React.forwardRef<
           }
         }
         
-        const scalingFactor = 0.9; // Reduced scaling for shorter tasks
+        const scalingFactor = TASK_CARD_HEIGHT_CONFIG.scalingFactors.short;
         const calculatedHeight = baseHeight + (duration - 15) * scalingFactor;
         return Math.min(Math.max(calculatedHeight, baseHeight), maxHeight);
-      } else if (duration >= 60) {
+      } else if (duration >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
         // Enhanced sizing for tasks 1 hour or more: more space for descriptions
-        const baseHeight = 160; // Increased base height for descriptions and all elements
-        const pixelsPerMinute = 2.0; // More generous scaling for longer tasks
-        const calculatedHeight = baseHeight + (duration - 60) * pixelsPerMinute;
+        const baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base;
+        const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.long;
+        const calculatedHeight = baseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
         return Math.min(
           Math.max(calculatedHeight, baseHeight),
           maxHeight,
         );
       } else {
         // Standard sizing for medium tasks (45-59 mins)
-        const minHeight = 100; // Minimum height for readability
-        const pixelsPerMinute = 1.2; // Scaling factor
+        const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
+        const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.medium;
         const calculatedHeight = minHeight + duration * pixelsPerMinute;
         return Math.min(
           Math.max(calculatedHeight, minHeight),
@@ -249,7 +247,7 @@ export const DraggableTaskCard = React.forwardRef<
         {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
         className={cn(
           "flex gap-2 mb-2",
-          isDragging ? "w-[280px] flex-shrink-0" : "w-full", // Constrain width in overlay
+          isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal,
           !isMobile && (isDragging || isSortableDragging)
             ? "opacity-50 cursor-grabbing"
             : "",
@@ -276,18 +274,19 @@ export const DraggableTaskCard = React.forwardRef<
             className={cn(
               "rounded-lg relative overflow-hidden",
               // Responsive padding: smaller on mobile, comfortable on desktop
-              "px-2 py-1.5 space-y-1 md:px-3 md:py-2.5 md:space-y-1.5",
+              TASK_CARD_SPACING.padding.mobile,
+              TASK_CARD_SPACING.padding.desktop,
+              TASK_CARD_SPACING.spaceY.mobile,
+              TASK_CARD_SPACING.spaceY.desktop,
               // Background: solid on mobile, semi-transparent on desktop
-              isMobile ? "bg-white" : "bg-white/60 backdrop-blur-sm",
+              isMobile ? TASK_CARD_BACKGROUNDS.mobile : TASK_CARD_BACKGROUNDS.desktop,
               // Responsive borders: thinner on mobile, standard on desktop
-              "border-l border-b border-r border-gray-300/80 md:border-gray-300/90",
+              `border-l border-b border-r ${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
               // Shadows: better blending on mobile
-              isMobile 
-                ? "shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)]" 
-                : "shadow-lg",
-              "hover:bg-white/80 hover:shadow-xl hover:border-gray-400/90 transition-all duration-200",
+              isMobile ? TASK_CARD_SHADOWS.mobile : TASK_CARD_SHADOWS.desktop,
+              `${TASK_CARD_BACKGROUNDS.hover} ${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
-              isDragging ? "w-[280px] flex-shrink-0" : "flex-1",
+              isDragging ? TASK_CARD_WIDTHS.dragging : "flex-1",
               // Bottom padding: auto-adjusts based on content (pomodoro timer, assigned users)
               // For tasks < 45 mins on mobile: inline bottom row needs less padding
               // Base bottom padding for all tasks
@@ -338,8 +337,8 @@ export const DraggableTaskCard = React.forwardRef<
                 task.scheduledDate || task.dueDate,
               ) && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Clock className={cn("text-gray-400", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
-                  <span className={cn("text-gray-600 font-bold", isMobile ? "text-[9px]" : "text-[10px]")}>
+                  <Clock className={cn("text-gray-400", isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop)} />
+                  <span className={cn("text-gray-600 font-bold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                     {formatTimeAMPM(
                       task.scheduledDate || task.dueDate,
                     )}
@@ -352,7 +351,7 @@ export const DraggableTaskCard = React.forwardRef<
                 className={cn(
                   "rounded-md border capitalize flex-shrink-0",
                   getPriorityBadgeColor(task.priority),
-                  isMobile ? "text-[9px] px-1 py-0 h-[16px]" : "text-[10px] px-1.5 py-0 h-[18px]",
+                  isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                 )}
               >
                 {task.priority}
@@ -362,16 +361,20 @@ export const DraggableTaskCard = React.forwardRef<
                 <Badge
                   variant="secondary"
                   className={cn(
-                    "bg-[#EBF5FB] text-[#1565C0] border-0 flex-shrink-0",
-                    isMobile ? "text-[9px] px-1 py-0 h-[16px]" : "text-[10px] px-1.5 py-0 h-[18px]",
+                    "border-0 flex-shrink-0",
+                    isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
                   )}
+                  style={{
+                    backgroundColor: TASK_CARD_TAG_COLORS.background,
+                    color: TASK_CARD_TAG_COLORS.text,
+                  }}
                 >
                   {task.tags[0]}
                 </Badge>
               )}
 
               {task.estimatedTime && (
-                <span className={cn("text-gray-500 font-medium flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
+                <span className={cn("text-gray-500 font-medium flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
                   {formatDuration(task.estimatedTime)}
                 </span>
               )}
@@ -379,12 +382,17 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Tracking Badge - Shown at top with other badges (mobile and desktop for tasks < 45 mins) */}
               {task.estimatedTime && task.estimatedTime < 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
                 <div className="flex items-center animate-pulse flex-shrink-0">
-                  <div className={cn(
-                    "flex items-center rounded-full bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
-                    isMobile ? "px-1 py-0.5 gap-0.5 text-[7px]" : "px-1.5 py-0.5 gap-1 text-[8px]"
-                  )}>
-                    <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
-                    <span className="font-semibold">Tracking...</span>
+                  <div 
+                    className={cn(
+                      "flex items-center rounded-full text-white",
+                      isMobile ? TASK_CARD_BADGE_SIZES.tracking.mobile : TASK_CARD_BADGE_SIZES.tracking.desktop
+                    )}
+                    style={{
+                      background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
+                    }}
+                  >
+                    <Timer className={cn("animate-spin", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                    <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                   </div>
                 </div>
               )}
@@ -392,8 +400,14 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
               {task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
-                  <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[8px]" : "text-[9px]")}>
+                  <Timer 
+                    className={cn(isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} 
+                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                  />
+                  <span 
+                    className={cn("font-medium", isMobile ? TASK_CARD_FONT_SIZES.trackedTime.mobile : TASK_CARD_FONT_SIZES.trackedTime.desktop)}
+                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                  >
                     {formatTimer(task.actualTime)}
                   </span>
                 </div>
@@ -403,12 +417,12 @@ export const DraggableTaskCard = React.forwardRef<
             <button
               onClick={handleToggleComplete}
               onPointerDown={(e) => e.stopPropagation()}
-              className={cn("flex-shrink-0 hover:opacity-80 transition-opacity", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")}
+              className={cn("flex-shrink-0 hover:opacity-80 transition-opacity", isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop)}
             >
               <Circle
                 className={cn(
                   "transition-colors",
-                  isMobile ? "w-3.5 h-3.5" : "w-4 h-4",
+                  isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop,
                   task.status === "done"
                     ? "text-primary fill-primary"
                     : "text-gray-300 hover:text-gray-400",
@@ -418,15 +432,16 @@ export const DraggableTaskCard = React.forwardRef<
           </div>
 
           {/* Row 2: H3 Title (Bold) */}
-          <div className={cn("flex items-start mt-1", isMobile ? "gap-1 px-1 mb-1" : "gap-1.5 px-1 mb-1")}>
+          <div className={cn("flex items-start mt-1", isMobile ? TASK_CARD_SPACING.title.mobile : TASK_CARD_SPACING.title.desktop)}>
             {task.recurrence && task.recurrence.type !== "none" && (
-              <Repeat className={cn("text-primary flex-shrink-0 mt-0.5", isMobile ? "w-3 h-3" : "w-3.5 h-3.5")} />
+              <Repeat className={cn("text-primary flex-shrink-0 mt-0.5", isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop)} />
             )}
             <h3
               className={cn(
-                "text-gray-900 leading-tight line-clamp-2 flex-1",
+                "text-gray-900 leading-tight flex-1",
+                TASK_CARD_LINE_CLAMP.title,
                 task.status === "done" && "line-through text-gray-400",
-                isMobile ? "text-sm" : "text-base",
+                isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop,
               )}
             >
               {task.title}
@@ -437,9 +452,9 @@ export const DraggableTaskCard = React.forwardRef<
           {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
             <div 
               className={cn(
-                "text-gray-500 leading-snug break-words text-[10px] px-1.5 py-1 mt-0.5 mb-3",
+                `text-gray-500 leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
                 // For exactly 1 hour (60 minutes), show 2 lines; for longer tasks, show 4 lines
-                task.estimatedTime === 60 ? "line-clamp-2" : "line-clamp-4",
+                task.estimatedTime === 60 ? TASK_CARD_LINE_CLAMP.description.oneHour : TASK_CARD_LINE_CLAMP.description.longer,
                 // Rich text formatting styles - only apply if HTML is present
                 // Note: Rich text editor font size changes will override this base size via inline styles
                 hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -478,24 +493,24 @@ export const DraggableTaskCard = React.forwardRef<
                         : "border-gray-300",
                     )}
                   />
-                  <span
-                    className={cn(
-                      "leading-tight",
-                      isMobile ? "text-[9px]" : "text-[10px]",
-                      subtask.completed
-                        ? "text-gray-400 line-through"
-                        : "text-gray-600",
-                    )}
-                  >
-                    {subtask.title}
-                  </span>
-                </div>
-              ))}
-              {task.subtasks.length > 3 && (
-                <div className={cn("text-gray-400", isMobile ? "text-[9px] pl-3" : "text-[10px] pl-4")}>
-                  +{task.subtasks.length - 3} more
-                </div>
-              )}
+                    <span
+                      className={cn(
+                        "leading-tight",
+                        isMobile ? TASK_CARD_FONT_SIZES.subtask.mobile : TASK_CARD_FONT_SIZES.subtask.desktop,
+                        subtask.completed
+                          ? "text-gray-400 line-through"
+                          : "text-gray-600",
+                      )}
+                    >
+                      {subtask.title}
+                    </span>
+                  </div>
+                ))}
+                {task.subtasks.length > 3 && (
+                  <div className={cn("text-gray-400", isMobile ? `${TASK_CARD_FONT_SIZES.subtask.mobile} pl-3` : `${TASK_CARD_FONT_SIZES.subtask.desktop} pl-4`)}>
+                    {TASK_CARD_TEXT.moreSubtasks(task.subtasks.length - 3)}
+                  </div>
+                )}
             </div>
           )}
 
@@ -611,8 +626,8 @@ export const DraggableTaskCard = React.forwardRef<
                     );
                   })}
                   {task.assignedTo.length > 3 && (
-                    <span className={cn("text-gray-500", isMobile ? "text-[9px]" : "text-[10px]")}>
-                      +{task.assignedTo.length - 3}
+                    <span className={cn("text-gray-500", isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop)}>
+                      {TASK_CARD_TEXT.moreAssigned(task.assignedTo.length - 3)}
                     </span>
                   )}
                 </div>
@@ -624,13 +639,17 @@ export const DraggableTaskCard = React.forwardRef<
                   "flex items-center pt-0.5 animate-pulse",
                   isMobile ? "gap-0.5" : "gap-1"
                 )}>
-                  <div className={cn(
-                    "flex items-center rounded-full px-1.5 py-0.5",
-                    "bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
-                    isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
-                  )}>
-                    <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
-                    <span className="font-semibold">Tracking...</span>
+                  <div 
+                    className={cn(
+                      "flex items-center rounded-full px-1.5 py-0.5 text-white",
+                      isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
+                    )}
+                    style={{
+                      background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
+                    }}
+                  >
+                    <Timer className={cn("animate-spin", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                    <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                   </div>
                 </div>
               )}
@@ -638,9 +657,15 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top */}
               {task.estimatedTime && task.estimatedTime >= 45 && task.actualTime && task.actualTime > 0 && (
                 <div className={cn("flex items-center pt-0.5", isMobile ? "gap-0.5" : "gap-1")}>
-                  <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
-                  <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[10px]" : "text-[11px]")}>
-                    {formatTimer(task.actualTime)} tracked
+                  <Timer 
+                    className={cn(isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop)} 
+                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                  />
+                  <span 
+                    className={cn("font-medium", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}
+                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                  >
+                    {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
                   </span>
                 </div>
               )}

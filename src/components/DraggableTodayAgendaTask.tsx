@@ -18,6 +18,17 @@ import { PomodoroTimer } from "./PomodoroTimer";
 import { useIsMobile } from "./ui/use-mobile";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import type { Task } from "../types";
+import {
+  TASK_CARD_PRIORITY_COLORS,
+  TASK_CARD_TAG_COLORS,
+  TASK_CARD_THEME_COLORS,
+  TASK_CARD_FONT_SIZES,
+  TASK_CARD_ICON_SIZES,
+  TASK_CARD_BADGE_SIZES,
+  TASK_CARD_SPACING,
+  TASK_CARD_TEXT,
+  TASK_CARD_LINE_CLAMP,
+} from "../lib/task-card-constants";
 
 interface DraggableTodayAgendaTaskProps {
   task: Task;
@@ -66,33 +77,11 @@ export function DraggableTodayAgendaTask({
   };
 
   const getPriorityLineColor = (priority: Task["priority"]) => {
-    switch (priority) {
-      case "urgent":
-        return "#EF4444"; // Red
-      case "high":
-        return "#F97316"; // Orange
-      case "medium":
-        return "#3B82F6"; // Blue
-      case "low":
-        return "#9CA3AF"; // Grey
-      default:
-        return "#E5E7EB";
-    }
+    return TASK_CARD_PRIORITY_COLORS[priority]?.line || TASK_CARD_PRIORITY_COLORS.default.line;
   };
 
   const getPriorityBadgeColor = (priority: Task["priority"]) => {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-50 text-red-700 border-red-200";
-      case "high":
-        return "bg-orange-50 text-orange-700 border-orange-200";
-      case "medium":
-        return "bg-blue-50 text-blue-700 border-blue-200";
-      case "low":
-        return "bg-gray-50 text-gray-700 border-gray-200";
-      default:
-        return "bg-gray-50 text-gray-600 border-gray-200";
-    }
+    return TASK_CARD_PRIORITY_COLORS[priority]?.badge || TASK_CARD_PRIORITY_COLORS.default.badge;
   };
 
   // Format duration display
@@ -287,22 +276,26 @@ export function DraggableTodayAgendaTask({
                   className={cn(
                     "rounded-md border capitalize flex-shrink-0",
                     getPriorityBadgeColor(task.priority),
-                    isMobile ? "text-[9px] px-1 py-0 h-[16px]" : "text-[10px] px-1.5 py-0 h-[18px]",
+                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                   )}
                 >
                   {task.priority}
                 </Badge>
 
                 {task.tags && task.tags.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "bg-[#EBF5FB] text-[#1565C0] border-0 flex-shrink-0",
-                      isMobile ? "text-[9px] px-1 py-0 h-[16px]" : "text-[10px] px-1.5 py-0 h-[18px]",
-                    )}
-                  >
-                    {task.tags[0]}
-                  </Badge>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "border-0 flex-shrink-0",
+                    isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
+                  )}
+                  style={{
+                    backgroundColor: TASK_CARD_TAG_COLORS.background,
+                    color: TASK_CARD_TAG_COLORS.text,
+                  }}
+                >
+                  {task.tags[0]}
+                </Badge>
                 )}
 
                 {task.estimatedTime && (
@@ -314,12 +307,17 @@ export function DraggableTodayAgendaTask({
                 {/* Tracking Badge - Shown at top with other badges (mobile and desktop for tasks < 45 mins) */}
                 {task.estimatedTime && task.estimatedTime < 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
                   <div className="flex items-center animate-pulse flex-shrink-0">
-                    <div className={cn(
-                      "flex items-center rounded-full bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
-                      isMobile ? "px-1 py-0.5 gap-0.5 text-[7px]" : "px-1.5 py-0.5 gap-1 text-[8px]"
-                    )}>
-                      <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
-                      <span className="font-semibold">Tracking...</span>
+                    <div 
+                      className={cn(
+                        "flex items-center rounded-full text-white",
+                        isMobile ? TASK_CARD_BADGE_SIZES.tracking.mobile : TASK_CARD_BADGE_SIZES.tracking.desktop
+                      )}
+                      style={{
+                        background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
+                      }}
+                    >
+                      <Timer className={cn("animate-spin", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                      <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                     </div>
                   </div>
                 )}
@@ -327,8 +325,14 @@ export function DraggableTodayAgendaTask({
                 {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
                 {task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <Timer className={cn("text-[#7B68EE]", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
-                    <span className={cn("text-[#7B68EE] font-medium", isMobile ? "text-[8px]" : "text-[9px]")}>
+                    <Timer 
+                      className={cn(isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} 
+                      style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                    />
+                    <span 
+                      className={cn("font-medium", isMobile ? TASK_CARD_FONT_SIZES.trackedTime.mobile : TASK_CARD_FONT_SIZES.trackedTime.desktop)}
+                      style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                    >
                       {formatTimer(task.actualTime)}
                     </span>
                   </div>
@@ -372,9 +376,9 @@ export function DraggableTodayAgendaTask({
             {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
               <div 
                 className={cn(
-                  "text-gray-500 leading-snug break-words text-[10px] px-1.5 py-1 mt-0.5 mb-3",
+                  `text-gray-500 leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
                   // For exactly 1 hour (60 minutes), show 2 lines; for longer tasks, show 4 lines
-                  task.estimatedTime === 60 ? "line-clamp-2" : "line-clamp-4",
+                  task.estimatedTime === 60 ? TASK_CARD_LINE_CLAMP.description.oneHour : TASK_CARD_LINE_CLAMP.description.longer,
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -492,13 +496,17 @@ export function DraggableTodayAgendaTask({
                 "flex items-center pt-0.5 animate-pulse",
                 isMobile ? "gap-0.5" : "gap-1"
               )}>
-                <div className={cn(
-                  "flex items-center rounded-full px-1.5 py-0.5",
-                  "bg-gradient-to-r from-[#7B68EE] to-[#9B87E8] text-white",
-                  isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
-                )}>
-                  <Timer className={cn("animate-spin", isMobile ? "w-2 h-2" : "w-2.5 h-2.5")} />
-                  <span className="font-semibold">Tracking...</span>
+                <div 
+                  className={cn(
+                    "flex items-center rounded-full px-1.5 py-0.5 text-white",
+                    isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
+                  )}
+                  style={{
+                    background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
+                  }}
+                >
+                  <Timer className={cn("animate-spin", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                  <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                 </div>
               </div>
             )}
@@ -506,9 +514,15 @@ export function DraggableTodayAgendaTask({
             {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top */}
             {task.estimatedTime && task.estimatedTime >= 45 && task.actualTime && task.actualTime > 0 && (
               <div className={cn("flex items-center pt-0.5", "gap-1")}>
-                <Timer className={cn("text-[#7B68EE]", "w-3 h-3")} />
-                <span className={cn("text-[#7B68EE] font-medium", "text-[11px]")}>
-                  {formatTimer(task.actualTime)} tracked
+                <Timer 
+                  className={cn("w-3 h-3")} 
+                  style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                />
+                <span 
+                  className={cn("font-medium", TASK_CARD_FONT_SIZES.duration.desktop)}
+                  style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                >
+                  {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
                 </span>
               </div>
             )}
