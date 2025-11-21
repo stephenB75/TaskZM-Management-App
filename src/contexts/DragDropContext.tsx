@@ -96,15 +96,20 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     // Check if dropped on Today Agenda
     if (over.id === 'today-agenda') {
       const today = new Date();
+      const now = new Date();
+      const isToday = today.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() &&
+                      today.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
       
-      // Calculate time from drop position
+      // Get category hours if applicable
+      const categoryHours = getCategoryHoursForTask(task, today, hoursSettings);
+      const taskDuration = task.estimatedTime || 30; // Default to 30 minutes if not specified
+      
+      // Calculate time from drop position (if available)
       // Get the droppable element (the timeline container)
       const droppableElement = document.querySelector('[data-droppable-id="today-agenda"]');
-      let hours = TASK_CALCULATION_CONSTANTS.dragDrop.defaultHour;
-      let minutes = 0;
+      let requestedTime: Date | null = null;
       
       // Try to get drop coordinates from event
-      // Use the over rect to get the drop position relative to the droppable
       if (event.over && 'rect' in event.over && droppableElement) {
         const overRect = (event.over as any).rect;
         const droppableRect = droppableElement.getBoundingClientRect();
@@ -129,8 +134,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           const minutesFrom8AM = contentY;
           const totalMinutes = TASK_CALCULATION_CONSTANTS.dragDrop.hourMin * 60 + minutesFrom8AM;
           
-          hours = Math.floor(totalMinutes / 60);
-          minutes = totalMinutes % 60;
+          let hours = Math.floor(totalMinutes / 60);
+          let minutes = totalMinutes % 60;
           
           // Round to nearest 15-minute slot
           minutes = Math.round(minutes / 15) * 15;
@@ -144,111 +149,98 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           if (hours === TASK_CALCULATION_CONSTANTS.dragDrop.hourMax && minutes > 0) {
             minutes = 0;
           }
-        }
-      } else {
-        // Fallback: preserve time from old date if it exists, otherwise use 9:00 AM
-        if (task.scheduledDate) {
-          const oldDate = new Date(task.scheduledDate);
-          if (!isNaN(oldDate.getTime())) {
-            hours = oldDate.getHours();
-            minutes = oldDate.getMinutes();
-            // Round to nearest 15-minute slot
-            minutes = Math.round(minutes / 15) * 15;
-            if (minutes >= 60) {
-              hours += 1;
-              minutes = 0;
-            }
-          }
-        }
-      }
-      
-      today.setHours(hours, minutes, 0, 0);
-      
-      // Get category hours if applicable
-      const categoryHours = getCategoryHoursForTask(task, today, hoursSettings);
-      
-      // Check for time conflicts and find next available slot after current time
-      const taskDuration = task.estimatedTime || 30; // Default to 30 minutes if not specified
-      const conflictingTask = checkTimeConflict(taskId, today, taskDuration, tasks);
-
-      // Find next available slot (ensuring after current time for today)
-      const now = new Date();
-      const isToday = today.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() &&
-                      today.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
-      
-      let finalTime = today;
-      
-      if (conflictingTask || (isToday && today.getTime() < now.getTime())) {
-        // Find next available slot after current time (if today) or requested time
-        const alternativeTime = findNextAvailableSlot(
-          taskId, 
-          today, 
-          taskDuration, 
-          tasks,
-          {
-            ensureAfterCurrentTime: isToday,
-            categoryHours: categoryHours,
-          }
-        );
-        
-        // Check if alternative time is valid and different
-        if (alternativeTime.getTime() !== today.getTime() && alternativeTime.getHours() < 24) {
-          // Check if alternative time is before current time (shouldn't happen, but safety check)
-          if (isToday && alternativeTime.getTime() < now.getTime()) {
-            toast.error('No available time slots', {
-              description: 'No available slots after current time within category hours and 5-hour limit.',
-            });
-            return;
-          }
           
-          // Store the pending update and show dialog
-          setPendingTaskUpdate({
-            taskId,
-            requestedTime: new Date(today), // Create a new Date object to avoid reference issues
-            alternativeTime,
-          });
-          setConflictDialogOpen(true);
-          return;
-        } else {
-          // No valid alternative found, show error
-          const reason = isToday && today.getTime() < now.getTime() 
-            ? 'Selected time is in the past. Please choose a time after the current time.'
-            : 'Time slot is already taken or outside category hours. Please choose a different time slot.';
-          toast.error('Time slot unavailable', {
-            description: reason,
-          });
-          return;
-        }
-      } else if (isToday && today.getTime() < now.getTime()) {
-        // Time is in the past, find next available slot
-        const alternativeTime = findNextAvailableSlot(
-          taskId,
-          now,
-          taskDuration,
-          tasks,
-          {
-            ensureAfterCurrentTime: true,
-            categoryHours: categoryHours,
+          // Create requested time from drop position
+          const dropTime = new Date(today);
+          dropTime.setHours(hours, minutes, 0, 0);
+          
+          // Only use drop time if it's after current time (for today) or valid for future dates
+          if (isToday) {
+            if (dropTime.getTime() >= now.getTime()) {
+              requestedTime = dropTime;
+            }
+          } else {
+            requestedTime = dropTime;
           }
-        );
-        
-        if (alternativeTime.getHours() < 24) {
-          setPendingTaskUpdate({
-            taskId,
-            requestedTime: new Date(today),
-            alternativeTime,
-          });
-          setConflictDialogOpen(true);
-          return;
-        } else {
-          toast.error('No available time slots', {
-            description: 'No available slots after current time within category hours and 5-hour limit.',
-          });
-          return;
         }
       }
       
-      finalTime = today;
+      // If no valid drop position or drop time is in the past, start from current time (for today) or default
+      if (!requestedTime) {
+        if (isToday) {
+          // Start from current time, rounded up to next 15-minute slot
+          requestedTime = new Date(now);
+          const currentMinutes = now.getMinutes();
+          const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+          if (roundedMinutes >= 60) {
+            requestedTime.setHours(requestedTime.getHours() + 1);
+            requestedTime.setMinutes(0);
+          } else {
+            requestedTime.setMinutes(roundedMinutes);
+          }
+          requestedTime.setSeconds(0);
+          requestedTime.setMilliseconds(0);
+        } else {
+          // For future dates, use default hour or preserve old time
+          const defaultTime = new Date(today);
+          if (task.scheduledDate) {
+            const oldDate = new Date(task.scheduledDate);
+            if (!isNaN(oldDate.getTime())) {
+              defaultTime.setHours(oldDate.getHours(), oldDate.getMinutes(), 0, 0);
+              // Round to nearest 15-minute slot
+              const minutes = defaultTime.getMinutes();
+              const roundedMinutes = Math.round(minutes / 15) * 15;
+              if (roundedMinutes >= 60) {
+                defaultTime.setHours(defaultTime.getHours() + 1);
+                defaultTime.setMinutes(0);
+              } else {
+                defaultTime.setMinutes(roundedMinutes);
+              }
+            } else {
+              defaultTime.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.defaultHour, 0, 0, 0);
+            }
+          } else {
+            defaultTime.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.defaultHour, 0, 0, 0);
+          }
+          requestedTime = defaultTime;
+        }
+      }
+      
+      // Always use findNextAvailableSlot to find the best available slot
+      // This ensures we find slots between existing tasks and respect current time
+      const finalTime = findNextAvailableSlot(
+        taskId,
+        requestedTime,
+        taskDuration,
+        tasks,
+        {
+          ensureAfterCurrentTime: isToday,
+          categoryHours: categoryHours,
+        }
+      );
+      
+      // Check if a valid slot was found
+      if (finalTime.getHours() >= 24) {
+        toast.error('No available time slots', {
+          description: 'No available slots after current time within category hours and 5-hour limit.',
+        });
+        return;
+      }
+      
+      // Check if the found time is different from requested (and we should show dialog)
+      const timeDifference = Math.abs(finalTime.getTime() - requestedTime.getTime());
+      const shouldShowDialog = timeDifference > 15 * 60 * 1000; // More than 15 minutes difference
+      
+      if (shouldShowDialog && isToday) {
+        // Show dialog if time was adjusted significantly
+        setPendingTaskUpdate({
+          taskId,
+          requestedTime: requestedTime,
+          alternativeTime: finalTime,
+        });
+        setConflictDialogOpen(true);
+        return;
+      }
 
       // Check 5-hour daily limit before scheduling
       const limitCheck = checkDailyLimit(finalTime, task, tasks);
@@ -278,7 +270,10 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         }
         
         // Use alternative time that fits within limit
-        finalTime = alternativeTime;
+        updateTask(taskId, {
+          scheduledDate: alternativeTime.toISOString(),
+        });
+        return;
       }
       
       if (warningLevel === 'warning') {
