@@ -2056,45 +2056,6 @@ export function TaskDialog({
                       </Button>
                     </div>
 
-                    {/* Quick-add suggestions */}
-                    {availableTags && availableTags.filter((tag) => tag.toLowerCase() !== 'urgent' && !tags.includes(tag)).length > 0 && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Quick add:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {availableTags
-                            .filter((tag) => tag.toLowerCase() !== 'urgent' && !tags.includes(tag))
-                            .map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="outline"
-                                className="cursor-pointer hover:bg-primary/10 transition-colors text-xs border-primary/20"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (!tags.includes(tag)) {
-                                    setTags([...tags, tag]);
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (!tags.includes(tag)) {
-                                      setTags([...tags, tag]);
-                                    }
-                                  }
-                                }}
-                                tabIndex={0}
-                                role="button"
-                                aria-label={`Add tag: ${tag}`}
-                              >
-                                + {tag}
-                              </Badge>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-
                     {tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {tags.map((tag) => (
