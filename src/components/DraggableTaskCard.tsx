@@ -192,6 +192,9 @@ export const DraggableTaskCard = React.forwardRef<
       const hasDescription = task.description && task.estimatedTime && task.estimatedTime >= 60;
       const hasSubtasks = task.subtasks && task.subtasks.length > 0;
       
+      // Check if task has any components (used across all duration branches)
+      const hasAnyComponents = hasAssignedUsers || inlinePomodoroPresent || hasSubtasks || hasPomodoro || hasTrackedTimeFull;
+      
       if (duration < TASK_CARD_HEIGHT_CONFIG.thresholds.short) {
         // Compact sizing for shorter tasks: base height + minimal scaling
         // Auto-adjusts for badge wrapping, assigned users, tracking, and subtasks
@@ -260,7 +263,6 @@ export const DraggableTaskCard = React.forwardRef<
         // Calculate duration-based height
         // Start scaling from minimum duration (15 minutes) to ensure proper representation
         // For tasks without components, ensure minimum base height accounts for content
-        const hasAnyComponents = hasAssignedUsers || inlinePomodoroPresent || hasSubtasks || hasPomodoro || hasTrackedTimeFull;
         const minBaseHeightForContent = 64; // Minimum height for title, badges, and time display
         
         // If no components and baseHeight is too small, use minimum content height
