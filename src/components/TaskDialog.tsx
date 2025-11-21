@@ -911,23 +911,25 @@ export function TaskDialog({
       assignedTo,
     };
 
+    // Check if user is actually changing the scheduled time
+    // If editing an existing task, compare with original scheduled time
+    // Declare outside the if block to ensure it's accessible
+    let timeHasChanged = true; // Default to true for new tasks
+    if (task && task.scheduledDate && finalScheduledDate) {
+      const originalScheduledTime = new Date(task.scheduledDate);
+      const scheduledDateTime = new Date(finalScheduledDate);
+      // Compare times (ignore milliseconds)
+      const originalTime = originalScheduledTime.getTime();
+      const newTime = scheduledDateTime.getTime();
+      // Consider times equal if within 1 minute (to account for rounding)
+      timeHasChanged = Math.abs(newTime - originalTime) > 60 * 1000;
+    }
+    
     // Check for time conflicts if scheduled date is set
     if (finalScheduledDate) {
       const scheduledDateTime = new Date(finalScheduledDate);
       const taskDuration = totalMinutes > 0 ? totalMinutes : 30; // Default to 30 minutes
       const taskId = task?.id || null;
-      
-      // Check if user is actually changing the scheduled time
-      // If editing an existing task, compare with original scheduled time
-      let timeHasChanged = true; // Default to true for new tasks
-      if (task && task.scheduledDate) {
-        const originalScheduledTime = new Date(task.scheduledDate);
-        // Compare times (ignore milliseconds)
-        const originalTime = originalScheduledTime.getTime();
-        const newTime = scheduledDateTime.getTime();
-        // Consider times equal if within 1 minute (to account for rounding)
-        timeHasChanged = Math.abs(newTime - originalTime) > 60 * 1000;
-      }
       
       // Create temporary task for category hours check
       const tempTask: Task = {
