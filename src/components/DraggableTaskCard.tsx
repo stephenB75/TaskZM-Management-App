@@ -256,7 +256,21 @@ export const DraggableTaskCard = React.forwardRef<
         // The scaling factor ensures longer tasks have proportionally taller cards
         // This is critical for visual time representation - borders adjust to match duration
         const scalingFactor = TASK_CARD_HEIGHT_CONFIG.scalingFactors.short;
-        const durationBasedHeight = baseHeight + (duration - 15) * scalingFactor;
+        
+        // Calculate duration-based height
+        // Start scaling from minimum duration (15 minutes) to ensure proper representation
+        // For tasks without components, ensure minimum base height accounts for content
+        const hasAnyComponents = hasAssignedUsers || inlinePomodoroPresent || hasSubtasks || hasPomodoro || hasTrackedTimeFull;
+        const minBaseHeightForContent = 64; // Minimum height for title, badges, and time display
+        
+        // If no components and baseHeight is too small, use minimum content height
+        const effectiveBaseHeight = !hasAnyComponents && baseHeight < minBaseHeightForContent
+          ? minBaseHeightForContent
+          : baseHeight;
+        
+        // Apply duration scaling: scale from 15 minutes (minimum task duration)
+        // This ensures even short tasks get proper height representation
+        const durationBasedHeight = effectiveBaseHeight + (duration - 15) * scalingFactor;
         
         // Account for actual padding being applied via CSS classes
         // Short tasks: px-2 py-1 pb-1 (mobile) or md:px-3 md:py-1.5 md:pb-1.5 (desktop)
@@ -268,12 +282,14 @@ export const DraggableTaskCard = React.forwardRef<
         const totalPadding = topPadding + bottomPadding; // 8px mobile, 12px desktop
         
         // Total height = content (duration-based) + padding
-        // The baseHeight includes content, duration scaling adds duration-based height
+        // The effectiveBaseHeight includes content, duration scaling adds duration-based height
         const totalHeight = durationBasedHeight + totalPadding;
         
         // Ensure minimum height accounts for content + padding
-        // This ensures borders adjust correctly with duration without conflicts
-        const minRequiredHeight = baseHeight + totalPadding;
+        // For tasks without components, ensure minimum height properly represents duration
+        const minRequiredHeight = hasAnyComponents
+          ? effectiveBaseHeight + totalPadding
+          : Math.max(effectiveBaseHeight + totalPadding, minBaseHeightForContent + totalPadding + (duration - 15) * scalingFactor);
         
         return Math.min(Math.max(totalHeight, minRequiredHeight), maxHeight);
       } else if (duration >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
@@ -323,14 +339,23 @@ export const DraggableTaskCard = React.forwardRef<
         // If no additional components (assigned users, subtasks), ensure height accounts for duration
         // Duration-based scaling should still apply
         // This ensures the card height scales with task duration for visual time-blocking
+        const hasAnyComponents = hasAssignedUsers || hasSubtasks;
+        const minBaseHeightForContent = 140; // Minimum height for title, badges, time display, and description area
+        
+        // If no components and baseHeight is too small, use minimum content height
+        const effectiveBaseHeight = !hasAnyComponents && baseHeight < minBaseHeightForContent
+          ? minBaseHeightForContent
+          : baseHeight;
+        
+        // Duration-based scaling: scale from 60 minutes (threshold for long tasks)
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.long;
-        const durationBasedHeight = baseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
+        const durationBasedHeight = effectiveBaseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
         
         // Account for actual padding being applied via CSS classes
         // Long tasks: px-2 py-2 pb-2 (mobile) or md:px-3 md:py-2 md:pb-2 (desktop) - no components
         // Long tasks with components: px-2 py-2 pb-3 (mobile) or md:px-3 md:py-2 md:pb-4 (desktop)
         const topPadding = TASK_CARD_CALCULATIONS.padding.long.top;
-        const bottomPadding = (hasAssignedUsers || hasSubtasks) 
+        const bottomPadding = hasAnyComponents
           ? (isMobile ? TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.desktop)
           : TASK_CARD_CALCULATIONS.padding.long.bottom.noComponents;
         const totalPadding = topPadding + bottomPadding;
@@ -339,7 +364,10 @@ export const DraggableTaskCard = React.forwardRef<
         const totalHeight = durationBasedHeight + totalPadding;
         
         // Ensure minimum height is at least the base + padding
-        const minRequiredHeight = baseHeight + totalPadding;
+        // For tasks without components, ensure minimum height properly represents duration
+        const minRequiredHeight = hasAnyComponents
+          ? effectiveBaseHeight + totalPadding
+          : Math.max(effectiveBaseHeight + totalPadding, minBaseHeightForContent + totalPadding + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute);
         
         return Math.min(
           Math.max(totalHeight, minRequiredHeight),
@@ -367,11 +395,20 @@ export const DraggableTaskCard = React.forwardRef<
           minHeight += subtaskHeight;
         }
         
-        // If no additional components, height should be based on duration
+        // If no additional components, ensure minimum base height accounts for content
+        const hasAnyComponents = hasAssignedUsers || hasSubtasks;
+        const minBaseHeightForContent = 80; // Minimum height for title, badges, and time display
+        
+        // If no components and minHeight is too small, use minimum content height
+        const effectiveBaseHeight = !hasAnyComponents && minHeight < minBaseHeightForContent
+          ? minBaseHeightForContent
+          : minHeight;
+        
         // Duration-based scaling ensures visual time-blocking representation
         // Borders adjust proportionally with duration - no conflicts
+        // Scale from 45 minutes (threshold for medium tasks)
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.medium;
-        const durationBasedHeight = minHeight + duration * pixelsPerMinute;
+        const durationBasedHeight = effectiveBaseHeight + (duration - 45) * pixelsPerMinute;
         
         // Account for actual padding being applied via CSS classes
         // Base padding from TASK_CARD_SPACING: py-1.5 (mobile) = 6px top + 6px bottom = 12px
@@ -380,7 +417,7 @@ export const DraggableTaskCard = React.forwardRef<
         // Medium tasks: px-2 py-1.5 pb-2 (mobile) or md:px-3 md:py-2.5 md:pb-2 (desktop) - no components
         // Medium tasks with components: px-2 py-1.5 pb-3 (mobile) or md:px-3 md:py-2.5 md:pb-4 (desktop)
         const topPadding = isMobile ? TASK_CARD_CALCULATIONS.padding.medium.top.mobile : TASK_CARD_CALCULATIONS.padding.medium.top.desktop;
-        const bottomPadding = (hasAssignedUsers || hasSubtasks) 
+        const bottomPadding = hasAnyComponents
           ? (isMobile ? TASK_CARD_CALCULATIONS.padding.medium.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.medium.bottom.withComponents.desktop)
           : (isMobile ? TASK_CARD_CALCULATIONS.padding.medium.bottom.noComponents.mobile : TASK_CARD_CALCULATIONS.padding.medium.bottom.noComponents.desktop);
         const totalPadding = topPadding + bottomPadding;
@@ -390,7 +427,10 @@ export const DraggableTaskCard = React.forwardRef<
         const totalHeight = durationBasedHeight + totalPadding;
         
         // Ensure minimum height accounts for time display and padding
-        const minRequiredHeight = minHeight + totalPadding;
+        // For tasks without components, ensure minimum height properly represents duration
+        const minRequiredHeight = hasAnyComponents
+          ? effectiveBaseHeight + totalPadding
+          : Math.max(effectiveBaseHeight + totalPadding, minBaseHeightForContent + totalPadding + (duration - 45) * pixelsPerMinute);
         
         return Math.min(
           Math.max(totalHeight, minRequiredHeight),
