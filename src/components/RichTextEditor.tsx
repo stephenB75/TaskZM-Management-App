@@ -11,8 +11,6 @@ import {
   Eraser,
   CaseLower,
   Pilcrow,
-  Minus,
-  Plus,
   Code,
   Indent,
   Outdent,
@@ -41,19 +39,30 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
-  const [fontSizeLevel, setFontSizeLevel] = useState(3);
+  
+  // Standard font size: 10pt (10px)
+  const STANDARD_FONT_SIZE = '10px';
 
-  const FONT_SIZE_MAP: Record<number, string> = {
-    1: "12px",
-    2: "13px",
-    3: "14px",
-    4: "16px",
-    5: "18px",
-    6: "20px",
-    7: "24px",
+  // Normalize font sizes to 10pt
+  const normalizeFontSizes = (element: HTMLElement) => {
+    // Remove all font size styles and set to 10pt
+    const allElements = element.querySelectorAll('*');
+    allElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      if (htmlEl.style.fontSize) {
+        htmlEl.style.fontSize = STANDARD_FONT_SIZE;
+      }
+    });
+    
+    // Also handle font tags with size attribute
+    const fontTags = element.querySelectorAll('font[size]');
+    fontTags.forEach((font) => {
+      const span = document.createElement('span');
+      span.style.fontSize = STANDARD_FONT_SIZE;
+      span.innerHTML = font.innerHTML;
+      font.replaceWith(span);
+    });
   };
-  const MIN_FONT_LEVEL = 1;
-  const MAX_FONT_LEVEL = 6;
 
   // Initialize editor content
   useEffect(() => {
@@ -63,19 +72,97 @@ export function RichTextEditor({
         // Plain text - wrap in paragraph tags for proper formatting
         const paragraphs = value.split('\n').filter(p => p.trim());
         if (paragraphs.length > 0) {
-          editorRef.current.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+          editorRef.current.innerHTML = paragraphs.map(p => `<p style="font-size: ${STANDARD_FONT_SIZE}">${p}</p>`).join('');
         } else {
           editorRef.current.innerHTML = '';
         }
       } else {
         editorRef.current.innerHTML = value || '';
+        // Normalize font sizes after setting HTML
+        normalizeFontSizes(editorRef.current);
       }
     }
   }, [value]);
 
   const handleInput = () => {
     if (editorRef.current) {
+      // Normalize font sizes on input
+      normalizeFontSizes(editorRef.current);
+      
+      // Ensure all paragraphs have 10pt font size
+      const paragraphs = editorRef.current.querySelectorAll('p');
+      paragraphs.forEach((p) => {
+        (p as HTMLElement).style.fontSize = STANDARD_FONT_SIZE;
+      });
+      
+      // Ensure the editor itself has 10pt font size
+      editorRef.current.style.fontSize = STANDARD_FONT_SIZE;
+      
       onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    
+    // Convert plain text to paragraphs with 10pt font size
+    const paragraphs = text.split('\n').filter(p => p.trim());
+    const formattedText = paragraphs.length > 0
+      ? paragraphs.map(p => `<p style="font-size: ${STANDARD_FONT_SIZE}">${p}</p>`).join('')
+      : `<p style="font-size: ${STANDARD_FONT_SIZE}">${text}</p>`;
+    
+    // Insert the formatted text
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      
+      const tempContainer = document.createElement('div');
+      tempContainer.innerHTML = formattedText;
+      
+      const fragment = document.createDocumentFragment();
+      while (tempContainer.firstChild) {
+        fragment.appendChild(tempContainer.firstChild);
+      }
+      
+      range.insertNode(fragment);
+      
+      // Move cursor to end of inserted content
+      range.setStartAfter(fragment.lastChild || fragment);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    
+    handleInput();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // When Enter is pressed, ensure new paragraphs have 10pt font size
+    if (e.key === 'Enter') {
+      setTimeout(() => {
+        if (editorRef.current) {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const container = range.commonAncestorContainer;
+            
+            // Find the paragraph element
+            let paragraph: HTMLElement | null = null;
+            if (container.nodeType === Node.TEXT_NODE && container.parentElement) {
+              paragraph = container.parentElement.closest('p') as HTMLElement;
+            } else if (container.nodeType === Node.ELEMENT_NODE) {
+              paragraph = (container as HTMLElement).closest('p') as HTMLElement;
+            }
+            
+            // Set font size to 10pt for the new paragraph
+            if (paragraph) {
+              paragraph.style.fontSize = STANDARD_FONT_SIZE;
+            }
+          }
+        }
+      }, 0);
     }
   };
 
@@ -85,25 +172,6 @@ export function RichTextEditor({
     handleInput();
   };
 
-  const normalizeFontTags = () => {
-    if (!editorRef.current) return;
-    const fonts = editorRef.current.querySelectorAll("font[size]");
-    fonts.forEach((font) => {
-      const size = font.getAttribute("size");
-      if (!size) return;
-      const span = document.createElement("span");
-      span.style.fontSize = FONT_SIZE_MAP[parseInt(size, 10)] || FONT_SIZE_MAP[3];
-      span.innerHTML = font.innerHTML;
-      font.replaceWith(span);
-    });
-  };
-
-  const applyFontSize = (level: number) => {
-    const clamped = Math.max(MIN_FONT_LEVEL, Math.min(MAX_FONT_LEVEL, level));
-    execCommand("fontSize", clamped.toString());
-    normalizeFontTags();
-    setFontSizeLevel(clamped);
-  };
 
   const transformSelection = (transformer: (input: string) => string) => {
     const selection = window.getSelection();
@@ -210,7 +278,21 @@ export function RichTextEditor({
         // Remove all formatting from selection
         execCommand('removeFormat');
         execCommand('unlink'); // Remove links too
-        setFontSizeLevel(3);
+        // Ensure font size is reset to 10pt
+        if (editorRef.current) {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            if (!range.collapsed) {
+              const selectedElement = range.commonAncestorContainer;
+              if (selectedElement.nodeType === Node.TEXT_NODE && selectedElement.parentElement) {
+                selectedElement.parentElement.style.fontSize = STANDARD_FONT_SIZE;
+              } else if (selectedElement.nodeType === Node.ELEMENT_NODE) {
+                (selectedElement as HTMLElement).style.fontSize = STANDARD_FONT_SIZE;
+              }
+            }
+          }
+        }
         break;
     }
   };
@@ -480,36 +562,6 @@ export function RichTextEditor({
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
-        {/* Font Size */}
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => applyFontSize(fontSizeLevel - 1)}
-            disabled={fontSizeLevel <= MIN_FONT_LEVEL}
-            title="Decrease font size"
-          >
-            <Minus className="w-4 h-4" />
-          </Button>
-          <span className="text-[11px] font-semibold text-muted-foreground w-6 text-center">
-            A
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => applyFontSize(fontSizeLevel + 1)}
-            disabled={fontSizeLevel >= MAX_FONT_LEVEL}
-            title="Increase font size"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="w-px h-5 bg-border mx-1" />
-        
         {/* Clear Formatting */}
         <Button
           type="button"
@@ -528,10 +580,12 @@ export function RichTextEditor({
         ref={editorRef}
         contentEditable
         onInput={handleInput}
+        onPaste={handlePaste}
+        onKeyDown={handleKeyDown}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={cn(
-          "min-h-[60px] p-3 outline-none text-sm rounded-b-xl",
+          "min-h-[60px] p-3 outline-none rounded-b-xl",
           "focus:ring-2 focus:ring-primary/20 focus:border-primary/40",
           !value && "text-muted-foreground",
           rows === 3 && "min-h-[60px]",
@@ -564,6 +618,7 @@ export function RichTextEditor({
         )}
         style={{
           minHeight: `${rows * 20}px`,
+          fontSize: STANDARD_FONT_SIZE,
         }}
         data-placeholder={placeholder}
         suppressContentEditableWarning
