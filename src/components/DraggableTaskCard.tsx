@@ -133,16 +133,25 @@ export const DraggableTaskCard = React.forwardRef<
     );
     const estimatedTimeValue = typeof task.estimatedTime === "number" ? task.estimatedTime : null;
     const hasEstimatedTime = estimatedTimeValue !== null;
+    const isShortTask = typeof estimatedTimeValue === "number" && estimatedTimeValue < 45;
+    const isLongTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= 60;
+    const canUsePomodoro = hasFeature("pomodoroTimer");
+    const pomodoroIsRunning = canUsePomodoro && timerState.isRunning;
     const showTrackingBadgeTopRow =
       hasEstimatedTime &&
       estimatedTimeValue < 45 &&
-      hasFeature("pomodoroTimer") &&
+      canUsePomodoro &&
       timerState.isRunning;
     const showTrackedTimeTopRow =
       hasEstimatedTime &&
       estimatedTimeValue < 45 &&
       Boolean(task.actualTime && task.actualTime > 0) &&
       !timerState.isRunning;
+    const showInlinePomodoroTimer = Boolean(isShortTask && canUsePomodoro);
+    const showAbsolutePomodoroTimer = Boolean(!isShortTask && hasEstimatedTime && canUsePomodoro);
+    const shouldRenderInlineBottomRow =
+      Boolean(task.estimatedTime && task.estimatedTime < 45) &&
+      (showInlinePomodoroTimer || Boolean(task.assignedTo && task.assignedTo.length > 0));
 
     // Format timer display (actualTime tracked)
     const formatTimer = (minutes: number | null) => {
@@ -176,10 +185,10 @@ export const DraggableTaskCard = React.forwardRef<
       const badgesWillWrap = estimatedBadgeWidth > availableWidth;
       const badgeWrapHeight = badgesWillWrap ? 24 : 0; // Extra height if badges wrap (one line height)
       
-      const hasPomodoro = hasFeature("pomodoroTimer") && timerState.isRunning;
+      const hasPomodoro = pomodoroIsRunning;
       const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
       const hasTrackedTimeFull = task.actualTime && task.actualTime > 0;
-      const hasPomodoroTimer = hasFeature("pomodoroTimer");
+      const inlinePomodoroPresent = showInlinePomodoroTimer;
       const hasDescription = task.description && task.estimatedTime && task.estimatedTime >= 60;
       const hasSubtasks = task.subtasks && task.subtasks.length > 0;
       
@@ -196,13 +205,13 @@ export const DraggableTaskCard = React.forwardRef<
           let calculatedBaseHeight = baseHeight;
           if (hasPomodoro || hasTrackedTimeFull) {
             // Tracking badge in top row + bottom row with assigned users and/or pomodoro timer
-            calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer 
+            calculatedBaseHeight = hasAssignedUsers || inlinePomodoroPresent 
               ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth 
               : TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking;
-          } else if (hasAssignedUsers && hasPomodoroTimer) {
+          } else if (hasAssignedUsers && inlinePomodoroPresent) {
             // Both assigned users and pomodoro timer in bottom row
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth;
-          } else if (hasAssignedUsers || hasPomodoroTimer) {
+          } else if (hasAssignedUsers || inlinePomodoroPresent) {
             // One of assigned users or pomodoro timer in bottom row
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned;
           } else {
@@ -221,12 +230,12 @@ export const DraggableTaskCard = React.forwardRef<
           // Desktop: apply same rules as mobile
           let calculatedBaseHeight = baseHeight;
           if (hasPomodoro || hasTrackedTimeFull) {
-            calculatedBaseHeight = hasAssignedUsers || hasPomodoroTimer 
+            calculatedBaseHeight = hasAssignedUsers || inlinePomodoroPresent 
               ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth 
               : TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking;
-          } else if (hasAssignedUsers && hasPomodoroTimer) {
+          } else if (hasAssignedUsers && inlinePomodoroPresent) {
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth;
-          } else if (hasAssignedUsers || hasPomodoroTimer) {
+          } else if (hasAssignedUsers || inlinePomodoroPresent) {
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned;
           } else {
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.compact;
@@ -476,10 +485,10 @@ export const DraggableTaskCard = React.forwardRef<
                 (isMobile ? "px-2 py-1.5 pb-3" : "md:px-3 md:py-2.5 md:pb-4"),
               // Long tasks (>= 60 mins): more padding for descriptions
               (task.estimatedTime && task.estimatedTime >= 60) && 
-                !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
+                !(pomodoroIsRunning || (task.assignedTo && task.assignedTo.length > 0)) && 
                 (isMobile ? "px-2 py-2 pb-2" : "md:px-3 md:py-2 md:pb-2"),
               (task.estimatedTime && task.estimatedTime >= 60) && 
-                ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
+                (pomodoroIsRunning || (task.assignedTo && task.assignedTo.length > 0)) && 
                 (isMobile ? "px-2 py-2 pb-3" : "md:px-3 md:py-2 md:pb-4"),
               // Fallback for tasks without estimatedTime
               !task.estimatedTime && (isMobile ? "px-2 py-1.5 pb-2" : "md:px-3 md:py-2.5 md:pb-2"),
@@ -705,7 +714,7 @@ export const DraggableTaskCard = React.forwardRef<
           )}
 
           {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
-          {task.estimatedTime && task.estimatedTime < 45 ? (
+          {shouldRenderInlineBottomRow ? (
             // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
             // Reduced spacing when all components are active
             <div className={cn(
@@ -716,9 +725,8 @@ export const DraggableTaskCard = React.forwardRef<
                 : isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5"
             )}>
               {/* Left: Assigned Users */}
-              <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
-                {task.assignedTo && task.assignedTo.length > 0 && (
-                  <>
+              {task.assignedTo && task.assignedTo.length > 0 && (
+                <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
                     {task.assignedTo.slice(0, 2).map((userId) => {
                       const member = getTeamMember(userId);
                       if (!member) return null;
@@ -764,14 +772,12 @@ export const DraggableTaskCard = React.forwardRef<
                     {task.assignedTo.length > 2 && (
                       <span className={cn(TASK_CARD_TEXT_COLORS.assignedUserCount, isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserCount.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserCount.desktop)}>+{task.assignedTo.length - 2}</span>
                     )}
-                  </>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Center/Right: Pomodoro Timer only (tracking badge moved to top on mobile) */}
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Pomodoro Timer */}
-                {hasFeature("pomodoroTimer") && (
+              {showInlinePomodoroTimer && (
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <div onClick={(e) => e.stopPropagation()}>
                     <PomodoroTimer
                       taskId={task.id}
@@ -783,8 +789,8 @@ export const DraggableTaskCard = React.forwardRef<
                       isMobile={isMobile}
                     />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           ) : (
             // Absolute positioning for desktop or tasks >= 45 mins
@@ -853,7 +859,7 @@ export const DraggableTaskCard = React.forwardRef<
               )}
 
               {/* Tracking Status - Show when timer is running (only for tasks >= 45 mins, tasks < 45 mins show at top) */}
-              {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
+              {task.estimatedTime && task.estimatedTime >= 45 && pomodoroIsRunning && (
                 <div className={cn(
                   "flex items-center pt-0.5 animate-pulse",
                   isMobile ? "gap-0.5" : "gap-1"
@@ -890,7 +896,7 @@ export const DraggableTaskCard = React.forwardRef<
               )}
 
               {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) - only for tasks >= 45 mins, tasks < 45 mins show in inline bottom row */}
-              {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
+              {showAbsolutePomodoroTimer && (
                 <div
                   className={cn("absolute", isMobile ? "bottom-0 right-1" : "bottom-2 right-2")}
                   onClick={(e) => e.stopPropagation()}
