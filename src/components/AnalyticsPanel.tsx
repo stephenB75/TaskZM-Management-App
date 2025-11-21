@@ -40,7 +40,6 @@ import {
 } from "recharts";
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
-import { motion } from "motion/react";
 import {
   COLOR_PRIMARY,
   COLOR_SUCCESS,
@@ -526,6 +525,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           innerRadius={0}
                           fill="#8884d8"
                           dataKey="value"
+                          isAnimationActive={true}
+                          animationBegin={0}
+                          animationDuration={800}
+                          animationEasing="ease-out"
                         >
                           {analytics.statusDistribution.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
@@ -587,6 +590,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                         dot={{ fill: COLOR_PRIMARY, r: 3 }}
                         activeDot={{ r: 5 }}
                         name="Hours"
+                        isAnimationActive={true}
+                        animationBegin={0}
+                        animationDuration={800}
+                        animationEasing="ease-out"
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -618,8 +625,28 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                         tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
                       />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="created" fill={COLOR_INFO} radius={[4, 4, 0, 0]} name="Created" />
-                      <Line type="monotone" dataKey="completed" stroke={COLOR_SUCCESS} strokeWidth={2} dot={false} name="Completed" />
+                      <Bar 
+                        dataKey="created" 
+                        fill={COLOR_INFO} 
+                        radius={[4, 4, 0, 0]} 
+                        name="Created"
+                        isAnimationActive={true}
+                        animationBegin={0}
+                        animationDuration={800}
+                        animationEasing="ease-out"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="completed" 
+                        stroke={COLOR_SUCCESS} 
+                        strokeWidth={2} 
+                        dot={false} 
+                        name="Completed"
+                        isAnimationActive={true}
+                        animationBegin={200}
+                        animationDuration={800}
+                        animationEasing="ease-out"
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -651,7 +678,14 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
                         />
                         <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                        <Bar 
+                          dataKey="value" 
+                          radius={[6, 6, 0, 0]}
+                          isAnimationActive={true}
+                          animationBegin={0}
+                          animationDuration={800}
+                          animationEasing="ease-out"
+                        >
                           {analytics.timePatterns.blocks.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -700,7 +734,15 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           width={55}
                         />
                         <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="value" fill={COLOR_PRIMARY} radius={[0, 6, 6, 0]} />
+                        <Bar 
+                          dataKey="value" 
+                          fill={COLOR_PRIMARY} 
+                          radius={[0, 6, 6, 0]}
+                          isAnimationActive={true}
+                          animationBegin={0}
+                          animationDuration={800}
+                          animationEasing="ease-out"
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
