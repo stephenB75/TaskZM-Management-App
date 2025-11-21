@@ -192,9 +192,10 @@ export const DraggableTaskCard = React.forwardRef<
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.mobileBase;
           }
           
-          // Add extra height for subtasks
+          // Add extra height for subtasks (reduced spacing)
           if (hasSubtasks) {
-            const subtaskHeight = Math.min(task.subtasks.length, 3) * 16; // ~16px per subtask, max 3 visible
+            const subtaskCount = Math.min(task.subtasks.length, 3);
+            const subtaskHeight = subtaskCount * 14 + (subtaskCount > 1 ? (subtaskCount - 1) * 2 : 0); // ~14px per subtask + 2px spacing between, max 3 visible
             calculatedBaseHeight += subtaskHeight;
           }
           
@@ -214,9 +215,10 @@ export const DraggableTaskCard = React.forwardRef<
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.mobileBase;
           }
           
-          // Add extra height for subtasks
+          // Add extra height for subtasks (reduced spacing)
           if (hasSubtasks) {
-            const subtaskHeight = Math.min(task.subtasks.length, 3) * 16; // ~16px per subtask, max 3 visible
+            const subtaskCount = Math.min(task.subtasks.length, 3);
+            const subtaskHeight = subtaskCount * 14 + (subtaskCount > 1 ? (subtaskCount - 1) * 2 : 0); // ~14px per subtask + 2px spacing between, max 3 visible
             calculatedBaseHeight += subtaskHeight;
           }
           
@@ -227,12 +229,17 @@ export const DraggableTaskCard = React.forwardRef<
         const scalingFactor = TASK_CARD_HEIGHT_CONFIG.scalingFactors.short;
         const durationBasedHeight = baseHeight + (duration - 15) * scalingFactor;
         
-        // If no active components, ensure minimum height accounts for time display and bottom padding
-        const minRequiredHeight = hasActiveComponents 
-          ? baseHeight 
-          : baseHeight + 8; // Add bottom padding for time display if no components
+        // Calculate actual content height (without padding)
+        // Content includes: badges, title, subtasks, bottom row components
+        const contentHeight = durationBasedHeight;
         
-        return Math.min(Math.max(durationBasedHeight, minRequiredHeight), maxHeight);
+        // Total height = content + padding
+        // But we need to account for the fact that padding is already in the base heights
+        // So we subtract the padding that's already accounted for, then add minimal padding
+        const minimalBottomPadding = hasActiveComponents ? (isMobile ? 4 : 6) : (isMobile ? 6 : 8);
+        const totalHeight = contentHeight + minimalBottomPadding;
+        
+        return Math.min(Math.max(totalHeight, baseHeight + minimalBottomPadding), maxHeight);
       } else if (duration >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
         // Enhanced sizing for tasks 1 hour or more: more space for descriptions
         // Base height: title + badges + time display
@@ -273,13 +280,15 @@ export const DraggableTaskCard = React.forwardRef<
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.long;
         const durationBasedHeight = baseHeight + (duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) * pixelsPerMinute;
         
-        // Ensure minimum height is at least the base + description bottom padding
-        const minRequiredHeight = hasDescription 
-          ? baseHeight 
-          : baseHeight + 8; // Reduced from 12px to minimize white space
+        // Add minimal bottom padding based on components
+        const minimalBottomPadding = (hasAssignedUsers || hasSubtasks) ? (isMobile ? 4 : 6) : (isMobile ? 6 : 8);
+        const totalHeight = durationBasedHeight + minimalBottomPadding;
+        
+        // Ensure minimum height is at least the base + minimal padding
+        const minRequiredHeight = baseHeight + minimalBottomPadding;
         
         return Math.min(
-          Math.max(durationBasedHeight, minRequiredHeight),
+          Math.max(totalHeight, minRequiredHeight),
           maxHeight,
         );
       } else {
@@ -307,11 +316,15 @@ export const DraggableTaskCard = React.forwardRef<
         const pixelsPerMinute = TASK_CARD_HEIGHT_CONFIG.scalingFactors.medium;
         const durationBasedHeight = minHeight + duration * pixelsPerMinute;
         
-        // Ensure minimum height accounts for time display and bottom padding
-        const minRequiredHeight = minHeight + 6; // Reduced from 8px to minimize white space
+        // Add minimal bottom padding based on components
+        const minimalBottomPadding = (hasAssignedUsers || hasSubtasks) ? (isMobile ? 4 : 6) : (isMobile ? 6 : 8);
+        const totalHeight = durationBasedHeight + minimalBottomPadding;
+        
+        // Ensure minimum height accounts for time display and minimal padding
+        const minRequiredHeight = minHeight + minimalBottomPadding;
         
         return Math.min(
-          Math.max(durationBasedHeight, minRequiredHeight),
+          Math.max(totalHeight, minRequiredHeight),
           maxHeight,
         );
       }
@@ -370,29 +383,17 @@ export const DraggableTaskCard = React.forwardRef<
               `${TASK_CARD_BACKGROUNDS.hover} ${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
               isDragging ? TASK_CARD_WIDTHS.dragging : "flex-1",
-              // Bottom padding: auto-adjusts based on content (pomodoro timer, assigned users)
-              // For tasks < 45 mins on mobile: inline bottom row needs less padding
-              // Base bottom padding for all tasks
-              !isMobile && "md:pb-8",
-              // Tasks < 45 mins with inline bottom row (mobile and desktop): reduced padding (bottom row handles spacing)
-              // Increase padding to ensure bottom row components fit comfortably
-              task.estimatedTime && task.estimatedTime < 45 && (isMobile ? "pb-2" : "md:pb-2.5"),
-              // Mobile tasks >= 45 mins: standard padding
-              isMobile && (!task.estimatedTime || task.estimatedTime >= 45) && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-6",
-              // Extra bottom padding on mobile for tasks >= 45 mins when pomodoro/assigned users present
-              isMobile && (!task.estimatedTime || task.estimatedTime >= 45) && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-8",
-              // Compact padding for shorter tasks (< 45 mins) - auto-adjusts when pomodoro/assigned users are present
-              // Only applies to tasks < 45 mins, but considers pomodoro timer and assigned users for better fit
-              (task.estimatedTime && task.estimatedTime < 45) && !isMobile && "md:py-2 md:space-y-1",
-              // On mobile: adjust padding based on components to ensure all elements fit
-              (task.estimatedTime && task.estimatedTime < 45) && isMobile && 
-                ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0))
-                ? "py-1 space-y-1" // More space when components present
-                : "py-1.5 space-y-1", // Standard compact with adequate spacing
-              // Enhanced padding for tasks 1 hour or more to accommodate descriptions
-              // Reduced padding when all components are active to minimize white space
-              task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3 md:pb-8 md:space-y-1.5",
-              task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-8 space-y-1.5",
+              // Bottom padding: dynamically adjusted based on content to minimize white space
+              // The height calculation accounts for content, so padding should be minimal
+              task.estimatedTime && task.estimatedTime < 45 && (isMobile ? "pb-1" : "md:pb-1.5"),
+              // Tasks >= 45 mins: minimal padding when no bottom components
+              (!task.estimatedTime || task.estimatedTime >= 45) && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && (isMobile ? "pb-2" : "md:pb-2"),
+              // Extra bottom padding only when bottom components are present
+              (!task.estimatedTime || task.estimatedTime >= 45) && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && (isMobile ? "pb-3" : "md:pb-4"),
+              // Vertical padding: minimal to reduce white space
+              (task.estimatedTime && task.estimatedTime < 45) && (isMobile ? "py-1" : "md:py-1.5"),
+              // Tasks >= 60 mins: slightly more padding for descriptions
+              task.estimatedTime && task.estimatedTime >= 60 && (isMobile ? "py-2" : "md:py-2"),
             )}
           style={{
             minHeight: `${cardHeight}px`,
