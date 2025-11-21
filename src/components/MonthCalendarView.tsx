@@ -99,6 +99,7 @@ function DraggableMonthTask({
         task.status === "done" && "opacity-60",
       )}
       data-dnd-kit-dragging={isDragging}
+      data-sortable-id={task.id}
       title={task.title}
       onClick={(e) => {
         e.stopPropagation();
@@ -498,7 +499,7 @@ export function MonthCalendarView({
   ];
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950" data-month-calendar="true">
       {/* Calendar Header */}
       <motion.div
         className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md"

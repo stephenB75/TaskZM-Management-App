@@ -306,10 +306,11 @@ export const DraggableTaskCard = React.forwardRef<
           // Estimate description height based on content length
           const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
           const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
-          // Reduce bottom padding when assigned users are present and no subtasks to eliminate white space
+          // Match CSS margin: mb-0 (0px) when assigned users present and no subtasks, mb-1.5 (6px) otherwise
+          // This ensures height calculation matches actual CSS rendering
           const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
-            ? 0 // mb-0 when assigned users follow directly
-            : 4; // Reduced from standard (6px) to minimize white space
+            ? 0 // mb-0 when assigned users follow directly (matches CSS)
+            : 6; // mb-1.5 = 6px when subtasks present or no assigned users (matches CSS)
           const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
           baseHeight += descriptionHeight;
         } else {
@@ -328,11 +329,16 @@ export const DraggableTaskCard = React.forwardRef<
           baseHeight += assignedUsersSpacing;
         }
         
-        // Add extra height for subtasks (only if present, reduced spacing)
+        // Add extra height for subtasks (only if present)
+        // Subtasks follow description directly (description mb-1.5 = 6px provides spacing)
+        // No additional top padding needed for subtasks (pt-0)
         if (hasSubtasks) {
           const subtaskCount = Math.min(task.subtasks.length, 3);
-          const subtaskHeight = subtaskCount * TASK_CARD_CALCULATIONS.subtask.height + 
-            (subtaskCount > 1 ? (subtaskCount - 1) * TASK_CARD_CALCULATIONS.subtask.spacing : 0);
+          // Subtask height: ~14px per item, spacing: 2px between items on mobile (space-y-0.5), 4px on desktop (space-y-1)
+          const subtaskItemHeight = 14; // Approximate height per subtask item
+          const subtaskSpacing = isMobile ? 2 : 4; // space-y-0.5 (2px) on mobile, space-y-1 (4px) on desktop
+          const subtaskHeight = subtaskCount * subtaskItemHeight + 
+            (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
           baseHeight += subtaskHeight;
         }
         
@@ -676,8 +682,9 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Subtasks Display */}
           {task.subtasks && task.subtasks.length > 0 && (
             <div className={cn(
-              // Reduce top padding when description is present (all components active)
-              task.description && task.estimatedTime && task.estimatedTime >= 60 ? "pt-0.5" : "pt-1",
+              // Subtasks follow description directly (description has mb-1.5 = 6px bottom margin)
+              // No additional top padding needed as description margin provides spacing
+              "pt-0",
               isMobile ? "space-y-0.5" : "space-y-1"
             )}>
               {task.subtasks.slice(0, 3).map((subtask) => {

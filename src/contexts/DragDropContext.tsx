@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
-import { isTaskBlocked, getIncompleteDependencies } from '../lib/utils';
+import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
@@ -413,19 +413,74 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             zIndex: 9999,
           }}
         >
-          {activeTask && (
-            <div 
-              className="opacity-90 pointer-events-none"
-              style={{
-                maxWidth: '280px',
-                width: '280px',
-                transform: 'rotate(3deg) scale(1.05)',
-                transition: 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-              }}
-            >
-              <DraggableTaskCard task={activeTask} onClick={() => {}} droppableId="" isDragging />
-            </div>
-          )}
+          {activeTask && (() => {
+            // Check if dragging from month calendar view by checking if the active element is within month calendar
+            // Use a try-catch to safely check the DOM
+            let isFromMonthCalendar = false;
+            try {
+              const activeElement = document.querySelector(`[data-sortable-id="${activeId}"]`) || 
+                                   document.querySelector(`[id="${activeId}"]`);
+              isFromMonthCalendar = activeElement?.closest('[data-month-calendar]') !== null;
+            } catch (e) {
+              // If check fails, default to false (use full card)
+              isFromMonthCalendar = false;
+            }
+            
+            // Use compact preview for month calendar, full card for other views
+            if (isFromMonthCalendar) {
+              const priorityColors = {
+                urgent: "border-l-red-400 bg-red-50 dark:bg-red-950/20",
+                high: "border-l-orange-400 bg-orange-50 dark:bg-orange-950/20",
+                medium: "border-l-blue-400 bg-blue-50 dark:bg-blue-950/20",
+                low: "border-l-gray-400 bg-gray-50 dark:bg-gray-950/20",
+              };
+              
+              return (
+                <div 
+                  className={cn(
+                    "opacity-90 pointer-events-none text-xs p-1 rounded border-l-2",
+                    priorityColors[activeTask.priority],
+                    activeTask.status === "done" && "opacity-60",
+                  )}
+                  style={{
+                    maxWidth: '120px',
+                    width: '120px',
+                    transform: 'rotate(2deg) scale(0.9)',
+                    transition: 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                    fontSize: '11px',
+                  }}
+                >
+                  <div className="flex items-start gap-1">
+                    <div className="flex items-start gap-0.5 flex-1 min-w-0">
+                      <p className={cn(
+                        "truncate font-medium leading-tight text-[11px]",
+                        activeTask.status === "done"
+                          ? "line-through text-muted-foreground"
+                          : "text-foreground/90",
+                      )}>
+                        {activeTask.title}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            
+            // Full card preview for other views
+            return (
+              <div 
+                className="opacity-90 pointer-events-none"
+                style={{
+                  maxWidth: '280px',
+                  width: '280px',
+                  transform: 'rotate(3deg) scale(1.05)',
+                  transition: 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                }}
+              >
+                <DraggableTaskCard task={activeTask} onClick={() => {}} droppableId="" isDragging />
+              </div>
+            );
+          })()}
         </DragOverlay>
       </DndContext>
 
