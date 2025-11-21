@@ -257,3 +257,140 @@ export const TASK_CARD_LINE_CLAMP = {
   },
 } as const;
 
+// Calculation Constants
+export const TASK_CARD_CALCULATIONS = {
+  badgeWidths: {
+    time: 60,
+    priority: 50,
+    tag: 60,
+    duration: 40,
+    tracking: 80,
+    average: 60,
+  },
+  availableWidth: {
+    mobile: 280,
+    desktop: 400,
+  },
+  description: {
+    charsPerLine: 50,
+    lineHeight: 16, // px for 12px font
+    minHeight: 64, // px minimum for 4 lines
+  },
+  subtask: {
+    height: 14, // px per subtask
+    spacing: 2, // px between subtasks
+  },
+  assignedUser: {
+    avatarSize: {
+      mobile: { width: 12, height: 12 }, // w-3 h-3
+      desktop: { width: 16, height: 16 }, // w-4 h-4
+    },
+    nameMaxWidth: {
+      mobile: 40, // px
+      desktop: 60, // px
+    },
+    containerOffset: {
+      mobile: 60, // px for max-w-[calc(100%-60px)]
+      desktop: 80, // px for max-w-[calc(100%-80px)]
+    },
+  },
+  priorityLine: {
+    width: 4, // w-1 = 4px
+    height: '50%', // h-1/2
+    minHeight: 40, // min-h-[40px]
+  },
+  padding: {
+    short: {
+      top: { mobile: 4, desktop: 6 }, // py-1 or py-1.5
+      bottom: { mobile: 4, desktop: 6 }, // pb-1 or pb-1.5
+    },
+    medium: {
+      top: { mobile: 6, desktop: 10 }, // py-1.5 or py-2.5
+      bottom: { 
+        noComponents: { mobile: 8, desktop: 8 }, // pb-2
+        withComponents: { mobile: 12, desktop: 16 }, // pb-3 or pb-4
+      },
+    },
+    long: {
+      top: 8, // py-2
+      bottom: {
+        noComponents: 8, // pb-2
+        withComponents: { mobile: 12, desktop: 16 }, // pb-3 or pb-4
+      },
+    },
+    description: {
+      bottom: {
+        standard: 6, // mb-1.5
+        noGap: 0, // mb-0 when assigned users follow
+      },
+    },
+    assignedUsers: {
+      standard: 24, // px
+      noGap: 20, // px when description has mb-0
+    },
+  },
+} as const;
+
+// Rich Text Editor Colors
+export const TASK_CARD_RICH_TEXT_COLORS = {
+  mark: {
+    light: 'bg-yellow-200',
+    dark: 'dark:bg-yellow-800',
+  },
+  code: {
+    light: 'bg-gray-100',
+    dark: 'dark:bg-gray-800',
+  },
+} as const;
+
+// Assigned User Avatar Colors
+export const TASK_CARD_ASSIGNED_USER_COLORS = {
+  gradient: 'bg-gradient-to-br from-purple-100 to-pink-100',
+  text: 'text-purple-700',
+} as const;
+
+// Text Colors
+export const TASK_CARD_TEXT_COLORS = {
+  description: 'text-gray-500',
+  assignedUserName: 'text-gray-600',
+  assignedUserCount: 'text-gray-500',
+  subtaskCompleted: 'text-gray-400',
+  tooltipEmail: 'text-gray-400',
+  icon: 'text-gray-400',
+  checkbox: {
+    default: 'text-gray-300',
+    hover: 'hover:text-gray-400',
+  },
+} as const;
+
+// Positioning Values
+export const TASK_CARD_POSITIONING = {
+  assignedUsers: {
+    bottom: {
+      mobile: 4, // bottom-1 = 4px
+      desktop: 8, // bottom-2 = 8px
+    },
+    left: {
+      mobile: 4, // left-1 = 4px
+      desktop: 8, // left-2 = 8px
+    },
+  },
+} as const;
+
+// Font Sizes (Additional - for assigned users and tooltips)
+export const TASK_CARD_ADDITIONAL_FONT_SIZES = {
+  assignedUserInitials: {
+    mobile: 'text-[7px]',
+    desktop: 'text-[8px]',
+  },
+  assignedUserNameInline: {
+    mobile: 'text-[8px]',
+    desktop: 'text-[9px]',
+  },
+  assignedUserCount: {
+    mobile: 'text-[8px]',
+    desktop: 'text-[9px]',
+  },
+  tooltipEmail: 'text-xs',
+} as const;
+

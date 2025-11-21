@@ -32,6 +32,12 @@ import {
   TASK_CARD_BACKGROUNDS,
   TASK_CARD_WIDTHS,
   TASK_CARD_LINE_CLAMP,
+  TASK_CARD_CALCULATIONS,
+  TASK_CARD_RICH_TEXT_COLORS,
+  TASK_CARD_ASSIGNED_USER_COLORS,
+  TASK_CARD_TEXT_COLORS,
+  TASK_CARD_POSITIONING,
+  TASK_CARD_ADDITIONAL_FONT_SIZES,
 } from "../lib/task-card-constants";
 
 interface DraggableTaskCardProps {
@@ -148,10 +154,8 @@ export const DraggableTaskCard = React.forwardRef<
       const hasTrackedTime = task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning;
       
       // Estimate if badges will wrap to second line
-      // Approximate badge widths: time (60px), priority (50px), tag (60px), duration (40px), tracking (80px)
-      // Available width: ~280px on mobile, ~400px on desktop (accounting for checkbox and padding)
       const badgeCount = [hasTime, hasPriority, hasTag, hasDuration, hasTracking || hasTrackedTime].filter(Boolean).length;
-      const estimatedBadgeWidth = badgeCount * 60; // Average badge width
+      const estimatedBadgeWidth = badgeCount * TASK_CARD_CALCULATIONS.badgeWidths.average;
       const availableWidth = isMobile ? 240 : 360; // Account for padding and checkbox
       const badgesWillWrap = estimatedBadgeWidth > availableWidth;
       const badgeWrapHeight = badgesWillWrap ? 24 : 0; // Extra height if badges wrap (one line height)
@@ -262,12 +266,13 @@ export const DraggableTaskCard = React.forwardRef<
         // Description is always shown for tasks >= 60 minutes if it exists
         if (hasDescription) {
           // Estimate description height based on content length
-          // Average ~50 characters per line, ~16px line height for 12px font
-          const estimatedLines = task.description ? Math.ceil(task.description.length / 50) : 4;
-          const lineHeight = 16; // Approximate line height for 12px font
+          const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
+          const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
           // Reduce bottom padding when assigned users are present and no subtasks to eliminate white space
-          const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) ? 0 : 6; // mb-0 or mb-1.5
-          const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + descriptionBottomPadding; // Minimum 4 lines, add padding
+          const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
+            ? TASK_CARD_CALCULATIONS.padding.description.bottom.noGap 
+            : TASK_CARD_CALCULATIONS.padding.description.bottom.standard;
+          const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
           baseHeight += descriptionHeight;
         } else {
           // If no description, still need space for the time duration display
@@ -279,14 +284,17 @@ export const DraggableTaskCard = React.forwardRef<
         // When description is present and no subtasks, assigned users are positioned closer (no gap)
         if (hasAssignedUsers) {
           // If description exists and no subtasks, reduce spacing since description has mb-0
-          const assignedUsersSpacing = (hasDescription && !hasSubtasks) ? 20 : 24; // Reduced from 24px to 20px when no gap
-          baseHeight += assignedUsersSpacing; // Height for assigned users row
+          const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
+            ? TASK_CARD_CALCULATIONS.padding.assignedUsers.noGap 
+            : TASK_CARD_CALCULATIONS.padding.assignedUsers.standard;
+          baseHeight += assignedUsersSpacing;
         }
         
         // Add extra height for subtasks (only if present, reduced spacing)
         if (hasSubtasks) {
           const subtaskCount = Math.min(task.subtasks.length, 3);
-          const subtaskHeight = subtaskCount * 14 + (subtaskCount > 1 ? (subtaskCount - 1) * 2 : 0); // ~14px per subtask + 2px spacing between
+          const subtaskHeight = subtaskCount * TASK_CARD_CALCULATIONS.subtask.height + 
+            (subtaskCount > 1 ? (subtaskCount - 1) * TASK_CARD_CALCULATIONS.subtask.spacing : 0);
           baseHeight += subtaskHeight;
         }
         
@@ -299,11 +307,11 @@ export const DraggableTaskCard = React.forwardRef<
         // Account for actual padding being applied via CSS classes
         // Long tasks: px-2 py-2 pb-2 (mobile) or md:px-3 md:py-2 md:pb-2 (desktop) - no components
         // Long tasks with components: px-2 py-2 pb-3 (mobile) or md:px-3 md:py-2 md:pb-4 (desktop)
-        // Top padding: py-2 = 8px (mobile/desktop)
-        // Bottom padding: pb-2 = 8px (no components) or pb-3 = 12px (mobile with components) or pb-4 = 16px (desktop with components)
-        const topPadding = 8; // py-2 (same for mobile and desktop)
-        const bottomPadding = (hasAssignedUsers || hasSubtasks) ? (isMobile ? 12 : 16) : 8; // pb-2, pb-3, or pb-4
-        const totalPadding = topPadding + bottomPadding; // 16px (no components), 20px (mobile with components), 24px (desktop with components)
+        const topPadding = TASK_CARD_CALCULATIONS.padding.long.top;
+        const bottomPadding = (hasAssignedUsers || hasSubtasks) 
+          ? (isMobile ? TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.desktop)
+          : TASK_CARD_CALCULATIONS.padding.long.bottom.noComponents;
+        const totalPadding = topPadding + bottomPadding;
         
         // Total height = content (duration-based) + padding
         const totalHeight = durationBasedHeight + totalPadding;
@@ -347,11 +355,11 @@ export const DraggableTaskCard = React.forwardRef<
         // Bottom padding: pb-2 (8px) when no components, pb-3/pb-4 when components present
         // Medium tasks: px-2 py-1.5 pb-2 (mobile) or md:px-3 md:py-2.5 md:pb-2 (desktop) - no components
         // Medium tasks with components: px-2 py-1.5 pb-3 (mobile) or md:px-3 md:py-2.5 md:pb-4 (desktop)
-        // Top padding: py-1.5 = 6px (mobile) or py-2.5 = 10px (desktop)
-        // Bottom padding: pb-2 = 8px (no components) or pb-3 = 12px (mobile with components) or pb-4 = 16px (desktop with components)
-        const topPadding = isMobile ? 6 : 10; // py-1.5 or py-2.5
-        const bottomPadding = (hasAssignedUsers || hasSubtasks) ? (isMobile ? 12 : 16) : 8; // pb-2, pb-3, or pb-4
-        const totalPadding = topPadding + bottomPadding; // 14px (mobile no components), 18px (mobile with components), 18px (desktop no components), 26px (desktop with components)
+        const topPadding = isMobile ? TASK_CARD_CALCULATIONS.padding.medium.top.mobile : TASK_CARD_CALCULATIONS.padding.medium.top.desktop;
+        const bottomPadding = (hasAssignedUsers || hasSubtasks) 
+          ? (isMobile ? TASK_CARD_CALCULATIONS.padding.medium.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.medium.bottom.withComponents.desktop)
+          : (isMobile ? TASK_CARD_CALCULATIONS.padding.medium.bottom.noComponents.mobile : TASK_CARD_CALCULATIONS.padding.medium.bottom.noComponents.desktop);
+        const totalPadding = topPadding + bottomPadding;
         
         // Total height = content (duration-based) + padding
         // Duration scaling ensures borders adjust correctly without conflicts
@@ -395,6 +403,10 @@ export const DraggableTaskCard = React.forwardRef<
         {/* Vertical colored priority line */}
         <div
           className="w-1 h-1/2 rounded-full flex-shrink-0 self-center min-h-[40px]"
+          style={{
+            width: `${TASK_CARD_CALCULATIONS.priorityLine.width}px`,
+            minHeight: `${TASK_CARD_CALCULATIONS.priorityLine.minHeight}px`,
+          }}
           style={{
             backgroundColor: getPriorityLineColor(
               task.priority,
@@ -579,7 +591,7 @@ export const DraggableTaskCard = React.forwardRef<
           {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
             <div 
               className={cn(
-                `text-gray-500 leading-snug break-words ${TASK_CARD_FONT_SIZES.description} px-1.5 py-1 mt-0.5`,
+                `${TASK_CARD_TEXT_COLORS.description} leading-snug break-words ${TASK_CARD_FONT_SIZES.description} px-1.5 py-1 mt-0.5`,
                 // Reduce bottom margin when assigned users are present and no subtasks to eliminate white space
                 (task.assignedTo && task.assignedTo.length > 0 && (!task.subtasks || task.subtasks.length === 0))
                   ? "mb-0" // No bottom margin when assigned users follow directly
@@ -590,12 +602,12 @@ export const DraggableTaskCard = React.forwardRef<
                 hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
                 hasHTMLTags(task.description) && "[&_u]:underline",
                 hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
-                hasHTMLTags(task.description) && "[&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800 [&_mark]:px-0.5 [&_mark]:rounded",
+                hasHTMLTags(task.description) && `[&_mark]:${TASK_CARD_RICH_TEXT_COLORS.mark.light} [&_mark]:${TASK_CARD_RICH_TEXT_COLORS.mark.dark} [&_mark]:px-0.5 [&_mark]:rounded`,
                 hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5",
                 hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
                 hasHTMLTags(task.description) && "[&_li]:ml-1",
                 hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words",
-                hasHTMLTags(task.description) && "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
+                hasHTMLTags(task.description) && `[&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.light} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.dark} [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono`
               )}
               {...(hasHTMLTags(task.description) 
                 ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
@@ -645,7 +657,7 @@ export const DraggableTaskCard = React.forwardRef<
                         "leading-tight",
                         isMobile ? TASK_CARD_FONT_SIZES.subtask.mobile : TASK_CARD_FONT_SIZES.subtask.desktop,
                         subtask.completed
-                          ? "text-gray-400 line-through"
+                          ? `${TASK_CARD_TEXT_COLORS.subtaskCompleted} line-through`
                           : "text-gray-600",
                       )}
                     >
@@ -655,7 +667,7 @@ export const DraggableTaskCard = React.forwardRef<
                 );
               })}
                 {task.subtasks.length > 3 && (
-                  <div className={cn("text-gray-400", isMobile ? `${TASK_CARD_FONT_SIZES.subtask.mobile} pl-3` : `${TASK_CARD_FONT_SIZES.subtask.desktop} pl-4`)}>
+                  <div className={cn(TASK_CARD_TEXT_COLORS.subtaskCompleted, isMobile ? `${TASK_CARD_FONT_SIZES.subtask.mobile} pl-3` : `${TASK_CARD_FONT_SIZES.subtask.desktop} pl-4`)}>
                     {TASK_CARD_TEXT.moreSubtasks(task.subtasks.length - 3)}
                   </div>
                 )}
@@ -686,16 +698,27 @@ export const DraggableTaskCard = React.forwardRef<
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
-                                <div className={cn(
-                                  "rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center font-semibold",
-                                  isMobile ? "w-3 h-3 text-[7px]" : "w-4 h-4 text-[8px]"
-                                )}>
+                                <div 
+                                  className={cn(
+                                    `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center font-semibold`,
+                                    isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop
+                                  )}
+                                  style={{
+                                    width: `${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.avatarSize.mobile.width : TASK_CARD_CALCULATIONS.assignedUser.avatarSize.desktop.width}px`,
+                                    height: `${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.avatarSize.mobile.height : TASK_CARD_CALCULATIONS.assignedUser.avatarSize.desktop.height}px`,
+                                  }}
+                                >
                                   {initials}
                                 </div>
-                                <span className={cn(
-                                  "text-gray-600 font-semibold truncate",
-                                  isMobile ? "text-[8px] max-w-[40px]" : "text-[9px] max-w-[60px]"
-                                )}>
+                                <span 
+                                  className={cn(
+                                    `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold truncate`,
+                                    isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameInline.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameInline.desktop
+                                  )}
+                                  style={{
+                                    maxWidth: `${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.nameMaxWidth.mobile : TASK_CARD_CALCULATIONS.assignedUser.nameMaxWidth.desktop}px`,
+                                  }}
+                                >
                                   {member.name}
                                 </span>
                               </div>
@@ -709,7 +732,7 @@ export const DraggableTaskCard = React.forwardRef<
                       );
                     })}
                     {task.assignedTo.length > 2 && (
-                      <span className={cn("text-gray-500", isMobile ? "text-[8px]" : "text-[9px]")}>+{task.assignedTo.length - 2}</span>
+                      <span className={cn(TASK_CARD_TEXT_COLORS.assignedUserCount, isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserCount.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserCount.desktop)}>+{task.assignedTo.length - 2}</span>
                     )}
                   </>
                 )}
@@ -741,7 +764,15 @@ export const DraggableTaskCard = React.forwardRef<
                 <div
                   className={cn(
                     "absolute flex items-center flex-wrap",
-                    isMobile ? "bottom-1 left-1 gap-1 max-w-[calc(100%-60px)]" : "bottom-2 left-2 gap-2 max-w-[calc(100%-80px)]",
+                    isMobile ? "gap-1" : "gap-2",
+                  )}
+                  style={{
+                    bottom: `${isMobile ? TASK_CARD_POSITIONING.assignedUsers.bottom.mobile : TASK_CARD_POSITIONING.assignedUsers.bottom.desktop}px`,
+                    left: `${isMobile ? TASK_CARD_POSITIONING.assignedUsers.left.mobile : TASK_CARD_POSITIONING.assignedUsers.left.desktop}px`,
+                    maxWidth: `calc(100% - ${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.containerOffset.mobile : TASK_CARD_CALCULATIONS.assignedUser.containerOffset.desktop}px)`,
+                  }}
+                  className={cn(
+                    "absolute flex items-center flex-wrap",
                   )}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -756,15 +787,21 @@ export const DraggableTaskCard = React.forwardRef<
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
-                              <div className={cn(
-                                "rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center font-semibold",
-                                isMobile ? "w-3 h-3 text-[7px]" : "w-4 h-4 text-[8px]",
-                              )}>
+                              <div 
+                                className={cn(
+                                  `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center font-semibold`,
+                                  isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop,
+                                )}
+                                style={{
+                                  width: `${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.avatarSize.mobile.width : TASK_CARD_CALCULATIONS.assignedUser.avatarSize.desktop.width}px`,
+                                  height: `${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.avatarSize.mobile.height : TASK_CARD_CALCULATIONS.assignedUser.avatarSize.desktop.height}px`,
+                                }}
+                              >
                                 {initials}
                               </div>
                               <span className={cn(
-                                "text-gray-600 font-semibold",
-                                isMobile ? "text-[9px]" : "text-[10px]",
+                                `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`,
+                                isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop,
                               )}>
                                 {member.name}
                               </span>
