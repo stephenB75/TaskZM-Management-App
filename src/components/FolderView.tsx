@@ -33,6 +33,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { cn, getInitials, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "sonner";
 import type { Task, Folder as FolderType } from "../types";
+import { Z_INDEX } from "../lib/layout-constants";
 
 interface FolderViewProps {
   folder: FolderType;
@@ -342,7 +343,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
-              <SelectContent className="z-[200]">
+              <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                 <SelectItem value="all">All Priorities</SelectItem>
                 <SelectItem value="urgent">Urgent</SelectItem>
                 <SelectItem value="high">High</SelectItem>
@@ -357,7 +358,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
               <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent className="z-[200]">
+              <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="todo">To Do</SelectItem>
                 <SelectItem value="in-progress">In Progress</SelectItem>

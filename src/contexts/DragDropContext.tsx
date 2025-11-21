@@ -6,6 +6,7 @@ import { isTaskBlocked, getIncompleteDependencies } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
+import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -51,7 +52,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 8px movement to activate drag
+        distance: TASK_CALCULATION_CONSTANTS.dragDrop.activationDistance,
       },
     })
   );
@@ -99,7 +100,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       // Calculate time from drop position
       // Get the droppable element (the timeline container)
       const droppableElement = document.querySelector('[data-droppable-id="today-agenda"]');
-      let hours = 9;
+      let hours = TASK_CALCULATION_CONSTANTS.dragDrop.defaultHour;
       let minutes = 0;
       
       // Try to get drop coordinates from event
@@ -124,9 +125,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           const contentY = Math.max(0, adjustedY - paddingTop);
           
           // Convert pixels to minutes
-          // Rough estimate: 1px ≈ 1 minute, starting from 8 AM (480 minutes from midnight)
+          // Rough estimate: 1px ≈ 1 minute, starting from default hour
           const minutesFrom8AM = contentY;
-          const totalMinutes = 8 * 60 + minutesFrom8AM;
+          const totalMinutes = TASK_CALCULATION_CONSTANTS.dragDrop.hourMin * 60 + minutesFrom8AM;
           
           hours = Math.floor(totalMinutes / 60);
           minutes = totalMinutes % 60;
@@ -138,9 +139,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             minutes = 0;
           }
           
-          // Clamp to valid hours (8 AM to 11 PM)
-          hours = Math.max(8, Math.min(23, hours));
-          if (hours === 23 && minutes > 0) {
+          // Clamp to valid hours
+          hours = Math.max(TASK_CALCULATION_CONSTANTS.dragDrop.hourMin, Math.min(TASK_CALCULATION_CONSTANTS.dragDrop.hourMax, hours));
+          if (hours === TASK_CALCULATION_CONSTANTS.dragDrop.hourMax && minutes > 0) {
             minutes = 0;
           }
         }

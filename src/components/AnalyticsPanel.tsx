@@ -63,6 +63,7 @@ import {
   COLOR_BORDER_LIGHT,
   getColorWithOpacity,
 } from "../lib/color-theme";
+import { UI_CHART_COLORS, UI_ANALYTICS_COLORS } from "../lib/ui-colors";
 
 interface AnalyticsPanelProps {
   onClose: () => void;
@@ -90,7 +91,7 @@ function CustomTooltip({ active, payload, label }: any) {
       <div
         className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-lg border text-xs"
         style={{ 
-          borderColor: COLOR_BORDER_LIGHT,
+          borderColor: UI_ANALYTICS_COLORS.borderLight,
         }}
       >
         <p className="font-semibold mb-1" style={{ color: COLOR_TEXT_PRIMARY }}>
@@ -146,7 +147,7 @@ function MetricCard({
   trend?: { value: number; label: string };
 }) {
   return (
-    <Card className="shadow-sm border-0" style={{ backgroundColor: COLOR_BACKGROUND_WHITE, borderColor: COLOR_BORDER_LIGHT }}>
+    <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg" style={{ backgroundColor: getColorWithOpacity(color, 0.1) }}>
@@ -505,7 +506,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Status Distribution - Pie Chart */}
             {analytics.statusDistribution.length > 0 && (
-              <Card className="shadow-sm border-0" style={{ backgroundColor: COLOR_BACKGROUND_WHITE, borderColor: COLOR_BORDER_LIGHT }}>
+              <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
                 <CardHeader className="pb-2 pt-3 px-3">
                   <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
                     Task Status
@@ -523,7 +524,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           label={false}
                           outerRadius={65}
                           innerRadius={0}
-                          fill="#8884d8"
+                          fill={UI_CHART_COLORS.primary}
                           dataKey="value"
                           isAnimationActive={true}
                           animationBegin={0}
@@ -558,7 +559,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             )}
 
             {/* Time Tracked Trend - Line Chart */}
-            <Card className="shadow-sm border-0" style={{ backgroundColor: COLOR_BACKGROUND_WHITE, borderColor: COLOR_BORDER_LIGHT }}>
+            <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
               <CardHeader className="pb-2 pt-3 px-3">
                 <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
                   Time Tracked (7 Days)
@@ -602,7 +603,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             </Card>
 
             {/* Tasks Created vs Completed - Composed Chart */}
-            <Card className="shadow-sm border-0" style={{ backgroundColor: COLOR_BACKGROUND_WHITE, borderColor: COLOR_BORDER_LIGHT }}>
+            <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
               <CardHeader className="pb-2 pt-3 px-3">
                 <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
                   Tasks Created vs Completed
@@ -655,7 +656,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Time of Day Completion - Bar Chart */}
             {analytics.timePatterns.blocks.length > 0 && (
-              <Card className="shadow-sm border-0" style={{ backgroundColor: COLOR_BACKGROUND_WHITE, borderColor: COLOR_BORDER_LIGHT }}>
+              <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
                 <CardHeader className="pb-2 pt-3 px-3">
                   <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
                     Completion by Time of Day
@@ -704,7 +705,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Top Task Tags - Horizontal Bar Chart */}
             {analytics.taskTypes.length > 0 && (
-              <Card className="shadow-sm border-0" style={{ backgroundColor: COLOR_BACKGROUND_WHITE, borderColor: COLOR_BORDER_LIGHT }}>
+              <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
                 <CardHeader className="pb-2 pt-3 px-3">
                   <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
                     Top Task Tags
@@ -752,7 +753,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Project Progress - Compact Table */}
             {analytics.projectProgress.length > 0 && (
-              <Card className="shadow-sm border-0" style={{ backgroundColor: COLOR_BACKGROUND_WHITE, borderColor: COLOR_BORDER_LIGHT }}>
+              <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
                 <CardHeader className="pb-2 pt-3 px-3">
                   <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
                     Project Progress

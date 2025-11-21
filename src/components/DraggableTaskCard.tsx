@@ -771,9 +771,6 @@ export const DraggableTaskCard = React.forwardRef<
                     left: `${isMobile ? TASK_CARD_POSITIONING.assignedUsers.left.mobile : TASK_CARD_POSITIONING.assignedUsers.left.desktop}px`,
                     maxWidth: `calc(100% - ${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.containerOffset.mobile : TASK_CARD_CALCULATIONS.assignedUser.containerOffset.desktop}px)`,
                   }}
-                  className={cn(
-                    "absolute flex items-center flex-wrap",
-                  )}
                   onClick={(e) => e.stopPropagation()}
                 >
                   {task.assignedTo.slice(0, 3).map((userId) => {

@@ -22,6 +22,7 @@ import { Button } from "./ui/button";
 import { useTheme } from "../contexts/ThemeContext";
 import { cn } from "../lib/utils";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
+import { Z_INDEX } from "../lib/layout-constants";
 
 interface AppTourProps {
   run: boolean;
@@ -637,8 +638,9 @@ export function AppTour({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-4"
+          className="fixed inset-0 flex items-center justify-center p-2 sm:p-4"
           style={{
+            zIndex: Z_INDEX.APP_TOUR,
             background: isDark
               ? "rgba(42, 42, 62, 0.85)"
               : "rgba(250, 249, 252, 0.90)",

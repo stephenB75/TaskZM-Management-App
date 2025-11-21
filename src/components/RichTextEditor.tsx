@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
+import { UI_RICH_TEXT_COLORS } from '../lib/ui-colors';
 
 interface RichTextEditorProps {
   value: string;
@@ -207,7 +208,7 @@ export function RichTextEditor({
         execCommand('strikethrough');
         break;
       case 'highlight':
-        execCommand('backColor', '#fef08a'); // Yellow highlight
+        execCommand('backColor', UI_RICH_TEXT_COLORS.highlight);
         break;
       case 'code':
         // Wrap selection in code tags
@@ -217,7 +218,7 @@ export function RichTextEditor({
           const selectedText = range.toString();
           if (selectedText) {
             const codeNode = document.createElement('code');
-            codeNode.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+            codeNode.style.backgroundColor = UI_RICH_TEXT_COLORS.codeBackground;
             codeNode.style.padding = '2px 4px';
             codeNode.style.borderRadius = '3px';
             codeNode.style.fontFamily = 'monospace';
@@ -628,7 +629,7 @@ export function RichTextEditor({
       <style>{`
         [contenteditable][data-placeholder]:empty:before {
           content: attr(data-placeholder);
-          color: #9ca3af;
+          color: ${UI_RICH_TEXT_COLORS.muted};
           pointer-events: none;
         }
         [contenteditable] ul,

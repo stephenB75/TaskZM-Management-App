@@ -39,6 +39,7 @@ import { AIRecommendationPanel } from "./AIRecommendationPanel";
 import { AppHeader } from "./AppHeader";
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
+import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "sonner";
@@ -79,7 +80,7 @@ function RescheduleMiniCalendar({
       }
       return new Date();
     } catch (error) {
-      console.error('Error initializing viewDate:', error);
+      logger.error('Error initializing viewDate:', error);
       return new Date();
     }
   });
@@ -94,7 +95,7 @@ function RescheduleMiniCalendar({
         setViewDate(rescheduleDate);
       }
     } catch (error) {
-      console.error('Error syncing viewDate:', error);
+      logger.error('Error syncing viewDate:', error);
     }
   }, [rescheduleDate]);
 
@@ -152,7 +153,7 @@ function RescheduleMiniCalendar({
              date.getMonth() === rescheduleDate.getMonth() &&
              date.getFullYear() === rescheduleDate.getFullYear();
     } catch (error) {
-      console.error('Error checking if date is selected:', error);
+      logger.error('Error checking if date is selected:', error);
       return false;
     }
   };
@@ -203,7 +204,7 @@ function RescheduleMiniCalendar({
         });
       }
     } catch (error) {
-      console.error('Error formatting display date:', error);
+      logger.error('Error formatting display date:', error);
       return null;
     }
   };
@@ -220,7 +221,7 @@ function RescheduleMiniCalendar({
             try {
               onTypeChange("day");
             } catch (error) {
-              console.error('Error changing type to day:', error);
+              logger.error('Error changing type to day:', error);
             }
           }}
           className={cn(
@@ -241,7 +242,7 @@ function RescheduleMiniCalendar({
             try {
               onTypeChange("week");
             } catch (error) {
-              console.error('Error changing type to week:', error);
+              logger.error('Error changing type to week:', error);
             }
           }}
           className={cn(
@@ -262,7 +263,7 @@ function RescheduleMiniCalendar({
             try {
               onTypeChange("month");
             } catch (error) {
-              console.error('Error changing type to month:', error);
+              logger.error('Error changing type to month:', error);
             }
           }}
           className={cn(
@@ -416,7 +417,7 @@ export function DashboardView({
     try {
       return hasFeature(feature);
     } catch (error) {
-      console.error('Error checking feature:', feature, error);
+      logger.error('Error checking feature:', feature, error);
       return false;
     }
   };

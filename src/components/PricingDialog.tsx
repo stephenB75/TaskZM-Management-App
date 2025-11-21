@@ -38,6 +38,7 @@ import {
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
 import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured } from "../lib/revenuecat";
+import { logger } from "../lib/logger";
 
 interface DialogOffering {
   priceString: string;
@@ -61,7 +62,7 @@ export function PricingDialog({
   
   // Debug: Log subscription state to help identify current plan
   React.useEffect(() => {
-    console.log('📋 PricingDialog - Current subscription state:', {
+    logger.debug('📋 PricingDialog - Current subscription state:', {
       tier: subscription.tier,
       billingPeriod: subscription.billingPeriod,
       status: subscription.status,
@@ -94,7 +95,7 @@ export function PricingDialog({
       await configureRevenueCat(user.id);
       const rcOfferings = await getOfferings();
 
-      console.log('📥 Offerings loaded in PricingDialog:', {
+      logger.debug('📥 Offerings loaded in PricingDialog:', {
         monthly: rcOfferings.monthly ? { 
           priceString: rcOfferings.monthly.priceString, 
           title: rcOfferings.monthly.title,
@@ -111,7 +112,7 @@ export function PricingDialog({
       // Log yearly subscription details specifically
       if (rcOfferings.yearly) {
         const yearlyPriceNum = parseFloat(rcOfferings.yearly.priceString.replace(/[^0-9.]/g, ''));
-        console.log('📅 Yearly subscription from RevenueCat:', {
+        logger.debug('📅 Yearly subscription from RevenueCat:', {
           title: rcOfferings.yearly.title,
           priceString: rcOfferings.yearly.priceString,
           numericValue: yearlyPriceNum,
@@ -126,19 +127,19 @@ export function PricingDialog({
       
       if (!hasMonthly && !hasYearly) {
         // RevenueCat must be configured and return offerings
-        console.warn('⚠️ RevenueCat configured but no offerings returned');
+        logger.warn('⚠️ RevenueCat configured but no offerings returned');
         setOfferingsError(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
       } else if (!hasMonthly) {
         // Only yearly available
-        console.warn('⚠️ Only yearly subscription available');
+        logger.warn('⚠️ Only yearly subscription available');
         setOfferingsError(SUBSCRIPTION_UI_TEXT.upgrade.monthlyNotAvailable);
       } else if (!hasYearly) {
         // Only monthly available
-        console.warn('⚠️ Only monthly subscription available');
+        logger.warn('⚠️ Only monthly subscription available');
         setOfferingsError(SUBSCRIPTION_UI_TEXT.upgrade.yearlyNotAvailable);
       } else {
         // We have both offerings from RevenueCat - clear any errors
-        console.log('✅ Both offerings loaded from RevenueCat');
+        logger.debug('✅ Both offerings loaded from RevenueCat');
         setOfferingsError(null);
       }
 
@@ -149,7 +150,7 @@ export function PricingDialog({
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
-      console.error('RevenueCat offerings load failed:', error);
+      logger.error('RevenueCat offerings load failed:', error);
       // All RevenueCat errors are critical - we require RevenueCat pricing
       const errorMessage = error?.message || SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc;
       setOfferingsError(errorMessage);
@@ -243,7 +244,7 @@ export function PricingDialog({
   // Validate that we're using RevenueCat data (not static)
   React.useEffect(() => {
     if (monthlyOffering) {
-      console.log('✅ Monthly offering from RevenueCat:', {
+      logger.debug('✅ Monthly offering from RevenueCat:', {
         priceString: monthlyOffering.priceString,
         title: monthlyOffering.title,
         source: 'RevenueCat (dynamic)',

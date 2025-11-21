@@ -1,5 +1,6 @@
 import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
+import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
 
 /**
  * Options for finding next available slot
@@ -135,8 +136,8 @@ export function findNextAvailableSlot(
     }
   }
 
-  const maxHour = 23;
-  const maxMinute = 0;
+  const maxHour = TASK_CALCULATION_CONSTANTS.timeConflict.maxHour;
+  const maxMinute = TASK_CALCULATION_CONSTANTS.timeConflict.maxMinute;
 
   // Try to find a slot after the candidate time
   while (candidateTime.getHours() < maxHour || (candidateTime.getHours() === maxHour && candidateTime.getMinutes() <= maxMinute)) {

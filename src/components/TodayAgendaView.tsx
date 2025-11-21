@@ -13,6 +13,9 @@ import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML } from "../lib/util
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "sonner";
 import type { Task } from "../types";
+import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
+import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
+import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -197,7 +200,7 @@ export function TodayAgendaView({
   // Calculate height based on task duration
   // Auto-adjusts for: badge wrapping, assigned users, tracking, descriptions
   const getTaskHeight = (task: Task) => {
-    const minutes = task.estimatedTime || 30; // Default to 30 minutes if not set
+    const minutes = task.estimatedTime || TASK_CALCULATION_CONSTANTS.defaultDurationMinutes;
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
     
     // Count badges that will be displayed in the top row
@@ -208,8 +211,8 @@ export function TodayAgendaView({
     
     // Estimate if badges will wrap to second line
     const badgeCount = [hasTime, hasPriority, hasTag, hasDuration].filter(Boolean).length;
-    const estimatedBadgeWidth = badgeCount * 60; // Average badge width
-    const availableWidth = isMobile ? 240 : 360; // Account for padding and checkbox
+    const estimatedBadgeWidth = badgeCount * TASK_CALCULATION_CONSTANTS.badge.averageWidth;
+    const availableWidth = isMobile ? TASK_CALCULATION_CONSTANTS.badge.availableWidth.mobile : TASK_CALCULATION_CONSTANTS.badge.availableWidth.desktop;
     const badgesWillWrap = estimatedBadgeWidth > availableWidth;
     const badgeWrapHeight = badgesWillWrap ? 24 : 0; // Extra height if badges wrap
     
@@ -219,7 +222,7 @@ export function TodayAgendaView({
     
     if (minutes < 45) {
       // Compact sizing for shorter tasks: base height + minimal scaling
-      let baseHeight = isMobile ? 72 : 60;
+      let baseHeight = isMobile ? TASK_CALCULATION_CONSTANTS.height.baseShort.mobile : TASK_CALCULATION_CONSTANTS.height.baseShort.desktop;
       
       // Add height for badge wrapping
       baseHeight += badgeWrapHeight;
@@ -234,7 +237,7 @@ export function TodayAgendaView({
       
       // Add extra height for subtasks (only if present)
       if (hasSubtasks) {
-        const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+        const subtaskHeight = Math.min(task.subtasks.length, 3) * TASK_CALCULATION_CONSTANTS.description.lineHeight;
         baseHeight += subtaskHeight;
       }
       
@@ -250,7 +253,7 @@ export function TodayAgendaView({
       return Math.max(durationBasedHeight, minRequiredHeight);
     } else if (minutes >= 60) {
       // Enhanced sizing for tasks 1 hour or more: more space for descriptions
-      let baseHeight = 140;
+      let baseHeight = TASK_CALCULATION_CONSTANTS.height.baseLong;
       
       // Add height for badge wrapping
       baseHeight += badgeWrapHeight;
@@ -259,10 +262,9 @@ export function TodayAgendaView({
       // Description is always shown for tasks >= 60 minutes if it exists
       if (hasDescription) {
         // Estimate description height based on content length
-        // Average ~50 characters per line, ~16px line height for 12px font
-        const estimatedLines = task.description ? Math.ceil(task.description.length / 50) : 4;
-        const lineHeight = 16; // Approximate line height for 12px font
-        const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 6; // Minimum 4 lines, add padding (mb-1.5 = 6px, reduced from mb-3)
+        const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CALCULATION_CONSTANTS.description.charsPerLine) : 4;
+        const lineHeight = TASK_CALCULATION_CONSTANTS.description.lineHeight;
+        const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CALCULATION_CONSTANTS.description.minHeight) + TASK_CALCULATION_CONSTANTS.description.padding;
         baseHeight += descriptionHeight;
       } else {
         // If no description, still need space for the time duration display
@@ -277,7 +279,7 @@ export function TodayAgendaView({
       
       // Add extra height for subtasks (only if present)
       if (hasSubtasks) {
-        const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
+        const subtaskHeight = Math.min(task.subtasks.length, 3) * TASK_CALCULATION_CONSTANTS.description.lineHeight;
         baseHeight += subtaskHeight;
       }
       
@@ -339,7 +341,7 @@ export function TodayAgendaView({
         ref={setNodeRef}
         data-droppable-id="today-agenda"
         className={cn(
-          "h-full flex flex-col transition-all duration-200 bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900",
+          `h-full flex flex-col transition-all duration-200 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
             "bg-primary/10 border-2 border-primary/30 border-dashed",
         )}
@@ -385,7 +387,7 @@ export function TodayAgendaView({
                   <Calendar className="w-6 h-6 text-primary/40" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  No tasks today
+                  {TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button
                   size="sm"
@@ -394,7 +396,7 @@ export function TodayAgendaView({
                   className="!rounded-full"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add task
+                  {TODAY_AGENDA_TEXT.emptyState.addTask}
                 </Button>
               </div>
             ) : (
@@ -450,7 +452,17 @@ export function TodayAgendaView({
                       <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="p-3 rounded-lg bg-gradient-to-r from-[#B8E6D5]/10 via-[#E6D5F0]/10 to-transparent border-l-2 border-[#B8E6D5] cursor-pointer hover:from-[#B8E6D5]/20 hover:via-[#E6D5F0]/15 transition-all"
+                        className="p-3 rounded-lg bg-gradient-to-r cursor-pointer transition-all"
+                        style={{
+                          background: `linear-gradient(to right, ${UI_GRADIENT_COLORS.status.success.from}10, ${UI_GRADIENT_COLORS.status.success.to}10, transparent)`,
+                          borderLeftColor: UI_GRADIENT_COLORS.status.success.from,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(to right, ${UI_GRADIENT_COLORS.status.success.from}20, ${UI_GRADIENT_COLORS.status.success.to}15, transparent)`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(to right, ${UI_GRADIENT_COLORS.status.success.from}10, ${UI_GRADIENT_COLORS.status.success.to}10, transparent)`;
+                        }}
                         onClick={() =>
                           handleTaskClick(nextUpTask)
                         }
@@ -475,8 +487,14 @@ export function TodayAgendaView({
                                     {getTaskTime(nextUpTask)}
                                   </span>
                                 )}
-                                <span className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider bg-[#B8E6D5] text-green-800 dark:text-green-900">
-                                  Next Up
+                                <span 
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider dark:text-green-900"
+                                  style={{
+                                    backgroundColor: UI_GRADIENT_COLORS.status.success.from,
+                                    color: '#065f46', // green-800
+                                  }}
+                                >
+                                  {TODAY_AGENDA_TEXT.nextUp}
                                 </span>
                               </div>
                             </div>

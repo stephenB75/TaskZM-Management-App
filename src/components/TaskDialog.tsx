@@ -48,6 +48,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { UI_GRADIENT_COLORS, UI_FOLDER_COLORS } from "../lib/ui-colors";
+import { Z_INDEX, MAX_HEIGHT } from "../lib/layout-constants";
 import { Calendar } from "./ui/calendar";
 import {
   Popover,
@@ -505,13 +507,13 @@ export function TaskDialog({
         const safePriority = typeof task.priority === 'string' ? task.priority : ((task.priority as any) || 'medium');
         
         if (typeof task.title !== 'string') {
-          console.warn('TaskDialog: Task title is not a string, using default', task);
+          logger.warn('TaskDialog: Task title is not a string, using default', task);
         }
         if (typeof task.status !== 'string') {
-          console.warn('TaskDialog: Task status is not a string, using default', task);
+          logger.warn('TaskDialog: Task status is not a string, using default', task);
         }
         if (typeof task.priority !== 'string') {
-          console.warn('TaskDialog: Task priority is not a string, using default', task);
+          logger.warn('TaskDialog: Task priority is not a string, using default', task);
         }
 
         setTitle(safeTitle);
@@ -629,7 +631,7 @@ export function TaskDialog({
             setFolderId(null);
           }
         } catch (error) {
-          console.error('Error finding folder for task:', error);
+          logger.error('Error finding folder for task:', error);
           setFolderId(null);
         }
         setTags(taskTags);
@@ -682,7 +684,7 @@ export function TaskDialog({
         }
         setAssignedTo(Array.isArray(task.assignedTo) ? task.assignedTo : []);
       } catch (error) {
-        console.error('Error loading task into dialog:', error, task);
+        logger.error('Error loading task into dialog:', error, task);
         toast.error('Error loading task details. Some fields may be missing.');
         // Don't close dialog - use safe defaults instead
         try {
@@ -693,7 +695,7 @@ export function TaskDialog({
           setTags(Array.isArray(task?.tags) ? task.tags : []);
           setSubtasks(Array.isArray(task?.subtasks) ? task.subtasks : []);
         } catch (fallbackError) {
-          console.error('Error setting fallback values:', fallbackError);
+          logger.error('Error setting fallback values:', fallbackError);
         }
       }
     } else {
@@ -1121,7 +1123,7 @@ export function TaskDialog({
           await addAvailableTag(tagToAdd);
         } catch (error) {
           // Silently fail - tag will still be added to this task
-          console.debug('Failed to add tag to available tags:', error);
+          logger.debug('Failed to add tag to available tags:', error);
         }
       }
     }
@@ -1315,7 +1317,7 @@ export function TaskDialog({
         }
       }}
     >
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      <DialogContent className={`max-w-3xl max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full ${UI_GRADIENT_COLORS.dialog.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
         <DialogHeader className="flex-shrink-0 pb-4 border-b border-primary/10">
           <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             {task ? "Edit Task" : "Create New Task"}
@@ -1372,7 +1374,7 @@ export function TaskDialog({
                     <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[200]">
+                    <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                       <SelectItem value="todo">To Do</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
                       <SelectItem value="done">Done</SelectItem>
@@ -1392,7 +1394,7 @@ export function TaskDialog({
                     <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[200]">
+                    <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="high">High</SelectItem>
@@ -1423,7 +1425,7 @@ export function TaskDialog({
                             setTags([...tags, selectedFolder.name]);
                           }
                         } catch (error) {
-                          console.error('Error finding selected folder:', error);
+                          logger.error('Error finding selected folder:', error);
                         }
                       } else {
                         // Remove folder name from tags when folder is deselected
@@ -1435,7 +1437,7 @@ export function TaskDialog({
                               setTags(tags.filter(tag => tag !== previousFolder.name));
                             }
                           } catch (error) {
-                            console.error('Error finding previous folder:', error);
+                            logger.error('Error finding previous folder:', error);
                           }
                         }
                       }
@@ -1444,7 +1446,7 @@ export function TaskDialog({
                     <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20">
                       <SelectValue placeholder="No folder" />
                     </SelectTrigger>
-                    <SelectContent className="z-[200]">
+                    <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                       <SelectItem value="none">No folder</SelectItem>
                       {folders && Array.isArray(folders) ? folders
                         .filter(folder => folder && folder.id && folder.name)
@@ -1453,7 +1455,7 @@ export function TaskDialog({
                             <div className="flex items-center gap-2">
                               <div
                                 className="w-3 h-3 rounded"
-                                style={{ backgroundColor: folder.color || '#3b82f6' }}
+                                style={{ backgroundColor: folder.color || UI_FOLDER_COLORS.fallback }}
                               />
                               <span>{folder.name}</span>
                             </div>
@@ -1714,7 +1716,10 @@ export function TaskDialog({
                                 <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer">
                                   <SelectValue placeholder="Hour" />
                                 </SelectTrigger>
-                                <SelectContent className="max-h-60 z-[200]">
+                                <SelectContent 
+                                  className="max-h-60"
+                                  style={{ zIndex: Z_INDEX.SELECT_CONTENT }}
+                                >
                                   {timeFormat === "12hr" 
                                     ? Array.from({ length: 12 }, (_, i) => {
                                         const hour = i + 1;
@@ -1766,7 +1771,10 @@ export function TaskDialog({
                                 >
                                   <SelectValue placeholder="Min" />
                                 </SelectTrigger>
-                                <SelectContent className="max-h-60 z-[200]">
+                                <SelectContent 
+                                  className="max-h-60"
+                                  style={{ zIndex: Z_INDEX.SELECT_CONTENT }}
+                                >
                                   {Array.from({ length: 60 }, (_, i) => {
                                     const minuteValue = i.toString().padStart(2, "0");
                                     return (
@@ -1802,7 +1810,7 @@ export function TaskDialog({
                                   <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer">
                                     <SelectValue placeholder="AM/PM" />
                                   </SelectTrigger>
-                                  <SelectContent className="z-[200]">
+                                  <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                                     <SelectItem value="AM" className="cursor-pointer">AM</SelectItem>
                                     <SelectItem value="PM" className="cursor-pointer">PM</SelectItem>
                                   </SelectContent>
@@ -1951,7 +1959,10 @@ export function TaskDialog({
                         <SelectTrigger className="h-9 bg-white dark:bg-gray-800/80 border-primary/20">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="max-h-60 z-[200]">
+                        <SelectContent 
+                          className="max-h-60"
+                          style={{ zIndex: Z_INDEX.SELECT_CONTENT }}
+                        >
                           <SelectItem value="local">Local Time</SelectItem>
                           <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
                           <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
@@ -2013,7 +2024,7 @@ export function TaskDialog({
                         <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20">
                           <SelectValue placeholder="Select a tag to add..." />
                         </SelectTrigger>
-                        <SelectContent className="z-[200]">
+                        <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                           {availableTags
                             .filter((tag) => !tags.includes(tag))
                             .map((tag) => (
@@ -2155,7 +2166,7 @@ export function TaskDialog({
                                       <SelectTrigger className="h-6 text-xs border-primary/20 bg-white dark:bg-gray-800/80">
                                         <SelectValue placeholder="Assign..." />
                                       </SelectTrigger>
-                                      <SelectContent className="z-[200]">
+                                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                                         {teamMembers
                                           .filter(
                                             (member) =>
@@ -2278,7 +2289,7 @@ export function TaskDialog({
                                 setRecurrenceDayOfMonth((prev) => prev || 1);
                               }
                             } catch (error) {
-                              console.error('Error setting recurrence type:', error);
+                              logger.error('Error setting recurrence type:', error);
                               toast.error('Failed to set recurrence type', {
                                 description: error instanceof Error ? error.message : 'Please try again',
                                 duration: TOAST_DURATION_SHORT_MS,
@@ -2289,7 +2300,7 @@ export function TaskDialog({
                           <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="z-[200]">
+                          <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                             <SelectItem value="none">Does not repeat</SelectItem>
                             <SelectItem value="daily">Daily</SelectItem>
                             <SelectItem value="weekly">Weekly</SelectItem>
@@ -2376,7 +2387,10 @@ export function TaskDialog({
                           <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="max-h-60 z-[200]">
+                          <SelectContent 
+                          className="max-h-60"
+                          style={{ zIndex: Z_INDEX.SELECT_CONTENT }}
+                        >
                             {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                               <SelectItem key={day} value={day.toString()}>
                                 {day}
@@ -2495,7 +2509,7 @@ export function TaskDialog({
                         <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20">
                           <SelectValue placeholder="Add assignee..." />
                         </SelectTrigger>
-                        <SelectContent className="z-[200]">
+                        <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                           {teamMembers
                             .filter((member) => !assignedTo.includes(member.id))
                             .map((member) => (
@@ -2571,7 +2585,7 @@ export function TaskDialog({
                         <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20">
                           <SelectValue placeholder="Add a dependency..." />
                         </SelectTrigger>
-                        <SelectContent className="z-[200]">
+                        <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                           {availableTasksForDependencies
                             .filter((t) => !dependencies.includes(t.id))
                             .map((t) => (

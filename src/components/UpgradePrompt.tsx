@@ -20,6 +20,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
+import { UI_UPGRADE_PROMPT_COLORS } from "../lib/ui-colors";
 
 interface UpgradePromptProps {
   open: boolean;
@@ -141,8 +142,8 @@ export function UpgradePrompt({
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-[#D4C5F9]/20 flex items-center justify-center">
-              <Icon className="w-5 h-5 text-[#D4C5F9]" />
+            <div className={`w-10 h-10 rounded-full ${UI_UPGRADE_PROMPT_COLORS.accentBgOpacity20} flex items-center justify-center`}>
+              <Icon className={`w-5 h-5 ${UI_UPGRADE_PROMPT_COLORS.accentTextClass}`} />
             </div>
             <AlertDialogTitle>
               {SUBSCRIPTION_UI_TEXT.upgradePrompt.unlock(config.title)}
@@ -162,16 +163,16 @@ export function UpgradePrompt({
                       key={index}
                       className="flex items-start gap-2 text-sm"
                     >
-                      <Sparkles className="w-4 h-4 text-[#D4C5F9] flex-shrink-0 mt-0.5" />
+                      <Sparkles className={`w-4 h-4 ${UI_UPGRADE_PROMPT_COLORS.accentTextClass} flex-shrink-0 mt-0.5`} />
                       <span>{benefit}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="bg-[#D4C5F9]/10 border border-[#D4C5F9]/20 rounded-lg p-3">
+              <div className={`${UI_UPGRADE_PROMPT_COLORS.accentBgOpacity10} ${UI_UPGRADE_PROMPT_COLORS.accentBorderOpacity20} rounded-lg p-3`}>
                 <p className="text-sm">
-                  <span className="text-[#D4C5F9]">
+                  <span className={UI_UPGRADE_PROMPT_COLORS.accentTextClass}>
                     {SUBSCRIPTION_UI_TEXT.upgradePrompt.specialOffer}
                   </span>{" "}
                   {SUBSCRIPTION_UI_TEXT.upgradePrompt.getProFeatures(DEFAULT_MONTHLY_PRICE).split(DEFAULT_MONTHLY_PRICE).map((part, i, arr) => 
@@ -191,7 +192,7 @@ export function UpgradePrompt({
           <AlertDialogCancel>{SUBSCRIPTION_UI_TEXT.upgradePrompt.maybeLater}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleUpgrade}
-            className="bg-[#D4C5F9] hover:bg-[#D4C5F9]/90 text-gray-800"
+            className={`${UI_UPGRADE_PROMPT_COLORS.accentClass} ${UI_UPGRADE_PROMPT_COLORS.accentHoverClass} text-gray-800`}
           >
             <Sparkles className="w-4 h-4 mr-2" />
             {SUBSCRIPTION_UI_TEXT.upgradePrompt.upgradeToPro}

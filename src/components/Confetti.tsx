@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { Z_INDEX } from '../lib/layout-constants';
 
 interface ConfettiProps {
   trigger: boolean;
@@ -158,8 +159,13 @@ export function Confetti({ trigger, onComplete }: ConfettiProps) {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[9999]"
-      style={{ position: 'fixed', top: 0, left: 0 }}
+      className="fixed inset-0 pointer-events-none"
+      style={{ 
+        zIndex: Z_INDEX.CONFETTI,
+        position: 'fixed', 
+        top: 0, 
+        left: 0 
+      }}
     />
   );
 }

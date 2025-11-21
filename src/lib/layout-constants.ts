@@ -281,3 +281,18 @@ export const APP_DESCRIPTION = 'TaskZM: A comprehensive neurodivergent-friendly 
 export const APP_SHORT_NAME = 'TaskZM';
 export const APP_FULL_NAME = 'TaskZM - Neurodivergent-Friendly Task Manager';
 
+// Z-Index Constants
+export const Z_INDEX = {
+  SELECT_CONTENT: 200, // z-[200] - Used in TaskDialog SelectContent (13 instances)
+  BADGE: 3, // z-[3] - Used in DraggableTodayAgendaTask for badge
+  TIMELINE_LINE: 1, // z-[1] - Used in DraggableTodayAgendaTask for timeline line
+  DROPDOWN: 9999, // z-[9999] - Used in Team/Folder panels dropdowns
+  CONFETTI: 9999, // z-[9999] - Used in Confetti component
+  APP_TOUR: 10000, // z-[10000] - Used in AppTour overlay
+} as const;
+
+// Max Height Constants
+export const MAX_HEIGHT = {
+  SELECT: 60, // max-h-60 - Used in TaskDialog for SelectContent
+} as const;
+

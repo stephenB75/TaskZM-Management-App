@@ -29,6 +29,7 @@ import {
   TASK_CARD_TEXT,
   TASK_CARD_LINE_CLAMP,
 } from "../lib/task-card-constants";
+import { Z_INDEX } from "../lib/layout-constants";
 
 interface DraggableTodayAgendaTaskProps {
   task: Task;
@@ -156,7 +157,10 @@ export function DraggableTodayAgendaTask({
       {isNextUp && (
         <div className="flex gap-3 w-full min-w-0 relative mb-1">
           <div className="w-16 flex-shrink-0" />
-          <span className="text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground self-start relative z-[3]">
+          <span 
+            className="text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground self-start relative"
+            style={{ zIndex: Z_INDEX.BADGE }}
+          >
             NEXT UP
           </span>
         </div>
@@ -206,8 +210,9 @@ export function DraggableTodayAgendaTask({
           {/* Vertical line - starts at headline center (aligned with dot center) and extends to bottom of task card, colored by priority */}
           {index < totalTasks - 1 && (
             <div 
-              className="absolute left-1/2 -translate-x-1/2 w-[2px] z-[1]"
+              className="absolute left-1/2 -translate-x-1/2 w-[2px]"
               style={{ 
+                zIndex: Z_INDEX.TIMELINE_LINE,
                 // Line starts at headline center position (same as dot center)
                 top: `${headlineCenterPosition}px`, // Headline center position (dot center)
                 height: `${(getTaskHeight(task) * 1.247) - headlineCenterPosition}px`, // From headline center to bottom
