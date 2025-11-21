@@ -134,7 +134,7 @@ export function TaskCard({
           <div className="flex-1 min-w-0">
             {/* Scheduled Time with AM/PM - Top Left Corner */}
             {formatTimeAMPM(task.scheduledDate || task.dueDate) && (
-              <div className="flex items-center gap-1 mb-1">
+              <div className="flex items-center gap-1 mb-1 px-1">
                 <Clock className="w-3 h-3 text-gray-400" />
                 <span className="text-xs text-gray-600">
                   {formatTimeAMPM(task.scheduledDate || task.dueDate)}
@@ -143,7 +143,7 @@ export function TaskCard({
             )}
             
             <h3 className={cn(
-              'text-sm mb-1 break-words',
+              'text-sm mb-1 break-words px-1',
               task.status === 'done' && 'line-through text-gray-500'
             )}>
               {task.title}
@@ -152,7 +152,7 @@ export function TaskCard({
             {task.description && (
               <div 
                 className={cn(
-                  "text-[10px] text-gray-600 dark:text-gray-400 line-clamp-4 break-words mb-2 px-1.5",
+                  "text-[10px] text-gray-600 dark:text-gray-400 line-clamp-4 break-words mb-2 px-1.5 py-0.5",
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",

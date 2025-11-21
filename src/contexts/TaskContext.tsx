@@ -6,6 +6,7 @@ import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
+import { findNextAvailableSlot } from '../lib/time-conflict';
 import type { Task, Project, Folder, TaskFilters, ViewConfig, HoursSettings, RolloverSettings } from '../types';
 import {
   WORKSPACE_MAX_RETRIES,
@@ -2154,7 +2155,32 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       
       for (const task of tasksToRollover) {
         try {
-          await updateTask(task.id, { scheduledDate: todayString });
+          // Find an available time slot on today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // Start checking from 9:00 AM (typical work start time)
+          const startTime = new Date(today);
+          startTime.setHours(9, 0, 0, 0);
+          
+          // Get task duration
+          const taskDuration = task.estimatedTime || 30; // Default to 30 minutes
+          
+          // Find next available slot on today
+          const availableSlot = findNextAvailableSlot(task.id, startTime, taskDuration, tasks);
+          
+          // Ensure the slot is on today (not tomorrow)
+          if (availableSlot.getDate() === today.getDate() && 
+              availableSlot.getMonth() === today.getMonth() && 
+              availableSlot.getFullYear() === today.getFullYear()) {
+            // Use the available slot time
+            await updateTask(task.id, { scheduledDate: availableSlot.toISOString() });
+          } else {
+            // Fallback: use 9:00 AM if no slot found
+            startTime.setHours(9, 0, 0, 0);
+            await updateTask(task.id, { scheduledDate: startTime.toISOString() });
+          }
+          
           rolledCount++;
         } catch (error) {
           logger.error('Failed to rollover task:', task.id, error);

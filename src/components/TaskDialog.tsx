@@ -955,6 +955,14 @@ export function TaskDialog({
       scheduledDateOnly.setHours(0, 0, 0, 0);
       
       if (scheduledDateOnly.getTime() === today.getTime()) {
+        // Check if this is an existing task that's already scheduled for today
+        const isExistingTaskOnToday = task && task.scheduledDate && 
+          (() => {
+            const existingDate = new Date(task.scheduledDate);
+            existingDate.setHours(0, 0, 0, 0);
+            return existingDate.getTime() === today.getTime();
+          })();
+        
         // Create a temporary task object for limit checking
         const tempTask: Task = {
           ...(task || {}),
@@ -967,8 +975,12 @@ export function TaskDialog({
         
         if (limitCheck.wouldExceed) {
           // Would exceed limit - prevent and show error
+          const message = isExistingTaskOnToday 
+            ? `Updating this task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Task: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`
+            : `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`;
+          
           toast.error('Daily limit exceeded', {
-            description: `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
+            description: message,
             duration: 5000,
           });
           return;
@@ -976,8 +988,12 @@ export function TaskDialog({
         
         if (warningLevel === 'warning') {
           // Close to limit - show warning but allow
+          const message = isExistingTaskOnToday
+            ? `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Updating this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`
+            : `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`;
+          
           toast.warning('Approaching daily limit', {
-            description: `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`,
+            description: message,
             duration: 4000,
           });
         }
