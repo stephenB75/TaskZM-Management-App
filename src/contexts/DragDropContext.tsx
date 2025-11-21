@@ -5,6 +5,7 @@ import { DraggableTaskCard } from '../components/DraggableTaskCard';
 import { isTaskBlocked, getIncompleteDependencies } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
+import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -37,7 +38,7 @@ interface DragDropProviderProps {
 }
 
 export function DragDropProvider({ children }: DragDropProviderProps) {
-  const { tasks, updateTask, folders } = useTasks();
+  const { tasks, updateTask, folders, hoursSettings } = useTasks();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [pendingTaskUpdate, setPendingTaskUpdate] = useState<{
@@ -162,16 +163,43 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       
       today.setHours(hours, minutes, 0, 0);
       
-      // Check for time conflicts
+      // Get category hours if applicable
+      const categoryHours = getCategoryHoursForTask(task, today, hoursSettings);
+      
+      // Check for time conflicts and find next available slot after current time
       const taskDuration = task.estimatedTime || 30; // Default to 30 minutes if not specified
       const conflictingTask = checkTimeConflict(taskId, today, taskDuration, tasks);
 
-      if (conflictingTask) {
-        // Find next available slot
-        const alternativeTime = findNextAvailableSlot(taskId, today, taskDuration, tasks);
+      // Find next available slot (ensuring after current time for today)
+      const now = new Date();
+      const isToday = today.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() &&
+                      today.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+      
+      let finalTime = today;
+      
+      if (conflictingTask || (isToday && today.getTime() < now.getTime())) {
+        // Find next available slot after current time (if today) or requested time
+        const alternativeTime = findNextAvailableSlot(
+          taskId, 
+          today, 
+          taskDuration, 
+          tasks,
+          {
+            ensureAfterCurrentTime: isToday,
+            categoryHours: categoryHours,
+          }
+        );
         
-        // Only show dialog if alternative time is different and valid
+        // Check if alternative time is valid and different
         if (alternativeTime.getTime() !== today.getTime() && alternativeTime.getHours() < 24) {
+          // Check if alternative time is before current time (shouldn't happen, but safety check)
+          if (isToday && alternativeTime.getTime() < now.getTime()) {
+            toast.error('No available time slots', {
+              description: 'No available slots after current time within category hours and 5-hour limit.',
+            });
+            return;
+          }
+          
           // Store the pending update and show dialog
           setPendingTaskUpdate({
             taskId,
@@ -182,24 +210,74 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           return;
         } else {
           // No valid alternative found, show error
-          toast.error('Time slot is already taken', {
-            description: 'Please choose a different time slot on the timeline.',
+          const reason = isToday && today.getTime() < now.getTime() 
+            ? 'Selected time is in the past. Please choose a time after the current time.'
+            : 'Time slot is already taken or outside category hours. Please choose a different time slot.';
+          toast.error('Time slot unavailable', {
+            description: reason,
+          });
+          return;
+        }
+      } else if (isToday && today.getTime() < now.getTime()) {
+        // Time is in the past, find next available slot
+        const alternativeTime = findNextAvailableSlot(
+          taskId,
+          now,
+          taskDuration,
+          tasks,
+          {
+            ensureAfterCurrentTime: true,
+            categoryHours: categoryHours,
+          }
+        );
+        
+        if (alternativeTime.getHours() < 24) {
+          setPendingTaskUpdate({
+            taskId,
+            requestedTime: new Date(today),
+            alternativeTime,
+          });
+          setConflictDialogOpen(true);
+          return;
+        } else {
+          toast.error('No available time slots', {
+            description: 'No available slots after current time within category hours and 5-hour limit.',
           });
           return;
         }
       }
+      
+      finalTime = today;
 
       // Check 5-hour daily limit before scheduling
-      const limitCheck = checkDailyLimit(today, task, tasks);
+      const limitCheck = checkDailyLimit(finalTime, task, tasks);
       const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours);
       
       if (limitCheck.wouldExceed) {
-        // Would exceed limit - prevent and show error
-        toast.error('Daily limit exceeded', {
-          description: `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
-          duration: 5000,
-        });
-        return;
+        // Would exceed limit - try to find a slot that fits
+        const alternativeTime = findNextAvailableSlot(
+          taskId,
+          finalTime,
+          taskDuration,
+          tasks,
+          {
+            ensureAfterCurrentTime: isToday,
+            categoryHours: categoryHours,
+          }
+        );
+        
+        // Check if alternative time would also exceed limit
+        const altLimitCheck = checkDailyLimit(alternativeTime, task, tasks);
+        if (altLimitCheck.wouldExceed) {
+          toast.error('Daily limit exceeded', {
+            description: `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
+            duration: 5000,
+          });
+          return;
+        }
+        
+        // Use alternative time that fits within limit
+        finalTime = alternativeTime;
       }
       
       if (warningLevel === 'warning') {
@@ -212,7 +290,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
 
       // No conflict and within limit, proceed with update
       updateTask(taskId, {
-        scheduledDate: today.toISOString(),
+        scheduledDate: finalTime.toISOString(),
       });
       return;
     }
