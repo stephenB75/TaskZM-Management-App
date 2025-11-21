@@ -418,7 +418,7 @@ export const DraggableTaskCard = React.forwardRef<
           </div>
 
           {/* Row 2: H3 Title (Bold) */}
-          <div className={cn("flex items-start", isMobile ? "gap-1 -mt-0.5 px-1" : "gap-1.5 px-1")}>
+          <div className={cn("flex items-start mt-1", isMobile ? "gap-1 px-1 mb-1" : "gap-1.5 px-1 mb-1")}>
             {task.recurrence && task.recurrence.type !== "none" && (
               <Repeat className={cn("text-primary flex-shrink-0 mt-0.5", isMobile ? "w-3 h-3" : "w-3.5 h-3.5")} />
             )}
@@ -437,7 +437,7 @@ export const DraggableTaskCard = React.forwardRef<
           {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
             <div 
               className={cn(
-                "text-gray-500 leading-snug break-words text-[10px] px-1.5 py-0.5",
+                "text-gray-500 leading-snug break-words text-[10px] px-1.5 py-1 mt-0.5 mb-1",
                 // For exactly 1 hour (60 minutes), show 2 lines; for longer tasks, show 4 lines
                 task.estimatedTime === 60 ? "line-clamp-2" : "line-clamp-4",
                 // Rich text formatting styles - only apply if HTML is present

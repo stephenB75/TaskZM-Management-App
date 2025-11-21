@@ -143,7 +143,7 @@ export function TaskCard({
             )}
             
             <h3 className={cn(
-              'text-sm mb-1 break-words px-1',
+              'text-sm mb-1.5 break-words px-1 mt-1',
               task.status === 'done' && 'line-through text-gray-500'
             )}>
               {task.title}
@@ -152,7 +152,7 @@ export function TaskCard({
             {task.description && (
               <div 
                 className={cn(
-                  "text-[10px] text-gray-600 dark:text-gray-400 line-clamp-4 break-words mb-2 px-1.5 py-0.5",
+                  "text-[10px] text-gray-600 dark:text-gray-400 line-clamp-4 break-words mb-2 px-1.5 py-1 mt-0.5",
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
