@@ -150,10 +150,11 @@ export const TASK_CARD_HEIGHT_CONFIG = {
       withTracking: 114,
       withAssigned: 114,
       withBoth: 126,
-      mobileBase: 108,
+      compact: 72,
     },
     medium: {
       min: 100,
+      compact: 84,
     },
     long: {
       base: 160,

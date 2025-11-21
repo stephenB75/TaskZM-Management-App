@@ -128,6 +128,22 @@ export const DraggableTaskCard = React.forwardRef<
       return `${minutes}m`;
     };
 
+    const scheduledTimeLabel = formatTimeAMPM(
+      task.scheduledDate || task.dueDate,
+    );
+    const estimatedTimeValue = typeof task.estimatedTime === "number" ? task.estimatedTime : null;
+    const hasEstimatedTime = estimatedTimeValue !== null;
+    const showTrackingBadgeTopRow =
+      hasEstimatedTime &&
+      estimatedTimeValue < 45 &&
+      hasFeature("pomodoroTimer") &&
+      timerState.isRunning;
+    const showTrackedTimeTopRow =
+      hasEstimatedTime &&
+      estimatedTimeValue < 45 &&
+      Boolean(task.actualTime && task.actualTime > 0) &&
+      !timerState.isRunning;
+
     // Format timer display (actualTime tracked)
     const formatTimer = (minutes: number | null) => {
       if (!minutes) return null;
@@ -150,8 +166,8 @@ export const DraggableTaskCard = React.forwardRef<
       const hasPriority = true; // Always shown
       const hasTag = task.tags && task.tags.length > 0;
       const hasDuration = !!task.estimatedTime;
-      const hasTracking = task.estimatedTime && task.estimatedTime < 45 && hasFeature("pomodoroTimer") && timerState.isRunning;
-      const hasTrackedTime = task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning;
+      const hasTracking = showTrackingBadgeTopRow;
+      const hasTrackedTime = showTrackedTimeTopRow;
       
       // Estimate if badges will wrap to second line
       const badgeCount = [hasTime, hasPriority, hasTag, hasDuration, hasTracking || hasTrackedTime].filter(Boolean).length;
@@ -175,9 +191,6 @@ export const DraggableTaskCard = React.forwardRef<
         // Add height for badge wrapping
         baseHeight += badgeWrapHeight;
         
-        // Check if any additional components are active
-        const hasActiveComponents = hasPomodoro || hasTrackedTimeFull || hasAssignedUsers || hasPomodoroTimer || hasSubtasks;
-        
         // Add height for components (only if present)
         if (isMobile) {
           let calculatedBaseHeight = baseHeight;
@@ -193,7 +206,7 @@ export const DraggableTaskCard = React.forwardRef<
             // One of assigned users or pomodoro timer in bottom row
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned;
           } else {
-            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.mobileBase;
+            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.compact;
           }
           
           // Add extra height for subtasks (reduced spacing)
@@ -216,7 +229,7 @@ export const DraggableTaskCard = React.forwardRef<
           } else if (hasAssignedUsers || hasPomodoroTimer) {
             calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned;
           } else {
-            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.mobileBase;
+            calculatedBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.compact;
           }
           
           // Add extra height for subtasks (reduced spacing)
@@ -326,7 +339,9 @@ export const DraggableTaskCard = React.forwardRef<
       } else {
         // Standard sizing for medium tasks (45-59 mins)
         // No description shown for these tasks, so height is based on duration + active components
-        let minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
+        let minHeight = (hasAssignedUsers || hasSubtasks)
+          ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min
+          : TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.compact;
         
         // Add height for badge wrapping
         minHeight += badgeWrapHeight;
@@ -376,6 +391,29 @@ export const DraggableTaskCard = React.forwardRef<
     };
 
     const cardHeight = getCardHeight();
+    const topRowItemCount = [
+      Boolean(scheduledTimeLabel),
+      true,
+      Boolean(task.tags && task.tags.length > 0),
+      hasEstimatedTime,
+      showTrackingBadgeTopRow,
+      showTrackedTimeTopRow,
+    ].filter(Boolean).length;
+    const isTopRowCompact = topRowItemCount <= 2;
+    const topRowGapClass = isMobile
+      ? isTopRowCompact
+        ? "gap-0.5"
+        : "gap-1"
+      : isTopRowCompact
+        ? "gap-1"
+        : "gap-1.5";
+    const topRowPaddingClass = isMobile
+      ? isTopRowCompact
+        ? "pr-1.5"
+        : "pr-2"
+      : isTopRowCompact
+        ? "pr-3"
+        : "pr-4";
 
     return (
       <div
@@ -406,11 +444,7 @@ export const DraggableTaskCard = React.forwardRef<
           style={{
             width: `${TASK_CARD_CALCULATIONS.priorityLine.width}px`,
             minHeight: `${TASK_CARD_CALCULATIONS.priorityLine.minHeight}px`,
-          }}
-          style={{
-            backgroundColor: getPriorityLineColor(
-              task.priority,
-            ),
+            backgroundColor: getPriorityLineColor(task.priority),
           }}
         />
 
@@ -462,25 +496,21 @@ export const DraggableTaskCard = React.forwardRef<
           }}
         >
           {/* Row 1: Time + Priority Badge + Tag + Duration + Tracking Badge (mobile) (left) + Checkbox (right) */}
-          <div className={cn("flex items-center justify-between", isMobile ? "gap-1" : "gap-2")}>
-            <div
-              className={cn(
-                "flex items-center flex-1 min-w-0 flex-wrap",
-                isMobile ? "gap-1" : "gap-1.5",
-                // Ensure badges don't collide with the completion button
-                isMobile ? "pr-2" : "pr-4"
-              )}
-            >
+      <div className={cn("flex items-center justify-between", isMobile ? "gap-1" : "gap-2")}>
+        <div
+          className={cn(
+            "flex items-center flex-1 min-w-0 flex-wrap",
+            topRowGapClass,
+            // Ensure badges don't collide with the completion button
+            topRowPaddingClass,
+          )}
+        >
               {/* Scheduled Time with AM/PM */}
-              {formatTimeAMPM(
-                task.scheduledDate || task.dueDate,
-              ) && (
+          {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <Clock className={cn("text-gray-400", isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop)} />
                   <span className={cn("text-gray-600 font-bold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-                    {formatTimeAMPM(
-                      task.scheduledDate || task.dueDate,
-                    )}
+                {scheduledTimeLabel}
                   </span>
                 </div>
               )}
@@ -519,7 +549,7 @@ export const DraggableTaskCard = React.forwardRef<
               )}
 
               {/* Tracking Badge - Shown at top with other badges (mobile and desktop for tasks < 45 mins) */}
-              {task.estimatedTime && task.estimatedTime < 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
+              {showTrackingBadgeTopRow && (
                 <div className="flex items-center animate-pulse flex-shrink-0">
                   <div 
                     className={cn(
@@ -537,7 +567,7 @@ export const DraggableTaskCard = React.forwardRef<
               )}
 
               {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
-              {task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
+              {showTrackedTimeTopRow && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <Timer 
                     className={cn(isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} 
