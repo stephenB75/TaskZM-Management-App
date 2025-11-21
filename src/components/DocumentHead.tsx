@@ -61,6 +61,32 @@ export function DocumentHead() {
       document.head.appendChild(link);
     };
 
+    // Set iOS PWA title (for home screen label)
+    const setAppleMobileWebAppTitle = () => {
+      let meta: HTMLMetaElement | null = document.querySelector(
+        "meta[name='apple-mobile-web-app-title']",
+      );
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.name = "apple-mobile-web-app-title";
+        document.head.appendChild(meta);
+      }
+      meta.content = APP_TITLE;
+    };
+
+    // Set application name (for PWA install prompts on some browsers)
+    const setApplicationName = () => {
+      let meta: HTMLMetaElement | null = document.querySelector(
+        "meta[name='application-name']",
+      );
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.name = "application-name";
+        document.head.appendChild(meta);
+      }
+      meta.content = APP_TITLE;
+    };
+
     // Set theme color
     const setThemeColor = () => {
       let meta: HTMLMetaElement | null = document.querySelector(
@@ -120,6 +146,8 @@ export function DocumentHead() {
     setAppleTouchIcon();
     setThemeColor();
     setDescription();
+    setAppleMobileWebAppTitle();
+    setApplicationName();
     setOGTags();
   }, []);
 
