@@ -230,11 +230,13 @@ export const DraggableTaskCard = React.forwardRef<
         // Add height for badge wrapping
         baseHeight += badgeWrapHeight;
         
-        // Add extra height for description (line-clamp-2 or line-clamp-4)
+        // Add extra height for description (full height, no line clamp)
         if (hasDescription) {
-          const descriptionLines = duration === 60 ? 2 : 4;
-          const lineHeight = 14; // Approximate line height for 10px font
-          const descriptionHeight = descriptionLines * lineHeight + 12; // Add padding (mb-3 = 12px)
+          // Estimate description height based on content length
+          // Average ~50 characters per line, ~16px line height for 12px font
+          const estimatedLines = task.description ? Math.ceil(task.description.length / 50) : 4;
+          const lineHeight = 16; // Approximate line height for 12px font
+          const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 12; // Minimum 4 lines, add padding (mb-3 = 12px)
           baseHeight += descriptionHeight;
         }
         
@@ -500,8 +502,6 @@ export const DraggableTaskCard = React.forwardRef<
             <div 
               className={cn(
                 `text-gray-500 leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
-                // For exactly 1 hour (60 minutes), show 2 lines; for longer tasks, show 4 lines
-                task.estimatedTime === 60 ? TASK_CARD_LINE_CLAMP.description.oneHour : TASK_CARD_LINE_CLAMP.description.longer,
                 // Rich text formatting styles - only apply if HTML is present
                 // Note: Rich text editor font size changes will override this base size via inline styles
                 hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",

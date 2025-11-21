@@ -65,7 +65,7 @@ export const TASK_CARD_FONT_SIZES = {
     mobile: 'text-sm',
     desktop: 'text-base',
   },
-  description: 'text-[10px]',
+  description: 'text-[12px]',
   tracking: {
     mobile: 'text-[7px]',
     desktop: 'text-[8px]',

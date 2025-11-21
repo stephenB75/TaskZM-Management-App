@@ -376,8 +376,6 @@ export function DraggableTodayAgendaTask({
               <div 
                 className={cn(
                   `text-gray-500 leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
-                  // For exactly 1 hour (60 minutes), show 2 lines; for longer tasks, show 4 lines
-                  task.estimatedTime === 60 ? TASK_CARD_LINE_CLAMP.description.oneHour : TASK_CARD_LINE_CLAMP.description.longer,
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",

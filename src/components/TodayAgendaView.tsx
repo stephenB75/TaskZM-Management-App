@@ -244,11 +244,13 @@ export function TodayAgendaView({
       // Add height for badge wrapping
       baseHeight += badgeWrapHeight;
       
-      // Add extra height for description
+      // Add extra height for description (full height, no line clamp)
       if (hasDescription) {
-        const descriptionLines = minutes === 60 ? 2 : 4;
-        const lineHeight = 14; // Approximate line height for 10px font
-        const descriptionHeight = descriptionLines * lineHeight + 12; // Add padding (mb-3 = 12px)
+        // Estimate description height based on content length
+        // Average ~50 characters per line, ~16px line height for 12px font
+        const estimatedLines = task.description ? Math.ceil(task.description.length / 50) : 4;
+        const lineHeight = 16; // Approximate line height for 12px font
+        const descriptionHeight = Math.max(estimatedLines * lineHeight, 64) + 12; // Minimum 4 lines, add padding (mb-3 = 12px)
         baseHeight += descriptionHeight;
       }
       

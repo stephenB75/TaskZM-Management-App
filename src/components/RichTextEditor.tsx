@@ -40,12 +40,12 @@ export function RichTextEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   
-  // Standard font size: 10pt (10px)
-  const STANDARD_FONT_SIZE = '10px';
+  // Standard font size: 12pt (12px)
+  const STANDARD_FONT_SIZE = '12px';
 
-  // Normalize font sizes to 10pt
+  // Normalize font sizes to 12pt
   const normalizeFontSizes = (element: HTMLElement) => {
-    // Remove all font size styles and set to 10pt
+    // Remove all font size styles and set to 12pt
     const allElements = element.querySelectorAll('*');
     allElements.forEach((el) => {
       const htmlEl = el as HTMLElement;
@@ -89,13 +89,13 @@ export function RichTextEditor({
       // Normalize font sizes on input
       normalizeFontSizes(editorRef.current);
       
-      // Ensure all paragraphs have 10pt font size
+      // Ensure all paragraphs have 12pt font size
       const paragraphs = editorRef.current.querySelectorAll('p');
       paragraphs.forEach((p) => {
         (p as HTMLElement).style.fontSize = STANDARD_FONT_SIZE;
       });
       
-      // Ensure the editor itself has 10pt font size
+      // Ensure the editor itself has 12pt font size
       editorRef.current.style.fontSize = STANDARD_FONT_SIZE;
       
       onChange(editorRef.current.innerHTML);
@@ -106,7 +106,7 @@ export function RichTextEditor({
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain');
     
-    // Convert plain text to paragraphs with 10pt font size
+    // Convert plain text to paragraphs with 12pt font size
     const paragraphs = text.split('\n').filter(p => p.trim());
     const formattedText = paragraphs.length > 0
       ? paragraphs.map(p => `<p style="font-size: ${STANDARD_FONT_SIZE}">${p}</p>`).join('')
@@ -139,7 +139,7 @@ export function RichTextEditor({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // When Enter is pressed, ensure new paragraphs have 10pt font size
+    // When Enter is pressed, ensure new paragraphs have 12pt font size
     if (e.key === 'Enter') {
       setTimeout(() => {
         if (editorRef.current) {
@@ -156,7 +156,7 @@ export function RichTextEditor({
               paragraph = (container as HTMLElement).closest('p') as HTMLElement;
             }
             
-            // Set font size to 10pt for the new paragraph
+            // Set font size to 12pt for the new paragraph
             if (paragraph) {
               paragraph.style.fontSize = STANDARD_FONT_SIZE;
             }
@@ -278,7 +278,7 @@ export function RichTextEditor({
         // Remove all formatting from selection
         execCommand('removeFormat');
         execCommand('unlink'); // Remove links too
-        // Ensure font size is reset to 10pt
+        // Ensure font size is reset to 12pt
         if (editorRef.current) {
           const selection = window.getSelection();
           if (selection && selection.rangeCount > 0) {
