@@ -7,6 +7,7 @@ import { checkTimeConflict, findNextAvailableSlot, formatTime, reorganizeConflic
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
+import { logger } from '../lib/logger';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -292,35 +293,51 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       // Then reorganize all tasks on the timeline to ensure chronological order
       // This ensures tasks are always in order and don't overlap, keeping timeline current with time of day
       // Use a delay to ensure the task update is processed and state is updated
+      // Note: We capture the current values in the closure to avoid stale references
+      const capturedTasks = tasks;
+      const capturedUpdateTask = updateTask;
+      const capturedToday = today;
+      const capturedIsToday = isToday;
+      const capturedCategoryHours = categoryHours;
+      const capturedTaskId = taskId;
+      const capturedFinalTime = finalTime;
+      
       setTimeout(() => {
-        // Get the latest tasks from the context (they should include the newly scheduled task)
-        // We need to access the latest tasks, so we'll use a callback approach
-        // For now, we'll reorganize based on the current tasks state plus our update
-        const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, scheduledDate: finalTime.toISOString() } : t);
-        
-        const reorganizations = reorganizeAllTasksForDate(
-          today,
-          updatedTasks,
-          {
-            ensureAfterCurrentTime: isToday,
-            categoryHours: categoryHours,
-          }
-        );
+        try {
+          // Get the latest tasks from the context (they should include the newly scheduled task)
+          // We use the captured tasks plus our update to ensure we have the latest state
+          const updatedTasks = capturedTasks.map(t => t.id === capturedTaskId ? { ...t, scheduledDate: capturedFinalTime.toISOString() } : t);
+          
+          const reorganizations = reorganizeAllTasksForDate(
+            capturedToday,
+            updatedTasks,
+            {
+              ensureAfterCurrentTime: capturedIsToday,
+              categoryHours: capturedCategoryHours,
+            }
+          );
 
-        // Update all tasks that need to be reorganized (including the task we just scheduled if it needs adjustment)
-        // Only update if the new time is different from the current time to avoid unnecessary updates
-        for (const reorganization of reorganizations) {
-          const task = updatedTasks.find(t => t.id === reorganization.taskId);
-          if (task && task.scheduledDate) {
-            const currentTime = new Date(task.scheduledDate).getTime();
-            const newTime = reorganization.newTime.getTime();
-            // Only update if time changed by more than 1 minute (to avoid floating point issues)
-            if (Math.abs(currentTime - newTime) > 60 * 1000) {
-              updateTask(reorganization.taskId, {
-                scheduledDate: reorganization.newTime.toISOString(),
-              });
+          // Update all tasks that need to be reorganized (including the task we just scheduled if it needs adjustment)
+          // Only update if the new time is different from the current time to avoid unnecessary updates
+          for (const reorganization of reorganizations) {
+            const task = updatedTasks.find(t => t.id === reorganization.taskId);
+            if (task && task.scheduledDate) {
+              const currentTime = new Date(task.scheduledDate).getTime();
+              const newTime = reorganization.newTime.getTime();
+              // Only update if time changed by more than 1 minute (to avoid floating point issues)
+              if (Math.abs(currentTime - newTime) > 60 * 1000) {
+                capturedUpdateTask(reorganization.taskId, {
+                  scheduledDate: reorganization.newTime.toISOString(),
+                }).catch((error) => {
+                  // Silently handle errors - reorganization is a background optimization
+                  logger.error('Failed to reorganize task:', error);
+                });
+              }
             }
           }
+        } catch (error) {
+          // Silently handle errors - reorganization is a background optimization
+          logger.error('Failed to reorganize tasks:', error);
         }
       }, 150);
       return;
