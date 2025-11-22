@@ -1929,8 +1929,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
     
     const folderName = folderToDelete.name;
+    let serverDeleteSuccess = false;
 
-    // Delete folder from server first (source of truth)
+    // Try to delete folder from server first (source of truth)
     // This ensures the folder is deleted even if tag removal fails
     if (accessToken) {
       try {
@@ -1948,6 +1949,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Delete folder from server first
         try {
           await api.deleteFolder(currentWorkspaceId, folderId);
+          serverDeleteSuccess = true;
         } catch (deleteError) {
           const errorMessage = deleteError instanceof Error ? deleteError.message : String(deleteError);
           // If workspace not found, try to ensure it exists and retry
@@ -1963,6 +1965,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 logger.info('Workspace created, retrying folder deletion with workspace ID:', validWorkspaceId);
                 // Retry deleting with valid workspace ID
                 await api.deleteFolder(validWorkspaceId, folderId);
+                serverDeleteSuccess = true;
                 // Update workspace ID in state if it changed
                 if (workspaceId !== validWorkspaceId) {
                   setWorkspaceId(validWorkspaceId);
@@ -1972,26 +1975,24 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               }
             } catch (retryError) {
               logger.error('Failed to ensure workspace on retry:', retryError);
-              throw deleteError; // Re-throw original error
+              // Don't throw - allow local deletion to proceed
+              logger.warn('Server deletion failed, proceeding with local deletion only');
             }
           } else {
-            throw deleteError; // Re-throw if not a workspace error
+            // For other errors, log but allow local deletion to proceed
+            logger.warn('Server deletion failed:', errorMessage);
           }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Error deleting folder from server:', error);
-        
-        if (errorMessage.includes('Workspace not found')) {
-          toast.error('Workspace not found. Please refresh the page.');
-        } else {
-          toast.error('Failed to delete folder. Please try again.');
-        }
-        throw error; // Re-throw to prevent state update
+        // Don't throw - allow local deletion to proceed
+        logger.warn('Server deletion failed, proceeding with local deletion only');
       }
     }
 
-    // Remove folder tag from all tasks that have it (after successful server deletion)
+    // Remove folder tag from all tasks that have it
+    // This happens regardless of server deletion success to keep local state consistent
     const tasksToUpdate = tasks.filter(task => 
       task.tags && task.tags.includes(folderName)
     );
@@ -2002,7 +2003,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await updateTask(task.id, { tags: updatedTags });
       } catch (error) {
         logger.error(`Failed to remove folder tag from task ${task.id}:`, error);
-        // Continue even if tag removal fails - folder is already deleted
+        // Continue even if tag removal fails - folder will still be deleted locally
       }
     }
 
@@ -2012,19 +2013,24 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await removeAvailableTag(folderName);
       } catch (error) {
         logger.error('Failed to remove folder name tag:', error);
-        // Continue even if tag removal fails - folder is already deleted
+        // Continue even if tag removal fails - folder will still be deleted locally
       }
     }
 
-    // Remove from state after successful server deletion
+    // Remove from state (always do this to keep UI consistent)
     setFolders(prev => {
       const updated = prev.filter(folder => folder.id !== folderId);
       saveToLocalStorage('folders', updated);
       return updated;
     });
 
-    toast.success('Folder deleted');
-  }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag]);
+    // Show appropriate success message
+    if (serverDeleteSuccess || !accessToken) {
+      toast.success('Folder deleted');
+    } else {
+      toast.success('Folder deleted (offline)');
+    }
+  }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag, ensureWorkspace, createWorkspaceIfNeeded, setWorkspaceId]);
 
   const updateHoursSettings = useCallback(async (settings: Partial<HoursSettings>) => {
     const updatedSettings = { ...hoursSettings, ...settings };
