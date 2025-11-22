@@ -205,8 +205,6 @@ export function findNextAvailableSlot(
 }
 
 /**
-<<<<<<< HEAD
-=======
  * Reorganize all tasks on a timeline to ensure chronological order and no overlaps
  * This function reorganizes all tasks for a given date to ensure they're in order
  * @param date - The date to reorganize tasks for
@@ -424,7 +422,6 @@ export function reorganizeConflictingTasks(
 }
 
 /**
->>>>>>> da6614d7 (The timeline now maintains chronological order and reorganizes tasks when new ones are added via drag-and-drop.)
  * Format time for display
  * @param date - Date to format
  * @returns Formatted time string (e.g., "2:30 PM")
