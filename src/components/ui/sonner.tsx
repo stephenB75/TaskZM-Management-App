@@ -1,12 +1,13 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import { useTheme } from "../../contexts/ThemeContext";
 import { Toaster as Sonner, ToasterProps } from "sonner";
 import { useEffect, useState } from "react";
 import { TOAST_DURATION_DEFAULT_MS } from "../../lib/layout-constants";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  const { actualTheme } = useTheme();
+  const theme = actualTheme === 'dark' ? 'dark' : 'light';
   const [position, setPosition] = useState<ToasterProps["position"]>("bottom-center");
 
   useEffect(() => {
