@@ -55,7 +55,7 @@ function CheckboxSwitch({
       <div 
         className={cn(
           "absolute inset-0 rounded-full transition-colors duration-200 cursor-pointer",
-          "peer-checked:bg-primary peer-unchecked:bg-switch-background",
+          "peer-checked:bg-primary peer-unchecked:bg-[var(--switch-background)]",
           "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
           "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
         )}

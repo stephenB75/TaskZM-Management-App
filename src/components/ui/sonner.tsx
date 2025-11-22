@@ -11,12 +11,20 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const [position, setPosition] = useState<ToasterProps["position"]>("bottom-center");
 
   useEffect(() => {
+    // Ensure window is available (client-side only)
+    if (typeof window === 'undefined') return;
+    
     const checkMobile = () => {
-      // Check if mobile (screen width < 768px)
-      if (window.innerWidth < 768) {
-        setPosition("top-center");
-      } else {
-        setPosition("bottom-center");
+      try {
+        // Check if mobile (screen width < 768px)
+        if (window.innerWidth < 768) {
+          setPosition("top-center");
+        } else {
+          setPosition("bottom-center");
+        }
+      } catch (error) {
+        // Fallback to default position if check fails
+        console.error('Error checking mobile size:', error);
       }
     };
 
@@ -25,7 +33,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
     // Listen for resize events
     window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener("resize", checkMobile);
+      }
+    };
   }, []);
 
   return (

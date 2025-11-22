@@ -64,7 +64,7 @@ function Switch({
         "h-5 w-10",
         "md:h-6 md:w-12",
         // Background colors
-        isChecked ? "bg-primary" : "bg-switch-background",
+        isChecked ? "bg-primary" : "bg-[var(--switch-background)]",
         // Disabled state
         disabled && "opacity-50 cursor-not-allowed",
         !disabled && "cursor-pointer",
