@@ -30,10 +30,6 @@ export default {
     'blur-3xl',
     'backdrop-blur-sm',
     'backdrop-blur-md',
-    'bg-input-background',
-    'dark:bg-input-background',
-    'bg-switch-background',
-    'dark:bg-switch-background',
   ],
   darkMode: 'class',
   theme: {
