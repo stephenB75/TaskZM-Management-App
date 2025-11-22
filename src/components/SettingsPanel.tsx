@@ -374,7 +374,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <div className="space-y-4">
               {/* Profile Card */}
               <div 
-                className="rounded-2xl border border-border/40 bg-muted/30 px-4 py-4 sm:px-5 sm:py-5 flex flex-col sm:flex-row items-center gap-4 w-full"
+                className="rounded-2xl border border-border/40 bg-muted/30 dark:bg-gray-800/50 px-4 py-4 sm:px-5 sm:py-5 flex flex-col sm:flex-row items-center gap-4 w-full"
               >
                 <div 
                   className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center text-primary font-semibold shadow-inner flex-shrink-0"
@@ -2288,7 +2288,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* App Tour */}
-        <AccordionItem value="app-tour" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="app-tour" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card dark:bg-gray-800/50 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Compass className="w-5 h-5 text-primary" />
@@ -2358,7 +2358,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* About */}
-        <AccordionItem value="about" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="about" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card dark:bg-gray-800/50 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Info className="w-5 h-5 text-primary" />

@@ -1930,38 +1930,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     
     const folderName = folderToDelete.name;
 
-    // Remove folder tag from all tasks that have it
-    const tasksToUpdate = tasks.filter(task => 
-      task.tags && task.tags.includes(folderName)
-    );
-
-    for (const task of tasksToUpdate) {
-      const updatedTags = task.tags.filter(tag => tag !== folderName);
-      try {
-        await updateTask(task.id, { tags: updatedTags });
-      } catch (error) {
-        logger.error(`Failed to remove folder tag from task ${task.id}:`, error);
-      }
-    }
-
-    // Remove folder name from available tags if it exists
-    if (availableTags.includes(folderName)) {
-      try {
-        await removeAvailableTag(folderName);
-      } catch (error) {
-        logger.error('Failed to remove folder name tag:', error);
-        // Continue with folder deletion even if tag removal fails
-      }
-    }
-
-    // Optimistic update: remove from state immediately
-    setFolders(prev => {
-      const updated = prev.filter(folder => folder.id !== folderId);
-      saveToLocalStorage('folders', updated);
-      return updated;
-    });
-
-    // Delete from Supabase (source of truth)
+    // Delete folder from server first (source of truth)
+    // This ensures the folder is deleted even if tag removal fails
     if (accessToken) {
       try {
         // Ensure workspace exists before deleting folder
@@ -1970,20 +1940,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const validWorkspaceId = await ensureWorkspace();
           if (!validWorkspaceId) {
             toast.error('Workspace not available. Please refresh the page.');
-            // Re-add folder to state since deletion failed
-            setFolders(prev => {
-              if (folderToDelete && !prev.find(f => f.id === folderId)) {
-                const updated = [...prev, folderToDelete];
-                saveToLocalStorage('folders', updated);
-                return updated;
-              }
-              return prev;
-            });
             throw new Error('Workspace not available');
           }
           currentWorkspaceId = validWorkspaceId;
         }
 
+        // Delete folder from server first
         try {
           await api.deleteFolder(currentWorkspaceId, folderId);
         } catch (deleteError) {
@@ -2016,35 +1978,52 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             throw deleteError; // Re-throw if not a workspace error
           }
         }
-
-        // Folder already removed from state optimistically above
-        // Just ensure localStorage is in sync
-        toast.success('Folder deleted');
       } catch (error) {
-        logger.error('Failed to delete folder from server:', error);
-        // Re-add folder to state since deletion failed
-        setFolders(prev => {
-          if (folderToDelete && !prev.find(f => f.id === folderId)) {
-            const updated = [...prev, folderToDelete];
-            saveToLocalStorage('folders', updated);
-            return updated;
-          }
-          return prev;
-        });
         const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+        logger.error('Error deleting folder from server:', error);
+        
+        if (errorMessage.includes('Workspace not found')) {
           toast.error('Workspace not found. Please refresh the page.');
         } else {
-          toast.error('Folder deletion failed, will sync when online');
+          toast.error('Failed to delete folder. Please try again.');
         }
-        // Re-throw error so UI can handle it
-        throw error;
+        throw error; // Re-throw to prevent state update
       }
-    } else {
-      // No workspace/auth - already deleted locally above
-      logger.warn('No workspace or access token, deleting folder locally only');
-      toast.success('Folder deleted (offline)');
     }
+
+    // Remove folder tag from all tasks that have it (after successful server deletion)
+    const tasksToUpdate = tasks.filter(task => 
+      task.tags && task.tags.includes(folderName)
+    );
+
+    for (const task of tasksToUpdate) {
+      const updatedTags = task.tags.filter(tag => tag !== folderName);
+      try {
+        await updateTask(task.id, { tags: updatedTags });
+      } catch (error) {
+        logger.error(`Failed to remove folder tag from task ${task.id}:`, error);
+        // Continue even if tag removal fails - folder is already deleted
+      }
+    }
+
+    // Remove folder name from available tags if it exists
+    if (availableTags.includes(folderName)) {
+      try {
+        await removeAvailableTag(folderName);
+      } catch (error) {
+        logger.error('Failed to remove folder name tag:', error);
+        // Continue even if tag removal fails - folder is already deleted
+      }
+    }
+
+    // Remove from state after successful server deletion
+    setFolders(prev => {
+      const updated = prev.filter(folder => folder.id !== folderId);
+      saveToLocalStorage('folders', updated);
+      return updated;
+    });
+
+    toast.success('Folder deleted');
   }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag]);
 
   const updateHoursSettings = useCallback(async (settings: Partial<HoursSettings>) => {

@@ -323,10 +323,24 @@ export const DraggableTaskCard = React.forwardRef<
         // Add extra height for assigned users (only if present)
         if (hasAssignedUsers) {
           // If description exists and no subtasks, reduce spacing since description has mb-0
+          // Account for avatar + name height (~20px) plus spacing
+          const assignedUsersBaseHeight = 20; // Avatar + name height
           const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
             ? 16 // Reduced spacing when description has mb-0
             : 20; // Standard spacing
-          componentHeight += assignedUsersSpacing;
+          componentHeight += assignedUsersBaseHeight + assignedUsersSpacing;
+        }
+        
+        // Add extra height for pomodoro timer if present (only for long tasks, shown absolutely)
+        if (hasPomodoro && !inlinePomodoroPresent) {
+          // Pomodoro timer in absolute position adds ~40px height
+          componentHeight += 40;
+        }
+        
+        // Add extra height for tracked time display if present
+        if (hasTrackedTimeFull) {
+          // Tracked time display adds ~24px height
+          componentHeight += 24;
         }
         
         // Add extra height for subtasks (only if present)
@@ -337,27 +351,14 @@ export const DraggableTaskCard = React.forwardRef<
           const subtaskSpacing = isMobile ? 2 : 4; // space-y-0.5 (2px) on mobile, space-y-1 (4px) on desktop
           const subtaskHeight = subtaskCount * subtaskItemHeight + 
             (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
-          componentHeight += subtaskHeight;
+          
+          // Add extra spacing if description is present (description has mb-1.5 = 6px)
+          const subtaskTopSpacing = hasDescription ? 6 : 0;
+          componentHeight += subtaskHeight + subtaskTopSpacing;
         }
         
         // Base card structure (title, badges, time) - approximately 120px
         const baseCardStructure = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base;
-        
-        // Standard padding for 1-hour task with standard components (used for base calculation)
-        // Standard assumes components are present (most common case)
-        const standardTopPadding = TASK_CARD_CALCULATIONS.padding.long.top;
-        const standardBottomPadding = isMobile 
-          ? TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.mobile 
-          : TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.desktop;
-        const standardTotalPadding = standardTopPadding + standardBottomPadding;
-        
-        // Standard component height for 1-hour task
-        // 210px total height - standard padding - base structure = standard component height
-        const standardComponentHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents - baseCardStructure - standardTotalPadding;
-        
-        // Calculate the actual component height vs standard
-        // This ensures uniform height for tasks with same components
-        const componentAdjustment = componentHeight - standardComponentHeight;
         
         // Account for actual padding being applied via CSS classes
         const actualTopPadding = TASK_CARD_CALCULATIONS.padding.long.top;
@@ -366,12 +367,16 @@ export const DraggableTaskCard = React.forwardRef<
           : TASK_CARD_CALCULATIONS.padding.long.bottom.noComponents;
         const actualTotalPadding = actualTopPadding + actualBottomPadding;
         
-        // Padding adjustment: difference between actual and standard padding
-        const paddingAdjustment = actualTotalPadding - standardTotalPadding;
+        // Calculate total content height: base structure + all component contributions
+        const totalContentHeight = baseCardStructure + componentHeight;
         
-        // Base TOTAL height for 1 hour: 210px (includes base + standard components + standard padding)
-        // Adjust based on actual components and padding
-        const oneHourTotalHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents + componentAdjustment + paddingAdjustment;
+        // Base TOTAL height for 1 hour: 210px minimum, but expand based on actual components
+        // If components require more space, use that instead of the fixed 210px
+        const minimumOneHourHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents;
+        const calculatedOneHourHeight = totalContentHeight + actualTotalPadding;
+        
+        // Use the larger of: minimum height (210px) or calculated height based on components
+        const oneHourTotalHeight = Math.max(minimumOneHourHeight, calculatedOneHourHeight);
         
         // Calculate additional hours beyond the first hour (60 minutes)
         // Each additional hour adds 200px to the TOTAL height
@@ -542,7 +547,6 @@ export const DraggableTaskCard = React.forwardRef<
             )}
           style={{
             minHeight: `${cardHeight}px`,
-            height: `${cardHeight}px`,
           }}
           onClick={(e) => {
             e.stopPropagation();

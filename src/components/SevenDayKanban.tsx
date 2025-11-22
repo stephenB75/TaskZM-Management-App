@@ -509,6 +509,7 @@ export function SevenDayKanban({
     <div 
       className="h-full flex flex-col dark:from-gray-800 dark:via-gray-900 dark:to-gray-800" 
       data-tour="kanban"
+      data-kanban-view="true"
       style={{
         backgroundImage: `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.desktop.from}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.via}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.to})`,
       }}

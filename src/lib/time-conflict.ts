@@ -197,8 +197,11 @@ export function findNextAvailableSlot(
     }
   }
 
-  // If no slot found, return the requested time (user can decide)
-  return requestedTime;
+  // If no slot found, return a time that indicates failure (24:00 or later)
+  // This allows the caller to detect that no slot was found
+  const failureTime = new Date(requestedTime);
+  failureTime.setHours(24, 0, 0, 0);
+  return failureTime;
 }
 
 /**

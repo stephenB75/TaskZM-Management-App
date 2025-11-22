@@ -284,6 +284,36 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         });
       }
 
+      // Double-check for conflicts before scheduling (safety check)
+      const conflictCheck = checkTimeConflict(taskId, finalTime, taskDuration, tasks);
+      if (conflictCheck) {
+        // If there's still a conflict, find the next available slot
+        const safeTime = findNextAvailableSlot(
+          taskId,
+          finalTime,
+          taskDuration,
+          tasks,
+          {
+            ensureAfterCurrentTime: isToday,
+            categoryHours: categoryHours,
+          }
+        );
+        
+        // Verify the safe time doesn't conflict
+        const safeConflictCheck = checkTimeConflict(taskId, safeTime, taskDuration, tasks);
+        if (safeConflictCheck) {
+          toast.error('Unable to schedule task', {
+            description: 'No available time slots without conflicts. Please try a different time.',
+          });
+          return;
+        }
+        
+        updateTask(taskId, {
+          scheduledDate: safeTime.toISOString(),
+        });
+        return;
+      }
+
       // No conflict and within limit, proceed with update
       updateTask(taskId, {
         scheduledDate: finalTime.toISOString(),
@@ -414,19 +444,23 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           }}
         >
           {activeTask && (() => {
-            // Check if dragging from month calendar view by checking if the active element is within month calendar
+            // Check if dragging from month calendar view or kanban view by checking if the active element is within those containers
             // Use a try-catch to safely check the DOM
             let isFromMonthCalendar = false;
+            let isFromKanban = false;
             try {
               const activeElement = document.querySelector(`[data-sortable-id="${activeId}"]`) || 
-                                   document.querySelector(`[id="${activeId}"]`);
+                                   document.querySelector(`[id="${activeId}"]`) ||
+                                   document.querySelector(`[data-task-id="${activeId}"]`);
               isFromMonthCalendar = activeElement?.closest('[data-month-calendar]') !== null;
+              isFromKanban = activeElement?.closest('[data-kanban-view]') !== null;
             } catch (e) {
               // If check fails, default to false (use full card)
               isFromMonthCalendar = false;
+              isFromKanban = false;
             }
             
-            // Use compact preview for month calendar, full card for other views
+            // Use compact preview for month calendar, larger preview for kanban, full card for other views
             if (isFromMonthCalendar) {
               const priorityColors = {
                 urgent: "border-l-red-400 bg-red-50 dark:bg-red-950/20",
@@ -466,7 +500,24 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               );
             }
             
-            // Full card preview for other views
+            // Larger preview for kanban view (week view)
+            if (isFromKanban) {
+              return (
+                <div 
+                  className="opacity-90 pointer-events-none"
+                  style={{
+                    maxWidth: '320px',
+                    width: '320px',
+                    transform: 'rotate(2deg) scale(1.1)',
+                    transition: 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  }}
+                >
+                  <DraggableTaskCard task={activeTask} onClick={() => {}} droppableId="" isDragging />
+                </div>
+              );
+            }
+            
+            // Full card preview for other views (including timeline)
             return (
               <div 
                 className="opacity-90 pointer-events-none"
