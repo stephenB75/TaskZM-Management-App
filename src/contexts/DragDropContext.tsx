@@ -318,9 +318,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             if (Math.abs(currentTime - newTime) > 60 * 1000) {
               updateTask(reorganization.taskId, {
                 scheduledDate: reorganization.newTime.toISOString(),
-            });
+              });
+            }
           }
-        }
         }
       }, 150);
       return;
