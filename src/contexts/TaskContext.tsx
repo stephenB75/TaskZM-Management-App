@@ -2117,47 +2117,50 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         if (!currentWorkspaceId) {
           const validWorkspaceId = await ensureWorkspace();
           if (!validWorkspaceId) {
-            toast.error('Workspace not available. Please refresh the page.');
-            throw new Error('Workspace not available');
+            // Don't throw - allow local deletion to proceed even if workspace is not available
+            logger.warn('Workspace not available, proceeding with local deletion only');
+          } else {
+            currentWorkspaceId = validWorkspaceId;
           }
-          currentWorkspaceId = validWorkspaceId;
         }
 
-        // Delete folder from server first
-        try {
-          await api.deleteFolder(currentWorkspaceId, folderId);
-          serverDeleteSuccess = true;
-        } catch (deleteError) {
-          const errorMessage = deleteError instanceof Error ? deleteError.message : String(deleteError);
-          // If workspace not found, try to ensure it exists and retry
-          if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
-            logger.debug('Workspace not found when deleting folder, ensuring workspace exists...');
-            try {
-              // Explicitly create workspace
-              await createWorkspaceIfNeeded();
-              // Wait a bit for workspace to be fully created
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              const validWorkspaceId = await ensureWorkspace();
-              if (validWorkspaceId) {
-                logger.info('Workspace created, retrying folder deletion with workspace ID:', validWorkspaceId);
-                // Retry deleting with valid workspace ID
-                await api.deleteFolder(validWorkspaceId, folderId);
-                serverDeleteSuccess = true;
-                // Update workspace ID in state if it changed
-                if (workspaceId !== validWorkspaceId) {
-                  setWorkspaceId(validWorkspaceId);
+        // Delete folder from server first (only if we have a workspace ID)
+        if (currentWorkspaceId) {
+          try {
+            await api.deleteFolder(currentWorkspaceId, folderId);
+            serverDeleteSuccess = true;
+          } catch (deleteError) {
+            const errorMessage = deleteError instanceof Error ? deleteError.message : String(deleteError);
+            // If workspace not found, try to ensure it exists and retry
+            if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+              logger.debug('Workspace not found when deleting folder, ensuring workspace exists...');
+              try {
+                // Explicitly create workspace
+                await createWorkspaceIfNeeded();
+                // Wait a bit for workspace to be fully created
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const validWorkspaceId = await ensureWorkspace();
+                if (validWorkspaceId) {
+                  logger.info('Workspace created, retrying folder deletion with workspace ID:', validWorkspaceId);
+                  // Retry deleting with valid workspace ID
+                  await api.deleteFolder(validWorkspaceId, folderId);
+                  serverDeleteSuccess = true;
+                  // Update workspace ID in state if it changed
+                  if (workspaceId !== validWorkspaceId) {
+                    setWorkspaceId(validWorkspaceId);
+                  }
+                } else {
+                  logger.warn('Workspace creation failed, proceeding with local deletion only');
                 }
-              } else {
-                throw new Error('Workspace creation failed - no workspace ID returned');
+              } catch (retryError) {
+                logger.error('Failed to ensure workspace on retry:', retryError);
+                // Don't throw - allow local deletion to proceed
+                logger.warn('Server deletion failed, proceeding with local deletion only');
               }
-            } catch (retryError) {
-              logger.error('Failed to ensure workspace on retry:', retryError);
-              // Don't throw - allow local deletion to proceed
-              logger.warn('Server deletion failed, proceeding with local deletion only');
+            } else {
+              // For other errors, log but allow local deletion to proceed
+              logger.warn('Server deletion failed:', errorMessage);
             }
-          } else {
-            // For other errors, log but allow local deletion to proceed
-            logger.warn('Server deletion failed:', errorMessage);
           }
         }
       } catch (error) {
