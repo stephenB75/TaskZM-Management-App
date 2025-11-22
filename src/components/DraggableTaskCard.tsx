@@ -343,39 +343,48 @@ export const DraggableTaskCard = React.forwardRef<
         // Base card structure (title, badges, time) - approximately 120px
         const baseCardStructure = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base;
         
-        // Standard component height for 1-hour task (210px - 120px base = 90px for components)
-        // This ensures 1-hour tasks with standard components = 210px
-        const standardComponentHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents - baseCardStructure;
+        // Standard padding for 1-hour task with standard components (used for base calculation)
+        // Standard assumes components are present (most common case)
+        const standardTopPadding = TASK_CARD_CALCULATIONS.padding.long.top;
+        const standardBottomPadding = isMobile 
+          ? TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.mobile 
+          : TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.desktop;
+        const standardTotalPadding = standardTopPadding + standardBottomPadding;
+        
+        // Standard component height for 1-hour task
+        // 210px total height - standard padding - base structure = standard component height
+        const standardComponentHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents - baseCardStructure - standardTotalPadding;
         
         // Calculate the actual component height vs standard
         // This ensures uniform height for tasks with same components
         const componentAdjustment = componentHeight - standardComponentHeight;
         
-        // Base height for 1 hour: 210px (includes base + standard components)
-        // Adjust based on actual components present
-        const oneHourBaseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents + componentAdjustment;
+        // Account for actual padding being applied via CSS classes
+        const actualTopPadding = TASK_CARD_CALCULATIONS.padding.long.top;
+        const actualBottomPadding = hasAnyComponents
+          ? (isMobile ? TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.desktop)
+          : TASK_CARD_CALCULATIONS.padding.long.bottom.noComponents;
+        const actualTotalPadding = actualTopPadding + actualBottomPadding;
+        
+        // Padding adjustment: difference between actual and standard padding
+        const paddingAdjustment = actualTotalPadding - standardTotalPadding;
+        
+        // Base TOTAL height for 1 hour: 210px (includes base + standard components + standard padding)
+        // Adjust based on actual components and padding
+        const oneHourTotalHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.baseWithComponents + componentAdjustment + paddingAdjustment;
         
         // Calculate additional hours beyond the first hour (60 minutes)
-        // Each additional hour adds 200px
+        // Each additional hour adds 200px to the TOTAL height
         const hours = duration / 60;
         const additionalHours = Math.floor(hours - 1); // Hours beyond the first hour
         const additionalHeight = additionalHours > 0 ? additionalHours * TASK_CARD_HEIGHT_CONFIG.baseHeights.long.incrementPerHour : 0;
         
-        // Total content height = 1-hour base + additional hours
-        const contentHeight = oneHourBaseHeight + additionalHeight;
-        
-        // Account for actual padding being applied via CSS classes
-        const topPadding = TASK_CARD_CALCULATIONS.padding.long.top;
-        const bottomPadding = hasAnyComponents
-          ? (isMobile ? TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.desktop)
-          : TASK_CARD_CALCULATIONS.padding.long.bottom.noComponents;
-        const totalPadding = topPadding + bottomPadding;
-        
-        // Total height = content + padding
-        const totalHeight = contentHeight + totalPadding;
+        // Total height = 1-hour base + additional hours
+        // This is the TOTAL height including padding
+        const totalHeight = oneHourTotalHeight + additionalHeight;
         
         // Ensure minimum height accounts for all components
-        const minRequiredHeight = oneHourBaseHeight + totalPadding;
+        const minRequiredHeight = oneHourTotalHeight;
         
         return Math.min(
           Math.max(totalHeight, minRequiredHeight),
