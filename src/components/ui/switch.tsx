@@ -64,7 +64,7 @@ function Switch({
         "h-5 w-10",
         "md:h-6 md:w-12",
         // Background colors
-        isChecked ? "bg-primary" : "bg-switch-background",
+        isChecked ? "bg-primary" : "bg-[var(--switch-background)]",
         // Disabled state
         disabled && "opacity-50 cursor-not-allowed",
         !disabled && "cursor-pointer",
@@ -77,7 +77,7 @@ function Switch({
       {/* Sliding thumb */}
       <span
         className={cn(
-          "block rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out",
+          "block rounded-full bg-white dark:bg-gray-200 shadow-md transition-transform duration-200 ease-in-out",
           // Mobile sizing
           "h-4 w-4",
           "md:h-5 md:w-5",

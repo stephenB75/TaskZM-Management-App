@@ -1920,6 +1920,80 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, addAvailableTag, removeAvailableTag]);
 
+  // Expose ensureWorkspace for manual triggering (moved before deleteFolder to avoid initialization error)
+  const ensureWorkspace = useCallback(async (): Promise<string | null> => {
+    // If no user/auth, can't create workspace
+    if (!user || !accessToken) {
+      logger.warn('Cannot ensure workspace: user or accessToken missing');
+      return null;
+    }
+    
+    try {
+      // First, try to get existing workspace (getUserWorkspaces auto-creates if missing)
+      logger.debug('Ensuring workspace exists...');
+      const { workspaces } = await api.getUserWorkspaces();
+      
+      if (workspaces && workspaces.length > 0 && workspaces[0].id) {
+        const wsId = workspaces[0].id;
+        logger.info('Workspace found/created:', wsId);
+        
+        // Update state if it's different
+        if (workspaceId !== wsId) {
+          setWorkspaceId(wsId);
+        }
+        return wsId;
+      }
+      
+      // If getUserWorkspaces didn't return a workspace, explicitly create one
+      logger.warn('No workspace returned from getUserWorkspaces, creating explicitly...');
+      await createWorkspaceIfNeeded();
+      
+      // After creation, fetch the workspace ID
+      const { workspaces: newWorkspaces } = await api.getUserWorkspaces();
+      if (newWorkspaces && newWorkspaces.length > 0 && newWorkspaces[0].id) {
+        const wsId = newWorkspaces[0].id;
+        logger.info('Workspace created successfully:', wsId);
+        setWorkspaceId(wsId);
+        return wsId;
+      }
+      
+      // If still no workspace, something went wrong
+      logger.error('Failed to create workspace - no workspace ID returned');
+      return null;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Try to create workspace explicitly if getUserWorkspaces failed
+      if (errorMessage.includes('not found') || errorMessage.includes('404') || errorMessage.includes('Workspace or endpoint not found')) {
+        logger.debug('Workspace not found, attempting explicit creation...');
+        try {
+          await createWorkspaceIfNeeded();
+          const { workspaces: retryWorkspaces } = await api.getUserWorkspaces();
+          if (retryWorkspaces && retryWorkspaces.length > 0 && retryWorkspaces[0].id) {
+            const wsId = retryWorkspaces[0].id;
+            logger.info('Workspace created after retry:', wsId);
+            setWorkspaceId(wsId);
+            return wsId;
+          }
+        } catch (createError) {
+          logger.error('Failed to create workspace on retry:', createError);
+        }
+      }
+      
+      // For other errors, log and show toast
+      logger.error('Failed to ensure workspace:', error);
+      const detailedMessage = errorMessage.includes('Unknown error') 
+        ? 'Unable to access workspace. Please check your connection and try again.'
+        : errorMessage;
+      
+      toast.error('Failed to access workspace', {
+        description: detailedMessage,
+        duration: TOAST_DURATION_LONG_MS,
+      });
+      return null;
+    }
+  }, [workspaceId, user, accessToken, createWorkspaceIfNeeded]);
+
   const deleteFolder = useCallback(async (folderId: string) => {
     // Find the folder to get its name
     const folderToDelete = folders.find(f => f.id === folderId);
@@ -1929,8 +2003,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
     
     const folderName = folderToDelete.name;
+    let serverDeleteSuccess = false;
 
-    // Delete folder from server first (source of truth)
+    // Try to delete folder from server first (source of truth)
     // This ensures the folder is deleted even if tag removal fails
     if (accessToken) {
       try {
@@ -1948,6 +2023,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Delete folder from server first
         try {
           await api.deleteFolder(currentWorkspaceId, folderId);
+          serverDeleteSuccess = true;
         } catch (deleteError) {
           const errorMessage = deleteError instanceof Error ? deleteError.message : String(deleteError);
           // If workspace not found, try to ensure it exists and retry
@@ -1963,6 +2039,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 logger.info('Workspace created, retrying folder deletion with workspace ID:', validWorkspaceId);
                 // Retry deleting with valid workspace ID
                 await api.deleteFolder(validWorkspaceId, folderId);
+                serverDeleteSuccess = true;
                 // Update workspace ID in state if it changed
                 if (workspaceId !== validWorkspaceId) {
                   setWorkspaceId(validWorkspaceId);
@@ -1972,26 +2049,24 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               }
             } catch (retryError) {
               logger.error('Failed to ensure workspace on retry:', retryError);
-              throw deleteError; // Re-throw original error
+              // Don't throw - allow local deletion to proceed
+              logger.warn('Server deletion failed, proceeding with local deletion only');
             }
           } else {
-            throw deleteError; // Re-throw if not a workspace error
+            // For other errors, log but allow local deletion to proceed
+            logger.warn('Server deletion failed:', errorMessage);
           }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Error deleting folder from server:', error);
-        
-        if (errorMessage.includes('Workspace not found')) {
-          toast.error('Workspace not found. Please refresh the page.');
-        } else {
-          toast.error('Failed to delete folder. Please try again.');
-        }
-        throw error; // Re-throw to prevent state update
+        // Don't throw - allow local deletion to proceed
+        logger.warn('Server deletion failed, proceeding with local deletion only');
       }
     }
 
-    // Remove folder tag from all tasks that have it (after successful server deletion)
+    // Remove folder tag from all tasks that have it
+    // This happens regardless of server deletion success to keep local state consistent
     const tasksToUpdate = tasks.filter(task => 
       task.tags && task.tags.includes(folderName)
     );
@@ -2002,7 +2077,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await updateTask(task.id, { tags: updatedTags });
       } catch (error) {
         logger.error(`Failed to remove folder tag from task ${task.id}:`, error);
-        // Continue even if tag removal fails - folder is already deleted
+        // Continue even if tag removal fails - folder will still be deleted locally
       }
     }
 
@@ -2012,19 +2087,24 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await removeAvailableTag(folderName);
       } catch (error) {
         logger.error('Failed to remove folder name tag:', error);
-        // Continue even if tag removal fails - folder is already deleted
+        // Continue even if tag removal fails - folder will still be deleted locally
       }
     }
 
-    // Remove from state after successful server deletion
+    // Remove from state (always do this to keep UI consistent)
     setFolders(prev => {
       const updated = prev.filter(folder => folder.id !== folderId);
       saveToLocalStorage('folders', updated);
       return updated;
     });
 
-    toast.success('Folder deleted');
-  }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag]);
+    // Show appropriate success message
+    if (serverDeleteSuccess || !accessToken) {
+      toast.success('Folder deleted');
+    } else {
+      toast.success('Folder deleted (offline)');
+    }
+  }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag, ensureWorkspace, createWorkspaceIfNeeded, setWorkspaceId]);
 
   const updateHoursSettings = useCallback(async (settings: Partial<HoursSettings>) => {
     const updatedSettings = { ...hoursSettings, ...settings };
@@ -2196,80 +2276,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     
     return () => clearTimeout(timer);
   }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask]);
-
-  // Expose ensureWorkspace for manual triggering
-  const ensureWorkspace = useCallback(async (): Promise<string | null> => {
-    // If no user/auth, can't create workspace
-    if (!user || !accessToken) {
-      logger.warn('Cannot ensure workspace: user or accessToken missing');
-      return null;
-    }
-    
-    try {
-      // First, try to get existing workspace (getUserWorkspaces auto-creates if missing)
-      logger.debug('Ensuring workspace exists...');
-      const { workspaces } = await api.getUserWorkspaces();
-      
-      if (workspaces && workspaces.length > 0 && workspaces[0].id) {
-        const wsId = workspaces[0].id;
-        logger.info('Workspace found/created:', wsId);
-        
-        // Update state if it's different
-        if (workspaceId !== wsId) {
-          setWorkspaceId(wsId);
-        }
-        return wsId;
-      }
-      
-      // If getUserWorkspaces didn't return a workspace, explicitly create one
-      logger.warn('No workspace returned from getUserWorkspaces, creating explicitly...');
-      await createWorkspaceIfNeeded();
-      
-      // After creation, fetch the workspace ID
-      const { workspaces: newWorkspaces } = await api.getUserWorkspaces();
-      if (newWorkspaces && newWorkspaces.length > 0 && newWorkspaces[0].id) {
-        const wsId = newWorkspaces[0].id;
-        logger.info('Workspace created successfully:', wsId);
-        setWorkspaceId(wsId);
-        return wsId;
-      }
-      
-      // If still no workspace, something went wrong
-      logger.error('Failed to create workspace - no workspace ID returned');
-      return null;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
-      // Try to create workspace explicitly if getUserWorkspaces failed
-      if (errorMessage.includes('not found') || errorMessage.includes('404') || errorMessage.includes('Workspace or endpoint not found')) {
-        logger.debug('Workspace not found, attempting explicit creation...');
-        try {
-          await createWorkspaceIfNeeded();
-          const { workspaces: retryWorkspaces } = await api.getUserWorkspaces();
-          if (retryWorkspaces && retryWorkspaces.length > 0 && retryWorkspaces[0].id) {
-            const wsId = retryWorkspaces[0].id;
-            logger.info('Workspace created after retry:', wsId);
-            setWorkspaceId(wsId);
-            return wsId;
-          }
-        } catch (createError) {
-          logger.error('Failed to create workspace on retry:', createError);
-        }
-      }
-      
-      // For other errors, log and show toast
-      logger.error('Failed to ensure workspace:', error);
-      const detailedMessage = errorMessage.includes('Unknown error') 
-        ? 'Unable to access workspace. Please check your connection and try again.'
-        : errorMessage;
-      
-      toast.error('Failed to access workspace', {
-        description: detailedMessage,
-        duration: TOAST_DURATION_LONG_MS,
-      });
-      return null;
-    }
-  }, [workspaceId, user, accessToken, createWorkspaceIfNeeded]);
 
   return (
     <TaskContext.Provider

@@ -36,7 +36,7 @@
   --destructive-foreground: #FFFFFF;
   --border: rgba(155, 135, 232, 0.15);
   --input: transparent;
-  --input-background: #EDE8F9;
+  --input-background: #F5F0FA;
   --switch-background: #E6D5F0;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
@@ -90,6 +90,7 @@
   --border: rgba(155, 135, 232, 0.2);
   --input: #3E3E52;
   --input-background: #3E3E52;
+  --switch-background: #4A4A5E;
   --ring: #9B87E8;
   --font-weight-medium: 500;
   --font-weight-normal: 400;

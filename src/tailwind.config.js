@@ -4,7 +4,7 @@ import tailwindcssAnimate from 'tailwindcss-animate';
 export default {
   content: [
     './index.html',
-    './**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   safelist: [
     'from-[#B4E4FF]/90',
@@ -75,6 +75,8 @@ export default {
         },
         border: 'var(--border)',
         input: 'var(--input)',
+        'input-background': 'var(--input-background)',
+        'switch-background': 'var(--switch-background)',
         ring: 'var(--ring)',
         chart: {
           '1': 'var(--chart-1)',

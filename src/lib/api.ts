@@ -879,6 +879,10 @@ export async function getTeamMembers(workspaceId: string) {
     const response = await fetch(`${API_BASE}/team/${workspaceId}/members`, {
       method: 'GET',
       headers: getHeaders(),
+    }).catch((fetchError) => {
+      // Handle network errors gracefully
+      logger.debug('Network error fetching team members:', fetchError);
+      return new Response(null, { status: 404, statusText: 'Not Found' });
     });
 
     if (!response.ok) {

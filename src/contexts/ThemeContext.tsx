@@ -12,9 +12,17 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => 
-    getFromLocalStorage<Theme>('theme', 'system')
-  );
+  const [theme, setThemeState] = useState<Theme>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        return getFromLocalStorage<Theme>('theme', 'system');
+      }
+      return 'system';
+    } catch (error) {
+      // Fallback to system theme if localStorage access fails
+      return 'system';
+    }
+  });
   const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
