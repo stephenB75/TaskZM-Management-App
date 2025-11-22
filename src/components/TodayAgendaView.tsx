@@ -16,6 +16,8 @@ import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
+import { reorganizeAllTasksForDate } from "../lib/time-conflict";
+import { getCategoryHoursForTask } from "../lib/category-hours-utils";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -24,7 +26,7 @@ interface TodayAgendaViewProps {
 export function TodayAgendaView({
   hideHeader = false,
 }: TodayAgendaViewProps = {}) {
-  const { tasks, updateTask } = useTasks();
+  const { tasks, updateTask, hoursSettings } = useTasks();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(
     null,
@@ -32,6 +34,7 @@ export function TodayAgendaView({
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+  const hasReorganizedRef = useRef(false);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -68,7 +71,7 @@ export function TodayAgendaView({
   // Done tasks automatically appear in Archive view
   const incompleteTasks = allTodayTasks.filter((task) => task.status !== "done");
 
-  // Sort incomplete tasks by time
+  // Sort incomplete tasks by time (chronological order)
   const todayTasks = incompleteTasks.sort((a, b) => {
     try {
       const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
@@ -81,6 +84,68 @@ export function TodayAgendaView({
       return 0;
     }
   });
+
+  // Automatically reorganize tasks on timeline load to ensure chronological order and current time alignment
+  useEffect(() => {
+    // Only reorganize once on mount and when tasks change significantly
+    if (hasReorganizedRef.current || todayTasks.length === 0) return;
+    
+    const now = new Date();
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    const isToday = now.getTime() >= todayDate.getTime() && 
+                    now.getTime() < new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() + 1).getTime();
+    
+    if (!isToday) {
+      hasReorganizedRef.current = true;
+      return; // Only reorganize for today's timeline
+    }
+    
+    // Check if reorganization is needed (tasks overlap or are out of order)
+    let needsReorganization = false;
+    let lastEnd = 0;
+    const nowTime = now.getTime();
+    
+    for (const task of todayTasks) {
+      if (!task.scheduledDate) continue;
+      const taskStart = new Date(task.scheduledDate).getTime();
+      const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
+      const taskEnd = taskStart + taskDuration;
+      
+      // Check if task is before current time (should be moved forward) or overlaps with previous
+      if (taskStart < nowTime || (lastEnd > 0 && taskStart < lastEnd)) {
+        needsReorganization = true;
+        break;
+      }
+      lastEnd = Math.max(lastEnd, taskEnd);
+    }
+    
+    if (needsReorganization) {
+      // Reorganize all tasks to ensure chronological order and current time alignment
+      const reorganizations = reorganizeAllTasksForDate(
+        todayDate,
+        tasks,
+        {
+          ensureAfterCurrentTime: true,
+          categoryHours: null, // Will be determined per task if needed
+        }
+      );
+      
+      // Apply reorganizations
+      if (reorganizations.length > 0) {
+        hasReorganizedRef.current = true;
+        reorganizations.forEach((reorganization) => {
+          updateTask(reorganization.taskId, {
+            scheduledDate: reorganization.newTime.toISOString(),
+          });
+        });
+      } else {
+        hasReorganizedRef.current = true;
+      }
+    } else {
+      hasReorganizedRef.current = true;
+    }
+  }, [todayTasks.length, tasks, updateTask]);
 
   // Auto-scroll to current time on mount and when tasks change
   useEffect(() => {
