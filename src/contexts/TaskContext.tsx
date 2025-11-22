@@ -6,9 +6,7 @@ import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
-import { findNextAvailableSlot, reorganizeAllTasksForDate } from '../lib/time-conflict';
-import { getCategoryHoursForTask } from '../lib/category-hours-utils';
-import { isDateInRecurrence } from '../lib/recurrence';
+import { findNextAvailableSlot } from '../lib/time-conflict';
 import type { Task, Project, Folder, TaskFilters, ViewConfig, HoursSettings, RolloverSettings } from '../types';
 import {
   WORKSPACE_MAX_RETRIES,
@@ -1345,60 +1343,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             description: `Task "${nextOccurrenceTask.title}" scheduled for ${new Date(nextOccurrenceTask.scheduledDate!).toLocaleDateString()}`,
           });
         }
-        
-        // Reorganize tasks on timeline when a task is marked as done
-        // This keeps the timeline current with the current time and fills gaps
-        if (updates.status === 'done' && currentTask.status !== 'done' && currentTask.scheduledDate) {
-          const taskDate = new Date(currentTask.scheduledDate);
-          taskDate.setHours(0, 0, 0, 0);
-          const now = new Date();
-          const isToday = taskDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-          
-          // Use a small delay to ensure the task update is processed first
-          setTimeout(async () => {
-            try {
-              // Get updated tasks list (the done task should be filtered out by reorganizeAllTasksForDate)
-              const result = await api.getTasks(validWorkspaceId);
-              if (result.error) {
-                logger.error('Error getting tasks for reorganization:', result.error);
-                return;
-              }
-              const updatedTasks = result.tasks || [];
-              
-              // Get category hours if applicable
-              const categoryHours = getCategoryHoursForTask(currentTask, taskDate, hoursSettings);
-              
-              const reorganizations = reorganizeAllTasksForDate(
-                taskDate,
-                updatedTasks,
-                {
-                  ensureAfterCurrentTime: isToday,
-                  categoryHours: categoryHours,
-                }
-              );
-
-              // Update all tasks that need to be reorganized
-              for (const reorganization of reorganizations) {
-                const taskToUpdate = updatedTasks.find(t => t.id === reorganization.taskId);
-                if (taskToUpdate) {
-                  await api.saveTask(validWorkspaceId, {
-                    ...taskToUpdate,
-                    scheduledDate: reorganization.newTime.toISOString(),
-                    updatedAt: new Date().toISOString(),
-                  });
-                }
-              }
-              
-              // Reload tasks after reorganization
-              if (reorganizations.length > 0) {
-                await loadTasksFromServer(validWorkspaceId);
-              }
-            } catch (error) {
-              logger.error('Failed to reorganize tasks after marking as done:', error);
-              // Don't show error to user - reorganization is a background optimization
-            }
-          }, 200);
-        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to update task on server:', error);
@@ -1427,53 +1371,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                   description: `Task "${nextOccurrenceTask.title}" scheduled for ${new Date(nextOccurrenceTask.scheduledDate!).toLocaleDateString()}`,
                 });
               }
-              
-              // Reorganize tasks on timeline when a task is marked as done (retry path)
-              if (updates.status === 'done' && currentTask.status !== 'done' && currentTask.scheduledDate) {
-                const taskDate = new Date(currentTask.scheduledDate);
-                taskDate.setHours(0, 0, 0, 0);
-                const now = new Date();
-                const isToday = taskDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-                
-                setTimeout(async () => {
-                  try {
-                    const result = await api.getTasks(validWorkspaceId);
-                    if (result.error) {
-                      logger.error('Error getting tasks for reorganization (retry path):', result.error);
-                      return;
-                    }
-                    const updatedTasks = result.tasks || [];
-                    const categoryHours = getCategoryHoursForTask(currentTask, taskDate, hoursSettings);
-                    
-                    const reorganizations = reorganizeAllTasksForDate(
-                      taskDate,
-                      updatedTasks,
-                      {
-                        ensureAfterCurrentTime: isToday,
-                        categoryHours: categoryHours,
-                      }
-                    );
-
-                    for (const reorganization of reorganizations) {
-                      const taskToUpdate = updatedTasks.find(t => t.id === reorganization.taskId);
-                      if (taskToUpdate) {
-                        await api.saveTask(validWorkspaceId, {
-                          ...taskToUpdate,
-                          scheduledDate: reorganization.newTime.toISOString(),
-                          updatedAt: new Date().toISOString(),
-                        });
-                      }
-                    }
-                    
-                    if (reorganizations.length > 0) {
-                      await loadTasksFromServer(validWorkspaceId);
-                    }
-                  } catch (error) {
-                    logger.error('Failed to reorganize tasks after marking as done (retry path):', error);
-                  }
-                }, 200);
-              }
-              
               return;
             } else {
               logger.error('Workspace creation failed - no workspace ID returned');
