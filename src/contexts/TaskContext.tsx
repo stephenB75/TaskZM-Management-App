@@ -2113,20 +2113,19 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     if (accessToken) {
       try {
         // Ensure workspace exists before deleting folder
-        let currentWorkspaceId: string | null = workspaceId;
+        let currentWorkspaceId = workspaceId;
         if (!currentWorkspaceId) {
           const validWorkspaceId = await ensureWorkspace();
           if (!validWorkspaceId) {
             // Don't throw - allow local deletion to proceed even if workspace is not available
             logger.warn('Workspace not available, proceeding with local deletion only');
-            currentWorkspaceId = null;
           } else {
             currentWorkspaceId = validWorkspaceId;
           }
         }
 
         // Delete folder from server first (only if we have a workspace ID)
-        if (currentWorkspaceId && typeof currentWorkspaceId === 'string') {
+        if (currentWorkspaceId) {
           try {
             await api.deleteFolder(currentWorkspaceId, folderId);
             serverDeleteSuccess = true;

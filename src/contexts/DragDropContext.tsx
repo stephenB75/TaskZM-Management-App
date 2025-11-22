@@ -316,11 +316,11 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             const newTime = reorganization.newTime.getTime();
             // Only update if time changed by more than 1 minute (to avoid floating point issues)
             if (Math.abs(currentTime - newTime) > 60 * 1000) {
-              updateTask(reorganization.taskId, {
-                scheduledDate: reorganization.newTime.toISOString(),
-              });
-            }
+            updateTask(reorganization.taskId, {
+              scheduledDate: reorganization.newTime.toISOString(),
+            });
           }
+        }
         }
       }, 150);
       return;
