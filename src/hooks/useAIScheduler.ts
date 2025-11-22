@@ -287,12 +287,11 @@ export function useAIScheduler() {
     const exceedsLimit: Task[] = [];
     const daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }> = [];
     
-    // Determine start date: use provided dateRange start, or default to today (not tomorrow)
-    // For rescheduling, we want to schedule within the selected period starting from the beginning
+    // Determine start date: use provided dateRange start, or default to current time
+    // For rescheduling, we want to schedule within the selected period starting from current time if today
     const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return today;
+      // Default to current time (not beginning of day) to schedule forward from now
+      return new Date();
     })();
     
     // Determine end date: use provided dateRange end, or default to 14 days ahead
@@ -522,16 +521,56 @@ export function useAIScheduler() {
           
           // Helper: Find available time slot
           const findAvailableTimeSlot = (): { hour: number; minute: number } => {
-            // If no existing tasks, use priority-based initial time
-            if (existingTasksForDay.length === 0) {
-              if (task.status === 'in-progress' || task.priority === 'urgent') {
-                return { hour: workStartHour, minute: 0 };
-              } else if (task.priority === 'high') {
-                return { hour: workStartHour, minute: 0 };
-              } else if (task.priority === 'medium') {
-                return { hour: 11, minute: 0 }; // Mid-day
+            // Determine the earliest time we can schedule (current time if today, otherwise work start)
+            const today = new Date();
+            const scheduleDateKey = getDateKey(scheduleDate);
+            const todayDateKey = getDateKey(today);
+            const isToday = scheduleDateKey === todayDateKey;
+            
+            // If scheduling for today, start from current time (rounded up to next 15 minutes)
+            // Otherwise, start from work start hour
+            let earliestTime: Date;
+            if (isToday) {
+              earliestTime = new Date(today);
+              // Round up to next 15-minute interval
+              const minutes = earliestTime.getMinutes();
+              const roundedMinutes = Math.ceil(minutes / 15) * 15;
+              if (roundedMinutes >= 60) {
+                earliestTime.setHours(earliestTime.getHours() + 1, 0, 0, 0);
               } else {
-                return { hour: 14, minute: 0 }; // Afternoon
+                earliestTime.setMinutes(roundedMinutes, 0, 0);
+              }
+              // Don't schedule before work hours
+              if (earliestTime.getHours() < workStartHour) {
+                earliestTime.setHours(workStartHour, 0, 0, 0);
+              }
+            } else {
+              earliestTime = new Date(scheduleDate);
+              earliestTime.setHours(workStartHour, 0, 0, 0);
+            }
+            
+            // If no existing tasks, use priority-based initial time (but not before earliestTime)
+            if (existingTasksForDay.length === 0) {
+              const priorityTime = (() => {
+                if (task.status === 'in-progress' || task.priority === 'urgent') {
+                  return { hour: workStartHour, minute: 0 };
+                } else if (task.priority === 'high') {
+                  return { hour: workStartHour, minute: 0 };
+                } else if (task.priority === 'medium') {
+                  return { hour: 11, minute: 0 }; // Mid-day
+                } else {
+                  return { hour: 14, minute: 0 }; // Afternoon
+                }
+              })();
+              
+              const priorityDateTime = new Date(scheduleDate);
+              priorityDateTime.setHours(priorityTime.hour, priorityTime.minute, 0, 0);
+              
+              // Use the later of priority time or earliest time
+              if (priorityDateTime >= earliestTime) {
+                return priorityTime;
+              } else {
+                return { hour: earliestTime.getHours(), minute: earliestTime.getMinutes() };
               }
             }
             
@@ -553,9 +592,8 @@ export function useAIScheduler() {
               // Check if there's a gap before this task
               let gapStart: Date;
               if (i === 0) {
-                // First task - check gap from work start
-                gapStart = new Date(scheduleDate);
-                gapStart.setHours(workStartHour, 0, 0, 0);
+                // First task - check gap from earliest time (current time if today, otherwise work start)
+                gapStart = new Date(earliestTime);
               } else {
                 // Gap from previous task end
                 const prevTask = sortedTasks[i - 1];
@@ -563,6 +601,11 @@ export function useAIScheduler() {
                 const prevTaskDuration = prevTask.estimatedTime || 30;
                 gapStart = new Date(prevTaskStart);
                 gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
+              }
+              
+              // Ensure gap start is not before earliest time (current time if today)
+              if (gapStart < earliestTime) {
+                gapStart = new Date(earliestTime);
               }
               
               // Calculate gap duration in minutes
@@ -602,9 +645,21 @@ export function useAIScheduler() {
             const nextAvailableTime = new Date(lastTaskStart);
             nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
             
+            // If scheduling for today, ensure we don't schedule before current time
+            if (isToday && nextAvailableTime < earliestTime) {
+              return { 
+                hour: earliestTime.getHours(), 
+                minute: earliestTime.getMinutes() 
+              };
+            }
+            
             // Ensure we don't exceed work hours
             if (nextAvailableTime.getHours() >= workEndHour) {
               // This shouldn't happen due to 5-hour limit, but handle it
+              // If today, try to use earliest time, otherwise use work start
+              if (isToday && earliestTime.getHours() < workEndHour) {
+                return { hour: earliestTime.getHours(), minute: earliestTime.getMinutes() };
+              }
               return { hour: workStartHour, minute: 0 };
             }
             
@@ -793,17 +848,22 @@ export function useAIScheduler() {
       
       // Create date range for the selected day (start and end of the same day)
       // Use the selected date, not tomorrow - allows rescheduling today's tasks
+      const today = new Date();
+      const todayDateKey = today.toISOString().split('T')[0];
+      const selectedDateKey = date.toISOString().split('T')[0];
+      
+      // If rescheduling for today, start from current time, otherwise start from beginning of day
       const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
+      if (selectedDateKey === todayDateKey) {
+        // Rescheduling for today - use current time as start
+        startOfDay.setTime(today.getTime());
+      } else {
+        // Rescheduling for future day - start from beginning of day
+        startOfDay.setHours(0, 0, 0, 0);
+      }
+      
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
-      
-      // If the selected date is today or in the past, use today as the start
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (startOfDay < today) {
-        startOfDay.setTime(today.getTime());
-      }
       
       // Generate new schedule for these specific tasks, constrained to the selected day
       const result = generateSchedulePlan(tasksForReschedule, { startDate: startOfDay, endDate: endOfDay });
@@ -846,10 +906,22 @@ export function useAIScheduler() {
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
       // Create date range for the selected week (Monday to Sunday)
+      const today = new Date();
+      const todayDateKey = today.toISOString().split('T')[0];
+      const weekStartDateKey = startDate.toISOString().split('T')[0];
+      
       const weekStart = new Date(startDate);
-      weekStart.setHours(0, 0, 0, 0);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6); // 7 days including start
+      // If rescheduling for current week (today is within this week), start from current time
+      if (weekStartDateKey === todayDateKey || (weekStart <= today && today <= new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000))) {
+        // Current week - use current time as start
+        weekStart.setTime(today.getTime());
+      } else {
+        // Future week - start from beginning of week
+        weekStart.setHours(0, 0, 0, 0);
+      }
+      
+      const weekEnd = new Date(startDate);
+      weekEnd.setDate(weekEnd.getDate() + 6); // 7 days including start
       weekEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected week
@@ -893,8 +965,19 @@ export function useAIScheduler() {
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
       // Create date range for the selected month (first day to last day of month)
+      const today = new Date();
       const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-      monthStart.setHours(0, 0, 0, 0);
+      
+      // If rescheduling for current month (today is within this month), start from current time
+      const isCurrentMonth = today.getFullYear() === date.getFullYear() && today.getMonth() === date.getMonth();
+      if (isCurrentMonth) {
+        // Current month - use current time as start
+        monthStart.setTime(today.getTime());
+      } else {
+        // Future month - start from beginning of month
+        monthStart.setHours(0, 0, 0, 0);
+      }
+      
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       monthEnd.setHours(23, 59, 59, 999);
       
