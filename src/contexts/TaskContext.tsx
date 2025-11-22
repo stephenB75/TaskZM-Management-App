@@ -1920,6 +1920,80 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, addAvailableTag, removeAvailableTag]);
 
+  // Expose ensureWorkspace for manual triggering (moved before deleteFolder to avoid initialization error)
+  const ensureWorkspace = useCallback(async (): Promise<string | null> => {
+    // If no user/auth, can't create workspace
+    if (!user || !accessToken) {
+      logger.warn('Cannot ensure workspace: user or accessToken missing');
+      return null;
+    }
+    
+    try {
+      // First, try to get existing workspace (getUserWorkspaces auto-creates if missing)
+      logger.debug('Ensuring workspace exists...');
+      const { workspaces } = await api.getUserWorkspaces();
+      
+      if (workspaces && workspaces.length > 0 && workspaces[0].id) {
+        const wsId = workspaces[0].id;
+        logger.info('Workspace found/created:', wsId);
+        
+        // Update state if it's different
+        if (workspaceId !== wsId) {
+          setWorkspaceId(wsId);
+        }
+        return wsId;
+      }
+      
+      // If getUserWorkspaces didn't return a workspace, explicitly create one
+      logger.warn('No workspace returned from getUserWorkspaces, creating explicitly...');
+      await createWorkspaceIfNeeded();
+      
+      // After creation, fetch the workspace ID
+      const { workspaces: newWorkspaces } = await api.getUserWorkspaces();
+      if (newWorkspaces && newWorkspaces.length > 0 && newWorkspaces[0].id) {
+        const wsId = newWorkspaces[0].id;
+        logger.info('Workspace created successfully:', wsId);
+        setWorkspaceId(wsId);
+        return wsId;
+      }
+      
+      // If still no workspace, something went wrong
+      logger.error('Failed to create workspace - no workspace ID returned');
+      return null;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Try to create workspace explicitly if getUserWorkspaces failed
+      if (errorMessage.includes('not found') || errorMessage.includes('404') || errorMessage.includes('Workspace or endpoint not found')) {
+        logger.debug('Workspace not found, attempting explicit creation...');
+        try {
+          await createWorkspaceIfNeeded();
+          const { workspaces: retryWorkspaces } = await api.getUserWorkspaces();
+          if (retryWorkspaces && retryWorkspaces.length > 0 && retryWorkspaces[0].id) {
+            const wsId = retryWorkspaces[0].id;
+            logger.info('Workspace created after retry:', wsId);
+            setWorkspaceId(wsId);
+            return wsId;
+          }
+        } catch (createError) {
+          logger.error('Failed to create workspace on retry:', createError);
+        }
+      }
+      
+      // For other errors, log and show toast
+      logger.error('Failed to ensure workspace:', error);
+      const detailedMessage = errorMessage.includes('Unknown error') 
+        ? 'Unable to access workspace. Please check your connection and try again.'
+        : errorMessage;
+      
+      toast.error('Failed to access workspace', {
+        description: detailedMessage,
+        duration: TOAST_DURATION_LONG_MS,
+      });
+      return null;
+    }
+  }, [workspaceId, user, accessToken, createWorkspaceIfNeeded]);
+
   const deleteFolder = useCallback(async (folderId: string) => {
     // Find the folder to get its name
     const folderToDelete = folders.find(f => f.id === folderId);
@@ -2202,80 +2276,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     
     return () => clearTimeout(timer);
   }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask]);
-
-  // Expose ensureWorkspace for manual triggering
-  const ensureWorkspace = useCallback(async (): Promise<string | null> => {
-    // If no user/auth, can't create workspace
-    if (!user || !accessToken) {
-      logger.warn('Cannot ensure workspace: user or accessToken missing');
-      return null;
-    }
-    
-    try {
-      // First, try to get existing workspace (getUserWorkspaces auto-creates if missing)
-      logger.debug('Ensuring workspace exists...');
-      const { workspaces } = await api.getUserWorkspaces();
-      
-      if (workspaces && workspaces.length > 0 && workspaces[0].id) {
-        const wsId = workspaces[0].id;
-        logger.info('Workspace found/created:', wsId);
-        
-        // Update state if it's different
-        if (workspaceId !== wsId) {
-          setWorkspaceId(wsId);
-        }
-        return wsId;
-      }
-      
-      // If getUserWorkspaces didn't return a workspace, explicitly create one
-      logger.warn('No workspace returned from getUserWorkspaces, creating explicitly...');
-      await createWorkspaceIfNeeded();
-      
-      // After creation, fetch the workspace ID
-      const { workspaces: newWorkspaces } = await api.getUserWorkspaces();
-      if (newWorkspaces && newWorkspaces.length > 0 && newWorkspaces[0].id) {
-        const wsId = newWorkspaces[0].id;
-        logger.info('Workspace created successfully:', wsId);
-        setWorkspaceId(wsId);
-        return wsId;
-      }
-      
-      // If still no workspace, something went wrong
-      logger.error('Failed to create workspace - no workspace ID returned');
-      return null;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
-      // Try to create workspace explicitly if getUserWorkspaces failed
-      if (errorMessage.includes('not found') || errorMessage.includes('404') || errorMessage.includes('Workspace or endpoint not found')) {
-        logger.debug('Workspace not found, attempting explicit creation...');
-        try {
-          await createWorkspaceIfNeeded();
-          const { workspaces: retryWorkspaces } = await api.getUserWorkspaces();
-          if (retryWorkspaces && retryWorkspaces.length > 0 && retryWorkspaces[0].id) {
-            const wsId = retryWorkspaces[0].id;
-            logger.info('Workspace created after retry:', wsId);
-            setWorkspaceId(wsId);
-            return wsId;
-          }
-        } catch (createError) {
-          logger.error('Failed to create workspace on retry:', createError);
-        }
-      }
-      
-      // For other errors, log and show toast
-      logger.error('Failed to ensure workspace:', error);
-      const detailedMessage = errorMessage.includes('Unknown error') 
-        ? 'Unable to access workspace. Please check your connection and try again.'
-        : errorMessage;
-      
-      toast.error('Failed to access workspace', {
-        description: detailedMessage,
-        duration: TOAST_DURATION_LONG_MS,
-      });
-      return null;
-    }
-  }, [workspaceId, user, accessToken, createWorkspaceIfNeeded]);
 
   return (
     <TaskContext.Provider
