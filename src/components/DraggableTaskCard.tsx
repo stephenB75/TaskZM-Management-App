@@ -519,7 +519,7 @@ export const DraggableTaskCard = React.forwardRef<
               isMobile ? TASK_CARD_SHADOWS.mobile : TASK_CARD_SHADOWS.desktop,
               `${TASK_CARD_BACKGROUNDS.hover} ${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
-              isDragging ? TASK_CARD_WIDTHS.dragging : "flex-1",
+              isDragging ? TASK_CARD_WIDTHS.dragging : "flex-1 flex-shrink-0",
               // Padding: synchronized with height calculation to prevent conflicts with duration-based borders
               // Short tasks (< 45 mins): minimal padding to reduce white space
               (task.estimatedTime && task.estimatedTime < 45) && (isMobile ? "px-2 py-1 pb-1" : "md:px-3 md:py-1.5 md:pb-1.5"),
@@ -542,6 +542,7 @@ export const DraggableTaskCard = React.forwardRef<
             )}
           style={{
             minHeight: `${cardHeight}px`,
+            height: `${cardHeight}px`,
           }}
           onClick={(e) => {
             e.stopPropagation();
