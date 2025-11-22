@@ -291,9 +291,11 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
 
       // Then reorganize all tasks on the timeline to ensure chronological order
       // This ensures tasks are always in order and don't overlap, keeping timeline current with time of day
-      // Use a small delay to ensure the task update is processed first
+      // Use a delay to ensure the task update is processed and state is updated
       setTimeout(() => {
-        // Get updated tasks list (including the newly scheduled task)
+        // Get the latest tasks from the context (they should include the newly scheduled task)
+        // We need to access the latest tasks, so we'll use a callback approach
+        // For now, we'll reorganize based on the current tasks state plus our update
         const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, scheduledDate: finalTime.toISOString() } : t);
         
         const reorganizations = reorganizeAllTasksForDate(
@@ -305,15 +307,22 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           }
         );
 
-        // Update all tasks that need to be reorganized (excluding the task we just scheduled)
+        // Update all tasks that need to be reorganized (including the task we just scheduled if it needs adjustment)
+        // Only update if the new time is different from the current time to avoid unnecessary updates
         for (const reorganization of reorganizations) {
-          if (reorganization.taskId !== taskId) {
-            updateTask(reorganization.taskId, {
-              scheduledDate: reorganization.newTime.toISOString(),
-            });
+          const task = updatedTasks.find(t => t.id === reorganization.taskId);
+          if (task && task.scheduledDate) {
+            const currentTime = new Date(task.scheduledDate).getTime();
+            const newTime = reorganization.newTime.getTime();
+            // Only update if time changed by more than 1 minute (to avoid floating point issues)
+            if (Math.abs(currentTime - newTime) > 60 * 1000) {
+              updateTask(reorganization.taskId, {
+                scheduledDate: reorganization.newTime.toISOString(),
+              });
+            }
           }
         }
-      }, 100);
+      }, 150);
       return;
     }
 

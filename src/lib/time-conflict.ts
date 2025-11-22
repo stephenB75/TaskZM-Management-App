@@ -270,12 +270,15 @@ export function reorganizeAllTasksForDate(
     lastScheduledEnd = defaultStart.getTime();
   }
 
-  // Reorganize each task to ensure no overlaps
+  // Reorganize each task to ensure no overlaps and tasks are after current time (for today)
+  // lastScheduledEnd is initialized to current time (for today) or category start/default start
+  // So any task before lastScheduledEnd will be moved forward
   for (const taskInfo of sortedTasks) {
     const task = taskInfo.task;
     const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
     
-    // Check if task overlaps with previous task
+    // Check if task overlaps with previous task or is before the earliest allowed time
+    // (lastScheduledEnd is set to current time for today, so tasks before current time will be moved)
     if (taskInfo.start < lastScheduledEnd) {
       // Task needs to be moved
       const candidateTime = new Date(lastScheduledEnd);
