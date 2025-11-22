@@ -58,20 +58,25 @@ if (typeof window !== 'undefined') {
       // Suppress Chrome extension errors
       if (message.includes('message channel closed before a response was received') ||
           message.includes('checkoutUrls') ||
-          message.includes('ERR_FILE_NOT_FOUND') && filename.includes('chrome-extension://') ||
-          message.includes('Failed to execute') && message.includes('MutationObserver') ||
+          message.includes('ERR_FILE_NOT_FOUND') ||
+          (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
+          (message.includes('observe') && message.includes('MutationObserver')) ||
           filename.includes('chrome-extension://') ||
           filename.includes('contentScript.bundle.js') ||
           filename.includes('content.js') ||
-          filename.includes('web-client-content-script.js')) {
+          filename.includes('web-client-content-script.js') ||
+          filename.includes('userReportLinkedCandidate.json')) {
         event.preventDefault();
-        // Only log in development - completely silent in production
-        if (import.meta.env.DEV) {
-          console.debug('Suppressed browser extension error (non-critical)', {
-            message: message.substring(0, 100),
-            filename: filename.substring(0, 100)
-          });
-        }
+        // Completely silent - these are browser extension errors, not app errors
+        return false;
+      }
+      
+      // Suppress expected 404 network errors from API calls (folders, team members)
+      // These are handled gracefully by returning empty arrays
+      if ((message.includes('404') || message.includes('Not Found')) && 
+          (filename.includes('folders') || filename.includes('team') || filename.includes('members') || filename.includes('supabase.co'))) {
+        event.preventDefault();
+        // Completely silent - these are expected for new workspaces
         return false;
       }
       
@@ -145,24 +150,22 @@ if (typeof window !== 'undefined') {
           message.includes('chrome-extension://') ||
           message.includes('moz-extension://') ||
           message.includes('ERR_FILE_NOT_FOUND') ||
-          message.includes('Failed to execute') && message.includes('MutationObserver') ||
+          (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
+          (message.includes('observe') && message.includes('MutationObserver')) ||
           stack.includes('content.js') ||
           stack.includes('contentScript') ||
-          stack.includes('web-client-content-script')) {
+          stack.includes('contentScript.bundle.js') ||
+          stack.includes('web-client-content-script') ||
+          stack.includes('userReportLinkedCandidate')) {
         event.preventDefault();
-        // Only log in development - completely silent in production
-        if (import.meta.env.DEV) {
-          console.debug('Suppressed browser extension promise rejection (non-critical)', {
-            message: message.substring(0, 100)
-          });
-        }
+        // Completely silent - these are browser extension errors, not app errors
         return false;
       }
       
       // Suppress expected 404 errors from API calls (folders, team members)
       // These are handled gracefully by returning empty arrays
-      if (message.includes('404') && 
-          (message.includes('folders') || message.includes('team') || message.includes('members'))) {
+      if ((message.includes('404') || message.includes('Not Found')) && 
+          (message.includes('folders') || message.includes('team') || message.includes('members') || message.includes('supabase.co'))) {
         event.preventDefault();
         // Completely silent - these are expected for new workspaces
         return false;
