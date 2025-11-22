@@ -159,6 +159,15 @@ if (typeof window !== 'undefined') {
         return false;
       }
       
+      // Suppress expected 404 errors from API calls (folders, team members)
+      // These are handled gracefully by returning empty arrays
+      if (message.includes('404') && 
+          (message.includes('folders') || message.includes('team') || message.includes('members'))) {
+        event.preventDefault();
+        // Completely silent - these are expected for new workspaces
+        return false;
+      }
+      
       // Suppress initialization errors in promise rejections ONLY from extensions
       if (message.includes('Cannot access') && message.includes('before initialization')) {
         // Only suppress if it's clearly from an extension or vendor code

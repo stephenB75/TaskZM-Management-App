@@ -205,6 +205,104 @@ export function findNextAvailableSlot(
 }
 
 /**
+ * Reorganize tasks when a new task is scheduled to avoid conflicts
+ * Moves conflicting tasks to available slots
+ * @param taskId - ID of the task being scheduled
+ * @param scheduledTime - The scheduled time for the new task
+ * @param taskDuration - Duration of the new task in minutes
+ * @param allTasks - All tasks to check against
+ * @param options - Optional settings for time validation
+ * @returns Array of tasks that need to be moved with their new times
+ */
+export function reorganizeConflictingTasks(
+  taskId: string,
+  scheduledTime: Date,
+  taskDuration: number,
+  allTasks: Task[],
+  options?: FindSlotOptions
+): Array<{ taskId: string; newTime: Date }> {
+  const targetDate = new Date(scheduledTime);
+  targetDate.setHours(0, 0, 0, 0);
+
+  // Get all tasks scheduled for the target date (excluding the current task)
+  const dateTasks = allTasks.filter((task) => {
+    if (task.id === taskId) return false;
+    if (task.status === 'done') return false;
+    return isDateInRecurrence(task, targetDate);
+  });
+
+  const newTaskStart = scheduledTime.getTime();
+  const newTaskEnd = newTaskStart + (taskDuration * 60 * 1000);
+
+  // Find all conflicting tasks
+  const conflictingTasks: Array<{ task: Task; start: number; end: number }> = [];
+  
+  for (const task of dateTasks) {
+    if (!task.scheduledDate) continue;
+    
+    const existingTaskStart = new Date(task.scheduledDate).getTime();
+    const existingTaskDuration = (task.estimatedTime || 30) * 60 * 1000;
+    const existingTaskEnd = existingTaskStart + existingTaskDuration;
+    
+    // Check for overlap
+    if (newTaskStart < existingTaskEnd && newTaskEnd > existingTaskStart) {
+      conflictingTasks.push({
+        task,
+        start: existingTaskStart,
+        end: existingTaskEnd,
+      });
+    }
+  }
+
+  // Sort conflicting tasks by start time
+  conflictingTasks.sort((a, b) => a.start - b.start);
+
+  // Reorganize each conflicting task
+  const reorganizations: Array<{ taskId: string; newTime: Date }> = [];
+  let lastScheduledEnd = newTaskEnd;
+
+  for (const conflicting of conflictingTasks) {
+    // Find next available slot after the new task or after the last reorganized task
+    const candidateTime = new Date(Math.max(lastScheduledEnd, newTaskEnd));
+    
+    // Round to nearest 15-minute slot
+    const minutes = candidateTime.getMinutes();
+    const roundedMinutes = Math.ceil(minutes / 15) * 15;
+    if (roundedMinutes >= 60) {
+      candidateTime.setHours(candidateTime.getHours() + 1);
+      candidateTime.setMinutes(0);
+    } else {
+      candidateTime.setMinutes(roundedMinutes);
+    }
+    candidateTime.setSeconds(0);
+    candidateTime.setMilliseconds(0);
+
+    // Find available slot for this conflicting task
+    const newTime = findNextAvailableSlot(
+      conflicting.task.id,
+      candidateTime,
+      conflicting.task.estimatedTime || 30,
+      allTasks,
+      options
+    );
+
+    // Check if a valid slot was found
+    if (newTime.getHours() < 24) {
+      reorganizations.push({
+        taskId: conflicting.task.id,
+        newTime,
+      });
+      
+      // Update last scheduled end for next iteration
+      const conflictingTaskDuration = (conflicting.task.estimatedTime || 30) * 60 * 1000;
+      lastScheduledEnd = newTime.getTime() + conflictingTaskDuration;
+    }
+  }
+
+  return reorganizations;
+}
+
+/**
  * Format time for display
  * @param date - Date to format
  * @returns Formatted time string (e.g., "2:30 PM")

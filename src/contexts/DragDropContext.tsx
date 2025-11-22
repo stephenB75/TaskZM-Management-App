@@ -3,7 +3,7 @@ import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, c
 import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
 import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
-import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
+import { checkTimeConflict, findNextAvailableSlot, formatTime, reorganizeConflictingTasks } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
@@ -281,6 +281,25 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         toast.warning('Approaching daily limit', {
           description: `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`,
           duration: 4000,
+        });
+      }
+
+      // Reorganize conflicting tasks before scheduling the new task
+      const reorganizations = reorganizeConflictingTasks(
+        taskId,
+        finalTime,
+        taskDuration,
+        tasks,
+        {
+          ensureAfterCurrentTime: isToday,
+          categoryHours: categoryHours,
+        }
+      );
+
+      // Update all conflicting tasks to their new times
+      for (const reorganization of reorganizations) {
+        updateTask(reorganization.taskId, {
+          scheduledDate: reorganization.newTime.toISOString(),
         });
       }
 

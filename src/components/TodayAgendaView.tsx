@@ -401,6 +401,74 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
+                {/* Current Time Indicator - Only show for today */}
+                {(() => {
+                  const now = new Date();
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const isToday = now.getTime() >= today.getTime() && 
+                                  now.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
+                  
+                  if (!isToday || todayTasks.length === 0) return null;
+                  
+                  // Find the task that contains or is closest to current time
+                  const currentTime = now.getTime();
+                  let indicatorPosition = 0;
+                  let accumulatedHeight = 0;
+                  const gapBetweenTasks = 12; // space-y-3 = 12px
+                  
+                  for (let i = 0; i < todayTasks.length; i++) {
+                    const task = todayTasks[i];
+                    if (!task.scheduledDate) continue;
+                    
+                    const taskTime = new Date(task.scheduledDate).getTime();
+                    const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
+                    const taskEnd = taskTime + taskDuration;
+                    const taskHeight = getTaskHeight(task);
+                    
+                    if (currentTime >= taskTime && currentTime <= taskEnd) {
+                      // Current time is within this task
+                      const progress = (currentTime - taskTime) / taskDuration;
+                      indicatorPosition = accumulatedHeight + (taskHeight * progress);
+                      break;
+                    } else if (currentTime < taskTime) {
+                      // Current time is before this task
+                      indicatorPosition = accumulatedHeight;
+                      break;
+                    } else {
+                      // Current time is after this task
+                      accumulatedHeight += taskHeight + gapBetweenTasks;
+                      if (i === todayTasks.length - 1) {
+                        // Current time is after last task
+                        indicatorPosition = accumulatedHeight;
+                      }
+                    }
+                  }
+                  
+                  return (
+                    <div
+                      className="absolute left-0 right-0 z-50 pointer-events-none"
+                      style={{
+                        top: `${indicatorPosition + 27.6}px`, // Account for padding
+                        transform: 'translateY(-50%)',
+                      }}
+                    >
+                      <div className="flex items-center gap-2 px-5">
+                        <div className="flex-1 h-0.5 bg-primary/60 relative">
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary border-2 border-background" />
+                        </div>
+                        <span className="text-xs font-medium text-primary bg-background/80 dark:bg-gray-800/80 px-2 py-0.5 rounded">
+                          {now.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+                
                 <div className="space-y-3 w-full relative" style={{ overflow: 'visible' }}>
                   {todayTasks.map((task, index) => (
                     <DraggableTodayAgendaTask
