@@ -205,6 +205,125 @@ export function findNextAvailableSlot(
 }
 
 /**
+ * Reorganize all tasks on a timeline to ensure chronological order and no overlaps
+ * This function reorganizes all tasks for a given date to ensure they're in order
+ * @param date - The date to reorganize tasks for
+ * @param allTasks - All tasks to check against
+ * @param options - Optional settings for time validation
+ * @returns Array of tasks that need to be moved with their new times
+ */
+export function reorganizeAllTasksForDate(
+  date: Date,
+  allTasks: Task[],
+  options?: FindSlotOptions
+): Array<{ taskId: string; newTime: Date }> {
+  const targetDate = new Date(date);
+  targetDate.setHours(0, 0, 0, 0);
+
+  // Get all tasks scheduled for the target date (excluding done tasks)
+  const dateTasks = allTasks.filter((task) => {
+    if (task.status === 'done') return false;
+    return isDateInRecurrence(task, targetDate);
+  });
+
+  // Sort tasks by scheduled time
+  const sortedTasks = dateTasks
+    .filter((task) => task.scheduledDate)
+    .map((task) => ({
+      task,
+      start: new Date(task.scheduledDate!).getTime(),
+      end: new Date(task.scheduledDate!).getTime() + ((task.estimatedTime || 30) * 60 * 1000),
+    }))
+    .sort((a, b) => a.start - b.start);
+
+  const reorganizations: Array<{ taskId: string; newTime: Date }> = [];
+  let lastScheduledEnd = 0;
+
+  // Determine the earliest start time
+  const now = new Date();
+  const isToday = targetDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  
+  if (options?.ensureAfterCurrentTime && isToday) {
+    // Start from current time (rounded up to next 15-minute slot)
+    const currentMinutes = now.getMinutes();
+    const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+    const earliestTime = new Date(now);
+    if (roundedMinutes >= 60) {
+      earliestTime.setHours(earliestTime.getHours() + 1);
+      earliestTime.setMinutes(0);
+    } else {
+      earliestTime.setMinutes(roundedMinutes);
+    }
+    earliestTime.setSeconds(0);
+    earliestTime.setMilliseconds(0);
+    lastScheduledEnd = earliestTime.getTime();
+  } else if (options?.categoryHours) {
+    // Start from category start time
+    const { start } = options.categoryHours;
+    const categoryStart = new Date(targetDate);
+    categoryStart.setHours(Math.floor(start / 60), start % 60, 0, 0);
+    lastScheduledEnd = categoryStart.getTime();
+  } else {
+    // Start from 8 AM
+    const defaultStart = new Date(targetDate);
+    defaultStart.setHours(8, 0, 0, 0);
+    lastScheduledEnd = defaultStart.getTime();
+  }
+
+  // Reorganize each task to ensure no overlaps
+  for (const taskInfo of sortedTasks) {
+    const task = taskInfo.task;
+    const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
+    
+    // Check if task overlaps with previous task
+    if (taskInfo.start < lastScheduledEnd) {
+      // Task needs to be moved
+      const candidateTime = new Date(lastScheduledEnd);
+      
+      // Round to nearest 15-minute slot
+      const minutes = candidateTime.getMinutes();
+      const roundedMinutes = Math.ceil(minutes / 15) * 15;
+      if (roundedMinutes >= 60) {
+        candidateTime.setHours(candidateTime.getHours() + 1);
+        candidateTime.setMinutes(0);
+      } else {
+        candidateTime.setMinutes(roundedMinutes);
+      }
+      candidateTime.setSeconds(0);
+      candidateTime.setMilliseconds(0);
+
+      // Find available slot for this task
+      const newTime = findNextAvailableSlot(
+        task.id,
+        candidateTime,
+        task.estimatedTime || 30,
+        allTasks,
+        options
+      );
+
+      // Check if a valid slot was found
+      if (newTime.getHours() < 24) {
+        reorganizations.push({
+          taskId: task.id,
+          newTime,
+        });
+        
+        // Update last scheduled end for next iteration
+        lastScheduledEnd = newTime.getTime() + taskDuration;
+      } else {
+        // No slot found, keep original time but update lastScheduledEnd if it's later
+        lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);
+      }
+    } else {
+      // Task doesn't need to be moved, but update lastScheduledEnd
+      lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);
+    }
+  }
+
+  return reorganizations;
+}
+
+/**
  * Reorganize tasks when a new task is scheduled to avoid conflicts
  * Moves conflicting tasks to available slots
  * @param taskId - ID of the task being scheduled

@@ -3,7 +3,7 @@ import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, c
 import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
 import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
-import { checkTimeConflict, findNextAvailableSlot, formatTime, reorganizeConflictingTasks } from '../lib/time-conflict';
+import { checkTimeConflict, findNextAvailableSlot, formatTime, reorganizeConflictingTasks, reorganizeAllTasksForDate } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
@@ -284,59 +284,36 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         });
       }
 
-      // Reorganize conflicting tasks before scheduling the new task
-      const reorganizations = reorganizeConflictingTasks(
-        taskId,
-        finalTime,
-        taskDuration,
-        tasks,
-        {
-          ensureAfterCurrentTime: isToday,
-          categoryHours: categoryHours,
-        }
-      );
+      // First, schedule the new task
+      updateTask(taskId, {
+        scheduledDate: finalTime.toISOString(),
+      });
 
-      // Update all conflicting tasks to their new times
-      for (const reorganization of reorganizations) {
-        updateTask(reorganization.taskId, {
-          scheduledDate: reorganization.newTime.toISOString(),
-        });
-      }
-
-      // Double-check for conflicts before scheduling (safety check)
-      const conflictCheck = checkTimeConflict(taskId, finalTime, taskDuration, tasks);
-      if (conflictCheck) {
-        // If there's still a conflict, find the next available slot
-        const safeTime = findNextAvailableSlot(
-          taskId,
-          finalTime,
-          taskDuration,
-          tasks,
+      // Then reorganize all tasks on the timeline to ensure chronological order
+      // This ensures tasks are always in order and don't overlap, keeping timeline current with time of day
+      // Use a small delay to ensure the task update is processed first
+      setTimeout(() => {
+        // Get updated tasks list (including the newly scheduled task)
+        const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, scheduledDate: finalTime.toISOString() } : t);
+        
+        const reorganizations = reorganizeAllTasksForDate(
+          today,
+          updatedTasks,
           {
             ensureAfterCurrentTime: isToday,
             categoryHours: categoryHours,
           }
         );
-        
-        // Verify the safe time doesn't conflict
-        const safeConflictCheck = checkTimeConflict(taskId, safeTime, taskDuration, tasks);
-        if (safeConflictCheck) {
-          toast.error('Unable to schedule task', {
-            description: 'No available time slots without conflicts. Please try a different time.',
-          });
-          return;
-        }
-        
-        updateTask(taskId, {
-          scheduledDate: safeTime.toISOString(),
-        });
-        return;
-      }
 
-      // No conflict and within limit, proceed with update
-      updateTask(taskId, {
-        scheduledDate: finalTime.toISOString(),
-      });
+        // Update all tasks that need to be reorganized (excluding the task we just scheduled)
+        for (const reorganization of reorganizations) {
+          if (reorganization.taskId !== taskId) {
+            updateTask(reorganization.taskId, {
+              scheduledDate: reorganization.newTime.toISOString(),
+            });
+          }
+        }
+      }, 100);
       return;
     }
 
