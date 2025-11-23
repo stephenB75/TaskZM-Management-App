@@ -32,6 +32,7 @@ export function TodayAgendaView({
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -40,6 +41,21 @@ export function TodayAgendaView({
         clearTimeout(confettiTimeoutRef.current);
       }
     };
+  }, []);
+
+  // Update current time every minute for the time indicator
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date());
+    };
+    
+    // Update immediately
+    updateTime();
+    
+    // Update every minute
+    const interval = setInterval(updateTime, 60000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Make this view a droppable zone for tasks from Kanban
@@ -403,7 +419,7 @@ export function TodayAgendaView({
               <>
                 {/* Current Time Indicator - Only show for today */}
                 {(() => {
-                  const now = new Date();
+                  const now = currentTime;
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   const isToday = now.getTime() >= today.getTime() && 
@@ -412,7 +428,7 @@ export function TodayAgendaView({
                   if (!isToday || todayTasks.length === 0) return null;
                   
                   // Find the task that contains or is closest to current time
-                  const currentTime = now.getTime();
+                  const currentTimeMs = now.getTime();
                   let indicatorPosition = 0;
                   let accumulatedHeight = 0;
                   const gapBetweenTasks = 12; // space-y-3 = 12px
@@ -426,12 +442,12 @@ export function TodayAgendaView({
                     const taskEnd = taskTime + taskDuration;
                     const taskHeight = getTaskHeight(task);
                     
-                    if (currentTime >= taskTime && currentTime <= taskEnd) {
+                    if (currentTimeMs >= taskTime && currentTimeMs <= taskEnd) {
                       // Current time is within this task
-                      const progress = (currentTime - taskTime) / taskDuration;
+                      const progress = (currentTimeMs - taskTime) / taskDuration;
                       indicatorPosition = accumulatedHeight + (taskHeight * progress);
                       break;
-                    } else if (currentTime < taskTime) {
+                    } else if (currentTimeMs < taskTime) {
                       // Current time is before this task
                       indicatorPosition = accumulatedHeight;
                       break;
