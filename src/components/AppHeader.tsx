@@ -249,8 +249,13 @@ export function AppHeader({
                 <motion.img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0 dark:brightness-100 dark:contrast-100 dark:invert-0"
-                  style={{ height: HEADER_LOGO_HEIGHT, filter: 'none' }}
+                  className="w-auto flex-shrink-0"
+                  style={{ 
+                    height: HEADER_LOGO_HEIGHT, 
+                    filter: 'none',
+                    WebkitFilter: 'none',
+                    mixBlendMode: 'normal',
+                  }}
                   initial={{ opacity: 0, scale: HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_LOGO }}
@@ -355,8 +360,13 @@ export function AppHeader({
                 <img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0 dark:brightness-100 dark:contrast-100 dark:invert-0"
-                  style={{ height: HEADER_LOGO_HEIGHT, filter: 'none' }}
+                  className="w-auto flex-shrink-0"
+                  style={{ 
+                    height: HEADER_LOGO_HEIGHT, 
+                    filter: 'none',
+                    WebkitFilter: 'none',
+                    mixBlendMode: 'normal',
+                  }}
                 />
               )}
               <div className="min-w-0">

@@ -172,6 +172,14 @@ html, body, #root {
   overflow: hidden; /* Prevent body scrolling - only content areas should scroll */
 }
 
+/* Ensure logo maintains natural colors in dark mode */
+img[alt="TaskZM Logo"] {
+  filter: none !important;
+  -webkit-filter: none !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
   html {

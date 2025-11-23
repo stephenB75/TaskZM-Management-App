@@ -862,21 +862,21 @@ export function DashboardView({
         actions={
           <div className="flex items-center gap-2">
             {/* View Mode Toggle - Desktop Only */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-card/80 border border-primary/10">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-700/80 border border-primary/10 dark:border-gray-600/50">
               <Calendar
                 className={cn(
                   "w-4 h-4 transition-colors",
                   viewMode === "week"
-                    ? "text-primary"
-                    : "text-muted-foreground",
+                    ? "text-primary dark:text-primary-foreground"
+                    : "text-muted-foreground dark:text-gray-400",
                 )}
               />
               <span
                 className={cn(
                   "text-xs font-medium transition-colors",
                   viewMode === "week"
-                    ? "text-primary"
-                    : "text-muted-foreground",
+                    ? "text-primary dark:text-primary-foreground"
+                    : "text-muted-foreground dark:text-gray-400",
                 )}
               >
                 Week
@@ -892,8 +892,8 @@ export function DashboardView({
                 className={cn(
                   "text-xs font-medium transition-colors",
                   viewMode === "month"
-                    ? "text-primary"
-                    : "text-muted-foreground",
+                    ? "text-primary dark:text-primary-foreground"
+                    : "text-muted-foreground dark:text-gray-400",
                 )}
               >
                 Month
@@ -902,8 +902,8 @@ export function DashboardView({
                 className={cn(
                   "w-4 h-4 transition-colors",
                   viewMode === "month"
-                    ? "text-primary"
-                    : "text-muted-foreground",
+                    ? "text-primary dark:text-primary-foreground"
+                    : "text-muted-foreground dark:text-gray-400",
                 )}
               />
             </div>
@@ -914,11 +914,11 @@ export function DashboardView({
                 variant="outline"
                 size="sm"
                 onClick={handleScheduleUnscheduledTasks}
-                className="rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] border-primary/20 hover:from-[#C9E4F7] hover:to-[#E6D5F0] transition-all whitespace-nowrap"
+                className="rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40 hover:from-[#C9E4F7] hover:to-[#E6D5F0] dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all whitespace-nowrap"
                 data-tour="ai-scheduler"
               >
-                <Sparkles className="w-4 h-4 mr-2 text-primary flex-shrink-0" />
-                AI Scheduler Suggestions
+                <Sparkles className="w-4 h-4 mr-2 text-primary dark:text-primary-foreground flex-shrink-0" />
+                <span className="text-foreground dark:text-gray-100">AI Scheduler Suggestions</span>
               </Button>
               <Button
                 variant="outline"
@@ -941,11 +941,11 @@ export function DashboardView({
                     });
                   }
                 }}
-                className="rounded-full bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:from-primary/20 hover:to-primary/10 transition-all"
+                className="rounded-full bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all"
                 disabled={isRescheduling}
               >
-                <RefreshCw className={cn("w-4 h-4 mr-2 text-primary", isRescheduling && "animate-spin")} />
-                Re-schedule
+                <RefreshCw className={cn("w-4 h-4 mr-2 text-primary dark:text-primary-foreground", isRescheduling && "animate-spin")} />
+                <span className="text-foreground dark:text-gray-100">Re-schedule</span>
               </Button>
             </div>
           </div>
