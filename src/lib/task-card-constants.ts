@@ -3,27 +3,27 @@
  * Centralized configuration for task card styling, colors, sizes, and text
  */
 
-// Priority Colors (for priority line and badges)
+// Priority Colors (for priority line and badges) - Improved contrast for dark mode
 export const TASK_CARD_PRIORITY_COLORS = {
   urgent: {
     line: '#EF4444', // Red
-    badge: 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800',
+    badge: 'bg-red-50 dark:bg-red-900/70 text-red-700 dark:text-red-100 border-red-200 dark:border-red-700',
   },
   high: {
     line: '#F97316', // Orange
-    badge: 'bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+    badge: 'bg-orange-50 dark:bg-orange-900/70 text-orange-700 dark:text-orange-100 border-orange-200 dark:border-orange-700',
   },
   medium: {
     line: '#3B82F6', // Blue
-    badge: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+    badge: 'bg-blue-50 dark:bg-blue-900/70 text-blue-700 dark:text-blue-100 border-blue-200 dark:border-blue-700',
   },
   low: {
     line: '#9CA3AF', // Grey
-    badge: 'bg-gray-50 dark:bg-muted/20 text-gray-700 dark:text-muted-foreground border-gray-200 dark:border-border',
+    badge: 'bg-gray-50 dark:bg-gray-700/70 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600',
   },
   default: {
     line: '#E5E7EB',
-    badge: 'bg-gray-50 dark:bg-muted/20 text-gray-600 dark:text-muted-foreground border-gray-200 dark:border-border',
+    badge: 'bg-gray-50 dark:bg-gray-700/70 text-gray-600 dark:text-gray-200 border-gray-200 dark:border-gray-600',
   },
 } as const;
 
@@ -244,11 +244,11 @@ export const TASK_CARD_BORDERS = {
   hover: 'hover:border-gray-400/90',
 } as const;
 
-// Background Colors
+// Background Colors - Use lighter backgrounds in dark mode for better visibility
 export const TASK_CARD_BACKGROUNDS = {
-  mobile: 'bg-white dark:bg-card',
-  desktop: 'bg-white/60 dark:bg-card/60 backdrop-blur-sm',
-  hover: 'hover:bg-white/80 dark:hover:bg-card/80',
+  mobile: 'bg-white dark:bg-[#3E3E52]', // Lighter dark background for better visibility
+  desktop: 'bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm', // Lighter with transparency
+  hover: 'hover:bg-white/80 dark:hover:bg-[#4A4A5E]', // Slightly lighter on hover
 } as const;
 
 // Width Values
