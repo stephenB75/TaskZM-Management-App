@@ -49,6 +49,7 @@ import {
 } from "./ui/alert-dialog";
 import { ScrollArea } from "./ui/scroll-area";
 import { useTasks } from "../contexts/TaskContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
 import { logger } from "../lib/logger";
@@ -58,6 +59,8 @@ import {
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_SKY,
   COLOR_PASTEL_MINT,
+  COLOR_PASTEL_MINT_DARK,
+  COLOR_PASTEL_SKY_DARK,
   COLOR_FOLDER_DEFAULT,
   FOLDER_COLOR_OPTIONS,
   getColorWithOpacity,
@@ -110,6 +113,7 @@ interface FoldersPanelProps {
 }
 
 export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
+  const { actualTheme } = useTheme();
   const {
     folders,
     addFolder,
@@ -535,11 +539,18 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
     );
   }
 
+  // Get appropriate colors based on theme
+  const isDark = actualTheme === 'dark';
+  // Use dark mode colors from CSS variables (matching globals.css)
+  const gradientColor1 = isDark ? '#8A7A9A' : COLOR_PASTEL_LAVENDER; // pastel-lavender dark variant
+  const gradientColor2 = isDark ? COLOR_PASTEL_SKY_DARK : COLOR_PASTEL_SKY;
+  const gradientColor3 = isDark ? COLOR_PASTEL_MINT_DARK : COLOR_PASTEL_MINT;
+
   return (
     <div
-      className="h-full flex flex-col dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 dark:bg-gradient-to-b"
+      className="h-full flex flex-col"
       style={{
-        background: `linear-gradient(to bottom, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.35)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.35)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.35)})`,
+        background: `linear-gradient(to bottom, ${getColorWithOpacity(gradientColor1, 0.35)}, ${getColorWithOpacity(gradientColor2, 0.35)}, ${getColorWithOpacity(gradientColor3, 0.35)})`,
       }}
     >
       {/* Header */}
