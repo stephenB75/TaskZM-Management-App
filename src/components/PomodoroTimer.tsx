@@ -247,7 +247,7 @@ export function PomodoroTimer({
 
       {/* Timer Display */}
       <div className="text-center">
-        <div className="text-3xl font-mono font-bold text-gray-900">
+        <div className="text-3xl font-mono font-bold text-foreground">
           {formatTime(timerState.timeLeft)}
         </div>
       </div>

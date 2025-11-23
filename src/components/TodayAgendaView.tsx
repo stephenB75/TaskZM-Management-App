@@ -582,8 +582,6 @@ export function TodayAgendaView({
                                 >
                                   {TODAY_AGENDA_TEXT.nextUp}
                                 </span>
-                                  {TODAY_AGENDA_TEXT.nextUp}
-                                </span>
                               </div>
                             </div>
                             <div className="flex items-start gap-1.5 mt-1.5">

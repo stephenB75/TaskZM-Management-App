@@ -40,6 +40,7 @@ import {
 } from "recharts";
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   COLOR_PRIMARY,
   COLOR_SUCCESS,
@@ -89,12 +90,9 @@ function CustomTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
       <div
-        className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-lg border text-xs"
-        style={{ 
-          borderColor: UI_ANALYTICS_COLORS.borderLight,
-        }}
+        className="bg-card p-2 rounded-md shadow-lg border border-border text-xs"
       >
-        <p className="font-semibold mb-1" style={{ color: COLOR_TEXT_PRIMARY }}>
+        <p className="font-semibold mb-1 text-foreground">
           {label}
         </p>
         {payload.map((entry: any, index: number) => {
@@ -114,11 +112,11 @@ function CustomTooltip({ active, payload, label }: any) {
                   className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: entry.color }}
                 />
-                <span style={{ color: COLOR_TEXT_SECONDARY }}>
+                <span className="text-muted-foreground">
                   {entry.name}:
                 </span>
               </div>
-              <span className="font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
+              <span className="font-semibold text-foreground">
                 {formatValue(entry.value)}
               </span>
             </div>
@@ -147,7 +145,7 @@ function MetricCard({
   trend?: { value: number; label: string };
 }) {
   return (
-    <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
+    <Card className="shadow-sm border border-border bg-card">
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg" style={{ backgroundColor: getColorWithOpacity(color, 0.1) }}>
@@ -159,14 +157,14 @@ function MetricCard({
             </div>
           )}
         </div>
-        <div className="text-xs font-medium mb-1" style={{ color: COLOR_TEXT_SECONDARY }}>
+        <div className="text-xs font-medium mb-1 text-muted-foreground">
           {title}
         </div>
-        <div className="text-xl font-bold mb-0.5" style={{ color: COLOR_TEXT_PRIMARY }}>
+        <div className="text-xl font-bold mb-0.5 text-foreground">
           {value}
         </div>
         {subtitle && (
-          <div className="text-[10px]" style={{ color: COLOR_TEXT_MUTED }}>
+          <div className="text-[10px] text-muted-foreground">
             {subtitle}
           </div>
         )}
@@ -178,6 +176,13 @@ function MetricCard({
 export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   const { tasks, projects } = useTasks();
   const { features } = useSubscription();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
+  
+  // Theme-aware colors for charts
+  const textColor = isDark ? '#A8A8B8' : '#6B7280'; // muted-foreground
+  const textPrimaryColor = isDark ? '#E8E6F0' : '#111827'; // foreground
+  const borderColor = isDark ? 'rgba(155, 135, 232, 0.2)' : '#E5E7EB'; // border
 
   // Calculate date range limit
   const dateRangeLimit = features?.analyticsDaysLimit;
@@ -506,9 +511,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Status Distribution - Pie Chart */}
             {analytics.statusDistribution.length > 0 && (
-              <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
+              <Card className="shadow-sm border border-border bg-card">
                 <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
+                  <CardTitle className="text-sm font-semibold text-foreground">
                     Task Status
                   </CardTitle>
                 </CardHeader>
@@ -545,7 +550,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                             const item = analytics.statusDistribution.find(d => d.name === value);
                             const percent = item ? ((item.value / analytics.totalTasks) * 100).toFixed(0) : '0';
                             return (
-                              <span style={{ fontSize: '11px', color: COLOR_TEXT_SECONDARY }}>
+                              <span className="text-[11px] text-muted-foreground">
                                 {value}: {percent}%
                               </span>
                             );
@@ -559,28 +564,28 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             )}
 
             {/* Time Tracked Trend - Line Chart */}
-            <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
-              <CardHeader className="pb-2 pt-3 px-3">
-                <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
-                  Time Tracked (7 Days)
-                </CardTitle>
+              <Card className="shadow-sm border border-border bg-card">
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm font-semibold text-foreground">
+                    Time Tracked (7 Days)
+                  </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
                 <div className="h-40">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={analytics.timeTrackingTrend} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={COLOR_BORDER_LIGHT} vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
                       <XAxis
                         dataKey="date"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                        tick={{ fontSize: 10, fill: textColor }}
                       />
                       <YAxis
                         tickFormatter={(value) => `${value}h`}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                        tick={{ fontSize: 10, fill: textColor }}
                       />
                       <Tooltip content={<CustomTooltip />} />
                       <Line
@@ -603,27 +608,27 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             </Card>
 
             {/* Tasks Created vs Completed - Composed Chart */}
-            <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
-              <CardHeader className="pb-2 pt-3 px-3">
-                <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
-                  Tasks Created vs Completed
-                </CardTitle>
+              <Card className="shadow-sm border border-border bg-card">
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm font-semibold text-foreground">
+                    Tasks Created vs Completed
+                  </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
                 <div className="h-40">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={analytics.taskPerDayProgress} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={COLOR_BORDER_LIGHT} vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
                       <XAxis
                         dataKey="date"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                        tick={{ fontSize: 10, fill: textColor }}
                       />
                       <YAxis
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                        tick={{ fontSize: 10, fill: textColor }}
                       />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar 
@@ -656,9 +661,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Time of Day Completion - Bar Chart */}
             {analytics.timePatterns.blocks.length > 0 && (
-              <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
+              <Card className="shadow-sm border border-border bg-card">
                 <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
+                  <CardTitle className="text-sm font-semibold text-foreground">
                     Completion by Time of Day
                   </CardTitle>
                 </CardHeader>
@@ -666,17 +671,17 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   <div className="h-40">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analytics.timePatterns.blocks} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={COLOR_BORDER_LIGHT} vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
                         <XAxis
                           dataKey="name"
                           tickLine={false}
                           axisLine={false}
-                          tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                          tick={{ fontSize: 10, fill: textColor }}
                         />
                         <YAxis
                           tickLine={false}
                           axisLine={false}
-                          tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                          tick={{ fontSize: 10, fill: textColor }}
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Bar 
@@ -695,8 +700,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                     </ResponsiveContainer>
                   </div>
                   <div className="text-center mt-2">
-                    <div className="text-xs" style={{ color: COLOR_TEXT_SECONDARY }}>
-                      Peak: <span className="font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>{peakHourLabel}</span>
+                    <div className="text-xs text-muted-foreground">
+                      Peak: <span className="font-semibold text-foreground">{peakHourLabel}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -705,9 +710,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Top Task Tags - Horizontal Bar Chart */}
             {analytics.taskTypes.length > 0 && (
-              <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
+              <Card className="shadow-sm border border-border bg-card">
                 <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
+                  <CardTitle className="text-sm font-semibold text-foreground">
                     Top Task Tags
                   </CardTitle>
                 </CardHeader>
@@ -719,19 +724,19 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                         layout="vertical"
                         margin={{ top: 5, right: 10, left: 60, bottom: 0 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke={COLOR_BORDER_LIGHT} horizontal />
+                        <CartesianGrid strokeDasharray="3 3" stroke={borderColor} horizontal />
                         <XAxis
                           type="number"
                           tickLine={false}
                           axisLine={false}
-                          tick={{ fontSize: 10, fill: COLOR_TEXT_SECONDARY }}
+                          tick={{ fontSize: 10, fill: textColor }}
                         />
                         <YAxis
                           type="category"
                           dataKey="name"
                           tickLine={false}
                           axisLine={false}
-                          tick={{ fontSize: 10, fill: COLOR_TEXT_PRIMARY }}
+                          tick={{ fontSize: 10, fill: textPrimaryColor }}
                           width={55}
                         />
                         <Tooltip content={<CustomTooltip />} />
@@ -753,21 +758,21 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Project Progress - Compact Table */}
             {analytics.projectProgress.length > 0 && (
-              <Card className="shadow-sm border-0" style={{ backgroundColor: UI_ANALYTICS_COLORS.backgroundWhite, borderColor: UI_ANALYTICS_COLORS.borderLight }}>
+              <Card className="shadow-sm border border-border bg-card">
                 <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-sm font-semibold" style={{ color: COLOR_TEXT_PRIMARY }}>
+                  <CardTitle className="text-sm font-semibold text-foreground">
                     Project Progress
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
                   <div className="space-y-2">
                     {analytics.projectProgress.map((project, index) => (
-                      <div key={index} className="flex items-center justify-between py-1.5 border-b last:border-0" style={{ borderColor: COLOR_BORDER_LIGHT }}>
+                      <div key={index} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium truncate" style={{ color: COLOR_TEXT_PRIMARY }}>
+                          <div className="text-xs font-medium truncate text-foreground">
                             {project.name}
                           </div>
-                          <div className="text-[10px]" style={{ color: COLOR_TEXT_MUTED }}>
+                          <div className="text-[10px] text-muted-foreground">
                             {project.completed}/{project.total} tasks
                           </div>
                         </div>
