@@ -189,11 +189,11 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* Desktop Header - Side panel headers are relative, main header is fixed */}
+      {/* Desktop/Tablet Header - Side panel headers are relative, main header is fixed */}
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel, with fade animation
         <motion.div 
-          className="hidden lg:block relative border-b backdrop-blur-lg shadow-sm flex-shrink-0"
+          className="hidden md:block relative border-b backdrop-blur-lg shadow-sm flex-shrink-0"
           initial={{ opacity: 0, y: HEADER_SIDE_PANEL_ANIMATION_Y_OFFSET }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ 
@@ -302,7 +302,7 @@ export function AppHeader({
         // Include panelOpen in key to ensure React unmounts/remounts when state changes
         <div 
           key={`main-header-${String(panelOpen)}-${String(panelKey || 'default')}-${headerUpdateKey}`}
-          className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
+          className="hidden md:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
             backgroundColor: isDark 

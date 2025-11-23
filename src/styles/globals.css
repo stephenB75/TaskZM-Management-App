@@ -254,6 +254,36 @@ body {
   background: rgba(155, 135, 232, 0.5);
 }
 
+/* Tablet optimizations (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Improve touch targets for tablets */
+  button, a {
+    min-height: 40px;
+    min-width: 40px;
+  }
+  
+  /* Optimize font rendering for tablets */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Better spacing for tablet layouts */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Small monitor optimizations (1024px - 1279px) */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  /* Optimize for smaller desktop screens */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
 /* Mobile landscape optimizations */
 @media (max-height: 500px) and (orientation: landscape) {
   /* Reduce vertical padding in landscape mode */

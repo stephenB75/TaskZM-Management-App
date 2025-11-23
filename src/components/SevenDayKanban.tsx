@@ -65,6 +65,28 @@ export function SevenDayKanban({
   const { activeId } = useDragDrop();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
+  
+  // Calculate responsive column width based on viewport
+  const [columnWidth, setColumnWidth] = React.useState(KANBAN_COLUMN_DIMENSIONS.width.desktop);
+  
+  React.useEffect(() => {
+    const updateColumnWidth = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.mobile);
+      } else if (width >= 768 && width < 1024) {
+        setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.tablet);
+      } else if (width >= 1024 && width < 1280) {
+        setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.smallMonitor);
+      } else {
+        setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.desktop);
+      }
+    };
+    
+    updateColumnWidth();
+    window.addEventListener('resize', updateColumnWidth);
+    return () => window.removeEventListener('resize', updateColumnWidth);
+  }, []);
   const [weekOffset, setWeekOffset] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -539,7 +561,7 @@ export function SevenDayKanban({
           >
             <div 
               ref={columnsContainerRef}
-              className="flex gap-1 sm:gap-1.5 md:gap-2 p-2 sm:p-2.5 md:p-3 min-w-max"
+              className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3 min-w-max"
               style={{
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
                 transformOrigin: 'top left',
@@ -560,8 +582,8 @@ export function SevenDayKanban({
                       column.isWeekend && isDark && 'bg-card/60'
                     )}
                     style={{
-                      minWidth: `${KANBAN_COLUMN_DIMENSIONS.width}px`,
-                      width: `${KANBAN_COLUMN_DIMENSIONS.width}px`,
+                      minWidth: `${columnWidth}px`,
+                      width: `${columnWidth}px`,
                       // Only apply weekend gradient in light mode
                       ...(column.isWeekend && !isDark && {
                         backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,

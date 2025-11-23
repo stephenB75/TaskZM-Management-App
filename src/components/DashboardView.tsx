@@ -956,7 +956,7 @@ export function DashboardView({
 
       {/* Mobile Day Selector - Only show on mobile when viewing week */}
       {mobileView === "week" && (
-        <div className="lg:hidden border-b border-primary/10">
+        <div className="md:hidden border-b border-primary/10">
           <div className="px-1 py-2 sm:px-2">
             <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
               {/* Previous Week Button */}
@@ -1055,10 +1055,10 @@ export function DashboardView({
 
       {/* Main Layout */}
       <div className="flex-1 overflow-hidden flex">
-        {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false */}
+        {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false (hidden on tablets to save space) */}
         {!hideAgenda && (
           <motion.div
-            className="hidden lg:flex flex-col w-64 border-r border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm"
+            className="hidden xl:flex flex-col w-64 border-r border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -1079,9 +1079,9 @@ export function DashboardView({
             ease: "easeOut",
           }}
         >
-          {/* Desktop: Full Kanban or Calendar */}
+          {/* Desktop/Tablet: Full Kanban or Calendar */}
           <div
-            className="hidden lg:block h-full"
+            className="hidden md:block h-full"
             data-tour="kanban-board"
           >
             {viewMode === "week" ? (
@@ -1092,7 +1092,7 @@ export function DashboardView({
           </div>
 
           {/* Mobile: Tabbed Content */}
-          <div className="lg:hidden h-full">
+          <div className="md:hidden h-full">
             {mobileView === "today" ? (
               <TodayAgendaView hideHeader={true} />
             ) : viewMode === "week" ? (
@@ -1114,7 +1114,7 @@ export function DashboardView({
       <Sheet open={aiPanelOpen} onOpenChange={onAiPanelChange}>
         <SheetContent
           side="right"
-          className="w-full sm:w-[400px] bg-gradient-to-b from-white to-[#F9F7FD] dark:from-gray-900 dark:to-gray-800"
+          className="w-full sm:w-[360px] md:w-[400px] bg-gradient-to-b from-white to-[#F9F7FD] dark:from-gray-900 dark:to-gray-800"
         >
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">

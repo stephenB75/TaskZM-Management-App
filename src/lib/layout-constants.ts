@@ -8,6 +8,8 @@ export const SIDEBAR_WIDTH = 64;
 
 // Side panel width (matches panel animation width in App.tsx)
 export const PANEL_WIDTH = 440;
+export const PANEL_WIDTH_TABLET = 360; // Narrower for tablets
+export const PANEL_WIDTH_SMALL_MONITOR = 400; // Slightly narrower for small monitors
 
 // Header height (matches header minHeight/height in AppHeader.tsx and padding in App.tsx)
 export const HEADER_HEIGHT = 73;
@@ -52,9 +54,22 @@ export const HEADER_SIDE_PANEL_ANIMATION_EASE = 'easeOut'; // Easing function fo
 export const HEADER_MOBILE_SPACER_HEIGHT = '1.75rem'; // h-7 = 1.75rem (28px) - spacer for mobile header
 export const HEADER_MOBILE_SPACER_HEIGHT_PX = 28; // h-7 = 28px - for calculations
 
+// Calculate panel width based on viewport
+export const getPanelWidth = (): number => {
+  if (typeof window === 'undefined') return PANEL_WIDTH;
+  const width = window.innerWidth;
+  if (width >= 768 && width < 1024) {
+    return PANEL_WIDTH_TABLET;
+  } else if (width >= 1024 && width < 1280) {
+    return PANEL_WIDTH_SMALL_MONITOR;
+  }
+  return PANEL_WIDTH;
+};
+
 // Calculate main header left position when panel is open
 export const getMainHeaderLeft = (panelOpen: boolean): number => {
-  return panelOpen ? SIDEBAR_WIDTH + PANEL_WIDTH : SIDEBAR_WIDTH;
+  const panelWidth = getPanelWidth();
+  return panelOpen ? SIDEBAR_WIDTH + panelWidth : SIDEBAR_WIDTH;
 };
 
 // Calculate main header width

@@ -47,7 +47,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, getPanelWidth } from './lib/layout-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
@@ -77,6 +77,18 @@ function AppContent() {
   const [upgradeFeature, setUpgradeFeature] = useState<'aiScheduler' | 'taskHours' | 'analytics' | 'taskRollover' | 'pomodoroTimer' | 'teamFeatures' | 'calendarSync'>('aiScheduler');
   const [runTour, setRunTour] = useState(false);
   const hasInitializedView = useRef(false);
+  const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
+  
+  // Update panel width based on viewport size
+  useEffect(() => {
+    const updatePanelWidth = () => {
+      setPanelWidth(getPanelWidth());
+    };
+    
+    updatePanelWidth();
+    window.addEventListener('resize', updatePanelWidth);
+    return () => window.removeEventListener('resize', updatePanelWidth);
+  }, []);
   
   const { scheduleAllTasks, unscheduledCount, isScheduling } = useAIScheduler();
   
@@ -392,7 +404,7 @@ function AppContent() {
           unscheduledCount={unscheduledCount}
         />
         <main className="flex-1 overflow-hidden relative flex">
-          {/* Mobile: Show different views - Full height container with proper bottom spacing */}
+          {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
           <div className="lg:hidden h-full flex-1 flex flex-col">
             <div className="flex-1 overflow-hidden">
               {currentView === 'dashboard' && (
@@ -430,13 +442,31 @@ function AppContent() {
                 key={currentView}
                 initial={{ width: 0, opacity: 0 }}
                 animate={{ 
-                  width: PANEL_WIDTH,
+                  width: panelWidth,
                   opacity: 1 
                 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="hidden lg:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
+                className="hidden md:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
               >
+                {/* Panel Content */}
+                <div className="h-full w-full overflow-hidden">
+                  {currentView === 'notifications' && <NotificationsPanel />}
+                  {currentView === 'today' && <TodayAgendaView />}
+                  {currentView === 'inbox' && <InboxView />}
+                  {currentView === 'team' && <TeamPanel />}
+                  {currentView === 'folders' && <FoldersPanel />}
+                  {currentView === 'analytics' && <AnalyticsPanel onClose={handleClosePanel} />}
+                  {currentView === 'archive' && <ArchiveView />}
+                  {currentView === 'settings' && (
+                    <SettingsPanel 
+                      onStartTour={() => setRunTour(true)}
+                    />
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
                 {/* Panel Content */}
                 <div className="h-full w-full overflow-hidden">
                   {currentView === 'notifications' && <NotificationsPanel />}
@@ -458,7 +488,7 @@ function AppContent() {
 
           {/* Desktop: Dashboard - pushed to the right when panel is open */}
           <motion.div 
-            className={`hidden lg:block h-full flex-1 overflow-hidden`}
+            className={`hidden md:block h-full flex-1 overflow-hidden`}
             style={{ paddingTop: `${HEADER_HEIGHT}px` }}
             layout
             initial={false}
