@@ -8,6 +8,7 @@ import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags } from "../l
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { usePomodoro } from "../contexts/PomodoroContext";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   Tooltip,
   TooltipContent,
@@ -58,8 +59,10 @@ export function DraggableTodayAgendaTask({
   const { getTeamMember } = useTeam();
   const { hasFeature } = useSubscription();
   const { getTimerState } = usePomodoro();
+  const { actualTheme } = useTheme();
   const isMobile = useIsMobile();
   const timerState = getTimerState(task.id);
+  const isDark = actualTheme === 'dark';
   
   const {
     attributes,
@@ -191,7 +194,7 @@ export function DraggableTodayAgendaTask({
             overflow: 'visible' 
           }}
         >
-          <span className="text-xs text-muted-foreground mb-1 text-center relative z-10">
+          <span className="text-xs text-muted-foreground dark:text-gray-300 mb-1 text-center relative z-10">
             {getTaskTime(task)}
           </span>
           {/* Dot - positioned at headline center, aligned with the line */}
@@ -233,15 +236,15 @@ export function DraggableTodayAgendaTask({
               "rounded-lg relative flex-1 overflow-hidden",
               // Responsive padding: smaller on mobile, comfortable on desktop
               "px-2 py-1.5 space-y-1 md:px-3 md:py-2.5 md:space-y-1.5",
-              // Background: solid on mobile, semi-transparent on desktop
-              isMobile ? "bg-white dark:bg-card" : "bg-white/60 dark:bg-card/60 backdrop-blur-sm",
-              // Responsive borders: thinner on mobile, standard on desktop
-              "border-b border-r border-gray-300/80 md:border-gray-300/90",
+              // Background: solid on mobile, semi-transparent on desktop - match task card backgrounds
+              isMobile ? "bg-white dark:bg-[#3E3E52]" : "bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm",
+              // Responsive borders: thinner on mobile, standard on desktop - dark mode variants
+              "border-b border-r border-gray-300/80 dark:border-gray-600/50 md:border-gray-300/90 dark:md:border-gray-600/60",
               // Shadows: better blending on mobile
               isMobile 
-                ? "shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)]" 
-                : "shadow-lg",
-              "hover:bg-white/80 dark:hover:bg-gray-800/80 hover:shadow-xl hover:border-gray-400/90 dark:hover:border-gray-600/90 transition-all duration-200",
+                ? "shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_1px_3px_rgba(0,0,0,0.4)]" 
+                : "shadow-lg dark:shadow-xl",
+              "hover:bg-white/80 dark:hover:bg-[#4A4A5E] hover:shadow-xl dark:hover:shadow-2xl hover:border-gray-400/90 dark:hover:border-gray-500/70 transition-all duration-200",
               task.status === "done" && "opacity-60",
               isNextUp && "ring-2 ring-primary/20",
               // Bottom padding: auto-adjusts based on content (pomodoro timer, assigned users)
@@ -294,8 +297,8 @@ export function DraggableTodayAgendaTask({
                     isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
                   )}
                   style={{
-                    backgroundColor: TASK_CARD_TAG_COLORS.background,
-                    color: TASK_CARD_TAG_COLORS.text,
+                    backgroundColor: isDark ? TASK_CARD_TAG_COLORS.background.dark : TASK_CARD_TAG_COLORS.background.light,
+                    color: isDark ? TASK_CARD_TAG_COLORS.text.dark : TASK_CARD_TAG_COLORS.text.light,
                   }}
                 >
                   {task.tags[0]}
@@ -303,7 +306,7 @@ export function DraggableTodayAgendaTask({
                 )}
 
                 {task.estimatedTime && (
-                  <span className={cn("text-gray-500 dark:text-muted-foreground font-medium flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
+                  <span className={cn("text-gray-500 dark:text-gray-300 font-medium flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
@@ -354,7 +357,7 @@ export function DraggableTodayAgendaTask({
                     isMobile ? "w-3.5 h-3.5" : "w-4 h-4",
                     task.status === "done"
                       ? "text-primary fill-primary"
-                      : "text-gray-300 hover:text-gray-400",
+                      : "text-gray-300 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300",
                   )}
                 />
               </button>
@@ -367,8 +370,8 @@ export function DraggableTodayAgendaTask({
               )}
               <h3
                 className={cn(
-                  "text-foreground leading-tight line-clamp-2 flex-1",
-                  task.status === "done" && "line-through text-gray-400",
+                  "text-foreground dark:text-gray-100 leading-tight line-clamp-2 flex-1",
+                  task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
                   isMobile ? "text-sm" : "text-base",
                 )}
               >
@@ -380,7 +383,7 @@ export function DraggableTodayAgendaTask({
             {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
               <div 
                 className={cn(
-                  `text-gray-500 dark:text-muted-foreground leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
+                  `text-gray-500 dark:text-gray-300 leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -438,8 +441,8 @@ export function DraggableTodayAgendaTask({
                           "leading-tight",
                           isMobile ? "text-[9px]" : "text-[10px]",
                           subtask.completed
-                            ? "text-gray-400 line-through"
-                            : "text-gray-600 dark:text-foreground",
+                            ? "text-gray-400 dark:text-gray-500 line-through"
+                            : "text-gray-600 dark:text-gray-200",
                         )}
                       >
                         {subtask.title}
@@ -448,7 +451,7 @@ export function DraggableTodayAgendaTask({
                   );
                 })}
                 {task.subtasks.length > 3 && (
-                  <div className={cn("text-gray-400", isMobile ? "text-[9px] pl-3" : "text-[10px] pl-4")}>
+                  <div className={cn("text-gray-400 dark:text-gray-500", isMobile ? "text-[9px] pl-3" : "text-[10px] pl-4")}>
                     +{task.subtasks.length - 3} more
                   </div>
                 )}
@@ -482,7 +485,7 @@ export function DraggableTodayAgendaTask({
                               {initials}
                             </div>
                             <span className={cn(
-                              "text-gray-600 dark:text-foreground font-semibold",
+                              "text-gray-600 dark:text-gray-200 font-semibold",
                               isMobile ? "text-[9px]" : "text-[10px]",
                             )}>
                               {member.name}
@@ -491,7 +494,7 @@ export function DraggableTodayAgendaTask({
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>{member.name}</p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-gray-400 dark:text-gray-300">
                             {member.email}
                           </p>
                         </TooltipContent>
@@ -500,7 +503,7 @@ export function DraggableTodayAgendaTask({
                   );
                 })}
                 {task.assignedTo.length > 3 && (
-                  <span className={cn("text-gray-500 dark:text-muted-foreground", isMobile ? "text-[9px]" : "text-[10px]")}>
+                  <span className={cn("text-gray-500 dark:text-gray-300", isMobile ? "text-[9px]" : "text-[10px]")}>
                     +{task.assignedTo.length - 3}
                   </span>
                 )}
