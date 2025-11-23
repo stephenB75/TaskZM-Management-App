@@ -572,8 +572,8 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Scheduled Time with AM/PM */}
           {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Clock className={cn("text-gray-400 dark:text-gray-500", isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop)} />
-                  <span className={cn("text-gray-600 dark:text-gray-900 font-bold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                  <Clock className={cn("text-gray-400 dark:text-gray-300", isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop)} />
+                  <span className={cn("text-gray-600 dark:text-gray-200 font-bold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                 {scheduledTimeLabel}
                   </span>
                 </div>
@@ -607,7 +607,7 @@ export const DraggableTaskCard = React.forwardRef<
               )}
 
               {task.estimatedTime && (
-                <span className={cn("text-gray-500 dark:text-gray-700 font-medium flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                <span className={cn("text-gray-500 dark:text-gray-300 font-medium flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
                   {formatDuration(task.estimatedTime)}
                 </span>
               )}
@@ -658,7 +658,7 @@ export const DraggableTaskCard = React.forwardRef<
                   isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop,
                   task.status === "done"
                     ? "text-primary fill-primary"
-                    : "text-gray-300 dark:text-gray-500 hover:text-gray-400 dark:hover:text-gray-600",
+                    : "text-gray-300 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300",
                 )}
               />
             </button>
@@ -671,9 +671,9 @@ export const DraggableTaskCard = React.forwardRef<
             )}
             <h3
               className={cn(
-                "text-foreground dark:text-gray-900 leading-tight flex-1",
+                "text-foreground dark:text-gray-100 leading-tight flex-1",
                 TASK_CARD_LINE_CLAMP.title,
-                task.status === "done" && "line-through text-gray-400 dark:text-gray-600",
+                task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
                 isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop,
               )}
             >
@@ -753,7 +753,7 @@ export const DraggableTaskCard = React.forwardRef<
                         isMobile ? TASK_CARD_FONT_SIZES.subtask.mobile : TASK_CARD_FONT_SIZES.subtask.desktop,
                         subtask.completed
                           ? `${TASK_CARD_TEXT_COLORS.subtaskCompleted} line-through`
-                          : "text-gray-600 dark:text-gray-800",
+                          : "text-gray-600 dark:text-gray-200",
                       )}
                     >
                       {subtask.title}
@@ -819,7 +819,7 @@ export const DraggableTaskCard = React.forwardRef<
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>{member.name}</p>
-                              <p className="text-xs text-gray-400 dark:text-muted-foreground">{member.email}</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-300">{member.email}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -898,7 +898,7 @@ export const DraggableTaskCard = React.forwardRef<
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{member.name}</p>
-                            <p className="text-xs text-gray-400 dark:text-muted-foreground">
+                            <p className="text-xs text-gray-400 dark:text-gray-300">
                               {member.email}
                             </p>
                           </TooltipContent>
@@ -907,7 +907,7 @@ export const DraggableTaskCard = React.forwardRef<
                     );
                   })}
                   {task.assignedTo.length > 3 && (
-                    <span className={cn("text-gray-500 dark:text-muted-foreground", isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop)}>
+                    <span className={cn("text-gray-500 dark:text-gray-300", isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop)}>
                       {TASK_CARD_TEXT.moreAssigned(task.assignedTo.length - 3)}
                     </span>
                   )}

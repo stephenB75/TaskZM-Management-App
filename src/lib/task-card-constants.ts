@@ -358,17 +358,17 @@ export const TASK_CARD_ASSIGNED_USER_COLORS = {
   text: 'text-purple-700',
 } as const;
 
-// Text Colors
+// Text Colors - Light colors for dark backgrounds in dark mode
 export const TASK_CARD_TEXT_COLORS = {
-  description: 'text-gray-500',
-  assignedUserName: 'text-gray-600',
-  assignedUserCount: 'text-gray-500',
-  subtaskCompleted: 'text-gray-400',
-  tooltipEmail: 'text-gray-400',
-  icon: 'text-gray-400',
+  description: 'text-gray-500 dark:text-gray-300',
+  assignedUserName: 'text-gray-600 dark:text-gray-200',
+  assignedUserCount: 'text-gray-500 dark:text-gray-300',
+  subtaskCompleted: 'text-gray-400 dark:text-gray-400',
+  tooltipEmail: 'text-gray-400 dark:text-gray-300',
+  icon: 'text-gray-400 dark:text-gray-300',
   checkbox: {
-    default: 'text-gray-300',
-    hover: 'hover:text-gray-400',
+    default: 'text-gray-300 dark:text-gray-400',
+    hover: 'hover:text-gray-400 dark:hover:text-gray-300',
   },
 } as const;
 
