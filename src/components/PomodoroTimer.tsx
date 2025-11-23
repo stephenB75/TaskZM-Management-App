@@ -12,6 +12,7 @@ import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 import { cn } from "../lib/utils";
 import { usePomodoro } from "../contexts/PomodoroContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 type TimerMode = "work" | "shortBreak" | "longBreak";
 
@@ -50,6 +51,8 @@ export function PomodoroTimer({
     registerCallback,
     unregisterCallback,
   } = usePomodoro();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const timerState = getTimerState(taskId);
 
   // Initialize timer with task's actual time and estimated duration
@@ -195,12 +198,12 @@ export function PomodoroTimer({
                 size="icon"
                 variant="ghost"
                 className={cn(
-                  "rounded-full text-[#7B68EE]",
-                  timerState.sessionsCompleted > 0 && "text-[#50C878]",
+                  "rounded-full text-[#7B68EE] dark:text-[#9B87E8]",
+                  timerState.sessionsCompleted > 0 && "text-[#50C878] dark:text-[#5AC888]",
                   isMobile 
                     ? "h-2.5 w-2.5 bg-transparent hover:bg-transparent border-0" 
-                    : "h-5 w-5 border-[#7B68EE]/30 hover:bg-[#7B68EE]/10",
-                  timerState.sessionsCompleted > 0 && !isMobile && "border-[#50C878]/30 hover:bg-[#50C878]/10",
+                    : "h-5 w-5 border-[#7B68EE]/30 dark:border-[#9B87E8]/40 hover:bg-[#7B68EE]/10 dark:hover:bg-[#9B87E8]/20",
+                  timerState.sessionsCompleted > 0 && !isMobile && "border-[#50C878]/30 dark:border-[#5AC888]/40 hover:bg-[#50C878]/10 dark:hover:bg-[#5AC888]/20",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -211,7 +214,7 @@ export function PomodoroTimer({
               </Button>
               {timerState.sessionsCompleted > 0 && (
                 <span className={cn(
-                  "text-[#50C878] font-medium",
+                  "text-[#50C878] dark:text-[#5AC888] font-medium",
                   isMobile ? "text-[6px]" : "text-[10px]"
                 )}>
                   {timerState.sessionsCompleted} 🍅
@@ -225,7 +228,7 @@ export function PomodoroTimer({
   }
 
   return (
-    <div className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-white/50 to-[#F3E8FF]/30 border border-[#7B68EE]/20">
+    <div className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-white/50 dark:from-gray-800/50 to-[#F3E8FF]/30 dark:to-purple-900/30 border border-[#7B68EE]/20 dark:border-[#9B87E8]/30">
       {/* Mode Indicator */}
       <div className="flex items-center justify-between">
         <div
@@ -238,7 +241,7 @@ export function PomodoroTimer({
           <span>{getModeLabel()}</span>
         </div>
         {timerState.sessionsCompleted > 0 && (
-          <div className="flex items-center gap-1 text-xs text-[#50C878]">
+          <div className="flex items-center gap-1 text-xs text-[#50C878] dark:text-[#5AC888]">
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>{timerState.sessionsCompleted} 🍅</span>
           </div>
@@ -263,7 +266,7 @@ export function PomodoroTimer({
           className={cn(
             "rounded-full",
             !timerState.isRunning &&
-              "bg-[#7B68EE] hover:bg-[#6A5ACD] text-white",
+              "bg-[#7B68EE] dark:bg-[#9B87E8] hover:bg-[#6A5ACD] dark:hover:bg-[#8A77D8] text-white",
           )}
           onClick={(e) => {
             e.preventDefault();
