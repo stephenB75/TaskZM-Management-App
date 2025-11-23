@@ -7,30 +7,36 @@
 export const TASK_CARD_PRIORITY_COLORS = {
   urgent: {
     line: '#EF4444', // Red
-    badge: 'bg-red-50 text-red-700 border-red-200',
+    badge: 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800',
   },
   high: {
     line: '#F97316', // Orange
-    badge: 'bg-orange-50 text-orange-700 border-orange-200',
+    badge: 'bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
   },
   medium: {
     line: '#3B82F6', // Blue
-    badge: 'bg-blue-50 text-blue-700 border-blue-200',
+    badge: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
   },
   low: {
     line: '#9CA3AF', // Grey
-    badge: 'bg-gray-50 text-gray-700 border-gray-200',
+    badge: 'bg-gray-50 dark:bg-muted/20 text-gray-700 dark:text-muted-foreground border-gray-200 dark:border-border',
   },
   default: {
     line: '#E5E7EB',
-    badge: 'bg-gray-50 text-gray-600 border-gray-200',
+    badge: 'bg-gray-50 dark:bg-muted/20 text-gray-600 dark:text-muted-foreground border-gray-200 dark:border-border',
   },
 } as const;
 
 // Tag Colors
 export const TASK_CARD_TAG_COLORS = {
-  background: '#EBF5FB',
-  text: '#1565C0',
+  background: {
+    light: '#EBF5FB',
+    dark: 'rgba(59, 130, 246, 0.2)', // blue-500 with 20% opacity for dark mode
+  },
+  text: {
+    light: '#1565C0',
+    dark: '#60A5FA', // blue-400 for dark mode
+  },
 } as const;
 
 // Primary Theme Colors (for tracking badges, etc.)
@@ -240,9 +246,9 @@ export const TASK_CARD_BORDERS = {
 
 // Background Colors
 export const TASK_CARD_BACKGROUNDS = {
-  mobile: 'bg-white',
-  desktop: 'bg-white/60 backdrop-blur-sm',
-  hover: 'hover:bg-white/80',
+  mobile: 'bg-white dark:bg-card',
+  desktop: 'bg-white/60 dark:bg-card/60 backdrop-blur-sm',
+  hover: 'hover:bg-white/80 dark:hover:bg-card/80',
 } as const;
 
 // Width Values

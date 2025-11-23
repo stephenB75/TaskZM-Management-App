@@ -14,6 +14,7 @@ import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { usePomodoro } from "../contexts/PomodoroContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { useIsMobile } from "./ui/use-mobile";
 import type { Task } from "../types";
@@ -59,6 +60,8 @@ export const DraggableTaskCard = React.forwardRef<
     const { getTeamMember } = useTeam();
     const { hasFeature } = useSubscription();
     const { getTimerState } = usePomodoro();
+    const { actualTheme } = useTheme();
+    const isDark = actualTheme === 'dark';
     const isMobile = useIsMobile();
     const timerState = getTimerState(task.id);
     const {
@@ -595,8 +598,8 @@ export const DraggableTaskCard = React.forwardRef<
                     isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
                   )}
                   style={{
-                    backgroundColor: TASK_CARD_TAG_COLORS.background,
-                    color: TASK_CARD_TAG_COLORS.text,
+                    backgroundColor: isDark ? TASK_CARD_TAG_COLORS.background.dark : TASK_CARD_TAG_COLORS.background.light,
+                    color: isDark ? TASK_CARD_TAG_COLORS.text.dark : TASK_CARD_TAG_COLORS.text.light,
                   }}
                 >
                   {task.tags[0]}
