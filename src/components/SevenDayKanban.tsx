@@ -520,7 +520,7 @@ export function SevenDayKanban({
           <div 
             ref={scrollContainerRef}
             className={cn(
-              "h-full overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent",
+              "h-full overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent",
               activeId && "cursor-default" // Change cursor when dragging task
             )}
             onPointerDown={handlePointerDown}
@@ -584,7 +584,7 @@ export function SevenDayKanban({
                           <h3 
                             className={cn(
                               'uppercase text-xs sm:text-sm tracking-wider mb-0.5 sm:mb-1 font-bold',
-                              !column.isToday && 'text-gray-700'
+                              !column.isToday && 'text-gray-700 dark:text-foreground'
                             )}
                             style={column.isToday ? { color: KANBAN_DAY_COLORS.today.text } : undefined}
                           >

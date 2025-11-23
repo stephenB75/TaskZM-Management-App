@@ -7,6 +7,7 @@ import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useSidebar } from "../contexts/SidebarContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { 
   SIDEBAR_WIDTH, 
   PANEL_WIDTH, 
@@ -82,6 +83,8 @@ export function AppHeader({
   const { isSyncing, lastSync, workspaceId } = useTasks();
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
 
   // Use state to force re-render when panelOpen or panelKey changes
   // This ensures the header position updates immediately
@@ -128,7 +131,9 @@ export function AppHeader({
         className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm"
         style={{
           zIndex: HEADER_Z_INDEX,
-          backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
+          backgroundColor: isDark 
+            ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
+            : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
           borderColor: HEADER_BORDER_COLOR,
           paddingLeft: HEADER_PADDING_X_MOBILE,
           paddingRight: HEADER_PADDING_X_MOBILE,
@@ -198,7 +203,9 @@ export function AppHeader({
           }}
           style={{ 
             zIndex: HEADER_Z_INDEX,
-            backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
+            backgroundColor: isDark 
+              ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
+              : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
             borderColor: HEADER_BORDER_COLOR,
             paddingLeft: HEADER_PADDING_X_DESKTOP,
             paddingRight: HEADER_PADDING_X_DESKTOP,
@@ -298,7 +305,9 @@ export function AppHeader({
           className="hidden lg:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
-            backgroundColor: getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
+            backgroundColor: isDark 
+              ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
+              : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
             borderColor: HEADER_BORDER_COLOR,
             paddingLeft: HEADER_PADDING_X_DESKTOP,
             paddingRight: HEADER_PADDING_X_DESKTOP,
