@@ -151,12 +151,32 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               }))
               .sort((a, b) => a.start - b.start);
             
-            // Estimate task heights (rough calculation)
+            // Calculate task heights using the same logic as getTaskHeight in TodayAgendaView
+            // This provides more accurate positioning
+            const calculateTaskHeight = (task: Task): number => {
+              const minutes = task.estimatedTime || 30;
+              const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+              
+              // Simplified version of getTaskHeight logic
+              if (minutes < 45) {
+                const baseHeight = isMobile ? 72 : 60;
+                const scalingFactor = 0.8;
+                return Math.max(baseHeight, baseHeight + (minutes - 15) * scalingFactor);
+              } else if (minutes >= 60) {
+                const baseHeight = 140;
+                const scalingFactor = 2.0;
+                return baseHeight + (minutes - 60) * scalingFactor;
+              } else {
+                // 45-59 minutes
+                return Math.max(80, minutes * 1.5);
+              }
+            };
+            
             let accumulatedHeight = 0;
             const gapBetweenTasks = 12; // space-y-3 = 12px
             
             for (const taskInfo of sortedTasks) {
-              const taskHeight = (taskInfo.task.estimatedTime || 30) * 1.5; // Rough estimate: 1.5px per minute
+              const taskHeight = calculateTaskHeight(taskInfo.task);
               
               if (contentY >= accumulatedHeight && contentY < accumulatedHeight + taskHeight) {
                 // Drop is within this task - place after it
@@ -195,16 +215,23 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             }
           }
           
-          // If we couldn't determine from existing tasks, use pixel-based estimation
+          // If we couldn't determine from existing tasks, calculate time from pixel position
+          // Use a more accurate calculation based on timeline structure
           if (!dropTime) {
-            // Convert pixels to minutes (rough estimate: 1px ≈ 1 minute)
-            const minutesFromStart = contentY;
+            // Calculate time based on pixel position in timeline
+            // Use category hours start if available, otherwise use earliest allowed time
             const startHour = categoryHours 
               ? Math.floor(categoryHours.start / 60)
               : TASK_CALCULATION_CONSTANTS.dragDrop.hourMin;
             const startMinute = categoryHours 
               ? categoryHours.start % 60
               : 0;
+            
+            // Convert pixel position to time
+            // Estimate: approximately 1.5-2px per minute depending on task density
+            // Use a more conservative estimate to avoid overshooting
+            const pixelsPerMinute = 1.5; // More accurate estimate
+            const minutesFromStart = Math.max(0, contentY / pixelsPerMinute);
             
             const totalMinutes = (startHour * 60) + startMinute + minutesFromStart;
             let hours = Math.floor(totalMinutes / 60);
@@ -217,11 +244,36 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               minutes = 0;
             }
             
-            // Clamp to valid hours (24-hour format, so 0-23)
-            hours = Math.max(TASK_CALCULATION_CONSTANTS.dragDrop.hourMin, Math.min(TASK_CALCULATION_CONSTANTS.dragDrop.hourMax, hours));
-            if (hours === TASK_CALCULATION_CONSTANTS.dragDrop.hourMax && minutes > 0) {
-              hours = TASK_CALCULATION_CONSTANTS.dragDrop.hourMax;
-              minutes = 0;
+            // Clamp to category hours if available
+            if (categoryHours) {
+              const totalMinutesInDay = hours * 60 + minutes;
+              const categoryEndMinutes = categoryHours.end;
+              
+              if (totalMinutesInDay < categoryHours.start) {
+                // Before category start - move to category start
+                hours = Math.floor(categoryHours.start / 60);
+                minutes = categoryHours.start % 60;
+              } else if (totalMinutesInDay + taskDuration > categoryEndMinutes) {
+                // Would exceed category end - clamp to fit within category hours
+                const maxStartMinutes = categoryEndMinutes - taskDuration;
+                if (maxStartMinutes >= categoryHours.start) {
+                  hours = Math.floor(maxStartMinutes / 60);
+                  minutes = maxStartMinutes % 60;
+                  // Round down to nearest 15-minute slot
+                  minutes = Math.floor(minutes / 15) * 15;
+                } else {
+                  // Task doesn't fit in category hours - use category start
+                  hours = Math.floor(categoryHours.start / 60);
+                  minutes = categoryHours.start % 60;
+                }
+              }
+            } else {
+              // Clamp to valid hours (24-hour format, so 0-23)
+              hours = Math.max(TASK_CALCULATION_CONSTANTS.dragDrop.hourMin, Math.min(TASK_CALCULATION_CONSTANTS.dragDrop.hourMax, hours));
+              if (hours === TASK_CALCULATION_CONSTANTS.dragDrop.hourMax && minutes > 0) {
+                hours = TASK_CALCULATION_CONSTANTS.dragDrop.hourMax;
+                minutes = 0;
+              }
             }
             
             // Ensure hours is in valid 24-hour range (0-23)
@@ -231,7 +283,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             }
             
             dropTime = new Date(today);
-            dropTime.setHours(hours, minutes, 0, 0); // Uses 24-hour format (0-23)
+            dropTime.setHours(hours, minutes, 0, 0);
           }
           
           // Round to nearest 15-minute slot
@@ -257,60 +309,85 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         }
       }
       
-      // If no valid drop position or drop time is in the past, find the earliest available slot
+      // If no valid drop position was detected, calculate from drop coordinates or use category hours
+      // Never use default times - always calculate from actual position or category hours
       if (!requestedTime) {
-        if (isToday) {
-          // Start from current time, rounded up to next 15-minute slot
-          requestedTime = new Date(now);
-          const currentMinutes = now.getMinutes();
-          const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
-          if (roundedMinutes >= 60) {
-            requestedTime.setHours(requestedTime.getHours() + 1);
-            requestedTime.setMinutes(0);
-          } else {
-            requestedTime.setMinutes(roundedMinutes);
-          }
-          requestedTime.setSeconds(0);
-          requestedTime.setMilliseconds(0);
-        } else {
-          // For future dates, start from earliest available time (category start or earliest task gap)
-          // First, check if there are existing tasks for this date
-          const existingTasksForDate = tasks.filter((t) => {
-            if (t.id === taskId || t.status === 'done') return false;
-            if (!t.scheduledDate) return false;
-            const taskDate = new Date(t.scheduledDate);
-            return taskDate.toDateString() === today.toDateString();
-          });
+        // Try to get drop coordinates from the event to calculate time
+        if (event.over && 'rect' in event.over) {
+          const overRect = (event.over as any).rect;
+          const droppableElement = document.querySelector('[data-droppable-id="today-agenda"]');
           
-          if (existingTasksForDate.length > 0) {
-            // Find the earliest gap or start after the last task
-            const sortedTasks = existingTasksForDate
-              .map((t) => ({
-                task: t,
-                start: new Date(t.scheduledDate!).getTime(),
-                end: new Date(t.scheduledDate!).getTime() + ((t.estimatedTime || 30) * 60 * 1000),
-              }))
-              .sort((a, b) => a.start - b.start);
+          if (droppableElement && overRect) {
+            const droppableRect = droppableElement.getBoundingClientRect();
+            const dropY = overRect.top + (overRect.height / 2);
+            const relativeY = dropY - droppableRect.top;
             
-            // Check if there's a gap at the start (before first task)
-            const firstTask = sortedTasks[0];
-            const earliestAllowed = new Date(today);
-            if (categoryHours) {
-              earliestAllowed.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
-            } else {
-              earliestAllowed.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.hourMin, 0, 0, 0);
+            // Get scroll position
+            const scrollViewport = droppableElement.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+            const scrollTop = scrollViewport?.scrollTop || 0;
+            const adjustedY = relativeY + scrollTop;
+            
+            // Timeline padding
+            const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
+            const contentY = Math.max(0, adjustedY - paddingTop);
+            
+            // Calculate time from pixel position using category hours
+            const startHour = categoryHours 
+              ? Math.floor(categoryHours.start / 60)
+              : (isToday ? now.getHours() : TASK_CALCULATION_CONSTANTS.dragDrop.hourMin);
+            const startMinute = categoryHours 
+              ? categoryHours.start % 60
+              : (isToday ? Math.ceil(now.getMinutes() / 15) * 15 : 0);
+            
+            // Convert pixels to minutes
+            const pixelsPerMinute = 1.5;
+            const minutesFromStart = Math.max(0, contentY / pixelsPerMinute);
+            
+            const totalMinutes = (startHour * 60) + startMinute + minutesFromStart;
+            let hours = Math.floor(totalMinutes / 60);
+            let minutes = totalMinutes % 60;
+            
+            // Round to nearest 15-minute slot
+            minutes = Math.round(minutes / 15) * 15;
+            if (minutes >= 60) {
+              hours += 1;
+              minutes = 0;
             }
             
-            if (firstTask.start > earliestAllowed.getTime() + (taskDuration * 60 * 1000)) {
-              // There's space before the first task
-              requestedTime = earliestAllowed;
-            } else {
-              // Start after the last task
-              const lastTask = sortedTasks[sortedTasks.length - 1];
-              requestedTime = new Date(lastTask.end);
-              // Round to nearest 15-minute slot
-              const minutes = requestedTime.getMinutes();
-              const roundedMinutes = Math.ceil(minutes / 15) * 15;
+            // Apply category hours constraints
+            if (categoryHours) {
+              const totalMinutesInDay = hours * 60 + minutes;
+              if (totalMinutesInDay < categoryHours.start) {
+                hours = Math.floor(categoryHours.start / 60);
+                minutes = categoryHours.start % 60;
+              } else if (totalMinutesInDay + taskDuration > categoryHours.end) {
+                const maxStartMinutes = categoryHours.end - taskDuration;
+                if (maxStartMinutes >= categoryHours.start) {
+                  hours = Math.floor(maxStartMinutes / 60);
+                  minutes = maxStartMinutes % 60;
+                  minutes = Math.floor(minutes / 15) * 15;
+                } else {
+                  hours = Math.floor(categoryHours.start / 60);
+                  minutes = categoryHours.start % 60;
+                }
+              }
+            }
+            
+            // Clamp to valid range
+            if (hours >= 24) {
+              hours = 23;
+              minutes = 0;
+            }
+            
+            requestedTime = new Date(today);
+            requestedTime.setHours(hours, minutes, 0, 0);
+            
+            // For today, ensure it's not in the past
+            if (isToday && requestedTime.getTime() < now.getTime()) {
+              // Use current time rounded up
+              requestedTime = new Date(now);
+              const currentMinutes = now.getMinutes();
+              const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
               if (roundedMinutes >= 60) {
                 requestedTime.setHours(requestedTime.getHours() + 1);
                 requestedTime.setMinutes(0);
@@ -319,15 +396,40 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               }
               requestedTime.setSeconds(0);
               requestedTime.setMilliseconds(0);
+              
+              // Apply category hours if available
+              if (categoryHours) {
+                const requestedTotalMinutes = requestedTime.getHours() * 60 + requestedTime.getMinutes();
+                if (requestedTotalMinutes < categoryHours.start) {
+                  requestedTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
+                }
+              }
             }
-          } else {
-            // No existing tasks - start from category start or earliest allowed time
-            requestedTime = new Date(today);
-            if (categoryHours) {
-              requestedTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
+          }
+        }
+        
+        // If still no time, use category hours start or current time (for today)
+        if (!requestedTime) {
+          requestedTime = new Date(today);
+          if (categoryHours) {
+            // Always use category hours start if available
+            requestedTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
+          } else if (isToday) {
+            // For today without category hours, use current time rounded up
+            requestedTime = new Date(now);
+            const currentMinutes = now.getMinutes();
+            const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+            if (roundedMinutes >= 60) {
+              requestedTime.setHours(requestedTime.getHours() + 1);
+              requestedTime.setMinutes(0);
             } else {
-              requestedTime.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.hourMin, 0, 0, 0);
+              requestedTime.setMinutes(roundedMinutes);
             }
+            requestedTime.setSeconds(0);
+            requestedTime.setMilliseconds(0);
+          } else {
+            // For future dates without category hours, use earliest allowed time
+            requestedTime.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.hourMin, 0, 0, 0);
           }
         }
       }
