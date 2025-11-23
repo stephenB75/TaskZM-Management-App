@@ -367,7 +367,7 @@ export function DraggableTodayAgendaTask({
               )}
               <h3
                 className={cn(
-                  "text-gray-900 leading-tight line-clamp-2 flex-1",
+                  "text-foreground leading-tight line-clamp-2 flex-1",
                   task.status === "done" && "line-through text-gray-400",
                   isMobile ? "text-sm" : "text-base",
                 )}

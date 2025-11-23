@@ -672,7 +672,7 @@ export function AppTour({
             }}
             className={cn(
               "w-full max-w-2xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl",
-              isDark ? "bg-[#353549]" : "bg-white",
+              isDark ? "bg-card" : "bg-card",
             )}
             style={{
               border: isDark
@@ -790,7 +790,7 @@ export function AppTour({
               <div
                 className={cn(
                   "mx-4 sm:mx-6 md:mx-8 mb-3 sm:mb-4 rounded-xl sm:rounded-2xl overflow-hidden",
-                  isDark ? "bg-black/20" : "bg-gray-50",
+                  isDark ? "bg-black/20" : "bg-muted",
                 )}
               >
                 {step.illustration === "kanban" && (
@@ -830,7 +830,7 @@ export function AppTour({
                         "p-2.5 sm:p-3 rounded-lg sm:rounded-xl border",
                         isDark
                           ? "bg-white/5 border-white/10"
-                          : "bg-gray-50/50 border-gray-200/50",
+                          : "bg-muted/50 border-border",
                       )}
                     >
                       <div className="flex items-start gap-2 sm:gap-2.5">
@@ -917,7 +917,7 @@ export function AppTour({
                       "rounded-lg sm:rounded-xl text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9",
                       isDark
                         ? "border-white/20 hover:bg-white/10"
-                        : "border-gray-300 hover:bg-gray-100",
+                        : "border-border hover:bg-muted",
                     )}
                   >
                     <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />

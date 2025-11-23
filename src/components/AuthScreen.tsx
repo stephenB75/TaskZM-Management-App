@@ -458,7 +458,7 @@ export function AuthScreen() {
             {/* Branding Section */}
             <motion.div className="space-y-1.5 sm:space-y-2 flex flex-col items-center mb-2 sm:mb-2.5 lg:mb-3 lg:flex-shrink-0" variants={logoVariants}>
               <motion.div
-                className="inline-flex items-center gap-1 bg-white/70 dark:bg-background/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-white/50"
+                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-border"
                 whileHover={{ scale: 1.05 }}
               >
                 <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#7B68EE]" />
@@ -502,7 +502,7 @@ export function AuthScreen() {
                             return prev === 0 ? totalPages - 1 : prev - 1;
                           });
                         }}
-                        className="p-1 hover:bg-white/20 dark:hover:bg-gray-800/20 rounded-full transition-all hover:scale-110"
+                        className="p-1 hover:bg-card/20 dark:hover:bg-muted/20 rounded-full transition-all hover:scale-110"
                         aria-label="Previous features"
                       >
                         <ChevronLeft className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
@@ -514,7 +514,7 @@ export function AuthScreen() {
                             return prev === totalPages - 1 ? 0 : prev + 1;
                           });
                         }}
-                        className="p-1 hover:bg-white/20 dark:hover:bg-gray-800/20 rounded-full transition-all hover:scale-110"
+                        className="p-1 hover:bg-card/20 dark:hover:bg-muted/20 rounded-full transition-all hover:scale-110"
                         aria-label="Next features"
                       >
                         <ChevronRight className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
@@ -560,7 +560,7 @@ export function AuthScreen() {
                               {/* Glow effect on hover */}
                               <div className="absolute inset-0 bg-gradient-to-br from-[#7B68EE]/30 to-[#D4C5F9]/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
                             </div>
-                            <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-900 dark:text-white font-semibold leading-tight px-0.5">
+                            <span className="text-[9px] sm:text-[10px] md:text-xs text-foreground font-semibold leading-tight px-0.5">
                               {title}
                             </span>
                             </motion.div>
@@ -769,7 +769,7 @@ export function AuthScreen() {
                           <span className="w-full border-t border-gray-300 dark:border-border" />
                         </div>
                         <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
-                          <span className="bg-white dark:bg-background px-2 text-gray-500">
+                          <span className="bg-card dark:bg-background px-2 text-muted-foreground">
                             {AUTH_UI_TEXT.or}
                           </span>
                         </div>

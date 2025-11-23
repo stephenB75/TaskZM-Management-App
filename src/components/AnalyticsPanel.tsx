@@ -454,7 +454,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           : `${analytics.timePatterns.peakHour - 12} PM`;
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: COLOR_BACKGROUND_LIGHT }}>
+    <div className="h-full flex flex-col bg-background">
       <AppHeader
         title="Analytics"
         panelOpen={true}

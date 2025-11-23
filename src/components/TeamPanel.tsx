@@ -56,6 +56,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { useTeam } from "../contexts/TeamContext";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
 import type { User } from "../types";
@@ -118,7 +119,9 @@ import {
 import {
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_SKY,
+  COLOR_PASTEL_SKY_DARK,
   COLOR_PASTEL_MINT,
+  COLOR_PASTEL_MINT_DARK,
   COLOR_ROLE_ADMIN,
   COLOR_ROLE_MEMBER,
   COLOR_ROLE_VIEWER,
@@ -1017,11 +1020,19 @@ export function TeamPanel() {
     }
   };
 
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
+  
+  // Get appropriate colors based on theme
+  const gradientColor1 = isDark ? '#8A7A9A' : COLOR_PASTEL_LAVENDER;
+  const gradientColor2 = isDark ? COLOR_PASTEL_SKY_DARK : COLOR_PASTEL_SKY;
+  const gradientColor3 = isDark ? COLOR_PASTEL_MINT_DARK : COLOR_PASTEL_MINT;
+
   return (
     <div
-      className="h-full flex flex-col dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 dark:bg-gradient-to-b"
+      className="h-full flex flex-col"
       style={{
-        background: `linear-gradient(to bottom, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.35)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.35)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.35)})`,
+        background: `linear-gradient(to bottom, ${getColorWithOpacity(gradientColor1, 0.35)}, ${getColorWithOpacity(gradientColor2, 0.35)}, ${getColorWithOpacity(gradientColor3, 0.35)})`,
       }}
     >
       {/* Header */}
