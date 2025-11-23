@@ -655,7 +655,7 @@ export const DraggableTaskCard = React.forwardRef<
                   isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop,
                   task.status === "done"
                     ? "text-primary fill-primary"
-                    : "text-gray-300 hover:text-gray-400",
+                    : "text-gray-300 dark:text-muted-foreground hover:text-gray-400 dark:hover:text-foreground",
                 )}
               />
             </button>

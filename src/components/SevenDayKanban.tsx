@@ -4,6 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Plus, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTasks } from '../contexts/TaskContext';
 import { useDragDrop } from '../contexts/DragDropContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
@@ -62,6 +63,8 @@ export function SevenDayKanban({
 }: SevenDayKanbanProps) {
   const { tasks } = useTasks();
   const { activeId } = useDragDrop();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const [weekOffset, setWeekOffset] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -404,9 +407,11 @@ export function SevenDayKanban({
 
     return (
       <div 
-        className="h-full flex flex-col dark:from-gray-800 dark:via-gray-900 dark:to-gray-800"
+        className="h-full flex flex-col"
         style={{
-          backgroundImage: `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
+          backgroundImage: isDark
+            ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+            : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
         }}
       >
 
@@ -505,13 +510,17 @@ export function SevenDayKanban({
   }
 
   // Desktop multi-column view
+  const backgroundGradient = isDark
+    ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+    : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.desktop.from}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.via}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.to})`;
+  
   return (
     <div 
-      className="h-full flex flex-col dark:from-gray-800 dark:via-gray-900 dark:to-gray-800" 
+      className="h-full flex flex-col" 
       data-tour="kanban"
       data-kanban-view="true"
       style={{
-        backgroundImage: `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.desktop.from}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.via}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.to})`,
+        backgroundImage: backgroundGradient,
       }}
     >
       
