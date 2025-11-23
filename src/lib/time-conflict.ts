@@ -99,20 +99,21 @@ export function findNextAvailableSlot(
     // Start from current time (rounded up to next 15-minute slot)
     const currentMinutes = now.getMinutes();
     const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
-    candidateTime = new Date(now);
+    const currentTimeRounded = new Date(now);
     if (roundedMinutes >= 60) {
-      candidateTime.setHours(candidateTime.getHours() + 1);
-      candidateTime.setMinutes(0);
+      currentTimeRounded.setHours(currentTimeRounded.getHours() + 1);
+      currentTimeRounded.setMinutes(0);
     } else {
-      candidateTime.setMinutes(roundedMinutes);
+      currentTimeRounded.setMinutes(roundedMinutes);
     }
-    candidateTime.setSeconds(0);
-    candidateTime.setMilliseconds(0);
+    currentTimeRounded.setSeconds(0);
+    currentTimeRounded.setMilliseconds(0);
     
-    // Ensure candidate time is not before requested time
-    if (candidateTime.getTime() < requestedTime.getTime()) {
-      candidateTime = new Date(requestedTime);
-    }
+    // Use the later of: current time rounded up, or requested time
+    // This ensures we never schedule in the past, but also respects the drop position if it's in the future
+    candidateTime = currentTimeRounded.getTime() > requestedTime.getTime() 
+      ? currentTimeRounded 
+      : new Date(requestedTime);
   }
 
   // Apply category hours constraint if provided
@@ -122,11 +123,28 @@ export function findNextAvailableSlot(
     const candidateMinute = candidateTime.getMinutes();
     const candidateTotalMinutes = candidateHour * 60 + candidateMinute;
     
-    // If candidate is before category start, move to category start
-    if (candidateTotalMinutes < start) {
-      candidateTime.setHours(Math.floor(start / 60), start % 60, 0, 0);
-      // Round to nearest 15-minute slot
-      const roundedMinutes = Math.ceil((start % 60) / 15) * 15;
+    // For today, ensure we respect both current time AND category hours
+    // The effective start is the later of: current time or category start
+    let effectiveStart = start;
+    if (isToday && options?.ensureAfterCurrentTime) {
+      const currentMinutes = now.getMinutes();
+      const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+      const currentTimeRounded = new Date(now);
+      if (roundedMinutes >= 60) {
+        currentTimeRounded.setHours(currentTimeRounded.getHours() + 1);
+        currentTimeRounded.setMinutes(0);
+      } else {
+        currentTimeRounded.setMinutes(roundedMinutes);
+      }
+      const currentTotalMinutes = currentTimeRounded.getHours() * 60 + currentTimeRounded.getMinutes();
+      effectiveStart = Math.max(start, currentTotalMinutes);
+    }
+    
+    // If candidate is before effective start, move to effective start
+    if (candidateTotalMinutes < effectiveStart) {
+      candidateTime.setHours(Math.floor(effectiveStart / 60), effectiveStart % 60, 0, 0);
+      // Round up to next 15-minute slot
+      const roundedMinutes = Math.ceil((effectiveStart % 60) / 15) * 15;
       if (roundedMinutes >= 60) {
         candidateTime.setHours(candidateTime.getHours() + 1);
         candidateTime.setMinutes(0);
