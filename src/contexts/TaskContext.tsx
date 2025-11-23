@@ -1416,7 +1416,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         return updated;
       });
     }
-  }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrence, ensureWorkspace, createWorkspaceIfNeeded, debouncedSync]);
+  }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrence]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     updateActivity(); // Track demo user activity

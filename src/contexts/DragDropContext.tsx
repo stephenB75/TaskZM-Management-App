@@ -284,6 +284,36 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         });
       }
 
+      // Double-check for conflicts before scheduling (safety check)
+      const conflictCheck = checkTimeConflict(taskId, finalTime, taskDuration, tasks);
+      if (conflictCheck) {
+        // If there's still a conflict, find the next available slot
+        const safeTime = findNextAvailableSlot(
+          taskId,
+          finalTime,
+          taskDuration,
+          tasks,
+          {
+            ensureAfterCurrentTime: isToday,
+            categoryHours: categoryHours,
+          }
+        );
+        
+        // Verify the safe time doesn't conflict
+        const safeConflictCheck = checkTimeConflict(taskId, safeTime, taskDuration, tasks);
+        if (safeConflictCheck) {
+          toast.error('Unable to schedule task', {
+            description: 'No available time slots without conflicts. Please try a different time.',
+          });
+          return;
+        }
+        
+        updateTask(taskId, {
+          scheduledDate: safeTime.toISOString(),
+        });
+        return;
+      }
+
       // No conflict and within limit, proceed with update
       updateTask(taskId, {
         scheduledDate: finalTime.toISOString(),
