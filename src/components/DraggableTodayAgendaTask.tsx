@@ -229,11 +229,12 @@ export function DraggableTodayAgendaTask({
         </div>
 
         {/* Task Content - Match Kanban Week View */}
-        <div className="flex gap-2 flex-1 min-w-0">
+        <div className={cn("flex gap-2 flex-1 min-w-0", isDragging && "max-w-[280px]")}>
           {/* Compact Card - Match Kanban styling (priority line removed for timeline view) */}
           <div
             className={cn(
               "rounded-lg relative flex-1 overflow-hidden",
+              isDragging && "scale-90 origin-left",
               // Responsive padding: smaller on mobile, comfortable on desktop
               "px-2 py-1.5 space-y-1 md:px-3 md:py-2.5 md:space-y-1.5",
               // Background: solid on mobile, semi-transparent on desktop - match task card backgrounds

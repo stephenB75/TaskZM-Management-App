@@ -172,10 +172,10 @@ html, body, #root {
   overflow: hidden; /* Prevent body scrolling - only content areas should scroll */
 }
 
-/* Ensure logo maintains natural colors in dark mode */
-img[alt="TaskZM Logo"] {
-  filter: none !important;
-  -webkit-filter: none !important;
+/* Logo styling - make "task" part white in dark mode while keeping "zm" lavender */
+.dark img[alt="TaskZM Logo"] {
+  filter: brightness(4) contrast(1.1) saturate(1.5) !important;
+  -webkit-filter: brightness(4) contrast(1.1) saturate(1.5) !important;
   mix-blend-mode: normal !important;
   opacity: 1 !important;
 }

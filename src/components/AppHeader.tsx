@@ -57,6 +57,7 @@ import {
   COLOR_GRADIENT_END,
   getColorWithOpacity,
 } from "../lib/color-theme";
+import { cn } from "../lib/utils";
 import logoImage from "../assets/taskzm-logo.png";
 
 interface AppHeaderProps {
@@ -249,12 +250,12 @@ export function AppHeader({
                 <motion.img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0"
+                  className={cn(
+                    "w-auto flex-shrink-0",
+                    isDark && "brightness-[4] contrast-110 saturate-150"
+                  )}
                   style={{ 
-                    height: HEADER_LOGO_HEIGHT, 
-                    filter: 'none',
-                    WebkitFilter: 'none',
-                    mixBlendMode: 'normal',
+                    height: HEADER_LOGO_HEIGHT,
                   }}
                   initial={{ opacity: 0, scale: HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -360,12 +361,12 @@ export function AppHeader({
                 <img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0"
+                  className={cn(
+                    "w-auto flex-shrink-0",
+                    isDark && "brightness-[4] contrast-110 saturate-150"
+                  )}
                   style={{ 
-                    height: HEADER_LOGO_HEIGHT, 
-                    filter: 'none',
-                    WebkitFilter: 'none',
-                    mixBlendMode: 'normal',
+                    height: HEADER_LOGO_HEIGHT,
                   }}
                 />
               )}

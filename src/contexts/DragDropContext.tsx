@@ -695,8 +695,6 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       return;
     }
     
-    // Silently handle drop - no logging needed
-
     // Parse the new date
     const [year, month, day] = targetDateString.split('-').map(Number);
     
@@ -713,6 +711,99 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     const categoryHours = getCategoryHoursForTask(task, targetDate, hoursSettings);
     const taskDuration = task.estimatedTime || 30;
     
+    // Check if task is being dragged from today agenda timeline
+    // If so, try to calculate time from drop position
+    let requestedTime: Date | null = null;
+    const isFromTodayAgenda = task.scheduledDate && (() => {
+      try {
+        const taskDate = new Date(task.scheduledDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        taskDate.setHours(0, 0, 0, 0);
+        return taskDate.getTime() === today.getTime();
+      } catch {
+        return false;
+      }
+    })();
+    
+    // If dragging from today agenda to another day, try to calculate time from drop position
+    if (isFromTodayAgenda && event.over && 'rect' in event.over) {
+      try {
+        const overRect = (event.over as any).rect;
+        const droppableElement = document.querySelector(`[data-droppable-id="${targetDateString}"]`) || 
+                                 document.querySelector(`[id="${targetDateString}"]`);
+        
+        if (droppableElement && overRect) {
+          const droppableRect = droppableElement.getBoundingClientRect();
+          const dropY = overRect.top + (overRect.height / 2);
+          const relativeY = dropY - droppableRect.top;
+          
+          // Get scroll position
+          const scrollViewport = droppableElement.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+          const scrollTop = scrollViewport?.scrollTop || 0;
+          const adjustedY = relativeY + scrollTop;
+          
+          // Timeline padding (similar to today agenda)
+          const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
+          const contentY = Math.max(0, adjustedY - paddingTop);
+          
+          // Calculate time from pixel position
+          const pixelsPerMinute = 1.5;
+          const minutesFromStart = Math.max(0, contentY / pixelsPerMinute);
+          
+          // Determine start hour based on category hours or default
+          const startHour = categoryHours 
+            ? Math.floor(categoryHours.start / 60)
+            : TASK_CALCULATION_CONSTANTS.dragDrop.hourMin;
+          const startMinute = categoryHours 
+            ? categoryHours.start % 60
+            : 0;
+          
+          const totalMinutes = (startHour * 60) + startMinute + minutesFromStart;
+          let hours = Math.floor(totalMinutes / 60);
+          let minutes = totalMinutes % 60;
+          
+          // Round to nearest 15-minute slot
+          minutes = Math.round(minutes / 15) * 15;
+          if (minutes >= 60) {
+            hours += 1;
+            minutes = 0;
+          }
+          
+          // Apply category hours constraints
+          if (categoryHours) {
+            const totalMinutesInDay = hours * 60 + minutes;
+            if (totalMinutesInDay < categoryHours.start) {
+              hours = Math.floor(categoryHours.start / 60);
+              minutes = categoryHours.start % 60;
+            } else if (totalMinutesInDay + taskDuration > categoryHours.end) {
+              const maxStartMinutes = categoryHours.end - taskDuration;
+              if (maxStartMinutes >= categoryHours.start) {
+                hours = Math.floor(maxStartMinutes / 60);
+                minutes = maxStartMinutes % 60;
+                minutes = Math.floor(minutes / 15) * 15;
+              } else {
+                hours = Math.floor(categoryHours.start / 60);
+                minutes = categoryHours.start % 60;
+              }
+            }
+          }
+          
+          // Clamp to valid range
+          if (hours >= 24) {
+            hours = 23;
+            minutes = 0;
+          }
+          
+          requestedTime = new Date(targetDate);
+          requestedTime.setHours(hours, minutes, 0, 0);
+        }
+      } catch (error) {
+        // If calculation fails, fall back to default behavior
+        console.error('Error calculating time from drop position:', error);
+      }
+    }
+    
     // Find existing tasks for this date
     const existingTasksForDate = tasks.filter((t) => {
       if (t.id === taskId || t.status === 'done') return false;
@@ -724,7 +815,10 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     
     // Determine start time
     let startTime: Date;
-    if (existingTasksForDate.length > 0) {
+    if (requestedTime) {
+      // Use calculated time from drop position
+      startTime = requestedTime;
+    } else if (existingTasksForDate.length > 0) {
       // Find earliest gap or start after last task
       const sortedTasks = existingTasksForDate
         .map((t) => ({
@@ -768,7 +862,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       }
     }
     
-    // Use findNextAvailableSlot to find the best slot
+    // Use findNextAvailableSlot to find the best available slot
+    // This validates against existing tasks and finds the next available time
     const newDate = findNextAvailableSlot(
       taskId,
       startTime,
@@ -781,12 +876,26 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     );
     
     if (isNaN(newDate.getTime())) {
-      console.error('Invalid date created from:', { year, month, day, hours, minutes });
+      console.error('Invalid date created from:', { year, month, day, targetDateString });
+      return;
+    }
+    
+    // Check if the found time is different from requested (and we should show dialog)
+    const timeDifference = requestedTime ? Math.abs(newDate.getTime() - requestedTime.getTime()) : 0;
+    const shouldShowDialog = timeDifference > 15 * 60 * 1000; // More than 15 minutes difference
+    
+    if (shouldShowDialog && requestedTime) {
+      // Show dialog if time was adjusted significantly
+      setPendingTaskUpdate({
+        taskId,
+        requestedTime: requestedTime,
+        alternativeTime: newDate,
+      });
+      setConflictDialogOpen(true);
       return;
     }
 
     // Update task with new scheduled date
-    console.log('[DragDrop] Updating task:', taskId, 'to', newDate.toISOString());
     updateTask(taskId, {
       scheduledDate: newDate.toISOString(),
     });
