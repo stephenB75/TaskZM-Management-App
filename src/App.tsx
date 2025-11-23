@@ -467,24 +467,6 @@ function AppContent() {
               </motion.div>
             )}
           </AnimatePresence>
-                {/* Panel Content */}
-                <div className="h-full w-full overflow-hidden">
-                  {currentView === 'notifications' && <NotificationsPanel />}
-                  {currentView === 'today' && <TodayAgendaView />}
-                  {currentView === 'inbox' && <InboxView />}
-                  {currentView === 'team' && <TeamPanel />}
-                  {currentView === 'folders' && <FoldersPanel />}
-                  {currentView === 'analytics' && <AnalyticsPanel onClose={handleClosePanel} />}
-                  {currentView === 'archive' && <ArchiveView />}
-                  {currentView === 'settings' && (
-                    <SettingsPanel 
-                      onStartTour={() => setRunTour(true)}
-                    />
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Desktop: Dashboard - pushed to the right when panel is open */}
           <motion.div 
