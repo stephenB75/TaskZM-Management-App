@@ -9,6 +9,7 @@ import { motion } from "motion/react";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   NAV_BAR_HEIGHT,
   NAV_BAR_PADDING_TOP,
@@ -70,6 +71,8 @@ export function BottomNav({
   unscheduledCount = 0,
 }: BottomNavProps) {
   const { isSyncing } = useTasks();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const isDashboard = currentView === "dashboard";
 
   // Haptic feedback for modern mobile devices
@@ -128,12 +131,14 @@ export function BottomNav({
 
   return (
     <motion.nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-background/95 backdrop-blur-lg border-t border-primary/10 shadow-2xl overflow-visible"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-primary/10 dark:border-gray-700/50 shadow-2xl overflow-visible"
       initial={{ y: NAV_BAR_INITIAL_Y_OFFSET }}
       animate={{ y: 0 }}
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
       style={{
-        boxShadow: `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_LIGHT)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_DARK)}`,
+        boxShadow: isDark
+          ? `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity('#000000', 0.3)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity('#000000', 0.2)}`
+          : `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_LIGHT)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_DARK)}`,
       }}
     >
       {/* Subtle sync indicator at top */}
@@ -167,9 +172,9 @@ export function BottomNav({
               className={cn(
                 "flex flex-col items-center justify-center flex-1 rounded-xl relative overflow-visible",
                 "touch-manipulation transition-transform ease-out",
-                item.active && "text-primary",
+                item.active && "text-primary dark:text-primary-foreground",
                 !item.active &&
-                  "text-muted-foreground hover:text-foreground",
+                  "text-muted-foreground dark:text-gray-400 hover:text-foreground dark:hover:text-gray-200",
               )}
               style={{
                 paddingTop: NAV_BAR_BUTTON_PADDING_TOP,
@@ -238,7 +243,15 @@ export function BottomNav({
               </div>
 
               {/* Label */}
-              <span className="font-medium leading-tight" style={{ fontSize: NAV_BAR_LABEL_TEXT_SIZE, marginTop: NAV_BAR_LABEL_MARGIN_TOP }}>
+              <span 
+                className={cn(
+                  "font-medium leading-tight",
+                  item.active 
+                    ? "text-primary dark:text-primary-foreground" 
+                    : "text-muted-foreground dark:text-gray-400"
+                )} 
+                style={{ fontSize: NAV_BAR_LABEL_TEXT_SIZE, marginTop: NAV_BAR_LABEL_MARGIN_TOP }}
+              >
                 {item.label}
               </span>
             </button>
