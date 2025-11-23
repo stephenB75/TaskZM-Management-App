@@ -35,7 +35,10 @@ export const UI_CHART_COLORS = {
 // Rich Text Editor Colors
 export const UI_RICH_TEXT_COLORS = {
   highlight: '#fef08a',
-  codeBackground: 'rgba(0, 0, 0, 0.1)',
+  codeBackground: {
+    light: 'rgba(0, 0, 0, 0.1)',
+    dark: 'rgba(255, 255, 255, 0.1)',
+  },
   muted: '#9ca3af',
 } as const;
 

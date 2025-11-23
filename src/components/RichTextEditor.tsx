@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
+import { useTheme } from '../contexts/ThemeContext';
 import { UI_RICH_TEXT_COLORS } from '../lib/ui-colors';
 
 interface RichTextEditorProps {
@@ -38,6 +39,7 @@ export function RichTextEditor({
   className,
   rows = 3,
 }: RichTextEditorProps) {
+  const { actualTheme } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   
@@ -218,7 +220,9 @@ export function RichTextEditor({
           const selectedText = range.toString();
           if (selectedText) {
             const codeNode = document.createElement('code');
-            codeNode.style.backgroundColor = UI_RICH_TEXT_COLORS.codeBackground;
+            codeNode.style.backgroundColor = actualTheme === 'dark' 
+              ? UI_RICH_TEXT_COLORS.codeBackground.dark 
+              : UI_RICH_TEXT_COLORS.codeBackground.light;
             codeNode.style.padding = '2px 4px';
             codeNode.style.borderRadius = '3px';
             codeNode.style.fontFamily = 'monospace';

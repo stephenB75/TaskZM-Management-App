@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { useDroppable } from "@dnd-kit/core";
 import { Calendar, Plus, StickyNote } from "lucide-react";
 import { useTasks } from "../contexts/TaskContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
@@ -25,6 +26,7 @@ export function TodayAgendaView({
   hideHeader = false,
 }: TodayAgendaViewProps = {}) {
   const { tasks, updateTask } = useTasks();
+  const { actualTheme } = useTheme();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(
     null,
@@ -572,12 +574,14 @@ export function TodayAgendaView({
                                   </span>
                                 )}
                                 <span 
-                                  className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider dark:text-green-900"
+                                  className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
                                   style={{
                                     backgroundColor: UI_GRADIENT_COLORS.status.success.from,
-                                    color: '#065f46', // green-800
+                                    color: actualTheme === 'dark' ? '#10b981' : '#065f46', // green-500 for dark, green-800 for light
                                   }}
                                 >
+                                  {TODAY_AGENDA_TEXT.nextUp}
+                                </span>
                                   {TODAY_AGENDA_TEXT.nextUp}
                                 </span>
                               </div>

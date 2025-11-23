@@ -44,9 +44,9 @@ export function AIScheduleResultDialog({
       date.toDateString() === tomorrow.toDateString();
 
     if (isToday)
-      return `Today at ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+      return `Today at ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
     if (isTomorrow)
-      return `Tomorrow at ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+      return `Tomorrow at ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
 
     return date.toLocaleDateString("en-US", {
       weekday: "short",

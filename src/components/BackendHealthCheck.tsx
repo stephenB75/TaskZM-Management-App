@@ -239,7 +239,7 @@ export function BackendHealthCheck() {
               ✓ All systems operational
             </p>
             <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-              Last checked: {lastChecked.toLocaleTimeString()}
+              Last checked: {lastChecked.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
             </p>
           </div>
         )}

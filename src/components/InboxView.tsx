@@ -433,12 +433,12 @@ export function InboxView() {
                                         "border-red-400 text-red-700 bg-red-50",
                                       task.priority ===
                                         "high" &&
-                                        "border-orange-400 text-orange-700 bg-orange-50",
+                                        "border-orange-400 text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/20",
                                       task.priority ===
                                         "medium" &&
-                                        "border-blue-400 text-blue-700 bg-blue-50",
+                                        "border-blue-400 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20",
                                       task.priority === "low" &&
-                                        "border-gray-400 text-gray-700 bg-gray-50",
+                                        "border-gray-400 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20",
                                     )}
                                   >
                                     {task.priority}

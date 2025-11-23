@@ -594,7 +594,7 @@ export function SevenDayKanban({
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 rounded-full flex-shrink-0 hover:bg-white/50"
+                          className="h-6 w-6 rounded-full flex-shrink-0 hover:bg-white/50 dark:hover:bg-gray-700/50"
                           onClick={() => handleAddTask(column.dateString)}
                           data-tour="add-task"
                         >
