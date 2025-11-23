@@ -236,12 +236,12 @@ export function DraggableTodayAgendaTask({
               // Background: solid on mobile, semi-transparent on desktop
               isMobile ? "bg-white dark:bg-gray-800" : "bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm",
               // Responsive borders: thinner on mobile, standard on desktop
-              "border-b border-r border-gray-300/80 md:border-gray-300/90",
+              "border-b border-r border-gray-300/80 dark:border-gray-600/80 md:border-gray-300/90 dark:md:border-gray-600/90",
               // Shadows: better blending on mobile
               isMobile 
                 ? "shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)]" 
                 : "shadow-lg",
-              "hover:bg-white/80 dark:hover:bg-gray-800/80 hover:shadow-xl hover:border-gray-400/90 dark:hover:border-gray-600/90 transition-all duration-200",
+              "hover:bg-white/80 dark:hover:bg-gray-800/80 hover:shadow-xl hover:border-gray-400/90 dark:hover:border-gray-500/90 transition-all duration-200",
               task.status === "done" && "opacity-60",
               isNextUp && "ring-2 ring-primary/20",
               // Bottom padding: auto-adjusts based on content (pomodoro timer, assigned users)

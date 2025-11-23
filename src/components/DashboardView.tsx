@@ -1181,7 +1181,7 @@ export function DashboardView({
                                   task.priority === "medium" &&
                                     "border-blue-400 text-blue-700 bg-blue-50",
                                   task.priority === "low" &&
-                                    "border-gray-400 text-gray-700 bg-gray-50",
+                                    "border-gray-400 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800",
                                 )}
                               >
                                 {task.priority}

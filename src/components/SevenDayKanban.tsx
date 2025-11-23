@@ -584,7 +584,7 @@ export function SevenDayKanban({
                           <h3 
                             className={cn(
                               'uppercase text-xs sm:text-sm tracking-wider mb-0.5 sm:mb-1 font-bold',
-                              !column.isToday && 'text-gray-700'
+                              !column.isToday && 'text-gray-700 dark:text-gray-300'
                             )}
                             style={column.isToday ? { color: KANBAN_DAY_COLORS.today.text } : undefined}
                           >

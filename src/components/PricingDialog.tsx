@@ -539,7 +539,7 @@ export function PricingDialog({
                   <p className="text-[11px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
                 </div>
                 {subscription.tier === "free" && (
-                  <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-[9px] md:text-[10px] px-1.5 py-0.5 shadow-sm flex-shrink-0 ml-1.5">
+                  <Badge className="bg-[#B8E6D5] dark:bg-[#5A8A7A] text-gray-800 dark:text-gray-200 border-[#B8E6D5] dark:border-[#5A8A7A] text-[9px] md:text-[10px] px-1.5 py-0.5 shadow-sm flex-shrink-0 ml-1.5">
                     {SUBSCRIPTION_UI_TEXT.free.button.current}
                   </Badge>
                 )}
@@ -579,7 +579,7 @@ export function PricingDialog({
               >
                 {isDowngrading ? (
                   <span className="flex items-center justify-center gap-1.5">
-                    <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-3 h-3 border-2 border-gray-600 dark:border-gray-400 border-t-transparent rounded-full animate-spin" />
                     <span className="text-[10px] md:text-[11px]">{SUBSCRIPTION_UI_TEXT.pro.button.downgrading}</span>
                   </span>
                 ) : subscription.tier === "free" ? (

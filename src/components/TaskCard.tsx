@@ -135,8 +135,8 @@ export function TaskCard({
             {/* Scheduled Time with AM/PM - Top Left Corner */}
             {formatTimeAMPM(task.scheduledDate || task.dueDate) && (
               <div className="flex items-center gap-1 mb-1 px-1">
-                <Clock className="w-3 h-3 text-gray-400" />
-                <span className="text-xs text-gray-600">
+                <Clock className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                <span className="text-xs text-gray-600 dark:text-gray-400">
                   {formatTimeAMPM(task.scheduledDate || task.dueDate)}
                 </span>
               </div>
@@ -144,7 +144,7 @@ export function TaskCard({
             
             <h3 className={cn(
               'text-sm mb-1.5 break-words px-1 mt-1',
-              task.status === 'done' && 'line-through text-gray-500'
+              task.status === 'done' && 'line-through text-gray-500 dark:text-gray-400'
             )}>
               {task.title}
             </h3>
@@ -227,7 +227,7 @@ export function TaskCard({
                   );
                 })}
                 {task.assignedTo.length > 3 && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     +{task.assignedTo.length - 3} more
                   </span>
                 )}
@@ -236,7 +236,7 @@ export function TaskCard({
 
             {task.subtasks && task.subtasks.length > 0 && (
               <div className="mb-2">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                   <span>
                     {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
                   </span>
@@ -250,7 +250,7 @@ export function TaskCard({
               {task.dueDate && (
                 <div className={cn(
                   'flex items-center gap-1',
-                  overdue && task.status !== 'done' ? 'text-red-600' : 'text-gray-600'
+                  overdue && task.status !== 'done' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'
                 )}>
                   <Calendar className="w-3 h-3" />
                   <span>{formatDate(task.dueDate)}</span>
@@ -258,7 +258,7 @@ export function TaskCard({
               )}
 
               {task.estimatedTime && (
-                <div className="flex items-center gap-1 text-gray-600">
+                <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                   <Clock className="w-3 h-3" />
                   <span>{task.estimatedTime}m</span>
                 </div>
@@ -266,7 +266,7 @@ export function TaskCard({
 
               {task.tags && task.tags.length > 0 && (
                 <div className="flex items-center gap-1">
-                  <Tag className="w-3 h-3 text-gray-400" />
+                  <Tag className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                   <div className="flex gap-1">
                     {task.tags.slice(0, 2).map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
@@ -274,21 +274,21 @@ export function TaskCard({
                       </Badge>
                     ))}
                     {task.tags.length > 2 && (
-                      <span className="text-gray-400">+{task.tags.length - 2}</span>
+                      <span className="text-gray-400 dark:text-gray-500">+{task.tags.length - 2}</span>
                     )}
                   </div>
                 </div>
               )}
 
               {task.assignedTo.length > 0 && (
-                <div className="flex items-center gap-1 text-gray-600">
+                <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                   <Users className="w-3 h-3" />
                   <span>{task.assignedTo.length}</span>
                 </div>
               )}
 
               {task.dependencies && task.dependencies.length > 0 && (
-                <div className="flex items-center gap-1 text-gray-600">
+                <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                   <Link2 className="w-3 h-3" />
                   <span>{task.dependencies.length}</span>
                 </div>
