@@ -555,12 +555,15 @@ export function SevenDayKanban({
                     key={column.dateString}
                     className={cn(
                       'flex flex-col rounded-2xl overflow-hidden soft-shadow',
-                      !column.isWeekend && 'bg-white/80 dark:bg-card/80'
+                      // Use theme-aware backgrounds in dark mode, day-specific in light mode
+                      !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-white/80'),
+                      column.isWeekend && isDark && 'bg-card/60'
                     )}
                     style={{
                       minWidth: `${KANBAN_COLUMN_DIMENSIONS.width}px`,
                       width: `${KANBAN_COLUMN_DIMENSIONS.width}px`,
-                      ...(column.isWeekend && {
+                      // Only apply weekend gradient in light mode
+                      ...(column.isWeekend && !isDark && {
                         backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
                       }),
                     }}
@@ -576,13 +579,18 @@ export function SevenDayKanban({
                     <div 
                       className={cn(
                         'p-1.5 sm:p-2 border-b backdrop-blur-sm',
-                        column.isToday && 'ring-2 ring-inset'
+                        column.isToday && 'ring-2 ring-inset',
+                        // Use theme-aware background in dark mode, day-specific gradients in light mode
+                        isDark 
+                          ? 'bg-card/50 border-border' 
+                          : getDayColors(column.dayName).header && 'bg-transparent'
                       )}
                       style={{
                         ...(column.isToday && {
                           ringColor: `${KANBAN_DAY_COLORS.today.ring}${Math.round(KANBAN_DAY_COLORS.today.ringOpacity * 2.55).toString(16).padStart(2, '0')}`,
                         }),
-                        ...(getDayColors(column.dayName).header && {
+                        // Only apply day-specific gradients in light mode
+                        ...(!isDark && getDayColors(column.dayName).header && {
                           backgroundImage: `linear-gradient(to right, ${getDayColors(column.dayName).header.from}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.via}${Math.round(70 * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.to}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')})`,
                           borderColor: `${getDayColors(column.dayName).header.border}${Math.round(getDayColors(column.dayName).header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`,
                         }),
@@ -603,7 +611,7 @@ export function SevenDayKanban({
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 rounded-full flex-shrink-0 hover:bg-card/50 dark:hover:bg-muted/50"
+                          className="h-6 w-6 rounded-full flex-shrink-0 hover:bg-muted/50 dark:hover:bg-muted/50"
                           onClick={() => handleAddTask(column.dateString)}
                           data-tour="add-task"
                         >
@@ -616,9 +624,16 @@ export function SevenDayKanban({
                     <DroppableColumn id={column.dateString} className="flex-1">
                       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                         <div 
-                          className="p-2 sm:p-3 space-y-2 h-full"
+                          className={cn(
+                            'p-2 sm:p-3 space-y-2 h-full',
+                            // Use theme-aware background in dark mode, day-specific colors in light mode
+                            isDark ? 'bg-muted/10' : ''
+                          )}
                           style={{
-                            backgroundColor: `${getDayColors(column.dayName).background}${Math.round(getDayColors(column.dayName).backgroundOpacity * 2.55).toString(16).padStart(2, '0')}`,
+                            // Only apply day-specific background colors in light mode
+                            ...(!isDark && {
+                              backgroundColor: `${getDayColors(column.dayName).background}${Math.round(getDayColors(column.dayName).backgroundOpacity * 2.55).toString(16).padStart(2, '0')}`,
+                            }),
                           }}
                         >
                           <AnimatePresence mode="popLayout">
