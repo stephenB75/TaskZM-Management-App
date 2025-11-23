@@ -339,7 +339,7 @@ export function RichTextEditor({
   return (
     <div 
       className={cn(
-        "border rounded-xl bg-white/80 dark:bg-gray-900/70 backdrop-blur-sm shadow-sm",
+        "border rounded-xl bg-white/80 dark:bg-background/70 backdrop-blur-sm shadow-sm",
         "border-primary/10",
         className
       )}
@@ -614,7 +614,7 @@ export function RichTextEditor({
           "[&_div[style*='text-align:justify']]:text-justify",
           "[&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-3 [&_blockquote]:ml-2 [&_blockquote]:italic [&_blockquote]:my-1",
           // Code styling
-          "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block",
+          "[&_code]:bg-muted [&_code]:dark:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block",
           // Ensure proper display of formatted text
           "[&_strong]:font-bold [&_b]:font-bold",
           "[&_em]:italic [&_i]:italic",

@@ -182,9 +182,9 @@ export function InboxView() {
       case "medium":
         return "border-l-blue-400 bg-blue-50/50 dark:bg-blue-950/10";
       case "low":
-        return "border-l-gray-400 bg-gray-50/50 dark:bg-gray-950/10";
+        return "border-l-gray-400 bg-gray-50/50 dark:bg-muted/10";
       default:
-        return "border-l-gray-400 bg-gray-50/50 dark:bg-gray-950/10";
+        return "border-l-gray-400 bg-gray-50/50 dark:bg-muted/10";
     }
   };
 
@@ -233,7 +233,7 @@ export function InboxView() {
 
       <div className="flex-1 flex flex-col min-h-0">
         {/* Quick Add and Filters Section */}
-        <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
+        <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex flex-col gap-4">
             {/* Quick Add */}
             <AnimatePresence>
@@ -303,7 +303,7 @@ export function InboxView() {
                   onChange={(e) =>
                     setSearchQuery(e.target.value)
                   }
-                  className="pl-9 bg-white dark:bg-gray-900"
+                  className="pl-9 bg-white dark:bg-card"
                 />
               </div>
 
@@ -311,7 +311,7 @@ export function InboxView() {
                 value={filterPriority}
                 onValueChange={setFilterPriority}
               >
-                <SelectTrigger className="w-full bg-white dark:bg-gray-900">
+                <SelectTrigger className="w-full bg-white dark:bg-card">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
@@ -330,7 +330,7 @@ export function InboxView() {
                 value={filterStatus}
                 onValueChange={setFilterStatus}
               >
-                <SelectTrigger className="w-full bg-white dark:bg-gray-900">
+                <SelectTrigger className="w-full bg-white dark:bg-card">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -438,7 +438,7 @@ export function InboxView() {
                                         "medium" &&
                                         "border-blue-400 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20",
                                       task.priority === "low" &&
-                                        "border-gray-400 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20",
+                                        "border-gray-400 text-gray-700 dark:text-foreground bg-gray-50 dark:bg-muted/20",
                                     )}
                                   >
                                     {task.priority}

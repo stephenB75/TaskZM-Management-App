@@ -230,7 +230,7 @@ export function ArchiveView() {
 
       <div className="flex-1 flex flex-col min-h-0">
         {/* Search and Filter Bar */}
-        <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
+        <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex flex-col gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -238,7 +238,7 @@ export function ArchiveView() {
                 placeholder="Search completed tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-10 bg-white dark:bg-gray-900"
+                className="pl-9 h-10 bg-white dark:bg-card"
               />
             </div>
 
@@ -247,7 +247,7 @@ export function ArchiveView() {
                 value={filterPriority}
                 onValueChange={setFilterPriority}
               >
-                <SelectTrigger className="w-full h-10 bg-white dark:bg-gray-900">
+                <SelectTrigger className="w-full h-10 bg-white dark:bg-card">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
@@ -266,7 +266,7 @@ export function ArchiveView() {
                 value={filterDate}
                 onValueChange={setFilterDate}
               >
-                <SelectTrigger className="w-full h-10 bg-white dark:bg-gray-900">
+                <SelectTrigger className="w-full h-10 bg-white dark:bg-card">
                   <Calendar className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Time" />
                 </SelectTrigger>

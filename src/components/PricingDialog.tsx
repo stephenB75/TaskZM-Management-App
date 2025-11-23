@@ -527,15 +527,15 @@ export function PricingDialog({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
               className={cn(
-                "relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 shadow-md hover:shadow-lg flex flex-col",
+                "relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 bg-white dark:bg-card hover:border-gray-300 dark:hover:border-border transition-all duration-300 shadow-md hover:shadow-lg flex flex-col",
                 subscription.tier === "free"
                   ? "border-[#B8E6D5] ring-2 ring-[#B8E6D5]/50 dark:border-[#5A8A7A] dark:ring-[#5A8A7A]/50"
-                  : "border-gray-200 dark:border-gray-700"
+                  : "border-gray-200 dark:border-border"
               )}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-0.5">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-foreground mb-0.5">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
                 </div>
                 {subscription.tier === "free" && (
@@ -547,7 +547,7 @@ export function PricingDialog({
 
               <div className="mb-2.5">
                 <div className="flex items-baseline gap-1 mb-0.5">
-                  <span className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-gray-100">{SUBSCRIPTION_UI_TEXT.free.price}</span>
+                  <span className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-foreground">{SUBSCRIPTION_UI_TEXT.free.price}</span>
                   <span className="text-[10px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
                 </div>
                 <p className="text-[10px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.description}</p>
@@ -557,9 +557,9 @@ export function PricingDialog({
                 {freeTierFeatures.map((feature, index) => (
                   <li key={index} className="flex items-start gap-1.5 group">
                     <div className="flex-shrink-0 w-3.5 h-3.5 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5">
-                      <feature.icon className="w-2 h-2 text-gray-800 dark:text-gray-100" />
+                      <feature.icon className="w-2 h-2 text-gray-800 dark:text-foreground" />
                     </div>
-                    <span className="text-[11px] md:text-xs text-gray-700 dark:text-gray-300 leading-snug">
+                    <span className="text-[11px] md:text-xs text-gray-700 dark:text-foreground leading-snug">
                       {feature.text}
                     </span>
                   </li>
@@ -571,8 +571,8 @@ export function PricingDialog({
                 className={cn(
                   "w-full border-2 text-[11px] md:text-xs py-1.5 font-medium transition-all duration-200",
                   subscription.tier === "free"
-                    ? "border-[#B8E6D5] bg-[#B8E6D5]/10 text-gray-700 dark:text-gray-300 cursor-default"
-                    : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    ? "border-[#B8E6D5] bg-[#B8E6D5]/10 text-gray-700 dark:text-foreground cursor-default"
+                    : "border-gray-300 dark:border-border text-gray-700 dark:text-foreground hover:bg-gray-50 dark:hover:bg-card"
                 )}
                 disabled={subscription.tier === "free" || isDowngrading}
                 onClick={subscription.tier === "pro" ? handleDowngrade : undefined}
@@ -648,10 +648,10 @@ export function PricingDialog({
                       )}>
                         <feature.icon className={cn(
                           "w-1.5 h-1.5",
-                          feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
+                          feature.highlight ? "text-white" : "text-gray-800 dark:text-foreground"
                         )} />
                       </div>
-                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-gray-300 leading-snug">
+                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-foreground leading-snug">
                         {feature.text}
                       </span>
                     </li>
@@ -691,7 +691,7 @@ export function PricingDialog({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
-                className="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl p-3 md:p-4 bg-gray-50 dark:bg-gray-800 overflow-hidden flex flex-col opacity-50"
+                className="relative border-2 border-gray-300 dark:border-border rounded-lg md:rounded-xl p-3 md:p-4 bg-gray-50 dark:bg-card overflow-hidden flex flex-col opacity-50"
               >
                 <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-4">
                   <p className="text-[11px] md:text-xs text-muted-foreground text-center">
@@ -776,10 +776,10 @@ export function PricingDialog({
                       )}>
                         <feature.icon className={cn(
                           "w-1.5 h-1.5",
-                          feature.highlight ? "text-white" : "text-gray-800 dark:text-gray-100"
+                          feature.highlight ? "text-white" : "text-gray-800 dark:text-foreground"
                         )} />
                       </div>
-                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-gray-300 leading-snug">
+                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-foreground leading-snug">
                         {feature.text}
                       </span>
                     </li>
@@ -792,7 +792,7 @@ export function PricingDialog({
                       )}>
                         <feature.icon className="w-1.5 h-1.5 text-white" />
                       </div>
-                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-gray-300 font-medium leading-snug">
+                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-foreground font-medium leading-snug">
                         {feature.text}
                       </span>
                     </li>
@@ -832,7 +832,7 @@ export function PricingDialog({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg md:rounded-xl p-3 md:p-4 bg-gray-50 dark:bg-gray-800 overflow-hidden flex flex-col opacity-50"
+                className="relative border-2 border-gray-300 dark:border-border rounded-lg md:rounded-xl p-3 md:p-4 bg-gray-50 dark:bg-card overflow-hidden flex flex-col opacity-50"
               >
                 <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-4">
                   <p className="text-[11px] md:text-xs text-muted-foreground text-center">
@@ -844,7 +844,7 @@ export function PricingDialog({
           </div>
 
           <div className="mt-3 md:mt-4 p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
-            <p className="text-[11px] md:text-xs text-center text-gray-700 dark:text-gray-300 leading-snug">
+            <p className="text-[11px] md:text-xs text-center text-gray-700 dark:text-foreground leading-snug">
               {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
               <span className="font-medium text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
               {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}

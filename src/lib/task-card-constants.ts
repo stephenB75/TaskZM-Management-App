@@ -342,7 +342,7 @@ export const TASK_CARD_RICH_TEXT_COLORS = {
   },
   code: {
     light: 'bg-gray-100',
-    dark: 'dark:bg-gray-800',
+    dark: 'dark:bg-muted',
   },
 } as const;
 

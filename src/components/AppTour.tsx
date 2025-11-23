@@ -406,7 +406,7 @@ function KanbanIllustration() {
           {[1, 2].map((task) => (
             <div
               key={task}
-              className="h-6 sm:h-7 md:h-8 rounded-md sm:rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm"
+              className="h-6 sm:h-7 md:h-8 rounded-md sm:rounded-lg bg-white/80 dark:bg-card/80 shadow-sm"
             />
           ))}
         </motion.div>

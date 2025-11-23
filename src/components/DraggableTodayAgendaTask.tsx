@@ -234,7 +234,7 @@ export function DraggableTodayAgendaTask({
               // Responsive padding: smaller on mobile, comfortable on desktop
               "px-2 py-1.5 space-y-1 md:px-3 md:py-2.5 md:space-y-1.5",
               // Background: solid on mobile, semi-transparent on desktop
-              isMobile ? "bg-white dark:bg-gray-800" : "bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm",
+              isMobile ? "bg-white dark:bg-card" : "bg-white/60 dark:bg-card/60 backdrop-blur-sm",
               // Responsive borders: thinner on mobile, standard on desktop
               "border-b border-r border-gray-300/80 md:border-gray-300/90",
               // Shadows: better blending on mobile
@@ -303,7 +303,7 @@ export function DraggableTodayAgendaTask({
                 )}
 
                 {task.estimatedTime && (
-                  <span className={cn("text-gray-500 dark:text-gray-400 font-medium flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
+                  <span className={cn("text-gray-500 dark:text-muted-foreground font-medium flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
@@ -380,7 +380,7 @@ export function DraggableTodayAgendaTask({
             {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
               <div 
                 className={cn(
-                  `text-gray-500 dark:text-gray-400 leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
+                  `text-gray-500 dark:text-muted-foreground leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -392,7 +392,7 @@ export function DraggableTodayAgendaTask({
                   hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
                   hasHTMLTags(task.description) && "[&_li]:ml-1",
                   hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words",
-                  hasHTMLTags(task.description) && "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
+                  hasHTMLTags(task.description) && "[&_code]:bg-muted [&_code]:dark:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
                 )}
                 {...(hasHTMLTags(task.description) 
                   ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
@@ -430,7 +430,7 @@ export function DraggableTodayAgendaTask({
                           isMobile ? "w-2 h-2" : "w-2.5 h-2.5",
                           subtask.completed
                             ? "bg-primary border-primary"
-                            : "border-gray-300 dark:border-gray-600 hover:border-primary/50",
+                            : "border-gray-300 dark:border-border hover:border-primary/50",
                         )}
                       />
                       <span
@@ -439,7 +439,7 @@ export function DraggableTodayAgendaTask({
                           isMobile ? "text-[9px]" : "text-[10px]",
                           subtask.completed
                             ? "text-gray-400 line-through"
-                            : "text-gray-600 dark:text-gray-300",
+                            : "text-gray-600 dark:text-foreground",
                         )}
                       >
                         {subtask.title}
@@ -482,7 +482,7 @@ export function DraggableTodayAgendaTask({
                               {initials}
                             </div>
                             <span className={cn(
-                              "text-gray-600 dark:text-gray-300 font-semibold",
+                              "text-gray-600 dark:text-foreground font-semibold",
                               isMobile ? "text-[9px]" : "text-[10px]",
                             )}>
                               {member.name}
@@ -500,7 +500,7 @@ export function DraggableTodayAgendaTask({
                   );
                 })}
                 {task.assignedTo.length > 3 && (
-                  <span className={cn("text-gray-500 dark:text-gray-400", isMobile ? "text-[9px]" : "text-[10px]")}>
+                  <span className={cn("text-gray-500 dark:text-muted-foreground", isMobile ? "text-[9px]" : "text-[10px]")}>
                     +{task.assignedTo.length - 3}
                   </span>
                 )}

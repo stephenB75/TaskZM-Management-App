@@ -210,7 +210,7 @@ export function AppSidebar({
                   !item.pro && (
                     <Badge
                       variant="secondary"
-                      className="ml-auto bg-white/50 dark:bg-gray-800/50"
+                      className="ml-auto bg-white/50 dark:bg-card/50"
                     >
                       {item.badge}
                     </Badge>

@@ -206,7 +206,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
       case "medium":
         return "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400";
       case "low":
-        return "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-400";
+        return "bg-gray-100 text-gray-700 border-gray-300 dark:bg-muted dark:text-muted-foreground";
       default:
         return "bg-gray-100 text-gray-700 border-gray-300";
     }
@@ -282,7 +282,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
       <div className="md:hidden h-[64px]" />
 
       {/* Stats Bar */}
-      <div className="px-4 pt-12 pb-3 mt-4 border-b bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
+      <div className="px-4 pt-12 pb-3 mt-4 border-b bg-white/50 dark:bg-background/50 backdrop-blur-sm">
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1.5">
             <Badge variant="outline" className="text-xs">
@@ -313,7 +313,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
             <div className="flex items-center gap-1.5">
               <Badge
                 variant="outline"
-                className="text-xs border-gray-500/30 text-gray-700 dark:text-gray-400"
+                className="text-xs border-gray-500/30 text-gray-700 dark:text-muted-foreground"
               >
                 {stats.todo} todo
               </Badge>
@@ -323,7 +323,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
       </div>
 
       {/* Filters */}
-      <div className="px-4 py-3 border-b bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0 relative z-10">
+      <div className="px-4 py-3 border-b bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0 relative z-10">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />

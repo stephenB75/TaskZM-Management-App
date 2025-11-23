@@ -67,7 +67,7 @@ function CheckboxSwitch({
       >
         <div 
           className={cn(
-            "absolute top-[2px] left-[2px] bg-white dark:bg-gray-200 rounded-full shadow-md transition-transform duration-200",
+            "absolute top-[2px] left-[2px] bg-white dark:bg-card-foreground rounded-full shadow-md transition-transform duration-200",
             "peer-checked:translate-x-[20px]"
           )}
           style={{

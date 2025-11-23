@@ -210,7 +210,7 @@ function RescheduleMiniCalendar({
   };
 
   return (
-    <div className="w-full bg-white/80 dark:bg-gray-800/80 rounded-lg p-3 border-2 border-primary/30 shadow-lg">
+    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3 border-2 border-primary/30 shadow-lg">
       {/* Toggle Buttons */}
       <div className="flex gap-2 mb-3">
         <Button
@@ -862,7 +862,7 @@ export function DashboardView({
         actions={
           <div className="flex items-center gap-2">
             {/* View Mode Toggle - Desktop Only */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 border border-primary/10">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-card/80 border border-primary/10">
               <Calendar
                 className={cn(
                   "w-4 h-4 transition-colors",
@@ -990,7 +990,7 @@ export function DashboardView({
                           "flex flex-col items-center justify-center px-1.5 py-1.5 sm:px-2.5 sm:py-2 rounded-xl transition-all flex-shrink-0 w-[calc((100%-12px)/7)] sm:w-auto sm:min-w-[48px]",
                           isSelected
                             ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
-                            : "bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 border border-transparent",
+                            : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
                         )}
                       >
                         <span
@@ -1058,7 +1058,7 @@ export function DashboardView({
         {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false */}
         {!hideAgenda && (
           <motion.div
-            className="hidden lg:flex flex-col w-64 border-r border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm"
+            className="hidden lg:flex flex-col w-64 border-r border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}

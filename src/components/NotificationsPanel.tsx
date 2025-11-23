@@ -313,10 +313,10 @@ export function NotificationsPanel() {
 
       <div className="flex-1 flex flex-col min-h-0">
         {/* Filters */}
-        <div className="px-4 md:px-8 py-4 border-b border-primary/10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
+        <div className="px-4 md:px-8 py-4 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-3">
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-[180px] h-10 bg-white dark:bg-gray-900">
+              <SelectTrigger className="w-full sm:w-[180px] h-10 bg-white dark:bg-card">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder={NOTIFICATION_PANEL_TEXT.filters.placeholder} />
               </SelectTrigger>

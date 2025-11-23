@@ -146,7 +146,7 @@ export function AwardCelebration() {
     toast.custom(
       (t) => (
         <div
-          className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+          className="w-full max-w-sm bg-white dark:bg-card rounded-2xl shadow-xl border border-gray-200 dark:border-border overflow-hidden"
           style={{
             boxShadow: `0 4px 20px ${color}20`,
           }}
@@ -191,7 +191,7 @@ export function AwardCelebration() {
                 <div className="font-semibold text-gray-900 dark:text-white mb-0.5">
                   {award.name}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-muted-foreground">
                   {award.description}
                 </div>
               </div>

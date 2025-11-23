@@ -83,20 +83,20 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-          <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-background p-4">
+          <div className="max-w-md w-full bg-white dark:bg-card rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">
               Something went wrong
             </h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
+            <p className="text-gray-600 dark:text-foreground mb-4">
               The application encountered an unexpected error. Please try refreshing the page.
             </p>
             {this.state.error && (
               <details className="mb-4">
-                <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 mb-2">
+                <summary className="cursor-pointer text-sm text-gray-500 dark:text-muted-foreground mb-2">
                   Error Details
                 </summary>
-                <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-auto max-h-40">
+                <pre className="text-xs bg-gray-100 dark:bg-muted p-2 rounded overflow-auto max-h-40">
                   {this.state.error.toString()}
                   {this.state.errorInfo?.componentStack}
                 </pre>
@@ -110,7 +110,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="w-full mt-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className="w-full mt-2 px-4 py-2 bg-gray-200 dark:bg-muted text-gray-800 dark:text-foreground rounded-lg hover:bg-gray-300 dark:hover:bg-muted/80 transition-colors"
             >
               Refresh Page
             </button>

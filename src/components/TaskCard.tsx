@@ -89,7 +89,7 @@ export function TaskCard({
       case 'low':
         return 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-900';
       default:
-        return 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800';
+        return 'bg-white dark:bg-card border-gray-200 dark:border-border';
     }
   };
 
@@ -152,7 +152,7 @@ export function TaskCard({
             {task.description && (
               <div 
                 className={cn(
-                  "text-[12px] text-gray-600 dark:text-gray-400 break-words px-1.5 py-1 mt-0.5 mb-3",
+                  "text-[12px] text-gray-600 dark:text-muted-foreground break-words px-1.5 py-1 mt-0.5 mb-3",
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -164,7 +164,7 @@ export function TaskCard({
                   hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
                   hasHTMLTags(task.description) && "[&_li]:ml-1",
                   hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words",
-                  hasHTMLTags(task.description) && "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
+                  hasHTMLTags(task.description) && "[&_code]:bg-muted [&_code]:dark:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
                 )}
                 {...(hasHTMLTags(task.description) 
                   ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
@@ -192,7 +192,7 @@ export function TaskCard({
                       'text-xs leading-tight',
                       subtask.completed 
                         ? 'text-gray-400 line-through' 
-                        : 'text-gray-600 dark:text-gray-400'
+                        : 'text-gray-600 dark:text-muted-foreground'
                     )}>
                       {subtask.title}
                     </span>
@@ -220,7 +220,7 @@ export function TaskCard({
                       <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 flex items-center justify-center text-[10px] font-semibold text-purple-700 dark:text-purple-300">
                         {initials}
                       </div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400 font-semibold">
+                      <span className="text-xs text-gray-600 dark:text-muted-foreground font-semibold">
                         {member.name}
                       </span>
                     </div>

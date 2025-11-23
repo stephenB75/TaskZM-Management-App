@@ -755,7 +755,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                 urgent: "border-l-red-400 bg-red-50 dark:bg-red-950/20",
                 high: "border-l-orange-400 bg-orange-50 dark:bg-orange-950/20",
                 medium: "border-l-blue-400 bg-blue-50 dark:bg-blue-950/20",
-                low: "border-l-gray-400 bg-gray-50 dark:bg-gray-950/20",
+                low: "border-l-gray-400 bg-gray-50 dark:bg-muted/20",
               };
               
               return (

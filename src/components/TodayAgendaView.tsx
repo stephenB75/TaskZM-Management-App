@@ -475,7 +475,7 @@ export function TodayAgendaView({
                         <div className="flex-1 h-0.5 bg-primary/60 relative">
                           <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary border-2 border-background" />
                         </div>
-                        <span className="text-xs font-medium text-primary bg-background/80 dark:bg-gray-800/80 px-2 py-0.5 rounded">
+                        <span className="text-xs font-medium text-primary bg-background/80 dark:bg-card/80 px-2 py-0.5 rounded">
                           {now.toLocaleTimeString("en-US", {
                             hour: "numeric",
                             minute: "2-digit",
@@ -600,7 +600,7 @@ export function TodayAgendaView({
                                   hasHTMLTags(nextUpTask.notes) && "[&_li]:ml-1 [&_li]:leading-relaxed",
                                   hasHTMLTags(nextUpTask.notes) && "[&_p]:my-1 [&_p]:leading-relaxed [&_p]:block [&_p:empty]:hidden",
                                   hasHTMLTags(nextUpTask.notes) && "[&_p+p]:mt-2",
-                                  hasHTMLTags(nextUpTask.notes) && "[&_code]:bg-gray-100 [&_code]:dark:bg-gray-800 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block"
+                                  hasHTMLTags(nextUpTask.notes) && "[&_code]:bg-muted [&_code]:dark:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block"
                                 )}
                                 {...(hasHTMLTags(nextUpTask.notes) 
                                   ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(nextUpTask.notes) } }

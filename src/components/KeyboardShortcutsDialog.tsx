@@ -61,14 +61,14 @@ export function KeyboardShortcutsDialog() {
                     key={item.description}
                     className="flex items-center justify-between py-2"
                   >
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-gray-600 dark:text-muted-foreground">
                       {item.description}
                     </span>
                     <div className="flex gap-1">
                       {item.keys.map((key) => (
                         <kbd
                           key={key}
-                          className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded"
+                          className="px-2 py-1 text-xs bg-gray-100 dark:bg-muted border border-gray-300 dark:border-border rounded"
                         >
                           {key}
                         </kbd>

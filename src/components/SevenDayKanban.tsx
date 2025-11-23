@@ -546,7 +546,7 @@ export function SevenDayKanban({
                     key={column.dateString}
                     className={cn(
                       'flex flex-col rounded-2xl overflow-hidden soft-shadow',
-                      !column.isWeekend && 'bg-white/80 dark:bg-gray-800/80'
+                      !column.isWeekend && 'bg-white/80 dark:bg-card/80'
                     )}
                     style={{
                       minWidth: `${KANBAN_COLUMN_DIMENSIONS.width}px`,

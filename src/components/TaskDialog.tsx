@@ -196,7 +196,7 @@ function FixedMiniCalendar({
   const activeDate = activeField === "scheduled" ? scheduledDate : dueDate;
 
   return (
-    <div className="w-full bg-white/80 dark:bg-gray-800/80 rounded-lg p-3 border-2 border-primary/30 shadow-lg">
+    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3 border-2 border-primary/30 shadow-lg">
       {/* Toggle Buttons */}
       <div className="flex gap-2 mb-3">
         <Button
@@ -1384,7 +1384,7 @@ export function TaskDialog({
         >
           <div className="space-y-6 py-4">
             {/* Basic Information - Always Visible */}
-            <div className="space-y-4 bg-white/60 dark:bg-gray-800/40 rounded-lg p-4 border border-primary/10">
+            <div className="space-y-4 bg-white/60 dark:bg-card/40 rounded-lg p-4 border border-primary/10">
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-sm font-semibold">Title *</Label>
                 <Input
@@ -1393,7 +1393,7 @@ export function TaskDialog({
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Task title"
                   autoFocus
-                  className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20"
+                  className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
                 />
               </div>
 
@@ -1417,7 +1417,7 @@ export function TaskDialog({
                       setStatus(value as TaskStatus)
                     }
                   >
-                    <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20">
+                    <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -1437,7 +1437,7 @@ export function TaskDialog({
                       setPriority(value as TaskPriority)
                     }
                   >
-                    <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20">
+                    <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -1489,7 +1489,7 @@ export function TaskDialog({
                       }
                     }}
                   >
-                    <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20">
+                    <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20">
                       <SelectValue placeholder="No folder" />
                     </SelectTrigger>
                     <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -1516,7 +1516,7 @@ export function TaskDialog({
             {/* Accordion Sections */}
             <Accordion type="multiple" defaultValue={["scheduling"]} className="space-y-3">
               {/* Scheduling Section */}
-              <AccordionItem value="scheduling" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-gray-800/40 overflow-hidden">
+              <AccordionItem value="scheduling" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-card/40 overflow-hidden">
                 <AccordionTrigger className="px-4 hover:no-underline hover:bg-primary/5 dark:hover:bg-primary/10">
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4 text-primary" />
@@ -1639,7 +1639,7 @@ export function TaskDialog({
                             }
                           }
                         }}
-                        className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20 text-sm"
+                        className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20 text-sm"
                       />
 
                       {/* Time Picker */}
@@ -1759,7 +1759,7 @@ export function TaskDialog({
                                   }
                                 }}
                               >
-                                <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer">
+                                <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer">
                                   <SelectValue placeholder="Hour" />
                                 </SelectTrigger>
                                 <SelectContent 
@@ -1812,7 +1812,7 @@ export function TaskDialog({
                                 disabled={false}
                               >
                                 <SelectTrigger 
-                                  className="bg-white dark:bg-gray-800/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer pointer-events-auto"
+                                  className="bg-white dark:bg-card/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer pointer-events-auto"
                                   aria-label="Select minutes"
                                 >
                                   <SelectValue placeholder="Min" />
@@ -1853,7 +1853,7 @@ export function TaskDialog({
                                     }
                                   }}
                                 >
-                                  <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer">
+                                  <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer">
                                     <SelectValue placeholder="AM/PM" />
                                   </SelectTrigger>
                                   <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -1944,7 +1944,7 @@ export function TaskDialog({
                             }
                           }
                         }}
-                        className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20 text-sm"
+                        className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20 text-sm"
                       />
                     </div>
                   </div>
@@ -1966,7 +1966,7 @@ export function TaskDialog({
                           }
                           placeholder="0"
                           min="0"
-                          className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20"
+                          className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
                         />
                         <Label className="text-xs text-muted-foreground mt-1 block">Hours</Label>
                       </div>
@@ -1984,7 +1984,7 @@ export function TaskDialog({
                           placeholder="0"
                           min="0"
                           max="59"
-                          className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20"
+                          className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
                         />
                         <Label className="text-xs text-muted-foreground mt-1 block">Minutes</Label>
                       </div>
@@ -2002,7 +2002,7 @@ export function TaskDialog({
                         value={timezone}
                         onValueChange={setTimezone}
                       >
-                        <SelectTrigger className="h-9 bg-white dark:bg-gray-800/80 border-primary/20">
+                        <SelectTrigger className="h-9 bg-white dark:bg-card/80 border-primary/20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent 
@@ -2040,7 +2040,7 @@ export function TaskDialog({
               </AccordionItem>
 
               {/* Organization Section */}
-              <AccordionItem value="organization" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-gray-800/40 overflow-hidden">
+              <AccordionItem value="organization" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-card/40 overflow-hidden">
                 <AccordionTrigger className="px-4 hover:no-underline hover:bg-primary/5 dark:hover:bg-primary/10">
                   <div className="flex items-center gap-2">
                     <Tag className="w-4 h-4 text-primary" />
@@ -2067,7 +2067,7 @@ export function TaskDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20">
+                        <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20">
                           <SelectValue placeholder="Select a tag to add..." />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2096,7 +2096,7 @@ export function TaskDialog({
                           (e.preventDefault(), addTag())
                         }
                         placeholder="Or type a new tag..."
-                        className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20"
+                        className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
                       />
                       <Button
                         type="button"
@@ -2160,7 +2160,7 @@ export function TaskDialog({
                           (e.preventDefault(), addSubtask())
                         }
                         placeholder="Add a subtask..."
-                        className="bg-white dark:bg-gray-800/80 border-primary/20 focus:border-primary focus:ring-primary/20"
+                        className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
                       />
                       <Button
                         type="button"
@@ -2179,7 +2179,7 @@ export function TaskDialog({
                           return (
                             <div
                               key={subtask.id}
-                              className="flex items-start gap-2 p-2 rounded-lg bg-white/50 dark:bg-gray-800/50 border border-primary/10"
+                              className="flex items-start gap-2 p-2 rounded-lg bg-white/50 dark:bg-card/50 border border-primary/10"
                             >
                               <Checkbox
                                 checked={subtask.completed}
@@ -2209,7 +2209,7 @@ export function TaskDialog({
                                         }
                                       }}
                                     >
-                                      <SelectTrigger className="h-6 text-xs border-primary/20 bg-white dark:bg-gray-800/80">
+                                      <SelectTrigger className="h-6 text-xs border-primary/20 bg-white dark:bg-card/80">
                                         <SelectValue placeholder="Assign..." />
                                       </SelectTrigger>
                                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2288,7 +2288,7 @@ export function TaskDialog({
               </AccordionItem>
 
               {/* Advanced Options Section */}
-              <AccordionItem value="advanced" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-gray-800/40 overflow-hidden">
+              <AccordionItem value="advanced" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-card/40 overflow-hidden">
                 <AccordionTrigger className="px-4 hover:no-underline hover:bg-primary/5 dark:hover:bg-primary/10">
                   <div className="flex items-center gap-2">
                     <Settings className="w-4 h-4 text-primary" />
@@ -2343,7 +2343,7 @@ export function TaskDialog({
                             }
                           }}
                         >
-                          <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20">
+                          <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2370,7 +2370,7 @@ export function TaskDialog({
                               }
                               min="1"
                               max="30"
-                              className="flex-1 bg-white dark:bg-gray-800/80 border-primary/20"
+                              className="flex-1 bg-white dark:bg-card/80 border-primary/20"
                             />
                             <span className="text-sm text-muted-foreground whitespace-nowrap">
                               {recurrenceType === "daily" && "day(s)"}
@@ -2430,7 +2430,7 @@ export function TaskDialog({
                             setRecurrenceDayOfMonth(parseInt(value))
                           }
                         >
-                          <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20">
+                          <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent 
@@ -2456,7 +2456,7 @@ export function TaskDialog({
                             <Button
                               type="button"
                               variant="outline"
-                              className="w-full justify-start text-left bg-white dark:bg-gray-800/80 border-primary/20"
+                              className="w-full justify-start text-left bg-white dark:bg-card/80 border-primary/20"
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
                               {recurrenceEndDate && recurrenceEndDate instanceof Date && !isNaN(recurrenceEndDate.getTime())
@@ -2464,7 +2464,7 @@ export function TaskDialog({
                                 : "Never (ongoing)"}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 shadow-xl border-2 border-primary/30 bg-white dark:bg-gray-900" align="start">
+                          <PopoverContent className="w-auto p-0 shadow-xl border-2 border-primary/30 bg-white dark:bg-popover" align="start">
                             <Calendar
                               mode="single"
                               selected={recurrenceEndDate}
@@ -2552,7 +2552,7 @@ export function TaskDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20">
+                        <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20">
                           <SelectValue placeholder="Add assignee..." />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2628,7 +2628,7 @@ export function TaskDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="bg-white dark:bg-gray-800/80 border-primary/20">
+                        <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20">
                           <SelectValue placeholder="Add a dependency..." />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2721,7 +2721,7 @@ export function TaskDialog({
                       onChange={setNotes}
                       placeholder="Additional notes... (Press Enter for new paragraphs)"
                       rows={4}
-                      className="bg-white dark:bg-gray-800/80"
+                      className="bg-white dark:bg-card/80"
                     />
                   </div>
 
@@ -2806,7 +2806,7 @@ export function TaskDialog({
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
       >
-        <AlertDialogContent className="bg-white dark:bg-gray-900 border-primary/20">
+        <AlertDialogContent className="bg-white dark:bg-popover border-primary/20">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Task?</AlertDialogTitle>
             <AlertDialogDescription>

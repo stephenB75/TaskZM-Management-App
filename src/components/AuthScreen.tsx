@@ -458,11 +458,11 @@ export function AuthScreen() {
             {/* Branding Section */}
             <motion.div className="space-y-1.5 sm:space-y-2 flex flex-col items-center mb-2 sm:mb-2.5 lg:mb-3 lg:flex-shrink-0" variants={logoVariants}>
               <motion.div
-                className="inline-flex items-center gap-1 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-white/50"
+                className="inline-flex items-center gap-1 bg-white/70 dark:bg-background/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-white/50"
                 whileHover={{ scale: 1.05 }}
               >
                 <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#7B68EE]" />
-                <span className="text-[8px] sm:text-[9px] text-gray-700 dark:text-gray-200">
+                <span className="text-[8px] sm:text-[9px] text-gray-700 dark:text-foreground">
                   {AUTH_UI_TEXT.neurodivergentBadge}
                 </span>
               </motion.div>
@@ -474,7 +474,7 @@ export function AuthScreen() {
                   className="w-[80px] sm:w-[100px] md:w-[140px] lg:w-[160px]"
                   whileHover={{ scale: 1.02 }}
                 />
-                <p className="text-[9px] sm:text-[10px] text-gray-700 dark:text-gray-200 text-center px-2 sm:px-0 max-w-md">
+                <p className="text-[9px] sm:text-[10px] text-gray-700 dark:text-foreground text-center px-2 sm:px-0 max-w-md">
                   {AUTH_UI_TEXT.tagline}
                 </p>
               </div>
@@ -554,7 +554,7 @@ export function AuthScreen() {
                               transition={{ duration: 0.2 }}
                             >
                             <div className="relative">
-                              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow border-2 border-white/60 dark:border-gray-700/50">
+                              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow border-2 border-white/60 dark:border-border/50">
                                 <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white drop-shadow-lg" />
                               </div>
                               {/* Glow effect on hover */}
@@ -673,7 +673,7 @@ export function AuthScreen() {
                               }
                             }}
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-card shadow-sm pr-10"
                           />
                           <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         </div>
@@ -705,7 +705,7 @@ export function AuthScreen() {
                               setSignInPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-card shadow-sm pr-10"
                           />
                           <button
                             type="button"
@@ -726,7 +726,7 @@ export function AuthScreen() {
                       <div className="flex items-center justify-between gap-2">
                         <Label
                           htmlFor="remember-me"
-                          className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer"
+                          className="text-[10px] sm:text-xs text-gray-600 dark:text-muted-foreground cursor-pointer"
                         >
                           {AUTH_UI_TEXT.signIn.rememberMe}
                         </Label>
@@ -766,10 +766,10 @@ export function AuthScreen() {
                       {/* Divider */}
                       <div className="relative py-1">
                         <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t border-gray-300 dark:border-gray-600" />
+                          <span className="w-full border-t border-gray-300 dark:border-border" />
                         </div>
                         <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
-                          <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">
+                          <span className="bg-white dark:bg-background px-2 text-gray-500">
                             {AUTH_UI_TEXT.or}
                           </span>
                         </div>
@@ -818,7 +818,7 @@ export function AuthScreen() {
                             setSignUpName(e.target.value)
                           }
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-card shadow-sm"
                         />
                       </div>
 
@@ -849,7 +849,7 @@ export function AuthScreen() {
                               }
                             }}
                             required
-                            className={`border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10 ${
+                            className={`border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-card shadow-sm pr-10 ${
                               emailError ? 'border-red-500' : ''
                             }`}
                           />
@@ -888,7 +888,7 @@ export function AuthScreen() {
                               setSignUpPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-card shadow-sm pr-10"
                           />
                           <button
                             type="button"
@@ -907,7 +907,7 @@ export function AuthScreen() {
                         {signUpPassword && (
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
-                              <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                              <div className="flex-1 h-1.5 bg-gray-200 dark:bg-muted rounded-full overflow-hidden">
                                 <div
                                   className={`h-full transition-all duration-300 ${
                                     passwordStrength.strength === 'weak'
@@ -933,7 +933,7 @@ export function AuthScreen() {
                               </span>
                             </div>
                             {passwordStrength.feedback.length > 0 && passwordStrength.strength !== 'strong' && (
-                              <ul className="text-[10px] text-gray-600 dark:text-gray-400 space-y-0.5">
+                              <ul className="text-[10px] text-gray-600 dark:text-muted-foreground space-y-0.5">
                                 {passwordStrength.feedback.slice(0, 2).map((item, idx) => (
                                   <li key={idx} className="flex items-center gap-1">
                                     <span className="text-red-500">•</span>
@@ -965,7 +965,7 @@ export function AuthScreen() {
                               )
                             }
                             required
-                            className={`border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-gray-800 shadow-sm pr-10 ${
+                            className={`border-2 focus:border-[#7B68EE] transition-colors h-8 sm:h-9 text-xs sm:text-sm bg-white dark:bg-card shadow-sm pr-10 ${
                               signUpConfirmPassword && !passwordsMatch ? 'border-red-500' : ''
                             } ${
                               signUpConfirmPassword && passwordsMatch ? 'border-green-500' : ''
@@ -1013,7 +1013,7 @@ export function AuthScreen() {
                         />
                         <Label
                           htmlFor="accept-terms"
-                          className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 cursor-pointer leading-tight"
+                          className="text-[10px] sm:text-xs text-gray-600 dark:text-muted-foreground cursor-pointer leading-tight"
                         >
                           {AUTH_UI_TEXT.signUp.acceptTerms.split('Terms of Service')[0]}
                           <button
@@ -1062,7 +1062,7 @@ export function AuthScreen() {
                       </motion.div>
 
                       {/* Info message */}
-                      <div className="text-center text-[10px] sm:text-xs md:text-sm text-gray-600 dark:text-gray-400 bg-[#E8F5F1] dark:bg-gray-800 rounded-lg p-2 sm:p-3">
+                      <div className="text-center text-[10px] sm:text-xs md:text-sm text-gray-600 dark:text-muted-foreground bg-[#E8F5F1] dark:bg-card rounded-lg p-2 sm:p-3">
                         <span className="inline-flex items-center gap-1 flex-wrap justify-center">
                           <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-[#7B68EE] flex-shrink-0" />
                           <span>Free forever • Pro features available • No credit card required</span>
@@ -1074,8 +1074,8 @@ export function AuthScreen() {
               </Tabs>
               
               {/* App Store Badges */}
-              <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
-                <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-3">
+              <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-3 border-t border-gray-200/50 dark:border-border/50">
+                <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-muted-foreground mb-3">
                   {AUTH_UI_TEXT.mobileApps.comingSoon}
                 </p>
                 <div className="flex items-center justify-center gap-3 sm:gap-4">

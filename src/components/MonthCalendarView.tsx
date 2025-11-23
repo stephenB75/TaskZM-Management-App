@@ -77,7 +77,7 @@ function DraggableMonthTask({
     urgent: "border-l-red-400 bg-red-50 dark:bg-red-950/20",
     high: "border-l-orange-400 bg-orange-50 dark:bg-orange-950/20",
     medium: "border-l-blue-400 bg-blue-50 dark:bg-blue-950/20",
-    low: "border-l-gray-400 bg-gray-50 dark:bg-gray-950/20",
+    low: "border-l-gray-400 bg-gray-50 dark:bg-muted/20",
   };
 
   const handleToggleComplete = (e: React.MouseEvent) => {
@@ -503,7 +503,7 @@ export function MonthCalendarView({
     <div className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950" data-month-calendar="true">
       {/* Calendar Header */}
       <motion.div
-        className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md"
+        className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-background/70 backdrop-blur-md"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -637,7 +637,7 @@ export function MonthCalendarView({
       {/* Mobile-specific info panel */}
       {mobileMode && (
         <motion.div
-          className="flex-shrink-0 p-3 border-t border-primary/10 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md"
+          className="flex-shrink-0 p-3 border-t border-primary/10 bg-white/70 dark:bg-background/70 backdrop-blur-md"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >

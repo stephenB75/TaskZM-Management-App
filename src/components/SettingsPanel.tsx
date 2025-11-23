@@ -374,7 +374,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <div className="space-y-4">
               {/* Profile Card */}
               <div 
-                className="rounded-2xl border border-border/40 bg-muted/30 dark:bg-gray-800/50 px-4 py-4 sm:px-5 sm:py-5 flex flex-col sm:flex-row items-center gap-4 w-full"
+                className="rounded-2xl border border-border/40 bg-muted/30 dark:bg-card/50 px-4 py-4 sm:px-5 sm:py-5 flex flex-col sm:flex-row items-center gap-4 w-full"
               >
                 <div 
                   className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center text-primary font-semibold shadow-inner flex-shrink-0"
@@ -565,7 +565,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     {features.aiScheduler ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={features.aiScheduler ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.aiScheduler}
@@ -585,7 +585,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     {features.taskHours ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={features.taskHours ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.taskHours}
@@ -602,7 +602,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     {features.analytics ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={features.analytics ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.analytics}
@@ -625,7 +625,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     {features.pomodoroTimer ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={features.pomodoroTimer ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.pomodoroTimer}
@@ -642,7 +642,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     {features.teamFeatures ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={features.teamFeatures ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.teamCollaboration}
@@ -659,7 +659,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     {features.calendarSync ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={features.calendarSync ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.calendarSync}
@@ -676,7 +676,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     {features.taskRollover ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={features.taskRollover ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.autoTaskRollover}
@@ -2288,7 +2288,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* App Tour */}
-        <AccordionItem value="app-tour" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card dark:bg-gray-800/50 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="app-tour" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card dark:bg-card/50 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Compass className="w-5 h-5 text-primary" />
@@ -2358,7 +2358,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* About */}
-        <AccordionItem value="about" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card dark:bg-gray-800/50 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="about" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card dark:bg-card/50 my-2 sm:my-1.5 md:my-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Info className="w-5 h-5 text-primary" />

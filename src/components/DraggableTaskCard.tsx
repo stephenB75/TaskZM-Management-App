@@ -569,8 +569,8 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Scheduled Time with AM/PM */}
           {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Clock className={cn("text-gray-400 dark:text-gray-500", isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop)} />
-                  <span className={cn("text-gray-600 dark:text-gray-300 font-bold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                  <Clock className={cn("text-gray-400 dark:text-muted-foreground", isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop)} />
+                  <span className={cn("text-gray-600 dark:text-foreground font-bold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                 {scheduledTimeLabel}
                   </span>
                 </div>
@@ -604,7 +604,7 @@ export const DraggableTaskCard = React.forwardRef<
               )}
 
               {task.estimatedTime && (
-                <span className={cn("text-gray-500 dark:text-gray-400 font-medium flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                <span className={cn("text-gray-500 dark:text-muted-foreground font-medium flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
                   {formatDuration(task.estimatedTime)}
                 </span>
               )}
@@ -668,9 +668,9 @@ export const DraggableTaskCard = React.forwardRef<
             )}
             <h3
               className={cn(
-                "text-gray-900 dark:text-gray-100 leading-tight flex-1",
+                "text-gray-900 dark:text-foreground leading-tight flex-1",
                 TASK_CARD_LINE_CLAMP.title,
-                task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
+                task.status === "done" && "line-through text-gray-400 dark:text-muted-foreground",
                 isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop,
               )}
             >
@@ -741,7 +741,7 @@ export const DraggableTaskCard = React.forwardRef<
                         isMobile ? "w-2 h-2" : "w-2.5 h-2.5",
                         subtask.completed
                           ? "bg-primary border-primary"
-                          : "border-gray-300 dark:border-gray-600 hover:border-primary/50",
+                          : "border-gray-300 dark:border-border hover:border-primary/50",
                       )}
                     />
                     <span
@@ -750,7 +750,7 @@ export const DraggableTaskCard = React.forwardRef<
                         isMobile ? TASK_CARD_FONT_SIZES.subtask.mobile : TASK_CARD_FONT_SIZES.subtask.desktop,
                         subtask.completed
                           ? `${TASK_CARD_TEXT_COLORS.subtaskCompleted} line-through`
-                          : "text-gray-600 dark:text-gray-300",
+                          : "text-gray-600 dark:text-foreground",
                       )}
                     >
                       {subtask.title}
@@ -771,7 +771,7 @@ export const DraggableTaskCard = React.forwardRef<
             // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
             // Reduced spacing when all components are active
             <div className={cn(
-              "flex items-center justify-between border-t border-gray-200/50 dark:border-gray-700/50",
+              "flex items-center justify-between border-t border-gray-200/50 dark:border-border/50",
               // Check if subtasks are present to reduce spacing
               task.subtasks && task.subtasks.length > 0
                 ? isMobile ? "gap-1.5 mt-1 pt-1" : "gap-2 mt-1.5 pt-1.5"
@@ -816,7 +816,7 @@ export const DraggableTaskCard = React.forwardRef<
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>{member.name}</p>
-                              <p className="text-xs text-gray-400 dark:text-gray-500">{member.email}</p>
+                              <p className="text-xs text-gray-400 dark:text-muted-foreground">{member.email}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -895,7 +895,7 @@ export const DraggableTaskCard = React.forwardRef<
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{member.name}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                            <p className="text-xs text-gray-400 dark:text-muted-foreground">
                               {member.email}
                             </p>
                           </TooltipContent>
@@ -904,7 +904,7 @@ export const DraggableTaskCard = React.forwardRef<
                     );
                   })}
                   {task.assignedTo.length > 3 && (
-                    <span className={cn("text-gray-500 dark:text-gray-400", isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop)}>
+                    <span className={cn("text-gray-500 dark:text-muted-foreground", isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop)}>
                       {TASK_CARD_TEXT.moreAssigned(task.assignedTo.length - 3)}
                     </span>
                   )}

@@ -77,7 +77,7 @@ function Switch({
       {/* Sliding thumb */}
       <span
         className={cn(
-          "block rounded-full bg-white dark:bg-gray-200 shadow-md transition-transform duration-200 ease-in-out",
+          "block rounded-full bg-white dark:bg-card-foreground shadow-md transition-transform duration-200 ease-in-out",
           // Mobile sizing
           "h-4 w-4",
           "md:h-5 md:w-5",
