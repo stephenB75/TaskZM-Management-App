@@ -173,11 +173,20 @@ html, body, #root {
 }
 
 /* Logo styling - make "task" part white in dark mode while keeping "zm" lavender */
+/* Only show logo in dark mode, remove any white background */
 .dark img[alt="TaskZM Logo"] {
   filter: brightness(4) contrast(1.1) saturate(1.5) !important;
   -webkit-filter: brightness(4) contrast(1.1) saturate(1.5) !important;
   mix-blend-mode: normal !important;
   opacity: 1 !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Ensure logo has transparent background in all modes */
+img[alt="TaskZM Logo"] {
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
 /* Mobile optimizations */

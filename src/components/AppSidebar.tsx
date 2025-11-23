@@ -32,6 +32,7 @@ import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useNotifications } from "../contexts/NotificationContext";
+import { useTheme } from "../contexts/ThemeContext";
 import taskzmLogo from "../assets/taskzm-logo.png";
 
 interface AppSidebarProps {
@@ -49,6 +50,8 @@ export function AppSidebar({
   onOpenChange,
   unscheduledCount = 0,
 }: AppSidebarProps) {
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const { tasks } = useTasks();
   const { teamMembers } = useTeam();
   const { hasFeature } = useSubscription();
@@ -162,16 +165,19 @@ export function AppSidebar({
   const mobileSidebarContent = (
     <div className="p-4 flex flex-col h-full">
       {/* Header */}
-      <div className="mb-6 flex flex-col items-center gap-1.5">
-        <img
-          src={taskzmLogo}
-          alt="TaskZM Logo"
-          className="w-[140px]"
-        />
-        <p className="text-sm text-muted-foreground text-center">
-          AI-Powered Tasks
-        </p>
-      </div>
+      {isDark && (
+        <div className="mb-6 flex flex-col items-center gap-1.5">
+          <img
+            src={taskzmLogo}
+            alt="TaskZM Logo"
+            className="w-[140px] brightness-[4] contrast-110 saturate-150"
+            style={{ backgroundColor: 'transparent' }}
+          />
+          <p className="text-sm text-muted-foreground text-center">
+            AI-Powered Tasks
+          </p>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="space-y-2 flex-1">
