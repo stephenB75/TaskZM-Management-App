@@ -266,6 +266,10 @@ export function NotificationsPanel() {
   const markAllAsRead = () => {
     const allIds = notifications.map(n => n.id);
     setReadNotifications(prev => new Set([...prev, ...allIds]));
+    // Trigger badge update after marking all as read
+    setTimeout(() => {
+      updateBadge();
+    }, 100);
   };
 
   const clearNotification = (id: string) => {
@@ -274,6 +278,11 @@ export function NotificationsPanel() {
     markAsRead(id);
     // Remove from list immediately
     setNotifications(prev => prev.filter(n => n.id !== id));
+    // Trigger badge update after notification is cleared
+    // Use setTimeout to ensure state updates are complete
+    setTimeout(() => {
+      updateBadge();
+    }, 100);
   };
 
   const getNotificationIcon = (type: NotificationItem['type']) => {

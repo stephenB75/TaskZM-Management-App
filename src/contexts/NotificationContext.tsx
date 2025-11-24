@@ -114,6 +114,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         return 0;
       }
 
+      // Get dismissed notifications from localStorage
+      const dismissedNotificationsArray = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, []);
+      const dismissedNotifications = new Set(dismissedNotificationsArray);
+
       const now = new Date();
       const today = new Date(now);
       today.setHours(0, 0, 0, 0);
@@ -121,6 +125,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       // Check tasks with dueDate OR scheduledDate
       const overdueTasks = tasks.filter(task => {
         if (task.status === 'done') return false;
+        
+        // Check if notification for this task was dismissed
+        const notificationId = `overdue_${task.id}`;
+        if (dismissedNotifications.has(notificationId)) return false;
         
         // Check dueDate first
         if (task.dueDate) {
@@ -141,6 +149,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       const dueSoonTasks = tasks.filter(task => {
         if (task.status === 'done') return false;
+        
+        // Check if notification for this task was dismissed
+        const notificationId = `due-soon_${task.id}`;
+        if (dismissedNotifications.has(notificationId)) return false;
         
         const reminderTime = new Date(now.getTime() + settings.reminderTime * 60 * 1000);
         

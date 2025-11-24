@@ -638,8 +638,7 @@ export function AppTour({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 flex items-center justify-center p-2 sm:p-4"
-          className="bg-background/90 dark:bg-background/85 backdrop-blur-lg"
+          className="fixed inset-0 flex items-center justify-center p-2 sm:p-4 bg-background/90 dark:bg-background/85 backdrop-blur-lg"
           style={{
             zIndex: Z_INDEX.APP_TOUR,
           }}
@@ -668,10 +667,9 @@ export function AppTour({
               stiffness: 200,
             }}
             className={cn(
-              "w-full max-w-2xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl",
+              "w-full max-w-2xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-primary/25 dark:border-primary/20",
               isDark ? "bg-card" : "bg-card",
             )}
-            className="border border-primary/25 dark:border-primary/20 shadow-2xl dark:shadow-2xl"
             style={{
               boxShadow: isDark
                 ? "0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(155, 135, 232, 0.2)"
@@ -750,8 +748,7 @@ export function AppTour({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-2.5 md:mb-3 pr-8 sm:pr-10"
-                  className="bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent"
+                  className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-2.5 md:mb-3 pr-8 sm:pr-10 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent"
                 >
                   {step.title}
                 </motion.h2>
@@ -847,12 +844,9 @@ export function AppTour({
                     className={cn(
                       "rounded-full transition-all flex-shrink-0",
                       i === currentStep ? "w-6 sm:w-8 h-1.5 sm:h-2" : "w-1.5 sm:w-2 h-1.5 sm:h-2",
-                    )}
-                    className={cn(
                       i === currentStep
-                        ? "bg-gradient-to-r from-primary via-primary to-accent"
+                        ? "bg-gradient-to-r from-primary via-primary to-accent shadow-lg shadow-primary/40"
                         : "bg-muted-foreground/20 dark:bg-muted-foreground/20",
-                      i === currentStep && "shadow-lg shadow-primary/40",
                     )}
                     animate={{
                       width: i === currentStep ? undefined : undefined,

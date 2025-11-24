@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   X,
   TrendingUp,
@@ -520,7 +520,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 <CardContent className="px-3 pb-3">
                   <div className="h-56" style={{ minHeight: '224px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
+                      <PieChart key={chartKey} margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
                         <Pie
                           data={analytics.statusDistribution}
                           cx="50%"
