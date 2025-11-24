@@ -23,6 +23,9 @@ import { useTheme } from "../contexts/ThemeContext";
 import { cn } from "../lib/utils";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 import { Z_INDEX } from "../lib/layout-constants";
+import { getOfferings } from "../lib/revenuecat";
+import { useAuth } from "../contexts/AuthContext";
+import { configureRevenueCat } from "../lib/revenuecat";
 
 interface AppTourProps {
   run: boolean;
@@ -48,7 +51,8 @@ interface TourStep {
     | "features";
 }
 
-const tourSteps: TourStep[] = [
+// Function to create tour steps with dynamic pricing
+const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep[] => [
   {
     title: "Welcome to TaskZM! 🎉",
     description:
@@ -169,7 +173,7 @@ const tourSteps: TourStep[] = [
       {
         icon: "💎",
         title: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature,
-        description: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(DEFAULT_MONTHLY_PRICE),
+        description: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(monthlyPrice),
       },
     ],
   },
@@ -344,7 +348,7 @@ const tourSteps: TourStep[] = [
       {
         icon: "💎",
         title: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature,
-        description: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(DEFAULT_MONTHLY_PRICE),
+        description: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(monthlyPrice),
       },
     ],
   },
@@ -535,18 +539,49 @@ export function AppTour({
 }: AppTourProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<
     "forward" | "backward"
   >("forward");
+  const [monthlyPrice, setMonthlyPrice] = useState<string>(DEFAULT_MONTHLY_PRICE);
   const prevRunRef = React.useRef(false);
   const hasInitializedRef = React.useRef(false);
   const currentStepRef = React.useRef(0);
   const isNavigatingRef = React.useRef(false);
 
-  const step = tourSteps[currentStep];
+  // Fetch RevenueCat pricing when component mounts or user changes
+  useEffect(() => {
+    const fetchPricing = async () => {
+      if (!user?.id) return;
+      
+      try {
+        // Configure RevenueCat if needed
+        await configureRevenueCat(user.id);
+        
+        // Get offerings from RevenueCat
+        const offerings = await getOfferings();
+        
+        if (offerings.monthly?.priceString) {
+          setMonthlyPrice(offerings.monthly.priceString);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch RevenueCat pricing for app tour:', error);
+        // Keep default price if fetch fails
+      }
+    };
+
+    fetchPricing();
+  }, [user?.id]);
+
+  // Update tour steps when monthly price changes
+  const dynamicTourSteps = React.useMemo(() => {
+    return createTourSteps(monthlyPrice);
+  }, [monthlyPrice]);
+
+  const step = dynamicTourSteps[currentStep];
   const isFirst = currentStep === 0;
-  const isLast = currentStep === tourSteps.length - 1;
+  const isLast = currentStep === dynamicTourSteps.length - 1;
 
   // Sync ref with state
   useEffect(() => {
@@ -596,7 +631,7 @@ export function AppTour({
   const handleNext = () => {
     setCurrentStep((prevStep) => {
       const nextStep = prevStep + 1;
-      if (nextStep >= tourSteps.length) {
+      if (nextStep >= dynamicTourSteps.length) {
         // Mark tour as completed
         localStorage.setItem('taskzm_tour_completed', 'true');
         onFinish();
@@ -838,7 +873,7 @@ export function AppTour({
             >
               {/* Progress Dots */}
               <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 flex-shrink-0 min-w-0">
-                {tourSteps.map((_, i) => (
+                {dynamicTourSteps.map((_, i) => (
                   <motion.div
                     key={i}
                     className={cn(
