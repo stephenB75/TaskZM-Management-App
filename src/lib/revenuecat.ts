@@ -142,7 +142,7 @@ function findPackageByType(
   
   // Expanded keywords to match various identifier formats
   // RevenueCat packages can have identifiers like: $rc_monthly, rc_monthly, monthly, $monthly, etc.
-  // Also supports formats like "Yearly Subscription - ofrng3abca1c147" (contains "yearly")
+  // Also supports formats like "Yearly Subscription - ofrnga3a1440e88" (contains "yearly")
   const keywords = type === 'monthly' 
     ? ['month', 'monthly', 'rc_monthly', '$rc_monthly'] 
     : ['year', 'yearly', 'annual', 'annually', 'rc_yearly', 'rc_annual', '$rc_yearly', '$rc_annual'];
@@ -466,7 +466,7 @@ export async function getOfferings(): Promise<{
     const availablePackages = offerings?.current?.availablePackages ?? [];
     
     // Search all offerings for rc_annual package and validate product ID
-    const YEARLY_OFFERING_ID = 'ofrng3abca1c147';
+    const YEARLY_OFFERING_ID = 'ofrnga3a1440e88';
     const yearlyOfferingValidation = offerings?.all?.[YEARLY_OFFERING_ID];
     
     // Log all available offerings
@@ -641,7 +641,7 @@ export async function getOfferings(): Promise<{
       console.log('🔍 Searching other offerings for missing package...');
       
       // Prioritize checking the specific yearly offering ID
-      const YEARLY_OFFERING_ID = 'ofrng3abca1c147';
+      const YEARLY_OFFERING_ID = 'ofrnga3a1440e88';
       if (offerings.all[YEARLY_OFFERING_ID]) {
         const yearlyOffering = offerings.all[YEARLY_OFFERING_ID];
         const yearlyPackages = yearlyOffering?.availablePackages ?? [];
