@@ -250,10 +250,9 @@ export function AppHeader({
                 <motion.img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0 brightness-[4] contrast-110 saturate-150"
+                  className="w-auto flex-shrink-0 dark-logo-filter"
                   style={{ 
                     height: HEADER_LOGO_HEIGHT,
-                    backgroundColor: 'transparent',
                   }}
                   initial={{ opacity: 0, scale: HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -359,10 +358,9 @@ export function AppHeader({
                 <img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0 brightness-[4] contrast-110 saturate-150"
+                  className="w-auto flex-shrink-0 dark-logo-filter"
                   style={{ 
                     height: HEADER_LOGO_HEIGHT,
-                    backgroundColor: 'transparent',
                   }}
                 />
               )}

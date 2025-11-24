@@ -170,8 +170,7 @@ export function AppSidebar({
           <img
             src={taskzmLogo}
             alt="TaskZM Logo"
-            className="w-[140px] brightness-[4] contrast-110 saturate-150"
-            style={{ backgroundColor: 'transparent' }}
+            className="w-[140px] dark-logo-filter"
           />
           <p className="text-sm text-muted-foreground text-center">
             AI-Powered Tasks

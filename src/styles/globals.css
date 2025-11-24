@@ -174,9 +174,10 @@ html, body, #root {
 
 /* Logo styling - make "task" part white in dark mode while keeping "zm" lavender */
 /* Only show logo in dark mode, remove any white background */
-.dark img[alt="TaskZM Logo"] {
-  filter: brightness(4) contrast(1.1) saturate(1.5) !important;
-  -webkit-filter: brightness(4) contrast(1.1) saturate(1.5) !important;
+.dark-logo-filter {
+  /* Invert to make dark text white, then adjust saturation to preserve lavender */
+  filter: brightness(0) invert(1) saturate(0.3) hue-rotate(240deg) saturate(4) brightness(1.1) !important;
+  -webkit-filter: brightness(0) invert(1) saturate(0.3) hue-rotate(240deg) saturate(4) brightness(1.1) !important;
   mix-blend-mode: normal !important;
   opacity: 1 !important;
   background-color: transparent !important;
