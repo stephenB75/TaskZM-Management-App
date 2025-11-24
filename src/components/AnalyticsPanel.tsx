@@ -181,50 +181,88 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   
   // Track when panel is mounted to force chart animations
   const [chartKey, setChartKey] = useState(0);
+  const [pieData, setPieData] = useState<Array<{ name: string; value: number; color: string }>>([]);
   const cardRef = React.useRef<HTMLDivElement>(null);
-  const hasAnimatedRef = React.useRef(false);
+  const hasTriggeredAnimationRef = React.useRef(false);
   
-  // Reset chart key when panel opens to force re-animation
+  // Update pie data when analytics change and trigger animation
   useEffect(() => {
-    // Increment key when component mounts (panel opens)
-    setChartKey(prev => prev + 1);
-    hasAnimatedRef.current = false;
+    if (analytics.statusDistribution.length > 0) {
+      // Create new array with new object references to force Recharts to re-render
+      const newData = analytics.statusDistribution.map(item => ({ ...item }));
+      setPieData(newData);
+      
+      // Trigger animation when data is ready
+      if (!hasTriggeredAnimationRef.current) {
+        const timer = setTimeout(() => {
+          setChartKey(prev => prev + 1);
+          hasTriggeredAnimationRef.current = true;
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      setPieData([]);
+    }
+  }, [analytics.statusDistribution]);
+  
+  // Reset animation state when panel opens
+  useEffect(() => {
+    hasTriggeredAnimationRef.current = false;
+    setChartKey(0);
     
     return () => {
-      hasAnimatedRef.current = false;
+      hasTriggeredAnimationRef.current = false;
     };
   }, []);
   
   // Use IntersectionObserver to detect when the pie chart card is visible and trigger animation
   useEffect(() => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || pieData.length === 0) return;
     
+    // Check if card is already visible (e.g., at top of scroll area)
+    const checkVisibility = () => {
+      if (!cardRef.current) return false;
+      const rect = cardRef.current.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      return isVisible;
+    };
+    
+    // If already visible, trigger animation immediately
+    if (checkVisibility() && !hasTriggeredAnimationRef.current) {
+      const timer = setTimeout(() => {
+        setChartKey(prev => prev + 1);
+        hasTriggeredAnimationRef.current = true;
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+    
+    // Otherwise, use IntersectionObserver for when it scrolls into view
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > 0.5 && !hasAnimatedRef.current) {
-            // Card is visible and hasn't animated yet, trigger animation
-            hasAnimatedRef.current = true;
+          if (entry.isIntersecting && entry.intersectionRatio > 0.1 && !hasTriggeredAnimationRef.current) {
+            // Card is visible, trigger animation
             setChartKey(prev => prev + 1);
+            hasTriggeredAnimationRef.current = true;
+            observer.disconnect();
           }
         });
       },
-      { threshold: 0.5, rootMargin: '0px' }
+      { threshold: 0.1, rootMargin: '50px' }
     );
     
-    observer.observe(cardRef.current);
+    // Start observing after a delay to ensure card is in DOM
+    const observeTimer = setTimeout(() => {
+      if (cardRef.current) {
+        observer.observe(cardRef.current);
+      }
+    }, 300);
     
     return () => {
+      clearTimeout(observeTimer);
       observer.disconnect();
     };
-  }, []);
-  
-  // Also update chart key when status distribution data changes
-  useEffect(() => {
-    if (analytics.statusDistribution.length > 0) {
-      setChartKey(prev => prev + 1);
-    }
-  }, [analytics.statusDistribution.length]);
+  }, [pieData.length]);
   
   // Theme-aware colors for charts
   const textColor = isDark ? '#A8A8B8' : '#6B7280'; // muted-foreground
@@ -557,7 +595,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             </div>
 
             {/* Status Distribution - Pie Chart */}
-            {analytics.statusDistribution.length > 0 && (
+            {pieData.length > 0 && (
               <Card ref={cardRef} className="shadow-sm border border-border bg-card">
                 <CardHeader className="pb-2 pt-3 px-3">
                   <CardTitle className="text-sm font-semibold text-foreground">
@@ -567,10 +605,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 <CardContent className="px-3 pb-3">
                   <div className="h-56" style={{ minHeight: '224px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart key={chartKey} margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
+                      <PieChart key={`piechart-${chartKey}`} margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
                         <Pie
-                          key={`pie-${chartKey}-${analytics.statusDistribution.length}`}
-                          data={analytics.statusDistribution}
+                          key={`pie-${chartKey}`}
+                          data={pieData}
                           cx="50%"
                           cy="45%"
                           labelLine={false}
@@ -581,13 +619,11 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           dataKey="value"
                           isAnimationActive={true}
                           animationBegin={0}
-                          animationDuration={1000}
+                          animationDuration={1500}
                           animationEasing="ease-out"
-                          startAngle={90}
-                          endAngle={-270}
                         >
-                          {analytics.statusDistribution.map((entry, index) => (
-                            <Cell key={`cell-${chartKey}-${index}`} fill={entry.color} />
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${chartKey}-${index}-${entry.name}`} fill={entry.color} />
                           ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
@@ -597,7 +633,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           iconType="circle"
                           wrapperStyle={{ paddingTop: '10px' }}
                           formatter={(value, entry: any) => {
-                            const item = analytics.statusDistribution.find(d => d.name === value);
+                            const item = pieData.find(d => d.name === value);
                             const percent = item ? ((item.value / analytics.totalTasks) * 100).toFixed(0) : '0';
                             return (
                               <span className="text-[11px] text-muted-foreground">
