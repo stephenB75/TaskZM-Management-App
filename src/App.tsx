@@ -40,6 +40,7 @@ import { NotificationsPanel } from './components/NotificationsPanel';
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
 import { PricingDialog } from './components/PricingDialog';
 import { UpgradePrompt } from './components/UpgradePrompt';
+import { DemoAccountDisclaimer } from './components/DemoAccountDisclaimer';
 import { DocumentHead } from './components/DocumentHead';
 import { useAIScheduler, type SchedulePlan } from './hooks/useAIScheduler';
 import { useAwardChecker } from './hooks/useAwardChecker';
@@ -76,6 +77,7 @@ function AppContent() {
   const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<'aiScheduler' | 'taskHours' | 'analytics' | 'taskRollover' | 'pomodoroTimer' | 'teamFeatures' | 'calendarSync'>('aiScheduler');
   const [runTour, setRunTour] = useState(false);
+  const [showDemoDisclaimer, setShowDemoDisclaimer] = useState(false);
   const hasInitializedView = useRef(false);
   const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
   
@@ -146,6 +148,30 @@ function AppContent() {
     hasInitializedView.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
+
+  // Show demo account disclaimer for demo users
+  useEffect(() => {
+    if (!user || isLoading) return;
+    
+    // Only show for demo users
+    if (user.isDemo) {
+      try {
+        // Check if disclaimer has been seen in this session
+        const disclaimerSeen = window?.sessionStorage?.getItem('demo_disclaimer_seen');
+        
+        if (!disclaimerSeen) {
+          // Show disclaimer after a short delay to let UI settle
+          const timer = setTimeout(() => {
+            setShowDemoDisclaimer(true);
+          }, 1000); // 1 second delay
+          
+          return () => clearTimeout(timer);
+        }
+      } catch (error) {
+        console.warn('Session storage unavailable when checking demo disclaimer:', error);
+      }
+    }
+  }, [user, isLoading]);
 
   // Auto-start tour only for new signups (not existing users)
   useEffect(() => {
@@ -525,6 +551,12 @@ function AppContent() {
         run={runTour}
         onFinish={handleTourFinish}
         onNavigate={handleTourNavigate}
+      />
+
+      {/* Demo Account Disclaimer */}
+      <DemoAccountDisclaimer
+        open={showDemoDisclaimer}
+        onOpenChange={setShowDemoDisclaimer}
       />
     </>
   );

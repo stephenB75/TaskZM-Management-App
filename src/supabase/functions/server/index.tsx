@@ -962,17 +962,59 @@ app.get("/make-server-65e6e67f/subscription", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
+    // Check if this is a demo user - demo users always get Pro tier (yearly)
+    const isDemoFlag = await kv.get(`user_${userId}_is_demo`);
+    const isDemo = isDemoFlag === 'true';
+
     // Get subscription data from webhook format (primary source)
-    const tier = await kv.get(`user:${userId}:tier`) || 'free';
-    const status = await kv.get(`user:${userId}:subscription_status`) || 'none';
+    let tier = await kv.get(`user:${userId}:tier`) || 'free';
+    let status = await kv.get(`user:${userId}:subscription_status`) || 'none';
     const store = await kv.get(`user:${userId}:subscription_store`);
-    const startDate = await kv.get(`user:${userId}:subscription_start`);
+    let startDate = await kv.get(`user:${userId}:subscription_start`);
     const expiresAt = await kv.get(`user:${userId}:subscription_expires_at`);
-    const billingPeriod = await kv.get(`user:${userId}:billing_period`);
+    let billingPeriod = await kv.get(`user:${userId}:billing_period`);
     const cancelAtPeriodEnd = status === 'cancelled' && expiresAt && new Date(expiresAt) > new Date();
 
     // Also check legacy format for backwards compatibility
     const legacySubscription = await kv.get(`user_${userId}_subscription`);
+    
+    // If demo user, ensure they have Pro tier with yearly billing
+    if (isDemo) {
+      // Override subscription for demo users to ensure they always have full access
+      tier = 'pro';
+      status = 'active';
+      billingPeriod = 'yearly';
+      
+      // Set start date if not already set
+      if (!startDate) {
+        startDate = new Date().toISOString();
+        await kv.set(`user:${userId}:subscription_start`, startDate);
+      }
+      
+      // Ensure subscription data is stored correctly for demo users
+      if (tier !== 'pro' || billingPeriod !== 'yearly' || status !== 'active') {
+        console.log(`🔧 Fixing subscription for demo user ${userId}: Ensuring Pro tier (yearly)`);
+        
+        // Update subscription in both formats
+        const demoSubscription = {
+          tier: 'pro',
+          status: 'active',
+          startDate: startDate || new Date().toISOString(),
+          endDate: null, // Demo accounts don't expire
+          cancelAtPeriodEnd: false,
+          billingPeriod: 'yearly',
+        };
+        
+        await kv.set(`user_${userId}_subscription`, demoSubscription);
+        await kv.set(`user:${userId}:tier`, 'pro');
+        await kv.set(`user:${userId}:subscription_status`, 'active');
+        await kv.set(`user:${userId}:subscription_store`, 'demo_account');
+        await kv.set(`user:${userId}:subscription_start`, demoSubscription.startDate);
+        await kv.set(`user:${userId}:billing_period`, 'yearly');
+        
+        console.log(`✅ Demo user ${userId} subscription fixed: Pro tier (yearly)`);
+      }
+    }
     
     // Build subscription object from webhook data
     const subscription = {
@@ -1353,7 +1395,7 @@ app.post("/make-server-65e6e67f/demo/cleanup-inactive", async (c) => {
       }
     }
     
-    const { maxInactiveMinutes = 60 } = body;
+    const { maxInactiveMinutes = 15 } = body;
     
     console.log(`🧹 Starting cleanup of inactive demo users (inactive > ${maxInactiveMinutes} minutes)`);
     
@@ -2479,16 +2521,60 @@ app.get("/make-server-65e6e67f/subscription-status", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
+    // Check if this is a demo user - demo users always get Pro tier (yearly)
+    const isDemoFlag = await kv.get(`user_${userId}_is_demo`);
+    const isDemo = isDemoFlag === 'true';
+
     // Get subscription data from kv store (webhook format)
-    const tier = await kv.get(`user:${userId}:tier`) || 'free';
-    const status = await kv.get(`user:${userId}:subscription_status`) || 'none';
-    const store = await kv.get(`user:${userId}:subscription_store`);
-    const startDate = await kv.get(`user:${userId}:subscription_start`);
+    let tier = await kv.get(`user:${userId}:tier`) || 'free';
+    let status = await kv.get(`user:${userId}:subscription_status`) || 'none';
+    let store = await kv.get(`user:${userId}:subscription_store`);
+    let startDate = await kv.get(`user:${userId}:subscription_start`);
     const expiresAt = await kv.get(`user:${userId}:subscription_expires_at`);
+    let billingPeriod = await kv.get(`user:${userId}:billing_period`);
     const cancelAtPeriodEnd = status === 'cancelled' && expiresAt && new Date(expiresAt) > new Date();
 
     // Also check legacy format for backwards compatibility
     const legacySubscription = await kv.get(`user_${userId}_subscription`);
+    
+    // If demo user, ensure they have Pro tier with yearly billing
+    if (isDemo) {
+      // Override subscription for demo users to ensure they always have full access
+      tier = 'pro';
+      status = 'active';
+      store = 'demo_account';
+      billingPeriod = 'yearly';
+      
+      // Set start date if not already set
+      if (!startDate) {
+        startDate = new Date().toISOString();
+        await kv.set(`user:${userId}:subscription_start`, startDate);
+      }
+      
+      // Ensure subscription data is stored correctly for demo users
+      if (tier !== 'pro' || billingPeriod !== 'yearly' || status !== 'active') {
+        console.log(`🔧 Fixing subscription status for demo user ${userId}: Ensuring Pro tier (yearly)`);
+        
+        // Update subscription in both formats
+        const demoSubscription = {
+          tier: 'pro',
+          status: 'active',
+          startDate: startDate || new Date().toISOString(),
+          endDate: null, // Demo accounts don't expire
+          cancelAtPeriodEnd: false,
+          billingPeriod: 'yearly',
+        };
+        
+        await kv.set(`user_${userId}_subscription`, demoSubscription);
+        await kv.set(`user:${userId}:tier`, 'pro');
+        await kv.set(`user:${userId}:subscription_status`, 'active');
+        await kv.set(`user:${userId}:subscription_store`, 'demo_account');
+        await kv.set(`user:${userId}:subscription_start`, demoSubscription.startDate);
+        await kv.set(`user:${userId}:billing_period`, 'yearly');
+        
+        console.log(`✅ Demo user ${userId} subscription status fixed: Pro tier (yearly)`);
+      }
+    }
     
     // Merge data - prefer webhook format if available
     const subscriptionData = {
@@ -2498,6 +2584,7 @@ app.get("/make-server-65e6e67f/subscription-status", async (c) => {
       startDate: startDate || legacySubscription?.startDate,
       endDate: expiresAt || legacySubscription?.endDate,
       cancelAtPeriodEnd: cancelAtPeriodEnd || legacySubscription?.cancelAtPeriodEnd || false,
+      billingPeriod: billingPeriod || legacySubscription?.billingPeriod || null,
       isPro: tier === 'pro' || legacySubscription?.tier === 'pro'
     };
 
