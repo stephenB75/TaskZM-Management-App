@@ -85,6 +85,7 @@ import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/not
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
+import { COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY, COLOR_PASTEL_MINT, getColorWithOpacity } from '../lib/color-theme';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -93,6 +94,7 @@ interface SettingsPanelProps {
 export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { user, signOut, updateProfile, accessToken } = useAuth();
   const { theme, setTheme, actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const { syncWithServer, isSyncing, lastSync, hoursSettings, updateHoursSettings, rolloverSettings, updateRolloverSettings, availableTags, addAvailableTag, removeAvailableTag } = useTasks();
   const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks } = useAI();
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
@@ -2294,7 +2296,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* App Tour */}
-        <AccordionItem value="app-tour" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card dark:bg-card/50 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem 
+          value="app-tour" 
+          className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 my-2 sm:my-1.5 md:my-4"
+          style={{
+            background: isDark 
+              ? `linear-gradient(to bottom right, ${getColorWithOpacity('#8A7A9A', 0.25)}, ${getColorWithOpacity('#6A8AAA', 0.25)})`
+              : `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.4)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.4)})`,
+          }}
+        >
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Compass className="w-5 h-5 text-primary" />
@@ -2364,7 +2374,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* About */}
-        <AccordionItem value="about" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-card dark:bg-card/50 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem 
+          value="about" 
+          className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 my-2 sm:my-1.5 md:my-4"
+          style={{
+            background: isDark 
+              ? `linear-gradient(to bottom right, ${getColorWithOpacity('#6A8AAA', 0.25)}, ${getColorWithOpacity('#5A8A7A', 0.25)})`
+              : `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.4)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.4)})`,
+          }}
+        >
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Info className="w-5 h-5 text-primary" />
