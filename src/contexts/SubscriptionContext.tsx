@@ -75,12 +75,26 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   // Initial state: Default to free tier (safe default)
   // NOTE: Actual subscription data comes from backend database (source of truth)
   // This is only a default until backend data is loaded
-  const [subscription, setSubscription] = useState<SubscriptionInfo>({
-    tier: 'free',
-    status: 'active',
-    startDate: null,
-    endDate: null,
-    cancelAtPeriodEnd: false,
+  // EXCEPTION: Demo users always get Pro tier (yearly) - set immediately
+  const [subscription, setSubscription] = useState<SubscriptionInfo>(() => {
+    // If user is a demo user, start with Pro tier (yearly) immediately
+    if (user?.isDemo) {
+      return {
+        tier: 'pro',
+        status: 'active',
+        startDate: new Date().toISOString(),
+        endDate: null,
+        cancelAtPeriodEnd: false,
+        billingPeriod: 'yearly',
+      };
+    }
+    return {
+      tier: 'free',
+      status: 'active',
+      startDate: null,
+      endDate: null,
+      cancelAtPeriodEnd: false,
+    };
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -114,6 +128,18 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const mergeSubscriptionWithRevenueCat = useCallback(async (current: SubscriptionInfo): Promise<SubscriptionInfo> => {
     if (!user?.id) return current;
+
+    // DEMO USERS: Always return Pro tier (yearly) - don't check RevenueCat
+    if (user.isDemo) {
+      return {
+        tier: 'pro',
+        status: 'active',
+        startDate: current.startDate || new Date().toISOString(),
+        endDate: null,
+        cancelAtPeriodEnd: false,
+        billingPeriod: 'yearly',
+      };
+    }
 
     try {
       if (!isRevenueCatConfigured()) {
@@ -194,6 +220,26 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       
+      // SPECIAL HANDLING FOR DEMO USERS:
+      // Demo users always get Pro tier (yearly) - clear any cached free tier data
+      if (user.isDemo) {
+        // Clear localStorage cache for demo users to force fresh fetch
+        localStorage.removeItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user.id}`);
+        localStorage.removeItem(`subscription_${user.id}`);
+        
+        // Set Pro tier immediately for demo users
+        const demoSubscription: SubscriptionInfo = {
+          tier: 'pro',
+          status: 'active',
+          startDate: new Date().toISOString(),
+          endDate: null,
+          cancelAtPeriodEnd: false,
+          billingPeriod: 'yearly',
+        };
+        setSubscription(demoSubscription);
+        console.log('✅ Demo user detected - setting Pro tier (yearly) immediately');
+      }
+      
       // DATA SOURCE PRIORITY:
       // 1. Backend database (source of truth)
       // 2. localStorage (cache only, last resort for offline)
@@ -203,44 +249,90 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       
       if (serverSubscription) {
         const normalized = normalizeSubscription(serverSubscription);
+        
+        // FORCE Pro tier (yearly) for demo users even if backend returns something else
+        if (user.isDemo) {
+          normalized.tier = 'pro';
+          normalized.status = 'active';
+          normalized.billingPeriod = 'yearly';
+          normalized.endDate = null;
+          normalized.cancelAtPeriodEnd = false;
+          if (!normalized.startDate) {
+            normalized.startDate = new Date().toISOString();
+          }
+          console.log('✅ Demo user - forcing Pro tier (yearly) from backend response');
+        }
+        
         const merged = await mergeSubscriptionWithRevenueCat(normalized);
         setSubscription(merged);
-        // Cache in localStorage for offline access
-        localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(merged));
+        // Cache in localStorage for offline access (but not for demo users to prevent stale cache)
+        if (!user.isDemo) {
+          localStorage.setItem(`subscription_${user?.id}`, JSON.stringify(merged));
+        }
       } else {
         // Fallback to localStorage cache if server fails (last resort)
-        const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            const merged = await mergeSubscriptionWithRevenueCat(normalizeSubscription(parsed));
-            setSubscription(merged);
-          } catch (parseError) {
-            console.warn('Failed to parse stored subscription:', parseError);
-            const fallback = await mergeSubscriptionWithRevenueCat(normalizeSubscription(null));
-            setSubscription(fallback);
+        // BUT: Skip cache for demo users - they should always get Pro tier
+        if (user.isDemo) {
+          const demoSubscription: SubscriptionInfo = {
+            tier: 'pro',
+            status: 'active',
+            startDate: new Date().toISOString(),
+            endDate: null,
+            cancelAtPeriodEnd: false,
+            billingPeriod: 'yearly',
+          };
+          const merged = await mergeSubscriptionWithRevenueCat(demoSubscription);
+          setSubscription(merged);
+          console.log('✅ Demo user - using Pro tier (yearly) fallback');
+        } else {
+          const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              const merged = await mergeSubscriptionWithRevenueCat(normalizeSubscription(parsed));
+              setSubscription(merged);
+            } catch (parseError) {
+              console.warn('Failed to parse stored subscription:', parseError);
+              const fallback = await mergeSubscriptionWithRevenueCat(normalizeSubscription(null));
+              setSubscription(fallback);
+            }
           }
         }
       }
     } catch (error) {
       console.warn('Failed to load subscription from server, using localStorage cache:', error);
       // Fallback to localStorage cache on error (last resort)
-      try {
-        const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const merged = await mergeSubscriptionWithRevenueCat(normalizeSubscription(parsed));
-          setSubscription(merged);
-        } else {
-          // If no stored cache, use default free tier (safe default)
+      // BUT: Demo users always get Pro tier (yearly)
+      if (user.isDemo) {
+        const demoSubscription: SubscriptionInfo = {
+          tier: 'pro',
+          status: 'active',
+          startDate: new Date().toISOString(),
+          endDate: null,
+          cancelAtPeriodEnd: false,
+          billingPeriod: 'yearly',
+        };
+        const merged = await mergeSubscriptionWithRevenueCat(demoSubscription);
+        setSubscription(merged);
+        console.log('✅ Demo user - using Pro tier (yearly) error fallback');
+      } else {
+        try {
+          const stored = localStorage.getItem(`${SUBSCRIPTION_STORAGE_KEY_PREFIX}${user?.id}`);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            const merged = await mergeSubscriptionWithRevenueCat(normalizeSubscription(parsed));
+            setSubscription(merged);
+          } else {
+            // If no stored cache, use default free tier (safe default)
+            const fallback = await mergeSubscriptionWithRevenueCat(normalizeSubscription(null));
+            setSubscription(fallback);
+          }
+        } catch (e) {
+          console.warn('Failed to load from localStorage cache, using default:', e);
+          // Last resort: use default free tier (safe default)
           const fallback = await mergeSubscriptionWithRevenueCat(normalizeSubscription(null));
           setSubscription(fallback);
         }
-      } catch (e) {
-        console.warn('Failed to load from localStorage cache, using default:', e);
-        // Last resort: use default free tier (safe default)
-        const fallback = await mergeSubscriptionWithRevenueCat(normalizeSubscription(null));
-        setSubscription(fallback);
       }
     } finally {
       setIsLoading(false);
@@ -258,6 +350,19 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   // Initial load when user logs in
   useEffect(() => {
     if (user && accessToken) {
+      // For demo users, immediately set Pro tier (yearly) before loading from server
+      if (user.isDemo) {
+        const demoSubscription: SubscriptionInfo = {
+          tier: 'pro',
+          status: 'active',
+          startDate: new Date().toISOString(),
+          endDate: null,
+          cancelAtPeriodEnd: false,
+          billingPeriod: 'yearly',
+        };
+        setSubscription(demoSubscription);
+        console.log('✅ Demo user logged in - setting Pro tier (yearly) immediately');
+      }
       loadSubscription();
     } else {
       setIsLoading(false);
