@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.2';
-export const VERSION_NAME = 'Responsive Layout Sync';
-export const VERSION_DATE = 'November 13, 2025';
-export const BUILD_NUMBER = '20251113-1';
+export const APP_VERSION = '1.0.3';
+export const VERSION_NAME = 'Analytics Motion Sync';
+export const VERSION_DATE = 'November 24, 2025';
+export const BUILD_NUMBER = '20251124-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,17 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.3',
+    date: 'November 24, 2025',
+    name: 'Analytics Motion Sync',
+    changes: [
+      'Fixed AppHeader dark mode detection to apply instant background updates on theme switch',
+      'Synchronized Today Agenda drag behaviour between desktop and mobile (disabled drag on mobile)',
+      'Resolved demo account task status pie chart crash by reordering analytics hooks',
+      'Added intersection-aware motion animation to the Analytics status card for parity with mobile',
+    ],
+  },
   {
     version: '1.0.2',
     date: 'November 13, 2025',

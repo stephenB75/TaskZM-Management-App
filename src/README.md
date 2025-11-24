@@ -1,6 +1,6 @@
 # TaskZM 🎯
 
-**Version 2.7.1** - A neurodivergent-friendly task management PWA with AI-assisted planning
+**Version 1.0.3** — Analytics Motion Sync (neurodivergent-friendly task management with AI-assisted planning)
 
 > 👋 **New here?** Start with **[START_HERE.md](START_HERE.md)** for a complete guide!
 
@@ -165,17 +165,17 @@ taskzm/
 
 ## ✅ Status
 
-**Version:** 2.10.0 "Folders & Focus Stability"  
-**Release Date:** November 7, 2025  
+**Version:** 1.0.3 "Analytics Motion Sync"  
+**Release Date:** November 24, 2025  
 **Status:** ✅ Production Ready
 
-- ✅ All 30+ components working
-- ✅ 200+ tests passing
-- ✅ Zero critical bugs
-- ✅ PWA ready
-- ✅ Mobile-responsive
-- ✅ Offline mode functional
-- ✅ Payment integration ready
+- ✅ Analytics panel crash resolved and status card animation synced with mobile
+- ✅ Dark mode header now updates instantly on theme switch
+- ✅ Today Agenda drag-and-drop parity between desktop and mobile
+- ✅ Demo account analytics verified (status pie chart + hover actions)
+- ✅ All 30+ components smoke-tested
+- ✅ PWA/mobile responsive + offline ready
+- ✅ Payment integration ready (Stripe + RevenueCat)
 - ✅ Deployed at **www.taskzm.com**
 
 ---
