@@ -4,6 +4,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { Calendar, Plus, StickyNote } from "lucide-react";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useIsMobile } from "./ui/use-mobile";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
@@ -27,6 +28,7 @@ export function TodayAgendaView({
 }: TodayAgendaViewProps = {}) {
   const { tasks, updateTask } = useTasks();
   const { actualTheme } = useTheme();
+  const isMobile = useIsMobile();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(
     null,
@@ -60,9 +62,10 @@ export function TodayAgendaView({
     return () => clearInterval(interval);
   }, []);
 
-  // Make this view a droppable zone for tasks from Kanban
+  // Make this view a droppable zone for tasks from Kanban (disabled on mobile)
   const { setNodeRef, isOver } = useDroppable({
     id: "today-agenda",
+    disabled: isMobile, // Disable drop on mobile - only allow vertical scroll
   });
 
   // Get today's tasks
