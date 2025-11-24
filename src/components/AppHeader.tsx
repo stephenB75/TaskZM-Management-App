@@ -87,11 +87,12 @@ export function AppHeader({
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
 
-  // Use state to force re-render when panelOpen or panelKey changes
-  // This ensures the header position updates immediately
+  // Use state to force re-render when panelOpen, panelKey, or theme changes
+  // This ensures the header position and theme updates immediately
   const [headerUpdateKey, setHeaderUpdateKey] = useState(0);
   const prevPanelKeyRef = useRef(panelKey);
   const prevPanelOpenRef = useRef(panelOpen);
+  const prevThemeRef = useRef(actualTheme);
   
   // Update state immediately when panelOpen changes to force re-render
   useEffect(() => {
@@ -109,6 +110,14 @@ export function AppHeader({
       prevPanelKeyRef.current = panelKey;
     }
   }, [panelKey]);
+  
+  // Update when theme changes to force immediate re-render with new colors
+  useEffect(() => {
+    if (prevThemeRef.current !== actualTheme) {
+      setHeaderUpdateKey(prev => prev + 1);
+      prevThemeRef.current = actualTheme;
+    }
+  }, [actualTheme]);
   
   // Calculate left position and width using layout constants
   // - Side panel headers: positioned at sidebar width - start of panel
@@ -129,6 +138,7 @@ export function AppHeader({
     <>
       {/* Mobile Header - Fixed at top */}
       <div 
+        key={`mobile-header-${actualTheme}`}
         className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm"
         style={{
           zIndex: HEADER_Z_INDEX,
@@ -140,6 +150,7 @@ export function AppHeader({
           paddingRight: HEADER_PADDING_X_MOBILE,
           paddingTop: HEADER_PADDING_Y_MOBILE,
           paddingBottom: HEADER_PADDING_Y_MOBILE,
+          transition: 'none', // Disable transitions for instant theme updates
         }}
       >
         <div className="flex items-center justify-between" style={{ gap: HEADER_GAP_MEDIUM }}>
@@ -308,7 +319,7 @@ export function AppHeader({
         // Use key prop based on panelOpen prop, panelKey, and updateKey to force re-render when panel state changes
         // Include panelOpen in key to ensure React unmounts/remounts when state changes
         <div 
-          key={`main-header-${String(panelOpen)}-${String(panelKey || 'default')}-${headerUpdateKey}`}
+          key={`main-header-${String(panelOpen)}-${String(panelKey || 'default')}-${actualTheme}-${headerUpdateKey}`}
           className="hidden md:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
           style={{ 
             zIndex: HEADER_Z_INDEX,
@@ -327,7 +338,7 @@ export function AppHeader({
             right: 0,
             // Explicitly disable any CSS transitions to ensure instant updates
             transition: 'none',
-            willChange: 'left, width', // Hint to browser for better performance
+            willChange: 'left, width, background-color', // Include background-color for theme changes
           }}
         >
           {/* Static container for logo and title - no animations */}
