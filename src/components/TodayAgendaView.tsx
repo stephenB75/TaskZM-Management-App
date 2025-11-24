@@ -36,7 +36,9 @@ export function TodayAgendaView({
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+  const scrollViewportRef = useRef<HTMLElement | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [scrollTop, setScrollTop] = useState(0);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -61,6 +63,48 @@ export function TodayAgendaView({
     
     return () => clearInterval(interval);
   }, []);
+
+  // Track scroll position for fixed time indicator
+  useEffect(() => {
+    const findScrollViewport = () => {
+      return timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+    };
+    
+    // Try to find scroll viewport immediately
+    let scrollViewport = findScrollViewport();
+    if (scrollViewport) {
+      scrollViewportRef.current = scrollViewport;
+    }
+    
+    // Also try after a short delay in case DOM isn't ready
+    const timeout = setTimeout(() => {
+      scrollViewport = findScrollViewport();
+      if (scrollViewport) {
+        scrollViewportRef.current = scrollViewport;
+      }
+    }, 100);
+    
+    const handleScroll = () => {
+      if (scrollViewportRef.current) {
+        setScrollTop(scrollViewportRef.current.scrollTop);
+      }
+    };
+    
+    if (scrollViewport) {
+      scrollViewport.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    
+    // Also listen on window resize to update position
+    window.addEventListener('resize', handleScroll, { passive: true });
+    
+    return () => {
+      clearTimeout(timeout);
+      if (scrollViewport) {
+        scrollViewport.removeEventListener('scroll', handleScroll);
+      }
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [todayTasks]);
 
   // Make this view a droppable zone for tasks from Kanban (disabled on mobile)
   const { setNodeRef, isOver } = useDroppable({
@@ -154,8 +198,25 @@ export function TodayAgendaView({
     return () => clearTimeout(timer);
   }, [todayTasks]);
 
-  // Find the first uncompleted task (next up)
-  const nextUpTaskId = todayTasks[0]?.id;
+  // Find the next uncompleted task after current time (next up)
+  const nextUpTaskId = (() => {
+    if (todayTasks.length === 0) return null;
+    
+    const now = new Date();
+    const currentTimeMs = now.getTime();
+    
+    // Find the first task that starts at or after current time
+    for (const task of todayTasks) {
+      if (!task.scheduledDate) continue;
+      const taskTime = new Date(task.scheduledDate).getTime();
+      if (taskTime >= currentTimeMs) {
+        return task.id;
+      }
+    }
+    
+    // If no task is after current time, return the first task
+    return todayTasks[0]?.id || null;
+  })();
 
   const handleTaskClick = (task: Task) => {
     console.log('TodayAgendaView: handleTaskClick called with task:', task);
@@ -392,7 +453,98 @@ export function TodayAgendaView({
       )}
 
       {/* Timeline */}
-      <div className="flex-1 overflow-hidden w-full">
+      <div className="flex-1 overflow-hidden w-full relative">
+        {/* Current Time Indicator - Fixed position outside scroll area */}
+        {(() => {
+          const now = currentTime;
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const isToday = now.getTime() >= today.getTime() && 
+                          now.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
+          
+          if (!isToday || todayTasks.length === 0) return null;
+          
+          // Find the task that contains or is closest to current time
+          const currentTimeMs = now.getTime();
+          let indicatorPosition = 0;
+          let accumulatedHeight = 0;
+          const gapBetweenTasks = 12; // space-y-3 = 12px
+          
+          for (let i = 0; i < todayTasks.length; i++) {
+            const task = todayTasks[i];
+            if (!task.scheduledDate) continue;
+            
+            const taskTime = new Date(task.scheduledDate).getTime();
+            const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
+            const taskEnd = taskTime + taskDuration;
+            const taskHeight = getTaskHeight(task);
+            
+            if (currentTimeMs >= taskTime && currentTimeMs <= taskEnd) {
+              // Current time is within this task
+              const progress = (currentTimeMs - taskTime) / taskDuration;
+              indicatorPosition = accumulatedHeight + (taskHeight * progress);
+              break;
+            } else if (currentTimeMs < taskTime) {
+              // Current time is before this task
+              indicatorPosition = accumulatedHeight;
+              break;
+            } else {
+              // Current time is after this task
+              accumulatedHeight += taskHeight + gapBetweenTasks;
+              if (i === todayTasks.length - 1) {
+                // Current time is after last task
+                indicatorPosition = accumulatedHeight;
+              }
+            }
+          }
+          
+          // Calculate position relative to scroll container
+          const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
+          const scrollContainer = scrollViewportRef.current;
+          
+          if (!scrollContainer) return null;
+          
+          const scrollContainerRect = scrollContainer.getBoundingClientRect();
+          const containerTop = scrollContainerRect.top;
+          const containerScrollTop = scrollTop;
+          
+          // Position in content (from top of scrollable content)
+          const contentPosition = paddingTop + indicatorPosition;
+          // Position relative to viewport (accounting for scroll)
+          const viewportPosition = containerTop + contentPosition - containerScrollTop;
+          
+          // Only show if within visible viewport (with some margin for smooth transitions)
+          const viewportHeight = scrollContainer.clientHeight;
+          const isVisible = viewportPosition >= containerTop - 100 && viewportPosition <= containerTop + viewportHeight + 100;
+          
+          if (!isVisible) return null;
+          
+          return (
+            <div
+              className="fixed z-50 pointer-events-none"
+              style={{
+                top: `${viewportPosition}px`,
+                left: `${scrollContainerRect.left}px`,
+                width: `${scrollContainerRect.width}px`,
+                transform: 'translateY(-50%)',
+              }}
+            >
+              <div className="flex items-center gap-2 px-5">
+                <div className="flex-1 h-0.5 bg-primary/60 relative">
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary border-2 border-background" />
+                </div>
+                <span className="text-xs font-medium text-primary bg-background/80 dark:bg-card/80 px-2 py-0.5 rounded">
+                  {now.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+        
         <ScrollArea 
           className="h-full w-full" 
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}
@@ -422,73 +574,6 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                {/* Current Time Indicator - Only show for today */}
-                {(() => {
-                  const now = currentTime;
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const isToday = now.getTime() >= today.getTime() && 
-                                  now.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
-                  
-                  if (!isToday || todayTasks.length === 0) return null;
-                  
-                  // Find the task that contains or is closest to current time
-                  const currentTimeMs = now.getTime();
-                  let indicatorPosition = 0;
-                  let accumulatedHeight = 0;
-                  const gapBetweenTasks = 12; // space-y-3 = 12px
-                  
-                  for (let i = 0; i < todayTasks.length; i++) {
-                    const task = todayTasks[i];
-                    if (!task.scheduledDate) continue;
-                    
-                    const taskTime = new Date(task.scheduledDate).getTime();
-                    const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
-                    const taskEnd = taskTime + taskDuration;
-                    const taskHeight = getTaskHeight(task);
-                    
-                    if (currentTimeMs >= taskTime && currentTimeMs <= taskEnd) {
-                      // Current time is within this task
-                      const progress = (currentTimeMs - taskTime) / taskDuration;
-                      indicatorPosition = accumulatedHeight + (taskHeight * progress);
-                      break;
-                    } else if (currentTimeMs < taskTime) {
-                      // Current time is before this task
-                      indicatorPosition = accumulatedHeight;
-                      break;
-                    } else {
-                      // Current time is after this task
-                      accumulatedHeight += taskHeight + gapBetweenTasks;
-                      if (i === todayTasks.length - 1) {
-                        // Current time is after last task
-                        indicatorPosition = accumulatedHeight;
-                      }
-                    }
-                  }
-                  
-                  return (
-                    <div
-                      className="absolute left-0 right-0 z-50 pointer-events-none"
-                      style={{
-                        top: `${indicatorPosition + 27.6}px`, // Account for padding
-                        transform: 'translateY(-50%)',
-                      }}
-                    >
-                      <div className="flex items-center gap-2 px-5">
-                        <div className="flex-1 h-0.5 bg-primary/60 relative">
-                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary border-2 border-background" />
-                        </div>
-                        <span className="text-xs font-medium text-primary bg-background/80 dark:bg-card/80 px-2 py-0.5 rounded">
-                          {now.toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
                 
                 <div className="space-y-3 w-full relative" style={{ overflow: 'visible' }}>
                   {todayTasks.map((task, index) => (

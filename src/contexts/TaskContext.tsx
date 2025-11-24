@@ -7,6 +7,7 @@ import { generateId, getFromLocalStorage, saveToLocalStorage } from '../lib/util
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
 import { findNextAvailableSlot } from '../lib/time-conflict';
+import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import type { Task, Project, Folder, TaskFilters, ViewConfig, HoursSettings, RolloverSettings } from '../types';
 import {
   WORKSPACE_MAX_RETRIES,
@@ -2228,36 +2229,113 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     const performRollover = async (tasksToRollover: Task[], todayString: string) => {
       let rolledCount = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const now = new Date();
       
-      for (const task of tasksToRollover) {
+      // Sort tasks by priority and scheduled time to maintain chronological order
+      const sortedTasksToRollover = [...tasksToRollover].sort((a, b) => {
+        // First by priority
+        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+        const aPriority = priorityOrder[a.priority] || 1;
+        const bPriority = priorityOrder[b.priority] || 1;
+        if (aPriority !== bPriority) return bPriority - aPriority;
+        
+        // Then by original scheduled time (if available)
+        if (a.scheduledDate && b.scheduledDate) {
+          return new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime();
+        }
+        if (a.scheduledDate) return -1;
+        if (b.scheduledDate) return 1;
+        
+        return 0;
+      });
+      
+      for (const task of sortedTasksToRollover) {
         try {
-          // Find an available time slot on today
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          // Get category hours for this task
+          const categoryHours = getCategoryHoursForTask(task, today, hoursSettings);
           
-          // Start checking from 9:00 AM (typical work start time)
-          const startTime = new Date(today);
-          startTime.setHours(9, 0, 0, 0);
+          // Determine start time based on category hours or current time
+          let startTime: Date;
+          if (categoryHours) {
+            // Start from category hours start time, but not before current time
+            const categoryStartMinutes = categoryHours.start;
+            const categoryStartHours = Math.floor(categoryStartMinutes / 60);
+            const categoryStartMins = categoryStartMinutes % 60;
+            
+            startTime = new Date(today);
+            startTime.setHours(categoryStartHours, categoryStartMins, 0, 0);
+            
+            // If category start is before current time, use current time (rounded up)
+            if (startTime.getTime() < now.getTime()) {
+              const currentMinutes = now.getMinutes();
+              const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+              startTime = new Date(now);
+              if (roundedMinutes >= 60) {
+                startTime.setHours(startTime.getHours() + 1);
+                startTime.setMinutes(0);
+              } else {
+                startTime.setMinutes(roundedMinutes);
+              }
+              startTime.setSeconds(0);
+              startTime.setMilliseconds(0);
+              
+              // Ensure we're still within category hours
+              const currentTotalMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+              if (currentTotalMinutes < categoryHours.start) {
+                startTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
+              }
+            }
+          } else {
+            // No category hours - start from current time (rounded up) or 9:00 AM, whichever is later
+            const currentMinutes = now.getMinutes();
+            const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+            startTime = new Date(now);
+            if (roundedMinutes >= 60) {
+              startTime.setHours(startTime.getHours() + 1);
+              startTime.setMinutes(0);
+            } else {
+              startTime.setMinutes(roundedMinutes);
+            }
+            startTime.setSeconds(0);
+            startTime.setMilliseconds(0);
+            
+            // Ensure not before 9:00 AM
+            const nineAM = new Date(today);
+            nineAM.setHours(9, 0, 0, 0);
+            if (startTime.getTime() < nineAM.getTime()) {
+              startTime = nineAM;
+            }
+          }
           
           // Get task duration
           const taskDuration = task.estimatedTime || 30; // Default to 30 minutes
           
-          // Find next available slot on today
-          const availableSlot = findNextAvailableSlot(task.id, startTime, taskDuration, tasks);
+          // Find next available slot on today, respecting category hours
+          const availableSlot = findNextAvailableSlot(
+            task.id,
+            startTime,
+            taskDuration,
+            tasks,
+            {
+              ensureAfterCurrentTime: true,
+              categoryHours: categoryHours,
+            }
+          );
           
-          // Ensure the slot is on today (not tomorrow)
+          // Ensure the slot is on today (not tomorrow) and within valid hours
           if (availableSlot.getDate() === today.getDate() && 
               availableSlot.getMonth() === today.getMonth() && 
-              availableSlot.getFullYear() === today.getFullYear()) {
+              availableSlot.getFullYear() === today.getFullYear() &&
+              availableSlot.getHours() < 24) {
             // Use the available slot time
             await updateTask(task.id, { scheduledDate: availableSlot.toISOString() });
+            rolledCount++;
           } else {
-            // Fallback: use 9:00 AM if no slot found
-            startTime.setHours(9, 0, 0, 0);
-            await updateTask(task.id, { scheduledDate: startTime.toISOString() });
+            // No valid slot found - skip this task
+            logger.warn('No available slot found for rollover task:', task.id);
           }
-          
-          rolledCount++;
         } catch (error) {
           logger.error('Failed to rollover task:', task.id, error);
         }

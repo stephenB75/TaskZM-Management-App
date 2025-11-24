@@ -3,7 +3,7 @@ import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, c
 import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
 import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
-import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
+import { checkTimeConflict, findNextAvailableSlot, formatTime, reorganizeAllTasksForDate } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
@@ -645,6 +645,29 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       updateTask(taskId, {
         scheduledDate: finalTime.toISOString(),
       });
+      
+      // Reorganize all tasks for today to ensure chronological order
+      // This ensures tasks remain in order after drag/drop
+      setTimeout(() => {
+        const reorganizations = reorganizeAllTasksForDate(
+          today,
+          tasks,
+          {
+            ensureAfterCurrentTime: isToday,
+            categoryHours: categoryHours,
+          }
+        );
+        
+        // Apply reorganizations (excluding the task we just moved)
+        reorganizations.forEach(({ taskId: reorgTaskId, newTime }) => {
+          if (reorgTaskId !== taskId) {
+            updateTask(reorgTaskId, {
+              scheduledDate: newTime.toISOString(),
+            });
+          }
+        });
+      }, 100);
+      
       return;
     }
 
@@ -899,6 +922,29 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     updateTask(taskId, {
       scheduledDate: newDate.toISOString(),
     });
+    
+    // Reorganize all tasks for the target date to ensure chronological order
+    // This ensures tasks remain in order after drag/drop
+    setTimeout(() => {
+      const categoryHours = getCategoryHoursForTask(task, targetDate, hoursSettings);
+      const reorganizations = reorganizeAllTasksForDate(
+        targetDate,
+        tasks,
+        {
+          ensureAfterCurrentTime: false,
+          categoryHours: categoryHours,
+        }
+      );
+      
+      // Apply reorganizations (excluding the task we just moved)
+      reorganizations.forEach(({ taskId: reorgTaskId, newTime }) => {
+        if (reorgTaskId !== taskId) {
+          updateTask(reorgTaskId, {
+            scheduledDate: newTime.toISOString(),
+          });
+        }
+      });
+    }, 100);
   };
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
