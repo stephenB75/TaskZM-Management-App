@@ -179,6 +179,12 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   
+  // Track when panel is mounted to force chart animations
+  const [chartKey, setChartKey] = useState(0);
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const hasTriggeredAnimationRef = React.useRef(false);
+  const observerRef = React.useRef<IntersectionObserver | null>(null);
+  
   // Theme-aware colors for charts
   const textColor = isDark ? '#A8A8B8' : '#6B7280'; // muted-foreground
   const textPrimaryColor = isDark ? '#E8E6F0' : '#111827'; // foreground
