@@ -246,13 +246,17 @@ export function AppHeader({
                   <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
                 </Button>
               )}
-              {!hideDesktopLogo && isDark && (
+              {!hideDesktopLogo && (
                 <motion.img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0 dark-logo-filter"
+                  className={cn(
+                    "w-auto flex-shrink-0",
+                    isDark && "dark-logo-filter"
+                  )}
                   style={{ 
                     height: HEADER_LOGO_HEIGHT,
+                    backgroundColor: 'transparent',
                   }}
                   initial={{ opacity: 0, scale: HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -354,13 +358,17 @@ export function AppHeader({
                   <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
                 </Button>
               )}
-              {!hideDesktopLogo && isDark && (
+              {!hideDesktopLogo && (
                 <img
                   src={logoImage}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0 dark-logo-filter"
+                  className={cn(
+                    "w-auto flex-shrink-0",
+                    isDark && "dark-logo-filter"
+                  )}
                   style={{ 
                     height: HEADER_LOGO_HEIGHT,
+                    backgroundColor: 'transparent',
                   }}
                 />
               )}
