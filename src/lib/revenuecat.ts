@@ -5,6 +5,9 @@
 
 import { REVENUECAT_MONTHLY_PRODUCT_ID, REVENUECAT_YEARLY_PRODUCT_ID } from './subscription-constants';
 
+// Track if we've already warned about product ID mismatch to avoid duplicate warnings
+let hasWarnedAboutProductIdMismatch = false;
+
 let PurchasesModule: any = null;
 let purchasesInstance: any = null;
 let isConfigured = false;
@@ -223,12 +226,15 @@ function findPackageByType(
       if (matchesProductId) {
         console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${productId} (${REVENUECAT_YEARLY_PRODUCT_ID})`);
       } else {
-        console.warn(`⚠️ WARNING: rc_annual identifier found but product ID doesn't match ${productId}`);
-        console.warn(`   Package has product IDs:`, {
-          storeProduct: storeProductId,
-          rcBillingProduct: rcBillingProductId,
-          product: pkgProductId,
-        });
+        // For Web Billing, "Yearly" is a valid identifier - only warn if it's neither expected ID nor "Yearly"
+        const isWebBillingYearly = rcBillingProductId === 'Yearly' || rcBillingProductId === 'yearly';
+        if (!isWebBillingYearly) {
+          console.warn(`⚠️ rc_annual package product ID mismatch:`, {
+            actual: rcBillingProductId || storeProductId || pkgProductId,
+            expected: productId,
+            note: 'Package will still work, but consider linking to product ' + productId + ' in RevenueCat Dashboard'
+          });
+        }
       }
     } else {
       console.log(`ℹ️ No package with rc_annual identifier found in available packages`);
@@ -259,11 +265,15 @@ function findPackageByType(
       if (pkgProductId === productId) {
         console.log(`✅ CONFIRMED: rc_annual identifier matches expected product ID ${productId}`);
       } else {
-        console.warn(`⚠️ rc_annual package found but product ID differs:`, {
-          actual: pkgProductId,
-          expected: productId,
-          note: 'Package will still be used, but product ID mismatch may indicate configuration issue',
-        });
+        // For Web Billing, "Yearly" is a valid identifier - only warn if it's neither expected ID nor "Yearly"
+        const isWebBillingYearly = pkgProductId === 'Yearly' || pkgProductId === 'yearly';
+        if (!isWebBillingYearly) {
+          console.warn(`⚠️ rc_annual package product ID differs:`, {
+            actual: pkgProductId,
+            expected: productId,
+            note: 'Package will still work, but consider linking to product ' + productId + ' in RevenueCat Dashboard'
+          });
+        }
       }
       
       return byRcAnnualIdentifier;
@@ -376,9 +386,15 @@ function findPackageByType(
         console.log(`   Package product ID: ${packageProductId}`);
         console.log(`   Expected product ID: ${productId}`);
       } else if (packageProductId && packageProductId !== productId) {
-        console.warn(`⚠️ WARNING: rc_annual package has different product ID than expected`);
-        console.warn(`   Package product ID: ${packageProductId}`);
-        console.warn(`   Expected product ID: ${productId}`);
+        // For Web Billing, "Yearly" is a valid identifier - only warn if it's neither expected ID nor "Yearly"
+        const isWebBillingYearly = packageProductId === 'Yearly' || packageProductId === 'yearly';
+        if (!isWebBillingYearly) {
+          console.warn(`⚠️ rc_annual package product ID differs:`, {
+            actual: packageProductId,
+            expected: productId,
+            note: 'Package will still work, but consider linking to product ' + productId + ' in RevenueCat Dashboard'
+          });
+        }
       }
     }
     
@@ -527,13 +543,19 @@ export async function getOfferings(): Promise<{
       if (productId === REVENUECAT_YEARLY_PRODUCT_ID) {
         console.log(`✅ CONFIRMED: rc_annual package has correct product ID (${REVENUECAT_YEARLY_PRODUCT_ID})`);
       } else {
-        console.warn(`⚠️ WARNING: rc_annual package has different product ID than expected`);
-        console.warn(`   Package product ID: ${productId}`);
-        console.warn(`   Expected product ID: ${REVENUECAT_YEARLY_PRODUCT_ID}`);
-        console.warn(`   → This might be a configuration issue in RevenueCat Dashboard`);
-        console.warn(`   → The package identifier "rc_annual" should be linked to product "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
-        console.warn(`   → Check RevenueCat Dashboard → Products → Find product "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
-        console.warn(`   → Then check Packages → Ensure "rc_annual" package uses this product`);
+        // For Web Billing, "Yearly" is a valid identifier - only warn if it's neither expected ID nor "Yearly"
+        const isWebBillingYearly = productId === 'Yearly' || productId === 'yearly';
+        if (!isWebBillingYearly && !hasWarnedAboutProductIdMismatch) {
+          hasWarnedAboutProductIdMismatch = true;
+          console.warn(`⚠️ rc_annual package product ID mismatch:`, {
+            actual: productId,
+            expected: REVENUECAT_YEARLY_PRODUCT_ID,
+            note: 'Package will still work. To fix: RevenueCat Dashboard → Packages → rc_annual → Link to product ' + REVENUECAT_YEARLY_PRODUCT_ID
+          });
+        } else if (isWebBillingYearly && !hasWarnedAboutProductIdMismatch) {
+          hasWarnedAboutProductIdMismatch = true;
+          console.log(`ℹ️ rc_annual package using Web Billing identifier "Yearly" (this is valid for Web Billing)`);
+        }
       }
     } else {
       console.warn(`⚠️ rc_annual package not found in any offering`);
