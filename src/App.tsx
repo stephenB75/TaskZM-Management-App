@@ -174,6 +174,7 @@ function AppContent() {
   }, [user, isLoading]);
 
   // Auto-start tour only for new signups (not existing users)
+  // For demo users, wait until disclaimer is closed before starting tour
   useEffect(() => {
     if (!user || isLoading) return;
     
@@ -183,21 +184,49 @@ function AppContent() {
       
       // Only auto-start tour for new signups who haven't completed the tour
       if (isNewSignup && !tourCompleted) {
-        const timer = setTimeout(() => {
-          setRunTour(true);
-          // Clear the new signup flag so it doesn't trigger again
-          try {
-            window?.localStorage?.removeItem('taskzm_is_new_signup');
-          } catch (removeError) {
-            console.warn('Unable to clear new signup flag:', removeError);
+        // For demo users, wait until disclaimer is closed
+        if (user.isDemo) {
+          // Check if disclaimer has been seen (user clicked "I Understand")
+          const disclaimerSeen = window?.sessionStorage?.getItem('demo_disclaimer_seen');
+          
+          // Only start tour if disclaimer has been seen (closed)
+          if (disclaimerSeen) {
+            const timer = setTimeout(() => {
+              setRunTour(true);
+              // Clear the new signup flag so it doesn't trigger again
+              try {
+                window?.localStorage?.removeItem('taskzm_is_new_signup');
+              } catch (removeError) {
+                console.warn('Unable to clear new signup flag:', removeError);
+              }
+              toast.info('👋 Welcome! Let us show you around TaskZM', {
+                description: 'Take a quick tour to learn the basics',
+                duration: TOAST_DURATION_MEDIUM_MS
+              });
+            }, 500); // Short delay after disclaimer is closed
+            
+            return () => clearTimeout(timer);
           }
-          toast.info('👋 Welcome! Let us show you around TaskZM', {
-            description: 'Take a quick tour to learn the basics',
-            duration: TOAST_DURATION_MEDIUM_MS
-          });
-        }, 1500); // 1.5 second delay to let the UI settle
-        
-        return () => clearTimeout(timer);
+          // If disclaimer not seen yet, wait for it to be closed
+          // This effect will re-run when disclaimer is closed
+        } else {
+          // For regular users, start tour normally
+          const timer = setTimeout(() => {
+            setRunTour(true);
+            // Clear the new signup flag so it doesn't trigger again
+            try {
+              window?.localStorage?.removeItem('taskzm_is_new_signup');
+            } catch (removeError) {
+              console.warn('Unable to clear new signup flag:', removeError);
+            }
+            toast.info('👋 Welcome! Let us show you around TaskZM', {
+              description: 'Take a quick tour to learn the basics',
+              duration: TOAST_DURATION_MEDIUM_MS
+            });
+          }, 1500); // 1.5 second delay to let the UI settle
+          
+          return () => clearTimeout(timer);
+        }
       } else if (isNewSignup) {
         // Clear the flag even if tour was already completed
         window?.localStorage?.removeItem('taskzm_is_new_signup');
@@ -205,7 +234,7 @@ function AppContent() {
     } catch (error) {
       console.warn('Local storage unavailable when checking tour status:', error);
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, showDemoDisclaimer]);
 
   // Keyboard shortcut to close panel (Escape key)
   // Must be defined before conditional returns (Rules of Hooks)
