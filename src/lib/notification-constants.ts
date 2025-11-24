@@ -18,6 +18,7 @@ export const NOTIFICATION_STORAGE_KEYS = {
   settings: 'notificationSettings',
   notifiedTasks: 'notifiedTasks',
   readNotifications: 'readNotifications',
+  dismissedNotifications: 'dismissedNotifications',
   lastSeenPomodoroSessions: 'lastSeenPomodoroSessions',
 } as const;
 

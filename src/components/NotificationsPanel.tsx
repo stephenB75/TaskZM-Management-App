@@ -55,11 +55,19 @@ export function NotificationsPanel() {
   const [readNotifications, setReadNotifications] = useState<Set<string>>(
     () => new Set(JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.readNotifications) || '[]'))
   );
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(
+    () => new Set(JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.dismissedNotifications) || '[]'))
+  );
 
   // Save read notifications to localStorage
   useEffect(() => {
     localStorage.setItem(NOTIFICATION_STORAGE_KEYS.readNotifications, JSON.stringify(Array.from(readNotifications)));
   }, [readNotifications]);
+
+  // Save dismissed notifications to localStorage
+  useEffect(() => {
+    localStorage.setItem(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, JSON.stringify(Array.from(dismissedNotifications)));
+  }, [dismissedNotifications]);
 
   // Track last seen Pomodoro session counts to detect new completions
   const [lastSeenSessions, setLastSeenSessions] = useState<Record<string, number>>(
@@ -107,6 +115,11 @@ export function NotificationsPanel() {
           const dateToUse = task.dueDate || task.scheduledDate;
           const dateText = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
           const notificationId = `overdue_${task.id}`;
+          
+          // Skip if notification was dismissed
+          if (dismissedNotifications.has(notificationId)) {
+            return;
+          }
           
           newNotifications.push({
             id: notificationId,
@@ -156,6 +169,11 @@ export function NotificationsPanel() {
           
           const notificationId = `due-soon_${task.id}`;
           
+          // Skip if notification was dismissed
+          if (dismissedNotifications.has(notificationId)) {
+            return;
+          }
+          
           newNotifications.push({
             id: notificationId,
             type: NOTIFICATION_TYPES.taskDueSoon as NotificationItem['type'],
@@ -180,7 +198,8 @@ export function NotificationsPanel() {
         const newSessions = timerState.sessionsCompleted - lastSeen;
         const notificationId = `pomodoro_${task.id}_${timerState.sessionsCompleted}`;
         
-        if (!readNotifications.has(notificationId)) {
+        // Skip if notification was dismissed
+        if (!dismissedNotifications.has(notificationId) && !readNotifications.has(notificationId)) {
           newNotifications.push({
             id: notificationId,
             type: NOTIFICATION_TYPES.pomodoroComplete as NotificationItem['type'],
@@ -194,9 +213,9 @@ export function NotificationsPanel() {
         
         updatedLastSeen[task.id] = timerState.sessionsCompleted;
       } else if (timerState.sessionsCompleted > 0) {
-        // Keep existing notification if not read
+        // Keep existing notification if not read and not dismissed
         const notificationId = `pomodoro_${task.id}_${timerState.sessionsCompleted}`;
-        if (!readNotifications.has(notificationId)) {
+        if (!dismissedNotifications.has(notificationId) && !readNotifications.has(notificationId)) {
           newNotifications.push({
             id: notificationId,
             type: NOTIFICATION_TYPES.pomodoroComplete as NotificationItem['type'],
@@ -231,7 +250,7 @@ export function NotificationsPanel() {
     }
     
     setNotifications(newNotifications);
-  }, [tasks, settings, readNotifications, getTimerState, lastSeenSessions]);
+  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions]);
 
   const filteredNotifications = notifications.filter(notif => {
     if (filterType === "all") return true;
@@ -250,11 +269,11 @@ export function NotificationsPanel() {
   };
 
   const clearNotification = (id: string) => {
+    // Mark as dismissed so it won't be regenerated
+    setDismissedNotifications(prev => new Set([...prev, id]));
     markAsRead(id);
-    // Optionally remove from list after a delay
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 300);
+    // Remove from list immediately
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const getNotificationIcon = (type: NotificationItem['type']) => {
