@@ -281,9 +281,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
   const handleStartTour = () => {
     if (onStartTour) {
+      console.log('🎯 Tour manually triggered from Settings Panel');
       onStartTour();
       toast.info('Starting app tour...', {
         description: 'Let us show you around TaskZM!'
+      });
+    } else {
+      console.warn('⚠️ onStartTour prop not provided to SettingsPanel');
+      toast.error('Unable to start tour', {
+        description: 'Tour functionality is not available. Please refresh the page.'
       });
     }
   };

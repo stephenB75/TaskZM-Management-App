@@ -192,6 +192,7 @@ function AppContent() {
           // Only start tour if disclaimer has been seen (closed)
           if (disclaimerSeen) {
             const timer = setTimeout(() => {
+              console.log('🎯 Starting tour for demo user after disclaimer closed');
               setRunTour(true);
               // Clear the new signup flag so it doesn't trigger again
               try {
@@ -206,12 +207,41 @@ function AppContent() {
             }, 500); // Short delay after disclaimer is closed
             
             return () => clearTimeout(timer);
+          } else {
+            // Disclaimer not seen yet - set up listener for when it closes
+            const checkDisclaimer = () => {
+              const seen = window?.sessionStorage?.getItem('demo_disclaimer_seen');
+              if (seen && !tourCompleted) {
+                console.log('🎯 Disclaimer closed, starting tour for demo user');
+                setTimeout(() => {
+                  setRunTour(true);
+                  try {
+                    window?.localStorage?.removeItem('taskzm_is_new_signup');
+                  } catch (removeError) {
+                    console.warn('Unable to clear new signup flag:', removeError);
+                  }
+                  toast.info('👋 Welcome! Let us show you around TaskZM', {
+                    description: 'Take a quick tour to learn the basics',
+                    duration: TOAST_DURATION_MEDIUM_MS
+                  });
+                }, 500);
+              }
+            };
+            
+            // Check immediately in case disclaimer was already closed
+            checkDisclaimer();
+            
+            // Listen for storage changes (when disclaimer sets sessionStorage)
+            const interval = setInterval(() => {
+              checkDisclaimer();
+            }, 500); // Check every 500ms
+            
+            return () => clearInterval(interval);
           }
-          // If disclaimer not seen yet, wait for it to be closed
-          // This effect will re-run when disclaimer is closed
         } else {
           // For regular users, start tour normally
           const timer = setTimeout(() => {
+            console.log('🎯 Starting tour for new regular user');
             setRunTour(true);
             // Clear the new signup flag so it doesn't trigger again
             try {
@@ -234,7 +264,7 @@ function AppContent() {
     } catch (error) {
       console.warn('Local storage unavailable when checking tour status:', error);
     }
-  }, [user, isLoading, showDemoDisclaimer]);
+  }, [user, isLoading]);
 
   // Keyboard shortcut to close panel (Escape key)
   // Must be defined before conditional returns (Rules of Hooks)
