@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { motion } from "motion/react";
 import {
   X,
   TrendingUp,
@@ -181,6 +182,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   
   // Track when panel is mounted to force chart animations
   const [chartKey, setChartKey] = useState(0);
+  const [shouldAnimateCard, setShouldAnimateCard] = useState(false);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const hasTriggeredAnimationRef = React.useRef(false);
   const observerRef = React.useRef<IntersectionObserver | null>(null);
@@ -464,6 +466,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   useEffect(() => {
     hasTriggeredAnimationRef.current = false;
     setChartKey(0);
+    setShouldAnimateCard(false);
     
     return () => {
       hasTriggeredAnimationRef.current = false;
@@ -506,6 +509,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     if (checkVisibility() && !hasTriggeredAnimationRef.current) {
       const timer = setTimeout(() => {
         if (!hasTriggeredAnimationRef.current) {
+          setShouldAnimateCard(true);
           setChartKey(prev => prev + 1);
           hasTriggeredAnimationRef.current = true;
         }
@@ -520,6 +524,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           entries.forEach((entry) => {
             if (entry.isIntersecting && entry.intersectionRatio > 0.1 && !hasTriggeredAnimationRef.current) {
               // Card is visible, trigger animation
+              setShouldAnimateCard(true);
               setChartKey(prev => prev + 1);
               hasTriggeredAnimationRef.current = true;
               if (observerRef.current) {
@@ -616,57 +621,68 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
             {/* Status Distribution - Pie Chart */}
             {analytics.statusDistribution && analytics.statusDistribution.length > 0 && (
-              <Card ref={cardRef} className="shadow-sm border border-border bg-card">
-                <CardHeader className="pb-2 pt-3 px-3">
-                  <CardTitle className="text-sm font-semibold text-foreground">
-                    Task Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-3 pb-3">
-                  <div className="h-56" style={{ minHeight: '224px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart key={`piechart-${chartKey}`} margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
-                        <Pie
-                          key={`pie-${chartKey}`}
-                          data={analytics.statusDistribution}
-                          cx="50%"
-                          cy="45%"
-                          labelLine={false}
-                          label={false}
-                          outerRadius={65}
-                          innerRadius={0}
-                          fill={UI_CHART_COLORS.primary}
-                          dataKey="value"
-                          isAnimationActive={true}
-                          animationBegin={0}
-                          animationDuration={1500}
-                          animationEasing="ease-out"
-                        >
-                          {analytics.statusDistribution.map((entry, index) => (
-                            <Cell key={`cell-${chartKey}-${index}-${entry.name}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend 
-                          verticalAlign="bottom" 
-                          height={36}
-                          iconType="circle"
-                          wrapperStyle={{ paddingTop: '10px' }}
-                          formatter={(value, entry: any) => {
-                            const item = analytics.statusDistribution.find((d: any) => d.name === value);
-                            const percent = item ? ((item.value / analytics.totalTasks) * 100).toFixed(0) : '0';
-                            return (
-                              <span className="text-[11px] text-muted-foreground">
-                                {value}: {percent}%
-                              </span>
-                            );
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+              <motion.div
+                ref={cardRef}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={shouldAnimateCard ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.95 }}
+                transition={{
+                  duration: 0.5,
+                  ease: "ease-out",
+                  delay: 0.1,
+                }}
+              >
+                <Card className="shadow-sm border border-border bg-card">
+                  <CardHeader className="pb-2 pt-3 px-3">
+                    <CardTitle className="text-sm font-semibold text-foreground">
+                      Task Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3">
+                    <div className="h-56" style={{ minHeight: '224px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart key={`piechart-${chartKey}`} margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
+                          <Pie
+                            key={`pie-${chartKey}`}
+                            data={analytics.statusDistribution}
+                            cx="50%"
+                            cy="45%"
+                            labelLine={false}
+                            label={false}
+                            outerRadius={65}
+                            innerRadius={0}
+                            fill={UI_CHART_COLORS.primary}
+                            dataKey="value"
+                            isAnimationActive={true}
+                            animationBegin={0}
+                            animationDuration={1500}
+                            animationEasing="ease-out"
+                          >
+                            {analytics.statusDistribution.map((entry, index) => (
+                              <Cell key={`cell-${chartKey}-${index}-${entry.name}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend 
+                            verticalAlign="bottom" 
+                            height={36}
+                            iconType="circle"
+                            wrapperStyle={{ paddingTop: '10px' }}
+                            formatter={(value, entry: any) => {
+                              const item = analytics.statusDistribution.find((d: any) => d.name === value);
+                              const percent = item ? ((item.value / analytics.totalTasks) * 100).toFixed(0) : '0';
+                              return (
+                                <span className="text-[11px] text-muted-foreground">
+                                  {value}: {percent}%
+                                </span>
+                              );
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             )}
 
             {/* Time Tracked Trend - Line Chart */}
