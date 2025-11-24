@@ -117,6 +117,25 @@ app.post("/make-server-65e6e67f/signup", async (c) => {
     }
 
     const supabase = getSupabaseClient();
+    
+    // For demo accounts, check if email already exists first
+    if (isDemo) {
+      try {
+        const { data: existingUsers } = await supabase.auth.admin.listUsers();
+        const emailExists = existingUsers?.users?.some(u => u.email === email);
+        if (emailExists) {
+          // For demo accounts, generate a new unique email if collision occurs
+          const newDemoEmail = `demo_${Date.now()}_${Math.random().toString(36).substring(7)}@taskzm.app`;
+          console.log(`Demo email collision detected, using new email: ${newDemoEmail}`);
+          // Update email in the request
+          email = newDemoEmail;
+        }
+      } catch (checkError) {
+        console.warn('Error checking existing users for demo account:', checkError);
+        // Continue with signup attempt
+      }
+    }
+    
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -130,7 +149,12 @@ app.post("/make-server-65e6e67f/signup", async (c) => {
 
     if (error) {
       console.log('Signup error:', error);
-      return c.json({ error: error.message }, 400);
+      // Provide more specific error messages
+      let errorMessage = error.message;
+      if (error.message?.toLowerCase().includes('already') || error.message?.toLowerCase().includes('exists')) {
+        errorMessage = 'An account with this email already exists. Please try signing in instead.';
+      }
+      return c.json({ error: errorMessage }, 400);
     }
 
     // Create initial workspace for the user
@@ -143,12 +167,32 @@ app.post("/make-server-65e6e67f/signup", async (c) => {
     
     console.log(`✅ Workspace created on signup: ${workspaceId} for user ${data.user.id}`);
     
-    // Mark demo user in KV store for cleanup tracking
+    // Mark demo user in KV store for cleanup tracking and grant Pro tier access
     if (isDemo) {
       const now = Date.now();
       await kv.set(`user_${data.user.id}_is_demo`, 'true');
       await kv.set(`user_${data.user.id}_demo_login_time`, now.toString());
       await kv.set(`user_${data.user.id}_demo_last_activity`, now.toString());
+      
+      // Grant Pro tier access to demo accounts (yearly billing for full features)
+      const demoSubscription = {
+        tier: 'pro',
+        status: 'active',
+        startDate: new Date().toISOString(),
+        endDate: null, // Demo accounts don't expire (they get cleaned up instead)
+        cancelAtPeriodEnd: false,
+        billingPeriod: 'yearly', // Yearly for full feature access
+      };
+      
+      // Set subscription in both formats for compatibility
+      await kv.set(`user_${data.user.id}_subscription`, demoSubscription);
+      await kv.set(`user:${data.user.id}:tier`, 'pro');
+      await kv.set(`user:${data.user.id}:subscription_status`, 'active');
+      await kv.set(`user:${data.user.id}:subscription_store`, 'demo_account');
+      await kv.set(`user:${data.user.id}:subscription_start`, demoSubscription.startDate);
+      await kv.set(`user:${data.user.id}:billing_period`, 'yearly');
+      
+      console.log(`✅ Demo account created with Pro tier access: ${data.user.id}`);
     }
 
     return c.json({ user: data.user, workspaceId });
@@ -1096,7 +1140,7 @@ app.delete("/make-server-65e6e67f/cleanup-demo-user", async (c) => {
       console.log(`  ✅ Deleted ${deletedWorkspaceKeys}/${allKeys.length + 1} workspace keys`);
     }
 
-    // 2. Delete user-specific data (including login timestamp and activity tracking)
+    // 2. Delete user-specific data (including login timestamp, activity tracking, and subscription data)
     console.log(`  👤 Deleting user data for: ${userId}`);
     const userKeys = await kv.getByPrefix(`user_${userId}_`);
     console.log(`  🗑️  Found ${userKeys.length} user keys to delete`);
@@ -1110,7 +1154,28 @@ app.delete("/make-server-65e6e67f/cleanup-demo-user", async (c) => {
         console.warn(`  ⚠️  Failed to delete key ${item.key}: ${e}`);
       }
     }
-    console.log(`  ✅ Deleted ${deletedUserKeys}/${userKeys.length} user keys`);
+    
+    // Also delete subscription data in the alternative format (user:userId:key)
+    const subscriptionKeys = [
+      `user:${userId}:tier`,
+      `user:${userId}:subscription_status`,
+      `user:${userId}:subscription_store`,
+      `user:${userId}:subscription_start`,
+      `user:${userId}:subscription_expires_at`,
+      `user:${userId}:billing_period`,
+    ];
+    
+    let deletedSubscriptionKeys = 0;
+    for (const key of subscriptionKeys) {
+      try {
+        await kv.del(key);
+        deletedSubscriptionKeys++;
+      } catch (e) {
+        // Subscription keys might not exist - not an error
+      }
+    }
+    
+    console.log(`  ✅ Deleted ${deletedUserKeys}/${userKeys.length} user keys and ${deletedSubscriptionKeys} subscription keys`);
 
     // 3. Delete calendar tokens if any
     try {
@@ -1419,7 +1484,7 @@ async function cleanupDemoUser(userId: string): Promise<{
       }
     }
 
-    // Delete user-specific data
+    // Delete user-specific data (including subscription data)
     try {
       const userKeys = await kv.getByPrefix(`user_${userId}_`);
       for (const item of userKeys) {
@@ -1427,6 +1492,24 @@ async function cleanupDemoUser(userId: string): Promise<{
           await kv.del(item.key);
         } catch (e) {
           errors.push(`Failed to delete user key ${item.key}: ${e}`);
+        }
+      }
+      
+      // Also delete subscription data in the alternative format (user:userId:key)
+      const subscriptionKeys = [
+        `user:${userId}:tier`,
+        `user:${userId}:subscription_status`,
+        `user:${userId}:subscription_store`,
+        `user:${userId}:subscription_start`,
+        `user:${userId}:subscription_expires_at`,
+        `user:${userId}:billing_period`,
+      ];
+      
+      for (const key of subscriptionKeys) {
+        try {
+          await kv.del(key);
+        } catch (e) {
+          // Subscription keys might not exist - not an error
         }
       }
     } catch (e) {

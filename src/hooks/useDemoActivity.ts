@@ -11,10 +11,10 @@ export function useDemoActivity() {
   const { user, accessToken } = useAuth();
 
   const updateActivity = useCallback(async () => {
-    if (!user?.isDemo || !accessToken) return;
+    if (!user?.isDemo || !accessToken || !user?.id) return;
 
     try {
-      await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/demo/update-activity`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/demo/update-activity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -22,8 +22,17 @@ export function useDemoActivity() {
         },
         body: JSON.stringify({ userId: user.id }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        logger.warn('Failed to update demo activity:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData.error || 'Unknown error',
+        });
+      }
     } catch (error) {
-      logger.warn('Failed to update demo activity:', error);
+      logger.warn('Failed to update demo activity (network error):', error);
     }
   }, [user?.isDemo, user?.id, accessToken]);
 

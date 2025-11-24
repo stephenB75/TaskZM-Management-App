@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Update demo user login timestamp
   const updateDemoLoginTime = useCallback(async (userId: string, token: string) => {
     try {
-      await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/demo/update-login-time`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/demo/update-login-time`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,8 +33,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ userId }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        logger.warn('Failed to update demo login time:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData.error || 'Unknown error',
+        });
+      }
     } catch (error) {
-      logger.warn('Failed to update demo login time:', error);
+      logger.warn('Failed to update demo login time (network error):', error);
       // Non-critical, continue
     }
   }, []);
@@ -156,7 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // If demo user, update login timestamp
         if (userData.isDemo && data.session.access_token) {
-          updateDemoLoginTime(data.session.user.id, data.session.access_token).catch(() => {});
+          updateDemoLoginTime(data.session.user.id, data.session.access_token).catch((err) => {
+            logger.warn('Failed to update demo login time:', err);
+          });
         }
         
         // Return session for signup flow

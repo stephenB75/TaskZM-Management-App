@@ -269,9 +269,20 @@ export function AuthScreen() {
       );
     } catch (error) {
       console.error("Demo account creation error:", error);
-      toast.error(
-        AUTH_UI_TEXT.demo.errorMessage,
-      );
+      
+      // Provide more specific error messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let userFriendlyMessage = AUTH_UI_TEXT.demo.errorMessage;
+      
+      if (errorMessage.toLowerCase().includes('already') || errorMessage.toLowerCase().includes('exists')) {
+        userFriendlyMessage = 'Demo account already exists. Please try again in a moment.';
+      } else if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('fetch')) {
+        userFriendlyMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      toast.error(userFriendlyMessage, {
+        duration: AUTH_CONFIG.toastDuration * 1.5, // Show longer for errors
+      });
     } finally {
       setIsLoading(false);
     }
