@@ -92,7 +92,7 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { user, signOut, updateProfile, accessToken } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, actualTheme } = useTheme();
   const { syncWithServer, isSyncing, lastSync, hoursSettings, updateHoursSettings, rolloverSettings, updateRolloverSettings, availableTags, addAvailableTag, removeAvailableTag } = useTasks();
   const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks } = useAI();
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
@@ -2294,7 +2294,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <Compass className="w-5 h-5 text-primary" />
               <span>App Tour</span>
               {!hasSeenTour && (
-                <Badge className="bg-[#FDD5B4] text-gray-800 border-[#FDD5B4] ml-2">
+                <Badge className="bg-accent/50 text-foreground border-accent/50 ml-2">
                   New
                 </Badge>
               )}
@@ -2305,11 +2305,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               Take a guided tour of TaskZM's features and learn how to get the most out of your neurodivergent-friendly task manager.
             </p>
             
-            <div className="bg-gradient-to-br from-[#C9E4F7]/10 to-[#E6D5F0]/10 border border-[#C9E4F7]/20 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/5 dark:to-accent/5 border border-primary/20 dark:border-primary/10 rounded-lg p-4">
               <div className="flex items-start gap-3 mb-3">
-                <Compass className="w-5 h-5 text-[#C9E4F7] flex-shrink-0 mt-0.5" />
+                <Compass className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm mb-1">Interactive Walkthrough</p>
+                  <p className="text-sm mb-1 text-foreground">Interactive Walkthrough</p>
                   <p className="text-xs text-muted-foreground">
                     {hasSeenTour 
                       ? 'Revisit all the key features and learn new tips'
@@ -2320,7 +2320,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
               <Button 
                 size="sm" 
-                className="w-full bg-[#C9E4F7] hover:bg-[#C9E4F7]/90 text-gray-800"
+                className="w-full bg-primary/20 hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40 text-foreground border border-primary/30"
                 onClick={handleStartTour}
               >
                 <Compass className="w-4 h-4 mr-2" />
@@ -2368,11 +2368,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <div className="space-y-4 sm:space-y-3 md:space-y-3">
               <div className="flex flex-col items-center gap-1.5">
-                <img 
-                  src={taskzmLogo} 
-                  alt="TaskZM Logo"
-                  className="w-[120px]"
-                />
+                {actualTheme === 'dark' && (
+                  <img 
+                    src={taskzmLogo} 
+                    alt="TaskZM Logo"
+                    className="w-[120px] dark-logo-filter"
+                  />
+                )}
                 <div className="text-xs text-muted-foreground text-center">Version {APP_VERSION}</div>
                 <div className="text-xs text-muted-foreground/70 text-center">{VERSION_NAME}</div>
               </div>
@@ -2423,7 +2425,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     )}
                     <Badge 
                       variant="secondary" 
-                      className={isSyncing ? 'bg-[#B4E4CE]/30' : 'bg-[#D4C5F9]/30'}
+                      className={isSyncing ? 'bg-accent/30 dark:bg-accent/20' : 'bg-primary/30 dark:bg-primary/20'}
                     >
                       {isSyncing ? 'Syncing...' : 'Active'}
                     </Badge>

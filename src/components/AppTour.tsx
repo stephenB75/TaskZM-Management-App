@@ -639,12 +639,9 @@ export function AppTour({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 flex items-center justify-center p-2 sm:p-4"
+          className="bg-background/90 dark:bg-background/85 backdrop-blur-lg"
           style={{
             zIndex: Z_INDEX.APP_TOUR,
-            background: isDark
-              ? "rgba(42, 42, 62, 0.85)"
-              : "rgba(250, 249, 252, 0.90)",
-            backdropFilter: "blur(8px)",
           }}
         >
           {/* Tour Card */}
@@ -674,10 +671,8 @@ export function AppTour({
               "w-full max-w-2xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl",
               isDark ? "bg-card" : "bg-card",
             )}
+            className="border border-primary/25 dark:border-primary/20 shadow-2xl dark:shadow-2xl"
             style={{
-              border: isDark
-                ? "1px solid rgba(155, 135, 232, 0.25)"
-                : "1px solid rgba(155, 135, 232, 0.15)",
               boxShadow: isDark
                 ? "0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(155, 135, 232, 0.2)"
                 : "0 20px 60px rgba(155, 135, 232, 0.15), 0 8px 20px rgba(155, 135, 232, 0.1)",
@@ -722,9 +717,7 @@ export function AppTour({
                   onClick={handleSkip}
                   className={cn(
                     "absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 p-1.5 sm:p-2 rounded-full transition-all",
-                    isDark
-                      ? "hover:bg-white/10 text-white/60 hover:text-white/90"
-                      : "hover:bg-black/5 text-black/40 hover:text-black/70",
+                    "hover:bg-muted text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <X className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -758,14 +751,7 @@ export function AppTour({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                   className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-2.5 md:mb-3 pr-8 sm:pr-10"
-                  style={{
-                    background: isDark
-                      ? "linear-gradient(135deg, #E8E6F0 0%, #C9E4F7 100%)"
-                      : "linear-gradient(135deg, #4A4A5E 0%, #9B87E8 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
+                  className="bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent"
                 >
                   {step.title}
                 </motion.h2>
@@ -775,10 +761,7 @@ export function AppTour({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className={cn(
-                    "text-xs sm:text-sm leading-relaxed",
-                    isDark ? "text-gray-300" : "text-gray-600",
-                  )}
+                  className="text-xs sm:text-sm leading-relaxed text-muted-foreground"
                 >
                   {step.description}
                 </motion.p>
@@ -838,24 +821,10 @@ export function AppTour({
                           {feature.icon}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div
-                            className={cn(
-                              "text-xs sm:text-sm font-medium mb-0.5",
-                              isDark
-                                ? "text-white"
-                                : "text-gray-900",
-                            )}
-                          >
+                          <div className="text-xs sm:text-sm font-medium mb-0.5 text-foreground">
                             {feature.title}
                           </div>
-                          <div
-                            className={cn(
-                              "text-[10px] sm:text-xs leading-snug",
-                              isDark
-                                ? "text-gray-400"
-                                : "text-gray-500",
-                            )}
-                          >
+                          <div className="text-[10px] sm:text-xs leading-snug text-muted-foreground">
                             {feature.description}
                           </div>
                         </div>
@@ -868,10 +837,7 @@ export function AppTour({
 
             {/* Footer */}
             <div
-              className={cn(
-                "px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 border-t flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4",
-                isDark ? "border-white/10" : "border-gray-200",
-              )}
+              className="px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4"
             >
               {/* Progress Dots */}
               <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 flex-shrink-0 min-w-0">
@@ -882,18 +848,12 @@ export function AppTour({
                       "rounded-full transition-all flex-shrink-0",
                       i === currentStep ? "w-6 sm:w-8 h-1.5 sm:h-2" : "w-1.5 sm:w-2 h-1.5 sm:h-2",
                     )}
-                    style={{
-                      background:
-                        i === currentStep
-                          ? "linear-gradient(90deg, #E6D5F0 0%, #9B87E8 50%, #C9E4F7 100%)"
-                          : isDark
-                            ? "rgba(255, 255, 255, 0.2)"
-                            : "rgba(0, 0, 0, 0.1)",
-                      boxShadow:
-                        i === currentStep
-                          ? "0 0 8px rgba(155, 135, 232, 0.4)"
-                          : "none",
-                    }}
+                    className={cn(
+                      i === currentStep
+                        ? "bg-gradient-to-r from-primary via-primary to-accent"
+                        : "bg-muted-foreground/20 dark:bg-muted-foreground/20",
+                      i === currentStep && "shadow-lg shadow-primary/40",
+                    )}
                     animate={{
                       width: i === currentStep ? undefined : undefined,
                     }}
@@ -913,12 +873,7 @@ export function AppTour({
                     variant="outline"
                     size="sm"
                     onClick={handlePrev}
-                    className={cn(
-                      "rounded-lg sm:rounded-xl text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9",
-                      isDark
-                        ? "border-white/20 hover:bg-white/10"
-                        : "border-border hover:bg-muted",
-                    )}
+                    className="rounded-lg sm:rounded-xl text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 border-border hover:bg-muted"
                   >
                     <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                     <span className="hidden sm:inline">Back</span>
@@ -928,11 +883,7 @@ export function AppTour({
                 <Button
                   size="sm"
                   onClick={handleNext}
-                  className="rounded-lg sm:rounded-xl bg-gradient-to-r from-[#9B87E8] to-[#C9E4F7] hover:from-[#8B77D8] hover:to-[#B9D4E7] text-white border-0 shadow-lg text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-1 sm:flex-initial"
-                  style={{
-                    boxShadow:
-                      "0 4px 12px rgba(155, 135, 232, 0.3)",
-                  }}
+                  className="rounded-lg sm:rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground border-0 shadow-lg shadow-primary/30 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-1 sm:flex-initial"
                 >
                   {isLast ? (
                     <span className="text-xs sm:text-sm">Get Started! 🎉</span>
