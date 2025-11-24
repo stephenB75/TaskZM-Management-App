@@ -179,110 +179,6 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   
-  // Track when panel is mounted to force chart animations
-  const [chartKey, setChartKey] = useState(0);
-  const cardRef = React.useRef<HTMLDivElement>(null);
-  const hasTriggeredAnimationRef = React.useRef(false);
-  const observerRef = React.useRef<IntersectionObserver | null>(null);
-  
-  // Reset animation state when panel opens
-  useEffect(() => {
-    hasTriggeredAnimationRef.current = false;
-    setChartKey(0);
-    
-    return () => {
-      hasTriggeredAnimationRef.current = false;
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-    };
-  }, []);
-  
-  // Use IntersectionObserver to detect when the pie chart card is visible and trigger animation
-  useEffect(() => {
-    // Only proceed if we have status distribution data
-    if (!analytics.statusDistribution || analytics.statusDistribution.length === 0) {
-      return;
-    }
-    
-    if (!cardRef.current) return;
-    
-    // Clean up any existing observer
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-      observerRef.current = null;
-    }
-    
-    // Check if card is already visible (e.g., at top of scroll area)
-    const checkVisibility = () => {
-      if (!cardRef.current) return false;
-      try {
-        const rect = cardRef.current.getBoundingClientRect();
-        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-        return isVisible;
-      } catch (error) {
-        console.warn('Error checking card visibility:', error);
-        return false;
-      }
-    };
-    
-    // If already visible, trigger animation immediately
-    if (checkVisibility() && !hasTriggeredAnimationRef.current) {
-      const timer = setTimeout(() => {
-        if (!hasTriggeredAnimationRef.current) {
-          setChartKey(prev => prev + 1);
-          hasTriggeredAnimationRef.current = true;
-        }
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-    
-    // Otherwise, use IntersectionObserver for when it scrolls into view
-    try {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting && entry.intersectionRatio > 0.1 && !hasTriggeredAnimationRef.current) {
-              // Card is visible, trigger animation
-              setChartKey(prev => prev + 1);
-              hasTriggeredAnimationRef.current = true;
-              if (observerRef.current) {
-                observerRef.current.disconnect();
-                observerRef.current = null;
-              }
-            }
-          });
-        },
-        { threshold: 0.1, rootMargin: '50px' }
-      );
-      
-      observerRef.current = observer;
-      
-      // Start observing after a delay to ensure card is in DOM
-      const observeTimer = setTimeout(() => {
-        if (cardRef.current && observerRef.current) {
-          try {
-            observerRef.current.observe(cardRef.current);
-          } catch (error) {
-            console.warn('Error observing card:', error);
-          }
-        }
-      }, 300);
-      
-      return () => {
-        clearTimeout(observeTimer);
-        if (observerRef.current) {
-          observerRef.current.disconnect();
-          observerRef.current = null;
-        }
-      };
-    } catch (error) {
-      console.warn('Error setting up IntersectionObserver:', error);
-      return;
-    }
-  }, [analytics.statusDistribution.length]); // Use length instead of array reference
-  
   // Theme-aware colors for charts
   const textColor = isDark ? '#A8A8B8' : '#6B7280'; // muted-foreground
   const textPrimaryColor = isDark ? '#E8E6F0' : '#111827'; // foreground
@@ -294,6 +190,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     ? new Date(Date.now() - (dateRangeLimit - 1) * 24 * 60 * 60 * 1000) // dateRangeLimit days ago
     : null; // null means unlimited
 
+  // Compute analytics FIRST before using it in useEffect hooks
   const analytics = useMemo(() => {
     if (!Array.isArray(tasks)) {
       return {
@@ -546,7 +443,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       avgCompletionTime,
       statusDistribution,
     };
-  }, [tasks, projects]);
+  }, [tasks, projects, maxDate, dateRangeLimit]);
 
   const peakHourLabel =
     analytics.timePatterns.peakHour === 0
@@ -556,6 +453,104 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         : analytics.timePatterns.peakHour === 12
           ? "12 PM"
           : `${analytics.timePatterns.peakHour - 12} PM`;
+  
+  // Reset animation state when panel opens
+  useEffect(() => {
+    hasTriggeredAnimationRef.current = false;
+    setChartKey(0);
+    
+    return () => {
+      hasTriggeredAnimationRef.current = false;
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+    };
+  }, []);
+  
+  // Use IntersectionObserver to detect when the pie chart card is visible and trigger animation
+  useEffect(() => {
+    // Only proceed if we have status distribution data
+    if (!analytics || !analytics.statusDistribution || analytics.statusDistribution.length === 0) {
+      return;
+    }
+    
+    if (!cardRef.current) return;
+    
+    // Clean up any existing observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    
+    // Check if card is already visible (e.g., at top of scroll area)
+    const checkVisibility = () => {
+      if (!cardRef.current) return false;
+      try {
+        const rect = cardRef.current.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        return isVisible;
+      } catch (error) {
+        console.warn('Error checking card visibility:', error);
+        return false;
+      }
+    };
+    
+    // If already visible, trigger animation immediately
+    if (checkVisibility() && !hasTriggeredAnimationRef.current) {
+      const timer = setTimeout(() => {
+        if (!hasTriggeredAnimationRef.current) {
+          setChartKey(prev => prev + 1);
+          hasTriggeredAnimationRef.current = true;
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+    
+    // Otherwise, use IntersectionObserver for when it scrolls into view
+    try {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && entry.intersectionRatio > 0.1 && !hasTriggeredAnimationRef.current) {
+              // Card is visible, trigger animation
+              setChartKey(prev => prev + 1);
+              hasTriggeredAnimationRef.current = true;
+              if (observerRef.current) {
+                observerRef.current.disconnect();
+                observerRef.current = null;
+              }
+            }
+          });
+        },
+        { threshold: 0.1, rootMargin: '50px' }
+      );
+      
+      observerRef.current = observer;
+      
+      // Start observing after a delay to ensure card is in DOM
+      const observeTimer = setTimeout(() => {
+        if (cardRef.current && observerRef.current) {
+          try {
+            observerRef.current.observe(cardRef.current);
+          } catch (error) {
+            console.warn('Error observing card:', error);
+          }
+        }
+      }, 300);
+      
+      return () => {
+        clearTimeout(observeTimer);
+        if (observerRef.current) {
+          observerRef.current.disconnect();
+          observerRef.current = null;
+        }
+      };
+    } catch (error) {
+      console.warn('Error setting up IntersectionObserver:', error);
+      return;
+    }
+  }, [analytics?.statusDistribution?.length || 0]); // Use length with safe navigation
 
   return (
     <div className="h-full flex flex-col bg-background">
