@@ -5,6 +5,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import * as kv from "./kv_store.tsx";
 import * as calendarSync from "./calendar-sync.tsx";
 import * as cleanupUtils from "./cleanup-utils.tsx";
+import * as emailService from "./email-service.tsx";
 
 const app = new Hono();
 
@@ -2911,11 +2912,39 @@ app.post("/make-server-65e6e67f/team/:workspaceId/invite", async (c) => {
       await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(invitations));
     }
 
-    // TODO: Send email invitation here
-    // For now, we'll return the invitation with the token
-    // In production, send email with invitation link: https://taskzm.com/invite?token=${invitationToken}
+    // Get inviter's name for email
+    const supabase = getSupabaseClient();
+    let inviterName = 'Someone';
+    try {
+      const { data: inviterUser } = await supabase.auth.admin.getUserById(userId);
+      if (inviterUser?.user) {
+        inviterName = inviterUser.user.user_metadata?.name || inviterUser.user.email?.split('@')[0] || 'Someone';
+      }
+    } catch (err) {
+      console.log('Could not fetch inviter name:', err);
+    }
 
-    console.log(`📧 Invitation sent to ${email} for workspace ${workspaceId}`);
+    // Get workspace name if available
+    const workspaceName = await kv.get(`workspace_${workspaceId}_name`) || undefined;
+
+    // Send invitation email
+    const inviteLink = `https://taskzm.com/invite?token=${invitationToken}`;
+    const emailResult = await emailService.sendInvitationEmail({
+      to: email.toLowerCase(),
+      inviterName,
+      inviteeName: name,
+      workspaceName,
+      role: role || 'member',
+      inviteLink,
+      expiresInDays: 7,
+    });
+
+    if (emailResult.success) {
+      console.log(`✅ Invitation email sent to ${email} for workspace ${workspaceId}`);
+    } else {
+      console.warn(`⚠️ Failed to send invitation email to ${email}:`, emailResult.error);
+      // Don't fail the invitation if email fails - still return success
+    }
 
     return c.json({
       invitation: {
@@ -3272,6 +3301,22 @@ app.post("/make-server-65e6e67f/team/invitations/accept", async (c) => {
     invitation.acceptedBy = userId;
     await kv.set(`invitation_${token}`, JSON.stringify(invitation));
 
+    // Send notification to inviter (optional, don't fail if it fails)
+    try {
+      const { data: inviterUser } = await supabase.auth.admin.getUserById(invitation.invitedBy);
+      if (inviterUser?.user?.email) {
+        const workspaceName = await kv.get(`workspace_${workspaceId}_name`) || undefined;
+        await emailService.sendInvitationAcceptedNotification(
+          inviterUser.user.email,
+          invitation.name,
+          workspaceName
+        );
+      }
+    } catch (err) {
+      // Silently fail - notification is optional
+      console.log('Could not send acceptance notification:', err);
+    }
+
     return c.json({
       success: true,
       userId,
@@ -3327,8 +3372,39 @@ app.post("/make-server-65e6e67f/team/:workspaceId/invitations/resend", async (c)
     
     await kv.set(`invitation_${token}`, JSON.stringify(invitation));
 
-    // TODO: Send email invitation here
-    console.log(`📧 Invitation resent to ${invitation.email} for workspace ${workspaceId}`);
+    // Get inviter's name for email
+    const supabase = getSupabaseClient();
+    let inviterName = 'Someone';
+    try {
+      const { data: inviterUser } = await supabase.auth.admin.getUserById(invitation.invitedBy);
+      if (inviterUser?.user) {
+        inviterName = inviterUser.user.user_metadata?.name || inviterUser.user.email?.split('@')[0] || 'Someone';
+      }
+    } catch (err) {
+      console.log('Could not fetch inviter name:', err);
+    }
+
+    // Get workspace name if available
+    const workspaceName = await kv.get(`workspace_${workspaceId}_name`) || undefined;
+
+    // Send invitation email
+    const inviteLink = `https://taskzm.com/invite?token=${token}`;
+    const emailResult = await emailService.sendInvitationEmail({
+      to: invitation.email.toLowerCase(),
+      inviterName,
+      inviteeName: invitation.name,
+      workspaceName,
+      role: invitation.role,
+      inviteLink,
+      expiresInDays: 7,
+    });
+
+    if (emailResult.success) {
+      console.log(`✅ Invitation email resent to ${invitation.email} for workspace ${workspaceId}`);
+    } else {
+      console.warn(`⚠️ Failed to resend invitation email to ${invitation.email}:`, emailResult.error);
+      // Don't fail the resend if email fails - still return success
+    }
 
     return c.json({
       success: true,
