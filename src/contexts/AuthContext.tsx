@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase-client';
 import { setAccessToken } from '../lib/api';
 import { logger } from '../lib/logger';
 import { clearUserLocalStorage } from '../lib/utils';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import type { User } from '../types';
 
 interface AuthContextType {
