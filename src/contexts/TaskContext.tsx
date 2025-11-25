@@ -2251,6 +2251,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         return 0;
       });
       
+      // Track scheduled tasks to maintain chronological order and prevent overlaps
+      // This array is updated as we schedule tasks to ensure findNextAvailableSlot
+      // knows about previously scheduled rollover tasks
+      const scheduledRolloverTasks: Task[] = [];
+      let lastScheduledEnd: number | null = null; // Track the end time of the last scheduled task
+      
       for (const task of sortedTasksToRollover) {
         try {
           // Get category hours for this task
@@ -2309,15 +2315,41 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             }
           }
           
+          // If we have a previously scheduled task, start from its end time to maintain chronological order
+          if (lastScheduledEnd !== null) {
+            const lastEndDate = new Date(lastScheduledEnd);
+            // Round to nearest 15-minute slot
+            const minutes = lastEndDate.getMinutes();
+            const roundedMinutes = Math.ceil(minutes / 15) * 15;
+            if (roundedMinutes >= 60) {
+              lastEndDate.setHours(lastEndDate.getHours() + 1);
+              lastEndDate.setMinutes(0);
+            } else {
+              lastEndDate.setMinutes(roundedMinutes);
+            }
+            lastEndDate.setSeconds(0);
+            lastEndDate.setMilliseconds(0);
+            
+            // Use the later of: last scheduled end or calculated start time
+            // This ensures chronological order while respecting category hours
+            if (lastEndDate.getTime() > startTime.getTime()) {
+              startTime = lastEndDate;
+            }
+          }
+          
           // Get task duration
           const taskDuration = task.estimatedTime || 30; // Default to 30 minutes
+          
+          // Combine existing tasks with previously scheduled rollover tasks
+          // This ensures findNextAvailableSlot knows about all scheduled tasks
+          const allTasksIncludingRollover = [...tasks, ...scheduledRolloverTasks];
           
           // Find next available slot on today, respecting category hours
           const availableSlot = findNextAvailableSlot(
             task.id,
             startTime,
             taskDuration,
-            tasks,
+            allTasksIncludingRollover,
             {
               ensureAfterCurrentTime: true,
               categoryHours: categoryHours,
@@ -2331,6 +2363,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               availableSlot.getHours() < 24) {
             // Use the available slot time
             await updateTask(task.id, { scheduledDate: availableSlot.toISOString() });
+            
+            // Track this scheduled task for subsequent iterations
+            const scheduledTask: Task = {
+              ...task,
+              scheduledDate: availableSlot.toISOString(),
+            };
+            scheduledRolloverTasks.push(scheduledTask);
+            
+            // Update last scheduled end time for chronological ordering
+            const taskEndTime = availableSlot.getTime() + (taskDuration * 60 * 1000);
+            lastScheduledEnd = taskEndTime;
+            
             rolledCount++;
           } else {
             // No valid slot found - skip this task
