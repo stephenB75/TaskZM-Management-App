@@ -42,7 +42,6 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
-import { KANBAN_TIME } from "../lib/kanban-constants";
 import { toast } from "sonner";
 import type { Task } from "../types";
 
@@ -463,7 +462,9 @@ export function DashboardView({
 
     const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 
-    return Array.from({ length: KANBAN_TIME.daysInWeek }, (_, i) => {
+    const daysToShow = 7; // Mobile Today Agenda week view should remain 7 days
+
+    return Array.from({ length: daysToShow }, (_, i) => {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
 

@@ -119,7 +119,9 @@ export function SevenDayKanban({
     const mondayOffset = (currentDay + 6) % 7; // Convert to Monday=0
     startOfWeek.setDate(startOfWeek.getDate() - mondayOffset + currentWeekOffset * 7);
 
-    return Array.from({ length: KANBAN_TIME.daysInWeek }, (_, i) => {
+    const totalDays = mobileMode ? 7 : KANBAN_TIME.daysInWeek;
+
+    return Array.from({ length: totalDays }, (_, i) => {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
       
