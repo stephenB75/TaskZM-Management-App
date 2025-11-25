@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
@@ -40,6 +40,7 @@ interface DragDropProviderProps {
 
 export function DragDropProvider({ children }: DragDropProviderProps) {
   const { tasks, updateTask, folders, hoursSettings } = useTasks();
+  const tasksRef = useRef(tasks);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [pendingTaskUpdate, setPendingTaskUpdate] = useState<{
@@ -47,6 +48,11 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     requestedTime: Date;
     alternativeTime: Date;
   } | null>(null);
+
+  // Keep tasksRef in sync with tasks
+  useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
 
   // Initialize sensors once - useSensors hook is stable and won't cause re-renders
   const sensors = useSensors(
@@ -648,24 +654,39 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       
       // Reorganize all tasks for today to ensure chronological order
       // This ensures tasks remain in order after drag/drop
+      // Use setTimeout to ensure the task update has been processed
       setTimeout(() => {
+        // Get fresh tasks from ref to avoid stale closure
+        const freshTasks = tasksRef.current;
         const reorganizations = reorganizeAllTasksForDate(
           today,
-          tasks,
+          freshTasks,
           {
             ensureAfterCurrentTime: isToday,
             categoryHours: categoryHours,
           }
         );
         
-        // Apply reorganizations (excluding the task we just moved)
-        reorganizations.forEach(({ taskId: reorgTaskId, newTime }) => {
-          if (reorgTaskId !== taskId) {
-            updateTask(reorgTaskId, {
-              scheduledDate: newTime.toISOString(),
-            });
-          }
-        });
+        // Only apply reorganizations if there are tasks that need to be moved
+        // Filter out the task we just moved and only move tasks that actually need repositioning
+        if (reorganizations.length > 0) {
+          reorganizations.forEach(({ taskId: reorgTaskId, newTime }) => {
+            if (reorgTaskId !== taskId) {
+              // Check if the new time is actually different from current time
+              const currentTask = freshTasks.find(t => t.id === reorgTaskId);
+              if (currentTask?.scheduledDate) {
+                const currentTime = new Date(currentTask.scheduledDate).getTime();
+                const newTimeMs = newTime.getTime();
+                // Only update if time actually changed (more than 1 minute difference)
+                if (Math.abs(currentTime - newTimeMs) > 60000) {
+                  updateTask(reorgTaskId, {
+                    scheduledDate: newTime.toISOString(),
+                  });
+                }
+              }
+            }
+          });
+        }
       }, 100);
       
       return;
@@ -925,25 +946,40 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     
     // Reorganize all tasks for the target date to ensure chronological order
     // This ensures tasks remain in order after drag/drop
+    // Use setTimeout to ensure the task update has been processed
     setTimeout(() => {
+      // Get fresh tasks from ref to avoid stale closure
+      const freshTasks = tasksRef.current;
       const categoryHours = getCategoryHoursForTask(task, targetDate, hoursSettings);
       const reorganizations = reorganizeAllTasksForDate(
         targetDate,
-        tasks,
+        freshTasks,
         {
           ensureAfterCurrentTime: false,
           categoryHours: categoryHours,
         }
       );
       
-      // Apply reorganizations (excluding the task we just moved)
-      reorganizations.forEach(({ taskId: reorgTaskId, newTime }) => {
-        if (reorgTaskId !== taskId) {
-          updateTask(reorgTaskId, {
-            scheduledDate: newTime.toISOString(),
-          });
-        }
-      });
+      // Only apply reorganizations if there are tasks that need to be moved
+      // Filter out the task we just moved and only move tasks that actually need repositioning
+      if (reorganizations.length > 0) {
+        reorganizations.forEach(({ taskId: reorgTaskId, newTime }) => {
+          if (reorgTaskId !== taskId) {
+            // Check if the new time is actually different from current time
+            const currentTask = freshTasks.find(t => t.id === reorgTaskId);
+            if (currentTask?.scheduledDate) {
+              const currentTime = new Date(currentTask.scheduledDate).getTime();
+              const newTimeMs = newTime.getTime();
+              // Only update if time actually changed (more than 1 minute difference)
+              if (Math.abs(currentTime - newTimeMs) > 60000) {
+                updateTask(reorgTaskId, {
+                  scheduledDate: newTime.toISOString(),
+                });
+              }
+            }
+          }
+        });
+      }
     }, 100);
   };
 
