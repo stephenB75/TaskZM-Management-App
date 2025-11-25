@@ -265,106 +265,77 @@ export function TodayAgendaView({
     const hasDescription = task.description && task.estimatedTime && task.estimatedTime >= 60;
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     
-    if (minutes < 45) {
-      // Compact sizing for shorter tasks: base height + minimal scaling
-      let baseHeight = isMobile ? TASK_CALCULATION_CONSTANTS.height.baseShort.mobile : TASK_CALCULATION_CONSTANTS.height.baseShort.desktop;
+    // Get base height based on duration (standard starting height before components)
+    const getBaseHeightForDuration = (mins: number): number => {
+      if (mins >= 20 && mins <= 25) return 150;
+      if (mins >= 30 && mins <= 35) return 240;
+      if (mins >= 40 && mins <= 45) return 340;
+      if (mins >= 50 && mins <= 60) return 450;
+      if (mins === 120) return 550;
+      if (mins === 240) return 640;
       
-      // Add height for badge wrapping
-      baseHeight += badgeWrapHeight;
-      
-      // Check if any additional components are active
-      const hasActiveComponents = hasAssignedUsers || hasSubtasks;
-      
-      // Add extra height for assigned users (only if present)
-      if (hasAssignedUsers) {
-        baseHeight += 24;
+      // Interpolate for values between ranges
+      if (mins < 20) {
+        // Linear interpolation from 0-20 mins
+        return 60 + (mins / 20) * (150 - 60);
+      }
+      if (mins > 25 && mins < 30) {
+        // Linear interpolation from 25-30 mins
+        return 150 + ((mins - 25) / 5) * (240 - 150);
+      }
+      if (mins > 35 && mins < 40) {
+        // Linear interpolation from 35-40 mins
+        return 240 + ((mins - 35) / 5) * (340 - 240);
+      }
+      if (mins > 45 && mins < 50) {
+        // Linear interpolation from 45-50 mins
+        return 340 + ((mins - 45) / 5) * (450 - 340);
+      }
+      if (mins > 60 && mins < 120) {
+        // Linear interpolation from 60-120 mins
+        return 450 + ((mins - 60) / 60) * (550 - 450);
+      }
+      if (mins > 120 && mins < 240) {
+        // Linear interpolation from 120-240 mins
+        return 550 + ((mins - 120) / 120) * (640 - 550);
+      }
+      if (mins > 240) {
+        // Scale beyond 240 mins: add 100px per additional 120 mins
+        const additionalHours = (mins - 240) / 120;
+        return 640 + additionalHours * 100;
       }
       
-      // Add extra height for subtasks (only if present)
-      if (hasSubtasks) {
-        const subtaskHeight = Math.min(task.subtasks.length, 3) * TASK_CALCULATION_CONSTANTS.description.lineHeight;
-        baseHeight += subtaskHeight;
-      }
-      
-      // Duration-based scaling
-      const scalingFactor = 0.8; // Reduced scaling for shorter tasks
-      const durationBasedHeight = baseHeight + (minutes - 15) * scalingFactor;
-      
-      // If no active components, ensure minimum height accounts for time display and bottom padding
-      const minRequiredHeight = hasActiveComponents 
-        ? baseHeight 
-        : baseHeight + 8; // Add bottom padding for time display if no components
-      
-      return Math.max(durationBasedHeight, minRequiredHeight);
-    } else if (minutes >= 60) {
-      // Enhanced sizing for tasks 1 hour or more: more space for descriptions
-      let baseHeight = TASK_CALCULATION_CONSTANTS.height.baseLong;
-      
-      // Add height for badge wrapping
-      baseHeight += badgeWrapHeight;
-      
-      // Add extra height for description (full height, no line clamp)
-      // Description is always shown for tasks >= 60 minutes if it exists
-      if (hasDescription) {
-        // Estimate description height based on content length
-        const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CALCULATION_CONSTANTS.description.charsPerLine) : 4;
-        const lineHeight = TASK_CALCULATION_CONSTANTS.description.lineHeight;
-        const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CALCULATION_CONSTANTS.description.minHeight) + TASK_CALCULATION_CONSTANTS.description.padding;
-        baseHeight += descriptionHeight;
-      } else {
-        // If no description, still need space for the time duration display
-        // Add minimal padding for time display area
-        baseHeight += 8;
-      }
-      
-      // Add extra height for assigned users (only if present)
-      if (hasAssignedUsers) {
-        baseHeight += 24;
-      }
-      
-      // Add extra height for subtasks (only if present)
-      if (hasSubtasks) {
-        const subtaskHeight = Math.min(task.subtasks.length, 3) * TASK_CALCULATION_CONSTANTS.description.lineHeight;
-        baseHeight += subtaskHeight;
-      }
-      
-      // Duration-based scaling
-      const scalingFactor = 2.0; // More generous scaling for longer tasks
-      const durationBasedHeight = baseHeight + (minutes - 60) * scalingFactor;
-      
-      // Ensure minimum height accounts for description bottom padding
-      const minRequiredHeight = hasDescription 
-        ? baseHeight 
-        : baseHeight + 12; // Add bottom padding if no description
-      
-      return Math.max(durationBasedHeight, minRequiredHeight);
-    } else {
-      // Standard sizing for medium tasks (45-59 mins)
-      // No description shown for these tasks, so height is based on duration + active components
-      let minHeight = 80;
-      
-      // Add height for badge wrapping
-      minHeight += badgeWrapHeight;
-      
-      // Add extra height for assigned users (only if present)
-      if (hasAssignedUsers) {
-        minHeight += 24;
-      }
-      
-      // Add extra height for subtasks (only if present)
-      if (hasSubtasks) {
-        const subtaskHeight = Math.min(task.subtasks.length, 3) * 16;
-        minHeight += subtaskHeight;
-      }
-      
-      // Duration-based height calculation
-      const durationBasedHeight = minutes * 1.5;
-      
-      // Ensure minimum height accounts for time display and bottom padding
-      const minRequiredHeight = minHeight + 8; // Bottom padding for time display
-      
-      return Math.max(durationBasedHeight, minRequiredHeight);
+      return 150; // Default fallback
+    };
+    
+    // Get base height for this duration
+    let baseHeight = getBaseHeightForDuration(minutes);
+    
+    // Add height for badge wrapping
+    baseHeight += badgeWrapHeight;
+    
+    // Add extra height for components (only if present)
+    // Description is always shown for tasks >= 60 minutes if it exists
+    if (hasDescription) {
+      // Estimate description height based on content length
+      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CALCULATION_CONSTANTS.description.charsPerLine) : 4;
+      const lineHeight = TASK_CALCULATION_CONSTANTS.description.lineHeight;
+      const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CALCULATION_CONSTANTS.description.minHeight) + TASK_CALCULATION_CONSTANTS.description.padding;
+      baseHeight += descriptionHeight;
     }
+    
+    // Add extra height for assigned users (only if present)
+    if (hasAssignedUsers) {
+      baseHeight += 24;
+    }
+    
+    // Add extra height for subtasks (only if present)
+    if (hasSubtasks) {
+      const subtaskHeight = Math.min(task.subtasks.length, 3) * TASK_CALCULATION_CONSTANTS.description.lineHeight;
+      baseHeight += subtaskHeight;
+    }
+    
+    return baseHeight;
   }, []); // Empty deps - function is pure, only depends on task parameter
 
 
@@ -431,7 +402,7 @@ export function TodayAgendaView({
             </div>
           </div>
           {/* Spacer for fixed header on mobile */}
-          <div className="md:hidden h-[64px]" />
+          <div className="md:hidden h-[10px]" />
         </>
       )}
 

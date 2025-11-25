@@ -172,21 +172,44 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             // This provides more accurate positioning
             const calculateTaskHeight = (task: Task): number => {
               const minutes = task.estimatedTime || 30;
-              const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
               
-              // Simplified version of getTaskHeight logic
-              if (minutes < 45) {
-                const baseHeight = isMobile ? 72 : 60;
-                const scalingFactor = 0.8;
-                return Math.max(baseHeight, baseHeight + (minutes - 15) * scalingFactor);
-              } else if (minutes >= 60) {
-                const baseHeight = 140;
-                const scalingFactor = 2.0;
-                return baseHeight + (minutes - 60) * scalingFactor;
-              } else {
-                // 45-59 minutes
-                return Math.max(80, minutes * 1.5);
-              }
+              // Get base height based on duration (standard starting height before components)
+              const getBaseHeightForDuration = (mins: number): number => {
+                if (mins >= 20 && mins <= 25) return 150;
+                if (mins >= 30 && mins <= 35) return 240;
+                if (mins >= 40 && mins <= 45) return 340;
+                if (mins >= 50 && mins <= 60) return 450;
+                if (mins === 120) return 550;
+                if (mins === 240) return 640;
+                
+                // Interpolate for values between ranges
+                if (mins < 20) {
+                  return 60 + (mins / 20) * (150 - 60);
+                }
+                if (mins > 25 && mins < 30) {
+                  return 150 + ((mins - 25) / 5) * (240 - 150);
+                }
+                if (mins > 35 && mins < 40) {
+                  return 240 + ((mins - 35) / 5) * (340 - 240);
+                }
+                if (mins > 45 && mins < 50) {
+                  return 340 + ((mins - 45) / 5) * (450 - 340);
+                }
+                if (mins > 60 && mins < 120) {
+                  return 450 + ((mins - 60) / 60) * (550 - 450);
+                }
+                if (mins > 120 && mins < 240) {
+                  return 550 + ((mins - 120) / 120) * (640 - 550);
+                }
+                if (mins > 240) {
+                  const additionalHours = (mins - 240) / 120;
+                  return 640 + additionalHours * 100;
+                }
+                
+                return 150; // Default fallback
+              };
+              
+              return getBaseHeightForDuration(minutes);
             };
             
             let accumulatedHeight = 0;
