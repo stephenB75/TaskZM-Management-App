@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion } from "motion/react";
 import { useDroppable } from "@dnd-kit/core";
 import { Calendar, Plus, StickyNote } from "lucide-react";
@@ -208,53 +208,6 @@ export function TodayAgendaView({
     return () => clearTimeout(timer);
   }, [todayTasks]);
 
-  // Calculate static indicator position once - doesn't recalculate as time passes
-  const staticIndicatorPosition = useMemo(() => {
-    if (todayTasks.length === 0) return null;
-    
-    const now = staticTimestamp;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isToday = now.getTime() >= today.getTime() && 
-                    now.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
-    
-    if (!isToday) return null;
-    
-    const currentTimeMs = now.getTime();
-    let position = 0;
-    let accumulatedHeight = 0;
-    const gapBetweenTasks = 12; // space-y-3 = 12px
-    
-    for (let i = 0; i < todayTasks.length; i++) {
-      const task = todayTasks[i];
-      if (!task.scheduledDate) continue;
-      
-      const taskTime = new Date(task.scheduledDate).getTime();
-      const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
-      const taskEnd = taskTime + taskDuration;
-      const taskHeight = getTaskHeight(task);
-      
-      if (currentTimeMs >= taskTime && currentTimeMs <= taskEnd) {
-        // Current time is within this task
-        const progress = (currentTimeMs - taskTime) / taskDuration;
-        position = accumulatedHeight + (taskHeight * progress);
-        break;
-      } else if (currentTimeMs < taskTime) {
-        // Current time is before this task
-        position = accumulatedHeight;
-        break;
-      } else {
-        // Current time is after this task
-        accumulatedHeight += taskHeight + gapBetweenTasks;
-        if (i === todayTasks.length - 1) {
-          // Current time is after last task
-          position = accumulatedHeight;
-        }
-      }
-    }
-    
-    return position;
-  }, [staticTimestamp, todayTasks]);
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = (() => {
@@ -339,7 +292,8 @@ export function TodayAgendaView({
 
   // Calculate height based on task duration
   // Auto-adjusts for: badge wrapping, assigned users, tracking, descriptions
-  const getTaskHeight = (task: Task) => {
+  // Memoized to prevent unnecessary recalculations in staticIndicatorPosition
+  const getTaskHeight = useCallback((task: Task) => {
     const minutes = task.estimatedTime || TASK_CALCULATION_CONSTANTS.defaultDurationMinutes;
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
     
@@ -460,7 +414,56 @@ export function TodayAgendaView({
       
       return Math.max(durationBasedHeight, minRequiredHeight);
     }
-  };
+  }, []); // Empty deps - function is pure, only depends on task parameter
+
+  // Calculate static indicator position once - doesn't recalculate as time passes
+  // Must be after getTaskHeight is defined
+  const staticIndicatorPosition = useMemo(() => {
+    if (todayTasks.length === 0) return null;
+    
+    const now = staticTimestamp;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isToday = now.getTime() >= today.getTime() && 
+                    now.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
+    
+    if (!isToday) return null;
+    
+    const currentTimeMs = now.getTime();
+    let position = 0;
+    let accumulatedHeight = 0;
+    const gapBetweenTasks = 12; // space-y-3 = 12px
+    
+    for (let i = 0; i < todayTasks.length; i++) {
+      const task = todayTasks[i];
+      if (!task.scheduledDate) continue;
+      
+      const taskTime = new Date(task.scheduledDate).getTime();
+      const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
+      const taskEnd = taskTime + taskDuration;
+      const taskHeight = getTaskHeight(task);
+      
+      if (currentTimeMs >= taskTime && currentTimeMs <= taskEnd) {
+        // Current time is within this task
+        const progress = (currentTimeMs - taskTime) / taskDuration;
+        position = accumulatedHeight + (taskHeight * progress);
+        break;
+      } else if (currentTimeMs < taskTime) {
+        // Current time is before this task
+        position = accumulatedHeight;
+        break;
+      } else {
+        // Current time is after this task
+        accumulatedHeight += taskHeight + gapBetweenTasks;
+        if (i === todayTasks.length - 1) {
+          // Current time is after last task
+          position = accumulatedHeight;
+        }
+      }
+    }
+    
+    return position;
+  }, [staticTimestamp, todayTasks, getTaskHeight]);
 
   return (
     <>
