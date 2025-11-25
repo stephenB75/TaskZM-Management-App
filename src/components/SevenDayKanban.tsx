@@ -597,6 +597,7 @@ export function SevenDayKanban({
                       </span>
                     </div>
                   )}
+
                   <div className="flex flex-col gap-2 min-w-max">
                     <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
                       <span
@@ -609,6 +610,7 @@ export function SevenDayKanban({
                       </span>
                       <span className="flex-1 h-px bg-gradient-to-r from-primary/30 via-transparent to-transparent dark:from-primary/40" />
                     </div>
+
                     <div className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2">
                       {group.map((column, columnIndex) => {
                 const dayTasks = getTasksForDay(column.dateString);
@@ -733,9 +735,10 @@ export function SevenDayKanban({
                         </div>
                       </SortableContext>
                     </DroppableColumn>
-                  </motion.div>
-                );
-              })}
+                        </motion.div>
+                      );
+                    })}
+                    </div>
                   </div>
                 </React.Fragment>
               ))}
