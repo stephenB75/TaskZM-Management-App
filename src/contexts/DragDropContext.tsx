@@ -175,38 +175,38 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               
               // Get base height based on duration (standard starting height before components)
               const getBaseHeightForDuration = (mins: number): number => {
-                if (mins >= 20 && mins <= 25) return 150;
-                if (mins >= 30 && mins <= 35) return 240;
-                if (mins >= 40 && mins <= 45) return 340;
-                if (mins >= 50 && mins <= 60) return 450;
-                if (mins === 120) return 550;
-                if (mins === 240) return 640;
+                if (mins >= 20 && mins <= 25) return 100;
+                if (mins >= 30 && mins <= 35) return 200;
+                if (mins >= 40 && mins <= 45) return 250;
+                if (mins >= 50 && mins <= 60) return 320;
+                if (mins >= 100 && mins <= 120) return 400;
+                if (mins >= 200 && mins <= 220) return 480;
                 
                 // Interpolate for values between ranges
                 if (mins < 20) {
-                  return 60 + (mins / 20) * (150 - 60);
+                  return 60 + (mins / 20) * (100 - 60);
                 }
                 if (mins > 25 && mins < 30) {
-                  return 150 + ((mins - 25) / 5) * (240 - 150);
+                  return 100 + ((mins - 25) / 5) * (200 - 100);
                 }
                 if (mins > 35 && mins < 40) {
-                  return 240 + ((mins - 35) / 5) * (340 - 240);
+                  return 200 + ((mins - 35) / 5) * (250 - 200);
                 }
                 if (mins > 45 && mins < 50) {
-                  return 340 + ((mins - 45) / 5) * (450 - 340);
+                  return 250 + ((mins - 45) / 5) * (320 - 250);
                 }
-                if (mins > 60 && mins < 120) {
-                  return 450 + ((mins - 60) / 60) * (550 - 450);
+                if (mins > 60 && mins < 100) {
+                  return 320 + ((mins - 60) / 40) * (400 - 320);
                 }
-                if (mins > 120 && mins < 240) {
-                  return 550 + ((mins - 120) / 120) * (640 - 550);
+                if (mins > 120 && mins < 200) {
+                  return 400 + ((mins - 120) / 80) * (480 - 400);
                 }
-                if (mins > 240) {
-                  const additionalHours = (mins - 240) / 120;
-                  return 640 + additionalHours * 100;
+                if (mins > 220) {
+                  const additionalHours = (mins - 220) / 120;
+                  return 480 + additionalHours * 80;
                 }
                 
-                return 150; // Default fallback
+                return 100; // Default fallback
               };
               
               return getBaseHeightForDuration(minutes);
