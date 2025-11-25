@@ -309,10 +309,12 @@ export const DraggableTaskCard = React.forwardRef<
     const cardHeight = getCardHeight();
     
     // Force re-render when components activate/deactivate to recalculate height
+    const [, forceUpdate] = React.useReducer(x => x + 1, 0);
     React.useEffect(() => {
       // This effect triggers a re-render when timer state or assigned users change
       // The getCardHeight function will recalculate based on current state
-    }, [timerState.isRunning, task.assignedTo?.length, task.subtasks?.length, task.actualTime]);
+      forceUpdate();
+    }, [timerState.isRunning, task.assignedTo?.length, task.subtasks?.length, task.actualTime, task.description, task.estimatedTime]);
     
     const topRowItemCount = [
       Boolean(scheduledTimeLabel),

@@ -113,7 +113,7 @@ export function SevenDayKanban({
     // Use mobileWeekOffset in mobile mode, weekOffset in desktop mode
     const currentWeekOffset = mobileMode ? mobileWeekOffset : weekOffset;
     
-    // For desktop: start from today (don't show past days)
+    // For desktop: start from tomorrow (today is shown in Today Agenda timeline)
     // For mobile: start from Monday of the current week
     let startDate: Date;
     if (mobileMode) {
@@ -123,9 +123,9 @@ export function SevenDayKanban({
       const mondayOffset = (currentDay + 6) % 7; // Convert to Monday=0
       startDate.setDate(startDate.getDate() - mondayOffset + currentWeekOffset * 7);
     } else {
-      // Desktop: Start from today (don't show past days)
+      // Desktop: Start from tomorrow (today is shown in Today Agenda timeline, so exclude it)
       startDate = new Date(today);
-      startDate.setDate(startDate.getDate() + (currentWeekOffset * 7));
+      startDate.setDate(startDate.getDate() + 1 + (currentWeekOffset * 7));
     }
 
     const totalDays = mobileMode ? 7 : KANBAN_TIME.daysInWeek;

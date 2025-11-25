@@ -293,17 +293,22 @@ export function useAIScheduler() {
     const exceedsLimit: Task[] = [];
     const daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }> = [];
     
-    // Determine start date: use provided dateRange start, or default to current time
+    // Determine start date: use provided dateRange start, or default to beginning of today
     // For rescheduling, we want to schedule within the selected period starting from current time if today
     const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
-      // Default to current time (not beginning of day) to schedule forward from now
-      return new Date();
+      // Default to beginning of today (00:00:00) to schedule from present day
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today;
     })();
     
-    // Determine end date: use provided dateRange end, or default to 14 days ahead
+    // Determine end date: use provided dateRange end, or default to 14th day from today
+    // "From present day up to 14th day" means: today (day 1) through day 14 = 14 days total
+    // So end date is today + 13 days (the 14th day)
     const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
       const future = new Date(startDate);
-      future.setDate(future.getDate() + 14);
+      // Add 13 days to get to the 14th day (today is day 1, so day 14 is 13 days from today)
+      future.setDate(future.getDate() + 13);
       return future;
     })();
     

@@ -64,6 +64,13 @@ export function DraggableTodayAgendaTask({
   const timerState = getTimerState(task.id);
   const isDark = actualTheme === 'dark';
   
+  // Force re-render when task properties change to recalculate height
+  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+  React.useEffect(() => {
+    // Force re-render when task properties that affect height change
+    forceUpdate();
+  }, [task.assignedTo?.length, task.subtasks?.length, task.actualTime, task.description, task.estimatedTime, timerState.isRunning]);
+  
   const {
     attributes,
     listeners,
