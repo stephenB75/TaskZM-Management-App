@@ -882,45 +882,15 @@ export function DashboardView({
               <div className="flex-1 overflow-x-auto scrollbar-hide min-w-0">
                 <div className="flex gap-0.5 sm:gap-1.5">
                   {weekColumns.map((column, index) => {
-                    const isSelected =
-                      index === mobileDayIndex;
-                    const dayTasks = getTasksForDay(
-                      column.dateString,
-                    );
-                    const weekNumber =
-                      column.weekNumber ??
-                      Math.floor(index / 7) + 1;
-                    const isWeekStart =
-                      (column.dayIndex ?? index) % 7 === 0;
-                    const widthClass =
-                      "w-[calc((100%-12px)/7)] sm:w-auto sm:min-w-[48px]";
+                    const isSelected = index === mobileDayIndex;
+                    const dayTasks = getTasksForDay(column.dateString);
 
                     return (
-                      <div
+                      <button
                         key={column.dateString}
+                        onClick={() => setMobileDayIndex(index)}
                         className={cn(
-                          "flex flex-col flex-shrink-0",
-                          widthClass,
-                        )}
-                      >
-                        {isWeekStart && (
-                          <span
-                            className={cn(
-                              "text-[10px] font-semibold uppercase tracking-[0.3em] mb-1",
-                              weekNumber === 2
-                                ? "text-primary"
-                                : "text-muted-foreground",
-                            )}
-                          >
-                            Week {weekNumber}
-                          </span>
-                        )}
-                        <button
-                        onClick={() =>
-                          setMobileDayIndex(index)
-                        }
-                        className={cn(
-                            "flex flex-col items-center justify-center px-1.5 py-1.5 sm:px-2.5 sm:py-2 rounded-xl transition-all w-full",
+                          "flex flex-col items-center justify-center px-1.5 py-1.5 sm:px-2.5 sm:py-2 rounded-xl transition-all flex-shrink-0 w-[calc((100%-12px)/7)] sm:w-auto sm:min-w-[48px]",
                           isSelected
                             ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
                             : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
@@ -949,10 +919,7 @@ export function DashboardView({
                         {dayTasks.length > 0 && (
                           <div className="flex gap-0.5 mt-0.5 sm:mt-1">
                             {Array.from({
-                              length: Math.min(
-                                dayTasks.length,
-                                3,
-                              ),
+                              length: Math.min(dayTasks.length, 3),
                             }).map((_, i) => (
                               <div
                                 key={i}
@@ -967,7 +934,6 @@ export function DashboardView({
                           </div>
                         )}
                       </button>
-                      </div>
                     );
                   })}
                 </div>
