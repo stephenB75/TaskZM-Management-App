@@ -18,6 +18,7 @@ import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
+import { HEADER_HEIGHT } from "../lib/layout-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -395,7 +396,12 @@ export function TodayAgendaView({
       {/* Header */}
       {!hideHeader && (
         <>
-          <div className="relative">
+          <div 
+            className="relative"
+            style={{ 
+              minHeight: `${HEADER_HEIGHT}px`,
+            }}
+          >
             <AppHeader
               title="Today Agenda"
               panelOpen={true}
@@ -412,8 +418,26 @@ export function TodayAgendaView({
               hideDesktopLogo
             />
             {/* Current Time Indicator - Bottom right corner of header */}
-            <div className="absolute bottom-2 right-4 md:right-6 z-10 pointer-events-none">
-              <span className="text-xs font-medium text-primary bg-background/80 dark:bg-card/80 px-2 py-1 rounded shadow-sm">
+            {/* Mobile: fixed positioning relative to viewport (mobile header is fixed) */}
+            <div 
+              className="md:hidden fixed right-4 z-50 pointer-events-none"
+              style={{ 
+                top: '52px', // Position at bottom of mobile header (64px height - 12px padding)
+              }}
+            >
+              <span className="text-xs font-medium text-primary bg-background/90 dark:bg-card/90 px-2 py-1 rounded shadow-sm border border-primary/20 backdrop-blur-sm">
+                {currentTime.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </span>
+            </div>
+            {/* Desktop: absolute positioning relative to header container */}
+            <div 
+              className="hidden md:block absolute bottom-2 right-6 z-50 pointer-events-none"
+            >
+              <span className="text-xs font-medium text-primary bg-background/90 dark:bg-card/90 px-2 py-1 rounded shadow-sm border border-primary/20 backdrop-blur-sm">
                 {currentTime.toLocaleTimeString("en-US", {
                   hour: "numeric",
                   minute: "2-digit",
