@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
 import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
-import { checkTimeConflict, findNextAvailableSlot, formatTime, reorganizeAllTasksForDate } from '../lib/time-conflict';
+import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
@@ -40,7 +40,6 @@ interface DragDropProviderProps {
 
 export function DragDropProvider({ children }: DragDropProviderProps) {
   const { tasks, updateTask, folders, hoursSettings } = useTasks();
-  const tasksRef = useRef(tasks);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [pendingTaskUpdate, setPendingTaskUpdate] = useState<{
@@ -48,11 +47,6 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     requestedTime: Date;
     alternativeTime: Date;
   } | null>(null);
-
-  // Keep tasksRef in sync with tasks
-  useEffect(() => {
-    tasksRef.current = tasks;
-  }, [tasks]);
 
   // Initialize sensors once - useSensors hook is stable and won't cause re-renders
   const sensors = useSensors(
@@ -652,42 +646,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         scheduledDate: finalTime.toISOString(),
       });
       
-      // Reorganize all tasks for today to ensure chronological order
-      // This ensures tasks remain in order after drag/drop
-      // Use setTimeout to ensure the task update has been processed
-      setTimeout(() => {
-        // Get fresh tasks from ref to avoid stale closure
-        const freshTasks = tasksRef.current;
-        const reorganizations = reorganizeAllTasksForDate(
-          today,
-          freshTasks,
-          {
-            ensureAfterCurrentTime: isToday,
-            categoryHours: categoryHours,
-          }
-        );
-        
-        // Only apply reorganizations if there are tasks that need to be moved
-        // Filter out the task we just moved and only move tasks that actually need repositioning
-        if (reorganizations.length > 0) {
-          reorganizations.forEach(({ taskId: reorgTaskId, newTime }) => {
-            if (reorgTaskId !== taskId) {
-              // Check if the new time is actually different from current time
-              const currentTask = freshTasks.find(t => t.id === reorgTaskId);
-              if (currentTask?.scheduledDate) {
-                const currentTime = new Date(currentTask.scheduledDate).getTime();
-                const newTimeMs = newTime.getTime();
-                // Only update if time actually changed (more than 1 minute difference)
-                if (Math.abs(currentTime - newTimeMs) > 60000) {
-                  updateTask(reorgTaskId, {
-                    scheduledDate: newTime.toISOString(),
-                  });
-                }
-              }
-            }
-          });
-        }
-      }, 100);
+      // Note: Removed automatic reorganization to prevent infinite loops
+      // Tasks are already sorted chronologically in TodayAgendaView
+      // If reorganization is needed, it should be done manually or on a case-by-case basis
       
       return;
     }
@@ -944,43 +905,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       scheduledDate: newDate.toISOString(),
     });
     
-    // Reorganize all tasks for the target date to ensure chronological order
-    // This ensures tasks remain in order after drag/drop
-    // Use setTimeout to ensure the task update has been processed
-    setTimeout(() => {
-      // Get fresh tasks from ref to avoid stale closure
-      const freshTasks = tasksRef.current;
-      const categoryHours = getCategoryHoursForTask(task, targetDate, hoursSettings);
-      const reorganizations = reorganizeAllTasksForDate(
-        targetDate,
-        freshTasks,
-        {
-          ensureAfterCurrentTime: false,
-          categoryHours: categoryHours,
-        }
-      );
-      
-      // Only apply reorganizations if there are tasks that need to be moved
-      // Filter out the task we just moved and only move tasks that actually need repositioning
-      if (reorganizations.length > 0) {
-        reorganizations.forEach(({ taskId: reorgTaskId, newTime }) => {
-          if (reorgTaskId !== taskId) {
-            // Check if the new time is actually different from current time
-            const currentTask = freshTasks.find(t => t.id === reorgTaskId);
-            if (currentTask?.scheduledDate) {
-              const currentTime = new Date(currentTask.scheduledDate).getTime();
-              const newTimeMs = newTime.getTime();
-              // Only update if time actually changed (more than 1 minute difference)
-              if (Math.abs(currentTime - newTimeMs) > 60000) {
-                updateTask(reorgTaskId, {
-                  scheduledDate: newTime.toISOString(),
-                });
-              }
-            }
-          }
-        });
-      }
-    }, 100);
+    // Note: Removed automatic reorganization to prevent infinite loops
+    // Tasks are already sorted chronologically in views
+    // If reorganization is needed, it should be done manually or on a case-by-case basis
   };
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
