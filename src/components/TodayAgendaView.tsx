@@ -36,13 +36,8 @@ export function TodayAgendaView({
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
-  const scrollViewportRef = useRef<HTMLElement | null>(null);
-  // Static timestamp captured once on mount - doesn't update, keeps indicator in fixed position
-  const staticTimestamp = useMemo(() => new Date(), []);
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [scrollTop, setScrollTop] = useState(0);
-  const [isScrollReady, setIsScrollReady] = useState(false);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -68,50 +63,6 @@ export function TodayAgendaView({
     return () => clearInterval(interval);
   }, []);
 
-  // Track scroll position for fixed time indicator
-  // Only run once on mount to prevent infinite loops
-  useEffect(() => {
-    const findScrollViewport = () => {
-      return timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
-    };
-    
-    // Try to find scroll viewport immediately
-    let scrollViewport = findScrollViewport();
-    if (scrollViewport) {
-      scrollViewportRef.current = scrollViewport;
-      setIsScrollReady(true);
-    }
-    
-    // Also try after a short delay in case DOM isn't ready
-    const timeout = setTimeout(() => {
-      scrollViewport = findScrollViewport();
-      if (scrollViewport) {
-        scrollViewportRef.current = scrollViewport;
-        setIsScrollReady(true);
-      }
-    }, 100);
-    
-    const handleScroll = () => {
-      if (scrollViewportRef.current) {
-        setScrollTop(scrollViewportRef.current.scrollTop);
-      }
-    };
-    
-    if (scrollViewport) {
-      scrollViewport.addEventListener('scroll', handleScroll, { passive: true });
-    }
-    
-    // Also listen on window resize to update position
-    window.addEventListener('resize', handleScroll, { passive: true });
-    
-    return () => {
-      clearTimeout(timeout);
-      if (scrollViewport) {
-        scrollViewport.removeEventListener('scroll', handleScroll);
-      }
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, []); // Empty dependency array - only run once on mount
 
   // Make this view a droppable zone for tasks from Kanban (disabled on mobile)
   const { setNodeRef, isOver } = useDroppable({
@@ -292,7 +243,6 @@ export function TodayAgendaView({
 
   // Calculate height based on task duration
   // Auto-adjusts for: badge wrapping, assigned users, tracking, descriptions
-  // Memoized to prevent unnecessary recalculations in staticIndicatorPosition
   const getTaskHeight = useCallback((task: Task) => {
     const minutes = task.estimatedTime || TASK_CALCULATION_CONSTANTS.defaultDurationMinutes;
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
@@ -416,54 +366,6 @@ export function TodayAgendaView({
     }
   }, []); // Empty deps - function is pure, only depends on task parameter
 
-  // Calculate static indicator position once - doesn't recalculate as time passes
-  // Must be after getTaskHeight is defined
-  const staticIndicatorPosition = useMemo(() => {
-    if (todayTasks.length === 0) return null;
-    
-    const now = staticTimestamp;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isToday = now.getTime() >= today.getTime() && 
-                    now.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
-    
-    if (!isToday) return null;
-    
-    const currentTimeMs = now.getTime();
-    let position = 0;
-    let accumulatedHeight = 0;
-    const gapBetweenTasks = 12; // space-y-3 = 12px
-    
-    for (let i = 0; i < todayTasks.length; i++) {
-      const task = todayTasks[i];
-      if (!task.scheduledDate) continue;
-      
-      const taskTime = new Date(task.scheduledDate).getTime();
-      const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
-      const taskEnd = taskTime + taskDuration;
-      const taskHeight = getTaskHeight(task);
-      
-      if (currentTimeMs >= taskTime && currentTimeMs <= taskEnd) {
-        // Current time is within this task
-        const progress = (currentTimeMs - taskTime) / taskDuration;
-        position = accumulatedHeight + (taskHeight * progress);
-        break;
-      } else if (currentTimeMs < taskTime) {
-        // Current time is before this task
-        position = accumulatedHeight;
-        break;
-      } else {
-        // Current time is after this task
-        accumulatedHeight += taskHeight + gapBetweenTasks;
-        if (i === todayTasks.length - 1) {
-          // Current time is after last task
-          position = accumulatedHeight;
-        }
-      }
-    }
-    
-    return position;
-  }, [staticTimestamp, todayTasks, getTaskHeight]);
 
   return (
     <>
@@ -493,21 +395,33 @@ export function TodayAgendaView({
       {/* Header */}
       {!hideHeader && (
         <>
-          <AppHeader
-            title="Today Agenda"
-            panelOpen={true}
-            isSidePanelHeader={true}
-            description={
-              isOver
-                ? "Drop to add to today"
-                : today.toLocaleDateString("en-US", {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })
-            }
-            hideDesktopLogo
-          />
+          <div className="relative">
+            <AppHeader
+              title="Today Agenda"
+              panelOpen={true}
+              isSidePanelHeader={true}
+              description={
+                isOver
+                  ? "Drop to add to today"
+                  : today.toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    })
+              }
+              hideDesktopLogo
+            />
+            {/* Current Time Indicator - Bottom right corner of header */}
+            <div className="absolute bottom-2 right-4 md:right-6 z-10 pointer-events-none">
+              <span className="text-xs font-medium text-primary bg-background/80 dark:bg-card/80 px-2 py-1 rounded shadow-sm">
+                {currentTime.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </span>
+            </div>
+          </div>
           {/* Spacer for fixed header on mobile */}
           <div className="md:hidden h-[64px]" />
         </>
@@ -545,36 +459,6 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                {/* Current Time Indicator - Only show for today */}
-                {staticIndicatorPosition !== null && isScrollReady && (
-                  (() => {
-                    const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
-                    
-                    return (
-                      <div
-                        className="absolute left-0 right-0 z-0 pointer-events-none"
-                        style={{
-                          top: `${paddingTop + staticIndicatorPosition - scrollTop}px`,
-                          transform: 'translateY(-50%)',
-                        }}
-                      >
-                        <div className="flex items-center gap-2 px-5">
-                          <div className="flex-1 h-0.5 bg-primary/60 relative">
-                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary border-2 border-background" />
-                          </div>
-                          <span className="text-xs font-medium text-primary bg-background/80 dark:bg-card/80 px-2 py-0.5 rounded">
-                            {currentTime.toLocaleTimeString("en-US", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()
-                )}
-                
                 <div className="space-y-3 w-full relative z-10" style={{ overflow: 'visible' }}>
                   {todayTasks.map((task, index) => (
                     <DraggableTodayAgendaTask
