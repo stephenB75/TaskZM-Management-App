@@ -862,12 +862,12 @@ export function DashboardView({
       {/* Spacer for fixed header on mobile - accounts for header height + border */}
       <div className="md:hidden h-[10px] flex-shrink-0" />
 
-      {/* Mobile Day Selector - Only show on mobile when viewing week */}
+      {/* Mobile 7-Day Calendar - Only show on mobile when viewing week */}
       {mobileView === "week" && (
-        <div className="md:hidden border-b border-primary/10">
-          <div className="px-1 py-2 sm:px-2">
-            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-              {/* Previous Week Button */}
+        <div className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm">
+          <div className="px-2 py-3 sm:px-4 sm:py-4">
+            {/* Week Navigation Header */}
+            <div className="flex items-center justify-between mb-3">
               <Button
                 size="icon"
                 variant="ghost"
@@ -877,69 +877,15 @@ export function DashboardView({
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-
-              {/* Scrollable Day Selector */}
-              <div className="flex-1 overflow-x-auto scrollbar-hide min-w-0">
-                <div className="flex gap-0.5 sm:gap-1.5">
-                  {weekColumns.map((column, index) => {
-                    const isSelected = index === mobileDayIndex;
-                    const dayTasks = getTasksForDay(column.dateString);
-
-                    return (
-                      <button
-                        key={column.dateString}
-                        onClick={() => setMobileDayIndex(index)}
-                        className={cn(
-                          "flex flex-col items-center justify-center px-1.5 py-1.5 sm:px-2.5 sm:py-2 rounded-xl transition-all flex-shrink-0 w-[calc((100%-12px)/7)] sm:w-auto sm:min-w-[48px]",
-                          isSelected
-                            ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
-                            : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "text-[9px] sm:text-[10px] uppercase tracking-wide mb-0.5 sm:mb-1 leading-tight",
-                            isSelected
-                              ? "font-semibold"
-                              : "text-muted-foreground font-medium",
-                          )}
-                        >
-                          {column.dayName}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-sm sm:text-base font-semibold leading-none",
-                            isSelected
-                              ? "text-primary"
-                              : "text-foreground",
-                          )}
-                        >
-                          {column.date.getDate()}
-                        </span>
-                        {dayTasks.length > 0 && (
-                          <div className="flex gap-0.5 mt-0.5 sm:mt-1">
-                            {Array.from({
-                              length: Math.min(dayTasks.length, 3),
-                            }).map((_, i) => (
-                              <div
-                                key={i}
-                                className={cn(
-                                  "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
-                                  isSelected
-                                    ? "bg-primary"
-                                    : "bg-primary/40",
-                                )}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+              
+              <div className="flex-1 text-center">
+                <span className="text-sm font-semibold text-foreground">
+                  {weekColumns[0]?.date && weekColumns[6]?.date
+                    ? `${weekColumns[0].date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekColumns[6].date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: weekColumns[0].date.getFullYear() !== weekColumns[6].date.getFullYear() ? "numeric" : undefined })}`
+                    : "Week View"}
+                </span>
               </div>
-
-              {/* Next Week Button */}
+              
               <Button
                 size="icon"
                 variant="ghost"
@@ -948,6 +894,76 @@ export function DashboardView({
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
+            </div>
+
+            {/* 7-Day Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {/* Day Headers */}
+              {weekColumns.map((column) => (
+                <div
+                  key={`header-${column.dateString}`}
+                  className="text-center text-[10px] sm:text-xs font-medium text-muted-foreground py-1"
+                >
+                  {column.dayName.substring(0, 3)}
+                </div>
+              ))}
+              
+              {/* Date Cells */}
+              {weekColumns.map((column, index) => {
+                const isSelected = index === mobileDayIndex;
+                const dayTasks = getTasksForDay(column.dateString);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isToday = 
+                  column.date.getFullYear() === today.getFullYear() &&
+                  column.date.getMonth() === today.getMonth() &&
+                  column.date.getDate() === today.getDate();
+
+                return (
+                  <button
+                    key={column.dateString}
+                    onClick={() => setMobileDayIndex(index)}
+                    className={cn(
+                      "flex flex-col items-center justify-center py-2 rounded-lg transition-all relative",
+                      isSelected
+                        ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
+                        : isToday
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "text-sm sm:text-base font-semibold leading-none",
+                        isSelected
+                          ? "text-primary"
+                          : isToday
+                          ? "text-primary"
+                          : "text-foreground",
+                      )}
+                    >
+                      {column.date.getDate()}
+                    </span>
+                    {dayTasks.length > 0 && (
+                      <div className="flex gap-0.5 mt-1">
+                        {Array.from({
+                          length: Math.min(dayTasks.length, 3),
+                        }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
+                              isSelected
+                                ? "bg-primary"
+                                : "bg-primary/40",
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
