@@ -44,6 +44,8 @@ interface DayColumn {
   dateString: string;
   isToday: boolean;
   isWeekend: boolean;
+  weekNumber: number;
+  dayIndex: number;
 }
 
 interface SevenDayKanbanProps {
@@ -111,29 +113,32 @@ export function SevenDayKanban({
     // Use mobileWeekOffset in mobile mode, weekOffset in desktop mode
     const currentWeekOffset = mobileMode ? mobileWeekOffset : weekOffset;
     
-    // Start from tomorrow
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1 + (currentWeekOffset * 7));
+    // Start from Monday of the current week
+    const startOfWeek = new Date(today);
+    const currentDay = startOfWeek.getDay(); // 0 (Sun) - 6 (Sat)
+    const mondayOffset = (currentDay + 6) % 7; // Convert to Monday=0
+    startOfWeek.setDate(startOfWeek.getDate() - mondayOffset + currentWeekOffset * 7);
 
     return Array.from({ length: KANBAN_TIME.daysInWeek }, (_, i) => {
-      const date = new Date(tomorrow);
-      date.setDate(tomorrow.getDate() + i);
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
       
       const isToday = 
         date.getFullYear() === today.getFullYear() &&
         date.getMonth() === today.getMonth() &&
         date.getDate() === today.getDate();
 
-      // Get day of week (0 = Sunday, 1 = Monday, etc.)
       const dayOfWeek = date.getDay();
-      const dayName = DAYS_OF_WEEK[dayOfWeek === 0 ? 6 : dayOfWeek - 1]; // Adjust for Monday-based array
+      const dayName = DAYS_OF_WEEK[dayOfWeek === 0 ? 6 : dayOfWeek - 1]; // Monday-based array
 
       return {
         date,
         dayName,
         dateString: date.toISOString().split('T')[0],
         isToday,
-        isWeekend: dayOfWeek === 0 || dayOfWeek === 6, // Saturday (0) or Sunday (6)
+        isWeekend: dayOfWeek === 0 || dayOfWeek === 6, // Sunday or Saturday
+        weekNumber: Math.floor(i / 7) + 1,
+        dayIndex: i,
       };
     });
   };
@@ -423,7 +428,10 @@ export function SevenDayKanban({
 
   // Render mobile single column or desktop multi-column
   if (mobileMode) {
-    const currentColumn = weekColumns[mobileDayIndex];
+    const currentColumn = weekColumns[mobileDayIndex] ?? weekColumns[0];
+    if (!currentColumn) {
+      return null;
+    }
     const dayTasks = getTasksForDay(currentColumn.dateString);
     const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
 
@@ -569,6 +577,9 @@ export function SevenDayKanban({
               }}
             >
               {weekColumns.map((column, index) => {
+                const weekNumber = column.weekNumber ?? Math.floor(index / 7) + 1;
+                const isWeekStart = (column.dayIndex ?? index) % 7 === 0;
+                const isSecondWeek = weekNumber === 2;
                 const dayTasks = getTasksForDay(column.dateString);
                 const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
 
@@ -579,7 +590,8 @@ export function SevenDayKanban({
                       'flex flex-col rounded-2xl overflow-hidden soft-shadow',
                       // Use theme-aware backgrounds in dark mode, day-specific in light mode
                       !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-white/80'),
-                      column.isWeekend && isDark && 'bg-card/60'
+                      column.isWeekend && isDark && 'bg-card/60',
+                      isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
                     )}
                     style={{
                       minWidth: `${columnWidth}px`,
@@ -618,6 +630,19 @@ export function SevenDayKanban({
                         }),
                       }}
                     >
+                      {isWeekStart && (
+                        <div className="flex items-center justify-between mb-1">
+                          <span
+                            className={cn(
+                              'text-[10px] font-semibold uppercase tracking-[0.3em]',
+                              weekNumber === 2 ? 'text-primary dark:text-primary/80' : 'text-muted-foreground'
+                            )}
+                          >
+                            Week {weekNumber}
+                          </span>
+                          <span className="flex-1 h-px ml-2 bg-gradient-to-r from-primary/30 via-transparent to-transparent dark:from-primary/40" />
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 

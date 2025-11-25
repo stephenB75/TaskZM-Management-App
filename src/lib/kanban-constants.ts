@@ -174,7 +174,7 @@ export const KANBAN_SCROLL = {
 // Time Constants
 export const KANBAN_TIME = {
   defaultHour: 9, // 9 AM default time for new tasks
-  daysInWeek: 7,
+  daysInWeek: 14,
 } as const;
 
 // Mobile View Constants

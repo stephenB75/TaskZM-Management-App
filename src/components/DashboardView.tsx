@@ -42,6 +42,7 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { KANBAN_TIME } from "../lib/kanban-constants";
 import { toast } from "sonner";
 import type { Task } from "../types";
 
@@ -441,28 +442,26 @@ export function DashboardView({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1 + weekOffset * 7);
+    // Start from Monday of the current week
+    const startOfWeek = new Date(today);
+    const dayOfWeek = startOfWeek.getDay(); // 0 (Sun) - 6 (Sat)
+    const mondayOffset = (dayOfWeek + 6) % 7;
+    startOfWeek.setDate(startOfWeek.getDate() - mondayOffset + weekOffset * 7);
 
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(tomorrow);
-      date.setDate(tomorrow.getDate() + i);
+    const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 
-      const dayOfWeek = date.getDay();
-      const dayNames = [
-        "SUN",
-        "MON",
-        "TUE",
-        "WED",
-        "THU",
-        "FRI",
-        "SAT",
-      ];
+    return Array.from({ length: KANBAN_TIME.daysInWeek }, (_, i) => {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+
+      const dow = date.getDay();
 
       return {
         date,
-        dayName: dayNames[dayOfWeek],
+        dayName: dayNames[dow],
         dateString: date.toISOString().split("T")[0],
+        weekNumber: Math.floor(i / 7) + 1,
+        dayIndex: i,
       };
     });
   };
@@ -979,61 +978,87 @@ export function DashboardView({
                     const dayTasks = getTasksForDay(
                       column.dateString,
                     );
+                    const weekNumber =
+                      column.weekNumber ??
+                      Math.floor(index / 7) + 1;
+                    const isWeekStart =
+                      (column.dayIndex ?? index) % 7 === 0;
+                    const widthClass =
+                      "w-[calc((100%-12px)/7)] sm:w-auto sm:min-w-[48px]";
 
                     return (
-                      <button
+                      <div
                         key={column.dateString}
-                        onClick={() =>
-                          setMobileDayIndex(index)
-                        }
                         className={cn(
-                          "flex flex-col items-center justify-center px-1.5 py-1.5 sm:px-2.5 sm:py-2 rounded-xl transition-all flex-shrink-0 w-[calc((100%-12px)/7)] sm:w-auto sm:min-w-[48px]",
-                          isSelected
-                            ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
-                            : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
+                          "flex flex-col flex-shrink-0",
+                          widthClass,
                         )}
                       >
-                        <span
-                          className={cn(
-                            "text-[9px] sm:text-[10px] uppercase tracking-wide mb-0.5 sm:mb-1 leading-tight",
-                            isSelected
-                              ? "font-semibold"
-                              : "text-muted-foreground font-medium",
-                          )}
-                        >
-                          {column.dayName}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-sm sm:text-base font-semibold leading-none",
-                            isSelected
-                              ? "text-primary"
-                              : "text-foreground",
-                          )}
-                        >
-                          {column.date.getDate()}
-                        </span>
-                        {dayTasks.length > 0 && (
-                          <div className="flex gap-0.5 mt-0.5 sm:mt-1">
-                            {Array.from({
-                              length: Math.min(
-                                dayTasks.length,
-                                3,
-                              ),
-                            }).map((_, i) => (
-                              <div
-                                key={i}
-                                className={cn(
-                                  "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
-                                  isSelected
-                                    ? "bg-primary"
-                                    : "bg-primary/40",
-                                )}
-                              />
-                            ))}
-                          </div>
+                        {isWeekStart && (
+                          <span
+                            className={cn(
+                              "text-[10px] font-semibold uppercase tracking-[0.3em] mb-1",
+                              weekNumber === 2
+                                ? "text-primary"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            Week {weekNumber}
+                          </span>
                         )}
-                      </button>
+                        <button
+                          onClick={() =>
+                            setMobileDayIndex(index)
+                          }
+                          className={cn(
+                            "flex flex-col items-center justify-center px-1.5 py-1.5 sm:px-2.5 sm:py-2 rounded-xl transition-all w-full",
+                            isSelected
+                              ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
+                              : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "text-[9px] sm:text-[10px] uppercase tracking-wide mb-0.5 sm:mb-1 leading-tight",
+                              isSelected
+                                ? "font-semibold"
+                                : "text-muted-foreground font-medium",
+                            )}
+                          >
+                            {column.dayName}
+                          </span>
+                          <span
+                            className={cn(
+                              "text-sm sm:text-base font-semibold leading-none",
+                              isSelected
+                                ? "text-primary"
+                                : "text-foreground",
+                            )}
+                          >
+                            {column.date.getDate()}
+                          </span>
+                          {dayTasks.length > 0 && (
+                            <div className="flex gap-0.5 mt-0.5 sm:mt-1">
+                              {Array.from({
+                                length: Math.min(
+                                  dayTasks.length,
+                                  3,
+                                ),
+                              }).map((_, i) => (
+                                <div
+                                  key={i}
+                                  className={cn(
+                                    "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
+                                    isSelected
+                                      ? "bg-primary"
+                                      : "bg-primary/40",
+                                  )}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
