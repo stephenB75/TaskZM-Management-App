@@ -303,7 +303,7 @@ export const DraggableTaskCard = React.forwardRef<
       // Standard heights are TOTAL heights (including padding applied via CSS classes)
       // Do NOT add padding here - CSS classes handle padding, and standard heights already account for it
       // Return base height directly - this is the total card height matching the standard requirements
-      return Math.min(baseHeight, maxHeight);
+      return Math.max(Math.min(baseHeight, maxHeight), TASK_CARD_HEIGHT_CONFIG.minHeight);
     };
 
     const cardHeight = getCardHeight();
