@@ -54,9 +54,10 @@ export function useAIScheduler() {
   const getCategoryTimeSlot = (
     task: Task, 
     scheduleDate: Date, 
-    timeSlot: number
+    timeSlot: number,
+    forceCategoryHours: boolean = false
   ): { hours: number; minutes: number; reason: string } | null => {
-    if (!hoursSettings.respectHours) return null;
+    if (!hoursSettings.respectHours && !forceCategoryHours) return null;
 
     const category = getTaskCategory(task);
     if (!category) return null;
@@ -93,7 +94,11 @@ export function useAIScheduler() {
     };
   };
 
-  const generateSchedulePlan = (tasksToSchedule?: Task[], dateRange?: { startDate: Date; endDate: Date }): ScheduleResult => {
+  const generateSchedulePlan = (
+    tasksToSchedule?: Task[],
+    dateRange?: { startDate: Date; endDate: Date },
+    options?: { forceCategoryHours?: boolean }
+  ): ScheduleResult => {
     const unscheduledTasks = tasksToSchedule || getUnscheduledTasks();
     
     if (unscheduledTasks.length === 0) {
@@ -503,7 +508,12 @@ export function useAIScheduler() {
         
         // Try to get category-based time slot first
         let timeSlot = tasksScheduledToday % maxTasksPerDay;
-        const categoryTime = getCategoryTimeSlot(task, scheduleDate, timeSlot);
+        const categoryTime = getCategoryTimeSlot(
+          task,
+          scheduleDate,
+          timeSlot,
+          options?.forceCategoryHours ?? false
+        );
         
         if (categoryTime) {
           // Use category hours if available and respectHours is enabled
@@ -866,7 +876,11 @@ export function useAIScheduler() {
       endOfDay.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected day
-      const result = generateSchedulePlan(tasksForReschedule, { startDate: startOfDay, endDate: endOfDay });
+      const result = generateSchedulePlan(
+        tasksForReschedule,
+        { startDate: startOfDay, endDate: endOfDay },
+        { forceCategoryHours: true }
+      );
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
         for (const { task, scheduledDate } of result.scheduled) {
@@ -906,26 +920,19 @@ export function useAIScheduler() {
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
       // Create date range for the selected week (Monday to Sunday)
-      const today = new Date();
-      const todayDateKey = today.toISOString().split('T')[0];
-      const weekStartDateKey = startDate.toISOString().split('T')[0];
-      
       const weekStart = new Date(startDate);
-      // If rescheduling for current week (today is within this week), start from current time
-      if (weekStartDateKey === todayDateKey || (weekStart <= today && today <= new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000))) {
-        // Current week - use current time as start
-        weekStart.setTime(today.getTime());
-      } else {
-        // Future week - start from beginning of week
-        weekStart.setHours(0, 0, 0, 0);
-      }
+      weekStart.setHours(0, 0, 0, 0);
       
       const weekEnd = new Date(startDate);
       weekEnd.setDate(weekEnd.getDate() + 6); // 7 days including start
       weekEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected week
-      const result = generateSchedulePlan(tasksForReschedule, { startDate: weekStart, endDate: weekEnd });
+      const result = generateSchedulePlan(
+        tasksForReschedule,
+        { startDate: weekStart, endDate: weekEnd },
+        { forceCategoryHours: true }
+      );
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
         for (const { task, scheduledDate } of result.scheduled) {
@@ -965,24 +972,18 @@ export function useAIScheduler() {
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
       // Create date range for the selected month (first day to last day of month)
-      const today = new Date();
-      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-      
-      // If rescheduling for current month (today is within this month), start from current time
-      const isCurrentMonth = today.getFullYear() === date.getFullYear() && today.getMonth() === date.getMonth();
-      if (isCurrentMonth) {
-        // Current month - use current time as start
-        monthStart.setTime(today.getTime());
-      } else {
-        // Future month - start from beginning of month
-        monthStart.setHours(0, 0, 0, 0);
-      }
+      const monthStart = new Date(date);
+      monthStart.setHours(0, 0, 0, 0);
       
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       monthEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected month
-      const result = generateSchedulePlan(tasksForReschedule, { startDate: monthStart, endDate: monthEnd });
+      const result = generateSchedulePlan(
+        tasksForReschedule,
+        { startDate: monthStart, endDate: monthEnd },
+        { forceCategoryHours: true }
+      );
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
         for (const { task, scheduledDate } of result.scheduled) {
