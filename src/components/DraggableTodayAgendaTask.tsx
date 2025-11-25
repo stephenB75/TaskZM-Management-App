@@ -66,10 +66,35 @@ export function DraggableTodayAgendaTask({
   
   // Force re-render when task properties change to recalculate height
   const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+  
+  // Memoize key values that affect height to create stable dependencies
+  const assignedToKey = React.useMemo(() => 
+    task.assignedTo ? `${task.assignedTo.length}-${task.assignedTo.join(',')}` : 'none',
+    [task.assignedTo]
+  );
+  const subtasksKey = React.useMemo(() => 
+    task.subtasks ? `${task.subtasks.length}-${task.subtasks.map(s => s.id).join(',')}` : 'none',
+    [task.subtasks]
+  );
+  
   React.useEffect(() => {
     // Force re-render when task properties that affect height change
+    // Using stable keys to track array changes properly
     forceUpdate();
-  }, [task.assignedTo?.length, task.subtasks?.length, task.actualTime, task.description, task.estimatedTime, timerState.isRunning]);
+  }, [
+    // Timer state changes (affects pomodoro display)
+    timerState.isRunning,
+    // Task properties that affect height - using stable keys
+    assignedToKey,
+    subtasksKey,
+    task.actualTime,
+    task.description,
+    task.estimatedTime,
+    // Properties that affect badge display
+    task.scheduledDate,
+    task.dueDate,
+    task.tags?.length,
+  ]);
   
   const {
     attributes,

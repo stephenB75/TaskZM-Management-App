@@ -309,12 +309,41 @@ export const DraggableTaskCard = React.forwardRef<
     const cardHeight = getCardHeight();
     
     // Force re-render when components activate/deactivate to recalculate height
+    // Track all properties that affect card height calculation
     const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+    
+    // Memoize key values that affect height to create stable dependencies
+    const assignedToKey = React.useMemo(() => 
+      task.assignedTo ? `${task.assignedTo.length}-${task.assignedTo.join(',')}` : 'none',
+      [task.assignedTo]
+    );
+    const subtasksKey = React.useMemo(() => 
+      task.subtasks ? `${task.subtasks.length}-${task.subtasks.map(s => s.id).join(',')}` : 'none',
+      [task.subtasks]
+    );
+    const tagsKey = React.useMemo(() => 
+      task.tags ? `${task.tags.length}-${task.tags.join(',')}` : 'none',
+      [task.tags]
+    );
+    
     React.useEffect(() => {
-      // This effect triggers a re-render when timer state or assigned users change
+      // This effect triggers a re-render when any component or property that affects height changes
       // The getCardHeight function will recalculate based on current state
       forceUpdate();
-    }, [timerState.isRunning, task.assignedTo?.length, task.subtasks?.length, task.actualTime, task.description, task.estimatedTime]);
+    }, [
+      // Timer state changes (affects pomodoro display and tracking badge)
+      timerState.isRunning,
+      // Task properties that affect height - using stable keys to track array changes
+      assignedToKey,
+      subtasksKey,
+      tagsKey,
+      task.actualTime,
+      task.description,
+      task.estimatedTime,
+      // Properties that affect badge wrapping (affects badgeWrapHeight)
+      task.scheduledDate,
+      task.dueDate,
+    ]);
     
     const topRowItemCount = [
       Boolean(scheduledTimeLabel),
