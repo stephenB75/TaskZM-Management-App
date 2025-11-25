@@ -85,8 +85,8 @@ export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe
 export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Button top padding
 export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.375rem'; // Button bottom padding
 export const NAV_BAR_ICON_SIZE = '2rem'; // w-8 h-8 = 2rem
-export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '1.05rem'; // Move icons closer to nav bottom (approx 15% of nav height)
-export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '1.05rem'; // Move icons closer to nav bottom (approx 15% of nav height)
+export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '2.25rem'; // Center icons vertically within nav bar
+export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '2.25rem'; // Center icons vertically within nav bar
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
 export const NAV_BAR_INDICATOR_TOP = '-0.5rem'; // Keep indicator above icon (moves with icon)
 export const NAV_BAR_INDICATOR_MARGIN_LEFT = '-1rem';
