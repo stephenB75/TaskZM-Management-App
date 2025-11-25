@@ -552,7 +552,7 @@ export function TodayAgendaView({
                     
                     return (
                       <div
-                        className="absolute left-0 right-0 z-50 pointer-events-none"
+                        className="absolute left-0 right-0 z-0 pointer-events-none"
                         style={{
                           top: `${paddingTop + staticIndicatorPosition - scrollTop}px`,
                           transform: 'translateY(-50%)',
@@ -575,7 +575,7 @@ export function TodayAgendaView({
                   })()
                 )}
                 
-                <div className="space-y-3 w-full relative" style={{ overflow: 'visible' }}>
+                <div className="space-y-3 w-full relative z-10" style={{ overflow: 'visible' }}>
                   {todayTasks.map((task, index) => (
                     <DraggableTodayAgendaTask
                       key={task.id}
