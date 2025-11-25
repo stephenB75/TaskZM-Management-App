@@ -586,20 +586,31 @@ export function SevenDayKanban({
               }}
             >
               {weekGroups.map((group, groupIndex) => (
-                <div key={`week-group-${groupIndex}`} className="flex flex-col gap-2 min-w-max">
-                  <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
-                    <span
-                      className={cn(
-                        'text-[11px] sm:text-xs font-semibold tracking-[0.5em] uppercase',
-                        groupIndex === 1 ? 'text-primary dark:text-primary/80' : 'text-muted-foreground'
-                      )}
-                    >
-                      {groupIndex === 0 ? 'WEEK ONE' : 'WEEK TWO'}
-                    </span>
-                    <span className="flex-1 h-px bg-gradient-to-r from-primary/30 via-transparent to-transparent dark:from-primary/40" />
-                  </div>
-                  <div className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2">
-                    {group.map((column, columnIndex) => {
+                <React.Fragment key={`week-group-${groupIndex}`}>
+                  {groupIndex === 1 && (
+                    <div className="flex flex-col items-center justify-center px-4 sm:px-6 mx-2 sm:mx-4">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/80 dark:bg-card/70 border border-primary/30 dark:border-primary/40 flex items-center justify-center shadow-xl mb-2">
+                        <span className="text-4xl sm:text-5xl font-light text-primary">+</span>
+                      </div>
+                      <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
+                        Transition
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2 min-w-max">
+                    <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
+                      <span
+                        className={cn(
+                          'text-[11px] sm:text-xs font-semibold tracking-[0.5em] uppercase',
+                          groupIndex === 1 ? 'text-primary dark:text-primary/80' : 'text-muted-foreground'
+                        )}
+                      >
+                        {groupIndex === 0 ? 'WEEK ONE' : 'WEEK TWO'}
+                      </span>
+                      <span className="flex-1 h-px bg-gradient-to-r from-primary/30 via-transparent to-transparent dark:from-primary/40" />
+                    </div>
+                    <div className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2">
+                      {group.map((column, columnIndex) => {
                       const dayTasks = getTasksForDay(column.dateString);
                       const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
                       const globalIndex = groupIndex * 7 + columnIndex;
@@ -726,7 +737,7 @@ export function SevenDayKanban({
                       );
                     })}
                   </div>
-                </div>
+                </React.Fragment>
               ))}
             </div>
           </div>
