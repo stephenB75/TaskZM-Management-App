@@ -417,23 +417,7 @@ export function TodayAgendaView({
               }
               hideDesktopLogo
             />
-            {/* Current Time Indicator - Bottom right corner of header */}
-            {/* Mobile: fixed positioning relative to viewport (mobile header is fixed) */}
-            <div 
-              className="md:hidden fixed right-4 z-50 pointer-events-none"
-              style={{ 
-                top: '52px', // Position at bottom of mobile header (64px height - 12px padding)
-              }}
-            >
-              <span className="text-xs font-medium text-primary bg-background/90 dark:bg-card/90 px-2 py-1 rounded shadow-sm border border-primary/20 backdrop-blur-sm">
-                {currentTime.toLocaleTimeString("en-US", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                })}
-              </span>
-            </div>
-            {/* Desktop: absolute positioning relative to header container */}
+            {/* Current Time Indicator - Desktop only (bottom right corner of header) */}
             <div 
               className="hidden md:block absolute bottom-2 right-6 z-50 pointer-events-none"
             >
