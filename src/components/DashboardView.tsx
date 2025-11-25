@@ -62,6 +62,18 @@ interface SchedulePlan {
   reason?: string;
 }
 
+const getTwoWeekDateRange = () => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  const mondayOffset = (day + 6) % 7;
+  start.setDate(start.getDate() - mondayOffset);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 13);
+  end.setHours(23, 59, 59, 999);
+  return { startDate: start, endDate: end };
+};
+
 // Mini Calendar Component for AI Re-scheduler (matching TaskDialog style)
 function RescheduleMiniCalendar({
   rescheduleType,
@@ -411,6 +423,7 @@ export function DashboardView({
   const getScheduledTasksForDay = aiSchedulerContext?.getScheduledTasksForDay;
   const getScheduledTasksForWeek = aiSchedulerContext?.getScheduledTasksForWeek;
   const getScheduledTasksForMonth = aiSchedulerContext?.getScheduledTasksForMonth;
+  const generateSchedulePlan = aiSchedulerContext?.generateSchedulePlan;
 
   // Safe wrapper for hasFeature
   const safeHasFeature = (feature: keyof import('../types').SubscriptionFeatures): boolean => {
@@ -493,7 +506,6 @@ export function DashboardView({
   };
 
   const handleScheduleUnscheduledTasks = () => {
-    // Check if user has access to AI Scheduler feature
     if (!safeHasFeature('aiScheduler')) {
       toast.error('AI Scheduler is a Pro feature', {
         description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
@@ -501,7 +513,6 @@ export function DashboardView({
       return;
     }
 
-    // Check AI scheduler usage limit for free tier
     if (features?.aiSchedulerLimit !== undefined) {
       const { hasReachedLimit, incrementAIUsage } = require('../lib/ai-scheduler-usage');
       if (hasReachedLimit(features.aiSchedulerLimit)) {
@@ -509,22 +520,15 @@ export function DashboardView({
           description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} AI suggestions this week. Upgrade to Pro for unlimited AI scheduling.`,
           action: {
             label: 'Upgrade',
-            onClick: () => {
-              // This will be handled by parent component
-              window.dispatchEvent(new CustomEvent('show-pricing-dialog'));
-            },
+            onClick: () => window.dispatchEvent(new CustomEvent('show-pricing-dialog')),
           },
         });
         return;
       }
-      // Increment usage before scheduling
       incrementAIUsage();
     }
 
-    const unscheduledTasks = tasks.filter(
-      (t) => !t.scheduledDate && t.status !== "done",
-    );
-
+    const unscheduledTasks = tasks.filter((t) => !t.scheduledDate && t.status !== "done");
     if (unscheduledTasks.length === 0) {
       toast.info("No unscheduled tasks found", {
         description: "All your tasks are already scheduled!",
@@ -532,131 +536,35 @@ export function DashboardView({
       return;
     }
 
-    // Sort tasks by priority and status for intelligent scheduling
-    const sortedTasks = [...unscheduledTasks].sort((a, b) => {
-      // Priority weights: urgent=4, high=3, medium=2, low=1
-      const priorityWeight = {
-        urgent: 4,
-        high: 3,
-        medium: 2,
-        low: 1,
-      };
-      const aPriority = priorityWeight[a.priority] || 1;
-      const bPriority = priorityWeight[b.priority] || 1;
+    if (!generateSchedulePlan) {
+      toast.error('Unable to start AI Scheduler', {
+        description: 'Please try again in a moment.',
+      });
+      return;
+    }
 
-      // Status weights: on-hold=1, todo=2, in-progress=3
-      const statusWeight = {
-        "on-hold": 1,
-        todo: 2,
-        "in-progress": 3,
-        done: 0,
-      };
-      const aStatus = statusWeight[a.status] || 0;
-      const bStatus = statusWeight[b.status] || 0;
+    const range = getTwoWeekDateRange();
+    const result = generateSchedulePlan(undefined, range, { forceCategoryHours: true });
 
-      // First sort by status (in-progress first)
-      if (aStatus !== bStatus) return bStatus - aStatus;
+    if (result.scheduled.length === 0 && result.exceedsLimit.length === 0) {
+      toast.info("No available time slots", {
+        description: "AI Scheduler couldn't find any openings within the next two weeks.",
+      });
+      return;
+    }
 
-      // Then by priority
-      if (aPriority !== bPriority) return bPriority - aPriority;
-
-      // Then by due date (if exists)
-      if (a.dueDate && b.dueDate) {
-        return (
-          new Date(a.dueDate).getTime() -
-          new Date(b.dueDate).getTime()
-        );
-      }
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-
-      return 0;
-    });
-
-    const plan: SchedulePlan[] = [];
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0);
-
-    let currentDay = new Date(tomorrow);
-    let tasksScheduledToday = 0;
-    const maxTasksPerDay = 3;
-
-    sortedTasks.forEach((task) => {
-      // Determine scheduling based on priority and status
-      let daysToAdd = 0;
-      let reason = "";
-
-      if (task.status === "in-progress") {
-        daysToAdd = 0;
-        reason = "In-progress - scheduled ASAP";
-      } else if (task.priority === "urgent") {
-        daysToAdd = 0;
-        reason = "Urgent priority - scheduled for tomorrow";
-      } else if (task.priority === "high") {
-        daysToAdd =
-          tasksScheduledToday >= maxTasksPerDay ? 1 : 0;
-        reason =
-          daysToAdd === 0
-            ? "High priority - scheduled soon"
-            : "High priority - next available slot";
-      } else if (task.priority === "medium") {
-        daysToAdd = Math.floor(tasksScheduledToday / 2) + 1;
-        reason = "Medium priority - balanced schedule";
-      } else {
-        daysToAdd = Math.floor(tasksScheduledToday / 2) + 2;
-        reason = "Low priority - scheduled for later";
-      }
-
-      // Check if task has a due date and adjust if needed
-      if (task.dueDate) {
-        const dueDate = new Date(task.dueDate);
-        const suggestedDate = new Date(tomorrow);
-        suggestedDate.setDate(
-          suggestedDate.getDate() + daysToAdd,
-        );
-
-        // If suggested date is after due date, schedule closer to due date
-        if (suggestedDate > dueDate) {
-          const daysDiff = Math.max(
-            0,
-            Math.floor(
-              (dueDate.getTime() - tomorrow.getTime()) /
-                (1000 * 60 * 60 * 24),
-            ) - 1,
-          );
-          daysToAdd = Math.max(0, daysDiff);
-          reason = "Due date approaching - prioritized";
-        }
-      }
-
-      // Calculate time slot based on priority and estimated time
-      let timeSlot = tasksScheduledToday % maxTasksPerDay;
-      const scheduleDate = new Date(tomorrow);
-      scheduleDate.setDate(scheduleDate.getDate() + daysToAdd);
-
-      // Schedule urgent/in-progress tasks in the morning
-      if (
-        task.status === "in-progress" ||
-        task.priority === "urgent"
-      ) {
-        scheduleDate.setHours(9, 0, 0, 0);
-      } else if (task.priority === "high") {
-        const hourOffset =
-          timeSlot === 0 ? 0 : timeSlot === 1 ? 2 : 4;
-        scheduleDate.setHours(9 + hourOffset, 0, 0, 0);
-      } else {
-        const hourOffset =
-          timeSlot === 0 ? 2 : timeSlot === 1 ? 4 : 6;
-        scheduleDate.setHours(9 + hourOffset, 0, 0, 0);
-      }
-
-      plan.push({ task, scheduledDate: scheduleDate, reason });
-      tasksScheduledToday++;
-    });
-
-    setSchedulePlan(plan);
+    setSchedulePlan(result.scheduled);
     setShowSchedulePreview(true);
+
+    if (result.exceedsLimit.length > 0) {
+      toast.warning(
+        `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} need manual scheduling`,
+        {
+          description: 'No available slots within the next two weeks for these tasks.',
+          duration: 5000,
+        }
+      );
+    }
   };
 
   const confirmScheduling = () => {

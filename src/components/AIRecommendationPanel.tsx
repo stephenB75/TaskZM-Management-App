@@ -59,6 +59,18 @@ interface AIRecommendationPanelProps {
   onClose: () => void;
 }
 
+const getTwoWeekDateRange = () => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  const mondayOffset = (day + 6) % 7;
+  start.setDate(start.getDate() - mondayOffset);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 13);
+  end.setHours(23, 59, 59, 999);
+  return { startDate: start, endDate: end };
+};
+
 export function AIRecommendationPanel({
   onClose,
 }: AIRecommendationPanelProps) {
@@ -121,7 +133,8 @@ export function AIRecommendationPanel({
       incrementAIUsage();
     }
 
-    const result = generateSchedulePlan();
+    const range = getTwoWeekDateRange();
+    const result = generateSchedulePlan(undefined, range, { forceCategoryHours: true });
     
     // Check if any days exceed 5 hours
     if (result.daysExceedingLimit.length > 0) {
@@ -153,7 +166,8 @@ export function AIRecommendationPanel({
   const handleProceedWithExceedsLimit = () => {
     setShowExceedsLimitDialog(false);
     // Regenerate plan and proceed with scheduling
-    const result = generateSchedulePlan();
+    const range = getTwoWeekDateRange();
+    const result = generateSchedulePlan(undefined, range, { forceCategoryHours: true });
     setSchedulePlan(result.scheduled);
     setShowSchedulePreview(true);
     

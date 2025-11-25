@@ -32,6 +32,18 @@ import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from
 import { useIsMobile } from "./ui/use-mobile";
 import type { Task } from "../types";
 
+const getTwoWeekDateRange = () => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  const mondayOffset = (day + 6) % 7;
+  start.setDate(start.getDate() - mondayOffset);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 13);
+  end.setHours(23, 59, 59, 999);
+  return { startDate: start, endDate: end };
+};
+
 export function InboxView() {
   const { tasks, addTask } = useTasks();
   const { getTeamMember } = useTeam();
@@ -160,11 +172,27 @@ export function InboxView() {
     );
 
     try {
-      await scheduleAllTasks();
+      const range = getTwoWeekDateRange();
+      const result = await scheduleAllTasks({ dateRange: range, forceCategoryHours: true });
       toast.dismiss(loadingToast);
-      toast.success("Inbox cleared!", {
-        description: "All tasks have been scheduled",
-      });
+      if (result.scheduled.length > 0) {
+        toast.success("Inbox cleared!", {
+          description: `Scheduled ${result.scheduled.length} task${result.scheduled.length === 1 ? "" : "s"} across the next two weeks`,
+        });
+      } else {
+        toast.info("No available slots", {
+          description: "AI Scheduler couldn't find openings within the next two weeks.",
+        });
+      }
+
+      if (result.exceedsLimit.length > 0) {
+        toast.warning(
+          `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? "" : "s"} need manual scheduling`,
+          {
+            description: "No remaining time within the next two weeks for these tasks.",
+          },
+        );
+      }
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error("Scheduling failed", {

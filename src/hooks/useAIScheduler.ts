@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTasks } from '../contexts/TaskContext';
 import { useAI } from '../contexts/AIContext';
 import { isTaskBlocked, calculateDependencyDepth } from '../lib/utils';
+import { KANBAN_TIME } from '../lib/kanban-constants';
 import type { Task } from '../types';
 
 export interface SchedulePlan {
@@ -782,8 +783,8 @@ export function useAIScheduler() {
     }
   };
 
-  const scheduleAllTasks = async (): Promise<ScheduleResult> => {
-    const result = generateSchedulePlan();
+  const scheduleAllTasks = async (options?: { dateRange?: { startDate: Date; endDate: Date }; forceCategoryHours?: boolean }): Promise<ScheduleResult> => {
+    const result = generateSchedulePlan(undefined, options?.dateRange, { forceCategoryHours: options?.forceCategoryHours });
     if (result.scheduled.length > 0) {
       await applySchedulePlan(result.scheduled);
     }
@@ -803,7 +804,7 @@ export function useAIScheduler() {
   // Helper: Get tasks scheduled for a week (starting from date)
   const getScheduledTasksForWeek = (startDate: Date): Task[] => {
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6); // 7 days including start
+    endDate.setDate(endDate.getDate() + (KANBAN_TIME.daysInWeek - 1));
     
     return tasks.filter(task => {
       if (!task.scheduledDate || task.status === 'done') return false;
@@ -924,7 +925,7 @@ export function useAIScheduler() {
       weekStart.setHours(0, 0, 0, 0);
       
       const weekEnd = new Date(startDate);
-      weekEnd.setDate(weekEnd.getDate() + 6); // 7 days including start
+      weekEnd.setDate(weekEnd.getDate() + (KANBAN_TIME.daysInWeek - 1));
       weekEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected week

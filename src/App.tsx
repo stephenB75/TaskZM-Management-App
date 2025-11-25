@@ -52,6 +52,18 @@ import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIG
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
+const getTwoWeekDateRange = () => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  const mondayOffset = (day + 6) % 7;
+  start.setDate(start.getDate() - mondayOffset);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 13);
+  end.setHours(23, 59, 59, 999);
+  return { startDate: start, endDate: end };
+};
+
 function AppContent() {
   const { user, isLoading } = useAuth();
   useDemoActivity(); // Track demo user activity on app interactions
@@ -426,7 +438,7 @@ function AppContent() {
 
     try {
       // Schedule all tasks
-      const result = await scheduleAllTasks();
+      const result = await scheduleAllTasks({ dateRange: getTwoWeekDateRange(), forceCategoryHours: true });
       
       // Dismiss loading toast
       toast.dismiss(loadingToast);
