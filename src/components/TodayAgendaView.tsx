@@ -358,9 +358,9 @@ export function TodayAgendaView({
         ref={setNodeRef}
         data-droppable-id="today-agenda"
         className={cn(
-          `h-full flex flex-col transition-all duration-200 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
+          `h-full flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
-            "bg-primary/10 border-2 border-primary/30 border-dashed",
+            "bg-primary/15 border-2 border-primary/50 border-dashed shadow-lg shadow-primary/20",
           !isMobile && "min-h-[400px]", // Ensure drop zone is always accessible
         )}
         style={{
@@ -384,7 +384,7 @@ export function TodayAgendaView({
             isSidePanelHeader={true}
             description={
               isOver
-                ? "Drop to add to today"
+                ? "✨ Drop task here to schedule for today"
                 : today.toLocaleDateString("en-US", {
                     weekday: "short",
                     month: "short",
@@ -424,18 +424,37 @@ export function TodayAgendaView({
             style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
           >
             {todayTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center min-h-[300px] pointer-events-none">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
-                  <Calendar className="w-6 h-6 text-primary/40" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-3 pointer-events-none">
-                  {TODAY_AGENDA_TEXT.emptyState.noTasks}
+              <div className={cn(
+                "flex flex-col items-center justify-center py-12 text-center min-h-[300px] pointer-events-none transition-all duration-300",
+                isOver && "scale-105"
+              )}>
+                <motion.div 
+                  className={cn(
+                    "w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none transition-all duration-300",
+                    isOver && "bg-primary/20 scale-110 ring-4 ring-primary/30"
+                  )}
+                  animate={isOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Calendar className={cn(
+                    "w-6 h-6 text-primary/40 transition-colors duration-300",
+                    isOver && "text-primary/60"
+                  )} />
+                </motion.div>
+                <p className={cn(
+                  "text-sm text-muted-foreground mb-3 pointer-events-none transition-colors duration-300",
+                  isOver && "text-primary/80 font-medium"
+                )}>
+                  {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleAddTask}
-                  className="!rounded-full pointer-events-auto"
+                  className={cn(
+                    "!rounded-full pointer-events-auto transition-all duration-300",
+                    isOver && "ring-2 ring-primary/50 scale-105"
+                  )}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   {TODAY_AGENDA_TEXT.emptyState.addTask}

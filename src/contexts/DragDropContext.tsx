@@ -61,11 +61,38 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     const taskId = event.active.id as string;
     setActiveId(taskId);
     document.body.classList.add('dragging');
+    // Add smooth cursor transition
+    document.body.style.cursor = 'grabbing';
   };
 
   const handleDragOver = (event: DragOverEvent) => {
     // Store drop position for time calculation
     // This will be used in handleDragEnd to calculate time slot
+    // Add visual feedback for invalid drops if needed
+    const taskId = event.active.id as string;
+    const task = tasks.find(t => t.id === taskId);
+    
+    if (task && event.over) {
+      // Check if task is blocked - provide visual feedback
+      if (isTaskBlocked(task, tasks)) {
+        // Visual feedback is handled via cursor and overlay styling
+        document.body.style.cursor = 'not-allowed';
+        // Add visual indicator to the overlay
+        const overlay = document.querySelector('[role="dialog"]') as HTMLElement;
+        if (overlay && overlay.classList.contains('opacity-90')) {
+          overlay.style.opacity = '0.5';
+          overlay.style.filter = 'grayscale(50%)';
+        }
+      } else {
+        document.body.style.cursor = 'grabbing';
+        // Reset overlay styling
+        const overlay = document.querySelector('[role="dialog"]') as HTMLElement;
+        if (overlay) {
+          overlay.style.opacity = '';
+          overlay.style.filter = '';
+        }
+      }
+    }
   };
 
 
@@ -73,6 +100,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     const { active, over } = event;
     setActiveId(null);
     document.body.classList.remove('dragging');
+    // Reset cursor
+    document.body.style.cursor = '';
 
     if (!over) {
       return;
@@ -89,7 +118,17 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       const incompleteDeps = getIncompleteDependencies(task, tasks);
       toast.error('Cannot schedule blocked task', {
         description: `This task depends on ${incompleteDeps.length} incomplete task${incompleteDeps.length > 1 ? 's' : ''}. Complete them first.`,
+        duration: 4000,
       });
+      // Add visual shake animation to indicate invalid drop
+      const activeElement = document.querySelector(`[data-task-id="${taskId}"]`) || 
+                           document.querySelector(`[id="${taskId}"]`);
+      if (activeElement) {
+        activeElement.classList.add('animate-shake');
+        setTimeout(() => {
+          activeElement.classList.remove('animate-shake');
+        }, 500);
+      }
       return;
     }
 
@@ -970,7 +1009,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           style={{
             cursor: 'grabbing',
             zIndex: 9999,
+            pointerEvents: 'none',
           }}
+          className="cursor-grabbing"
         >
           {activeTask && (() => {
             // Check if dragging from month calendar view or kanban view by checking if the active element is within those containers
