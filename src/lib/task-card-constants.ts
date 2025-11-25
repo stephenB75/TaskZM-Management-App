@@ -253,7 +253,7 @@ export const TASK_CARD_BACKGROUNDS = {
 
 // Width Values
 export const TASK_CARD_WIDTHS = {
-  dragging: 'w-[280px]',
+  dragging: 'w-[336px]', // Increased by 20% from 280px to match wider columns
   normal: 'w-full',
 } as const;
 
@@ -277,8 +277,8 @@ export const TASK_CARD_CALCULATIONS = {
     average: 60,
   },
   availableWidth: {
-    mobile: 280,
-    desktop: 400,
+    mobile: 280, // Unchanged for mobile view
+    desktop: 480, // Increased by 20% from 400px to match wider desktop columns
   },
   description: {
     charsPerLine: 50,

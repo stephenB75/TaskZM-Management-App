@@ -227,7 +227,9 @@ export const DraggableTaskCard = React.forwardRef<
       // Estimate if badges will wrap to second line
       const badgeCount = [hasTime, hasPriority, hasTag, hasDuration, hasTracking || hasTrackedTime].filter(Boolean).length;
       const estimatedBadgeWidth = badgeCount * TASK_CARD_CALCULATIONS.badgeWidths.average;
-      const availableWidth = isMobile ? 240 : 360; // Account for padding and checkbox
+      // Increased available width for desktop by 20% to match increased column width (336px columns)
+      // Mobile remains unchanged at 240px
+      const availableWidth = isMobile ? 240 : 432; // Desktop increased from 360 to 432 to match 20% wider columns
       const badgesWillWrap = estimatedBadgeWidth > availableWidth;
       const badgeWrapHeight = badgesWillWrap ? 24 : 0; // Extra height if badges wrap (one line height)
       

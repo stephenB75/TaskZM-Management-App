@@ -229,7 +229,7 @@ export function DraggableTodayAgendaTask({
         </div>
 
         {/* Task Content - Match Kanban Week View */}
-        <div className={cn("flex gap-2 flex-1 min-w-0", isDragging && "max-w-[280px]")}>
+        <div className={cn("flex gap-2 flex-1 min-w-0", isDragging && "max-w-[336px]")}>
           {/* Compact Card - Match Kanban styling (priority line removed for timeline view) */}
           <div
             className={cn(
