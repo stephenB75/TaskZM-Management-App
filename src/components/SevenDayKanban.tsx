@@ -113,17 +113,26 @@ export function SevenDayKanban({
     // Use mobileWeekOffset in mobile mode, weekOffset in desktop mode
     const currentWeekOffset = mobileMode ? mobileWeekOffset : weekOffset;
     
-    // Start from Monday of the current week
-    const startOfWeek = new Date(today);
-    const currentDay = startOfWeek.getDay(); // 0 (Sun) - 6 (Sat)
-    const mondayOffset = (currentDay + 6) % 7; // Convert to Monday=0
-    startOfWeek.setDate(startOfWeek.getDate() - mondayOffset + currentWeekOffset * 7);
+    // For desktop: start from today (don't show past days)
+    // For mobile: start from Monday of the current week
+    let startDate: Date;
+    if (mobileMode) {
+      // Mobile: Start from Monday of the current week
+      startDate = new Date(today);
+      const currentDay = startDate.getDay(); // 0 (Sun) - 6 (Sat)
+      const mondayOffset = (currentDay + 6) % 7; // Convert to Monday=0
+      startDate.setDate(startDate.getDate() - mondayOffset + currentWeekOffset * 7);
+    } else {
+      // Desktop: Start from today (don't show past days)
+      startDate = new Date(today);
+      startDate.setDate(startDate.getDate() + (currentWeekOffset * 7));
+    }
 
     const totalDays = mobileMode ? 7 : KANBAN_TIME.daysInWeek;
 
     return Array.from({ length: totalDays }, (_, i) => {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
       
       const isToday = 
         date.getFullYear() === today.getFullYear() &&
@@ -622,7 +631,7 @@ export function SevenDayKanban({
                   <motion.div
                     key={column.dateString}
                     className={cn(
-                      'flex flex-col rounded-2xl overflow-hidden soft-shadow',
+                      'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
                       !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-white/80'),
                             column.isWeekend && isDark && 'bg-card/60',
                             isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
@@ -722,12 +731,13 @@ export function SevenDayKanban({
                             ) : (
                               <>
                                 {dayTasks.map((task) => (
+                                  <div key={task.id} className="px-2 sm:px-2.5">
                                   <DraggableTaskCard
-                                    key={task.id}
                                     task={task}
                                     onClick={() => handleTaskClick(task)}
                                     droppableId={column.dateString}
                                   />
+                                  </div>
                                 ))}
                               </>
                             )}

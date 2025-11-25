@@ -120,22 +120,25 @@ export function AppSidebar({
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
                   <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                    <motion.button
+                      type="button"
                       className={cn(
-                        "w-12 h-12 rounded-xl transition-all",
+                        "w-12 h-12 rounded-xl transition-all relative flex items-center justify-center",
+                        "bg-transparent border-none cursor-pointer",
                         currentView === item.id
-                          ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md"
-                          : "hover:bg-primary/10",
+                          ? "text-primary"
+                          : "text-muted-foreground hover:text-primary",
                       )}
                       onClick={() => onViewChange(item.id)}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     >
                       <Icon className="w-5 h-5" />
                       {item.pro && (
                         <Lock className="w-3 h-3 absolute top-1 right-1 text-[#D4C5F9]" />
                       )}
-                    </Button>
+                    </motion.button>
                     {item.badge !== undefined &&
                       item.badge > 0 && (
                         <Badge
