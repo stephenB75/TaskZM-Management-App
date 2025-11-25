@@ -233,7 +233,7 @@ export function DraggableTodayAgendaTask({
           {/* Compact Card - Match Kanban styling (priority line removed for timeline view) */}
           <div
             className={cn(
-              "rounded-lg relative flex-1 overflow-hidden",
+              "rounded-lg relative flex-1 overflow-hidden box-border",
               isDragging && "scale-90 origin-left",
               // Responsive padding: smaller on mobile, comfortable on desktop
               "px-2 py-1.5 space-y-1 md:px-3 md:py-2.5 md:space-y-1.5",
@@ -267,7 +267,8 @@ export function DraggableTodayAgendaTask({
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
             )}
             style={{
-              minHeight: `${getTaskHeight(task) * 1.247}px`,
+              height: `${getTaskHeight(task) * 1.247}px`,
+              boxSizing: 'border-box', // Include padding in height calculation
             }}
             onClick={(e) => {
               if (!isDragging) {

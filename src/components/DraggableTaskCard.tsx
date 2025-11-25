@@ -300,36 +300,10 @@ export const DraggableTaskCard = React.forwardRef<
         baseHeight += subtaskHeight + subtaskTopSpacing;
       }
       
-      // Account for actual padding being applied via CSS classes
-      // Determine padding based on duration and components
-      let actualTopPadding: number;
-      let actualBottomPadding: number;
-      
-      if (duration < TASK_CARD_HEIGHT_CONFIG.thresholds.short) {
-        // Short tasks: px-2 py-1 pb-1 (mobile) or md:px-3 md:py-1.5 md:pb-1.5 (desktop)
-        actualTopPadding = isMobile ? 4 : 6; // py-1 or py-1.5
-        actualBottomPadding = isMobile ? 4 : 6; // pb-1 or pb-1.5
-      } else if (duration >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
-        // Long tasks
-        actualTopPadding = TASK_CARD_CALCULATIONS.padding.long.top;
-        actualBottomPadding = hasAnyComponents
-          ? (isMobile ? TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.long.bottom.withComponents.desktop)
-          : TASK_CARD_CALCULATIONS.padding.long.bottom.noComponents;
-      } else {
-        // Medium tasks: px-2 py-1.5 pb-2 (mobile) or md:px-3 md:py-2.5 md:pb-2 (desktop) - no components
-        // Medium tasks with components: px-2 py-1.5 pb-3 (mobile) or md:px-3 md:py-2.5 md:pb-4 (desktop)
-        actualTopPadding = isMobile ? TASK_CARD_CALCULATIONS.padding.medium.top.mobile : TASK_CARD_CALCULATIONS.padding.medium.top.desktop;
-        actualBottomPadding = hasAnyComponents
-          ? (isMobile ? TASK_CARD_CALCULATIONS.padding.medium.bottom.withComponents.mobile : TASK_CARD_CALCULATIONS.padding.medium.bottom.withComponents.desktop)
-          : (isMobile ? TASK_CARD_CALCULATIONS.padding.medium.bottom.noComponents.mobile : TASK_CARD_CALCULATIONS.padding.medium.bottom.noComponents.desktop);
-      }
-      
-      const actualTotalPadding = actualTopPadding + actualBottomPadding;
-      
-      // Total height = base height (duration-based) + component adjustments + padding
-      const totalHeight = baseHeight + actualTotalPadding;
-      
-      return Math.min(totalHeight, maxHeight);
+      // Standard heights are TOTAL heights (including padding applied via CSS classes)
+      // Do NOT add padding here - CSS classes handle padding, and standard heights already account for it
+      // Return base height directly - this is the total card height matching the standard requirements
+      return Math.min(baseHeight, maxHeight);
     };
 
     const cardHeight = getCardHeight();
@@ -393,7 +367,7 @@ export const DraggableTaskCard = React.forwardRef<
         {/* Compact Card - Partial borders, clean background, height represents duration */}
           <div
             className={cn(
-              "rounded-lg relative overflow-hidden",
+              "rounded-lg relative overflow-hidden box-border",
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
@@ -427,7 +401,8 @@ export const DraggableTaskCard = React.forwardRef<
               !task.estimatedTime && (isMobile ? "px-2 py-1.5 pb-2" : "md:px-3 md:py-2.5 md:pb-2"),
             )}
           style={{
-            minHeight: `${cardHeight}px`,
+            height: `${cardHeight}px`,
+            boxSizing: 'border-box', // Include padding in height calculation
           }}
           onClick={(e) => {
             e.stopPropagation();
