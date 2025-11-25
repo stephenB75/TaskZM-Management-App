@@ -437,17 +437,15 @@ export function SevenDayKanban({
 
   // Render mobile single column or desktop multi-column
   if (mobileMode) {
-    const canGoBack = mobileWeekOffset > 0;
-    const columnWidthMobile = Math.min(columnWidth, 280);
-
-    const handleGoToToday = () => {
-      if (mobileWeekOffset !== 0) {
-        onMobileWeekChange?.(0);
-      }
-    };
+    const currentColumn = weekColumns[mobileDayIndex] ?? weekColumns[0];
+    if (!currentColumn) {
+      return null;
+    }
+    const dayTasks = getTasksForDay(currentColumn.dateString);
+    const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
 
     return (
-      <div
+      <div 
         className="h-full flex flex-col"
         style={{
           backgroundImage: isDark
@@ -455,144 +453,86 @@ export function SevenDayKanban({
             : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
         }}
       >
-        <div className="px-3 py-2 sm:px-4 sm:py-3 flex items-center justify-between border-b border-white/20 dark:border-border/20">
-          <div className="flex items-center gap-1.5">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-full"
-              onClick={() => onMobileWeekChange?.(Math.max(0, mobileWeekOffset - 1))}
-              disabled={!canGoBack}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <div className="flex flex-col leading-tight">
-              <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-                Calendar Week
-              </span>
-              <span className="text-sm font-semibold text-foreground">
-                {mobileWeekOffset === 0 ? 'This Week' : `Week ${mobileWeekOffset + 1}`}
-              </span>
-            </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-full"
-              onClick={() => onMobileWeekChange?.(mobileWeekOffset + 1)}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGoToToday}
-            disabled={mobileWeekOffset === 0}
-            className="rounded-full gap-1 text-xs"
-          >
-            <CalendarDays className="w-3.5 h-3.5" />
-            Today
-          </Button>
-        </div>
 
-        <div className="flex-1 overflow-x-auto overflow-y-hidden" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-          <div className="flex gap-1.5 px-2 sm:px-3 py-3 min-w-max">
-            {weekColumns.map((column) => {
-              const dayTasks = getTasksForDay(column.dateString);
-              const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
-
-              return (
-                <motion.div
-                  key={column.dateString}
-                  className={cn(
-                    'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-white/30 dark:border-border/40 bg-white/80 dark:bg-card/70',
-                    column.isToday && 'ring-2 ring-primary/60'
-                  )}
-                  style={{
-                    minWidth: `${columnWidthMobile}px`,
-                    width: `${columnWidthMobile}px`,
-                  }}
-                  initial={{ opacity: 0, y: KANBAN_ANIMATION.initialY }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: KANBAN_ANIMATION.duration,
-                    delay: column.dayIndex * KANBAN_ANIMATION.delayPerColumn,
-                    ease: KANBAN_ANIMATION.easing
-                  }}
-                >
-                  <div
-                    className={cn(
-                      'px-2.5 py-2 border-b backdrop-blur-sm flex items-center justify-between',
-                      column.isToday && 'bg-primary/5'
-                    )}
-                  >
-                    <div>
-                      <p className={cn(
-                        'text-[11px] font-semibold uppercase tracking-wide mb-0.5',
-                        column.isToday ? 'text-primary' : 'text-muted-foreground'
-                      )}>
-                        {column.dayName.substring(0, 3)}
-                      </p>
-                      <p className="text-lg font-semibold text-foreground">
-                        {column.date.getDate()}
-                      </p>
+        {/* Mobile Single Column */}
+        <div className="flex-1 overflow-hidden px-4 pt-2 pb-24 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+          <DroppableColumn id={currentColumn.dateString} className="h-full">
+              <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+                <ScrollArea className="h-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}>
+                  <div className="pb-6 sm:pb-8">
+                    <div className="flex items-center gap-2 mb-3 min-w-0">
+                      <div className={cn(
+                        "w-1 h-5 sm:h-6 rounded-full flex-shrink-0",
+                        currentColumn.isToday ? "bg-primary" : "bg-muted"
+                      )} />
+                      <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
+                        {dayTasks.length} {dayTasks.length === 1 ? 'task' : 'tasks'}
+                      </span>
+                      
+                      {/* Today Button - Text on mobile, icon + text on larger screens */}
+                      <Button
+                        variant="outline"
+                        onClick={() => onMobileWeekChange?.(0)}
+                        disabled={mobileWeekOffset === 0}
+                        className="rounded-full h-7 px-3 gap-1.5 sm:h-8 sm:px-3 flex-shrink-0 text-xs ml-auto sm:ml-2"
+                        aria-label="Jump to today"
+                      >
+                        <CalendarDays className="hidden sm:block w-3.5 h-3.5 flex-shrink-0 mr-1" />
+                        <span>Today</span>
+                      </Button>
+                      
+                      {/* Add Button - Icon only on mobile, text on larger screens */}
+                      <Button
+                        variant="outline"
+                        onClick={() => handleAddTask(currentColumn.dateString)}
+                        className="rounded-full h-7 w-7 p-0 gap-0 sm:w-auto sm:h-8 sm:px-3 sm:gap-1.5 flex-shrink-0 text-xs"
+                        aria-label="Add new task"
+                      >
+                        <Plus className="w-3.5 h-3.5 flex-shrink-0 sm:mr-1" />
+                        <span className="hidden sm:inline">Add</span>
+                      </Button>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 rounded-full"
-                      onClick={() => handleAddTask(column.dateString)}
-                      aria-label={`Add task for ${column.dayName}`}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
 
-                  <DroppableColumn id={column.dateString} className="flex-1">
-                    <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                      <div className="p-2 space-y-2 h-full">
-                        <AnimatePresence mode="popLayout">
-                          {dayTasks.length === 0 ? (
-                            <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              className="flex flex-col items-center justify-center py-10 text-center text-xs text-muted-foreground"
-                            >
-                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                                <Plus className="w-5 h-5 text-primary/50" />
-                              </div>
-                              No tasks
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="mt-3 rounded-full text-xs"
-                                onClick={() => handleAddTask(column.dateString)}
-                              >
-                                <Plus className="w-3.5 h-3.5 mr-1" />
-                                Add task
-                              </Button>
-                            </motion.div>
-                          ) : (
-                            dayTasks.map((task) => (
-                              <DraggableTaskCard
-                                key={task.id}
-                                task={task}
-                                onClick={() => handleTaskClick(task)}
-                                droppableId={column.dateString}
-                              />
-                            ))
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </SortableContext>
-                  </DroppableColumn>
-                </motion.div>
-              );
-            })}
-          </div>
+                    <AnimatePresence mode="popLayout">
+                      {dayTasks.length === 0 ? (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
+                        >
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
+                            <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
+                          </div>
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">No tasks scheduled</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAddTask(currentColumn.dateString)}
+                            className="rounded-full h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5 mr-1.5 sm:w-4 sm:h-4 sm:mr-2" />
+                            Add your first task
+                          </Button>
+                        </motion.div>
+                      ) : (
+                        (Array.isArray(dayTasks) ? dayTasks : []).map((task) => (
+                          <DraggableTaskCard
+                            key={task.id}
+                            task={task}
+                            onClick={() => handleTaskClick(task)}
+                            droppableId={currentColumn.dateString}
+                          />
+                        ))
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </ScrollArea>
+              </SortableContext>
+            </DroppableColumn>
         </div>
 
+        {/* Task Dialog */}
         <TaskDialog
           open={dialogOpen}
           onClose={() => {
