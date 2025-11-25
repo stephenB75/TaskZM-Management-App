@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import { useDroppable } from "@dnd-kit/core";
 import { Calendar, Plus, StickyNote } from "lucide-react";
@@ -66,6 +66,7 @@ export function TodayAgendaView({
   }, []);
 
   // Track scroll position for fixed time indicator
+  // Only run once on mount to prevent infinite loops
   useEffect(() => {
     const findScrollViewport = () => {
       return timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
@@ -107,7 +108,7 @@ export function TodayAgendaView({
       }
       window.removeEventListener('resize', handleScroll);
     };
-  }, [todayTasks]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Make this view a droppable zone for tasks from Kanban (disabled on mobile)
   const { setNodeRef, isOver } = useDroppable({
@@ -136,19 +137,22 @@ export function TodayAgendaView({
   // Done tasks automatically appear in Archive view
   const incompleteTasks = allTodayTasks.filter((task) => task.status !== "done");
 
-  // Sort incomplete tasks by time
-  const todayTasks = incompleteTasks.sort((a, b) => {
-    try {
-      const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
-      const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
-      if (isNaN(timeA)) return 1;
-      if (isNaN(timeB)) return -1;
-      return timeA - timeB;
-    } catch (error) {
-      console.error('Error sorting tasks:', error, a, b);
-      return 0;
-    }
-  });
+  // Sort incomplete tasks by time - use useMemo to prevent recreation on every render
+  // This prevents infinite loops in useEffect dependencies
+  const todayTasks = useMemo(() => {
+    return [...incompleteTasks].sort((a, b) => {
+      try {
+        const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
+        const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+        if (isNaN(timeA)) return 1;
+        if (isNaN(timeB)) return -1;
+        return timeA - timeB;
+      } catch (error) {
+        console.error('Error sorting tasks:', error, a, b);
+        return 0;
+      }
+    });
+  }, [incompleteTasks]);
 
   // Auto-scroll to current time on mount and when tasks change
   useEffect(() => {

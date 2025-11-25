@@ -2229,8 +2229,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     const performRollover = async (tasksToRollover: Task[], todayString: string) => {
       let rolledCount = 0;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
       const now = new Date();
       
       // Sort tasks by priority and scheduled time to maintain chronological order
