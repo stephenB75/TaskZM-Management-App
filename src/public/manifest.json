@@ -1,7 +1,7 @@
 {
-  "name": "TaskZM - Neurodivergent-Friendly Task Manager",
+  "name": "TaskZM - A neurodivergent-friendly task management application with AI-assisted planning.",
   "short_name": "TaskZM",
-  "description": "TaskZM: A comprehensive neurodivergent-friendly task management application with AI-assisted planning, calendar integration, and analytics.",
+  "description": "TaskZM - A neurodivergent-friendly task management application with AI-assisted planning.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
