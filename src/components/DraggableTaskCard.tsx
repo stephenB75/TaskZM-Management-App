@@ -404,10 +404,17 @@ export const DraggableTaskCard = React.forwardRef<
             height: `${cardHeight}px`,
             boxSizing: 'border-box', // Include padding in height calculation
           }}
+          onMouseDown={(e) => {
+            // Prevent click if user is starting a drag
+            // The drag handler will take precedence
+            if (isDragging || isSortableDragging) {
+              e.preventDefault();
+            }
+          }}
           onClick={(e) => {
             e.stopPropagation();
-            // Only trigger onClick if not dragging
-            if (!isDragging && !isSortableDragging) {
+            // Only trigger onClick if not dragging and not in the middle of a drag operation
+            if (!isDragging && !isSortableDragging && !document.body.classList.contains('dragging')) {
               onClick();
             }
           }}

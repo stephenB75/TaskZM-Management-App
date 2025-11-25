@@ -24,12 +24,16 @@ export function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "select-none transition-all duration-200",
+        "select-none transition-all duration-200 min-h-[200px]",
         className,
         !isMobile &&
           isOver &&
           "ring-2 ring-primary/50 ring-inset bg-primary/10 scale-[1.02]",
       )}
+      style={{
+        // Ensure drop zone is always accessible, even when empty
+        position: 'relative',
+      }}
     >
       {children}
     </div>

@@ -361,7 +361,12 @@ export function TodayAgendaView({
           `h-full flex flex-col transition-all duration-200 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
             "bg-primary/10 border-2 border-primary/30 border-dashed",
+          !isMobile && "min-h-[400px]", // Ensure drop zone is always accessible
         )}
+        style={{
+          position: 'relative',
+          zIndex: 1, // Ensure drop zone is above other elements
+        }}
         data-tour="today-panel"
       >
       {/* Header */}
@@ -419,18 +424,18 @@ export function TodayAgendaView({
             style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
           >
             {todayTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+              <div className="flex flex-col items-center justify-center py-12 text-center min-h-[300px] pointer-events-none">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
                   <Calendar className="w-6 h-6 text-primary/40" />
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-muted-foreground mb-3 pointer-events-none">
                   {TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleAddTask}
-                  className="!rounded-full"
+                  className="!rounded-full pointer-events-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   {TODAY_AGENDA_TEXT.emptyState.addTask}

@@ -656,6 +656,8 @@ export function SevenDayKanban({
                             ...(!isDark && {
                               backgroundColor: `${getDayColors(column.dayName).background}${Math.round(getDayColors(column.dayName).backgroundOpacity * 2.55).toString(16).padStart(2, '0')}`,
                             }),
+                            // Ensure the container doesn't block drop events
+                            minHeight: '200px',
                           }}
                         >
                           <AnimatePresence mode="popLayout">
@@ -664,17 +666,17 @@ export function SevenDayKanban({
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="flex flex-col items-center justify-center py-12 text-center"
+                                className="flex flex-col items-center justify-center py-12 text-center min-h-[200px] pointer-events-none"
                               >
-                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
                                   <Plus className="w-6 h-6 text-primary/40" />
                                 </div>
-                                <p className="text-sm text-muted-foreground mb-3">No tasks</p>
+                                <p className="text-sm text-muted-foreground mb-3 pointer-events-none">No tasks</p>
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleAddTask(column.dateString)}
-                                  className="rounded-full"
+                                  className="rounded-full pointer-events-auto"
                                 >
                                   Add task
                                 </Button>

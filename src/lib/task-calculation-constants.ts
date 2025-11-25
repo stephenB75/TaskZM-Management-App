@@ -43,7 +43,7 @@ export const TASK_CALCULATION_CONSTANTS = {
   
   // Drag and Drop Constants
   dragDrop: {
-    activationDistance: 8, // px - activation distance for drag
+    activationDistance: 10, // px - activation distance for drag (increased for easier initiation)
     defaultHour: 9, // Default hour for scheduling
     hourMin: 8, // Minimum hour for scheduling
     hourMax: 23, // Maximum hour for scheduling
