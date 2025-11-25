@@ -173,10 +173,16 @@ function AppContent() {
     }
   }, [user, isLoading]);
 
+  // Track if tour has been triggered to prevent multiple triggers
+  const tourTriggeredRef = React.useRef(false);
+  
   // Auto-start tour only for new signups (not existing users)
   // For demo users, wait until disclaimer is closed before starting tour
   useEffect(() => {
     if (!user || isLoading) return;
+    
+    // Prevent multiple triggers
+    if (tourTriggeredRef.current) return;
     
     try {
       const tourCompleted = window?.localStorage?.getItem('taskzm_tour_completed');
@@ -191,15 +197,19 @@ function AppContent() {
           
           // Only start tour if disclaimer has been seen (closed)
           if (disclaimerSeen) {
+            // Mark as triggered immediately to prevent loops
+            tourTriggeredRef.current = true;
+            
+            // Clear the new signup flag immediately to prevent re-triggering
+            try {
+              window?.localStorage?.removeItem('taskzm_is_new_signup');
+            } catch (removeError) {
+              console.warn('Unable to clear new signup flag:', removeError);
+            }
+            
             const timer = setTimeout(() => {
               console.log('🎯 Starting tour for demo user after disclaimer closed');
               setRunTour(true);
-              // Clear the new signup flag so it doesn't trigger again
-              try {
-                window?.localStorage?.removeItem('taskzm_is_new_signup');
-              } catch (removeError) {
-                console.warn('Unable to clear new signup flag:', removeError);
-              }
               toast.info('👋 Welcome! Let us show you around TaskZM', {
                 description: 'Take a quick tour to learn the basics',
                 duration: TOAST_DURATION_MEDIUM_MS
@@ -208,18 +218,28 @@ function AppContent() {
             
             return () => clearTimeout(timer);
           } else {
-            // Disclaimer not seen yet - set up listener for when it closes
+            // Disclaimer not seen yet - set up one-time listener for when it closes
+            let hasTriggered = false;
+            
             const checkDisclaimer = () => {
+              // Prevent multiple triggers
+              if (hasTriggered || tourTriggeredRef.current) return;
+              
               const seen = window?.sessionStorage?.getItem('demo_disclaimer_seen');
               if (seen && !tourCompleted) {
+                hasTriggered = true;
+                tourTriggeredRef.current = true;
+                
+                // Clear the new signup flag immediately
+                try {
+                  window?.localStorage?.removeItem('taskzm_is_new_signup');
+                } catch (removeError) {
+                  console.warn('Unable to clear new signup flag:', removeError);
+                }
+                
                 console.log('🎯 Disclaimer closed, starting tour for demo user');
                 setTimeout(() => {
                   setRunTour(true);
-                  try {
-                    window?.localStorage?.removeItem('taskzm_is_new_signup');
-                  } catch (removeError) {
-                    console.warn('Unable to clear new signup flag:', removeError);
-                  }
                   toast.info('👋 Welcome! Let us show you around TaskZM', {
                     description: 'Take a quick tour to learn the basics',
                     duration: TOAST_DURATION_MEDIUM_MS
@@ -231,24 +251,32 @@ function AppContent() {
             // Check immediately in case disclaimer was already closed
             checkDisclaimer();
             
-            // Listen for storage changes (when disclaimer sets sessionStorage)
+            // Listen for storage changes (when disclaimer sets sessionStorage) - but only once
             const interval = setInterval(() => {
               checkDisclaimer();
+              // Clear interval after first trigger to prevent loops
+              if (hasTriggered) {
+                clearInterval(interval);
+              }
             }, 500); // Check every 500ms
             
             return () => clearInterval(interval);
           }
         } else {
           // For regular users, start tour normally
+          // Mark as triggered immediately to prevent loops
+          tourTriggeredRef.current = true;
+          
+          // Clear the new signup flag immediately to prevent re-triggering
+          try {
+            window?.localStorage?.removeItem('taskzm_is_new_signup');
+          } catch (removeError) {
+            console.warn('Unable to clear new signup flag:', removeError);
+          }
+          
           const timer = setTimeout(() => {
             console.log('🎯 Starting tour for new regular user');
             setRunTour(true);
-            // Clear the new signup flag so it doesn't trigger again
-            try {
-              window?.localStorage?.removeItem('taskzm_is_new_signup');
-            } catch (removeError) {
-              console.warn('Unable to clear new signup flag:', removeError);
-            }
             toast.info('👋 Welcome! Let us show you around TaskZM', {
               description: 'Take a quick tour to learn the basics',
               duration: TOAST_DURATION_MEDIUM_MS
@@ -455,8 +483,16 @@ function AppContent() {
     setCurrentView(view);
   };
 
+  const handleTourStart = () => {
+    // Reset trigger ref when manually starting tour
+    tourTriggeredRef.current = false;
+    setRunTour(true);
+  };
+
   const handleTourFinish = () => {
     setRunTour(false);
+    // Reset the trigger ref so tour can be manually restarted
+    tourTriggeredRef.current = false;
     try {
       window?.localStorage?.setItem('taskzm_tour_completed', 'true');
       // Clear new signup flag if it exists
@@ -509,7 +545,7 @@ function AppContent() {
               {currentView === 'archive' && <ArchiveView />}
               {currentView === 'settings' && (
                 <SettingsPanel 
-                  onStartTour={() => setRunTour(true)}
+                  onStartTour={handleTourStart}
                 />
               )}
             </div>
@@ -545,7 +581,7 @@ function AppContent() {
                   {currentView === 'archive' && <ArchiveView />}
                   {currentView === 'settings' && (
                     <SettingsPanel 
-                      onStartTour={() => setRunTour(true)}
+                      onStartTour={handleTourStart}
                     />
                   )}
                 </div>
