@@ -39,6 +39,7 @@ export function TodayAgendaView({
   const scrollViewportRef = useRef<HTMLElement | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [scrollTop, setScrollTop] = useState(0);
+  const [isScrollReady, setIsScrollReady] = useState(false);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -74,6 +75,7 @@ export function TodayAgendaView({
     let scrollViewport = findScrollViewport();
     if (scrollViewport) {
       scrollViewportRef.current = scrollViewport;
+      setIsScrollReady(true);
     }
     
     // Also try after a short delay in case DOM isn't ready
@@ -81,6 +83,7 @@ export function TodayAgendaView({
       scrollViewport = findScrollViewport();
       if (scrollViewport) {
         scrollViewportRef.current = scrollViewport;
+        setIsScrollReady(true);
       }
     }, 100);
     
@@ -454,96 +457,6 @@ export function TodayAgendaView({
 
       {/* Timeline */}
       <div className="flex-1 overflow-hidden w-full relative">
-        {/* Current Time Indicator - Fixed position outside scroll area */}
-        {(() => {
-          const now = currentTime;
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const isToday = now.getTime() >= today.getTime() && 
-                          now.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
-          
-          if (!isToday || todayTasks.length === 0) return null;
-          
-          // Find the task that contains or is closest to current time
-          const currentTimeMs = now.getTime();
-          let indicatorPosition = 0;
-          let accumulatedHeight = 0;
-          const gapBetweenTasks = 12; // space-y-3 = 12px
-          
-          for (let i = 0; i < todayTasks.length; i++) {
-            const task = todayTasks[i];
-            if (!task.scheduledDate) continue;
-            
-            const taskTime = new Date(task.scheduledDate).getTime();
-            const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
-            const taskEnd = taskTime + taskDuration;
-            const taskHeight = getTaskHeight(task);
-            
-            if (currentTimeMs >= taskTime && currentTimeMs <= taskEnd) {
-              // Current time is within this task
-              const progress = (currentTimeMs - taskTime) / taskDuration;
-              indicatorPosition = accumulatedHeight + (taskHeight * progress);
-              break;
-            } else if (currentTimeMs < taskTime) {
-              // Current time is before this task
-              indicatorPosition = accumulatedHeight;
-              break;
-            } else {
-              // Current time is after this task
-              accumulatedHeight += taskHeight + gapBetweenTasks;
-              if (i === todayTasks.length - 1) {
-                // Current time is after last task
-                indicatorPosition = accumulatedHeight;
-              }
-            }
-          }
-          
-          // Calculate position relative to scroll container
-          const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
-          const scrollContainer = scrollViewportRef.current;
-          
-          if (!scrollContainer) return null;
-          
-          const scrollContainerRect = scrollContainer.getBoundingClientRect();
-          const containerTop = scrollContainerRect.top;
-          const containerScrollTop = scrollTop;
-          
-          // Position in content (from top of scrollable content)
-          const contentPosition = paddingTop + indicatorPosition;
-          // Position relative to viewport (accounting for scroll)
-          const viewportPosition = containerTop + contentPosition - containerScrollTop;
-          
-          // Only show if within visible viewport (with some margin for smooth transitions)
-          const viewportHeight = scrollContainer.clientHeight;
-          const isVisible = viewportPosition >= containerTop - 100 && viewportPosition <= containerTop + viewportHeight + 100;
-          
-          if (!isVisible) return null;
-          
-          return (
-            <div
-              className="fixed z-50 pointer-events-none"
-              style={{
-                top: `${viewportPosition}px`,
-                left: `${scrollContainerRect.left}px`,
-                width: `${scrollContainerRect.width}px`,
-                transform: 'translateY(-50%)',
-              }}
-            >
-              <div className="flex items-center gap-2 px-5">
-                <div className="flex-1 h-0.5 bg-primary/60 relative">
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary border-2 border-background" />
-                </div>
-                <span className="text-xs font-medium text-primary bg-background/80 dark:bg-card/80 px-2 py-0.5 rounded">
-                  {now.toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}
-                </span>
-              </div>
-            </div>
-          );
-        })()}
         
         <ScrollArea 
           className="h-full w-full" 
@@ -574,6 +487,76 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
+                {/* Current Time Indicator - Only show for today */}
+                {(() => {
+                  const now = currentTime;
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const isToday = now.getTime() >= today.getTime() && 
+                                  now.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
+                  
+                  if (!isToday || todayTasks.length === 0 || !isScrollReady) return null;
+                  
+                  // Find the task that contains or is closest to current time
+                  const currentTimeMs = now.getTime();
+                  let indicatorPosition = 0;
+                  let accumulatedHeight = 0;
+                  const gapBetweenTasks = 12; // space-y-3 = 12px
+                  
+                  for (let i = 0; i < todayTasks.length; i++) {
+                    const task = todayTasks[i];
+                    if (!task.scheduledDate) continue;
+                    
+                    const taskTime = new Date(task.scheduledDate).getTime();
+                    const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
+                    const taskEnd = taskTime + taskDuration;
+                    const taskHeight = getTaskHeight(task);
+                    
+                    if (currentTimeMs >= taskTime && currentTimeMs <= taskEnd) {
+                      // Current time is within this task
+                      const progress = (currentTimeMs - taskTime) / taskDuration;
+                      indicatorPosition = accumulatedHeight + (taskHeight * progress);
+                      break;
+                    } else if (currentTimeMs < taskTime) {
+                      // Current time is before this task
+                      indicatorPosition = accumulatedHeight;
+                      break;
+                    } else {
+                      // Current time is after this task
+                      accumulatedHeight += taskHeight + gapBetweenTasks;
+                      if (i === todayTasks.length - 1) {
+                        // Current time is after last task
+                        indicatorPosition = accumulatedHeight;
+                      }
+                    }
+                  }
+                  
+                  // Calculate position - use absolute positioning within the scroll container
+                  const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
+                  
+                  return (
+                    <div
+                      className="absolute left-0 right-0 z-50 pointer-events-none"
+                      style={{
+                        top: `${paddingTop + indicatorPosition - scrollTop}px`,
+                        transform: 'translateY(-50%)',
+                      }}
+                    >
+                      <div className="flex items-center gap-2 px-5">
+                        <div className="flex-1 h-0.5 bg-primary/60 relative">
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary border-2 border-background" />
+                        </div>
+                        <span className="text-xs font-medium text-primary bg-background/80 dark:bg-card/80 px-2 py-0.5 rounded">
+                          {now.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
                 
                 <div className="space-y-3 w-full relative" style={{ overflow: 'visible' }}>
                   {todayTasks.map((task, index) => (
