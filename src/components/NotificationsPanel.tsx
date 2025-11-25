@@ -337,7 +337,7 @@ export function NotificationsPanel() {
         }
       />
       {/* Spacer for fixed header on mobile */}
-      <div className="md:hidden h-[64px]" />
+      <div className="md:hidden h-[20px]" />
 
       <div className="flex-1 flex flex-col min-h-0">
         {/* Filters */}

@@ -952,7 +952,7 @@ export function DashboardView({
         }
       />
       {/* Spacer for fixed header on mobile - accounts for header height + border */}
-      <div className="md:hidden h-[73px] flex-shrink-0" />
+      <div className="md:hidden h-[20px] flex-shrink-0" />
 
       {/* Mobile Day Selector - Only show on mobile when viewing week */}
       {mobileView === "week" && (

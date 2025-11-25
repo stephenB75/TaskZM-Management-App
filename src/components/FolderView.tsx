@@ -279,7 +279,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
         hideDesktopLogo
       />
       {/* Spacer for fixed header on mobile */}
-      <div className="md:hidden h-[64px]" />
+      <div className="md:hidden h-[20px]" />
 
       {/* Stats Bar */}
       <div className="px-4 pt-12 pb-3 mt-4 border-b bg-white/50 dark:bg-background/50 backdrop-blur-sm">

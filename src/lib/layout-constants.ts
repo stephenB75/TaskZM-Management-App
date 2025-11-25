@@ -146,7 +146,7 @@ export const TEAM_PANEL_CARD_PADDING = '1rem'; // p-4 = 1rem
 export const TEAM_PANEL_CARD_PADDING_LEFT = '1.25rem'; // pl-5 = 1.25rem
 export const TEAM_PANEL_SEARCH_ICON_SIZE = '1rem'; // w-4 h-4 = 1rem
 export const TEAM_PANEL_EMPTY_STATE_ICON_SIZE = '3rem'; // w-12 h-12 = 3rem
-export const TEAM_PANEL_MOBILE_HEADER_SPACER = '64px'; // h-[64px] = 64px
+export const TEAM_PANEL_MOBILE_HEADER_SPACER = '20px'; // h-[20px]
 export const TEAM_PANEL_BOTTOM_PADDING_MOBILE = 'calc(6rem + env(safe-area-inset-bottom, 0px))';
 export const TEAM_PANEL_DROPDOWN_Z_INDEX = 9999; // z-[9999]
 export const TEAM_PANEL_NOTIFICATION_Z_INDEX = 20; // z-20
@@ -170,7 +170,7 @@ export const TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT = '0.25rem'; // right-1 = 0.25
 export const TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET = '0.5rem'; // Additional padding top offset
 
 // Folder Panel specific constants
-export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '64px'; // h-[64px] = 64px
+export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '20px'; // h-[20px]
 export const FOLDER_PANEL_SEARCH_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem
 export const FOLDER_PANEL_SEARCH_PADDING_BOTTOM = '0.75rem'; // pb-3 = 0.75rem
 export const FOLDER_PANEL_SEARCH_PADDING_TOP_DESKTOP = '1rem'; // lg:pt-4 = 1rem
@@ -228,7 +228,7 @@ export const WORKSPACE_SYNC_INTERVAL_IDLE_MS = 120000; // Idle sync interval (2 
 export const WORKSPACE_ACTIVITY_TIMEOUT_MS = 120000; // Timeout to consider user inactive (2 minutes) - reduced to switch to idle faster
 
 // Settings Panel constants
-export const SETTINGS_PANEL_MOBILE_HEADER_SPACER = '64px'; // h-[64px] = 64px
+export const SETTINGS_PANEL_MOBILE_HEADER_SPACER = '20px'; // h-[20px]
 export const SETTINGS_PANEL_BOTTOM_PADDING_MOBILE = 'calc(6rem + env(safe-area-inset-bottom, 0px))';
 export const SETTINGS_PANEL_PADDING_TOP = '1rem'; // pt-4 = 1rem
 export const SETTINGS_PANEL_CONTAINER_PADDING_SMALL = '1rem'; // p-4 = 1rem
