@@ -627,15 +627,15 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       {/* Folders List */}
       <div className="flex-1 overflow-hidden min-h-0">
         <ScrollArea className="h-full">
-          <div 
-            className="pb-safe md:pb-4" 
-            style={{ 
-              padding: PANEL_PADDING,
-              paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
-              paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))',
-              gap: PANEL_CONTENT_SPACING
-            }}
-          >
+        <div 
+          className="pb-safe md:pb-4" 
+          style={{ 
+            padding: PANEL_PADDING,
+            paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
+            paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))',
+            gap: PANEL_CONTENT_SPACING
+          }}
+        >
           {filteredFolders.length === 0 ? (
             <div 
               className="text-center" 
@@ -689,8 +689,8 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               );
             })
           )}
-          </div>
-        </ScrollArea>
+        </div>
+      </ScrollArea>
       </div>
 
       {/* Add/Edit Folder Dialog */}

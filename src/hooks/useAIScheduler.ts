@@ -922,7 +922,7 @@ export function useAIScheduler() {
       
       // Create date range for the selected week (Monday to Sunday)
       const weekStart = new Date(startDate);
-      weekStart.setHours(0, 0, 0, 0);
+        weekStart.setHours(0, 0, 0, 0);
       
       const weekEnd = new Date(startDate);
       weekEnd.setDate(weekEnd.getDate() + (KANBAN_TIME.daysInWeek - 1));
@@ -974,7 +974,7 @@ export function useAIScheduler() {
       
       // Create date range for the selected month (first day to last day of month)
       const monthStart = new Date(date);
-      monthStart.setHours(0, 0, 0, 0);
+        monthStart.setHours(0, 0, 0, 0);
       
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       monthEnd.setHours(23, 59, 59, 999);

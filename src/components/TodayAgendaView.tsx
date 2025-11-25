@@ -310,31 +310,31 @@ export function TodayAgendaView({
     
     // Get base height for this duration
     let baseHeight = getBaseHeightForDuration(minutes);
-    
-    // Add height for badge wrapping
-    baseHeight += badgeWrapHeight;
-    
+      
+      // Add height for badge wrapping
+      baseHeight += badgeWrapHeight;
+      
     // Add extra height for components (only if present)
-    // Description is always shown for tasks >= 60 minutes if it exists
-    if (hasDescription) {
-      // Estimate description height based on content length
-      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CALCULATION_CONSTANTS.description.charsPerLine) : 4;
-      const lineHeight = TASK_CALCULATION_CONSTANTS.description.lineHeight;
-      const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CALCULATION_CONSTANTS.description.minHeight) + TASK_CALCULATION_CONSTANTS.description.padding;
-      baseHeight += descriptionHeight;
-    }
-    
-    // Add extra height for assigned users (only if present)
-    if (hasAssignedUsers) {
-      baseHeight += 24;
-    }
-    
-    // Add extra height for subtasks (only if present)
-    if (hasSubtasks) {
-      const subtaskHeight = Math.min(task.subtasks.length, 3) * TASK_CALCULATION_CONSTANTS.description.lineHeight;
-      baseHeight += subtaskHeight;
-    }
-    
+      // Description is always shown for tasks >= 60 minutes if it exists
+      if (hasDescription) {
+        // Estimate description height based on content length
+        const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CALCULATION_CONSTANTS.description.charsPerLine) : 4;
+        const lineHeight = TASK_CALCULATION_CONSTANTS.description.lineHeight;
+        const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CALCULATION_CONSTANTS.description.minHeight) + TASK_CALCULATION_CONSTANTS.description.padding;
+        baseHeight += descriptionHeight;
+      }
+      
+      // Add extra height for assigned users (only if present)
+      if (hasAssignedUsers) {
+        baseHeight += 24;
+      }
+      
+      // Add extra height for subtasks (only if present)
+      if (hasSubtasks) {
+        const subtaskHeight = Math.min(task.subtasks.length, 3) * TASK_CALCULATION_CONSTANTS.description.lineHeight;
+        baseHeight += subtaskHeight;
+      }
+      
     return baseHeight;
   }, []); // Empty deps - function is pure, only depends on task parameter
 
@@ -378,21 +378,21 @@ export function TodayAgendaView({
               minHeight: `${HEADER_HEIGHT}px`,
             }}
           >
-            <AppHeader
-              title="Today Agenda"
-              panelOpen={true}
-              isSidePanelHeader={true}
-              description={
-                isOver
-                  ? "Drop to add to today"
-                  : today.toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })
-              }
-              hideDesktopLogo
-            />
+          <AppHeader
+            title="Today Agenda"
+            panelOpen={true}
+            isSidePanelHeader={true}
+            description={
+              isOver
+                ? "Drop to add to today"
+                : today.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })
+            }
+            hideDesktopLogo
+          />
             {/* Current Time Indicator - Desktop only (bottom right corner of header) */}
             <div 
               className="hidden md:block absolute bottom-2 right-6 z-50 pointer-events-none"
@@ -406,7 +406,7 @@ export function TodayAgendaView({
               </span>
             </div>
           </div>
-        {/* Spacer for fixed header on mobile */}
+          {/* Spacer for fixed header on mobile */}
         <div className="md:hidden h-[20px]" />
         </>
       )}

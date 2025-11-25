@@ -611,131 +611,131 @@ export function SevenDayKanban({
                     </div>
                     <div className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2">
                       {group.map((column, columnIndex) => {
-                      const dayTasks = getTasksForDay(column.dateString);
-                      const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
+                const dayTasks = getTasksForDay(column.dateString);
+                const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
                       const globalIndex = groupIndex * 7 + columnIndex;
                       const isSecondWeek = groupIndex === 1;
 
-                      return (
-                        <motion.div
-                          key={column.dateString}
-                          className={cn(
-                            'flex flex-col rounded-2xl overflow-hidden soft-shadow',
-                            !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-white/80'),
+                return (
+                  <motion.div
+                    key={column.dateString}
+                    className={cn(
+                      'flex flex-col rounded-2xl overflow-hidden soft-shadow',
+                      !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-white/80'),
                             column.isWeekend && isDark && 'bg-card/60',
                             isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
+                    )}
+                    style={{
+                      minWidth: `${columnWidth}px`,
+                      width: `${columnWidth}px`,
+                      ...(column.isWeekend && !isDark && {
+                        backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
+                      }),
+                    }}
+                    initial={{ opacity: 0, y: KANBAN_ANIMATION.initialY }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: KANBAN_ANIMATION.duration, 
+                            delay: globalIndex * KANBAN_ANIMATION.delayPerColumn,
+                      ease: KANBAN_ANIMATION.easing
+                    }}
+                  >
+                    <div 
+                      className={cn(
+                        'p-1.5 sm:p-2 border-b backdrop-blur-sm',
+                        column.isToday && 'ring-2 ring-inset',
+                        isDark 
+                          ? 'bg-card/50 border-border' 
+                          : getDayColors(column.dayName).header && 'bg-transparent'
+                      )}
+                      style={{
+                        ...(column.isToday && {
+                          ringColor: `${KANBAN_DAY_COLORS.today.ring}${Math.round(KANBAN_DAY_COLORS.today.ringOpacity * 2.55).toString(16).padStart(2, '0')}`,
+                        }),
+                        ...(!isDark && getDayColors(column.dayName).header && {
+                          backgroundImage: `linear-gradient(to right, ${getDayColors(column.dayName).header.from}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.via}${Math.round(70 * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.to}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')})`,
+                          borderColor: `${getDayColors(column.dayName).header.border}${Math.round(getDayColors(column.dayName).header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`,
+                        }),
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 
+                            className={cn(
+                              'uppercase text-xs sm:text-sm tracking-wider mb-0.5 sm:mb-1 font-bold',
+                              !column.isToday && 'text-gray-700 dark:text-foreground'
+                            )}
+                            style={column.isToday ? { color: KANBAN_DAY_COLORS.today.text } : undefined}
+                          >
+                            {column.dayName.substring(0, 3)} {column.date.getDate()}
+                          </h3>
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 rounded-full flex-shrink-0 hover:bg-muted/50 dark:hover:bg-muted/50"
+                          onClick={() => handleAddTask(column.dateString)}
+                          data-tour="add-task"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <DroppableColumn id={column.dateString} className="flex-1">
+                      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+                        <div 
+                          className={cn(
+                            'p-2 sm:p-3 space-y-2 h-full',
+                            isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
-                            minWidth: `${columnWidth}px`,
-                            width: `${columnWidth}px`,
-                            ...(column.isWeekend && !isDark && {
-                              backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
+                            ...(!isDark && {
+                              backgroundColor: `${getDayColors(column.dayName).background}${Math.round(getDayColors(column.dayName).backgroundOpacity * 2.55).toString(16).padStart(2, '0')}`,
                             }),
-                          }}
-                          initial={{ opacity: 0, y: KANBAN_ANIMATION.initialY }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ 
-                            duration: KANBAN_ANIMATION.duration, 
-                            delay: globalIndex * KANBAN_ANIMATION.delayPerColumn,
-                            ease: KANBAN_ANIMATION.easing
+                                  minHeight: '200px',
                           }}
                         >
-                          <div 
-                            className={cn(
-                              'p-1.5 sm:p-2 border-b backdrop-blur-sm',
-                              column.isToday && 'ring-2 ring-inset',
-                              isDark 
-                                ? 'bg-card/50 border-border' 
-                                : getDayColors(column.dayName).header && 'bg-transparent'
-                            )}
-                            style={{
-                              ...(column.isToday && {
-                                ringColor: `${KANBAN_DAY_COLORS.today.ring}${Math.round(KANBAN_DAY_COLORS.today.ringOpacity * 2.55).toString(16).padStart(2, '0')}`,
-                              }),
-                              ...(!isDark && getDayColors(column.dayName).header && {
-                                backgroundImage: `linear-gradient(to right, ${getDayColors(column.dayName).header.from}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.via}${Math.round(70 * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.to}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')})`,
-                                borderColor: `${getDayColors(column.dayName).header.border}${Math.round(getDayColors(column.dayName).header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`,
-                              }),
-                            }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 
-                                  className={cn(
-                                    'uppercase text-xs sm:text-sm tracking-wider mb-0.5 sm:mb-1 font-bold',
-                                    !column.isToday && 'text-gray-700 dark:text-foreground'
-                                  )}
-                                  style={column.isToday ? { color: KANBAN_DAY_COLORS.today.text } : undefined}
-                                >
-                                  {column.dayName.substring(0, 3)} {column.date.getDate()}
-                                </h3>
-                              </div>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6 rounded-full flex-shrink-0 hover:bg-muted/50 dark:hover:bg-muted/50"
-                                onClick={() => handleAddTask(column.dateString)}
-                                data-tour="add-task"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          <DroppableColumn id={column.dateString} className="flex-1">
-                            <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                              <div 
-                                className={cn(
-                                  'p-2 sm:p-3 space-y-2 h-full',
-                                  isDark ? 'bg-muted/10' : ''
-                                )}
-                                style={{
-                                  ...(!isDark && {
-                                    backgroundColor: `${getDayColors(column.dayName).background}${Math.round(getDayColors(column.dayName).backgroundOpacity * 2.55).toString(16).padStart(2, '0')}`,
-                                  }),
-                                  minHeight: '200px',
-                                }}
-                              >
-                                <AnimatePresence mode="popLayout">
-                                  {dayTasks.length === 0 ? (
-                                    <motion.div
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: 1 }}
-                                      exit={{ opacity: 0 }}
+                          <AnimatePresence mode="popLayout">
+                            {dayTasks.length === 0 ? (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
                                       className="flex flex-col items-center justify-center py-12 text-center min-h-[200px] pointer-events-none"
-                                    >
+                              >
                                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
-                                        <Plus className="w-6 h-6 text-primary/40" />
-                                      </div>
+                                  <Plus className="w-6 h-6 text-primary/40" />
+                                </div>
                                       <p className="text-sm text-muted-foreground mb-3 pointer-events-none">No tasks</p>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleAddTask(column.dateString)}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleAddTask(column.dateString)}
                                         className="rounded-full pointer-events-auto"
-                                      >
-                                        Add task
-                                      </Button>
-                                    </motion.div>
-                                  ) : (
-                                    <>
-                                      {dayTasks.map((task) => (
-                                        <DraggableTaskCard
-                                          key={task.id}
-                                          task={task}
-                                          onClick={() => handleTaskClick(task)}
-                                          droppableId={column.dateString}
-                                        />
-                                      ))}
-                                    </>
-                                  )}
-                                </AnimatePresence>
-                              </div>
-                            </SortableContext>
-                          </DroppableColumn>
-                        </motion.div>
-                      );
-                    })}
+                                >
+                                  Add task
+                                </Button>
+                              </motion.div>
+                            ) : (
+                              <>
+                                {dayTasks.map((task) => (
+                                  <DraggableTaskCard
+                                    key={task.id}
+                                    task={task}
+                                    onClick={() => handleTaskClick(task)}
+                                    droppableId={column.dateString}
+                                  />
+                                ))}
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </SortableContext>
+                    </DroppableColumn>
+                  </motion.div>
+                );
+              })}
                   </div>
                 </React.Fragment>
               ))}

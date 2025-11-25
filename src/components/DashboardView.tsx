@@ -916,57 +916,57 @@ export function DashboardView({
                           </span>
                         )}
                         <button
-                          onClick={() =>
-                            setMobileDayIndex(index)
-                          }
-                          className={cn(
+                        onClick={() =>
+                          setMobileDayIndex(index)
+                        }
+                        className={cn(
                             "flex flex-col items-center justify-center px-1.5 py-1.5 sm:px-2.5 sm:py-2 rounded-xl transition-all w-full",
+                          isSelected
+                            ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
+                            : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "text-[9px] sm:text-[10px] uppercase tracking-wide mb-0.5 sm:mb-1 leading-tight",
                             isSelected
-                              ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
-                              : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
+                              ? "font-semibold"
+                              : "text-muted-foreground font-medium",
                           )}
                         >
-                          <span
-                            className={cn(
-                              "text-[9px] sm:text-[10px] uppercase tracking-wide mb-0.5 sm:mb-1 leading-tight",
-                              isSelected
-                                ? "font-semibold"
-                                : "text-muted-foreground font-medium",
-                            )}
-                          >
-                            {column.dayName}
-                          </span>
-                          <span
-                            className={cn(
-                              "text-sm sm:text-base font-semibold leading-none",
-                              isSelected
-                                ? "text-primary"
-                                : "text-foreground",
-                            )}
-                          >
-                            {column.date.getDate()}
-                          </span>
-                          {dayTasks.length > 0 && (
-                            <div className="flex gap-0.5 mt-0.5 sm:mt-1">
-                              {Array.from({
-                                length: Math.min(
-                                  dayTasks.length,
-                                  3,
-                                ),
-                              }).map((_, i) => (
-                                <div
-                                  key={i}
-                                  className={cn(
-                                    "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
-                                    isSelected
-                                      ? "bg-primary"
-                                      : "bg-primary/40",
-                                  )}
-                                />
-                              ))}
-                            </div>
+                          {column.dayName}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-sm sm:text-base font-semibold leading-none",
+                            isSelected
+                              ? "text-primary"
+                              : "text-foreground",
                           )}
-                        </button>
+                        >
+                          {column.date.getDate()}
+                        </span>
+                        {dayTasks.length > 0 && (
+                          <div className="flex gap-0.5 mt-0.5 sm:mt-1">
+                            {Array.from({
+                              length: Math.min(
+                                dayTasks.length,
+                                3,
+                              ),
+                            }).map((_, i) => (
+                              <div
+                                key={i}
+                                className={cn(
+                                  "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
+                                  isSelected
+                                    ? "bg-primary"
+                                    : "bg-primary/40",
+                                )}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </button>
                       </div>
                     );
                   })}

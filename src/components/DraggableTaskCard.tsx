@@ -245,61 +245,61 @@ export const DraggableTaskCard = React.forwardRef<
       
       // Get base height for this duration (standard starting height before components)
       let baseHeight = getBaseHeightForDuration(duration);
-      
-      // Add height for badge wrapping
-      baseHeight += badgeWrapHeight;
-      
-      // Add extra height for description (full height, no line clamp)
-      // Description is always shown for tasks >= 60 minutes if it exists
-      if (hasDescription) {
-        // Estimate description height based on content length
-        const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
-        const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
-        // Match CSS margin: mb-0 (0px) when assigned users present and no subtasks, mb-1.5 (6px) otherwise
-        const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
-          ? 0 // mb-0 when assigned users follow directly (matches CSS)
-          : 6; // mb-1.5 = 6px when subtasks present or no assigned users (matches CSS)
-        const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
-        baseHeight += descriptionHeight;
-      }
-      
-      // Add extra height for assigned users (only if present)
-      if (hasAssignedUsers) {
-        // If description exists and no subtasks, reduce spacing since description has mb-0
-        // Account for avatar + name height (~20px) plus spacing
-        const assignedUsersBaseHeight = 20; // Avatar + name height
-        const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
-          ? 16 // Reduced spacing when description has mb-0
-          : 20; // Standard spacing
-        baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
-      }
-      
-      // Add extra height for pomodoro timer if present (only for long tasks, shown absolutely)
-      if (hasPomodoro && !inlinePomodoroPresent) {
-        // Pomodoro timer in absolute position adds ~40px height
-        baseHeight += 40;
-      }
-      
-      // Add extra height for tracked time display if present
-      if (hasTrackedTimeFull) {
-        // Tracked time display adds ~24px height
-        baseHeight += 24;
-      }
-      
-      // Add extra height for subtasks (only if present)
-      if (hasSubtasks) {
-        const subtaskCount = Math.min(task.subtasks.length, 3);
-        // Subtask height: ~14px per item, spacing: 2px between items on mobile (space-y-0.5), 4px on desktop (space-y-1)
-        const subtaskItemHeight = 14; // Approximate height per subtask item
-        const subtaskSpacing = isMobile ? 2 : 4; // space-y-0.5 (2px) on mobile, space-y-1 (4px) on desktop
-        const subtaskHeight = subtaskCount * subtaskItemHeight + 
-          (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
         
-        // Add extra spacing if description is present (description has mb-1.5 = 6px)
-        const subtaskTopSpacing = hasDescription ? 6 : 0;
+        // Add height for badge wrapping
+        baseHeight += badgeWrapHeight;
+        
+        // Add extra height for description (full height, no line clamp)
+        // Description is always shown for tasks >= 60 minutes if it exists
+        if (hasDescription) {
+          // Estimate description height based on content length
+          const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
+          const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
+          // Match CSS margin: mb-0 (0px) when assigned users present and no subtasks, mb-1.5 (6px) otherwise
+          const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
+            ? 0 // mb-0 when assigned users follow directly (matches CSS)
+            : 6; // mb-1.5 = 6px when subtasks present or no assigned users (matches CSS)
+          const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
+        baseHeight += descriptionHeight;
+        }
+        
+        // Add extra height for assigned users (only if present)
+        if (hasAssignedUsers) {
+          // If description exists and no subtasks, reduce spacing since description has mb-0
+          // Account for avatar + name height (~20px) plus spacing
+          const assignedUsersBaseHeight = 20; // Avatar + name height
+          const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
+            ? 16 // Reduced spacing when description has mb-0
+            : 20; // Standard spacing
+        baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
+        }
+        
+        // Add extra height for pomodoro timer if present (only for long tasks, shown absolutely)
+        if (hasPomodoro && !inlinePomodoroPresent) {
+          // Pomodoro timer in absolute position adds ~40px height
+        baseHeight += 40;
+        }
+        
+        // Add extra height for tracked time display if present
+        if (hasTrackedTimeFull) {
+          // Tracked time display adds ~24px height
+        baseHeight += 24;
+        }
+        
+        // Add extra height for subtasks (only if present)
+        if (hasSubtasks) {
+          const subtaskCount = Math.min(task.subtasks.length, 3);
+          // Subtask height: ~14px per item, spacing: 2px between items on mobile (space-y-0.5), 4px on desktop (space-y-1)
+          const subtaskItemHeight = 14; // Approximate height per subtask item
+          const subtaskSpacing = isMobile ? 2 : 4; // space-y-0.5 (2px) on mobile, space-y-1 (4px) on desktop
+          const subtaskHeight = subtaskCount * subtaskItemHeight + 
+            (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
+          
+          // Add extra spacing if description is present (description has mb-1.5 = 6px)
+          const subtaskTopSpacing = hasDescription ? 6 : 0;
         baseHeight += subtaskHeight + subtaskTopSpacing;
-      }
-      
+        }
+        
       // Standard heights are TOTAL heights (including padding applied via CSS classes)
       // Do NOT add padding here - CSS classes handle padding, and standard heights already account for it
       // Return base height directly - this is the total card height matching the standard requirements

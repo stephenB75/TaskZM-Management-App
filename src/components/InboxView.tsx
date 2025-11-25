@@ -176,7 +176,7 @@ export function InboxView() {
       const result = await scheduleAllTasks({ dateRange: range, forceCategoryHours: true });
       toast.dismiss(loadingToast);
       if (result.scheduled.length > 0) {
-        toast.success("Inbox cleared!", {
+      toast.success("Inbox cleared!", {
           description: `Scheduled ${result.scheduled.length} task${result.scheduled.length === 1 ? "" : "s"} across the next two weeks`,
         });
       } else {

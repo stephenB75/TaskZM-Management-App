@@ -373,7 +373,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
       {/* Tasks List */}
       <div className="flex-1 overflow-hidden min-h-0">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-3 pb-safe md:pb-4">
+        <div className="p-4 space-y-3 pb-safe md:pb-4">
           {sortedTasks.length === 0 ? (
             <div className="text-center py-12">
               <Folder className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
@@ -563,8 +563,8 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
               );
             })
           )}
-          </div>
-        </ScrollArea>
+        </div>
+      </ScrollArea>
       </div>
 
       {/* Task Dialog */}

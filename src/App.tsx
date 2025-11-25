@@ -187,7 +187,7 @@ function AppContent() {
 
   // Track if tour has been triggered to prevent multiple triggers
   const tourTriggeredRef = React.useRef(false);
-  
+
   // Auto-start tour only for new signups (not existing users)
   // For demo users, wait until disclaimer is closed before starting tour
   useEffect(() => {
