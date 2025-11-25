@@ -407,7 +407,7 @@ export function TodayAgendaView({
             </div>
           </div>
           {/* Spacer for fixed header on mobile */}
-        <div className="md:hidden h-[20px]" />
+        <div className="md:hidden h-[10px]" />
         </>
       )}
 

@@ -257,7 +257,7 @@ export function InboxView() {
         }
       />
       {/* Spacer for fixed header on mobile */}
-      <div className="md:hidden h-[20px]" />
+      <div className="md:hidden h-[10px]" />
 
       <div className="flex-1 flex flex-col min-h-0">
         {/* Quick Add and Filters Section */}
