@@ -382,7 +382,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <div className="space-y-4">
               {/* Profile Card */}
               <div 
-                className="rounded-2xl border border-border/40 bg-muted/30 dark:bg-card/50 px-4 py-4 sm:px-5 sm:py-5 flex flex-col sm:flex-row items-center gap-4 w-full"
+                className="rounded-2xl border border-border/40 bg-muted/30 dark:bg-card/50 px-4 py-4 sm:px-5 sm:py-5 flex flex-col items-center gap-4 w-full"
               >
                 <div 
                   className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center text-primary font-semibold shadow-inner flex-shrink-0"
@@ -394,12 +394,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 >
                   {getInitials(user?.name)}
                 </div>
-                <div className="flex-1 min-w-0 space-y-2 text-center sm:text-left w-full sm:w-auto">
+                <div className="flex-1 min-w-0 space-y-2 text-center w-full">
                   <div className="space-y-1">
                     <div className="text-base font-semibold text-foreground truncate">{user?.name || '—'}</div>
                     <div className="text-sm text-muted-foreground truncate break-all">{user?.email || '—'}</div>
                   </div>
-                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start text-[11px]">
+                  <div className="flex flex-wrap gap-2 justify-center text-[11px]">
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap">
                       {subscription.tier === 'pro' ? 'Pro Member' : 'Free Member'}
                     </Badge>
@@ -413,13 +413,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <div className="flex flex-col gap-2 w-full items-center">
                 <Button 
                   size="sm" 
                   variant="outline"
                   onClick={handleUpdateProfile} 
                   disabled={isUpdatingProfile || profileName.trim() === user?.name}
-                  className="flex-1 sm:flex-none sm:min-w-[120px]"
+                  className="w-full sm:w-auto sm:min-w-[120px]"
                 >
                   {isUpdatingProfile ? 'Saving…' : 'Save Profile'}
                 </Button>
@@ -427,7 +427,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   variant="destructive" 
                   size="sm" 
                   onClick={handleSignOut} 
-                  className="flex-1 sm:flex-none sm:min-w-[120px]"
+                  className="w-full sm:w-auto sm:min-w-[120px]"
                 >
                   <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                   Sign Out
