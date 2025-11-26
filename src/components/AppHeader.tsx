@@ -50,7 +50,6 @@ import {
   HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT,
   HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL,
   HEADER_SIDE_PANEL_ANIMATION_EASE,
-  HEADER_MOBILE_SAFE_AREA_SPACER,
 } from "../lib/layout-constants";
 import {
   COLOR_GRADIENT_START,
@@ -201,13 +200,6 @@ export function AppHeader({
           </div>
         </div>
       </div>
-      {/* Flow spacer so mobile content starts below fixed header */}
-      <div 
-        className="md:hidden"
-        aria-hidden="true"
-        style={{ height: HEADER_MOBILE_SAFE_AREA_SPACER }}
-      />
-
       {/* Desktop/Tablet Header - Side panel headers are relative, main header is fixed */}
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel, with fade animation
