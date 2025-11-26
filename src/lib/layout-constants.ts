@@ -53,6 +53,7 @@ export const HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL = 0.9; // Initial scale f
 export const HEADER_SIDE_PANEL_ANIMATION_EASE = 'easeOut'; // Easing function for side panel animations
 export const HEADER_MOBILE_SPACER_HEIGHT = '1.75rem'; // h-7 = 1.75rem (28px) - spacer for mobile header
 export const HEADER_MOBILE_SPACER_HEIGHT_PX = 28; // h-7 = 28px - for calculations
+export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // Spacer that accounts for notch/safe-area devices
 
 // Calculate panel width based on viewport
 export const getPanelWidth = (): number => {
