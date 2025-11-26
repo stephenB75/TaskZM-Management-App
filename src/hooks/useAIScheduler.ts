@@ -977,8 +977,46 @@ export function useAIScheduler() {
     }
   };
 
-  const scheduleAllTasks = async (options?: { dateRange?: { startDate: Date; endDate: Date }; forceCategoryHours?: boolean }): Promise<ScheduleResult> => {
-    const result = generateSchedulePlan(undefined, options?.dateRange, { forceCategoryHours: options?.forceCategoryHours });
+  const scheduleAllTasks = async (options?: { 
+    dateRange?: { startDate: Date; endDate: Date }; 
+    forceCategoryHours?: boolean;
+    onlyWithoutDueDate?: boolean;
+    period?: 'day' | 'twoWeeks';
+  }): Promise<ScheduleResult> => {
+    // Filter tasks: only schedule tasks without due dates if requested
+    let tasksToSchedule: Task[] | undefined = undefined;
+    if (options?.onlyWithoutDueDate) {
+      const unscheduledTasks = getUnscheduledTasks();
+      tasksToSchedule = unscheduledTasks.filter(task => !task.dueDate);
+    }
+    
+    // Determine date range: day or two weeks
+    let dateRange = options?.dateRange;
+    if (!dateRange && options?.period) {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      
+      if (options.period === 'day') {
+        const end = new Date(start);
+        end.setHours(23, 59, 59, 999);
+        dateRange = { startDate: start, endDate: end };
+      } else {
+        // Two weeks (14 days)
+        const end = new Date(start);
+        end.setDate(end.getDate() + 13); // 14 days total (today + 13 more)
+        end.setHours(23, 59, 59, 999);
+        dateRange = { startDate: start, endDate: end };
+      }
+    }
+    
+    const result = generateSchedulePlan(
+      tasksToSchedule, 
+      dateRange, 
+      { 
+        forceCategoryHours: options?.forceCategoryHours ?? true,
+        enforceMinimumHours: false // Don't enforce minimum for initial scheduling
+      }
+    );
     if (result.scheduled.length > 0) {
       await applySchedulePlan(result.scheduled);
     }

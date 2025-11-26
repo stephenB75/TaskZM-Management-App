@@ -437,8 +437,12 @@ function AppContent() {
     });
 
     try {
-      // Schedule all tasks
-      const result = await scheduleAllTasks({ dateRange: getTwoWeekDateRange(), forceCategoryHours: true });
+      // Schedule only tasks without due dates for a two week period, using category hours
+      const result = await scheduleAllTasks({ 
+        period: 'twoWeeks',
+        onlyWithoutDueDate: true,
+        forceCategoryHours: true 
+      });
       
       // Dismiss loading toast
       toast.dismiss(loadingToast);

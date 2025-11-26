@@ -102,6 +102,9 @@ export function AIRecommendationPanel({
   const [rescheduleType, setRescheduleType] = useState<'day' | 'week' | 'month' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [rescheduleDateOpen, setRescheduleDateOpen] = useState(false);
+  const [suggestionPeriod, setSuggestionPeriod] = useState<'day' | 'week' | 'month' | 'twoWeeks'>('twoWeeks');
+  const [suggestionDate, setSuggestionDate] = useState<Date | undefined>(new Date());
+  const [suggestionDateOpen, setSuggestionDateOpen] = useState(false);
 
   const handleScheduleUnscheduledTasks = () => {
     // Check if user has access to AI Scheduler feature
@@ -165,9 +168,43 @@ export function AIRecommendationPanel({
 
   const handleProceedWithExceedsLimit = () => {
     setShowExceedsLimitDialog(false);
-    // Regenerate plan and proceed with scheduling
-    const range = getTwoWeekDateRange();
-    const result = generateSchedulePlan(undefined, range, { forceCategoryHours: true });
+    // Regenerate plan and proceed with scheduling using category hours
+    // Use the same period as the original suggestion
+    let range: { startDate: Date; endDate: Date };
+    const baseDate = suggestionDate || new Date();
+    
+    if (suggestionPeriod === 'day') {
+      const start = new Date(baseDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(baseDate);
+      end.setHours(23, 59, 59, 999);
+      range = { startDate: start, endDate: end };
+    } else if (suggestionPeriod === 'week') {
+      const monday = new Date(baseDate);
+      const day = monday.getDay();
+      const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
+      monday.setDate(diff);
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(sunday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      range = { startDate: monday, endDate: sunday };
+    } else if (suggestionPeriod === 'month') {
+      const year = baseDate.getFullYear();
+      const month = baseDate.getMonth();
+      const start = new Date(year, month, 1);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(year, month + 1, 0);
+      end.setHours(23, 59, 59, 999);
+      range = { startDate: start, endDate: end };
+    } else {
+      range = getTwoWeekDateRange();
+    }
+    
+    const result = generateSchedulePlan(undefined, range, { 
+      forceCategoryHours: true,
+      enforceMinimumHours: false // Don't enforce minimum for suggestions
+    });
     setSchedulePlan(result.scheduled);
     setShowSchedulePreview(true);
     
@@ -716,16 +753,64 @@ export function AIRecommendationPanel({
                   </div>
                   <div className="space-y-3">
                     {showScheduleButton && (
-                      <Button
-                        onClick={handleScheduleUnscheduledTasks}
-                        className="w-full rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                        size="default"
-                      >
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        {aiSettings.priorityBasedScheduling
-                          ? "Schedule by Priority"
-                          : "Schedule Tasks"}
-                      </Button>
+                      <>
+                        {/* Period Selector for AI Suggestions */}
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={suggestionPeriod}
+                            onValueChange={(value) => setSuggestionPeriod(value as 'day' | 'week' | 'month' | 'twoWeeks')}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="day">Today</SelectItem>
+                              <SelectItem value="week">This Week</SelectItem>
+                              <SelectItem value="month">This Month</SelectItem>
+                              <SelectItem value="twoWeeks">Two Weeks</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {(suggestionPeriod === 'day' || suggestionPeriod === 'week' || suggestionPeriod === 'month') && (
+                            <Popover open={suggestionDateOpen} onOpenChange={setSuggestionDateOpen}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 text-xs flex-1"
+                                >
+                                  <Calendar className="w-3 h-3 mr-1" />
+                                  {suggestionDate?.toLocaleDateString('en-US', {
+                                    month: suggestionPeriod === 'month' ? 'long' : 'short',
+                                    day: suggestionPeriod !== 'month' ? 'numeric' : undefined,
+                                    year: 'numeric'
+                                  })}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={suggestionDate}
+                                  onSelect={(date) => {
+                                    setSuggestionDate(date);
+                                    setSuggestionDateOpen(false);
+                                  }}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
+                        <Button
+                          onClick={handleScheduleUnscheduledTasks}
+                          className="w-full rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                          size="default"
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          {aiSettings.priorityBasedScheduling
+                            ? "Schedule by Priority"
+                            : "Schedule Tasks"}
+                        </Button>
+                      </>
                     )}
                     
                     {/* Reschedule Options - Always show when AI scheduling is enabled */}

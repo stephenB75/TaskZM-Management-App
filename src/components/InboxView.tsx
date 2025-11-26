@@ -172,8 +172,12 @@ export function InboxView() {
     );
 
     try {
-      const range = getTwoWeekDateRange();
-      const result = await scheduleAllTasks({ dateRange: range, forceCategoryHours: true });
+      // Schedule only tasks without due dates for a two week period, using category hours
+      const result = await scheduleAllTasks({ 
+        period: 'twoWeeks',
+        onlyWithoutDueDate: true,
+        forceCategoryHours: true 
+      });
       toast.dismiss(loadingToast);
       if (result.scheduled.length > 0) {
       toast.success("Inbox cleared!", {

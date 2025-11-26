@@ -544,8 +544,12 @@ export function DashboardView({
       return;
     }
 
+    // AI Suggestions: Generate suggestions using category hours for two week period
     const range = getTwoWeekDateRange();
-    const result = generateSchedulePlan(undefined, range, { forceCategoryHours: true });
+    const result = generateSchedulePlan(undefined, range, { 
+      forceCategoryHours: true,
+      enforceMinimumHours: false // Don't enforce minimum for suggestions
+    });
 
     if (result.scheduled.length === 0 && result.exceedsLimit.length === 0) {
       toast.info("No available time slots", {
