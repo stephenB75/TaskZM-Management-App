@@ -261,7 +261,9 @@ export function useAIScheduler() {
     dateRange?: { startDate: Date; endDate: Date },
     options?: { forceCategoryHours?: boolean; shuffle?: boolean; enforceMinimumHours?: boolean }
   ): ScheduleResult => {
-    const unscheduledTasks = tasksToSchedule || getUnscheduledTasks();
+    // Get tasks to schedule, filtering out completed (done) tasks
+    // Completed tasks should never be scheduled
+    const unscheduledTasks = (tasksToSchedule || getUnscheduledTasks()).filter(t => t.status !== 'done');
     
     if (unscheduledTasks.length === 0) {
       return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
@@ -1521,8 +1523,10 @@ export function useAIScheduler() {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Get the tasks again (they're now unscheduled) using the cloned tasks as fallback
+      // Filter out completed (done) tasks - they should never be rescheduled
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
-      const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
+      const tasksForReschedule = (freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null })))
+        .filter(t => t.status !== 'done'); // Extra safeguard: ensure no done tasks are rescheduled
       
       // Create date range for the selected day (start and end of the same day)
       // Use the selected date, not tomorrow - allows rescheduling today's tasks
@@ -1585,8 +1589,10 @@ export function useAIScheduler() {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Get the tasks again (they're now unscheduled) using the cloned tasks as fallback
+      // Filter out completed (done) tasks - they should never be rescheduled
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
-      const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
+      const tasksForReschedule = (freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null })))
+        .filter(t => t.status !== 'done'); // Extra safeguard: ensure no done tasks are rescheduled
       
       // Create date range for the selected week
       // Start from the current date (or selected date), not from Monday
@@ -1665,8 +1671,10 @@ export function useAIScheduler() {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Get the tasks again (they're now unscheduled) using the cloned tasks as fallback
+      // Filter out completed (done) tasks - they should never be rescheduled
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
-      const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
+      const tasksForReschedule = (freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null })))
+        .filter(t => t.status !== 'done'); // Extra safeguard: ensure no done tasks are rescheduled
       
       // Create date range for the selected month (first day to last day of month)
       const monthStart = new Date(date);
