@@ -59,7 +59,8 @@ export function useAIScheduler() {
     forceCategoryHours: boolean = false,
     existingTasksForDay: Task[] = []
   ): { hours: number; minutes: number; reason: string } | null => {
-    if (!hoursSettings.respectHours && !forceCategoryHours) return null;
+    // When forceCategoryHours is true, always use category hours regardless of respectHours setting
+    if (!forceCategoryHours && !hoursSettings.respectHours) return null;
 
     const category = getTaskCategory(task);
     if (!category) return null;
@@ -69,7 +70,20 @@ export function useAIScheduler() {
     const categoryHours = dayHours[category];
 
     // If category hours are disabled for this day type, return null to use default
-    if (!categoryHours.enabled) return null;
+    // But when forceCategoryHours is true, we should still try to schedule within reasonable hours
+    if (!categoryHours.enabled) {
+      // If forcing category hours but category is disabled, use default work hours as fallback
+      if (forceCategoryHours) {
+        // Return a default time slot based on category (work hours for work/projects, flexible for personal)
+        const defaultHour = category === 'personal' ? 10 : 9; // Personal tasks later, work/projects at 9 AM
+        return {
+          hours: defaultHour,
+          minutes: 0,
+          reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled (category hours disabled, using default)`
+        };
+      }
+      return null;
+    }
 
     const startTime = parseTime(categoryHours.start);
     const endTime = parseTime(categoryHours.end);
@@ -395,20 +409,17 @@ export function useAIScheduler() {
     
     // Shuffle tasks if requested (for rescheduling to create variety)
     if (options?.shuffle) {
-      // Group tasks by priority/status to maintain some order while shuffling
+      // For rescheduling, perform a more complete shuffle while maintaining critical priorities
+      // Keep urgent and in-progress tasks at the front, but shuffle everything else more thoroughly
       const urgentTasks = sortedTasks.filter(t => t.priority === 'urgent' || t.status === 'in-progress');
-      const highTasks = sortedTasks.filter(t => t.priority === 'high' && t.status !== 'in-progress');
-      const mediumTasks = sortedTasks.filter(t => t.priority === 'medium' && t.status !== 'in-progress');
-      const lowTasks = sortedTasks.filter(t => t.priority === 'low' && t.status !== 'in-progress');
+      const otherTasks = sortedTasks.filter(t => t.priority !== 'urgent' && t.status !== 'in-progress');
       
-      // Shuffle within each priority group
-      const shuffledUrgent = shuffleArray(urgentTasks);
-      const shuffledHigh = shuffleArray(highTasks);
-      const shuffledMedium = shuffleArray(mediumTasks);
-      const shuffledLow = shuffleArray(lowTasks);
+      // Shuffle the non-urgent tasks more thoroughly
+      const shuffledOther = shuffleArray(otherTasks);
       
-      // Combine back together maintaining priority order
-      sortedTasks = [...shuffledUrgent, ...shuffledHigh, ...shuffledMedium, ...shuffledLow];
+      // Combine: urgent tasks first, then shuffled others
+      // This creates variety while ensuring urgent tasks are still prioritized
+      sortedTasks = [...urgentTasks, ...shuffledOther];
     }
     
     const plan: SchedulePlan[] = [];
@@ -591,8 +602,8 @@ export function useAIScheduler() {
         }
       }
       
-      // Apply category-based date preference if respectHours is enabled
-      if (hoursSettings.respectHours) {
+      // Apply category-based date preference if respectHours is enabled OR forceCategoryHours is true
+      if (hoursSettings.respectHours || options?.forceCategoryHours) {
         const category = getTaskCategory(task);
         if (category) {
           const baseDate = new Date(tomorrow);
@@ -604,15 +615,23 @@ export function useAIScheduler() {
           const categoryHours = dayHours[category];
           
           // If category hours are disabled for the current day type, try to find a preferred day
+          // When forceCategoryHours is true, we should still try to schedule on appropriate days
           if (!categoryHours.enabled) {
-            const preferWeekend = category === 'personal'; // Personal tasks prefer weekends
-            const preferredDaysToAdd = findNextPreferredDay(tomorrow, preferWeekend, 7);
+            // Determine preferred day type based on category
+            // Work and projects prefer weekdays, personal prefers weekends
+            const preferWeekend = category === 'personal';
+            const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 7;
+            const preferredDaysToAdd = findNextPreferredDay(tomorrow, preferWeekend, maxSearchDays);
             
-            // Only switch days if we found a preferred day and it's not too far out
-            if (preferredDaysToAdd < daysToAdd + 7) {
+            // Only switch days if we found a preferred day and it's within the date range
+            const preferredDate = new Date(tomorrow);
+            preferredDate.setDate(preferredDate.getDate() + preferredDaysToAdd);
+            const isWithinRange = !dateRange || (preferredDate >= startDate && preferredDate <= endDate);
+            
+            if (isWithinRange && preferredDaysToAdd < daysToAdd + maxSearchDays) {
               daysToAdd = preferredDaysToAdd;
               const dayType = preferWeekend ? 'weekend' : 'weekday';
-              if (!reason.includes('Due date')) {
+              if (!reason.includes('Due date') && !reason.includes('minimum hours')) {
                 reason = `${category.charAt(0).toUpperCase() + category.slice(1)} task - scheduled for ${dayType}`;
               }
             }
@@ -633,12 +652,19 @@ export function useAIScheduler() {
         if (dayNeedingHours) {
           const hoursNeeded = getHoursToMinimum(dayNeedingHours);
           // If this task can help reach minimum (and doesn't exceed max), use this day
-          if (taskHours <= hoursNeeded && !wouldExceedLimit(dayNeedingHours, taskHours)) {
+          // Allow tasks that help fill the minimum, even if they're larger than the exact gap
+          // as long as they don't exceed the 5-hour maximum
+          if (!wouldExceedLimit(dayNeedingHours, taskHours)) {
             const daysDiff = Math.floor((dayNeedingHours.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24));
-            if (daysDiff >= 0 && daysDiff < (dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14)) {
+            const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
+            if (daysDiff >= 0 && daysDiff < maxDays) {
               finalDaysToAdd = daysDiff;
               foundDay = true;
-              reason = `${reason} - filling minimum hours requirement`;
+              const dateKey = getDateKey(dayNeedingHours);
+              const currentHours = dailyHours.get(dateKey) || 0;
+              if (currentHours < MIN_HOURS_PER_DAY) {
+                reason = `${reason} - filling minimum hours requirement (${currentHours.toFixed(1)}h → ${(currentHours + taskHours).toFixed(1)}h)`;
+              }
             }
           }
         }
@@ -1035,13 +1061,22 @@ export function useAIScheduler() {
 
   // Helper: Get tasks scheduled for a week (starting from date)
   const getScheduledTasksForWeek = (startDate: Date): Task[] => {
-    const endDate = new Date(startDate);
+    // Find the Monday of the week containing startDate
+    const weekStart = new Date(startDate);
+    weekStart.setHours(0, 0, 0, 0);
+    const dayOfWeek = weekStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
+    weekStart.setDate(weekStart.getDate() + daysToMonday);
+    
+    const endDate = new Date(weekStart);
     endDate.setDate(endDate.getDate() + (KANBAN_TIME.daysInWeek - 1));
+    endDate.setHours(23, 59, 59, 999);
     
     return tasks.filter(task => {
       if (!task.scheduledDate || task.status === 'done') return false;
       const taskDate = new Date(task.scheduledDate);
-      return taskDate >= startDate && taskDate <= endDate;
+      taskDate.setHours(0, 0, 0, 0);
+      return taskDate >= weekStart && taskDate <= endDate;
     });
   };
 
@@ -1154,10 +1189,15 @@ export function useAIScheduler() {
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
       // Create date range for the selected week (Monday to Sunday)
+      // Find the Monday of the week containing startDate
       const weekStart = new Date(startDate);
-        weekStart.setHours(0, 0, 0, 0);
+      weekStart.setHours(0, 0, 0, 0);
+      const dayOfWeek = weekStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
+      weekStart.setDate(weekStart.getDate() + daysToMonday);
       
-      const weekEnd = new Date(startDate);
+      // Week ends on Sunday (6 days after Monday)
+      const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + (KANBAN_TIME.daysInWeek - 1));
       weekEnd.setHours(23, 59, 59, 999);
       
