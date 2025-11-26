@@ -157,15 +157,29 @@ export const TASK_CARD_HEIGHT_CONFIG = {
       withAssigned: 80, // Reduced from 114 - assigned users + minimal bottom space
       withBoth: 90, // Reduced from 126 - both components + minimal bottom space
       compact: 56, // Reduced from 72 - absolute minimum for content
+      // Transition heights for scaling
+      transitionToMedium: 200, // Height at 45 mins (transition point to medium, matches long task start at 60 mins)
     },
     medium: {
       min: 80, // Reduced from 100 - minimum with components
       compact: 64, // Reduced from 84 - compact without components
+      // Transition heights for scaling
+      transitionFromShort: 200, // Height at 45 mins (matches short task max and long task start)
+      transitionToLong: 200, // Height at 60 mins (matches long task start, ensures medium never exceeds long)
     },
     long: {
       base: 120, // Reduced from 160 - base for title, badges, time (description added separately)
       baseWithComponents: 210, // Base height for 1-hour tasks (includes base + components)
       incrementPerHour: 200, // Additional height per hour beyond the first hour
+      // Standard base heights by duration
+      at60mins: 200, // 60 mins
+      at90mins: 300, // 90 mins
+      at120mins: 400, // 120 mins
+      at150mins: 500, // 150 mins
+      at180mins: 600, // 180 mins
+      beyond180mins: 650, // >180 mins (base cap)
+      minHeight: 200, // Minimum height for long tasks (60 mins)
+      maxHeightAfterAdjustment: 850, // Maximum height after auto-adjustment (allows components to add ~200px)
     },
   },
   scalingFactors: {
@@ -174,6 +188,33 @@ export const TASK_CARD_HEIGHT_CONFIG = {
     long: 2.0, // Legacy - kept for backward compatibility, but using incrementPerHour instead
   },
   heightMultiplier: 1.247, // For timeline view
+  // Component height adjustments
+  componentHeights: {
+    badgeWrap: 24, // Extra height if badges wrap (one line height)
+    assignedUsers: {
+      base: 20, // Avatar + name height
+      spacing: {
+        standard: 20, // Standard spacing
+        reduced: 16, // Reduced spacing when description has mb-0
+      },
+    },
+    pomodoroTimer: 40, // Height for pomodoro timer (long tasks only)
+    trackedTime: 24, // Height for tracked time display (medium and long tasks)
+    description: {
+      bottomPadding: {
+        standard: 6, // mb-1.5 = 6px when subtasks present or no assigned users
+        noGap: 0, // mb-0 when assigned users follow directly
+      },
+    },
+    subtask: {
+      itemHeight: 14, // Height per subtask item
+      spacing: {
+        mobile: 2, // space-y-0.5 = 2px on mobile
+        desktop: 4, // space-y-1 = 4px on desktop
+      },
+      topSpacing: 6, // Top spacing when description is present
+    },
+  },
 } as const;
 
 // Padding and Spacing
@@ -277,8 +318,8 @@ export const TASK_CARD_CALCULATIONS = {
     average: 60,
   },
   availableWidth: {
-    mobile: 280, // Unchanged for mobile view
-    desktop: 480, // Increased by 20% from 400px to match wider desktop columns
+    mobile: 240, // Available width for badge calculations on mobile
+    desktop: 432, // Available width for badge calculations on desktop (increased by 20% from 360 to match wider columns)
   },
   description: {
     charsPerLine: 50,
