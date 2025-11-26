@@ -306,12 +306,6 @@ export const DraggableTaskCard = React.forwardRef<
       return Math.max(Math.min(baseHeight, maxHeight), TASK_CARD_HEIGHT_CONFIG.minHeight);
     };
 
-    const cardHeight = getCardHeight();
-    
-    // Force re-render when components activate/deactivate to recalculate height
-    // Track all properties that affect card height calculation
-    const [, forceUpdate] = React.useReducer(x => x + 1, 0);
-    
     // Memoize key values that affect height to create stable dependencies
     const assignedToKey = React.useMemo(() => 
       task.assignedTo ? `${task.assignedTo.length}-${task.assignedTo.join(',')}` : 'none',
@@ -326,10 +320,9 @@ export const DraggableTaskCard = React.forwardRef<
       [task.tags]
     );
     
-    React.useEffect(() => {
-      // This effect triggers a re-render when any component or property that affects height changes
-      // The getCardHeight function will recalculate based on current state
-      forceUpdate();
+    // Memoize card height calculation to ensure it recalculates when dependencies change
+    const cardHeight = React.useMemo(() => {
+      return getCardHeight();
     }, [
       // Timer state changes (affects pomodoro display and tracking badge)
       timerState.isRunning,
@@ -343,6 +336,15 @@ export const DraggableTaskCard = React.forwardRef<
       // Properties that affect badge wrapping (affects badgeWrapHeight)
       task.scheduledDate,
       task.dueDate,
+      // Computed flags that affect height (derived from above, but included for clarity)
+      showTrackingBadgeTopRow,
+      showTrackedTimeTopRow,
+      showInlinePomodoroTimer,
+      pomodoroIsRunning,
+      // Feature flag that affects pomodoro display
+      canUsePomodoro,
+      // Mobile state affects spacing calculations
+      isMobile,
     ]);
     
     const topRowItemCount = [

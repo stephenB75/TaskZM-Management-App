@@ -64,9 +64,6 @@ export function DraggableTodayAgendaTask({
   const timerState = getTimerState(task.id);
   const isDark = actualTheme === 'dark';
   
-  // Force re-render when task properties change to recalculate height
-  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
-  
   // Memoize key values that affect height to create stable dependencies
   const assignedToKey = React.useMemo(() => 
     task.assignedTo ? `${task.assignedTo.length}-${task.assignedTo.join(',')}` : 'none',
@@ -77,23 +74,45 @@ export function DraggableTodayAgendaTask({
     [task.subtasks]
   );
   
-  React.useEffect(() => {
-    // Force re-render when task properties that affect height change
-    // Using stable keys to track array changes properly
-    forceUpdate();
+  // Calculate dynamic height that accounts for pomodoro timer and other components
+  const taskCardHeight = React.useMemo(() => {
+    const baseHeight = getTaskHeight(task) * 1.247;
+    
+    // Add extra height for pomodoro timer when running (adds bottom padding)
+    const hasPomodoro = hasFeature("pomodoroTimer") && timerState.isRunning;
+    const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
+    
+    // Calculate additional height needed for components
+    let additionalHeight = 0;
+    
+    // Pomodoro timer adds extra bottom padding (pb-8 vs pb-6 on mobile, md:pb-8 vs md:pb-2 on desktop)
+    if (hasPomodoro || hasAssignedUsers) {
+      if (isMobile) {
+        // Mobile: pb-8 (32px) vs pb-6 (24px) = 8px extra
+        additionalHeight += 8;
+      } else {
+        // Desktop: md:pb-8 (32px) vs md:pb-2 (8px) for medium tasks, or md:pb-12 (48px) vs md:pb-2 (8px) for long tasks
+        if (task.estimatedTime && task.estimatedTime >= 60) {
+          // Long tasks: pb-12 (48px) vs pb-2 (8px) = 40px extra
+          additionalHeight += 40;
+        } else if (task.estimatedTime && task.estimatedTime >= 45) {
+          // Medium tasks: pb-4 (16px) vs pb-2 (8px) = 8px extra
+          additionalHeight += 8;
+        } else {
+          // Short tasks: pb-1.5 (6px) standard, but components add space
+          additionalHeight += 8;
+        }
+      }
+    }
+    
+    return baseHeight + additionalHeight;
   }, [
-    // Timer state changes (affects pomodoro display)
+    getTaskHeight,
+    task,
     timerState.isRunning,
-    // Task properties that affect height - using stable keys
+    hasFeature,
     assignedToKey,
-    subtasksKey,
-    task.actualTime,
-    task.description,
-    task.estimatedTime,
-    // Properties that affect badge display
-    task.scheduledDate,
-    task.dueDate,
-    task.tags?.length,
+    isMobile,
   ]);
   
   const {
@@ -182,7 +201,7 @@ export function DraggableTodayAgendaTask({
   const timeLabelTextHeight = 16; // text-xs height
   const timeLabelMargin = 4; // mb-1 = 4px
   const dotCenterOffset = headlineCenterPosition - timeLabelTextHeight - timeLabelMargin; // Position dot to align with headline center
-  const taskCardHeight = getTaskHeight(task) * 1.247;
+  // taskCardHeight is now calculated above with useMemo
   const taskCardBottom = badgeHeight + badgeMargin + taskCardHeight; // Bottom of task card
   const lineHeight = taskCardBottom - headlineCenterPosition; // Line from headline center to bottom of task card
 
@@ -222,7 +241,7 @@ export function DraggableTodayAgendaTask({
         <div
           className="flex flex-col items-center flex-shrink-0 w-16 relative"
           style={{ 
-            height: `${getTaskHeight(task) * 1.247}px`, // Match task card height
+            height: `${taskCardHeight}px`, // Match task card height
             overflow: 'visible' 
           }}
         >
@@ -250,7 +269,7 @@ export function DraggableTodayAgendaTask({
                 zIndex: Z_INDEX.TIMELINE_LINE,
                 // Line starts at headline center position (same as dot center)
                 top: `${headlineCenterPosition}px`, // Headline center position (dot center)
-                height: `${(getTaskHeight(task) * 1.247) - headlineCenterPosition}px`, // From headline center to bottom
+                height: `${taskCardHeight - headlineCenterPosition}px`, // From headline center to bottom
                 minHeight: '8px', // Minimum visible line
                 backgroundColor: isNextUp 
                   ? `${getPriorityLineColor(task.priority)}CC` // 80% opacity for Next Up
@@ -299,7 +318,9 @@ export function DraggableTodayAgendaTask({
               task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
             )}
             style={{
-              height: `${getTaskHeight(task) * 1.247}px`,
+              height: `${taskCardHeight}px`,
+              minHeight: `${taskCardHeight}px`,
+              maxHeight: `${taskCardHeight}px`,
               boxSizing: 'border-box', // Include padding in height calculation
             }}
             onClick={(e) => {
