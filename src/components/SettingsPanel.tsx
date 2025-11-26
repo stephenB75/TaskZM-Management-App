@@ -78,6 +78,11 @@ import {
   SETTINGS_PANEL_PADDING_MEDIUM,
   SETTINGS_PANEL_PADDING_LARGE,
   SETTINGS_PANEL_PADDING_Y_SMALL,
+  SETTINGS_PANEL_START_TOUR_BUTTON_GAP,
+  SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT,
+  SETTINGS_PANEL_START_TOUR_BUTTON_PADDING_X,
+  SETTINGS_PANEL_START_TOUR_FONT_SIZE,
+  SETTINGS_PANEL_START_TOUR_ICON_SIZE,
   SETTINGS_PANEL_TOAST_DURATION_MS,
   SETTINGS_PANEL_TIMEOUT_DELAY_MS,
 } from '../lib/layout-constants';
@@ -309,11 +314,17 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <Button
               size="sm"
               variant="outline"
-              className="flex items-center"
-              style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
+              className="flex items-center rounded-full"
+              style={{
+                gap: SETTINGS_PANEL_START_TOUR_BUTTON_GAP,
+                height: SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT,
+                paddingInline: SETTINGS_PANEL_START_TOUR_BUTTON_PADDING_X,
+                fontSize: SETTINGS_PANEL_START_TOUR_FONT_SIZE,
+                lineHeight: SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT,
+              }}
               onClick={handleStartTour}
             >
-              <Compass style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} />
+              <Compass style={{ width: SETTINGS_PANEL_START_TOUR_ICON_SIZE, height: SETTINGS_PANEL_START_TOUR_ICON_SIZE }} />
               Start Tour
             </Button>
           ) : null

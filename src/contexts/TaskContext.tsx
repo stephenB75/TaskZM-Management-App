@@ -15,10 +15,11 @@ import {
   WORKSPACE_TOAST_DURATION_MS,
   WORKSPACE_NAME_FALLBACK,
   WORKSPACE_NAME_SUFFIX,
-  WORKSPACE_SYNC_INTERVAL_MS,
   WORKSPACE_SYNC_INTERVAL_ACTIVE_MS,
   WORKSPACE_SYNC_INTERVAL_IDLE_MS,
+  WORKSPACE_SYNC_INTERVAL_MAX_MS,
   WORKSPACE_ACTIVITY_TIMEOUT_MS,
+  WORKSPACE_SYNC_NO_CHANGE_THRESHOLD,
 } from '../lib/layout-constants';
 import {
   TOAST_DURATION_MEDIUM_MS,
@@ -126,6 +127,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Start with idle interval (2 minutes)
   const syncLockRef = useRef<boolean>(false); // Prevent concurrent sync operations
+  const consecutiveNoChangeSyncsRef = useRef<number>(0); // Track backoff when no changes detected
+  const syncIntervalRef = useRef<number>(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Keep latest interval in ref to avoid stale closures
   
   // Activity tracking for adaptive polling
   const lastActivityRef = useRef<number>(Date.now());
@@ -142,6 +145,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     projects?: string;
     folders?: string;
   }>({});
+
+  // Keep latest interval readily available for callback logic
+  useEffect(() => {
+    syncIntervalRef.current = syncInterval;
+  }, [syncInterval]);
 
   // Load from Supabase FIRST when authenticated, localStorage only as offline fallback
   useEffect(() => {
@@ -823,71 +831,120 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const syncWithServer = useCallback(async (wsId?: string, silent: boolean = false) => {
-    const targetWorkspaceId = wsId || workspaceId;
-    if (!targetWorkspaceId || !accessToken) return;
+  const syncWithServer = useCallback(
+    async (wsId?: string, silent: boolean = false) => {
+      const targetWorkspaceId = wsId || workspaceId;
+      if (!targetWorkspaceId || !accessToken) return;
 
-    // Prevent concurrent sync operations
-    if (syncLockRef.current) {
-      logger.debug('Sync already in progress, skipping...');
-      return;
-    }
-
-    syncLockRef.current = true;
-    setIsSyncing(true);
-    try {
-      logger.debug(`Force syncing with server for workspace: ${targetWorkspaceId}`);
-      
-      // Load from Supabase (source of truth)
-      const result = await api.getTasks(targetWorkspaceId);
-      const { tasks: serverTasks, error } = result;
-      
-      // If there was an error, handle it
-      if (error) {
-        logger.error('Sync error:', error);
-        if (!silent) {
-          if (error.message.includes('Authentication')) {
-            toast.error('Authentication failed', {
-              description: 'Please sign in again to continue.',
-            });
-          } else {
-            toast.error('Failed to sync with server', {
-              description: error.message || 'Please check your internet connection',
-            });
-          }
-        }
+      // Prevent concurrent sync operations
+      if (syncLockRef.current) {
+        logger.debug('Sync already in progress, skipping...');
         return;
       }
-      
-      // Server is source of truth - always use server data, overwrite localStorage
-      logger.info(`Synced ${serverTasks.length} tasks from server`);
-      setTasks(serverTasks);
-      saveToLocalStorage('tasks', serverTasks);
-      setLastSync(new Date());
-      
-      // Clear sync flags to ensure fresh sync
-      const syncKey = `synced_local_data_${targetWorkspaceId}`;
-      localStorage.removeItem(syncKey);
-      localStorage.setItem(`last_server_sync_${targetWorkspaceId}`, String(Date.now()));
-      
-      if (!silent && serverTasks.length > 0) {
-        toast.success('Synced with server', {
-          description: `Loaded ${serverTasks.length} task${serverTasks.length !== 1 ? 's' : ''}`,
-        });
+
+      syncLockRef.current = true;
+      setIsSyncing(true);
+      try {
+        const lastModifiedSince = lastSyncTimestampsRef.current.tasks;
+
+        // Load from Supabase (source of truth) with conditional headers
+        const result = await api.getTasks(
+          targetWorkspaceId,
+          lastModifiedSince ? { ifModifiedSince: lastModifiedSince } : undefined
+        );
+        const {
+          tasks: serverTasks = [],
+          error,
+          notModified,
+          lastModified,
+        } = result;
+
+        // If there was an error, handle it
+        if (error) {
+          logger.error('Sync error:', error);
+          if (!silent) {
+            if (error.message.includes('Authentication')) {
+              toast.error('Authentication failed', {
+                description: 'Please sign in again to continue.',
+              });
+            } else {
+              toast.error('Failed to sync with server', {
+                description: error.message || 'Please check your internet connection',
+              });
+            }
+          }
+          return;
+        }
+
+        const syncTimestamp = lastModified || new Date().toISOString();
+        lastSyncTimestampsRef.current.tasks = syncTimestamp;
+        localStorage.setItem(`last_sync_timestamp_tasks_${targetWorkspaceId}`, syncTimestamp);
+        localStorage.setItem(`last_server_sync_${targetWorkspaceId}`, String(Date.now()));
+        setLastSync(new Date());
+
+        if (notModified) {
+          logger.debug('No task changes detected since last sync');
+          consecutiveNoChangeSyncsRef.current += 1;
+
+          if (
+            !isActiveRef.current &&
+            consecutiveNoChangeSyncsRef.current >= WORKSPACE_SYNC_NO_CHANGE_THRESHOLD
+          ) {
+            const backoffSteps =
+              consecutiveNoChangeSyncsRef.current - WORKSPACE_SYNC_NO_CHANGE_THRESHOLD + 1;
+            const proposedInterval = Math.min(
+              WORKSPACE_SYNC_INTERVAL_IDLE_MS * Math.pow(2, backoffSteps),
+              WORKSPACE_SYNC_INTERVAL_MAX_MS
+            );
+
+            if (proposedInterval !== syncIntervalRef.current) {
+              logger.debug(
+                `Increasing idle sync interval to ${proposedInterval / 1000}s (no changes detected)`
+              );
+              setSyncInterval(proposedInterval);
+            }
+          }
+          return;
+        }
+
+        // Data changed - reset backoff and align interval to activity state
+        consecutiveNoChangeSyncsRef.current = 0;
+        const desiredInterval = isActiveRef.current
+          ? WORKSPACE_SYNC_INTERVAL_ACTIVE_MS
+          : WORKSPACE_SYNC_INTERVAL_IDLE_MS;
+        if (syncIntervalRef.current !== desiredInterval) {
+          setSyncInterval(desiredInterval);
+        }
+
+        // Server is source of truth - always use server data, overwrite localStorage
+        logger.info(`Synced ${serverTasks.length} tasks from server`);
+        setTasks(serverTasks);
+        saveToLocalStorage('tasks', serverTasks, user?.id);
+
+        // Clear sync flags to ensure fresh sync
+        const syncKey = `synced_local_data_${targetWorkspaceId}`;
+        localStorage.removeItem(syncKey);
+
+        if (!silent && serverTasks.length > 0) {
+          toast.success('Synced with server', {
+            description: `Loaded ${serverTasks.length} task${serverTasks.length !== 1 ? 's' : ''}`,
+          });
+        }
+      } catch (error) {
+        logger.error('Unexpected sync error:', error);
+        // On error, keep current state (might be offline)
+        if (!silent) {
+          toast.error('Failed to sync with server', {
+            description: 'Please check your internet connection',
+          });
+        }
+      } finally {
+        setIsSyncing(false);
+        syncLockRef.current = false;
       }
-    } catch (error) {
-      logger.error('Unexpected sync error:', error);
-      // On error, keep current state (might be offline)
-      if (!silent) {
-        toast.error('Failed to sync with server', {
-          description: 'Please check your internet connection',
-        });
-      }
-    } finally {
-      setIsSyncing(false);
-      syncLockRef.current = false;
-    }
-  }, [workspaceId, accessToken]);
+    },
+    [workspaceId, accessToken, user?.id]
+  );
 
   // Activity tracking for adaptive polling
   useEffect(() => {

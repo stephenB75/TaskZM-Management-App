@@ -170,7 +170,7 @@ export async function getTasks(
     since?: string; // ISO timestamp - only fetch tasks updated after this time
     ifModifiedSince?: string; // ETag/version - check if data changed
   }
-): Promise<{ tasks: Task[]; error?: Error }> {
+): Promise<{ tasks: Task[]; error?: Error; lastModified?: string; notModified?: boolean }> {
   // Validate workspace ID
   if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
     const error = new Error('Invalid workspace ID');
@@ -197,11 +197,16 @@ export async function getTasks(
       method: 'GET',
       headers,
     });
+    const lastModifiedHeader = response.headers.get('last-modified') || undefined;
 
     // Handle 304 Not Modified (no changes)
     if (response.status === 304) {
       logger.debug('Tasks not modified since last sync');
-      return { tasks: [] };
+      return {
+        tasks: [],
+        lastModified: lastModifiedHeader || options?.ifModifiedSince,
+        notModified: true,
+      };
     }
 
     // Handle 404 - workspace might not exist yet (not necessarily an error)
@@ -237,7 +242,7 @@ export async function getTasks(
       logger.error('Invalid getTasks response format:', data);
       return { tasks: [], error };
     }
-    return { tasks: data.tasks };
+    return { tasks: data.tasks, lastModified: lastModifiedHeader };
   } catch (error) {
     // Network errors or other fetch failures
     const errorObj = error instanceof Error ? error : new Error('Network error');

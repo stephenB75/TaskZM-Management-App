@@ -225,6 +225,8 @@ export const WORKSPACE_NAME_SUFFIX = "'s Workspace"; // Suffix appended to user 
 export const WORKSPACE_SYNC_INTERVAL_MS = 600000; // Default auto-sync interval in milliseconds (10 minutes) - DEPRECATED: Use ACTIVE/IDLE intervals
 export const WORKSPACE_SYNC_INTERVAL_ACTIVE_MS = 30000; // Active sync interval (30 seconds) when user is actively using the app - reduced for better cross-device sync
 export const WORKSPACE_SYNC_INTERVAL_IDLE_MS = 120000; // Idle sync interval (2 minutes) when user is inactive - reduced for better cross-device sync
+export const WORKSPACE_SYNC_INTERVAL_MAX_MS = 300000; // Maximum auto-sync backoff interval (5 minutes) to avoid hammering Supabase
+export const WORKSPACE_SYNC_NO_CHANGE_THRESHOLD = 3; // Number of consecutive no-change syncs before increasing interval
 export const WORKSPACE_ACTIVITY_TIMEOUT_MS = 120000; // Timeout to consider user inactive (2 minutes) - reduced to switch to idle faster
 
 // Settings Panel constants
@@ -250,6 +252,7 @@ export const SETTINGS_PANEL_ICON_SIZE_MEDIUM = '1rem'; // w-4 h-4 = 1rem
 export const SETTINGS_PANEL_ICON_SIZE_LARGE = '1.25rem'; // w-5 h-5 = 1.25rem
 export const SETTINGS_PANEL_ICON_SIZE_XLARGE = '2rem'; // w-8 h-8 = 2rem
 export const SETTINGS_PANEL_ICON_SIZE_EXTRA_SMALL = '0.875rem'; // w-3.5 h-3.5 = 0.875rem
+export const SETTINGS_PANEL_START_TOUR_ICON_SIZE = '0.8rem'; // 20% smaller than standard medium icon
 export const SETTINGS_PANEL_AVATAR_SIZE = '4rem'; // w-16 h-16 = 4rem
 export const SETTINGS_PANEL_INPUT_HEIGHT = '2.25rem'; // h-9 = 2.25rem
 export const SETTINGS_PANEL_BADGE_HEIGHT = '1rem'; // h-4 = 1rem
@@ -274,6 +277,10 @@ export const SETTINGS_PANEL_PADDING_SMALL = '0.625rem'; // p-2.5 = 0.625rem
 export const SETTINGS_PANEL_PADDING_MEDIUM = '0.75rem'; // p-3 = 0.75rem
 export const SETTINGS_PANEL_PADDING_LARGE = '1rem'; // p-4 = 1rem
 export const SETTINGS_PANEL_PADDING_Y_SMALL = '0.25rem'; // py-1 = 0.25rem
+export const SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT = '1.6rem'; // 20% smaller than default h-8 (2rem)
+export const SETTINGS_PANEL_START_TOUR_BUTTON_PADDING_X = '0.6rem'; // 20% smaller than default px-3 (0.75rem)
+export const SETTINGS_PANEL_START_TOUR_BUTTON_GAP = '0.4rem'; // 20% smaller than default 0.5rem gap
+export const SETTINGS_PANEL_START_TOUR_FONT_SIZE = '0.7rem'; // Slightly smaller text for compact button
 export const SETTINGS_PANEL_TOAST_DURATION_MS = 5000; // Toast duration in milliseconds (5 seconds)
 export const SETTINGS_PANEL_TIMEOUT_DELAY_MS = 100; // Timeout delay in milliseconds (100ms)
 
