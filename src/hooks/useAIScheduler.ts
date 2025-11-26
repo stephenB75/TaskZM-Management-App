@@ -614,12 +614,31 @@ export function useAIScheduler() {
           const dayHours = isCurrentWeekend ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
           const categoryHours = dayHours[category];
           
+          // Work and projects should avoid weekends, personal prefers weekends
+          // This preference should be enforced regardless of whether category hours are enabled
+          const preferWeekend = category === 'personal';
+          const shouldAvoidWeekend = (category === 'work' || category === 'projects') && isCurrentWeekend;
+          
+          // If work/projects task is scheduled on weekend, try to find a weekday
+          if (shouldAvoidWeekend) {
+            const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
+            const preferredDaysToAdd = findNextPreferredDay(tomorrow, false, maxSearchDays); // false = prefer weekday
+            
+            // Only switch days if we found a weekday and it's within the date range
+            const preferredDate = new Date(tomorrow);
+            preferredDate.setDate(preferredDate.getDate() + preferredDaysToAdd);
+            const isWithinRange = !dateRange || (preferredDate >= startDate && preferredDate <= endDate);
+            
+            if (isWithinRange && preferredDaysToAdd < daysToAdd + maxSearchDays) {
+              daysToAdd = preferredDaysToAdd;
+              if (!reason.includes('Due date') && !reason.includes('minimum hours')) {
+                reason = `${category.charAt(0).toUpperCase() + category.slice(1)} task - scheduled for weekday (avoiding weekend)`;
+              }
+            }
+          }
           // If category hours are disabled for the current day type, try to find a preferred day
           // When forceCategoryHours is true, we should still try to schedule on appropriate days
-          if (!categoryHours.enabled) {
-            // Determine preferred day type based on category
-            // Work and projects prefer weekdays, personal prefers weekends
-            const preferWeekend = category === 'personal';
+          else if (!categoryHours.enabled) {
             const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 7;
             const preferredDaysToAdd = findNextPreferredDay(tomorrow, preferWeekend, maxSearchDays);
             
@@ -650,20 +669,27 @@ export function useAIScheduler() {
         // First, try to find a day that needs hours to reach minimum
         const dayNeedingHours = findDayWithLeastHours(startDate, endDate);
         if (dayNeedingHours) {
-          const hoursNeeded = getHoursToMinimum(dayNeedingHours);
-          // If this task can help reach minimum (and doesn't exceed max), use this day
-          // Allow tasks that help fill the minimum, even if they're larger than the exact gap
-          // as long as they don't exceed the 5-hour maximum
-          if (!wouldExceedLimit(dayNeedingHours, taskHours)) {
-            const daysDiff = Math.floor((dayNeedingHours.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24));
-            const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
-            if (daysDiff >= 0 && daysDiff < maxDays) {
-              finalDaysToAdd = daysDiff;
-              foundDay = true;
-              const dateKey = getDateKey(dayNeedingHours);
-              const currentHours = dailyHours.get(dateKey) || 0;
-              if (currentHours < MIN_HOURS_PER_DAY) {
-                reason = `${reason} - filling minimum hours requirement (${currentHours.toFixed(1)}h → ${(currentHours + taskHours).toFixed(1)}h)`;
+          // Skip weekends for work and projects tasks when respectHours or forceCategoryHours is enabled
+          const shouldSkipWeekend = (hoursSettings.respectHours || options?.forceCategoryHours) && 
+                                    (getTaskCategory(task) === 'work' || getTaskCategory(task) === 'projects') &&
+                                    isWeekend(dayNeedingHours);
+          
+          if (!shouldSkipWeekend) {
+            const hoursNeeded = getHoursToMinimum(dayNeedingHours);
+            // If this task can help reach minimum (and doesn't exceed max), use this day
+            // Allow tasks that help fill the minimum, even if they're larger than the exact gap
+            // as long as they don't exceed the 5-hour maximum
+            if (!wouldExceedLimit(dayNeedingHours, taskHours)) {
+              const daysDiff = Math.floor((dayNeedingHours.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24));
+              const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
+              if (daysDiff >= 0 && daysDiff < maxDays) {
+                finalDaysToAdd = daysDiff;
+                foundDay = true;
+                const dateKey = getDateKey(dayNeedingHours);
+                const currentHours = dailyHours.get(dateKey) || 0;
+                if (currentHours < MIN_HOURS_PER_DAY) {
+                  reason = `${reason} - filling minimum hours requirement (${currentHours.toFixed(1)}h → ${(currentHours + taskHours).toFixed(1)}h)`;
+                }
               }
             }
           }
@@ -689,6 +715,20 @@ export function useAIScheduler() {
             finalDaysToAdd++;
             daysSearched++;
             continue;
+          }
+          
+          // Skip weekends for work and projects tasks when respectHours or forceCategoryHours is enabled
+          if (hoursSettings.respectHours || options?.forceCategoryHours) {
+            const category = getTaskCategory(task);
+            if (category === 'work' || category === 'projects') {
+              const isTestWeekend = isWeekend(testDate);
+              if (isTestWeekend) {
+                // Skip this weekend day, try next day
+                finalDaysToAdd++;
+                daysSearched++;
+                continue;
+              }
+            }
           }
           
           // Check if this day has space for the task (within 5-hour limit)
