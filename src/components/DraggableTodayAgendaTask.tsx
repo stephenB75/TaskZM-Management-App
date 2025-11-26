@@ -31,6 +31,15 @@ import {
   TASK_CARD_HEIGHT_CONFIG,
   TASK_CARD_CALCULATIONS,
   TASK_CARD_LINE_CLAMP,
+  TASK_CARD_BACKGROUNDS,
+  TASK_CARD_BORDERS,
+  TASK_CARD_SHADOWS,
+  TASK_CARD_RICH_TEXT_COLORS,
+  TASK_CARD_ASSIGNED_USER_COLORS,
+  TASK_CARD_POSITIONING,
+  TASK_CARD_OPACITY,
+  TASK_CARD_TIMELINE,
+  TASK_CARD_ADDITIONAL_FONT_SIZES,
 } from "../lib/task-card-constants";
 import { Z_INDEX } from "../lib/layout-constants";
 
@@ -324,17 +333,17 @@ export function DraggableTodayAgendaTask({
 
   // Calculate positions for Next Up line to align with headline
   // Structure: Badge row (20px badge + 4px margin) -> Headline row -> Timeline Marker
-  //   -> Time label (~16px) -> Time label margin (4px mb-1) -> Dot aligned with headline
+  //   -> Time label (~18px) -> Time label margin (4px mb-1) -> Dot aligned with headline
   // Headline position from top: badge (20px) + badge margin (4px) + row gap (6px space-y-1.5) = 30px
   // Dot should align with headline center, which is approximately at 30px + headline line-height/2
-  const badgeHeight = 20; // Badge: text-[10px] with py-0.5
-  const badgeMargin = 4; // mb-1 = 4px
-  const rowGap = isMobile ? 2 : 6; // gap between badge row and headline row (reduced on mobile: -mt-0.5 = -2px from space-y-1 = 2px total)
+  const badgeHeight = TASK_CARD_TIMELINE.badge.height;
+  const badgeMargin = TASK_CARD_TIMELINE.badge.margin;
+  const rowGap = isMobile ? TASK_CARD_TIMELINE.rowGap.mobile : TASK_CARD_TIMELINE.rowGap.desktop;
   const headlineStartPosition = badgeHeight + badgeMargin + rowGap; // ~26px on mobile, ~30px on desktop
-  const headlineLineHeight = isMobile ? 20 : 24; // text-sm/text-base line-height
+  const headlineLineHeight = isMobile ? TASK_CARD_TIMELINE.headline.lineHeight.mobile : TASK_CARD_TIMELINE.headline.lineHeight.desktop;
   const headlineCenterPosition = headlineStartPosition + (headlineLineHeight / 2); // Center of headline (~40-42px)
-  const timeLabelTextHeight = 16; // text-xs height
-  const timeLabelMargin = 4; // mb-1 = 4px
+  const timeLabelTextHeight = TASK_CARD_TIMELINE.timeLabel.height;
+  const timeLabelMargin = TASK_CARD_TIMELINE.timeLabel.margin;
   const dotCenterOffset = headlineCenterPosition - timeLabelTextHeight - timeLabelMargin; // Position dot to align with headline center
   // taskCardHeight is now calculated above with useMemo
   const taskCardBottom = badgeHeight + badgeMargin + taskCardHeight; // Bottom of task card
@@ -347,7 +356,10 @@ export function DraggableTodayAgendaTask({
         <div className="flex gap-3 w-full min-w-0 relative mb-1">
           <div className="w-16 flex-shrink-0" />
           <span 
-            className="text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground self-start relative"
+            className={cn(
+              TASK_CARD_FONT_SIZES.duration.desktop,
+              "font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground self-start relative"
+            )}
             style={{ zIndex: Z_INDEX.BADGE }}
           >
             NEXT UP
@@ -380,7 +392,7 @@ export function DraggableTodayAgendaTask({
             overflow: 'visible' 
           }}
         >
-          <span className="text-xs text-muted-foreground dark:text-gray-300 mb-1 text-center relative z-10">
+          <span className={cn(TASK_CARD_ADDITIONAL_FONT_SIZES.tooltipEmail, "text-muted-foreground dark:text-gray-300 mb-1 text-center relative z-10")}>
             {getTaskTime(task)}
           </span>
           {/* Dot - positioned at headline center, aligned with the line */}
@@ -399,15 +411,16 @@ export function DraggableTodayAgendaTask({
           {/* Vertical line - starts at headline center (aligned with dot center) and extends to bottom of task card, colored by priority */}
           {index < totalTasks - 1 && (
             <div 
-              className="absolute left-1/2 -translate-x-1/2 w-[2px]"
+              className="absolute left-1/2 -translate-x-1/2"
               style={{ 
                 zIndex: Z_INDEX.TIMELINE_LINE,
+                width: `${TASK_CARD_POSITIONING.timelineLine.width}px`,
                 // Line starts at headline center position (same as dot center)
                 top: `${headlineCenterPosition}px`, // Headline center position (dot center)
                 height: `${taskCardHeight - headlineCenterPosition}px`, // From headline center to bottom
-                minHeight: '8px', // Minimum visible line
+                minHeight: `${TASK_CARD_POSITIONING.timelineLine.minHeight}px`, // Minimum visible line
                 backgroundColor: isNextUp 
-                  ? `${getPriorityLineColor(task.priority)}CC` // 80% opacity for Next Up
+                  ? `${getPriorityLineColor(task.priority)}${TASK_CARD_OPACITY.timelineLine.nextUp}` // 80% opacity for Next Up
                   : getPriorityLineColor(task.priority), // Full color for regular tasks
               }}
             />
@@ -415,42 +428,41 @@ export function DraggableTodayAgendaTask({
         </div>
 
         {/* Task Content - Match Kanban Week View */}
-        <div className={cn("flex gap-2 flex-1 min-w-0", isDragging && "max-w-[386px]")}>
+        <div className={cn("flex", TASK_CARD_SPACING.gap.card, "flex-1 min-w-0", isDragging && "max-w-[386px]")}>
           {/* Compact Card - Match Kanban styling (priority line removed for timeline view) */}
           <div
             className={cn(
               "rounded-lg relative flex-1 overflow-hidden box-border",
-              isDragging && "scale-90 origin-left",
+              isDragging && TASK_CARD_TIMELINE.scale.dragging,
               // Responsive padding: smaller on mobile, comfortable on desktop
-              "px-2 py-1.5 space-y-1 md:px-3 md:py-2.5 md:space-y-1.5",
+              TASK_CARD_SPACING.timeline.base,
               // Background: solid on mobile, semi-transparent on desktop - match task card backgrounds
-              isMobile ? "bg-white dark:bg-[#3E3E52]" : "bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm",
+              isMobile ? TASK_CARD_BACKGROUNDS.timeline.mobile : TASK_CARD_BACKGROUNDS.timeline.desktop,
               // Responsive borders: thinner on mobile, standard on desktop - dark mode variants
-              "border-b border-r border-gray-300/80 dark:border-gray-600/50 md:border-gray-300/90 dark:md:border-gray-600/60",
+              TASK_CARD_BORDERS.timeline.mobile,
+              TASK_CARD_BORDERS.timeline.desktop,
               // Shadows: better blending on mobile
-              isMobile 
-                ? "shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_1px_3px_rgba(0,0,0,0.4)]" 
-                : "shadow-lg dark:shadow-xl",
-              "hover:bg-white/80 dark:hover:bg-[#4A4A5E] hover:shadow-xl dark:hover:shadow-2xl hover:border-gray-400/90 dark:hover:border-gray-500/70 transition-all duration-200",
+              isMobile ? TASK_CARD_SHADOWS.timeline.mobile : TASK_CARD_SHADOWS.timeline.desktop,
+              `${TASK_CARD_BACKGROUNDS.timeline.hover} ${TASK_CARD_SHADOWS.timeline.hover} ${TASK_CARD_BORDERS.timeline.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
-              isNextUp && "ring-2 ring-primary/20",
+              isNextUp && TASK_CARD_TIMELINE.nextUp.ring,
               // Bottom padding: auto-adjusts based on content (pomodoro timer, assigned users)
               // Base bottom padding for all tasks
-              !isMobile && "md:pb-8",
-              isMobile && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-6",
+              !isMobile && TASK_CARD_SPACING.timeline.bottomPadding.desktop,
+              isMobile && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && TASK_CARD_SPACING.timeline.bottomPadding.mobile.standard,
               // Extra bottom padding on mobile when pomodoro/assigned users present to fit components
-              isMobile && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && "pb-8",
+              isMobile && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && TASK_CARD_SPACING.timeline.bottomPadding.mobile.withComponents,
               // Compact padding for shorter tasks (< 45 mins) - auto-adjusts when pomodoro/assigned users are present
               // Only applies to tasks < 45 mins, but considers pomodoro timer and assigned users for better fit
-              (task.estimatedTime && task.estimatedTime < 45) && !isMobile && "md:py-2 md:space-y-1",
+              (task.estimatedTime && task.estimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short) && !isMobile && TASK_CARD_SPACING.timeline.short.desktop,
               // On mobile: adjust padding based on components to ensure all elements fit
-              (task.estimatedTime && task.estimatedTime < 45) && isMobile && 
+              (task.estimatedTime && task.estimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short) && isMobile && 
                 ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0))
-                ? "py-1 space-y-1" // More space when components present
-                : "py-1.5 space-y-1", // Standard compact with adequate spacing
+                ? TASK_CARD_SPACING.timeline.short.withComponents // More space when components present
+                : TASK_CARD_SPACING.timeline.short.mobile, // Standard compact with adequate spacing
               // Enhanced padding for tasks 1 hour or more to accommodate descriptions
-              task.estimatedTime && task.estimatedTime >= 60 && !isMobile && "md:py-3.5 md:pb-12 md:space-y-2.5",
-              task.estimatedTime && task.estimatedTime >= 60 && isMobile && "py-2.5 pb-10 space-y-2",
+              task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.long && !isMobile && TASK_CARD_SPACING.timeline.long.desktop,
+              task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.long && isMobile && TASK_CARD_SPACING.timeline.long.mobile,
             )}
             style={{
               height: `${taskCardHeight}px`,
@@ -496,7 +508,7 @@ export function DraggableTodayAgendaTask({
                 )}
 
                 {task.estimatedTime && (
-                  <span className={cn("text-gray-500 dark:text-gray-300 font-medium flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
+                  <span className={cn("text-gray-500 dark:text-gray-300 font-medium flex-shrink-0", isMobile ? "text-[11px]" : "text-[12px]")}>
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
@@ -562,7 +574,7 @@ export function DraggableTodayAgendaTask({
                 className={cn(
                   "text-foreground dark:text-gray-100 leading-tight line-clamp-2 flex-1",
                   task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
-                  isMobile ? "text-sm" : "text-base",
+                  isMobile ? "text-[15px]" : "text-[18px]",
                 )}
               >
                 {task.title}
@@ -585,7 +597,7 @@ export function DraggableTodayAgendaTask({
                   hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
                   hasHTMLTags(task.description) && "[&_li]:ml-1",
                   hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words",
-                  hasHTMLTags(task.description) && "[&_code]:bg-muted [&_code]:dark:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
+                  hasHTMLTags(task.description) && `[&_code]:bg-muted [&_code]:dark:bg-muted [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.padding} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.rounded} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.fontSize} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.fontFamily}`
                 )}
                 {...(hasHTMLTags(task.description) 
                   ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
@@ -629,7 +641,7 @@ export function DraggableTodayAgendaTask({
                       <span
                         className={cn(
                           "leading-tight",
-                          isMobile ? "text-[9px]" : "text-[10px]",
+                          isMobile ? "text-[10px]" : "text-[11px]",
                           subtask.completed
                             ? "text-gray-400 dark:text-gray-500 line-through"
                             : "text-gray-600 dark:text-gray-200",
@@ -641,7 +653,7 @@ export function DraggableTodayAgendaTask({
                   );
                 })}
                 {task.subtasks.length > 3 && (
-                  <div className={cn("text-gray-400 dark:text-gray-500", isMobile ? "text-[9px] pl-3" : "text-[10px] pl-4")}>
+                  <div className={cn("text-gray-400 dark:text-gray-500", isMobile ? "text-[10px] pl-3" : "text-[11px] pl-4")}>
                     +{task.subtasks.length - 3} more
                   </div>
                 )}
@@ -669,14 +681,16 @@ export function DraggableTodayAgendaTask({
                         <TooltipTrigger asChild>
                           <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
                             <div className={cn(
-                              "rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center font-semibold",
-                              isMobile ? "w-3 h-3 text-[7px]" : "w-4 h-4 text-[8px]",
+                              TASK_CARD_ASSIGNED_USER_COLORS.gradient,
+                              TASK_CARD_ASSIGNED_USER_COLORS.text,
+                              "rounded-full flex items-center justify-center font-semibold",
+                              isMobile ? `w-3 h-3 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile}` : `w-4 h-4 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop}`,
                             )}>
                               {initials}
                             </div>
                             <span className={cn(
                               "text-gray-600 dark:text-gray-200 font-semibold",
-                              isMobile ? "text-[9px]" : "text-[10px]",
+                              isMobile ? "text-[10px]" : "text-[11px]",
                             )}>
                               {member.name}
                             </span>
@@ -684,7 +698,7 @@ export function DraggableTodayAgendaTask({
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>{member.name}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-300">
+                          <p className="text-[13px] text-gray-400 dark:text-gray-300">
                             {member.email}
                           </p>
                         </TooltipContent>
@@ -693,7 +707,7 @@ export function DraggableTodayAgendaTask({
                   );
                 })}
                 {task.assignedTo.length > 3 && (
-                  <span className={cn("text-gray-500 dark:text-gray-300", isMobile ? "text-[9px]" : "text-[10px]")}>
+                  <span className={cn("text-gray-500 dark:text-gray-300", isMobile ? "text-[10px]" : "text-[11px]")}>
                     +{task.assignedTo.length - 3}
                   </span>
                 )}
@@ -709,7 +723,7 @@ export function DraggableTodayAgendaTask({
                 <div 
                   className={cn(
                     "flex items-center rounded-full px-1.5 py-0.5 text-white",
-                    isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
+                    isMobile ? "gap-0.5 text-[9px]" : "gap-1 text-[11px]"
                   )}
                   style={{
                     background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,

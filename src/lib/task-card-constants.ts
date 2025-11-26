@@ -49,48 +49,48 @@ export const TASK_CARD_THEME_COLORS = {
   },
 } as const;
 
-// Font Sizes
+// Font Sizes (increased by 10%)
 export const TASK_CARD_FONT_SIZES = {
   time: {
-    mobile: 'text-[9px]',
-    desktop: 'text-[10px]',
+    mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
+    desktop: 'text-[11px]', // 10px * 1.1 = 11px
   },
   priority: {
-    mobile: 'text-[9px]',
-    desktop: 'text-[10px]',
+    mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
+    desktop: 'text-[11px]', // 10px * 1.1 = 11px
   },
   tag: {
-    mobile: 'text-[9px]',
-    desktop: 'text-[10px]',
+    mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
+    desktop: 'text-[11px]', // 10px * 1.1 = 11px
   },
   duration: {
-    mobile: 'text-[10px]',
-    desktop: 'text-[11px]',
+    mobile: 'text-[11px]', // 10px * 1.1 = 11px
+    desktop: 'text-[12px]', // 11px * 1.1 = 12.1px ≈ 12px
   },
   title: {
-    mobile: 'text-sm',
-    desktop: 'text-base',
+    mobile: 'text-[15px]', // text-sm (14px) * 1.1 = 15.4px ≈ 15px
+    desktop: 'text-[18px]', // text-base (16px) * 1.1 = 17.6px ≈ 18px
   },
-  description: 'text-[12px]',
+  description: 'text-[13px]', // 12px * 1.1 = 13.2px ≈ 13px
   tracking: {
-    mobile: 'text-[7px]',
-    desktop: 'text-[8px]',
+    mobile: 'text-[8px]', // 7px * 1.1 = 7.7px ≈ 8px
+    desktop: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
   },
   trackedTime: {
-    mobile: 'text-[8px]',
-    desktop: 'text-[9px]',
+    mobile: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
+    desktop: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
   },
   subtask: {
-    mobile: 'text-[9px]',
-    desktop: 'text-[10px]',
+    mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
+    desktop: 'text-[11px]', // 10px * 1.1 = 11px
   },
   assignedUser: {
-    mobile: 'text-[8px]',
-    desktop: 'text-[9px]',
+    mobile: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
+    desktop: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
   },
   assignedUserName: {
-    mobile: 'text-[9px]',
-    desktop: 'text-[10px]',
+    mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
+    desktop: 'text-[11px]', // 10px * 1.1 = 11px
   },
 } as const;
 
@@ -126,19 +126,19 @@ export const TASK_CARD_ICON_SIZES = {
   },
 } as const;
 
-// Badge Sizes
+// Badge Sizes (font sizes increased by 10%)
 export const TASK_CARD_BADGE_SIZES = {
   priority: {
-    mobile: 'text-[9px] px-1 py-0 h-[16px]',
-    desktop: 'text-[10px] px-1.5 py-0 h-[18px]',
+    mobile: 'text-[10px] px-1 py-0 h-[16px]', // 9px * 1.1 = 9.9px ≈ 10px
+    desktop: 'text-[11px] px-1.5 py-0 h-[18px]', // 10px * 1.1 = 11px
   },
   tag: {
-    mobile: 'text-[9px] px-1 py-0 h-[16px]',
-    desktop: 'text-[10px] px-1.5 py-0 h-[18px]',
+    mobile: 'text-[10px] px-1 py-0 h-[16px]', // 9px * 1.1 = 9.9px ≈ 10px
+    desktop: 'text-[11px] px-1.5 py-0 h-[18px]', // 10px * 1.1 = 11px
   },
   tracking: {
-    mobile: 'px-1 py-0.5 gap-0.5 text-[7px]',
-    desktop: 'px-1.5 py-0.5 gap-1 text-[8px]',
+    mobile: 'px-1 py-0.5 gap-0.5 text-[8px]', // 7px * 1.1 = 7.7px ≈ 8px
+    desktop: 'px-1.5 py-0.5 gap-1 text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
   },
 } as const;
 
@@ -251,6 +251,60 @@ export const TASK_CARD_SPACING = {
     mobile: 'py-1 space-y-1',
     desktop: 'md:py-2 md:space-y-1',
   },
+  // Task type specific padding
+  short: {
+    mobile: 'px-2 py-1 pb-1',
+    desktop: 'md:px-3 md:py-1.5 md:pb-1.5',
+  },
+  medium: {
+    mobile: {
+      standard: 'px-2 py-1.5 pb-2',
+      withComponents: 'px-2 py-1.5 pb-3',
+    },
+    desktop: {
+      standard: 'md:px-3 md:py-2.5 md:pb-2',
+      withComponents: 'md:px-3 md:py-2.5 md:pb-4',
+    },
+  },
+  long: {
+    mobile: {
+      standard: 'px-2 py-2 pb-2',
+      withComponents: 'px-2 py-2 pb-3',
+    },
+    desktop: {
+      standard: 'md:px-3 md:py-2 md:pb-2',
+      withComponents: 'md:px-3 md:py-2 md:pb-4',
+    },
+  },
+  fallback: {
+    mobile: 'px-2 py-1.5 pb-2',
+    desktop: 'md:px-3 md:py-2.5 md:pb-2',
+  },
+  // Timeline view specific padding
+  timeline: {
+    base: 'px-2 py-1.5 space-y-1 md:px-3 md:py-2.5 md:space-y-1.5',
+    short: {
+      mobile: 'py-1 space-y-1',
+      desktop: 'md:py-2 md:space-y-1',
+      withComponents: 'py-1 space-y-1',
+    },
+    long: {
+      mobile: 'py-2.5 pb-10 space-y-2',
+      desktop: 'md:py-3.5 md:pb-12 md:space-y-2.5',
+    },
+    bottomPadding: {
+      mobile: {
+        standard: 'pb-6',
+        withComponents: 'pb-8',
+      },
+      desktop: 'md:pb-8',
+    },
+  },
+  // Gap values
+  gap: {
+    card: 'gap-2', // Gap between priority line and card
+    timeline: 'gap-3', // Gap in timeline view
+  },
 } as const;
 
 // Text Content
@@ -276,6 +330,12 @@ export const TASK_CARD_SHADOWS = {
   mobile: 'shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)]',
   desktop: 'shadow-lg',
   hover: 'hover:shadow-xl',
+  // Timeline view shadows
+  timeline: {
+    mobile: 'shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_1px_3px_rgba(0,0,0,0.4)]',
+    desktop: 'shadow-lg dark:shadow-xl',
+    hover: 'hover:shadow-xl dark:hover:shadow-2xl',
+  },
 } as const;
 
 // Border Colors
@@ -283,6 +343,16 @@ export const TASK_CARD_BORDERS = {
   mobile: 'border-gray-300/80',
   desktop: 'md:border-gray-300/90',
   hover: 'hover:border-gray-400/90',
+  // Timeline view borders
+  timeline: {
+    mobile: 'border-b border-r border-gray-300/80 dark:border-gray-600/50',
+    desktop: 'md:border-gray-300/90 dark:md:border-gray-600/60',
+    hover: 'hover:border-gray-400/90 dark:hover:border-gray-500/70',
+  },
+  // Priority line styling
+  priorityLine: {
+    className: 'w-1 h-1/2 rounded-full flex-shrink-0 self-center',
+  },
 } as const;
 
 // Background Colors - Use lighter backgrounds in dark mode for better visibility
@@ -290,6 +360,12 @@ export const TASK_CARD_BACKGROUNDS = {
   mobile: 'bg-white dark:bg-[#3E3E52]', // Lighter dark background for better visibility
   desktop: 'bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm', // Lighter with transparency
   hover: 'hover:bg-white/80 dark:hover:bg-[#4A4A5E]', // Slightly lighter on hover
+  // Timeline view backgrounds
+  timeline: {
+    mobile: 'bg-white dark:bg-[#3E3E52]',
+    desktop: 'bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm',
+    hover: 'hover:bg-white/80 dark:hover:bg-[#4A4A5E]',
+  },
 } as const;
 
 // Width Values
@@ -390,6 +466,11 @@ export const TASK_CARD_RICH_TEXT_COLORS = {
   code: {
     light: 'bg-gray-100',
     dark: 'dark:bg-muted',
+    // Code block padding and styling
+    padding: 'px-1 py-0.5',
+    rounded: 'rounded',
+    fontSize: 'text-[13px]',
+    fontFamily: 'font-mono',
   },
 } as const;
 
@@ -397,6 +478,17 @@ export const TASK_CARD_RICH_TEXT_COLORS = {
 export const TASK_CARD_ASSIGNED_USER_COLORS = {
   gradient: 'bg-gradient-to-br from-purple-100 to-pink-100',
   text: 'text-purple-700',
+  // Avatar sizes
+  avatar: {
+    mobile: {
+      width: 12, // w-3 = 12px
+      height: 12, // h-3 = 12px
+    },
+    desktop: {
+      width: 16, // w-4 = 16px
+      height: 16, // h-4 = 16px
+    },
+  },
 } as const;
 
 // Text Colors - Light colors for dark backgrounds in dark mode
@@ -424,23 +516,71 @@ export const TASK_CARD_POSITIONING = {
       mobile: 4, // left-1 = 4px
       desktop: 8, // left-2 = 8px
     },
+    // Timeline view positioning
+    timeline: {
+      mobile: 'bottom-1 left-1 gap-1',
+      desktop: 'bottom-2 left-2 gap-2',
+    },
+  },
+  // Timeline line positioning
+  timelineLine: {
+    minHeight: 8, // Minimum visible line height in px
+    width: 2, // Line width in px
   },
 } as const;
 
-// Font Sizes (Additional - for assigned users and tooltips)
+// Font Sizes (Additional - for assigned users and tooltips, increased by 10%)
 export const TASK_CARD_ADDITIONAL_FONT_SIZES = {
   assignedUserInitials: {
-    mobile: 'text-[7px]',
-    desktop: 'text-[8px]',
+    mobile: 'text-[8px]', // 7px * 1.1 = 7.7px ≈ 8px
+    desktop: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
   },
   assignedUserNameInline: {
-    mobile: 'text-[8px]',
-    desktop: 'text-[9px]',
+    mobile: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
+    desktop: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
   },
   assignedUserCount: {
-    mobile: 'text-[8px]',
-    desktop: 'text-[9px]',
+    mobile: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
+    desktop: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
   },
-  tooltipEmail: 'text-xs',
+  tooltipEmail: 'text-[13px]', // text-xs (12px) * 1.1 = 13.2px ≈ 13px
+} as const;
+
+// Opacity Values
+export const TASK_CARD_OPACITY = {
+  done: 60, // opacity-60 for completed tasks
+  dragging: 70, // opacity-70 for dragging state
+  overlay: 95, // opacity-95 for drag overlay
+  timelineLine: {
+    nextUp: 'CC', // 80% opacity hex for Next Up timeline line
+  },
+} as const;
+
+// Timeline View Constants
+export const TASK_CARD_TIMELINE = {
+  badge: {
+    height: 20, // Badge height in px
+    margin: 4, // mb-1 = 4px
+  },
+  rowGap: {
+    mobile: 2, // gap between badge row and headline row on mobile
+    desktop: 6, // gap between badge row and headline row on desktop
+  },
+  headline: {
+    lineHeight: {
+      mobile: 22, // text-[15px] line-height (increased by 10%)
+      desktop: 27, // text-[18px] line-height (increased by 10%)
+    },
+  },
+  timeLabel: {
+    height: 18, // text-[13px] height (increased by 10%)
+    margin: 4, // mb-1 = 4px
+  },
+  nextUp: {
+    ring: 'ring-2 ring-primary/20',
+  },
+  scale: {
+    dragging: 'scale-90 origin-left',
+  },
 } as const;
 

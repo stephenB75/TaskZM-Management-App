@@ -39,6 +39,7 @@ import {
   TASK_CARD_TEXT_COLORS,
   TASK_CARD_POSITIONING,
   TASK_CARD_ADDITIONAL_FONT_SIZES,
+  TASK_CARD_OPACITY,
 } from "../lib/task-card-constants";
 
 interface DraggableTaskCardProps {
@@ -405,7 +406,7 @@ export const DraggableTaskCard = React.forwardRef<
       >
         {/* Vertical colored priority line */}
         <div
-          className="w-1 h-1/2 rounded-full flex-shrink-0 self-center min-h-[40px]"
+          className={TASK_CARD_BORDERS.priorityLine.className}
           style={{
             width: `${TASK_CARD_CALCULATIONS.priorityLine.width}px`,
             minHeight: `${TASK_CARD_CALCULATIONS.priorityLine.minHeight}px`,
@@ -431,23 +432,24 @@ export const DraggableTaskCard = React.forwardRef<
               isDragging ? TASK_CARD_WIDTHS.dragging : "flex-shrink-0 w-full",
               // Padding: synchronized with height calculation to prevent conflicts with duration-based borders
               // Short tasks (< 45 mins): minimal padding to reduce white space
-              (task.estimatedTime && task.estimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short) && (isMobile ? "px-2 py-1 pb-1" : "md:px-3 md:py-1.5 md:pb-1.5"),
+              (task.estimatedTime && task.estimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short) && 
+                (isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop),
               // Medium tasks (45-59 mins): standard padding
               (task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && task.estimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.long) && 
                 !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
-                (isMobile ? "px-2 py-1.5 pb-2" : "md:px-3 md:py-2.5 md:pb-2"),
+                (isMobile ? TASK_CARD_SPACING.medium.mobile.standard : TASK_CARD_SPACING.medium.desktop.standard),
               (task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && task.estimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.long) && 
                 ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
-                (isMobile ? "px-2 py-1.5 pb-3" : "md:px-3 md:py-2.5 md:pb-4"),
+                (isMobile ? TASK_CARD_SPACING.medium.mobile.withComponents : TASK_CARD_SPACING.medium.desktop.withComponents),
               // Long tasks (>= 60 mins): more padding for descriptions
-              (task.estimatedTime && task.estimatedTime >= 60) && 
+              (task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) && 
                 !(pomodoroIsRunning || (task.assignedTo && task.assignedTo.length > 0)) && 
-                (isMobile ? "px-2 py-2 pb-2" : "md:px-3 md:py-2 md:pb-2"),
-              (task.estimatedTime && task.estimatedTime >= 60) && 
+                (isMobile ? TASK_CARD_SPACING.long.mobile.standard : TASK_CARD_SPACING.long.desktop.standard),
+              (task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.long) && 
                 (pomodoroIsRunning || (task.assignedTo && task.assignedTo.length > 0)) && 
-                (isMobile ? "px-2 py-2 pb-3" : "md:px-3 md:py-2 md:pb-4"),
+                (isMobile ? TASK_CARD_SPACING.long.mobile.withComponents : TASK_CARD_SPACING.long.desktop.withComponents),
               // Fallback for tasks without estimatedTime
-              !task.estimatedTime && (isMobile ? "px-2 py-1.5 pb-2" : "md:px-3 md:py-2.5 md:pb-2"),
+              !task.estimatedTime && (isMobile ? TASK_CARD_SPACING.fallback.mobile : TASK_CARD_SPACING.fallback.desktop),
             )}
           style={{
             height: `${cardHeight}px`,
@@ -613,7 +615,7 @@ export const DraggableTaskCard = React.forwardRef<
                 hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
                 hasHTMLTags(task.description) && "[&_li]:ml-1",
                 hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words",
-                hasHTMLTags(task.description) && `[&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.light} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.dark} [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono`
+                hasHTMLTags(task.description) && `[&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.light} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.dark} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.padding} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.rounded} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.fontSize} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.fontFamily}`
               )}
               {...(hasHTMLTags(task.description) 
                 ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
@@ -731,7 +733,7 @@ export const DraggableTaskCard = React.forwardRef<
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>{member.name}</p>
-                              <p className="text-xs text-gray-400 dark:text-gray-300">{member.email}</p>
+                              <p className={TASK_CARD_ADDITIONAL_FONT_SIZES.tooltipEmail + " text-gray-400 dark:text-gray-300"}>{member.email}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -810,7 +812,7 @@ export const DraggableTaskCard = React.forwardRef<
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{member.name}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-300">
+                            <p className={TASK_CARD_ADDITIONAL_FONT_SIZES.tooltipEmail + " text-gray-400 dark:text-gray-300"}>
                               {member.email}
                             </p>
                           </TooltipContent>
