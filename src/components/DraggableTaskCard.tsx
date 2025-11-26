@@ -321,7 +321,7 @@ export const DraggableTaskCard = React.forwardRef<
     );
     
     // Memoize card height calculation to ensure it recalculates when dependencies change
-    // Calculate height directly in useMemo to ensure all dependencies are properly tracked
+    // Calculate height directly in useMemo using standard heights from config
     const cardHeight = React.useMemo(() => {
       // Recalculate all computed values inside useMemo based on current dependencies
       const duration = task.estimatedTime || TASK_CARD_HEIGHT_CONFIG.defaultDuration;
@@ -329,6 +329,8 @@ export const DraggableTaskCard = React.forwardRef<
       const currentEstimatedTimeValue = typeof task.estimatedTime === "number" ? task.estimatedTime : null;
       const hasEstimatedTime = currentEstimatedTimeValue !== null;
       const isShortTask = typeof currentEstimatedTimeValue === "number" && currentEstimatedTimeValue < 45;
+      const isMediumTask = typeof currentEstimatedTimeValue === "number" && currentEstimatedTimeValue >= 45 && currentEstimatedTimeValue < 60;
+      const isLongTask = typeof currentEstimatedTimeValue === "number" && currentEstimatedTimeValue >= 60;
       const currentCanUsePomodoro = hasFeature("pomodoroTimer");
       const currentPomodoroIsRunning = currentCanUsePomodoro && timerState.isRunning;
       const currentShowTrackingBadgeTopRow =
@@ -342,29 +344,6 @@ export const DraggableTaskCard = React.forwardRef<
         Boolean(task.actualTime && task.actualTime > 0) &&
         !timerState.isRunning;
       const currentShowInlinePomodoroTimer = Boolean(isShortTask && currentCanUsePomodoro);
-      
-      // Use the same logic as getCardHeight but with recomputed values
-      const getBaseHeightForDuration = (mins: number): number => {
-        if (mins >= 20 && mins <= 25) return 100;
-        if (mins >= 30 && mins <= 35) return 200;
-        if (mins >= 40 && mins <= 45) return 250;
-        if (mins >= 50 && mins <= 60) return 320;
-        if (mins >= 100 && mins <= 120) return 400;
-        if (mins >= 200 && mins <= 220) return 480;
-        
-        if (mins < 20) return 60 + (mins / 20) * (100 - 60);
-        if (mins > 25 && mins < 30) return 100 + ((mins - 25) / 5) * (200 - 100);
-        if (mins > 35 && mins < 40) return 200 + ((mins - 35) / 5) * (250 - 200);
-        if (mins > 45 && mins < 50) return 250 + ((mins - 45) / 5) * (320 - 250);
-        if (mins > 60 && mins < 100) return 320 + ((mins - 60) / 40) * (400 - 320);
-        if (mins > 120 && mins < 200) return 400 + ((mins - 120) / 80) * (480 - 400);
-        if (mins > 220) {
-          const additionalHours = (mins - 220) / 120;
-          return 480 + additionalHours * 80;
-        }
-        
-        return 100;
-      };
       
       // Count badges that will be displayed in the top row
       const hasTime = !!(task.scheduledDate || task.dueDate);
@@ -388,13 +367,37 @@ export const DraggableTaskCard = React.forwardRef<
       const hasDescription = task.description && task.estimatedTime && task.estimatedTime >= 60;
       const hasSubtasks = task.subtasks && task.subtasks.length > 0;
       
-      // Get base height for this duration
-      let baseHeight = getBaseHeightForDuration(duration);
+      // Use standard heights from config as base, then add dynamic adjustments
+      let baseHeight: number;
       
-      // Add height for badge wrapping
+      if (isShortTask) {
+        // Short tasks (< 45 mins): Use standard heights based on components
+        if (hasTracking && hasAssignedUsers) {
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth; // 90
+        } else if (hasTracking) {
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking; // 80
+        } else if (hasAssignedUsers) {
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned; // 80
+        } else {
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 60
+        }
+      } else if (isMediumTask) {
+        // Medium tasks (45-59 mins): Use standard min height, add for components
+        baseHeight = hasAssignedUsers || hasPomodoro || hasTrackedTimeFull
+          ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min // 80
+          : TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.compact; // 64
+      } else {
+        // Long tasks (>= 60 mins): Use standard base, add increment per hour
+        const hours = Math.floor(duration / 60);
+        const additionalHours = Math.max(0, hours - 1); // Hours beyond the first hour
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base; // 120
+        baseHeight += additionalHours * TASK_CARD_HEIGHT_CONFIG.baseHeights.long.incrementPerHour; // 200 per additional hour
+      }
+      
+      // Add height for badge wrapping (applies to all task types)
       baseHeight += badgeWrapHeight;
       
-      // Add extra height for description
+      // Add extra height for description (only for long tasks >= 60 mins)
       if (hasDescription) {
         const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
         const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
@@ -403,24 +406,24 @@ export const DraggableTaskCard = React.forwardRef<
         baseHeight += descriptionHeight;
       }
       
-      // Add extra height for assigned users
-      if (hasAssignedUsers) {
+      // Add extra height for assigned users (for medium and long tasks, short tasks already accounted in base)
+      if (hasAssignedUsers && !isShortTask) {
         const assignedUsersBaseHeight = 20;
         const assignedUsersSpacing = (hasDescription && !hasSubtasks) ? 16 : 20;
         baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
       }
       
       // Add extra height for pomodoro timer if present (only for long tasks, shown absolutely)
-      if (hasPomodoro && !inlinePomodoroPresent) {
+      if (hasPomodoro && !inlinePomodoroPresent && isLongTask) {
         baseHeight += 40;
       }
       
-      // Add extra height for tracked time display if present
-      if (hasTrackedTimeFull) {
+      // Add extra height for tracked time display if present (for medium and long tasks)
+      if (hasTrackedTimeFull && !isShortTask) {
         baseHeight += 24;
       }
       
-      // Add extra height for subtasks
+      // Add extra height for subtasks (applies to all task types)
       if (hasSubtasks) {
         const subtaskCount = Math.min(task.subtasks.length, 3);
         const subtaskItemHeight = 14;
@@ -431,7 +434,14 @@ export const DraggableTaskCard = React.forwardRef<
         baseHeight += subtaskHeight + subtaskTopSpacing;
       }
       
-      return Math.max(Math.min(baseHeight, maxHeight), 64); // Use explicit minHeight instead of config
+      // Ensure height is within bounds
+      const minHeight = isShortTask 
+        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.compact // 56
+        : isMediumTask
+        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.compact // 64
+        : TASK_CARD_HEIGHT_CONFIG.baseHeights.long.base; // 120
+      
+      return Math.max(Math.min(baseHeight, maxHeight), minHeight);
     }, [
       // Base dependencies that affect height calculation
       timerState.isRunning,
