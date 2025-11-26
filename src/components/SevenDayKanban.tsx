@@ -526,12 +526,19 @@ export function SevenDayKanban({
                         </motion.div>
                       ) : (
                         (Array.isArray(dayTasks) ? dayTasks : []).map((task) => (
-                          <DraggableTaskCard
+                          <div
                             key={task.id}
-                            task={task}
-                            onClick={() => handleTaskClick(task)}
-                            droppableId={currentColumn.dateString}
-                          />
+                            style={{ 
+                              transform: 'scale(0.85)',
+                              transformOrigin: 'top center',
+                            }}
+                          >
+                            <DraggableTaskCard
+                              task={task}
+                              onClick={() => handleTaskClick(task)}
+                              droppableId={currentColumn.dateString}
+                            />
+                          </div>
                         ))
                       )}
                     </AnimatePresence>
@@ -731,7 +738,14 @@ export function SevenDayKanban({
                             ) : (
                               <>
                                 {dayTasks.map((task) => (
-                                  <div key={task.id} className="px-2 sm:px-2.5">
+                                  <div 
+                                    key={task.id} 
+                                    className="px-2 sm:px-2.5"
+                                    style={{ 
+                                      transform: 'scale(0.85)',
+                                      transformOrigin: 'top center',
+                                    }}
+                                  >
                                   <DraggableTaskCard
                                     task={task}
                                     onClick={() => handleTaskClick(task)}

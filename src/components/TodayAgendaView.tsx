@@ -402,7 +402,7 @@ export function TodayAgendaView({
           <div 
             className="relative"
             style={{ 
-              minHeight: `${HEADER_HEIGHT}px`,
+              minHeight: isMobile ? `${HEADER_HEIGHT * 0.6}px` : `${HEADER_HEIGHT}px`,
             }}
           >
           <AppHeader
