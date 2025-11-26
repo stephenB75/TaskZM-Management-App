@@ -159,7 +159,7 @@ export const KANBAN_ANIMATION = {
 
 // Zoom Constants
 export const KANBAN_ZOOM = {
-  minScale: 0.35,
+  minScale: 0.75, // Keep columns readable without shifting layout drastically
   maxScale: 1.0,
   padding: 60, // px total (30px top + 30px bottom)
   resizeDebounce: 100, // ms
