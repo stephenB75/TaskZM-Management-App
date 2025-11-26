@@ -415,59 +415,58 @@ export function useAIScheduler() {
     });
 
     // Sort tasks by priority and status for intelligent scheduling
+    // ALWAYS prioritize urgent and high priority tasks first, regardless of settings
     let sortedTasks = [...unscheduledTasks].sort((a, b) => {
-      // If priority-based scheduling is enabled, prioritize by priority
-      if (aiSettings.priorityBasedScheduling) {
-        // Priority weights: urgent=4, high=3, medium=2, low=1
-        const priorityWeight = { urgent: 4, high: 3, medium: 2, low: 1 };
-        const aPriority = priorityWeight[a.priority] || 1;
-        const bPriority = priorityWeight[b.priority] || 1;
-        
-        // Status weights: on-hold=1, todo=2, in-progress=3
-        const statusWeight = { 'on-hold': 1, todo: 2, 'in-progress': 3, done: 0 };
-        const aStatus = statusWeight[a.status] || 0;
-        const bStatus = statusWeight[b.status] || 0;
-        
-        // First sort by status (in-progress first)
-        if (aStatus !== bStatus) return bStatus - aStatus;
-        
-        // Then by priority (urgent first, then high, medium, low)
-        if (aPriority !== bPriority) return bPriority - aPriority;
+      // Priority weights: urgent=4, high=3, medium=2, low=1
+      // ALWAYS prioritize urgent and high, regardless of priorityBasedScheduling setting
+      const priorityWeight = { urgent: 4, high: 3, medium: 2, low: 1 };
+      const aPriority = priorityWeight[a.priority] || 1;
+      const bPriority = priorityWeight[b.priority] || 1;
       
-        // Then by due date (if exists)
-        if (a.dueDate && b.dueDate) {
-          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        }
-        if (a.dueDate) return -1;
-        if (b.dueDate) return 1;
-        
-        return 0;
-      } else {
-        // If priority-based scheduling is disabled, sort by due date and creation date
-        if (a.dueDate && b.dueDate) {
-          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        }
-        if (a.dueDate) return -1;
-        if (b.dueDate) return 1;
-        
-        // Fallback to created date
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      // Status weights: on-hold=1, todo=2, in-progress=3
+      const statusWeight = { 'on-hold': 1, todo: 2, 'in-progress': 3, done: 0 };
+      const aStatus = statusWeight[a.status] || 0;
+      const bStatus = statusWeight[b.status] || 0;
+      
+      // First sort by status (in-progress first)
+      if (aStatus !== bStatus) return bStatus - aStatus;
+      
+      // Then by priority (urgent first, then high, medium, low)
+      // This ensures urgent and high priority tasks are always scheduled first
+      if (aPriority !== bPriority) return bPriority - aPriority;
+    
+      // Then by due date (if exists)
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       }
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      
+      // Fallback to created date
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
     
     // Shuffle tasks if requested (for rescheduling to create variety)
     if (options?.shuffle) {
       // For rescheduling, perform a more complete shuffle while maintaining critical priorities
-      // Keep urgent and in-progress tasks at the front, but shuffle everything else more thoroughly
-      const urgentTasks = sortedTasks.filter(t => t.priority === 'urgent' || t.status === 'in-progress');
-      const otherTasks = sortedTasks.filter(t => t.priority !== 'urgent' && t.status !== 'in-progress');
+      // Keep urgent, high priority, and in-progress tasks at the front, but shuffle everything else more thoroughly
+      const priorityTasks = sortedTasks.filter(t => 
+        t.priority === 'urgent' || 
+        t.priority === 'high' || 
+        t.status === 'in-progress'
+      );
+      const otherTasks = sortedTasks.filter(t => 
+        t.priority !== 'urgent' && 
+        t.priority !== 'high' && 
+        t.status !== 'in-progress'
+      );
       
-      // Shuffle the non-urgent tasks more thoroughly
+      // Shuffle the non-priority tasks more thoroughly
       const shuffledOther = shuffleArray(otherTasks);
       
-      // Combine: urgent tasks first, then shuffled others
-      // This creates variety while ensuring urgent tasks are still prioritized
-      sortedTasks = [...urgentTasks, ...shuffledOther];
+      // Combine: urgent and high priority tasks first, then shuffled others
+      // This creates variety while ensuring urgent and high priority tasks are still prioritized
+      sortedTasks = [...priorityTasks, ...shuffledOther];
     }
     
     const plan: SchedulePlan[] = [];
@@ -1425,7 +1424,7 @@ export function useAIScheduler() {
         dateRange, 
         { 
           forceCategoryHours: options?.forceCategoryHours ?? true,
-          enforceMinimumHours: false // Don't enforce minimum for initial scheduling
+          enforceMinimumHours: true // Always enforce 5-hour minimum before pushing to next day
         }
       );
       

@@ -569,7 +569,7 @@ export function DashboardView({
     const range = getTwoWeekDateRange();
     const result = generateSchedulePlan(undefined, range, { 
       forceCategoryHours: true,
-      enforceMinimumHours: false // Don't enforce minimum for suggestions
+      enforceMinimumHours: true // Always enforce 5-hour minimum before pushing to next day
     });
 
     if (result.scheduled.length === 0 && result.exceedsLimit.length === 0) {
