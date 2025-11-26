@@ -1587,24 +1587,46 @@ export function useAIScheduler() {
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
-      // Create date range for the selected week (Monday to Sunday)
-      // Find the Monday of the week containing startDate
-      const weekStart = new Date(startDate);
-      weekStart.setHours(0, 0, 0, 0);
-      const dayOfWeek = weekStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
-      weekStart.setDate(weekStart.getDate() + daysToMonday);
+      // Create date range for the selected week
+      // Start from the current date (or selected date), not from Monday
+      const today = new Date();
+      const todayDateKey = today.toISOString().split('T')[0];
+      const selectedDateKey = startDate.toISOString().split('T')[0];
       
-      // Week ends on Sunday (6 days after Monday)
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + (KANBAN_TIME.daysInWeek - 1));
+      // Determine the actual start date for scheduling
+      // If rescheduling for the current week and today is in that week, start from today
+      // Otherwise, start from the selected date
+      let scheduleStartDate: Date;
+      if (selectedDateKey === todayDateKey || selectedDateKey >= todayDateKey) {
+        // Rescheduling for today or future - start from current date/time if today, otherwise start of selected date
+        scheduleStartDate = new Date(startDate);
+        if (selectedDateKey === todayDateKey) {
+          // Rescheduling for today - use current time as start
+          scheduleStartDate.setTime(today.getTime());
+        } else {
+          // Rescheduling for future date - start from beginning of that day
+          scheduleStartDate.setHours(0, 0, 0, 0);
+        }
+      } else {
+        // Rescheduling for past date - start from beginning of selected date
+        scheduleStartDate = new Date(startDate);
+        scheduleStartDate.setHours(0, 0, 0, 0);
+      }
+      
+      // Find the Sunday of the week containing startDate (end of week)
+      const weekEnd = new Date(startDate);
+      weekEnd.setHours(0, 0, 0, 0);
+      const dayOfWeek = weekEnd.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek; // Days to get to Sunday
+      weekEnd.setDate(weekEnd.getDate() + daysToSunday);
       weekEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected week
+      // Start from current date (or selected date), not from Monday
       // Shuffle tasks and enforce minimum hours for rescheduling
       const result = generateSchedulePlan(
         tasksForReschedule,
-        { startDate: weekStart, endDate: weekEnd },
+        { startDate: scheduleStartDate, endDate: weekEnd },
         { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
       );
       if (result.scheduled.length > 0) {
