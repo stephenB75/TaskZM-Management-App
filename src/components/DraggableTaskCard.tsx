@@ -234,11 +234,9 @@ export const DraggableTaskCard = React.forwardRef<
       let baseHeight: number;
       
       if (isShortTask) {
-        // Short tasks (< 45 mins): Scale from base (60px at 0min) to transition (200px at 45min)
-        // Use standard heights as minimum, but scale proportionally with duration
-        // Max height at 45 mins matches long task start at 60 mins to ensure short tasks never exceed long tasks
-        const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base;
-        const maxHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium;
+        // Short tasks (< 45 mins): Scale from 80px to 100px
+        const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px
+        const maxHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium; // 100px
         // Linear scaling: minHeight + (duration / 45) * (maxHeight - minHeight)
         baseHeight = minHeight + (duration / TASK_CARD_HEIGHT_CONFIG.thresholds.short) * (maxHeight - minHeight);
         
@@ -251,40 +249,31 @@ export const DraggableTaskCard = React.forwardRef<
           baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +20
         }
       } else if (isMediumTask) {
-        // Medium tasks (45-59 mins): Scale from 200px at 45min to 200px at 60min
-        // Flat at 200px to ensure medium tasks never exceed long tasks (which start at 200px at 60 mins)
-        const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionFromShort;
-        const maxHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong;
+        // Medium tasks (45-59 mins): Scale from 120px to 170px
+        const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionFromShort; // 120px
+        const maxHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong; // 170px
         // Linear scaling: minHeight + ((duration - 45) / 15) * (maxHeight - minHeight)
         const durationRange = TASK_CARD_HEIGHT_CONFIG.thresholds.long - TASK_CARD_HEIGHT_CONFIG.thresholds.short;
         baseHeight = minHeight + ((duration - TASK_CARD_HEIGHT_CONFIG.thresholds.short) / durationRange) * (maxHeight - minHeight);
-        
-        // Adjust for components (reduce if no components to use compact height)
-        if (!(hasAssignedUsers || hasPomodoro || hasTrackedTimeFull)) {
-          // If no components, reduce to compact height
-          const compactAdjustment = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min - TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.compact; // 16px
-          // Apply adjustment proportionally to maintain scaling
-          baseHeight = Math.max(baseHeight - compactAdjustment, TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.compact);
-        }
       } else {
-        // Long tasks (>= 60 mins): Use standard base heights, then auto-adjust for components
+        // Long tasks (>= 60 mins): Scale from 200px to 500px, then auto-adjust for components
         const longHeights = TASK_CARD_HEIGHT_CONFIG.baseHeights.long;
         if (duration <= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
-          baseHeight = longHeights.at60mins;
+          baseHeight = longHeights.at60mins; // 200px at 60 mins
         } else if (duration <= 90) {
-          // Interpolate between 60 mins and 90 mins
+          // Interpolate between 60 mins (200px) and 90 mins (275px)
           baseHeight = longHeights.at60mins + ((duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) / 30) * (longHeights.at90mins - longHeights.at60mins);
         } else if (duration <= 120) {
-          // Interpolate between 90 mins and 120 mins
+          // Interpolate between 90 mins (275px) and 120 mins (350px)
           baseHeight = longHeights.at90mins + ((duration - 90) / 30) * (longHeights.at120mins - longHeights.at90mins);
         } else if (duration <= 150) {
-          // Interpolate between 120 mins and 150 mins
+          // Interpolate between 120 mins (350px) and 150 mins (425px)
           baseHeight = longHeights.at120mins + ((duration - 120) / 30) * (longHeights.at150mins - longHeights.at120mins);
         } else if (duration <= 180) {
-          // Interpolate between 150 mins and 180 mins
+          // Interpolate between 150 mins (425px) and 180 mins (500px)
           baseHeight = longHeights.at150mins + ((duration - 150) / 30) * (longHeights.at180mins - longHeights.at150mins);
         } else {
-          // Beyond 180 mins, cap at base height
+          // Beyond 180 mins, cap at 500px base
           baseHeight = longHeights.beyond180mins;
         }
       }
@@ -339,17 +328,14 @@ export const DraggableTaskCard = React.forwardRef<
       // For long tasks, the base height already respects the standard heights (200-650px)
       // For short/medium tasks, ensure minimum compact height
       const minHeight = isShortTask 
-        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.compact
+        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base // 80px
         : isMediumTask
-        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.compact
-        : TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight;
+        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min // 120px
+        : TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight; // 200px
       
-      // Cap at maxHeight (600px) for short/medium tasks
-      // For long tasks: base height is capped at 650px for >180 mins, but auto-adjustment can add more
-      // Allow final height to exceed 650px after auto-adjustment (components can add ~200px)
-      const effectiveMaxHeight = isLongTask 
-        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.long.maxHeightAfterAdjustment 
-        : maxHeight;
+      // Cap at maxHeight (550px) for all tasks
+      // For long tasks: base height is capped at 500px, but auto-adjustment can add up to 550px total
+      const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px cap for all tasks
       
       return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);
     }, [
