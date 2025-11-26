@@ -28,6 +28,11 @@ export function useAIScheduler() {
     return tasks.filter(t => !t.scheduledDate && t.status !== 'done' && !isTaskBlocked(t, tasks));
   };
 
+  // Helper: Get date key for tracking (YYYY-MM-DD)
+  const getDateKey = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
   // Helper: Determine task category from tags
   const getTaskCategory = (task: Task): 'work' | 'personal' | 'projects' | null => {
     if (!task.tags || task.tags.length === 0) return null;
@@ -275,11 +280,6 @@ export function useAIScheduler() {
     // Initialize dailyHours with already scheduled tasks
     const dailyHours: Map<string, number> = new Map();
     const dailyTasks: Map<string, Task[]> = new Map();
-    
-    // Helper: Get date key for tracking (YYYY-MM-DD)
-    const getDateKey = (date: Date): string => {
-      return date.toISOString().split('T')[0];
-    };
     
     // Helper: Intelligently estimate task duration based on task properties
     // This needs to be defined before we use it to pre-populate dailyHours
@@ -1341,15 +1341,43 @@ export function useAIScheduler() {
     return { scheduled: plan, exceedsLimit, daysExceedingLimit };
   };
 
-  const applySchedulePlan = async (plan: SchedulePlan[]): Promise<void> => {
-    setIsScheduling(true);
+  const applySchedulePlan = async (plan: SchedulePlan[], manageState: boolean = true): Promise<void> => {
+    if (manageState) {
+      setIsScheduling(true);
+    }
     try {
+      // Validate plan before applying
+      if (!plan || plan.length === 0) {
+        return;
+      }
+      
       // Apply all scheduled dates
       for (const { task, scheduledDate } of plan) {
-        await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
+        // Validate task and scheduledDate
+        if (!task || !task.id) {
+          console.warn('Invalid task in schedule plan:', task);
+          continue;
+        }
+        
+        if (!scheduledDate || !(scheduledDate instanceof Date) || isNaN(scheduledDate.getTime())) {
+          console.warn('Invalid scheduledDate for task:', task.id, scheduledDate);
+          continue;
+        }
+        
+        try {
+          await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
+        } catch (taskError) {
+          console.error(`Error updating task ${task.id}:`, taskError);
+          // Continue with other tasks even if one fails
+        }
       }
+    } catch (error) {
+      console.error('Error in applySchedulePlan:', error);
+      throw error;
     } finally {
-      setIsScheduling(false);
+      if (manageState) {
+        setIsScheduling(false);
+      }
     }
   };
 
@@ -1366,6 +1394,11 @@ export function useAIScheduler() {
       if (options?.onlyWithoutDueDate) {
         const unscheduledTasks = getUnscheduledTasks();
         tasksToSchedule = unscheduledTasks.filter(task => !task.dueDate);
+      }
+      
+      // Validate that we have tasks to schedule
+      if (tasksToSchedule && tasksToSchedule.length === 0) {
+        return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
       }
       
       // Determine date range: day or two weeks
@@ -1395,8 +1428,16 @@ export function useAIScheduler() {
           enforceMinimumHours: false // Don't enforce minimum for initial scheduling
         }
       );
+      
+      // Validate result
+      if (!result || !Array.isArray(result.scheduled)) {
+        console.error('Invalid result from generateSchedulePlan:', result);
+        throw new Error('Failed to generate schedule plan');
+      }
+      
       if (result.scheduled.length > 0) {
-        await applySchedulePlan(result.scheduled);
+        // Don't manage state here since scheduleAllTasks already manages it
+        await applySchedulePlan(result.scheduled, false);
       }
       return result;
     } catch (error) {

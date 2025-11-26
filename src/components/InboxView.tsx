@@ -199,8 +199,9 @@ export function InboxView() {
       }
     } catch (error) {
       toast.dismiss(loadingToast);
+      console.error('Error in handleScheduleAll:', error);
       toast.error("Scheduling failed", {
-        description: "Please try again",
+        description: error instanceof Error ? error.message : "Please try again",
       });
     }
   };
