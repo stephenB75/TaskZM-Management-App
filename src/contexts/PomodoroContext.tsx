@@ -8,6 +8,7 @@ import {
   STORAGE_KEY_POMODORO,
 } from '../lib/business-constants';
 import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES } from '../lib/notification-constants';
+import { useTasks } from './TaskContext';
 
 type TimerMode = 'work' | 'shortBreak' | 'longBreak';
 
@@ -58,6 +59,7 @@ interface PersistedTimerState {
 const STORAGE_KEY = STORAGE_KEY_POMODORO;
 
 export function PomodoroProvider({ children }: { children: React.ReactNode }) {
+  const { updateTask } = useTasks();
   const [timers, setTimers] = useState<Record<string, TimerState>>({});
   const intervalsRef = useRef<Record<string, NodeJS.Timeout>>({});
   const onTimeUpdateCallbacksRef = useRef<Record<string, (minutes: number) => void | Promise<void>>>({});
@@ -172,6 +174,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       };
     });
 
+    // Update task status to "in-progress" when timer starts
+    updateTask(taskId, { status: 'in-progress' }).catch(err => {
+      logger.error('Failed to update task status to in-progress:', err);
+    });
+
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -192,6 +199,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         };
       }
       return prev;
+    });
+
+    // Update task status to "in-progress" when timer resumes
+    updateTask(taskId, { status: 'in-progress' }).catch(err => {
+      logger.error('Failed to update task status to in-progress:', err);
     });
 
     runTimer(taskId, { resetElapsed: false });
