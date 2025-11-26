@@ -577,9 +577,6 @@ export function useAIScheduler() {
       }
     };
     
-    let tasksScheduledToday = 0;
-    const maxTasksPerDay = 3;
-    
     // Helper: Find next available day of preferred type (weekday/weekend)
     const findNextPreferredDay = (startDate: Date, preferWeekend: boolean, maxDaysToSearch: number = 14): number => {
       let daysToAdd = 0;
@@ -855,8 +852,8 @@ export function useAIScheduler() {
         exceedsLimit.push(task);
       } else {
         // Update reason if we had to move to a later day
-        if (finalDaysToAdd > (tasksScheduledToday >= maxTasksPerDay ? 1 : 0)) {
-          if (!reason.includes('Due date') && !reason.includes('moved')) {
+        if (finalDaysToAdd > daysToAdd) {
+          if (!reason.includes('Due date') && !reason.includes('moved') && !reason.includes('minimum hours')) {
             reason = `${reason} - moved to available slot (5-hour limit)`;
           }
         }
@@ -1333,7 +1330,6 @@ export function useAIScheduler() {
         // Schedule the task (we've already verified it fits and has no conflicts)
         plan.push({ task, scheduledDate: scheduleDate, reason });
         addToDailyHours(scheduleDate, taskHours, task);
-        tasksScheduledToday++;
         
         // Track tasks per day for distribution
         const scheduledDayIndex = finalDaysToAdd;
@@ -1363,44 +1359,52 @@ export function useAIScheduler() {
     onlyWithoutDueDate?: boolean;
     period?: 'day' | 'twoWeeks';
   }): Promise<ScheduleResult> => {
-    // Filter tasks: only schedule tasks without due dates if requested
-    let tasksToSchedule: Task[] | undefined = undefined;
-    if (options?.onlyWithoutDueDate) {
-      const unscheduledTasks = getUnscheduledTasks();
-      tasksToSchedule = unscheduledTasks.filter(task => !task.dueDate);
-    }
-    
-    // Determine date range: day or two weeks
-    let dateRange = options?.dateRange;
-    if (!dateRange && options?.period) {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
+    setIsScheduling(true);
+    try {
+      // Filter tasks: only schedule tasks without due dates if requested
+      let tasksToSchedule: Task[] | undefined = undefined;
+      if (options?.onlyWithoutDueDate) {
+        const unscheduledTasks = getUnscheduledTasks();
+        tasksToSchedule = unscheduledTasks.filter(task => !task.dueDate);
+      }
       
-      if (options.period === 'day') {
-        const end = new Date(start);
-        end.setHours(23, 59, 59, 999);
-        dateRange = { startDate: start, endDate: end };
-      } else {
-        // Two weeks (14 days)
-        const end = new Date(start);
-        end.setDate(end.getDate() + 13); // 14 days total (today + 13 more)
-        end.setHours(23, 59, 59, 999);
-        dateRange = { startDate: start, endDate: end };
+      // Determine date range: day or two weeks
+      let dateRange = options?.dateRange;
+      if (!dateRange && options?.period) {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        
+        if (options.period === 'day') {
+          const end = new Date(start);
+          end.setHours(23, 59, 59, 999);
+          dateRange = { startDate: start, endDate: end };
+        } else {
+          // Two weeks (14 days)
+          const end = new Date(start);
+          end.setDate(end.getDate() + 13); // 14 days total (today + 13 more)
+          end.setHours(23, 59, 59, 999);
+          dateRange = { startDate: start, endDate: end };
+        }
       }
-    }
-    
-    const result = generateSchedulePlan(
-      tasksToSchedule, 
-      dateRange, 
-      { 
-        forceCategoryHours: options?.forceCategoryHours ?? true,
-        enforceMinimumHours: false // Don't enforce minimum for initial scheduling
+      
+      const result = generateSchedulePlan(
+        tasksToSchedule, 
+        dateRange, 
+        { 
+          forceCategoryHours: options?.forceCategoryHours ?? true,
+          enforceMinimumHours: false // Don't enforce minimum for initial scheduling
+        }
+      );
+      if (result.scheduled.length > 0) {
+        await applySchedulePlan(result.scheduled);
       }
-    );
-    if (result.scheduled.length > 0) {
-      await applySchedulePlan(result.scheduled);
+      return result;
+    } catch (error) {
+      console.error('Error in scheduleAllTasks:', error);
+      throw error;
+    } finally {
+      setIsScheduling(false);
     }
-    return result;
   };
 
   // Helper: Get tasks scheduled for a specific day
