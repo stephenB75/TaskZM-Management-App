@@ -760,12 +760,14 @@ export function useAIScheduler() {
           currentDate.setDate(currentDate.getDate() + 1);
         }
         
-        // Sort by hours needed (most needed first), then by date (earlier first)
+        // Sort by date first (earlier first), then by hours needed (most needed first)
+        // This ensures we fill days sequentially to meet the 5-hour requirement before moving to the next day
         daysNeedingHours.sort((a, b) => {
-          if (b.hoursNeeded !== a.hoursNeeded) {
-            return b.hoursNeeded - a.hoursNeeded; // Most needed first
+          const dateDiff = a.date.getTime() - b.date.getTime();
+          if (dateDiff !== 0) {
+            return dateDiff; // Earlier date first - fill days sequentially
           }
-          return a.date.getTime() - b.date.getTime(); // Earlier date first
+          return b.hoursNeeded - a.hoursNeeded; // If same date, most needed first
         });
         
         // Try each day that needs hours, starting with the one that needs the most
