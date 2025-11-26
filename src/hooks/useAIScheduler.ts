@@ -56,7 +56,8 @@ export function useAIScheduler() {
     task: Task, 
     scheduleDate: Date, 
     timeSlot: number,
-    forceCategoryHours: boolean = false
+    forceCategoryHours: boolean = false,
+    existingTasksForDay: Task[] = []
   ): { hours: number; minutes: number; reason: string } | null => {
     if (!hoursSettings.respectHours && !forceCategoryHours) return null;
 
@@ -77,13 +78,106 @@ export function useAIScheduler() {
     const totalMinutes = (endTime.hours * 60 + endTime.minutes) - (startTime.hours * 60 + startTime.minutes);
     const totalHours = totalMinutes / 60;
 
-    // Distribute tasks across the available time window
-    // Divide the time window into slots and place task in appropriate slot
-    const slotPosition = timeSlot % 3; // 0, 1, or 2
-    const offsetHours = (totalHours / 3) * slotPosition;
+    // Get existing tasks in the same category for this day
+    const sameCategoryTasks = existingTasksForDay.filter(t => getTaskCategory(t) === category);
+    
+    // If there are existing tasks in this category, try to find gaps or distribute evenly
+    if (sameCategoryTasks.length > 0) {
+      // Sort existing tasks by scheduled time
+      const sortedCategoryTasks = [...sameCategoryTasks].sort((a, b) => {
+        if (!a.scheduledDate || !b.scheduledDate) return 0;
+        return new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime();
+      });
+      
+      // Find gaps between existing category tasks
+      for (let i = 0; i < sortedCategoryTasks.length; i++) {
+        const currentTask = sortedCategoryTasks[i];
+        if (!currentTask.scheduledDate) continue;
+        
+        const currentTaskStart = new Date(currentTask.scheduledDate);
+        const currentTaskDuration = currentTask.estimatedTime || 30;
+        const currentTaskEnd = new Date(currentTaskStart);
+        currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
+        
+        // Check if there's a gap before this task
+        let gapStart: Date;
+        if (i === 0) {
+          // First task - check gap from category start
+          gapStart = new Date(scheduleDate);
+          gapStart.setHours(startTime.hours, startTime.minutes, 0, 0);
+        } else {
+          // Gap from previous task end
+          const prevTask = sortedCategoryTasks[i - 1];
+          if (!prevTask.scheduledDate) continue;
+          const prevTaskStart = new Date(prevTask.scheduledDate);
+          const prevTaskDuration = prevTask.estimatedTime || 30;
+          gapStart = new Date(prevTaskStart);
+          gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
+        }
+        
+        // Ensure gap start is within category hours
+        const categoryStart = new Date(scheduleDate);
+        categoryStart.setHours(startTime.hours, startTime.minutes, 0, 0);
+        if (gapStart < categoryStart) {
+          gapStart = new Date(categoryStart);
+        }
+        
+        // Calculate gap duration in minutes
+        const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / (1000 * 60);
+        const taskDuration = task.estimatedTime || 30;
+        
+        // If gap is large enough for this task, use it
+        if (gapDuration >= taskDuration) {
+          return {
+            hours: gapStart.getHours(),
+            minutes: gapStart.getMinutes(),
+            reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled in ${isWeekendDate ? 'weekend' : 'weekday'} ${category} hours gap`
+          };
+        }
+      }
+      
+      // No gap found - place after last category task
+      const lastTask = sortedCategoryTasks[sortedCategoryTasks.length - 1];
+      if (lastTask.scheduledDate) {
+        const lastTaskStart = new Date(lastTask.scheduledDate);
+        const lastTaskDuration = lastTask.estimatedTime || 30;
+        const nextAvailableTime = new Date(lastTaskStart);
+        nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
+        
+        // Ensure we don't exceed category end time
+        const categoryEnd = new Date(scheduleDate);
+        categoryEnd.setHours(endTime.hours, endTime.minutes, 0, 0);
+        
+        if (nextAvailableTime <= categoryEnd) {
+          return {
+            hours: nextAvailableTime.getHours(),
+            minutes: nextAvailableTime.getMinutes(),
+            reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled after other ${category} tasks in ${isWeekendDate ? 'weekend' : 'weekday'} hours`
+          };
+        }
+      }
+    }
+    
+    // No existing tasks or no gaps - distribute evenly across the available time window
+    // Use more slots for better distribution (5 slots instead of 3)
+    const numSlots = 5;
+    const slotPosition = timeSlot % numSlots; // 0, 1, 2, 3, or 4
+    const offsetHours = (totalHours / numSlots) * slotPosition;
 
     const finalHours = Math.floor(startTime.hours + offsetHours);
     const finalMinutes = Math.round((startTime.hours + offsetHours - finalHours) * 60 + startTime.minutes);
+    
+    // Ensure we don't exceed category end time
+    const categoryEndMinutes = endTime.hours * 60 + endTime.minutes;
+    const finalTotalMinutes = finalHours * 60 + finalMinutes;
+    if (finalTotalMinutes >= categoryEndMinutes) {
+      // Use category start time if we've exceeded
+      return {
+        hours: startTime.hours,
+        minutes: startTime.minutes,
+        reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled at start of ${isWeekendDate ? 'weekend' : 'weekday'} ${category} hours`
+      };
+    }
 
     const dayType = isWeekendDate ? 'weekend' : 'weekday';
     const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
@@ -98,13 +192,23 @@ export function useAIScheduler() {
   const generateSchedulePlan = (
     tasksToSchedule?: Task[],
     dateRange?: { startDate: Date; endDate: Date },
-    options?: { forceCategoryHours?: boolean }
+    options?: { forceCategoryHours?: boolean; shuffle?: boolean; enforceMinimumHours?: boolean }
   ): ScheduleResult => {
     const unscheduledTasks = tasksToSchedule || getUnscheduledTasks();
     
     if (unscheduledTasks.length === 0) {
       return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
     }
+    
+    // Helper: Shuffle array using Fisher-Yates algorithm
+    const shuffleArray = <T>(array: T[]): T[] => {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
 
     // Initialize dailyHours with already scheduled tasks
     const dailyHours: Map<string, number> = new Map();
@@ -249,7 +353,7 @@ export function useAIScheduler() {
     });
 
     // Sort tasks by priority and status for intelligent scheduling
-    const sortedTasks = [...unscheduledTasks].sort((a, b) => {
+    let sortedTasks = [...unscheduledTasks].sort((a, b) => {
       // If priority-based scheduling is enabled, prioritize by priority
       if (aiSettings.priorityBasedScheduling) {
         // Priority weights: urgent=4, high=3, medium=2, low=1
@@ -289,6 +393,24 @@ export function useAIScheduler() {
       }
     });
     
+    // Shuffle tasks if requested (for rescheduling to create variety)
+    if (options?.shuffle) {
+      // Group tasks by priority/status to maintain some order while shuffling
+      const urgentTasks = sortedTasks.filter(t => t.priority === 'urgent' || t.status === 'in-progress');
+      const highTasks = sortedTasks.filter(t => t.priority === 'high' && t.status !== 'in-progress');
+      const mediumTasks = sortedTasks.filter(t => t.priority === 'medium' && t.status !== 'in-progress');
+      const lowTasks = sortedTasks.filter(t => t.priority === 'low' && t.status !== 'in-progress');
+      
+      // Shuffle within each priority group
+      const shuffledUrgent = shuffleArray(urgentTasks);
+      const shuffledHigh = shuffleArray(highTasks);
+      const shuffledMedium = shuffleArray(mediumTasks);
+      const shuffledLow = shuffleArray(lowTasks);
+      
+      // Combine back together maintaining priority order
+      sortedTasks = [...shuffledUrgent, ...shuffledHigh, ...shuffledMedium, ...shuffledLow];
+    }
+    
     const plan: SchedulePlan[] = [];
     const exceedsLimit: Task[] = [];
     const daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }> = [];
@@ -320,6 +442,7 @@ export function useAIScheduler() {
     const tomorrow = startDate;
     
     const MAX_HOURS_PER_DAY = 5;
+    const MIN_HOURS_PER_DAY = 5; // Minimum hours requirement per day
     
     // Helper: Check if adding task would exceed daily limit
     const wouldExceedLimit = (date: Date, taskHours: number): boolean => {
@@ -327,6 +450,42 @@ export function useAIScheduler() {
       const currentHours = dailyHours.get(dateKey) || 0;
       // Use >= to strictly enforce the 5-hour limit (no going over)
       return (currentHours + taskHours) >= MAX_HOURS_PER_DAY;
+    };
+    
+    // Helper: Check if day has minimum hours requirement met
+    const hasMinimumHours = (date: Date): boolean => {
+      const dateKey = getDateKey(date);
+      const currentHours = dailyHours.get(dateKey) || 0;
+      return currentHours >= MIN_HOURS_PER_DAY;
+    };
+    
+    // Helper: Get hours remaining to reach minimum
+    const getHoursToMinimum = (date: Date): number => {
+      const dateKey = getDateKey(date);
+      const currentHours = dailyHours.get(dateKey) || 0;
+      return Math.max(0, MIN_HOURS_PER_DAY - currentHours);
+    };
+    
+    // Helper: Find day with least hours (for minimum hours enforcement)
+    const findDayWithLeastHours = (startDate: Date, endDate: Date): Date | null => {
+      let minHours = Infinity;
+      let minDate: Date | null = null;
+      
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateKey = getDateKey(currentDate);
+        const hours = dailyHours.get(dateKey) || 0;
+        
+        // Only consider days that don't have minimum hours yet
+        if (hours < MIN_HOURS_PER_DAY && hours < minHours) {
+          minHours = hours;
+          minDate = new Date(currentDate);
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      return minDate;
     };
     
     // Helper: Add task hours to daily tracking
@@ -464,36 +623,57 @@ export function useAIScheduler() {
       // Get task hours first
       const taskHours = getTaskHours(task);
       
-      // Find the next available day that has space for this task (within 5-hour limit)
+      // If enforcing minimum hours, try to fill days that don't meet minimum first
       let foundDay = false;
       let finalDaysToAdd = daysToAdd;
-      // Calculate max days to search based on date range or default to 14 days
-      const maxDaysToSearch = dateRange 
-        ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-        : 14;
-      let daysSearched = 0;
       
-      // Keep searching for a day with enough space within the date range
-      while (daysSearched < maxDaysToSearch && !foundDay) {
-        const testDate = new Date(tomorrow);
-        testDate.setDate(testDate.getDate() + finalDaysToAdd);
-        
-        // Check if testDate is within the allowed date range
-        if (dateRange && (testDate < startDate || testDate > endDate)) {
-          // Date is outside the allowed range, try next day
-          finalDaysToAdd++;
-          daysSearched++;
-          continue;
+      if (options?.enforceMinimumHours) {
+        // First, try to find a day that needs hours to reach minimum
+        const dayNeedingHours = findDayWithLeastHours(startDate, endDate);
+        if (dayNeedingHours) {
+          const hoursNeeded = getHoursToMinimum(dayNeedingHours);
+          // If this task can help reach minimum (and doesn't exceed max), use this day
+          if (taskHours <= hoursNeeded && !wouldExceedLimit(dayNeedingHours, taskHours)) {
+            const daysDiff = Math.floor((dayNeedingHours.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysDiff >= 0 && daysDiff < (dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14)) {
+              finalDaysToAdd = daysDiff;
+              foundDay = true;
+              reason = `${reason} - filling minimum hours requirement`;
+            }
+          }
         }
+      }
+      
+      // If not found yet, use normal search logic
+      if (!foundDay) {
+        // Calculate max days to search based on date range or default to 14 days
+        const maxDaysToSearch = dateRange 
+          ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+          : 14;
+        let daysSearched = 0;
         
-        // Check if this day has space for the task (within 5-hour limit)
-        if (!wouldExceedLimit(testDate, taskHours)) {
-          // Found a day with space - use it
-          foundDay = true;
-        } else {
-          // This day is full, try the next day (but only if within date range)
-          finalDaysToAdd++;
-          daysSearched++;
+        // Keep searching for a day with enough space within the date range
+        while (daysSearched < maxDaysToSearch && !foundDay) {
+          const testDate = new Date(tomorrow);
+          testDate.setDate(testDate.getDate() + finalDaysToAdd);
+          
+          // Check if testDate is within the allowed date range
+          if (dateRange && (testDate < startDate || testDate > endDate)) {
+            // Date is outside the allowed range, try next day
+            finalDaysToAdd++;
+            daysSearched++;
+            continue;
+          }
+          
+          // Check if this day has space for the task (within 5-hour limit)
+          if (!wouldExceedLimit(testDate, taskHours)) {
+            // Found a day with space - use it
+            foundDay = true;
+          } else {
+            // This day is full, try the next day (but only if within date range)
+            finalDaysToAdd++;
+            daysSearched++;
+          }
         }
       }
       
@@ -513,12 +693,21 @@ export function useAIScheduler() {
         scheduleDate.setDate(scheduleDate.getDate() + finalDaysToAdd);
         
         // Try to get category-based time slot first
-        let timeSlot = tasksScheduledToday % maxTasksPerDay;
+        // For rescheduling with shuffle, distribute tasks more evenly across category hours
+        const dateKey = getDateKey(scheduleDate);
+        const existingTasksForDay = dailyTasks.get(dateKey) || [];
+        const categoryTasksCount = existingTasksForDay.filter(t => {
+          const cat = getTaskCategory(t);
+          return cat === getTaskCategory(task);
+        }).length;
+        
+        let timeSlot = categoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
         const categoryTime = getCategoryTimeSlot(
           task,
           scheduleDate,
           timeSlot,
-          options?.forceCategoryHours ?? false
+          options?.forceCategoryHours ?? false,
+          existingTasksForDay
         );
         
         if (categoryTime) {
@@ -882,10 +1071,11 @@ export function useAIScheduler() {
       endOfDay.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected day
+      // Shuffle tasks and enforce minimum hours for rescheduling
       const result = generateSchedulePlan(
         tasksForReschedule,
         { startDate: startOfDay, endDate: endOfDay },
-        { forceCategoryHours: true }
+        { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
       );
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
@@ -934,10 +1124,11 @@ export function useAIScheduler() {
       weekEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected week
+      // Shuffle tasks and enforce minimum hours for rescheduling
       const result = generateSchedulePlan(
         tasksForReschedule,
         { startDate: weekStart, endDate: weekEnd },
-        { forceCategoryHours: true }
+        { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
       );
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
@@ -985,10 +1176,11 @@ export function useAIScheduler() {
       monthEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks, constrained to the selected month
+      // Shuffle tasks and enforce minimum hours for rescheduling
       const result = generateSchedulePlan(
         tasksForReschedule,
         { startDate: monthStart, endDate: monthEnd },
-        { forceCategoryHours: true }
+        { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
       );
       if (result.scheduled.length > 0) {
         // Don't set isScheduling again - we're already in scheduling mode
