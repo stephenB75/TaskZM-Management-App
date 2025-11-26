@@ -3,6 +3,8 @@ import { useTasks } from '../contexts/TaskContext';
 import { useAI } from '../contexts/AIContext';
 import { isTaskBlocked, calculateDependencyDepth } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
+import { findNextAvailableSlot } from '../lib/time-conflict';
+import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import type { Task } from '../types';
 
 export interface SchedulePlan {
@@ -69,6 +71,27 @@ export function useAIScheduler() {
     const dayHours = isWeekendDate ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
     const categoryHours = dayHours[category];
 
+    // Check if scheduling for today
+    const today = new Date();
+    const scheduleDateKey = getDateKey(scheduleDate);
+    const todayDateKey = getDateKey(today);
+    const isToday = scheduleDateKey === todayDateKey;
+    
+    // Calculate current time rounded up to next 15 minutes (for today)
+    let currentTimeRounded: Date | null = null;
+    if (isToday) {
+      currentTimeRounded = new Date(today);
+      const minutes = currentTimeRounded.getMinutes();
+      const roundedMinutes = Math.ceil(minutes / 15) * 15;
+      if (roundedMinutes >= 60) {
+        currentTimeRounded.setHours(currentTimeRounded.getHours() + 1, 0, 0, 0);
+      } else {
+        currentTimeRounded.setMinutes(roundedMinutes, 0, 0);
+      }
+      currentTimeRounded.setSeconds(0, 0);
+      currentTimeRounded.setMilliseconds(0);
+    }
+
     // If category hours are disabled for this day type, return null to use default
     // But when forceCategoryHours is true, we should still try to schedule within reasonable hours
     if (!categoryHours.enabled) {
@@ -76,6 +99,18 @@ export function useAIScheduler() {
       if (forceCategoryHours) {
         // Return a default time slot based on category (work hours for work/projects, flexible for personal)
         const defaultHour = category === 'personal' ? 10 : 9; // Personal tasks later, work/projects at 9 AM
+        const defaultTime = new Date(scheduleDate);
+        defaultTime.setHours(defaultHour, 0, 0, 0);
+        
+        // For today, ensure we don't schedule before current time
+        if (isToday && currentTimeRounded && defaultTime < currentTimeRounded) {
+          return {
+            hours: currentTimeRounded.getHours(),
+            minutes: currentTimeRounded.getMinutes(),
+            reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled from current time (category hours disabled)`
+          };
+        }
+        
         return {
           hours: defaultHour,
           minutes: 0,
@@ -94,6 +129,17 @@ export function useAIScheduler() {
 
     // Get existing tasks in the same category for this day
     const sameCategoryTasks = existingTasksForDay.filter(t => getTaskCategory(t) === category);
+    
+    // Determine the earliest time we can schedule
+    const categoryStart = new Date(scheduleDate);
+    categoryStart.setHours(startTime.hours, startTime.minutes, 0, 0);
+    
+    // For today, ensure we don't schedule before current time
+    let earliestAllowedTime = categoryStart;
+    if (isToday && currentTimeRounded) {
+      // Use the later of: category start or current time rounded up
+      earliestAllowedTime = currentTimeRounded > categoryStart ? currentTimeRounded : categoryStart;
+    }
     
     // If there are existing tasks in this category, try to find gaps or distribute evenly
     if (sameCategoryTasks.length > 0) {
@@ -116,9 +162,8 @@ export function useAIScheduler() {
         // Check if there's a gap before this task
         let gapStart: Date;
         if (i === 0) {
-          // First task - check gap from category start
-          gapStart = new Date(scheduleDate);
-          gapStart.setHours(startTime.hours, startTime.minutes, 0, 0);
+          // First task - check gap from earliest allowed time (category start or current time for today)
+          gapStart = new Date(earliestAllowedTime);
         } else {
           // Gap from previous task end
           const prevTask = sortedCategoryTasks[i - 1];
@@ -129,11 +174,9 @@ export function useAIScheduler() {
           gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
         }
         
-        // Ensure gap start is within category hours
-        const categoryStart = new Date(scheduleDate);
-        categoryStart.setHours(startTime.hours, startTime.minutes, 0, 0);
-        if (gapStart < categoryStart) {
-          gapStart = new Date(categoryStart);
+        // Ensure gap start is not before earliest allowed time
+        if (gapStart < earliestAllowedTime) {
+          gapStart = new Date(earliestAllowedTime);
         }
         
         // Calculate gap duration in minutes
@@ -157,6 +200,11 @@ export function useAIScheduler() {
         const lastTaskDuration = lastTask.estimatedTime || 30;
         const nextAvailableTime = new Date(lastTaskStart);
         nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
+        
+        // For today, ensure we don't schedule before current time
+        if (isToday && currentTimeRounded && nextAvailableTime < currentTimeRounded) {
+          nextAvailableTime.setTime(currentTimeRounded.getTime());
+        }
         
         // Ensure we don't exceed category end time
         const categoryEnd = new Date(scheduleDate);
@@ -837,8 +885,59 @@ export function useAIScheduler() {
         
         if (categoryTime) {
           // Use category hours if available and respectHours is enabled
-          scheduleDate.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
-          reason = categoryTime.reason;
+          // But first, use findNextAvailableSlot to find actual open time slot
+          const proposedTime = new Date(scheduleDate);
+          proposedTime.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
+          
+          // Check if scheduling for today
+          const today = new Date();
+          const scheduleDateKey = getDateKey(scheduleDate);
+          const todayDateKey = getDateKey(today);
+          const isToday = scheduleDateKey === todayDateKey;
+          
+          // Get category hours for the task - ALWAYS use them if available
+          let categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
+          
+          // If forceCategoryHours is enabled, try to get category hours even if respectHours is disabled
+          if (!categoryHours && options?.forceCategoryHours) {
+            const category = getTaskCategory(task);
+            if (category) {
+              const isWeekendDate = isWeekend(scheduleDate);
+              const dayHours = isWeekendDate ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
+              const catHours = dayHours[category];
+              if (catHours && catHours.enabled) {
+                const startMinutes = parseTimeToMinutes(catHours.start);
+                const endMinutes = parseTimeToMinutes(catHours.end);
+                categoryHours = { start: startMinutes, end: endMinutes };
+              }
+            }
+          }
+          
+          // Find the actual available slot using findNextAvailableSlot
+          // This ensures we find open slots, respect current time for today, and use category hours
+          const availableSlot = findNextAvailableSlot(
+            task.id,
+            proposedTime,
+            task.estimatedTime || 30,
+            tasks,
+            {
+              ensureAfterCurrentTime: isToday,
+              categoryHours: categoryHours ? {
+                start: categoryHours.start,
+                end: categoryHours.end,
+              } : undefined,
+            }
+          );
+          
+          // If a valid slot was found (not 24:00 or later), use it
+          if (availableSlot.getHours() < 24) {
+            scheduleDate.setTime(availableSlot.getTime());
+            reason = `${categoryTime.reason} - placed in available slot`;
+          } else {
+            // Fall back to proposed time if no slot found (shouldn't happen, but handle gracefully)
+            scheduleDate.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
+            reason = categoryTime.reason;
+          }
         } else {
           // Find available time slot by checking existing scheduled tasks for this day
           const dateKey = getDateKey(scheduleDate);
@@ -1085,21 +1184,88 @@ export function useAIScheduler() {
           
           const availableSlot = findAvailableTimeSlot();
           
-          // Round minutes to nearest 15-minute interval
-          let selectedMinute = Math.round(availableSlot.minute / 15) * 15;
-          let selectedHour = availableSlot.hour;
-          if (selectedMinute >= 60) {
-            selectedHour += 1;
-            selectedMinute = 0;
+          // Always use findNextAvailableSlot to ensure we find actual open slots
+          // This properly handles conflicts, respects current time, and uses category hours
+          const today = new Date();
+          const scheduleDateKey = getDateKey(scheduleDate);
+          const todayDateKey = getDateKey(today);
+          const isToday = scheduleDateKey === todayDateKey;
+          
+          // Create proposed time from availableSlot
+          const proposedTime = new Date(scheduleDate);
+          let proposedMinute = Math.round(availableSlot.minute / 15) * 15;
+          let proposedHour = availableSlot.hour;
+          if (proposedMinute >= 60) {
+            proposedHour += 1;
+            proposedMinute = 0;
+          }
+          // Ensure time doesn't exceed work hours (fallback if no category hours)
+          if (proposedHour >= workEndHour) {
+            proposedHour = workEndHour - 1;
+            proposedMinute = 0;
+          }
+          proposedTime.setHours(proposedHour, proposedMinute, 0, 0);
+          
+          // Get category hours for the task - ALWAYS use them if available
+          const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
+          
+          // If forceCategoryHours is enabled, try to get category hours even if respectHours is disabled
+          let effectiveCategoryHours = categoryHours;
+          if (!categoryHours && options?.forceCategoryHours) {
+            const category = getTaskCategory(task);
+            if (category) {
+              const isWeekendDate = isWeekend(scheduleDate);
+              const dayHours = isWeekendDate ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
+              const catHours = dayHours[category];
+              if (catHours && catHours.enabled) {
+                const startMinutes = parseTimeToMinutes(catHours.start);
+                const endMinutes = parseTimeToMinutes(catHours.end);
+                effectiveCategoryHours = { start: startMinutes, end: endMinutes };
+              }
+            }
           }
           
-          // Ensure time doesn't exceed work hours
-          if (selectedHour >= workEndHour) {
-            selectedHour = workEndHour - 1;
-            selectedMinute = 0;
-          }
+          // Use findNextAvailableSlot to find actual open slot with category hours
+          const finalSlot = findNextAvailableSlot(
+            task.id,
+            proposedTime,
+            taskDurationMinutes,
+            tasks,
+            {
+              ensureAfterCurrentTime: isToday,
+              categoryHours: effectiveCategoryHours ? {
+                start: effectiveCategoryHours.start,
+                end: effectiveCategoryHours.end,
+              } : undefined,
+            }
+          );
           
-          scheduleDate.setHours(selectedHour, selectedMinute, 0, 0);
+          // If a valid slot was found (not 24:00 or later), use it
+          if (finalSlot.getHours() < 24) {
+            scheduleDate.setTime(finalSlot.getTime());
+          } else {
+            // Fall back to availableSlot if findNextAvailableSlot couldn't find a slot
+            // This shouldn't happen often, but handle gracefully
+            let selectedMinute = Math.round(availableSlot.minute / 15) * 15;
+            let selectedHour = availableSlot.hour;
+            if (selectedMinute >= 60) {
+              selectedHour += 1;
+              selectedMinute = 0;
+            }
+            // Ensure time doesn't exceed work hours or category hours
+            if (effectiveCategoryHours) {
+              const maxHour = Math.floor(effectiveCategoryHours.end / 60);
+              const maxMinute = effectiveCategoryHours.end % 60;
+              if (selectedHour > maxHour || (selectedHour === maxHour && selectedMinute > maxMinute)) {
+                selectedHour = Math.floor(effectiveCategoryHours.start / 60);
+                selectedMinute = effectiveCategoryHours.start % 60;
+              }
+            } else if (selectedHour >= workEndHour) {
+              selectedHour = workEndHour - 1;
+              selectedMinute = 0;
+            }
+            scheduleDate.setHours(selectedHour, selectedMinute, 0, 0);
+          }
           
           // Verify no double booking - check for time overlaps with existing tasks
           const newTaskStart = scheduleDate.getTime();
