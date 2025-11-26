@@ -578,8 +578,6 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
         }
         hideDesktopLogo
       />
-      {/* Spacer for fixed header on mobile */}
-      <div className="lg:hidden" style={{ height: FOLDER_PANEL_MOBILE_HEADER_SPACER }} />
 
       {/* Search Bar */}
       <div 

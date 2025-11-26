@@ -1071,8 +1071,6 @@ export function TeamPanel() {
         }
         hideDesktopLogo
       />
-      {/* Spacer for fixed header on mobile */}
-      <div className="lg:hidden" style={{ height: TEAM_PANEL_MOBILE_HEADER_SPACER }} />
 
       {/* Search Bar */}
       <div 

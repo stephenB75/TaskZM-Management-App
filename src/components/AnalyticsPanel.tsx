@@ -652,7 +652,6 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           </Button>
         }
       />
-      <div className="md:hidden h-[10px]" />
 
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
