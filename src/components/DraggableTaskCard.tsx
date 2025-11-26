@@ -240,13 +240,13 @@ export const DraggableTaskCard = React.forwardRef<
         // Linear scaling: minHeight + (duration / 45) * (maxHeight - minHeight)
         baseHeight = minHeight + (duration / TASK_CARD_HEIGHT_CONFIG.thresholds.short) * (maxHeight - minHeight);
         
-        // Adjust for components (add extra height on top of scaled base)
+        // Adjust for components (add extra height, but will be capped at 100px max by final calculation)
         if (hasTracking && hasAssignedUsers) {
-          baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +30
+          baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +20px
         } else if (hasTracking) {
-          baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +20
+          baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +10px
         } else if (hasAssignedUsers) {
-          baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +20
+          baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +10px
         }
       } else if (isMediumTask) {
         // Medium tasks (45-59 mins): Scale from 120px to 170px
@@ -325,17 +325,19 @@ export const DraggableTaskCard = React.forwardRef<
       }
       
       // Ensure height is within bounds
-      // For long tasks, the base height already respects the standard heights (200-650px)
-      // For short/medium tasks, ensure minimum compact height
       const minHeight = isShortTask 
         ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base // 80px
         : isMediumTask
         ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min // 120px
         : TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight; // 200px
       
-      // Cap at maxHeight (550px) for all tasks
-      // For long tasks: base height is capped at 500px, but auto-adjustment can add up to 550px total
-      const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px cap for all tasks
+      // Set max height based on task type
+      // Short tasks: max 100px, Medium tasks: max 170px, Long tasks: max 550px (with auto-adjustment)
+      const effectiveMaxHeight = isShortTask
+        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium // 100px max for short
+        : isMediumTask
+        ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong // 170px max for medium
+        : TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px max for long (with auto-adjustment)
       
       return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);
     }, [
@@ -349,7 +351,8 @@ export const DraggableTaskCard = React.forwardRef<
       task.estimatedTime,
       task.scheduledDate,
       task.dueDate,
-      canUsePomodoro,
+      task.assignedTo,
+      hasFeature, // Include hasFeature function to ensure recalculation when feature availability changes
       isMobile,
     ]);
     

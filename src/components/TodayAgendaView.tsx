@@ -354,8 +354,13 @@ export function TodayAgendaView({
       ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min // 120px
       : TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight; // 200px
     
-    // Cap at maxHeight (550px) for all tasks
-    const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px cap
+    // Set max height based on task type
+    // Short tasks: max 100px, Medium tasks: max 170px, Long tasks: max 550px (with auto-adjustment)
+    const effectiveMaxHeight = isShortTask
+      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium // 100px max for short
+      : isMediumTask
+      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong // 170px max for medium
+      : TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px max for long (with auto-adjustment)
     
     return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);
   }, []); // Empty deps - function is pure, only depends on task parameter

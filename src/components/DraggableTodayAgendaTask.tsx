@@ -226,8 +226,12 @@ export function DraggableTodayAgendaTask({
       ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min // 120px
       : TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight) * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 200px
     
-    // Cap at maxHeight (550px) for all tasks, apply multiplier for timeline view
-    const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight * TASK_CARD_HEIGHT_CONFIG.heightMultiplier;
+    // Set max height based on task type, apply multiplier for timeline view
+    const effectiveMaxHeight = (isShortTask
+      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium // 100px max for short
+      : isMediumTask
+      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong // 170px max for medium
+      : TASK_CARD_HEIGHT_CONFIG.maxHeight) * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 550px max for long
     
     return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);
   }, [
