@@ -42,7 +42,7 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
-import { toast } from "sonner";
+import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
 
 interface DashboardViewProps {

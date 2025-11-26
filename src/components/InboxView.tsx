@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
-import { toast } from "sonner";
+import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
 import type { Task } from "../types";

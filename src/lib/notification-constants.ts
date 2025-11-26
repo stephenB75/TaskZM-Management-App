@@ -20,6 +20,7 @@ export const NOTIFICATION_STORAGE_KEYS = {
   readNotifications: 'readNotifications',
   dismissedNotifications: 'dismissedNotifications',
   lastSeenPomodoroSessions: 'lastSeenPomodoroSessions',
+  toastNotifications: 'toastNotifications',
 } as const;
 
 // Notification icon paths
@@ -76,6 +77,7 @@ export const NOTIFICATION_PANEL_TEXT = {
     overdue: 'Overdue Tasks',
     dueSoon: 'Due Soon',
     pomodoro: 'Pomodoro',
+    toast: 'App Notifications',
     placeholder: 'Filter',
   },
   permission: {
@@ -101,6 +103,7 @@ export const NOTIFICATION_TYPES = {
   pomodoroComplete: 'pomodoro-complete',
   pomodoroBreak: 'pomodoro-break',
   system: 'system',
+  toast: 'toast',
 } as const;
 
 // Notification tag prefixes (for browser notifications)

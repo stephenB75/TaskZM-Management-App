@@ -37,7 +37,7 @@ import {
 
 interface NotificationItem {
   id: string;
-  type: 'task-overdue' | 'task-due-soon' | 'pomodoro-complete' | 'pomodoro-break' | 'system';
+  type: 'task-overdue' | 'task-due-soon' | 'pomodoro-complete' | 'pomodoro-break' | 'system' | 'toast-success' | 'toast-error' | 'toast-info' | 'toast-warning';
   title: string;
   message: string;
   timestamp: Date;
@@ -48,7 +48,7 @@ interface NotificationItem {
 
 export function NotificationsPanel() {
   const { tasks } = useTasks();
-  const { badgeCount, settings } = useNotifications();
+  const { badgeCount, settings, getToastNotifications, markToastAsRead, clearToastNotification, updateBadge } = useNotifications();
   const { getTimerState } = usePomodoro();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
@@ -235,6 +235,23 @@ export function NotificationsPanel() {
       setLastSeenSessions(updatedLastSeen);
     }
 
+    // Add toast notifications from storage
+    const toastNotifications = getToastNotifications();
+    toastNotifications.forEach(toast => {
+      // Skip if already dismissed
+      if (dismissedNotifications.has(toast.id)) return;
+      
+      const notificationType = `toast-${toast.type}` as NotificationItem['type'];
+      newNotifications.push({
+        id: toast.id,
+        type: notificationType,
+        title: toast.title,
+        message: toast.description || '',
+        timestamp: new Date(toast.timestamp),
+        read: toast.read,
+      });
+    });
+    
     // Sort by timestamp (newest first)
     newNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     
@@ -245,15 +262,19 @@ export function NotificationsPanel() {
         overdue: newNotifications.filter(n => n.type === 'task-overdue').length,
         dueSoon: newNotifications.filter(n => n.type === 'task-due-soon').length,
         pomodoro: newNotifications.filter(n => n.type === 'pomodoro-complete').length,
+        toast: newNotifications.filter(n => n.type.startsWith('toast-')).length,
         unread: newNotifications.filter(n => !n.read).length,
       });
     }
     
     setNotifications(newNotifications);
-  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions]);
+  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions, getToastNotifications]);
 
   const filteredNotifications = notifications.filter(notif => {
     if (filterType === "all") return true;
+    if (filterType === "toast") {
+      return notif.type.startsWith('toast-');
+    }
     return notif.type === filterType;
   });
 
@@ -261,11 +282,21 @@ export function NotificationsPanel() {
 
   const markAsRead = (id: string) => {
     setReadNotifications(prev => new Set([...prev, id]));
+    // Also mark toast notifications as read if it's a toast notification
+    if (id.startsWith('toast_')) {
+      markToastAsRead(id);
+    }
   };
 
   const markAllAsRead = () => {
     const allIds = notifications.map(n => n.id);
     setReadNotifications(prev => new Set([...prev, ...allIds]));
+    // Also mark all toast notifications as read
+    notifications.forEach(n => {
+      if (n.id.startsWith('toast_')) {
+        markToastAsRead(n.id);
+      }
+    });
     // Trigger badge update after marking all as read
     setTimeout(() => {
       updateBadge();
@@ -276,6 +307,10 @@ export function NotificationsPanel() {
     // Mark as dismissed so it won't be regenerated
     setDismissedNotifications(prev => new Set([...prev, id]));
     markAsRead(id);
+    // Clear toast notifications from storage if it's a toast notification
+    if (id.startsWith('toast_')) {
+      clearToastNotification(id);
+    }
     // Remove from list immediately
     setNotifications(prev => prev.filter(n => n.id !== id));
     // Trigger badge update after notification is cleared
@@ -294,6 +329,14 @@ export function NotificationsPanel() {
       case 'pomodoro-complete':
       case 'pomodoro-break':
         return <Timer className="w-4 h-4 text-purple-500" />;
+      case 'toast-success':
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'toast-error':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'toast-warning':
+        return <AlertCircle className="w-4 h-4 text-orange-500" />;
+      case 'toast-info':
+        return <Bell className="w-4 h-4 text-blue-500" />;
       default:
         return <Bell className="w-4 h-4 text-primary" />;
     }
@@ -352,6 +395,7 @@ export function NotificationsPanel() {
                 <SelectItem value={NOTIFICATION_TYPES.taskOverdue}>{NOTIFICATION_PANEL_TEXT.filters.overdue}</SelectItem>
                 <SelectItem value={NOTIFICATION_TYPES.taskDueSoon}>{NOTIFICATION_PANEL_TEXT.filters.dueSoon}</SelectItem>
                 <SelectItem value={NOTIFICATION_TYPES.pomodoroComplete}>{NOTIFICATION_PANEL_TEXT.filters.pomodoro}</SelectItem>
+                <SelectItem value="toast">{NOTIFICATION_PANEL_TEXT.filters.toast}</SelectItem>
               </SelectContent>
             </Select>
           </div>

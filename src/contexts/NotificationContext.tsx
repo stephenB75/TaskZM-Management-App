@@ -26,6 +26,15 @@ interface NotificationSettings {
   checkInterval: number; // minutes between checks
 }
 
+interface ToastNotification {
+  id: string;
+  type: 'success' | 'error' | 'info' | 'warning' | 'loading';
+  title: string;
+  description?: string;
+  timestamp: string; // ISO string for localStorage compatibility
+  read: boolean;
+}
+
 interface NotificationContextType {
   permission: NotificationPermission;
   settings: NotificationSettings;
@@ -33,6 +42,10 @@ interface NotificationContextType {
   requestPermission: () => Promise<boolean>;
   updateSettings: (settings: Partial<NotificationSettings>) => void;
   updateBadge: () => void;
+  addToastNotification: (type: 'success' | 'error' | 'info' | 'warning', title: string, description?: string) => void;
+  getToastNotifications: () => ToastNotification[];
+  markToastAsRead: (id: string) => void;
+  clearToastNotification: (id: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -513,6 +526,46 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [settings, permission, checkAndNotify]);
 
+  // Toast notification management
+  const addToastNotification = useCallback((type: 'success' | 'error' | 'info' | 'warning', title: string, description?: string) => {
+    const toastNotifications = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, []);
+    const newNotification: ToastNotification = {
+      id: `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      title,
+      description,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    
+    // Add to beginning of array (newest first)
+    const updated = [newNotification, ...toastNotifications];
+    
+    // Keep only last 100 notifications to prevent storage bloat
+    const trimmed = updated.slice(0, 100);
+    
+    saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.toastNotifications, trimmed);
+    updateBadge(); // Update badge count
+  }, [updateBadge]);
+
+  const getToastNotifications = useCallback((): ToastNotification[] => {
+    return getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, []);
+  }, []);
+
+  const markToastAsRead = useCallback((id: string) => {
+    const toastNotifications = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, []);
+    const updated = toastNotifications.map(n => n.id === id ? { ...n, read: true } : n);
+    saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.toastNotifications, updated);
+    updateBadge(); // Update badge count
+  }, [updateBadge]);
+
+  const clearToastNotification = useCallback((id: string) => {
+    const toastNotifications = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, []);
+    const updated = toastNotifications.filter(n => n.id !== id);
+    saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.toastNotifications, updated);
+    updateBadge(); // Update badge count
+  }, [updateBadge]);
+
   // Don't auto-request - wait for user interaction
   // Permission will be requested when user clicks "Enable Notifications" button
 
@@ -525,6 +578,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         requestPermission,
         updateSettings,
         updateBadge,
+        addToastNotification,
+        getToastNotifications,
+        markToastAsRead,
+        clearToastNotification,
       }}
     >
       {children}
