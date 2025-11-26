@@ -136,7 +136,40 @@ export function AIRecommendationPanel({
       incrementAIUsage();
     }
 
-    const range = getTwoWeekDateRange();
+    // Calculate date range based on selected period and date
+    let range: { startDate: Date; endDate: Date };
+    const baseDate = suggestionDate || new Date();
+    
+    if (suggestionPeriod === 'day') {
+      const start = new Date(baseDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(baseDate);
+      end.setHours(23, 59, 59, 999);
+      range = { startDate: start, endDate: end };
+    } else if (suggestionPeriod === 'week') {
+      // Find Monday of the week containing baseDate
+      const monday = new Date(baseDate);
+      monday.setHours(0, 0, 0, 0);
+      const dayOfWeek = monday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
+      monday.setDate(monday.getDate() + daysToMonday);
+      const sunday = new Date(monday);
+      sunday.setDate(sunday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      range = { startDate: monday, endDate: sunday };
+    } else if (suggestionPeriod === 'month') {
+      const year = baseDate.getFullYear();
+      const month = baseDate.getMonth();
+      const start = new Date(year, month, 1);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(year, month + 1, 0);
+      end.setHours(23, 59, 59, 999);
+      range = { startDate: start, endDate: end };
+    } else {
+      // Two weeks (default)
+      range = getTwoWeekDateRange();
+    }
+    
     const result = generateSchedulePlan(undefined, range, { forceCategoryHours: true });
     
     // Check if any days exceed 5 hours
