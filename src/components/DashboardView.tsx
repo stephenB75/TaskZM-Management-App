@@ -877,7 +877,7 @@ export function DashboardView({
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              
+
               <div className="flex-1 text-center">
                 <span className="text-sm font-semibold text-foreground">
                   {weekColumns[0]?.date && weekColumns[6]?.date
@@ -909,9 +909,9 @@ export function DashboardView({
               ))}
               
               {/* Date Cells */}
-              {weekColumns.map((column, index) => {
-                const isSelected = index === mobileDayIndex;
-                const dayTasks = getTasksForDay(column.dateString);
+                  {weekColumns.map((column, index) => {
+                    const isSelected = index === mobileDayIndex;
+                    const dayTasks = getTasksForDay(column.dateString);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const isToday = 
@@ -919,51 +919,51 @@ export function DashboardView({
                   column.date.getMonth() === today.getMonth() &&
                   column.date.getDate() === today.getDate();
 
-                return (
-                  <button
-                    key={column.dateString}
-                    onClick={() => setMobileDayIndex(index)}
-                    className={cn(
+                    return (
+                      <button
+                        key={column.dateString}
+                        onClick={() => setMobileDayIndex(index)}
+                        className={cn(
                       "flex flex-col items-center justify-center py-2 rounded-lg transition-all relative",
-                      isSelected
-                        ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
+                          isSelected
+                            ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
                         : isToday
                         ? "bg-primary/10 text-primary border border-primary/20"
-                        : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "text-sm sm:text-base font-semibold leading-none",
-                        isSelected
+                            : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "text-sm sm:text-base font-semibold leading-none",
+                            isSelected
                           ? "text-primary"
                           : isToday
-                          ? "text-primary"
-                          : "text-foreground",
-                      )}
-                    >
-                      {column.date.getDate()}
-                    </span>
-                    {dayTasks.length > 0 && (
+                              ? "text-primary"
+                              : "text-foreground",
+                          )}
+                        >
+                          {column.date.getDate()}
+                        </span>
+                        {dayTasks.length > 0 && (
                       <div className="flex gap-0.5 mt-1">
-                        {Array.from({
-                          length: Math.min(dayTasks.length, 3),
-                        }).map((_, i) => (
-                          <div
-                            key={i}
-                            className={cn(
-                              "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
-                              isSelected
-                                ? "bg-primary"
-                                : "bg-primary/40",
-                            )}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                            {Array.from({
+                              length: Math.min(dayTasks.length, 3),
+                            }).map((_, i) => (
+                              <div
+                                key={i}
+                                className={cn(
+                                  "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
+                                  isSelected
+                                    ? "bg-primary"
+                                    : "bg-primary/40",
+                                )}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
             </div>
           </div>
         </div>

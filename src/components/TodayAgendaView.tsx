@@ -387,12 +387,12 @@ export function TodayAgendaView({
         className={cn(
           `h-full flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
-            "bg-primary/15 border-2 border-primary/50 border-dashed shadow-lg shadow-primary/20",
+            "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
           !isMobile && "min-h-[400px]", // Ensure drop zone is always accessible
         )}
         style={{
           position: 'relative',
-          zIndex: 1, // Ensure drop zone is above other elements
+          zIndex: isOver ? 100 : 1, // Ensure drop zone is above other elements when dragging over
         }}
         data-tour="today-panel"
       >

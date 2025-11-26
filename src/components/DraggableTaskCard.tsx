@@ -393,7 +393,7 @@ export const DraggableTaskCard = React.forwardRef<
           "flex gap-2 mb-2 transition-all duration-200",
           isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal,
           !isMobile && (isDragging || isSortableDragging)
-            ? "opacity-40 cursor-grabbing scale-95"
+            ? "opacity-70 cursor-grabbing scale-95"
             : "",
           !isMobile && !(isDragging || isSortableDragging)
             ? "cursor-grab hover:scale-[1.02]"

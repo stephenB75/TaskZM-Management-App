@@ -28,23 +28,24 @@ export function DroppableColumn({
         className,
         !isMobile &&
           isOver &&
-          "ring-2 ring-primary/60 ring-inset bg-primary/15 scale-[1.02] shadow-lg shadow-primary/10",
+          "ring-4 ring-primary/80 ring-inset bg-primary/20 scale-[1.02] shadow-xl shadow-primary/20 border-2 border-primary/50",
       )}
       style={{
         // Ensure drop zone is always accessible, even when empty
         position: 'relative',
+        zIndex: isOver ? 100 : 'auto',
       }}
     >
       {children}
       {/* Drop indicator overlay when dragging over */}
       {!isMobile && isOver && (
         <div 
-          className="absolute inset-0 pointer-events-none flex items-center justify-center z-10"
+          className="absolute inset-0 pointer-events-none flex items-center justify-center z-20"
           style={{
-            background: 'radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(124, 58, 237, 0.05) 50%, transparent 80%)',
           }}
         >
-          <div className="text-primary/60 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm">
+          <div className="text-primary font-semibold text-sm px-4 py-2 rounded-full bg-primary/20 border-2 border-primary/50 backdrop-blur-md shadow-lg animate-pulse">
             Drop here
           </div>
         </div>

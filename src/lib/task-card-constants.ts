@@ -294,7 +294,7 @@ export const TASK_CARD_BACKGROUNDS = {
 
 // Width Values
 export const TASK_CARD_WIDTHS = {
-  dragging: 'w-[336px]', // Increased by 20% from 280px to match wider columns
+  dragging: 'w-[386px]', // Increased by 15% from 336px to match wider columns
   normal: 'w-full',
 } as const;
 
@@ -318,8 +318,8 @@ export const TASK_CARD_CALCULATIONS = {
     average: 60,
   },
   availableWidth: {
-    mobile: 240, // Available width for badge calculations on mobile
-    desktop: 432, // Available width for badge calculations on desktop (increased by 20% from 360 to match wider columns)
+    mobile: 276, // Available width for badge calculations on mobile (increased by 15% from 240px)
+    desktop: 497, // Available width for badge calculations on desktop (increased by 15% from 432px to match wider columns)
   },
   description: {
     charsPerLine: 50,

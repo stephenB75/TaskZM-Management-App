@@ -70,7 +70,7 @@ function DraggableMonthTask({
     transition:
       transition ||
       "transform 250ms cubic-bezier(0.25, 0.8, 0.25, 1)",
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.7 : 1,
   };
 
   const priorityColors = {

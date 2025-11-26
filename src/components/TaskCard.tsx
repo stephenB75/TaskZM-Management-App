@@ -109,7 +109,7 @@ export function TaskCard({
           'border border-gray-300/80 md:border-2 md:border-gray-300/90',
           'shadow-lg hover:shadow-xl md:shadow-xl md:hover:shadow-2xl overflow-hidden relative',
           getPriorityBg(),
-          isDragging && 'opacity-50 scale-95',
+          isDragging && 'opacity-70 scale-95',
           task.status === 'done' && 'opacity-75'
         )}
         draggable

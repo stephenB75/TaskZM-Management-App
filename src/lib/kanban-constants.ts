@@ -122,10 +122,10 @@ export const KANBAN_BACKGROUND_GRADIENTS = {
 // Column Dimensions
 export const KANBAN_COLUMN_DIMENSIONS = {
   width: {
-    mobile: 280, // px - for mobile single column (unchanged)
-    tablet: 240, // px - narrower for tablets to fit more columns (unchanged)
-    desktop: 336, // px - increased by 20% from 280px for standard desktop width
-    smallMonitor: 312, // px - increased by 20% from 260px for small monitors (1024px-1280px)
+    mobile: 322, // px - increased by 15% from 280px for mobile single column
+    tablet: 276, // px - increased by 15% from 240px for tablets
+    desktop: 386, // px - increased by 15% from 336px for standard desktop width
+    smallMonitor: 359, // px - increased by 15% from 312px for small monitors (1024px-1280px)
   },
   gap: {
     mobile: 4, // gap-1 = 4px

@@ -1008,8 +1008,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           }}
           style={{
             cursor: 'grabbing',
-            zIndex: 9999,
+            zIndex: 99999,
             pointerEvents: 'none',
+            position: 'fixed',
           }}
           className="cursor-grabbing"
         >
@@ -1074,12 +1075,13 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             if (isFromKanban) {
               return (
                 <div 
-                  className="opacity-90 pointer-events-none"
+                  className="opacity-95 pointer-events-none shadow-2xl"
                   style={{
-                    maxWidth: '320px',
-                    width: '320px',
-                    transform: 'rotate(2deg) scale(1.1)',
+                    maxWidth: '386px',
+                    width: '386px',
+                    transform: 'rotate(2deg) scale(1.05)',
                     transition: 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                    filter: 'drop-shadow(0 20px 25px rgba(0, 0, 0, 0.3))',
                   }}
                 >
                   <DraggableTaskCard task={activeTask} onClick={() => {}} droppableId="" isDragging />
@@ -1090,12 +1092,13 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             // Full card preview for other views (including timeline)
             return (
               <div 
-                className="opacity-90 pointer-events-none"
+                className="opacity-95 pointer-events-none shadow-2xl"
                 style={{
-                  maxWidth: '280px',
-                  width: '280px',
+                  maxWidth: '386px',
+                  width: '386px',
                   transform: 'rotate(3deg) scale(1.05)',
                   transition: 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  filter: 'drop-shadow(0 20px 25px rgba(0, 0, 0, 0.3))',
                 }}
               >
                 <DraggableTaskCard task={activeTask} onClick={() => {}} droppableId="" isDragging />

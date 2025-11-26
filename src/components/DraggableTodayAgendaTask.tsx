@@ -362,12 +362,12 @@ export function DraggableTodayAgendaTask({
         {...attributes}
         {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
         initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: isDragging ? 0.5 : 1, x: 0 }}
+        animate={{ opacity: isDragging ? 0.7 : 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.2, delay: index * 0.05 }}
         className={cn(
           "flex gap-3 group w-full min-w-0 relative transition-all duration-200",
-          !isMobile && isDragging ? "cursor-grabbing opacity-40 scale-95" : "",
+          !isMobile && isDragging ? "cursor-grabbing opacity-70 scale-95" : "",
           !isMobile && !isDragging ? "cursor-grab hover:scale-[1.01]" : "",
         )}
         data-task-id={task.id}
@@ -415,7 +415,7 @@ export function DraggableTodayAgendaTask({
         </div>
 
         {/* Task Content - Match Kanban Week View */}
-        <div className={cn("flex gap-2 flex-1 min-w-0", isDragging && "max-w-[336px]")}>
+        <div className={cn("flex gap-2 flex-1 min-w-0", isDragging && "max-w-[386px]")}>
           {/* Compact Card - Match Kanban styling (priority line removed for timeline view) */}
           <div
             className={cn(
