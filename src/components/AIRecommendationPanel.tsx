@@ -139,10 +139,18 @@ export function AIRecommendationPanel({
     // Calculate date range based on selected period and date
     let range: { startDate: Date; endDate: Date };
     const baseDate = suggestionDate || new Date();
+    const today = new Date();
+    const todayDateKey = today.toISOString().split('T')[0];
+    const baseDateKey = baseDate.toISOString().split('T')[0];
     
     if (suggestionPeriod === 'day') {
       const start = new Date(baseDate);
-      start.setHours(0, 0, 0, 0);
+      // If suggesting for today, start from current time; otherwise start from beginning of day
+      if (baseDateKey === todayDateKey) {
+        start.setTime(today.getTime()); // Use current time for today
+      } else {
+        start.setHours(0, 0, 0, 0); // Start from beginning of day for future dates
+      }
       const end = new Date(baseDate);
       end.setHours(23, 59, 59, 999);
       range = { startDate: start, endDate: end };
@@ -205,10 +213,18 @@ export function AIRecommendationPanel({
     // Use the same period as the original suggestion
     let range: { startDate: Date; endDate: Date };
     const baseDate = suggestionDate || new Date();
+    const today = new Date();
+    const todayDateKey = today.toISOString().split('T')[0];
+    const baseDateKey = baseDate.toISOString().split('T')[0];
     
     if (suggestionPeriod === 'day') {
       const start = new Date(baseDate);
-      start.setHours(0, 0, 0, 0);
+      // If suggesting for today, start from current time; otherwise start from beginning of day
+      if (baseDateKey === todayDateKey) {
+        start.setTime(today.getTime()); // Use current time for today
+      } else {
+        start.setHours(0, 0, 0, 0); // Start from beginning of day for future dates
+      }
       const end = new Date(baseDate);
       end.setHours(23, 59, 59, 999);
       range = { startDate: start, endDate: end };
