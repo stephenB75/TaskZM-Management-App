@@ -557,7 +557,11 @@ function AppContent() {
               {currentView === 'inbox' && <InboxView />}
               {currentView === 'team' && <TeamPanel />}
               {currentView === 'folders' && <FoldersPanel />}
-              {currentView === 'analytics' && <AnalyticsPanel onClose={handleClosePanel} />}
+              {currentView === 'analytics' && (
+                <ErrorBoundary>
+                  <AnalyticsPanel onClose={handleClosePanel} />
+                </ErrorBoundary>
+              )}
               {currentView === 'archive' && <ArchiveView />}
               {currentView === 'settings' && (
                 <SettingsPanel 
@@ -593,7 +597,11 @@ function AppContent() {
                   {currentView === 'inbox' && <InboxView />}
                   {currentView === 'team' && <TeamPanel />}
                   {currentView === 'folders' && <FoldersPanel />}
-                  {currentView === 'analytics' && <AnalyticsPanel onClose={handleClosePanel} />}
+                  {currentView === 'analytics' && (
+                    <ErrorBoundary>
+                      <AnalyticsPanel onClose={handleClosePanel} />
+                    </ErrorBoundary>
+                  )}
                   {currentView === 'archive' && <ArchiveView />}
                   {currentView === 'settings' && (
                     <SettingsPanel 

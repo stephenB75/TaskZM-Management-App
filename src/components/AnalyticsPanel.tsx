@@ -180,6 +180,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   
+  // Safety check: ensure tasks and projects are arrays
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  
   // Track when panel is mounted to force chart animations
   const [chartKey, setChartKey] = useState(0);
   const [shouldAnimateCard, setShouldAnimateCard] = useState(false);
@@ -200,7 +204,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
   // Compute analytics FIRST before using it in useEffect hooks
   const analytics = useMemo(() => {
-    if (!Array.isArray(tasks)) {
+    if (!Array.isArray(safeTasks) || safeTasks.length === 0) {
       return {
         totalTimeTracked: 0,
         tasksWithTime: 0,
@@ -209,6 +213,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         weeklyTimeTracked: 0,
         totalTasks: 0,
         completedTasks: 0,
+        inProgressTasks: 0,
+        todoTasks: 0,
         completionRate: 0,
         timePatterns: { hourly: [], blocks: [], peakHour: 12 },
         taskTypes: [],
@@ -221,22 +227,40 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
     // Filter tasks by date range limit if set
     const filteredTasks = maxDate 
-      ? tasks.filter((t) => {
+      ? safeTasks.filter((t) => {
           try {
-            const taskDate = t.updatedAt ? new Date(t.updatedAt) : (t.createdAt ? new Date(t.createdAt) : null);
+            const taskDate = t?.updatedAt ? new Date(t.updatedAt) : (t?.createdAt ? new Date(t.createdAt) : null);
             if (!taskDate || isNaN(taskDate.getTime())) return true; // Include if no date
             return taskDate >= maxDate;
           } catch {
             return true; // Include if date parsing fails
           }
         })
-      : tasks;
+      : safeTasks;
 
     // Time tracking
-    const totalTimeTracked = filteredTasks.reduce((acc, task) => acc + (task.actualTime || 0), 0);
-    const tasksWithTime = filteredTasks.filter((t) => t.actualTime && t.actualTime > 0);
+    const totalTimeTracked = filteredTasks.reduce((acc, task) => {
+      try {
+        return acc + (task?.actualTime || 0);
+      } catch {
+        return acc;
+      }
+    }, 0);
+    const tasksWithTime = filteredTasks.filter((t) => {
+      try {
+        return t?.actualTime && t.actualTime > 0;
+      } catch {
+        return false;
+      }
+    });
     const avgTimePerTask = tasksWithTime.length > 0
-      ? tasksWithTime.reduce((acc, t) => acc + (t.actualTime || 0), 0) / tasksWithTime.length
+      ? tasksWithTime.reduce((acc, t) => {
+          try {
+            return acc + (t?.actualTime || 0);
+          } catch {
+            return acc;
+          }
+        }, 0) / tasksWithTime.length
       : 0;
 
     // Last 7 days time tracking (or up to dateRangeLimit if set)
@@ -250,7 +274,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
     const timeTrackingTrend = last7DaysTime.map((date) => {
       const tasksUpdatedThisDay = filteredTasks.filter((t) => {
-        if (!t.actualTime || t.actualTime <= 0 || !t.updatedAt) return false;
+        if (!t?.actualTime || t.actualTime <= 0 || !t?.updatedAt) return false;
         try {
           const updatedDate = new Date(t.updatedAt);
           if (isNaN(updatedDate.getTime())) return false;
@@ -262,7 +286,13 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           return false;
         }
       });
-      const timeTracked = tasksUpdatedThisDay.reduce((acc, t) => acc + (t.actualTime || 0), 0);
+      const timeTracked = tasksUpdatedThisDay.reduce((acc, t) => {
+        try {
+          return acc + (t?.actualTime || 0);
+        } catch {
+          return acc;
+        }
+      }, 0);
       return {
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         hours: (timeTracked / 60).toFixed(1),
@@ -275,7 +305,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
     const tasksTrackedThisWeek = filteredTasks.filter((t) => {
-      if (!t.actualTime || t.actualTime <= 0 || !t.updatedAt) return false;
+      if (!t?.actualTime || t.actualTime <= 0 || !t?.updatedAt) return false;
       try {
         const updatedDate = new Date(t.updatedAt);
         if (isNaN(updatedDate.getTime())) return false;
@@ -285,27 +315,53 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         return false;
       }
     });
-    const weeklyTimeTracked = tasksTrackedThisWeek.reduce((acc, t) => acc + (t.actualTime || 0), 0);
+    const weeklyTimeTracked = tasksTrackedThisWeek.reduce((acc, t) => {
+      try {
+        return acc + (t?.actualTime || 0);
+      } catch {
+        return acc;
+      }
+    }, 0);
 
     // Completion metrics (using filtered tasks)
     const totalTasks = filteredTasks.length;
-    const completedTasks = filteredTasks.filter((t) => t.status === "done").length;
-    const inProgressTasks = filteredTasks.filter((t) => t.status === "in-progress").length;
-    const todoTasks = filteredTasks.filter((t) => t.status === "todo").length;
+    const completedTasks = filteredTasks.filter((t) => t?.status === "done").length;
+    const inProgressTasks = filteredTasks.filter((t) => t?.status === "in-progress").length;
+    const todoTasks = filteredTasks.filter((t) => t?.status === "todo").length;
     const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-    // Status distribution for pie chart
+    // Status distribution for pie chart - ensure all values are valid numbers
     const statusDistribution = [
-      { name: 'Completed', value: completedTasks, color: COLOR_SUCCESS },
-      { name: 'In Progress', value: inProgressTasks, color: COLOR_WARNING },
-      { name: 'Todo', value: todoTasks, color: COLOR_INFO },
-    ].filter(item => item.value > 0);
+      { name: 'Completed', value: Number(completedTasks) || 0, color: COLOR_SUCCESS },
+      { name: 'In Progress', value: Number(inProgressTasks) || 0, color: COLOR_WARNING },
+      { name: 'Todo', value: Number(todoTasks) || 0, color: COLOR_INFO },
+    ]
+      .filter((item): item is { name: string; value: number; color: string } => {
+        return (
+          item !== null &&
+          item !== undefined &&
+          typeof item === 'object' &&
+          'name' in item &&
+          'value' in item &&
+          'color' in item &&
+          typeof item.name === 'string' &&
+          typeof item.value === 'number' &&
+          !isNaN(item.value) &&
+          item.value > 0 &&
+          typeof item.color === 'string'
+        );
+      })
+      .map(item => ({
+        name: String(item.name),
+        value: Number(item.value),
+        color: String(item.color),
+      }));
 
     // Time patterns (using filtered tasks)
     const hourCounts = new Array(24).fill(0);
-    filteredTasks.filter((t) => t.completedAt).forEach((task) => {
+    filteredTasks.filter((t) => t?.completedAt).forEach((task) => {
       try {
-        if (task.completedAt) {
+        if (task?.completedAt) {
           const completedDate = new Date(task.completedAt);
           if (!isNaN(completedDate.getTime())) {
             const hour = completedDate.getHours();
@@ -320,7 +376,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     const eveningTasks = hourCounts.slice(18, 22).reduce((a, b) => a + b, 0);
     const nightTasks = [...hourCounts.slice(0, 6), ...hourCounts.slice(22, 24)].reduce((a, b) => a + b, 0);
 
-    const maxCount = Math.max(...hourCounts);
+    const maxCount = hourCounts.length > 0 ? Math.max(...hourCounts) : 0;
     const peakHour = maxCount > 0 ? hourCounts.indexOf(maxCount) : 12;
 
     const timePatterns = {
@@ -336,9 +392,17 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     // Task types (using filtered tasks)
     const typeCount: Record<string, number> = {};
     filteredTasks.forEach((task) => {
-      task.tags?.forEach((tag) => {
-        typeCount[tag] = (typeCount[tag] || 0) + 1;
-      });
+      try {
+        if (task?.tags && Array.isArray(task.tags)) {
+          task.tags.forEach((tag) => {
+            if (tag) {
+              typeCount[tag] = (typeCount[tag] || 0) + 1;
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Error processing task tags:', error);
+      }
     });
     const taskTypes = Object.entries(typeCount)
       .map(([name, value]) => ({ name, value, color: COLOR_PRIMARY }))
@@ -357,7 +421,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       const nextDay = new Date(date);
       nextDay.setDate(nextDay.getDate() + 1);
       const completed = filteredTasks.filter((t) => {
-        if (!t.completedAt) return false;
+        if (!t?.completedAt) return false;
         try {
           const completedDate = new Date(t.completedAt);
           if (isNaN(completedDate.getTime())) return false;
@@ -368,7 +432,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       }).length;
 
       const created = filteredTasks.filter((t) => {
-        if (!t.createdAt) return false;
+        if (!t?.createdAt) return false;
         try {
           const createdDate = new Date(t.createdAt);
           if (isNaN(createdDate.getTime())) return false;
@@ -386,23 +450,28 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     });
 
     // Project progress (using filtered tasks)
-    const projectProgress = Array.isArray(projects) && projects.length > 0
-      ? projects
+    const projectProgress = Array.isArray(safeProjects) && safeProjects.length > 0
+      ? safeProjects
           .map((project) => {
             if (!project || !project.id) return null;
-            const projectTasks = filteredTasks.filter((t) => t.projectId === project.id);
-            const totalProjectTasks = projectTasks.length;
-            const completedProjectTasks = projectTasks.filter((t) => t.status === "done").length;
-            const projectCompletionRate = totalProjectTasks > 0
-              ? (completedProjectTasks / totalProjectTasks) * 100
-              : 0;
-            return {
-              name: project.name || 'Unnamed Project',
-              total: totalProjectTasks,
-              completed: completedProjectTasks,
-              completionRate: projectCompletionRate,
-              color: project.color || COLOR_PRIMARY,
-            };
+            try {
+              const projectTasks = filteredTasks.filter((t) => t?.projectId === project.id);
+              const totalProjectTasks = projectTasks.length;
+              const completedProjectTasks = projectTasks.filter((t) => t?.status === "done").length;
+              const projectCompletionRate = totalProjectTasks > 0
+                ? (completedProjectTasks / totalProjectTasks) * 100
+                : 0;
+              return {
+                name: project.name || 'Unnamed Project',
+                total: totalProjectTasks,
+                completed: completedProjectTasks,
+                completionRate: projectCompletionRate,
+                color: project.color || COLOR_PRIMARY,
+              };
+            } catch (error) {
+              console.warn('Error processing project for analytics:', error);
+              return null;
+            }
           })
           .filter((p): p is NonNullable<typeof p> => p !== null)
           .sort((a, b) => b.completionRate - a.completionRate)
@@ -411,10 +480,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
     // Avg completion time (using filtered tasks)
     const completedWithDates = filteredTasks.filter((t) => {
-      if (!t.completedAt || !t.createdAt) return false;
+      if (!t?.completedAt || !t?.createdAt) return false;
       try {
-        const created = new Date(t.createdAt);
-        const completed = new Date(t.completedAt);
+        const created = new Date(t?.createdAt);
+        const completed = new Date(t?.completedAt);
         return !isNaN(created.getTime()) && !isNaN(completed.getTime());
       } catch {
         return false;
@@ -423,8 +492,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     const avgCompletionTime = completedWithDates.length > 0
       ? completedWithDates.reduce((acc, task) => {
           try {
-            const created = new Date(task.createdAt).getTime();
-            const completed = new Date(task.completedAt!).getTime();
+            if (!task?.createdAt || !task?.completedAt) return acc;
+            const created = new Date(task?.createdAt).getTime();
+            const completed = new Date(task?.completedAt).getTime();
             if (isNaN(created) || isNaN(completed)) return acc;
             return acc + (completed - created);
           } catch {
@@ -451,7 +521,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       avgCompletionTime,
       statusDistribution,
     };
-  }, [tasks, projects, maxDate, dateRangeLimit]);
+  }, [safeTasks, safeProjects, maxDate, dateRangeLimit]);
 
   const peakHourLabel =
     analytics.timePatterns.peakHour === 0
@@ -620,14 +690,17 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             </div>
 
             {/* Status Distribution - Pie Chart */}
-            {analytics.statusDistribution && analytics.statusDistribution.length > 0 && (
+            {analytics?.statusDistribution && 
+             Array.isArray(analytics.statusDistribution) && 
+             analytics.statusDistribution.length > 0 &&
+             analytics.statusDistribution.every(item => item && typeof item === 'object' && 'value' in item && 'name' in item) && (
               <motion.div
                 ref={cardRef}
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={shouldAnimateCard ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.95 }}
                 transition={{
                   duration: 0.5,
-                  ease: "ease-out",
+                  ease: "easeOut",
                   delay: 0.1,
                 }}
               >
@@ -639,46 +712,105 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardHeader>
                   <CardContent className="px-3 pb-3">
                     <div className="h-56" style={{ minHeight: '224px' }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart key={`piechart-${chartKey}`} margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
-                          <Pie
-                            key={`pie-${chartKey}`}
-                            data={analytics.statusDistribution}
-                            cx="50%"
-                            cy="45%"
-                            labelLine={false}
-                            label={false}
-                            outerRadius={65}
-                            innerRadius={0}
-                            fill={UI_CHART_COLORS.primary}
-                            dataKey="value"
-                            isAnimationActive={true}
-                            animationBegin={0}
-                            animationDuration={1500}
-                            animationEasing="ease-out"
-                          >
-                            {analytics.statusDistribution.map((entry, index) => (
-                              <Cell key={`cell-${chartKey}-${index}-${entry.name}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend 
-                            verticalAlign="bottom" 
-                            height={36}
-                            iconType="circle"
-                            wrapperStyle={{ paddingTop: '10px' }}
-                            formatter={(value, entry: any) => {
-                              const item = analytics.statusDistribution.find((d: any) => d.name === value);
-                              const percent = item ? ((item.value / analytics.totalTasks) * 100).toFixed(0) : '0';
-                              return (
-                                <span className="text-[11px] text-muted-foreground">
-                                  {value}: {percent}%
-                                </span>
-                              );
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      {(() => {
+                        try {
+                          const validData = analytics?.statusDistribution?.filter(
+                            (item: any) => item && typeof item === 'object' && item.value > 0 && item.name && item.color
+                          ) || [];
+                          
+                          if (!validData || validData.length === 0) {
+                            return (
+                              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                No data available
+                              </div>
+                            );
+                          }
+
+                          // Double-check data is valid before rendering
+                          const finalData = validData.filter((item: any) => {
+                            return (
+                              item &&
+                              typeof item === 'object' &&
+                              typeof item.name === 'string' &&
+                              typeof item.value === 'number' &&
+                              !isNaN(item.value) &&
+                              item.value > 0 &&
+                              typeof item.color === 'string'
+                            );
+                          });
+
+                          if (finalData.length === 0) {
+                            return (
+                              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                No data available
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart key={`piechart-${chartKey}`} margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
+                                <Pie
+                                  key={`pie-${chartKey}`}
+                                  data={finalData}
+                                  cx="50%"
+                                  cy="45%"
+                                  labelLine={false}
+                                  label={false}
+                                  outerRadius={65}
+                                  innerRadius={0}
+                                  fill={UI_CHART_COLORS?.primary || COLOR_PRIMARY}
+                                  dataKey="value"
+                                  isAnimationActive={false}
+                                >
+                                  {finalData.map((entry: any, index: number) => {
+                                    if (!entry || !entry.name || !entry.color) return null;
+                                    return (
+                                      <Cell 
+                                        key={`cell-${chartKey}-${index}-${String(entry.name)}`} 
+                                        fill={String(entry.color)} 
+                                      />
+                                    );
+                                  }).filter(Boolean)}
+                                </Pie>
+                                <Tooltip content={<CustomTooltip />} />
+                                {finalData.length > 0 && (
+                                  <Legend 
+                                    verticalAlign="bottom" 
+                                    height={36}
+                                    iconType="circle"
+                                    wrapperStyle={{ paddingTop: '10px' }}
+                                    formatter={(value: any) => {
+                                      try {
+                                        if (!value || typeof value !== 'string') return '';
+                                        if (!analytics?.statusDistribution || !analytics?.totalTasks) {
+                                          return `${value}: 0%`;
+                                        }
+                                        const item = analytics.statusDistribution.find((d: any) => d?.name === value);
+                                        if (!item || typeof item.value !== 'number') return `${value}: 0%`;
+                                        const percent = analytics.totalTasks > 0 
+                                          ? ((item.value / analytics.totalTasks) * 100).toFixed(0) 
+                                          : '0';
+                                        return `${value}: ${percent}%`;
+                                      } catch (error) {
+                                        console.warn('Error formatting legend:', error);
+                                        return value ? `${String(value)}: 0%` : '';
+                                      }
+                                    }}
+                                  />
+                                )}
+                              </PieChart>
+                            </ResponsiveContainer>
+                          );
+                        } catch (error) {
+                          console.error('Error rendering pie chart:', error);
+                          return (
+                            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                              Error loading chart
+                            </div>
+                          );
+                        }
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
@@ -694,8 +826,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               </CardHeader>
               <CardContent className="px-3 pb-3">
                 <div className="h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={analytics.timeTrackingTrend} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                  {analytics?.timeTrackingTrend && Array.isArray(analytics.timeTrackingTrend) && analytics.timeTrackingTrend.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={analytics.timeTrackingTrend.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
                       <XAxis
                         dataKey="date"
@@ -718,13 +851,15 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                         dot={{ fill: COLOR_PRIMARY, r: 3 }}
                         activeDot={{ r: 5 }}
                         name="Hours"
-                        isAnimationActive={true}
-                        animationBegin={0}
-                        animationDuration={800}
-                        animationEasing="ease-out"
+                        isAnimationActive={false}
                       />
                     </LineChart>
                   </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      No data available
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -738,8 +873,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               </CardHeader>
               <CardContent className="px-3 pb-3">
                 <div className="h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={analytics.taskPerDayProgress} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                  {analytics?.taskPerDayProgress && Array.isArray(analytics.taskPerDayProgress) && analytics.taskPerDayProgress.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={analytics.taskPerDayProgress.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
                       <XAxis
                         dataKey="date"
@@ -758,10 +894,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                         fill={COLOR_INFO} 
                         radius={[4, 4, 0, 0]} 
                         name="Created"
-                        isAnimationActive={true}
-                        animationBegin={0}
-                        animationDuration={800}
-                        animationEasing="ease-out"
+                        isAnimationActive={false}
                       />
                       <Line 
                         type="monotone" 
@@ -771,18 +904,20 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                         dot={false} 
                         name="Completed"
                         isAnimationActive={true}
-                        animationBegin={200}
-                        animationDuration={800}
-                        animationEasing="ease-out"
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      No data available
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Time of Day Completion - Bar Chart */}
-            {analytics.timePatterns.blocks.length > 0 && (
+            {analytics?.timePatterns?.blocks && Array.isArray(analytics.timePatterns.blocks) && analytics.timePatterns.blocks.length > 0 && (
               <Card className="shadow-sm border border-border bg-card">
                 <CardHeader className="pb-2 pt-3 px-3">
                   <CardTitle className="text-sm font-semibold text-foreground">
@@ -792,7 +927,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 <CardContent className="px-3 pb-3">
                   <div className="h-40">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={analytics.timePatterns.blocks} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                      <BarChart data={analytics.timePatterns.blocks.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
                         <XAxis
                           dataKey="name"
@@ -810,9 +945,6 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           dataKey="value" 
                           radius={[6, 6, 0, 0]}
                           isAnimationActive={true}
-                          animationBegin={0}
-                          animationDuration={800}
-                          animationEasing="ease-out"
                         >
                           {analytics.timePatterns.blocks.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
@@ -831,7 +963,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             )}
 
             {/* Top Task Tags - Horizontal Bar Chart */}
-            {analytics.taskTypes.length > 0 && (
+            {analytics?.taskTypes && Array.isArray(analytics.taskTypes) && analytics.taskTypes.length > 0 && (
               <Card className="shadow-sm border border-border bg-card">
                 <CardHeader className="pb-2 pt-3 px-3">
                   <CardTitle className="text-sm font-semibold text-foreground">
@@ -842,7 +974,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   <div className="h-40">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
-                        data={analytics.taskTypes}
+                        data={analytics.taskTypes.filter(item => item && typeof item === 'object')}
                         layout="vertical"
                         margin={{ top: 5, right: 10, left: 60, bottom: 0 }}
                       >
@@ -867,9 +999,6 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                           fill={COLOR_PRIMARY} 
                           radius={[0, 6, 6, 0]}
                           isAnimationActive={true}
-                          animationBegin={0}
-                          animationDuration={800}
-                          animationEasing="ease-out"
                         />
                       </BarChart>
                     </ResponsiveContainer>
