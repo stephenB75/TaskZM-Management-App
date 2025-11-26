@@ -548,15 +548,37 @@ export function useAIScheduler() {
       return daysToAdd;
     };
     
-    sortedTasks.forEach((task) => {
+    // Calculate total days in date range for better distribution
+    const totalDaysInRange = dateRange 
+      ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      : 14;
+    
+    // Track tasks scheduled per day for better distribution
+    const tasksPerDayCount: Map<number, number> = new Map();
+    
+    // Helper: Get the day index with least tasks for even distribution
+    const getDayWithLeastTasks = (maxDays: number): number => {
+      let minCount = Infinity;
+      let minDay = 0;
+      for (let day = 0; day < maxDays; day++) {
+        const count = tasksPerDayCount.get(day) || 0;
+        if (count < minCount) {
+          minCount = count;
+          minDay = day;
+        }
+      }
+      return minDay;
+    };
+    
+    sortedTasks.forEach((task, taskIndex) => {
       // Determine scheduling based on priority and status (if priority-based scheduling is enabled)
-      // When rescheduling within a date range, prefer earlier dates and only push forward if necessary
+      // When rescheduling within a date range, distribute tasks evenly across days
       let daysToAdd = 0;
       let reason = '';
       
       if (aiSettings.priorityBasedScheduling) {
         // Priority-based scheduling logic
-        // For rescheduling, start from the beginning of the date range
+        // For rescheduling, distribute tasks across the week based on priority
         if (task.status === 'in-progress') {
           daysToAdd = 0;
           reason = 'In-progress - scheduled ASAP';
@@ -564,20 +586,24 @@ export function useAIScheduler() {
           daysToAdd = 0;
           reason = 'Urgent priority - scheduled first';
         } else if (task.priority === 'high') {
-          daysToAdd = tasksScheduledToday >= maxTasksPerDay ? 1 : 0;
-          reason = daysToAdd === 0 ? 'High priority - scheduled soon' : 'High priority - next available slot';
+          // Distribute high priority tasks across first few days (0-2), but use round-robin
+          daysToAdd = Math.min(taskIndex % 3, totalDaysInRange - 1);
+          reason = daysToAdd === 0 ? 'High priority - scheduled soon' : 'High priority - distributed across week';
         } else if (task.priority === 'medium') {
-          daysToAdd = Math.floor(tasksScheduledToday / 2) + 1;
-          reason = 'Medium priority - balanced schedule';
+          // Distribute medium priority tasks evenly across the week using round-robin
+          daysToAdd = Math.min(taskIndex % totalDaysInRange, totalDaysInRange - 1);
+          reason = 'Medium priority - distributed across week';
         } else {
-          daysToAdd = Math.floor(tasksScheduledToday / 2) + 2;
-          reason = 'Low priority - scheduled for later';
+          // Distribute low priority tasks evenly across the week using round-robin
+          daysToAdd = Math.min(taskIndex % totalDaysInRange, totalDaysInRange - 1);
+          reason = 'Low priority - distributed across week';
         }
       } else {
         // Simple sequential scheduling without priority consideration
-        // For rescheduling, distribute tasks evenly across the date range
-        daysToAdd = Math.floor(tasksScheduledToday / maxTasksPerDay);
-        reason = 'Scheduled in next available slot';
+        // For rescheduling, distribute tasks evenly across the date range using round-robin
+        // This ensures tasks are spread evenly across all days
+        daysToAdd = Math.min(taskIndex % totalDaysInRange, totalDaysInRange - 1);
+        reason = 'Scheduled - distributed across week';
       }
       
       // Check if task has a due date and adjust if needed
@@ -661,42 +687,61 @@ export function useAIScheduler() {
       // Get task hours first
       const taskHours = getTaskHours(task);
       
-      // If enforcing minimum hours, try to fill days that don't meet minimum first
+      // PRIORITY 1: If enforcing minimum hours, ALWAYS try to fill days that don't meet minimum first
+      // This ensures we meet the 5-hour requirement per day
       let foundDay = false;
       let finalDaysToAdd = daysToAdd;
       
       if (options?.enforceMinimumHours) {
-        // First, try to find a day that needs hours to reach minimum
-        const dayNeedingHours = findDayWithLeastHours(startDate, endDate);
-        if (dayNeedingHours) {
+        // Find ALL days that need hours to reach minimum, sorted by hours needed (most needed first)
+        const daysNeedingHours: Array<{ date: Date; hoursNeeded: number; currentHours: number }> = [];
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+          const dateKey = getDateKey(currentDate);
+          const currentHours = dailyHours.get(dateKey) || 0;
+          
           // Skip weekends for work and projects tasks when respectHours or forceCategoryHours is enabled
           const shouldSkipWeekend = (hoursSettings.respectHours || options?.forceCategoryHours) && 
                                     (getTaskCategory(task) === 'work' || getTaskCategory(task) === 'projects') &&
-                                    isWeekend(dayNeedingHours);
+                                    isWeekend(currentDate);
           
-          if (!shouldSkipWeekend) {
-            const hoursNeeded = getHoursToMinimum(dayNeedingHours);
-            // If this task can help reach minimum (and doesn't exceed max), use this day
-            // Allow tasks that help fill the minimum, even if they're larger than the exact gap
-            // as long as they don't exceed the 5-hour maximum
-            if (!wouldExceedLimit(dayNeedingHours, taskHours)) {
-              const daysDiff = Math.floor((dayNeedingHours.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24));
-              const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
-              if (daysDiff >= 0 && daysDiff < maxDays) {
-                finalDaysToAdd = daysDiff;
-                foundDay = true;
-                const dateKey = getDateKey(dayNeedingHours);
-                const currentHours = dailyHours.get(dateKey) || 0;
-                if (currentHours < MIN_HOURS_PER_DAY) {
-                  reason = `${reason} - filling minimum hours requirement (${currentHours.toFixed(1)}h → ${(currentHours + taskHours).toFixed(1)}h)`;
-                }
-              }
+          if (!shouldSkipWeekend && currentHours < MIN_HOURS_PER_DAY) {
+            const hoursNeeded = MIN_HOURS_PER_DAY - currentHours;
+            daysNeedingHours.push({
+              date: new Date(currentDate),
+              hoursNeeded,
+              currentHours
+            });
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        // Sort by hours needed (most needed first), then by date (earlier first)
+        daysNeedingHours.sort((a, b) => {
+          if (b.hoursNeeded !== a.hoursNeeded) {
+            return b.hoursNeeded - a.hoursNeeded; // Most needed first
+          }
+          return a.date.getTime() - b.date.getTime(); // Earlier date first
+        });
+        
+        // Try each day that needs hours, starting with the one that needs the most
+        for (const dayInfo of daysNeedingHours) {
+          // Check if this task can fit in this day (doesn't exceed 5-hour limit)
+          if (!wouldExceedLimit(dayInfo.date, taskHours)) {
+            const daysDiff = Math.floor((dayInfo.date.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24));
+            const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
+            if (daysDiff >= 0 && daysDiff < maxDays) {
+              finalDaysToAdd = daysDiff;
+              foundDay = true;
+              reason = `${reason} - filling minimum hours requirement (${dayInfo.currentHours.toFixed(1)}h → ${(dayInfo.currentHours + taskHours).toFixed(1)}h)`;
+              break; // Found a day, use it
             }
           }
         }
       }
       
-      // If not found yet, use normal search logic
+      // PRIORITY 2: If not found yet, search for days with available time slots
+      // This ensures tasks are distributed to wherever there's available time
       if (!foundDay) {
         // Calculate max days to search based on date range or default to 14 days
         const maxDaysToSearch = dateRange 
@@ -704,16 +749,16 @@ export function useAIScheduler() {
           : 14;
         let daysSearched = 0;
         
-        // Keep searching for a day with enough space within the date range
-        while (daysSearched < maxDaysToSearch && !foundDay) {
+        // Build list of candidate days with available space, sorted by available hours (most space first)
+        const candidateDays: Array<{ date: Date; availableHours: number; daysToAdd: number }> = [];
+        
+        // First pass: collect all days with available space
+        for (let dayOffset = 0; dayOffset < maxDaysToSearch; dayOffset++) {
           const testDate = new Date(tomorrow);
-          testDate.setDate(testDate.getDate() + finalDaysToAdd);
+          testDate.setDate(testDate.getDate() + dayOffset);
           
           // Check if testDate is within the allowed date range
           if (dateRange && (testDate < startDate || testDate > endDate)) {
-            // Date is outside the allowed range, try next day
-            finalDaysToAdd++;
-            daysSearched++;
             continue;
           }
           
@@ -723,9 +768,6 @@ export function useAIScheduler() {
             if (category === 'work' || category === 'projects') {
               const isTestWeekend = isWeekend(testDate);
               if (isTestWeekend) {
-                // Skip this weekend day, try next day
-                finalDaysToAdd++;
-                daysSearched++;
                 continue;
               }
             }
@@ -733,13 +775,30 @@ export function useAIScheduler() {
           
           // Check if this day has space for the task (within 5-hour limit)
           if (!wouldExceedLimit(testDate, taskHours)) {
-            // Found a day with space - use it
-            foundDay = true;
-          } else {
-            // This day is full, try the next day (but only if within date range)
-            finalDaysToAdd++;
-            daysSearched++;
+            const dateKey = getDateKey(testDate);
+            const currentHours = dailyHours.get(dateKey) || 0;
+            const availableHours = MAX_HOURS_PER_DAY - currentHours;
+            candidateDays.push({
+              date: new Date(testDate),
+              availableHours,
+              daysToAdd: dayOffset
+            });
           }
+        }
+        
+        // Sort by available hours (most space first), then by date (earlier first)
+        candidateDays.sort((a, b) => {
+          if (b.availableHours !== a.availableHours) {
+            return b.availableHours - a.availableHours; // Most space first
+          }
+          return a.date.getTime() - b.date.getTime(); // Earlier date first
+        });
+        
+        // Use the day with the most available space (or earliest if tied)
+        if (candidateDays.length > 0) {
+          const bestDay = candidateDays[0];
+          finalDaysToAdd = bestDay.daysToAdd;
+          foundDay = true;
         }
       }
       
@@ -790,7 +849,7 @@ export function useAIScheduler() {
           const workStartHour = 9;
           const workEndHour = 17;
           
-          // Helper: Find available time slot
+          // Helper: Find available time slot - prioritizes filling gaps in schedule
           const findAvailableTimeSlot = (): { hour: number; minute: number } => {
             // Determine the earliest time we can schedule (current time if today, otherwise work start)
             const today = new Date();
@@ -852,55 +911,115 @@ export function useAIScheduler() {
               return timeA - timeB;
             });
             
-            // Find gaps between existing tasks
-            for (let i = 0; i < sortedTasks.length; i++) {
+            // Find ALL available gaps between existing tasks
+            const availableGaps: Array<{ start: Date; duration: number; end: Date }> = [];
+            
+            // Check gap before first task
+            if (sortedTasks.length > 0) {
+              const firstTask = sortedTasks[0];
+              const firstTaskStart = new Date(firstTask.scheduledDate!);
+              let gapStart = new Date(earliestTime);
+              if (gapStart < firstTaskStart) {
+                const gapDuration = (firstTaskStart.getTime() - gapStart.getTime()) / (1000 * 60);
+                if (gapDuration >= taskDurationMinutes) {
+                  availableGaps.push({
+                    start: gapStart,
+                    duration: gapDuration,
+                    end: firstTaskStart
+                  });
+                }
+              }
+            }
+            
+            // Find gaps between tasks
+            for (let i = 1; i < sortedTasks.length; i++) {
+              const prevTask = sortedTasks[i - 1];
               const currentTask = sortedTasks[i];
+              
+              const prevTaskStart = new Date(prevTask.scheduledDate!);
+              const prevTaskDuration = prevTask.estimatedTime || 30;
+              const prevTaskEnd = new Date(prevTaskStart);
+              prevTaskEnd.setMinutes(prevTaskEnd.getMinutes() + prevTaskDuration);
+              
               const currentTaskStart = new Date(currentTask.scheduledDate!);
-              const currentTaskDuration = currentTask.estimatedTime || 30;
-              const currentTaskEnd = new Date(currentTaskStart);
-              currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
               
-              // Check if there's a gap before this task
-              let gapStart: Date;
-              if (i === 0) {
-                // First task - check gap from earliest time (current time if today, otherwise work start)
-                gapStart = new Date(earliestTime);
-              } else {
-                // Gap from previous task end
-                const prevTask = sortedTasks[i - 1];
-                const prevTaskStart = new Date(prevTask.scheduledDate!);
-                const prevTaskDuration = prevTask.estimatedTime || 30;
-                gapStart = new Date(prevTaskStart);
-                gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
-              }
-              
-              // Ensure gap start is not before earliest time (current time if today)
-              if (gapStart < earliestTime) {
-                gapStart = new Date(earliestTime);
-              }
-              
-              // Calculate gap duration in minutes
+              // Calculate gap
+              const gapStart = new Date(prevTaskEnd);
               const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / (1000 * 60);
               
-              // If gap is large enough for this task, use it
+              // If gap is large enough for this task, add it to available gaps
               if (gapDuration >= taskDurationMinutes) {
-                // Priority-based positioning within gap
-                if (task.status === 'in-progress' || task.priority === 'urgent') {
-                  // Urgent: start as early as possible in gap
+                availableGaps.push({
+                  start: gapStart,
+                  duration: gapDuration,
+                  end: currentTaskStart
+                });
+              }
+            }
+            
+            // Check gap after last task (if there's room before work end)
+            if (sortedTasks.length > 0) {
+              const lastTask = sortedTasks[sortedTasks.length - 1];
+              const lastTaskStart = new Date(lastTask.scheduledDate!);
+              const lastTaskDuration = lastTask.estimatedTime || 30;
+              const lastTaskEnd = new Date(lastTaskStart);
+              lastTaskEnd.setMinutes(lastTaskEnd.getMinutes() + lastTaskDuration);
+              
+              const workEnd = new Date(scheduleDate);
+              workEnd.setHours(workEndHour, 0, 0, 0);
+              
+              if (lastTaskEnd < workEnd) {
+                const gapDuration = (workEnd.getTime() - lastTaskEnd.getTime()) / (1000 * 60);
+                if (gapDuration >= taskDurationMinutes) {
+                  availableGaps.push({
+                    start: lastTaskEnd,
+                    duration: gapDuration,
+                    end: workEnd
+                  });
+                }
+              }
+            }
+            
+            // If we found available gaps, use the best one
+            if (availableGaps.length > 0) {
+              // Sort gaps by size (smallest first to fill small gaps, or largest first to use big gaps)
+              // For minimum hours enforcement, prefer smaller gaps to fill them up
+              // Otherwise, prefer earlier gaps
+              availableGaps.sort((a, b) => {
+                if (options?.enforceMinimumHours) {
+                  // When enforcing minimum, prefer smaller gaps to fill them
+                  return a.duration - b.duration;
+                } else {
+                  // Otherwise, prefer earlier gaps
+                  return a.start.getTime() - b.start.getTime();
+                }
+              });
+              
+              const bestGap = availableGaps[0];
+              
+              // Priority-based positioning within gap
+              if (task.status === 'in-progress' || task.priority === 'urgent') {
+                // Urgent: start as early as possible in gap
+                return { 
+                  hour: bestGap.start.getHours(), 
+                  minute: bestGap.start.getMinutes() 
+                };
+              } else if (task.priority === 'high') {
+                // High: start early in gap
+                return { 
+                  hour: bestGap.start.getHours(), 
+                  minute: bestGap.start.getMinutes() 
+                };
+              } else {
+                // Medium/Low: can start later in gap, but for minimum hours, fill from start
+                if (options?.enforceMinimumHours) {
                   return { 
-                    hour: gapStart.getHours(), 
-                    minute: gapStart.getMinutes() 
-                  };
-                } else if (task.priority === 'high') {
-                  // High: start early in gap
-                  return { 
-                    hour: gapStart.getHours(), 
-                    minute: gapStart.getMinutes() 
+                    hour: bestGap.start.getHours(), 
+                    minute: bestGap.start.getMinutes() 
                   };
                 } else {
-                  // Medium/Low: can start later in gap
-                  const gapCenter = new Date(gapStart);
-                  gapCenter.setMinutes(gapCenter.getMinutes() + Math.floor(gapDuration / 2));
+                  const gapCenter = new Date(bestGap.start);
+                  gapCenter.setMinutes(gapCenter.getMinutes() + Math.floor(bestGap.duration / 2));
                   return { 
                     hour: gapCenter.getHours(), 
                     minute: gapCenter.getMinutes() 
@@ -909,35 +1028,59 @@ export function useAIScheduler() {
               }
             }
             
-            // No gap found - place after last task
-            const lastTask = sortedTasks[sortedTasks.length - 1];
-            const lastTaskStart = new Date(lastTask.scheduledDate!);
-            const lastTaskDuration = lastTask.estimatedTime || 30;
-            const nextAvailableTime = new Date(lastTaskStart);
-            nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
-            
-            // If scheduling for today, ensure we don't schedule before current time
-            if (isToday && nextAvailableTime < earliestTime) {
+            // No gaps found - place after last task or at earliest time
+            if (sortedTasks.length > 0) {
+              const lastTask = sortedTasks[sortedTasks.length - 1];
+              const lastTaskStart = new Date(lastTask.scheduledDate!);
+              const lastTaskDuration = lastTask.estimatedTime || 30;
+              const nextAvailableTime = new Date(lastTaskStart);
+              nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
+              
+              // If scheduling for today, ensure we don't schedule before current time
+              if (isToday && nextAvailableTime < earliestTime) {
+                return { 
+                  hour: earliestTime.getHours(), 
+                  minute: earliestTime.getMinutes() 
+                };
+              }
+              
+              // Ensure we don't exceed work hours
+              if (nextAvailableTime.getHours() >= workEndHour) {
+                // This shouldn't happen due to 5-hour limit, but handle it
+                // If today, try to use earliest time, otherwise use work start
+                if (isToday && earliestTime.getHours() < workEndHour) {
+                  return { hour: earliestTime.getHours(), minute: earliestTime.getMinutes() };
+                }
+                return { hour: workStartHour, minute: 0 };
+              }
+              
               return { 
-                hour: earliestTime.getHours(), 
-                minute: earliestTime.getMinutes() 
+                hour: nextAvailableTime.getHours(), 
+                minute: nextAvailableTime.getMinutes() 
               };
             }
             
-            // Ensure we don't exceed work hours
-            if (nextAvailableTime.getHours() >= workEndHour) {
-              // This shouldn't happen due to 5-hour limit, but handle it
-              // If today, try to use earliest time, otherwise use work start
-              if (isToday && earliestTime.getHours() < workEndHour) {
-                return { hour: earliestTime.getHours(), minute: earliestTime.getMinutes() };
+            // No tasks at all - use priority-based time
+            const priorityTime = (() => {
+              if (task.status === 'in-progress' || task.priority === 'urgent') {
+                return { hour: workStartHour, minute: 0 };
+              } else if (task.priority === 'high') {
+                return { hour: workStartHour, minute: 0 };
+              } else if (task.priority === 'medium') {
+                return { hour: 11, minute: 0 };
+              } else {
+                return { hour: 14, minute: 0 };
               }
-              return { hour: workStartHour, minute: 0 };
-            }
+            })();
             
-            return { 
-              hour: nextAvailableTime.getHours(), 
-              minute: nextAvailableTime.getMinutes() 
-            };
+            const priorityDateTime = new Date(scheduleDate);
+            priorityDateTime.setHours(priorityTime.hour, priorityTime.minute, 0, 0);
+            
+            if (priorityDateTime >= earliestTime) {
+              return priorityTime;
+            } else {
+              return { hour: earliestTime.getHours(), minute: earliestTime.getMinutes() };
+            }
           };
           
           const availableSlot = findAvailableTimeSlot();
@@ -1025,6 +1168,11 @@ export function useAIScheduler() {
         plan.push({ task, scheduledDate: scheduleDate, reason });
         addToDailyHours(scheduleDate, taskHours, task);
         tasksScheduledToday++;
+        
+        // Track tasks per day for distribution
+        const scheduledDayIndex = finalDaysToAdd;
+        const currentCount = tasksPerDayCount.get(scheduledDayIndex) || 0;
+        tasksPerDayCount.set(scheduledDayIndex, currentCount + 1);
       }
     });
     
