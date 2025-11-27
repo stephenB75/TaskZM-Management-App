@@ -152,6 +152,7 @@ export function AppHeader({
           paddingBottom: HEADER_PADDING_Y_MOBILE,
           minHeight: `${HEADER_HEIGHT}px`,
           height: `${HEADER_HEIGHT}px`,
+          boxSizing: 'border-box', // Include border in height calculation
           transition: 'none', // Disable transitions for instant theme updates
         }}
       >
