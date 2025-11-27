@@ -59,12 +59,14 @@ export function useAIScheduler() {
   };
 
   // Helper: Get appropriate time slot based on category and date
+  // taskDurationMinutes: Duration of the task in minutes (for consistent gap checking)
   const getCategoryTimeSlot = (
     task: Task, 
     scheduleDate: Date, 
     timeSlot: number,
     forceCategoryHours: boolean = false,
-    existingTasksForDay: Task[] = []
+    existingTasksForDay: Task[] = [],
+    taskDurationMinutes?: number // Optional: if provided, use this instead of task.estimatedTime
   ): { hours: number; minutes: number; reason: string } | null => {
     // When forceCategoryHours is true, always use category hours regardless of respectHours setting
     if (!forceCategoryHours && !hoursSettings.respectHours) return null;
@@ -186,7 +188,8 @@ export function useAIScheduler() {
         
         // Calculate gap duration in minutes
         const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / (1000 * 60);
-        const taskDuration = task.estimatedTime || 30;
+        // Use provided duration if available, otherwise fall back to task.estimatedTime
+        const taskDuration = taskDurationMinutes ?? (task.estimatedTime || 30);
         
         // If gap is large enough for this task, use it
         if (gapDuration >= taskDuration) {
@@ -398,6 +401,13 @@ export function useAIScheduler() {
       return estimateTaskHours(task);
     };
     
+    // Helper: Get task duration in minutes (using intelligent estimation)
+    // This ensures consistent duration calculations across all AI functions
+    const getTaskMinutes = (task: Task): number => {
+      const hours = getTaskHours(task);
+      return Math.round(hours * 60); // Convert hours to minutes, rounded
+    };
+    
     // Pre-populate dailyHours with existing scheduled tasks
     tasks.forEach(task => {
       if (task.scheduledDate && task.status !== 'done') {
@@ -503,11 +513,12 @@ export function useAIScheduler() {
     const MIN_HOURS_PER_DAY = 5; // Minimum hours requirement per day
     
     // Helper: Check if adding task would exceed daily limit
+    // Allow tasks that would make the day exactly 5 hours (for efficient packing)
     const wouldExceedLimit = (date: Date, taskHours: number): boolean => {
       const dateKey = getDateKey(date);
       const currentHours = dailyHours.get(dateKey) || 0;
-      // Use >= to strictly enforce the 5-hour limit (no going over)
-      return (currentHours + taskHours) >= MAX_HOURS_PER_DAY;
+      // Use > to allow tasks that would make the day exactly 5 hours (efficient packing)
+      return (currentHours + taskHours) > MAX_HOURS_PER_DAY;
     };
     
     // Helper: Check if day has minimum hours requirement met
@@ -557,9 +568,10 @@ export function useAIScheduler() {
       tasksForDay.push(task);
       dailyTasks.set(dateKey, tasksForDay);
       
-      // Check if this day now exceeds or equals the limit (for tracking/reporting)
+      // Check if this day now exceeds the limit (for tracking/reporting)
+      // Note: Allow exactly 5 hours for efficient packing
       const totalHours = currentHours + taskHours;
-      if (totalHours >= MAX_HOURS_PER_DAY) {
+      if (totalHours > MAX_HOURS_PER_DAY) {
         // Check if we already have this day in exceedsLimit
         const existing = daysExceedingLimit.find(d => d.date === dateKey);
         if (!existing) {
@@ -873,12 +885,16 @@ export function useAIScheduler() {
         }).length;
         
         let timeSlot = categoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
+        // Use consistent duration calculation for all scheduling operations
+        const taskHours = getTaskHours(task);
+        const taskDurationMinutes = Math.round(taskHours * 60); // Convert hours to minutes
         const categoryTime = getCategoryTimeSlot(
           task,
           scheduleDate,
           timeSlot,
           options?.forceCategoryHours ?? false,
-          existingTasksForDay
+          existingTasksForDay,
+          taskDurationMinutes // Pass consistent duration for gap checking
         );
         
         if (categoryTime) {
@@ -913,10 +929,11 @@ export function useAIScheduler() {
           
           // Find the actual available slot using findNextAvailableSlot
           // This ensures we find open slots, respect current time for today, and use category hours
+          // taskDurationMinutes already calculated above for consistency
           const availableSlot = findNextAvailableSlot(
             task.id,
             proposedTime,
-            task.estimatedTime || 30,
+            taskDurationMinutes,
             tasks,
             {
               ensureAfterCurrentTime: isToday,
@@ -940,7 +957,9 @@ export function useAIScheduler() {
           // Find available time slot by checking existing scheduled tasks for this day
           const dateKey = getDateKey(scheduleDate);
           const existingTasksForDay = dailyTasks.get(dateKey) || [];
-          const taskDurationMinutes = task.estimatedTime || 30;
+          // Use consistent duration calculation: convert hours to minutes
+          const taskHours = getTaskHours(task);
+          const taskDurationMinutes = Math.round(taskHours * 60); // Convert hours back to minutes
           
           // Default work hours: 9 AM to 5 PM
           const workStartHour = 9;
