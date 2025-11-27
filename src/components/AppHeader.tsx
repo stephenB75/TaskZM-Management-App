@@ -150,6 +150,8 @@ export function AppHeader({
           paddingRight: HEADER_PADDING_X_MOBILE,
           paddingTop: HEADER_PADDING_Y_MOBILE,
           paddingBottom: HEADER_PADDING_Y_MOBILE,
+          minHeight: `${HEADER_HEIGHT}px`,
+          height: `${HEADER_HEIGHT}px`,
           transition: 'none', // Disable transitions for instant theme updates
         }}
       >
