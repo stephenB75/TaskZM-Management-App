@@ -137,45 +137,40 @@ export function AIRecommendationPanel({
     }
 
     // Calculate date range based on selected period and date
+    // AI Scheduler Suggestions should always start from tomorrow (next day), not today
     let range: { startDate: Date; endDate: Date };
     const baseDate = suggestionDate || new Date();
-    const today = new Date();
-    const todayDateKey = today.toISOString().split('T')[0];
-    const baseDateKey = baseDate.toISOString().split('T')[0];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
     
     if (suggestionPeriod === 'day') {
-      const start = new Date(baseDate);
-      // If suggesting for today, start from current time; otherwise start from beginning of day
-      if (baseDateKey === todayDateKey) {
-        start.setTime(today.getTime()); // Use current time for today
-      } else {
-        start.setHours(0, 0, 0, 0); // Start from beginning of day for future dates
-      }
-      const end = new Date(baseDate);
+      // For day suggestions, start from tomorrow
+      const start = new Date(tomorrow);
+      const end = new Date(tomorrow);
       end.setHours(23, 59, 59, 999);
       range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'week') {
-      // Find Monday of the week containing baseDate
-      const monday = new Date(baseDate);
-      monday.setHours(0, 0, 0, 0);
-      const dayOfWeek = monday.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
-      monday.setDate(monday.getDate() + daysToMonday);
-      const sunday = new Date(monday);
-      sunday.setDate(sunday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
-      range = { startDate: monday, endDate: sunday };
+      // For week suggestions, start from tomorrow and span 7 days
+      const start = new Date(tomorrow);
+      const end = new Date(tomorrow);
+      end.setDate(end.getDate() + 6); // 7 days total (tomorrow + 6 more)
+      end.setHours(23, 59, 59, 999);
+      range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'month') {
-      const year = baseDate.getFullYear();
-      const month = baseDate.getMonth();
-      const start = new Date(year, month, 1);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(year, month + 1, 0);
+      // For month suggestions, start from tomorrow and span 30 days
+      const start = new Date(tomorrow);
+      const end = new Date(tomorrow);
+      end.setDate(end.getDate() + 29); // 30 days total (tomorrow + 29 more)
       end.setHours(23, 59, 59, 999);
       range = { startDate: start, endDate: end };
     } else {
-      // Two weeks (default)
-      range = getTwoWeekDateRange();
+      // Two weeks (default) - start from tomorrow
+      const start = new Date(tomorrow);
+      const end = new Date(tomorrow);
+      end.setDate(end.getDate() + 13); // 14 days total (tomorrow + 13 more)
+      end.setHours(23, 59, 59, 999);
+      range = { startDate: start, endDate: end };
     }
     
     const result = generateSchedulePlan(undefined, range, { forceCategoryHours: true });
@@ -211,43 +206,39 @@ export function AIRecommendationPanel({
     setShowExceedsLimitDialog(false);
     // Regenerate plan and proceed with scheduling using category hours
     // Use the same period as the original suggestion
+    // AI Scheduler Suggestions should always start from tomorrow (next day), not today
     let range: { startDate: Date; endDate: Date };
-    const baseDate = suggestionDate || new Date();
-    const today = new Date();
-    const todayDateKey = today.toISOString().split('T')[0];
-    const baseDateKey = baseDate.toISOString().split('T')[0];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
     
     if (suggestionPeriod === 'day') {
-      const start = new Date(baseDate);
-      // If suggesting for today, start from current time; otherwise start from beginning of day
-      if (baseDateKey === todayDateKey) {
-        start.setTime(today.getTime()); // Use current time for today
-      } else {
-        start.setHours(0, 0, 0, 0); // Start from beginning of day for future dates
-      }
-      const end = new Date(baseDate);
+      // For day suggestions, start from tomorrow
+      const start = new Date(tomorrow);
+      const end = new Date(tomorrow);
       end.setHours(23, 59, 59, 999);
       range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'week') {
-      const monday = new Date(baseDate);
-      const day = monday.getDay();
-      const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
-      monday.setDate(diff);
-      monday.setHours(0, 0, 0, 0);
-      const sunday = new Date(monday);
-      sunday.setDate(sunday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
-      range = { startDate: monday, endDate: sunday };
+      // For week suggestions, start from tomorrow and span 7 days
+      const start = new Date(tomorrow);
+      const end = new Date(tomorrow);
+      end.setDate(end.getDate() + 6); // 7 days total (tomorrow + 6 more)
+      end.setHours(23, 59, 59, 999);
+      range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'month') {
-      const year = baseDate.getFullYear();
-      const month = baseDate.getMonth();
-      const start = new Date(year, month, 1);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(year, month + 1, 0);
+      // For month suggestions, start from tomorrow and span 30 days
+      const start = new Date(tomorrow);
+      const end = new Date(tomorrow);
+      end.setDate(end.getDate() + 29); // 30 days total (tomorrow + 29 more)
       end.setHours(23, 59, 59, 999);
       range = { startDate: start, endDate: end };
     } else {
-      range = getTwoWeekDateRange();
+      // Two weeks (default) - start from tomorrow
+      const start = new Date(tomorrow);
+      const end = new Date(tomorrow);
+      end.setDate(end.getDate() + 13); // 14 days total (tomorrow + 13 more)
+      end.setHours(23, 59, 59, 999);
+      range = { startDate: start, endDate: end };
     }
     
     const result = generateSchedulePlan(undefined, range, { 

@@ -566,7 +566,14 @@ export function DashboardView({
     }
 
     // AI Suggestions: Generate suggestions using category hours for two week period
-    const range = getTwoWeekDateRange();
+    // Start from tomorrow (next day), not today
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const end = new Date(tomorrow);
+    end.setDate(end.getDate() + 13); // 14 days total (tomorrow + 13 more)
+    end.setHours(23, 59, 59, 999);
+    const range = { startDate: tomorrow, endDate: end };
     const result = generateSchedulePlan(undefined, range, { 
       forceCategoryHours: true,
       enforceMinimumHours: true // Always enforce 5-hour minimum before pushing to next day
