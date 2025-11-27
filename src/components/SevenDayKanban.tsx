@@ -29,6 +29,7 @@ import {
   KANBAN_SPACING,
 } from '../lib/kanban-constants';
 import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING } from '../lib/layout-constants';
+import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
@@ -453,6 +454,7 @@ export function SevenDayKanban({
       return null;
     }
     const dayTasks = getTasksForDay(currentColumn.dateString);
+    const dayLayouts = buildTaskLayouts(dayTasks);
     const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
 
     return (
@@ -527,12 +529,13 @@ export function SevenDayKanban({
                           </Button>
                         </motion.div>
                       ) : (
-                        (Array.isArray(dayTasks) ? dayTasks : []).map((task) => (
+                        dayLayouts.map(({ task, marginTop }) => (
                           <div
                             key={task.id}
                             style={{ 
                               transform: 'scale(0.85)',
                               transformOrigin: 'top center',
+                              marginTop: `${marginTop}px`,
                             }}
                           >
                             <DraggableTaskCard
@@ -635,6 +638,7 @@ export function SevenDayKanban({
                 const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
                       const globalIndex = groupIndex * 7 + columnIndex;
                       const isSecondWeek = groupIndex === 1;
+                      const dayLayouts = buildTaskLayouts(dayTasks);
 
                 return (
                   <motion.div
@@ -706,7 +710,7 @@ export function SevenDayKanban({
                       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 space-y-2 h-full',
+                            'p-2 sm:p-3 flex flex-col h-full',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
@@ -740,13 +744,14 @@ export function SevenDayKanban({
                               </motion.div>
                             ) : (
                               <>
-                                {dayTasks.map((task) => (
+                                {dayLayouts.map(({ task, marginTop }) => (
                                   <div 
                                     key={task.id} 
                                     className="px-2 sm:px-2.5"
                                     style={{ 
                                       transform: 'scale(0.85)',
                                       transformOrigin: 'top center',
+                                      marginTop: `${marginTop}px`,
                                     }}
                                   >
                                   <DraggableTaskCard

@@ -217,6 +217,13 @@ export const TASK_CARD_HEIGHT_CONFIG = {
   },
 } as const;
 
+export const TASK_CARD_LAYOUT_METRICS = {
+  pixelsPerMinute:
+    TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins /
+    TASK_CARD_HEIGHT_CONFIG.thresholds.long, // 200px / 60 mins ≈ 3.33px per minute
+  minGapPx: 12, // Minimum visual gap between stacked tasks
+} as const;
+
 // Padding and Spacing
 export const TASK_CARD_SPACING = {
   padding: {

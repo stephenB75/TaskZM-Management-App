@@ -17,10 +17,13 @@ import { toast } from "sonner";
 import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
-import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS } from "../lib/task-card-constants";
+import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING } from "../lib/layout-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
+import { buildTaskLayouts } from "../lib/task-layout";
+
+const TIMELINE_SCROLL_OFFSET_PX = 200;
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -111,6 +114,8 @@ export function TodayAgendaView({
     });
   }, [incompleteTasks]);
 
+  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks), [todayTasks]);
+
   // Auto-scroll to current time on mount and when tasks change
   useEffect(() => {
     if (todayTasks.length === 0) return;
@@ -147,10 +152,12 @@ export function TodayAgendaView({
           // Find the scroll viewport by looking for the parent ScrollArea's viewport
           const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
           if (scrollViewport) {
-            // Estimate: each hour is roughly 60px, start from 8 AM
-            const hoursFrom8AM = Math.max(0, currentHour - 8);
-            const minutesOffset = (currentMinute / 60) * 60;
-            const estimatedScrollTop = Math.max(0, (hoursFrom8AM * 60) + minutesOffset - 200); // 200px offset for header
+            const baselineMinutes = TASK_CALCULATION_CONSTANTS.dragDrop.hourMin * 60;
+            const offsetMinutes = Math.max(0, currentTimeInMinutes - baselineMinutes);
+            const estimatedScrollTop = Math.max(
+              0,
+              offsetMinutes * TASK_CARD_LAYOUT_METRICS.pixelsPerMinute - TIMELINE_SCROLL_OFFSET_PX
+            );
             scrollViewport.scrollTop = estimatedScrollTop;
           }
         }
@@ -451,9 +458,9 @@ export function TodayAgendaView({
             style={{
               paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
                 ? `${TIMELINE_PADDING.mobile}px` 
-                : undefined
-            }} 
-            style={{ paddingBottom: KANBAN_MOBILE.bottomPaddingCalc }}
+                : undefined,
+              paddingBottom: KANBAN_MOBILE.bottomPaddingCalc,
+            }}
           >
             {todayTasks.length === 0 ? (
               <div className={cn(
@@ -494,29 +501,33 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                <div className="space-y-3 w-full relative z-10" style={{ overflow: 'visible' }}>
-                  {todayTasks.map((task, index) => (
-                    <DraggableTodayAgendaTask
+                <div className="flex flex-col w-full relative z-10" style={{ overflow: 'visible' }}>
+                  {timelineTaskLayouts.map(({ task, marginTop }, index) => (
+                    <div
                       key={task.id}
-                      task={task}
-                      index={index}
-                      totalTasks={todayTasks.length}
-                      onClick={handleTaskClick}
-                      getTaskHeight={getTaskHeight}
-                      getTaskTime={getTaskTime}
-                      getPriorityColor={getPriorityColor}
-                      isNextUp={task.id === nextUpTaskId}
-                      onComplete={() => {
-                        // Clear any existing timeout
-                        if (confettiTimeoutRef.current) {
-                          clearTimeout(confettiTimeoutRef.current);
-                        }
-                        // Only trigger confetti if it's not already showing
-                        if (!showConfetti) {
-                          setShowConfetti(true);
-                        }
+                      style={{
+                        marginTop: `${marginTop}px`,
                       }}
-                    />
+                    >
+                      <DraggableTodayAgendaTask
+                        task={task}
+                        index={index}
+                        totalTasks={todayTasks.length}
+                        onClick={handleTaskClick}
+                        getTaskHeight={getTaskHeight}
+                        getTaskTime={getTaskTime}
+                        getPriorityColor={getPriorityColor}
+                        isNextUp={task.id === nextUpTaskId}
+                        onComplete={() => {
+                          if (confettiTimeoutRef.current) {
+                            clearTimeout(confettiTimeoutRef.current);
+                          }
+                          if (!showConfetti) {
+                            setShowConfetti(true);
+                          }
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
 

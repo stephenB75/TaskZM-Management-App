@@ -7,6 +7,7 @@ import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/tim
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
+import { TASK_CARD_LAYOUT_METRICS } from '../lib/task-card-constants';
 import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
 import { toast } from 'sonner';
 import {
@@ -27,10 +28,16 @@ interface DragDropContextType {
 
 const DragDropContext = createContext<DragDropContextType | undefined>(undefined);
 
-export function useDragDrop() {
+export function useDragDrop(optional?: boolean) {
   const context = useContext(DragDropContext);
-  if (context === undefined) {
-    throw new Error('useDragDrop must be used within a DragDropProvider');
+  if (!context) {
+    if (optional) {
+      return { activeId: null };
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('useDragDrop called outside DragDropProvider. Returning fallback context.');
+    }
+    return { activeId: null };
   }
   return context;
 }
@@ -57,6 +64,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       },
     })
   );
+
+  const pixelsPerMinute = TASK_CARD_LAYOUT_METRICS.pixelsPerMinute;
 
   const handleDragStart = (event: DragStartEvent) => {
     const taskId = event.active.id as string;
@@ -305,7 +314,6 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             
             // Calculate time based on pixel position in timeline
             // Start from current time, not category start
-            const pixelsPerMinute = 1.5; // More accurate estimate
             const minutesFromCurrent = Math.max(0, contentY / pixelsPerMinute);
             
             const totalMinutes = currentTotalMinutes + minutesFromCurrent;
@@ -434,7 +442,6 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               const currentTotalMinutes = currentTimeRounded.getHours() * 60 + currentTimeRounded.getMinutes();
               
               // Convert pixels to minutes from current time
-              const pixelsPerMinute = 1.5;
               const minutesFromCurrent = Math.max(0, contentY / pixelsPerMinute);
               
               const totalMinutes = currentTotalMinutes + minutesFromCurrent;
@@ -508,7 +515,6 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                 : 0;
               
               // Convert pixels to minutes
-              const pixelsPerMinute = 1.5;
               const minutesFromStart = Math.max(0, contentY / pixelsPerMinute);
               
               const totalMinutes = (startHour * 60) + startMinute + minutesFromStart;
@@ -787,7 +793,6 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           const contentY = Math.max(0, adjustedY - paddingTop);
           
           // Calculate time from pixel position
-          const pixelsPerMinute = 1.5;
           const minutesFromStart = Math.max(0, contentY / pixelsPerMinute);
           
           // Determine start hour based on category hours or default
