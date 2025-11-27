@@ -686,13 +686,15 @@ export function useAIScheduler() {
       
       // ALWAYS enforce weekend avoidance for work/projects tasks (unconditional rule)
       const category = getTaskCategory(task);
+      // Define preferWeekend in outer scope so it's available in both blocks below
+      const preferWeekend = category === 'personal';
+      
       if (category) {
         const baseDate = new Date(tomorrow);
         baseDate.setDate(baseDate.getDate() + daysToAdd);
         const isCurrentWeekend = isWeekend(baseDate);
         
         // Work and projects should ALWAYS avoid weekends, personal prefers weekends
-        const preferWeekend = category === 'personal';
         const shouldAvoidWeekend = (category === 'work' || category === 'projects') && isCurrentWeekend;
         
         // If work/projects task is scheduled on weekend, ALWAYS try to find a weekday
