@@ -397,18 +397,10 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           dropTime.setSeconds(0);
           dropTime.setMilliseconds(0);
           
-          // For today, ensure drop time is not before current time
-          if (isToday) {
-            const currentTimeRounded = getCurrentTimeRounded();
-            if (dropTime.getTime() >= currentTimeRounded.getTime()) {
-              requestedTime = dropTime;
-            } else {
-              // Drop position is before current time - use current time as starting point
-              requestedTime = currentTimeRounded;
-            }
-          } else {
-            requestedTime = dropTime;
-          }
+          // For today, use drop time as preferred placement time
+          // findNextAvailableSlot will ensure it's after current time when searching
+          // This allows us to try placing at the drop position first, then search from current time if needed
+          requestedTime = dropTime;
         }
       }
       
@@ -560,37 +552,16 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           }
         }
         
-        // If still no time, use current time (for today) or category hours
+        // If still no time, use default time (for placement) - findNextAvailableSlot will ensure it's after current time
         if (!requestedTime) {
-          if (isToday) {
-            // For today, always start from current time (rounded up)
-            requestedTime = getCurrentTimeRounded();
-            
-            // Apply category hours if available - ensure we're within category hours
-            if (categoryHours) {
-              const requestedTotalMinutes = requestedTime.getHours() * 60 + requestedTime.getMinutes();
-              // If current time is before category start, use category start
-              if (requestedTotalMinutes < categoryHours.start) {
-                requestedTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
-                // Round up to next 15-minute slot
-                const categoryStartMinutes = categoryHours.start % 60;
-                const roundedMinutes = Math.ceil(categoryStartMinutes / 15) * 15;
-                if (roundedMinutes >= 60) {
-                  requestedTime.setHours(requestedTime.getHours() + 1);
-                  requestedTime.setMinutes(0);
-                } else {
-                  requestedTime.setMinutes(roundedMinutes);
-                }
-              }
-            }
+          // Use default time (9 AM or category start) as the preferred placement time
+          // findNextAvailableSlot will start searching from current time but try to place at this default time
+          requestedTime = new Date(today);
+          if (categoryHours) {
+            requestedTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
           } else {
-            // For future dates, use category hours start or earliest allowed time
-            requestedTime = new Date(today);
-            if (categoryHours) {
-              requestedTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
-            } else {
-              requestedTime.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.hourMin, 0, 0, 0);
-            }
+            // Use default hour (9 AM) as the preferred placement time
+            requestedTime.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.defaultHour, 0, 0, 0);
           }
         }
       }
