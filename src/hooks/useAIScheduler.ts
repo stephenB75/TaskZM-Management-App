@@ -1551,23 +1551,33 @@ export function useAIScheduler() {
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
-      // Create date range starting from the next day after the selected day
-      // AI re-scheduler should schedule from the next day, not from the selected day itself
-      const selectedDateKey = date.toISOString().split('T')[0];
-      const nextDay = new Date(date);
-      nextDay.setDate(nextDay.getDate() + 1);
-      nextDay.setHours(0, 0, 0, 0);
+      // Create date range for the selected day
+      // If the selected day is today or in the past, start from tomorrow
+      // Otherwise, schedule within the selected day
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDay = new Date(date);
+      selectedDay.setHours(0, 0, 0, 0);
       
-      // For re-scheduler, span two weeks from the next day
-      const endDate = new Date(nextDay);
-      endDate.setDate(endDate.getDate() + 13); // 14 days total (next day + 13 more)
-      endDate.setHours(23, 59, 59, 999);
+      const scheduleStartDate = selectedDay.getTime() <= today.getTime()
+        ? (() => {
+            // Selected day is today or in the past, start from tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            return tomorrow;
+          })()
+        : selectedDay; // Selected day is in the future, use it
       
-      // Generate new schedule for these specific tasks, spanning two weeks from next day
+      // End date: end of the selected day (or tomorrow if selected day is today/past)
+      const scheduleEndDate = new Date(scheduleStartDate);
+      scheduleEndDate.setHours(23, 59, 59, 999);
+      
+      // Generate new schedule for these specific tasks within the selected day
       // Shuffle tasks and enforce minimum hours for rescheduling
       const result = generateSchedulePlan(
         tasksForReschedule,
-        { startDate: nextDay, endDate: endDate },
+        { startDate: scheduleStartDate, endDate: scheduleEndDate },
         { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
       );
       if (result.scheduled.length > 0) {
@@ -1608,22 +1618,38 @@ export function useAIScheduler() {
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
-      // Create date range starting from the next day after the selected date
-      // AI re-scheduler should schedule from the next day, spanning two weeks
-      const nextDay = new Date(startDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      nextDay.setHours(0, 0, 0, 0);
+      // Calculate the week range from the selected date (Monday to Sunday)
+      // Find the Monday of the week containing startDate
+      const weekStart = new Date(startDate);
+      weekStart.setHours(0, 0, 0, 0);
+      const dayOfWeek = weekStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
+      weekStart.setDate(weekStart.getDate() + daysToMonday);
       
-      // For re-scheduler, span two weeks from the next day
-      const endDate = new Date(nextDay);
-      endDate.setDate(endDate.getDate() + 13); // 14 days total (next day + 13 more)
-      endDate.setHours(23, 59, 59, 999);
+      // Determine the actual start date: if the week start is today or in the past, start from tomorrow
+      // Otherwise, start from the week start date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const scheduleStartDate = weekStart.getTime() <= today.getTime() 
+        ? (() => {
+            // Week start is today or in the past, start from tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            return tomorrow;
+          })()
+        : weekStart; // Week start is in the future, use it
       
-      // Generate new schedule for these specific tasks, spanning two weeks from next day
+      // Calculate end date: Sunday of the selected week
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6); // Sunday (6 days after Monday)
+      weekEnd.setHours(23, 59, 59, 999);
+      
+      // Generate new schedule for these specific tasks within the selected week
       // Shuffle tasks and enforce minimum hours for rescheduling
       const result = generateSchedulePlan(
         tasksForReschedule,
-        { startDate: nextDay, endDate: endDate },
+        { startDate: scheduleStartDate, endDate: weekEnd },
         { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
       );
       if (result.scheduled.length > 0) {
@@ -1664,22 +1690,34 @@ export function useAIScheduler() {
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
-      // Create date range starting from the next day after the selected date
-      // AI re-scheduler should schedule from the next day, spanning two weeks
-      const nextDay = new Date(date);
-      nextDay.setDate(nextDay.getDate() + 1);
-      nextDay.setHours(0, 0, 0, 0);
+      // Calculate the month range from the selected date (first day to last day of month)
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const monthStart = new Date(year, month, 1);
+      monthStart.setHours(0, 0, 0, 0);
       
-      // For re-scheduler, span two weeks from the next day
-      const endDate = new Date(nextDay);
-      endDate.setDate(endDate.getDate() + 13); // 14 days total (next day + 13 more)
-      endDate.setHours(23, 59, 59, 999);
+      // Determine the actual start date: if month start is today or in the past, start from tomorrow
+      // Otherwise, start from the month start date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const scheduleStartDate = monthStart.getTime() <= today.getTime() 
+        ? (() => {
+            // Month start is today or in the past, start from tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            return tomorrow;
+          })()
+        : monthStart; // Month start is in the future, use it
       
-      // Generate new schedule for these specific tasks, spanning two weeks from next day
+      // Calculate end date: last day of the selected month
+      const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+      
+      // Generate new schedule for these specific tasks within the selected month
       // Shuffle tasks and enforce minimum hours for rescheduling
       const result = generateSchedulePlan(
         tasksForReschedule,
-        { startDate: nextDay, endDate: endDate },
+        { startDate: scheduleStartDate, endDate: monthEnd },
         { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
       );
       if (result.scheduled.length > 0) {

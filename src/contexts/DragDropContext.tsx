@@ -7,7 +7,7 @@ import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/tim
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
-import { TASK_CARD_LAYOUT_METRICS } from '../lib/task-card-constants';
+import { TASK_CARD_LAYOUT_METRICS, TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS } from '../lib/task-card-constants';
 import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
 import { toast } from 'sonner';
 import {
@@ -217,48 +217,59 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               }))
               .sort((a, b) => a.start - b.start);
             
-            // Calculate task heights using the same logic as getTaskHeight in TodayAgendaView
-            // This provides more accurate positioning
+            // Calculate task heights using single standard base height + auto-adjust for components (matching DraggableTaskCard)
+            // Standard base height: 80px for all tasks, regardless of duration
             const calculateTaskHeight = (task: Task): number => {
-              const minutes = task.estimatedTime || 30;
+              // Use single standard base height for all tasks
+              let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard base
               
-              // Get base height based on duration (standard starting height before components)
-              const getBaseHeightForDuration = (mins: number): number => {
-                if (mins >= 20 && mins <= 25) return 100;
-                if (mins >= 30 && mins <= 35) return 200;
-                if (mins >= 40 && mins <= 45) return 250;
-                if (mins >= 50 && mins <= 60) return 320;
-                if (mins >= 100 && mins <= 120) return 400;
-                if (mins >= 200 && mins <= 220) return 480;
-                
-                // Interpolate for values between ranges
-                if (mins < 20) {
-                  return 60 + (mins / 20) * (100 - 60);
-                }
-                if (mins > 25 && mins < 30) {
-                  return 100 + ((mins - 25) / 5) * (200 - 100);
-                }
-                if (mins > 35 && mins < 40) {
-                  return 200 + ((mins - 35) / 5) * (250 - 200);
-                }
-                if (mins > 45 && mins < 50) {
-                  return 250 + ((mins - 45) / 5) * (320 - 250);
-                }
-                if (mins > 60 && mins < 100) {
-                  return 320 + ((mins - 60) / 40) * (400 - 320);
-                }
-                if (mins > 120 && mins < 200) {
-                  return 400 + ((mins - 120) / 80) * (480 - 400);
-                }
-                if (mins > 220) {
-                  const additionalHours = (mins - 220) / 120;
-                  return 480 + additionalHours * 80;
-                }
-                
-                return 100; // Default fallback
-              };
+              // Auto-adjust: Check for content components
+              const hasDescription = !!task.description;
+              const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
+              const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+              const hasTrackedTime = task.actualTime && task.actualTime > 0;
               
-              return getBaseHeightForDuration(minutes);
+              // Auto-adjust: Add height for description
+              if (hasDescription) {
+                const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
+                const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
+                const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
+                  ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap
+                  : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
+                const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
+                baseHeight += descriptionHeight;
+              }
+              
+              // Auto-adjust: Add height for assigned users
+              if (hasAssignedUsers) {
+                const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base;
+                const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
+                  ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced
+                  : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard;
+                baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
+              }
+              
+              // Auto-adjust: Add height for tracked time
+              if (hasTrackedTime) {
+                baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime;
+              }
+              
+              // Auto-adjust: Add height for subtasks
+              if (hasSubtasks) {
+                const subtaskCount = Math.min(task.subtasks.length, 3);
+                const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight;
+                const subtaskSpacing = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.desktop; // Use desktop spacing for consistency
+                const subtaskHeight = subtaskCount * subtaskItemHeight + 
+                  (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
+                const subtaskTopSpacing = hasDescription ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing : 0;
+                baseHeight += subtaskHeight + subtaskTopSpacing;
+              }
+              
+              // Ensure height is within bounds (minimum 80px, maximum 550px)
+              const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px minimum
+              const maxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px maximum
+              
+              return Math.max(Math.min(baseHeight, maxHeight), minHeight);
             };
             
             let accumulatedHeight = 0;

@@ -276,53 +276,17 @@ export function TodayAgendaView({
     const badgeWrapHeight = badgesWillWrap ? TASK_CARD_HEIGHT_CONFIG.componentHeights.badgeWrap : 0;
     
     const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
-    const hasDescription = task.description && task.estimatedTime && task.estimatedTime >= 60;
+    const hasDescription = !!task.description; // Always show description if present, regardless of duration
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     
-    // Use standard heights from config as base, then scale based on duration
-    // This ensures visual time-blocking where height represents duration proportionally
-    let baseHeight: number;
+    // Use single standard base height for all tasks, then auto-adjust for components
+    // Standard base height: 80px for all tasks, regardless of duration
+    let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard base
     
-    if (isShortTask) {
-      // Short tasks (< 45 mins): Scale from 80px to 100px
-      const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px
-      const maxHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium; // 100px
-      // Linear scaling: minHeight + (minutes / 45) * (maxHeight - minHeight)
-      baseHeight = minHeight + (minutes / TASK_CARD_HEIGHT_CONFIG.thresholds.short) * (maxHeight - minHeight);
-    } else if (isMediumTask) {
-      // Medium tasks (45-59 mins): Scale from 120px to 170px
-      const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionFromShort; // 120px
-      const maxHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong; // 170px
-      // Linear scaling: minHeight + ((minutes - 45) / 15) * (maxHeight - minHeight)
-      const durationRange = TASK_CARD_HEIGHT_CONFIG.thresholds.long - TASK_CARD_HEIGHT_CONFIG.thresholds.short;
-      baseHeight = minHeight + ((minutes - TASK_CARD_HEIGHT_CONFIG.thresholds.short) / durationRange) * (maxHeight - minHeight);
-    } else {
-      // Long tasks (>= 60 mins): Scale from 200px to 500px, then auto-adjust for components
-      const longHeights = TASK_CARD_HEIGHT_CONFIG.baseHeights.long;
-      if (minutes <= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
-        baseHeight = longHeights.at60mins; // 200px at 60 mins
-      } else if (minutes <= 90) {
-        // Interpolate between 60 mins (200px) and 90 mins (275px)
-        baseHeight = longHeights.at60mins + ((minutes - TASK_CARD_HEIGHT_CONFIG.thresholds.long) / 30) * (longHeights.at90mins - longHeights.at60mins);
-      } else if (minutes <= 120) {
-        // Interpolate between 90 mins (275px) and 120 mins (350px)
-        baseHeight = longHeights.at90mins + ((minutes - 90) / 30) * (longHeights.at120mins - longHeights.at90mins);
-      } else if (minutes <= 150) {
-        // Interpolate between 120 mins (350px) and 150 mins (425px)
-        baseHeight = longHeights.at120mins + ((minutes - 120) / 30) * (longHeights.at150mins - longHeights.at120mins);
-      } else if (minutes <= 180) {
-        // Interpolate between 150 mins (425px) and 180 mins (500px)
-        baseHeight = longHeights.at150mins + ((minutes - 150) / 30) * (longHeights.at180mins - longHeights.at150mins);
-      } else {
-        // Beyond 180 mins, cap at 500px base
-        baseHeight = longHeights.beyond180mins;
-      }
-    }
-    
-    // Add height for badge wrapping
+    // Auto-adjust: Add height for badge wrapping
     baseHeight += badgeWrapHeight;
     
-    // Add extra height for description (only for long tasks)
+    // Auto-adjust: Add height for description (if description exists)
     if (hasDescription) {
       const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
       const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
@@ -333,8 +297,8 @@ export function TodayAgendaView({
       baseHeight += descriptionHeight;
     }
     
-    // Add extra height for assigned users (for medium and long tasks, short tasks use base)
-    if (hasAssignedUsers && !isShortTask) {
+    // Auto-adjust: Add height for assigned users (if present)
+    if (hasAssignedUsers) {
       const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base;
       const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
         ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced
@@ -342,7 +306,7 @@ export function TodayAgendaView({
       baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
     }
     
-    // Add extra height for subtasks
+    // Auto-adjust: Add height for subtasks (if present)
     if (hasSubtasks) {
       const subtaskCount = Math.min(task.subtasks.length, 3);
       const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight;
@@ -355,20 +319,9 @@ export function TodayAgendaView({
       baseHeight += subtaskHeight + subtaskTopSpacing;
     }
     
-    // Ensure height is within bounds
-    const minHeight = isShortTask 
-      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base // 80px
-      : isMediumTask
-      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min // 120px
-      : TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight; // 200px
-    
-    // Set max height based on task type
-    // Short tasks: max 100px, Medium tasks: max 170px, Long tasks: max 550px (with auto-adjustment)
-    const effectiveMaxHeight = isShortTask
-      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium // 100px max for short
-      : isMediumTask
-      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong // 170px max for medium
-      : TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px max for long (with auto-adjustment)
+    // Ensure height is within bounds (minimum 80px, maximum 550px)
+    const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px minimum
+    const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px maximum
     
     return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);
   }, []); // Empty deps - function is pure, only depends on task parameter

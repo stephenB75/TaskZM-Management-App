@@ -108,6 +108,7 @@ export function DraggableTodayAgendaTask({
       currentEstimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.short &&
       Boolean(task.actualTime && task.actualTime > 0) &&
       !timerState.isRunning;
+    const currentShowInlinePomodoroTimer = Boolean(isShortTask && currentCanUsePomodoro);
     
     // Count badges that will be displayed in the top row
     const hasTime = !!(task.scheduledDate || task.dueDate);
@@ -127,62 +128,17 @@ export function DraggableTodayAgendaTask({
     const hasPomodoro = currentPomodoroIsRunning;
     const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
     const hasTrackedTimeFull = task.actualTime && task.actualTime > 0;
-    const hasDescription = task.description && task.estimatedTime && task.estimatedTime >= 60;
+    const hasDescription = !!task.description; // Always show description if present, regardless of duration
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     
-    // Use standard heights from config as base, then scale based on duration
-    // This ensures visual time-blocking where height represents duration proportionally
-    let baseHeight: number;
+    // Use single standard base height for all tasks, then auto-adjust for components
+    // Standard base height: 80px for all tasks, regardless of duration
+    let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard base
     
-    if (isShortTask) {
-      // Short tasks (< 45 mins): Scale from 80px to 100px
-      const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px
-      const maxHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium; // 100px
-      // Linear scaling: minHeight + (duration / 45) * (maxHeight - minHeight)
-      baseHeight = minHeight + (duration / TASK_CARD_HEIGHT_CONFIG.thresholds.short) * (maxHeight - minHeight);
-      
-      // Adjust for components (add extra height on top of scaled base)
-      if (hasTracking && hasAssignedUsers) {
-        baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withBoth - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +30
-      } else if (hasTracking) {
-        baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withTracking - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +20
-      } else if (hasAssignedUsers) {
-        baseHeight += TASK_CARD_HEIGHT_CONFIG.baseHeights.short.withAssigned - TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // +20
-      }
-    } else if (isMediumTask) {
-      // Medium tasks (45-59 mins): Scale from 120px to 170px
-      const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionFromShort; // 120px
-      const maxHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong; // 170px
-      // Linear scaling: minHeight + ((duration - 45) / 15) * (maxHeight - minHeight)
-      const durationRange = TASK_CARD_HEIGHT_CONFIG.thresholds.long - TASK_CARD_HEIGHT_CONFIG.thresholds.short;
-      baseHeight = minHeight + ((duration - TASK_CARD_HEIGHT_CONFIG.thresholds.short) / durationRange) * (maxHeight - minHeight);
-    } else {
-      // Long tasks (>= 60 mins): Scale from 200px to 500px, then auto-adjust for components
-      const longHeights = TASK_CARD_HEIGHT_CONFIG.baseHeights.long;
-      if (duration <= TASK_CARD_HEIGHT_CONFIG.thresholds.long) {
-        baseHeight = longHeights.at60mins; // 200px at 60 mins
-      } else if (duration <= 90) {
-        // Interpolate between 60 mins (200px) and 90 mins (275px)
-        baseHeight = longHeights.at60mins + ((duration - TASK_CARD_HEIGHT_CONFIG.thresholds.long) / 30) * (longHeights.at90mins - longHeights.at60mins);
-      } else if (duration <= 120) {
-        // Interpolate between 90 mins (275px) and 120 mins (350px)
-        baseHeight = longHeights.at90mins + ((duration - 90) / 30) * (longHeights.at120mins - longHeights.at90mins);
-      } else if (duration <= 150) {
-        // Interpolate between 120 mins (350px) and 150 mins (425px)
-        baseHeight = longHeights.at120mins + ((duration - 120) / 30) * (longHeights.at150mins - longHeights.at120mins);
-      } else if (duration <= 180) {
-        // Interpolate between 150 mins (425px) and 180 mins (500px)
-        baseHeight = longHeights.at150mins + ((duration - 150) / 30) * (longHeights.at180mins - longHeights.at150mins);
-      } else {
-        // Beyond 180 mins, cap at 500px base
-        baseHeight = longHeights.beyond180mins;
-      }
-    }
-    
-    // Add height for badge wrapping (applies to all task types)
+    // Auto-adjust: Add height for badge wrapping
     baseHeight += badgeWrapHeight;
     
-    // Add extra height for description (only for long tasks >= 60 mins)
+    // Auto-adjust: Add height for description (if description exists)
     if (hasDescription) {
       const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
       const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
@@ -193,8 +149,8 @@ export function DraggableTodayAgendaTask({
       baseHeight += descriptionHeight;
     }
     
-    // Add extra height for assigned users (for medium and long tasks, short tasks already accounted in base)
-    if (hasAssignedUsers && !isShortTask) {
+    // Auto-adjust: Add height for assigned users (if present)
+    if (hasAssignedUsers) {
       const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base;
       const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
         ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced
@@ -202,17 +158,28 @@ export function DraggableTodayAgendaTask({
       baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
     }
     
-    // Add extra height for pomodoro timer if present (only for long tasks, shown absolutely)
-    if (hasPomodoro && isLongTask) {
+    // Auto-adjust: Add height for pomodoro timer if present (shown absolutely, not inline)
+    // Inline pomodoro is part of base layout, absolute pomodoro needs extra height
+    if (hasPomodoro && !currentShowInlinePomodoroTimer) {
       baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.pomodoroTimer;
     }
     
-    // Add extra height for tracked time display if present (for medium and long tasks)
-    if (hasTrackedTimeFull && !isShortTask) {
+    // Auto-adjust: Add height for tracking badge if shown at bottom (for tasks >= 45 mins)
+    // Tracking badge is shown at top for short tasks, at bottom for longer tasks
+    const trackingBadgeAtBottom = hasPomodoro && !currentShowTrackingBadgeTopRow;
+    if (trackingBadgeAtBottom) {
+      // Tracking badge at bottom needs height (similar to tracked time)
+      baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime; // Use same height as tracked time
+    }
+    
+    // Auto-adjust: Add height for tracked time display if present
+    // Tracked time is shown at top for short tasks, at bottom for longer tasks, but always needs height
+    if (hasTrackedTimeFull && !currentShowTrackedTimeTopRow) {
+      // Only add height if tracked time is shown at bottom (not at top where it's part of badge row)
       baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime;
     }
     
-    // Add extra height for subtasks (applies to all task types)
+    // Auto-adjust: Add height for subtasks (if present)
     if (hasSubtasks) {
       const subtaskCount = Math.min(task.subtasks.length, 3);
       const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight;
@@ -228,19 +195,9 @@ export function DraggableTodayAgendaTask({
     // Apply timeline multiplier (1.247) for timeline view
     baseHeight *= TASK_CARD_HEIGHT_CONFIG.heightMultiplier;
     
-    // Ensure height is within bounds
-    const minHeight = (isShortTask 
-      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base // 80px
-      : isMediumTask
-      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min // 120px
-      : TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight) * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 200px
-    
-    // Set max height based on task type, apply multiplier for timeline view
-    const effectiveMaxHeight = (isShortTask
-      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.short.transitionToMedium // 100px max for short
-      : isMediumTask
-      ? TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.transitionToLong // 170px max for medium
-      : TASK_CARD_HEIGHT_CONFIG.maxHeight) * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 550px max for long
+    // Ensure height is within bounds (minimum 80px, maximum 550px, both with multiplier)
+    const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 80px minimum
+    const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 550px maximum
     
     return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);
   }, [
@@ -250,7 +207,6 @@ export function DraggableTodayAgendaTask({
     subtasksKey,
     task.actualTime,
     task.description,
-    task.estimatedTime,
     task.scheduledDate,
     task.dueDate,
     task.tags?.length,
@@ -460,9 +416,9 @@ export function DraggableTodayAgendaTask({
                 ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0))
                 ? TASK_CARD_SPACING.timeline.short.withComponents // More space when components present
                 : TASK_CARD_SPACING.timeline.short.mobile, // Standard compact with adequate spacing
-              // Enhanced padding for tasks 1 hour or more to accommodate descriptions
-              task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.long && !isMobile && TASK_CARD_SPACING.timeline.long.desktop,
-              task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.long && isMobile && TASK_CARD_SPACING.timeline.long.mobile,
+              // Enhanced padding for tasks with descriptions to accommodate descriptions
+              task.description && !isMobile && TASK_CARD_SPACING.timeline.long.desktop,
+              task.description && isMobile && TASK_CARD_SPACING.timeline.long.mobile,
             )}
             style={{
               height: `${taskCardHeight}px`,
