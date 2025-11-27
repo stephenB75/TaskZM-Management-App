@@ -28,6 +28,7 @@ import {
   KANBAN_TEXT_SIZES,
   KANBAN_SPACING,
 } from '../lib/kanban-constants';
+import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING } from '../lib/layout-constants';
 import type { Task } from '../types';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
@@ -74,11 +75,12 @@ export function SevenDayKanban({
   React.useEffect(() => {
     const updateColumnWidth = () => {
       const width = window.innerWidth;
-      if (width < 768) {
+      // Use constants for breakpoints
+      if (width < VIEWPORT_BREAKPOINTS.mobile) {
         setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.mobile);
-      } else if (width >= 768 && width < 1024) {
+      } else if (width >= VIEWPORT_BREAKPOINTS.mobile && width < VIEWPORT_BREAKPOINTS.tablet) {
         setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.tablet);
-      } else if (width >= 1024 && width < 1280) {
+      } else if (width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop) {
         setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.smallMonitor);
       } else {
         setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.desktop);
@@ -464,7 +466,7 @@ export function SevenDayKanban({
       >
 
         {/* Mobile Single Column */}
-        <div className="flex-1 overflow-hidden px-4 pt-2 pb-24 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="flex-1 overflow-hidden px-4 pt-2 pb-24 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: KANBAN_MOBILE.bottomPaddingCalc }}>
           <DroppableColumn id={currentColumn.dateString} className="h-full">
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <ScrollArea className="h-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}>
@@ -711,7 +713,7 @@ export function SevenDayKanban({
                             ...(!isDark && {
                               backgroundColor: `${getDayColors(column.dayName).background}${Math.round(getDayColors(column.dayName).backgroundOpacity * 2.55).toString(16).padStart(2, '0')}`,
                             }),
-                                  minHeight: '200px',
+                                  minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
                           }}
                         >
                           <AnimatePresence mode="popLayout">
@@ -720,7 +722,8 @@ export function SevenDayKanban({
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                      className="flex flex-col items-center justify-center py-12 text-center min-h-[200px] pointer-events-none"
+                                      className="flex flex-col items-center justify-center py-12 text-center pointer-events-none"
+                                      style={{ minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px` }}
                               >
                                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
                                   <Plus className="w-6 h-6 text-primary/40" />

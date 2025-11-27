@@ -55,7 +55,49 @@ export const HEADER_MOBILE_SPACER_HEIGHT = '1.75rem'; // h-7 = 1.75rem (28px) - 
 export const HEADER_MOBILE_SPACER_HEIGHT_PX = 28; // h-7 = 28px - for calculations
 // Spacer that accounts for header height and safe-area inset
 // Header uses box-sizing: border-box, so HEADER_HEIGHT includes the border
-export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // Header height (including border) + safe area
+// Add a small buffer (2px) to account for any rounding or line-height issues
+export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_HEIGHT}px + 2px + env(safe-area-inset-top, 0px))`; // Header height (including border) + buffer + safe area
+
+// Viewport Breakpoints (matching Tailwind defaults)
+export const VIEWPORT_BREAKPOINTS = {
+  mobile: 768, // md breakpoint
+  tablet: 1024, // lg breakpoint
+  desktop: 1280, // xl breakpoint
+} as const;
+
+// Timeline Constants
+export const TIMELINE_PADDING = {
+  mobile: 27.6, // Timeline padding on mobile
+  desktop: 16, // Timeline padding on desktop
+} as const;
+
+// Mobile Text Sizes
+export const MOBILE_TEXT_SIZES = {
+  xsmall: 10, // text-[10px]
+  small: 11, // text-[11px]
+  base: 12, // text-xs = 12px
+} as const;
+
+// Mobile Spacing
+export const MOBILE_SPACING = {
+  contentPadding: {
+    x: {
+      mobile: 16, // px-4 = 16px
+      tablet: 24, // sm:px-6 = 24px
+    },
+    y: {
+      top: {
+        mobile: 8, // pt-2 = 8px
+        tablet: 16, // sm:pt-4 = 16px
+      },
+      bottom: {
+        mobile: 24, // pb-6 = 24px
+        tablet: 32, // sm:pb-8 = 32px
+      },
+    },
+  },
+  emptyStateMinHeight: 200, // min-h-[200px] = 200px
+} as const;
 
 // Calculate panel width based on viewport
 export const getPanelWidth = (): number => {

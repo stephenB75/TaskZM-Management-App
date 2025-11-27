@@ -152,7 +152,9 @@ export function AppHeader({
           paddingBottom: HEADER_PADDING_Y_MOBILE,
           minHeight: `${HEADER_HEIGHT}px`,
           height: `${HEADER_HEIGHT}px`,
+          maxHeight: `${HEADER_HEIGHT}px`, // Prevent header from growing beyond set height
           boxSizing: 'border-box', // Include border in height calculation
+          overflow: 'hidden', // Prevent content overflow
           transition: 'none', // Disable transitions for instant theme updates
         }}
       >

@@ -19,7 +19,8 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING } from "../lib/layout-constants";
+import { KANBAN_MOBILE } from "../lib/kanban-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -247,7 +248,7 @@ export function TodayAgendaView({
   // Auto-adjusts for: badge wrapping, assigned users, tracking, descriptions
   const getTaskHeight = useCallback((task: Task) => {
     const minutes = task.estimatedTime || TASK_CARD_HEIGHT_CONFIG.defaultDuration;
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet;
     
     // Determine task category
     const isShortTask = minutes < 45;
@@ -446,8 +447,13 @@ export function TodayAgendaView({
         >
           <div 
             ref={timelineContainerRef}
-            className="px-5 pt-[27.6px] pb-24 sm:pb-safe md:pt-4 md:pb-4 w-full relative" 
-            style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
+            className="px-5 pb-24 sm:pb-safe md:pt-4 md:pb-4 w-full relative"
+            style={{
+              paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
+                ? `${TIMELINE_PADDING.mobile}px` 
+                : undefined
+            }} 
+            style={{ paddingBottom: KANBAN_MOBILE.bottomPaddingCalc }}
           >
             {todayTasks.length === 0 ? (
               <div className={cn(

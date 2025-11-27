@@ -48,7 +48,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, getPanelWidth } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
@@ -75,7 +75,7 @@ function AppContent() {
   // Initialize view: 'today' on mobile, 'dashboard' on desktop
   const getInitialView = () => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth < 768 ? 'today' : 'dashboard';
+      return window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'today' : 'dashboard';
     }
     return 'dashboard';
   };
@@ -149,7 +149,7 @@ function AppContent() {
     if (hasInitializedView.current) return;
     
     // Check if we're on mobile (either via hook or window width)
-    const checkMobile = isMobile || (typeof window !== 'undefined' && window.innerWidth < 768);
+    const checkMobile = isMobile || (typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile);
     
     // Only set to 'today' on mobile if currently on 'dashboard'
     // This ensures mobile always starts with 'today' view on refresh/reopen

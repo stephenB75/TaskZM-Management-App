@@ -7,6 +7,7 @@ import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/tim
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
+import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -181,8 +182,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           const adjustedY = relativeY + scrollTop;
           
           // Estimate time based on position
-          // Timeline padding: 27.6px on mobile, 16px on desktop
-          const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
+          // Use constants for timeline padding
+          const paddingTop = window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? TIMELINE_PADDING.mobile : TIMELINE_PADDING.desktop;
           const contentY = Math.max(0, adjustedY - paddingTop);
           
           // Get existing tasks to calculate more accurate time from position
@@ -422,8 +423,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             const scrollTop = scrollViewport?.scrollTop || 0;
             const adjustedY = relativeY + scrollTop;
             
-            // Timeline padding
-            const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
+            // Timeline padding - use constants
+            const paddingTop = window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? TIMELINE_PADDING.mobile : TIMELINE_PADDING.desktop;
             const contentY = Math.max(0, adjustedY - paddingTop);
             
             // For today, always start calculation from current time (not category start)
@@ -781,8 +782,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           const scrollTop = scrollViewport?.scrollTop || 0;
           const adjustedY = relativeY + scrollTop;
           
-          // Timeline padding (similar to today agenda)
-          const paddingTop = window.innerWidth < 1024 ? 27.6 : 16;
+          // Timeline padding (similar to today agenda) - use constants
+          const paddingTop = window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? TIMELINE_PADDING.mobile : TIMELINE_PADDING.desktop;
           const contentY = Math.max(0, adjustedY - paddingTop);
           
           // Calculate time from pixel position
