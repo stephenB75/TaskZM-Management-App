@@ -279,21 +279,49 @@ export function TodayAgendaView({
     const hasDescription = !!task.description; // Always show description if present, regardless of duration
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     
-    // Use single standard base height for all tasks, then auto-adjust for components
-    // Standard base height: 80px for all tasks, regardless of duration
-    let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard base
+    // STANDARD HEIGHT CALCULATION: Use standard heights first, then auto-adjust for components
+    // Step 1: Get standard height for this duration category (this is the BASE)
+    let baseHeight: number;
+    if (isShortTask) {
+      // Short tasks (< 45 mins): Use standard base height
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard
+    } else if (isMediumTask) {
+      // Medium tasks (45-60 mins): Use standard minimum height
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px standard
+    } else {
+      // Long tasks (>= 60 mins): Use standard heights at defined points
+      if (minutes >= 180) {
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px standard
+      } else if (minutes >= 150) {
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins; // 425px standard
+      } else if (minutes >= 120) {
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins; // 350px standard (2 hours)
+      } else if (minutes >= 90) {
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins; // 275px standard
+      } else {
+        // 60-89 mins: Use standard base height (1 hour = 200px)
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px standard
+      }
+    }
+    
+    // Step 2: Now add component heights on top of the standard base height
     
     // Auto-adjust: Add height for badge wrapping
     baseHeight += badgeWrapHeight;
     
     // Auto-adjust: Add height for description (if description exists)
+    // Calculate actual description height based on content, with minimal padding
     if (hasDescription) {
-      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
+      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
       const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
+      // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
+      const actualLines = Math.max(estimatedLines, 1);
+      const descriptionContentHeight = actualLines * lineHeight;
+      // Add minimal bottom padding only when needed (0px if assigned users follow, 6px otherwise)
       const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
         ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap
         : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
-      const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
+      const descriptionHeight = descriptionContentHeight + descriptionBottomPadding;
       baseHeight += descriptionHeight;
     }
     
@@ -319,8 +347,15 @@ export function TodayAgendaView({
       baseHeight += subtaskHeight + subtaskTopSpacing;
     }
     
-    // Ensure height is within bounds (minimum 80px, maximum 550px)
-    const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px minimum
+    // Step 3: Enforce bounds - minimum based on task category, maximum 550px
+    let minHeight: number;
+    if (isShortTask) {
+      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px minimum for short tasks
+    } else if (isMediumTask) {
+      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px minimum for medium tasks
+    } else {
+      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight; // 200px minimum for long tasks
+    }
     const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px maximum
     
     return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);

@@ -131,21 +131,49 @@ export function DraggableTodayAgendaTask({
     const hasDescription = !!task.description; // Always show description if present, regardless of duration
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     
-    // Use single standard base height for all tasks, then auto-adjust for components
-    // Standard base height: 80px for all tasks, regardless of duration
-    let baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard base
+    // STANDARD HEIGHT CALCULATION: Use standard heights first, then auto-adjust for components
+    // Step 1: Get standard height for this duration category (this is the BASE)
+    let baseHeight: number;
+    if (isShortTask) {
+      // Short tasks (< 45 mins): Use standard base height
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard
+    } else if (isMediumTask) {
+      // Medium tasks (45-60 mins): Use standard minimum height
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px standard
+    } else {
+      // Long tasks (>= 60 mins): Use standard heights at defined points
+      if (currentEstimatedTimeValue >= 180) {
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px standard
+      } else if (currentEstimatedTimeValue >= 150) {
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins; // 425px standard
+      } else if (currentEstimatedTimeValue >= 120) {
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins; // 350px standard (2 hours)
+      } else if (currentEstimatedTimeValue >= 90) {
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins; // 275px standard
+      } else {
+        // 60-89 mins: Use standard base height (1 hour = 200px)
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px standard
+      }
+    }
+    
+    // Step 2: Now add component heights on top of the standard base height
     
     // Auto-adjust: Add height for badge wrapping
     baseHeight += badgeWrapHeight;
     
     // Auto-adjust: Add height for description (if description exists)
+    // Calculate actual description height based on content, with minimal padding
     if (hasDescription) {
-      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 4;
+      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
       const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
+      // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
+      const actualLines = Math.max(estimatedLines, 1);
+      const descriptionContentHeight = actualLines * lineHeight;
+      // Add minimal bottom padding only when needed (0px if assigned users follow, 6px otherwise)
       const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
         ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap
         : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
-      const descriptionHeight = Math.max(estimatedLines * lineHeight, TASK_CARD_CALCULATIONS.description.minHeight) + descriptionBottomPadding;
+      const descriptionHeight = descriptionContentHeight + descriptionBottomPadding;
       baseHeight += descriptionHeight;
     }
     
@@ -158,23 +186,25 @@ export function DraggableTodayAgendaTask({
       baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
     }
     
-    // Auto-adjust: Add height for pomodoro timer if present (shown absolutely, not inline)
-    // Inline pomodoro is part of base layout, absolute pomodoro needs extra height
-    if (hasPomodoro && !currentShowInlinePomodoroTimer) {
-      baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.pomodoroTimer;
-    }
+    // Auto-adjust: Pomodoro timer is absolutely positioned, so it doesn't add to height
+    // It overlays on top of the content at the bottom right corner
     
     // Auto-adjust: Add height for tracking badge if shown at bottom (for tasks >= 45 mins)
-    // Tracking badge is shown at top for short tasks, at bottom for longer tasks
-    const trackingBadgeAtBottom = hasPomodoro && !currentShowTrackingBadgeTopRow;
+    // Rendered when: task.estimatedTime >= 45 mins && pomodoroIsRunning
+    const trackingBadgeAtBottom = hasEstimatedTime && 
+      currentEstimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && 
+      hasPomodoro;
     if (trackingBadgeAtBottom) {
       // Tracking badge at bottom needs height (similar to tracked time)
       baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime; // Use same height as tracked time
     }
     
     // Auto-adjust: Add height for tracked time display if present
-    // Tracked time is shown at top for short tasks, at bottom for longer tasks, but always needs height
-    if (hasTrackedTimeFull && !currentShowTrackedTimeTopRow) {
+    // Rendered when: task.estimatedTime >= 45 mins && task.actualTime > 0
+    const trackedTimeAtBottom = hasEstimatedTime && 
+      currentEstimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && 
+      hasTrackedTimeFull;
+    if (trackedTimeAtBottom) {
       // Only add height if tracked time is shown at bottom (not at top where it's part of badge row)
       baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime;
     }
@@ -192,16 +222,24 @@ export function DraggableTodayAgendaTask({
       baseHeight += subtaskHeight + subtaskTopSpacing;
     }
     
-    // Apply timeline multiplier (1.247) for timeline view
+    // Step 3: Apply timeline multiplier (1.247) for timeline view
     baseHeight *= TASK_CARD_HEIGHT_CONFIG.heightMultiplier;
     
-    // Ensure height is within bounds (minimum 80px, maximum 550px, both with multiplier)
-    const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 80px minimum
+    // Step 4: Enforce bounds - minimum based on task category, maximum 550px (both with multiplier)
+    let minHeight: number;
+    if (isShortTask) {
+      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 80px minimum
+    } else if (isMediumTask) {
+      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 120px minimum
+    } else {
+      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 200px minimum
+    }
     const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight * TASK_CARD_HEIGHT_CONFIG.heightMultiplier; // 550px maximum
     
     return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);
   }, [
     // Base dependencies that affect height calculation
+    task.estimatedTime, // CRITICAL: Must include estimatedTime so height recalculates when duration changes
     timerState.isRunning,
     assignedToKey,
     subtasksKey,

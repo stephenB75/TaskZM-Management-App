@@ -276,11 +276,11 @@ export const TASK_CARD_SPACING = {
   long: {
     mobile: {
       standard: 'px-2 py-2 pb-2',
-      withComponents: 'px-2 py-2 pb-3',
+      withComponents: 'px-2 py-2 pb-2', // Reduced from pb-3 to pb-2 (8px) since assigned users are absolutely positioned
     },
     desktop: {
       standard: 'md:px-3 md:py-2 md:pb-2',
-      withComponents: 'md:px-3 md:py-2 md:pb-4',
+      withComponents: 'md:px-3 md:py-2 md:pb-2', // Reduced from pb-4 to pb-2 (8px) since assigned users are absolutely positioned
     },
   },
   fallback: {
