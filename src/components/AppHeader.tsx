@@ -141,6 +141,10 @@ export function AppHeader({
         key={`mobile-header-${actualTheme}`}
         className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm"
         style={{
+          position: 'fixed', // Explicitly set position to ensure it's fixed
+          top: 0,
+          left: 0,
+          right: 0,
           zIndex: HEADER_Z_INDEX,
           backgroundColor: isDark 
             ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
