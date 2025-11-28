@@ -525,8 +525,9 @@ export function useAIScheduler() {
     // Ensure end date is at end of day
     endDate.setHours(23, 59, 59, 999);
     
-    // Use startDate as the base for scheduling (tomorrow or provided start date)
-    const tomorrow = startDate;
+    // Use startDate as the base for scheduling (selected date for rescheduling, or tomorrow for new scheduling)
+    // This ensures rescheduling uses the selected date properly
+    const baseDate = startDate;
     
     const MAX_HOURS_PER_DAY = 5;
     const MIN_HOURS_PER_DAY = 5; // Minimum hours requirement per day
@@ -687,18 +688,18 @@ export function useAIScheduler() {
       if (task.dueDate) {
         const dueDate = new Date(task.dueDate);
         dueDate.setHours(0, 0, 0, 0);
-        const suggestedDate = new Date(tomorrow);
+        const suggestedDate = new Date(baseDate);
         suggestedDate.setDate(suggestedDate.getDate() + daysToAdd);
         
         // If suggested date is after due date, schedule closer to due date
         // But respect the date range constraint
         if (suggestedDate > dueDate) {
-          const daysDiff = Math.max(0, Math.floor((dueDate.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24)));
+          const daysDiff = Math.max(0, Math.floor((dueDate.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24)));
           const newDaysToAdd = Math.max(0, daysDiff);
           
           // Only adjust if the new date is within the allowed range
-          if (!dateRange || (new Date(tomorrow.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) >= startDate && 
-                             new Date(tomorrow.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) <= endDate)) {
+          if (!dateRange || (new Date(baseDate.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) >= startDate && 
+                             new Date(baseDate.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) <= endDate)) {
             daysToAdd = newDaysToAdd;
             reason = 'Due date approaching - prioritized';
           }
@@ -711,8 +712,8 @@ export function useAIScheduler() {
       const preferWeekend = category === 'personal';
       
       if (category) {
-        const baseDate = new Date(tomorrow);
-        baseDate.setDate(baseDate.getDate() + daysToAdd);
+        const testDate = new Date(baseDate);
+        testDate.setDate(testDate.getDate() + daysToAdd);
         const isCurrentWeekend = isWeekend(baseDate);
         
         // Work and projects should ALWAYS avoid weekends, personal prefers weekends
@@ -721,10 +722,10 @@ export function useAIScheduler() {
         // If work/projects task is scheduled on weekend, ALWAYS try to find a weekday
         if (shouldAvoidWeekend) {
           const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
-          const preferredDaysToAdd = findNextPreferredDay(tomorrow, false, maxSearchDays); // false = prefer weekday
+          const preferredDaysToAdd = findNextPreferredDay(baseDate, false, maxSearchDays); // false = prefer weekday
           
           // Only switch days if we found a weekday and it's within the date range
-          const preferredDate = new Date(tomorrow);
+          const preferredDate = new Date(baseDate);
           preferredDate.setDate(preferredDate.getDate() + preferredDaysToAdd);
           const isWithinRange = !dateRange || (preferredDate >= startDate && preferredDate <= endDate);
           
@@ -740,11 +741,11 @@ export function useAIScheduler() {
       // Apply category-based date preference if respectHours is enabled OR forceCategoryHours is true
       if (hoursSettings.respectHours || options?.forceCategoryHours) {
         if (category) {
-          const baseDate = new Date(tomorrow);
-          baseDate.setDate(baseDate.getDate() + daysToAdd);
+          const testDate = new Date(baseDate);
+          testDate.setDate(testDate.getDate() + daysToAdd);
           
           // Check if category hours are enabled for the current day type
-          const isCurrentWeekend = isWeekend(baseDate);
+          const isCurrentWeekend = isWeekend(testDate);
           const dayHours = isCurrentWeekend ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
           const categoryHours = dayHours[category];
           
@@ -752,10 +753,10 @@ export function useAIScheduler() {
           // When forceCategoryHours is true, we should still try to schedule on appropriate days
           if (!categoryHours.enabled) {
             const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 7;
-            const preferredDaysToAdd = findNextPreferredDay(tomorrow, preferWeekend, maxSearchDays);
+            const preferredDaysToAdd = findNextPreferredDay(baseDate, preferWeekend, maxSearchDays);
             
             // Only switch days if we found a preferred day and it's within the date range
-            const preferredDate = new Date(tomorrow);
+            const preferredDate = new Date(baseDate);
             preferredDate.setDate(preferredDate.getDate() + preferredDaysToAdd);
             const isWithinRange = !dateRange || (preferredDate >= startDate && preferredDate <= endDate);
             
@@ -815,7 +816,7 @@ export function useAIScheduler() {
         for (const dayInfo of daysNeedingHours) {
           // Check if this task can fit in this day (doesn't exceed 5-hour limit)
           if (!wouldExceedLimit(dayInfo.date, taskHours)) {
-            const daysDiff = Math.floor((dayInfo.date.getTime() - tomorrow.getTime()) / (1000 * 60 * 60 * 24));
+            const daysDiff = Math.floor((dayInfo.date.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
             const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
             if (daysDiff >= 0 && daysDiff < maxDays) {
               finalDaysToAdd = daysDiff;
@@ -841,7 +842,7 @@ export function useAIScheduler() {
         
         // First pass: collect all days with available space
         for (let dayOffset = 0; dayOffset < maxDaysToSearch; dayOffset++) {
-          const testDate = new Date(tomorrow);
+          const testDate = new Date(baseDate);
           testDate.setDate(testDate.getDate() + dayOffset);
           
           // Check if testDate is within the allowed date range
@@ -899,7 +900,7 @@ export function useAIScheduler() {
         }
         
         // Calculate time slot intelligently based on task duration and existing schedule
-        const scheduleDate = new Date(tomorrow);
+        const scheduleDate = new Date(baseDate);
         scheduleDate.setDate(scheduleDate.getDate() + finalDaysToAdd);
         
         // Try to get category-based time slot first
@@ -1639,31 +1640,29 @@ export function useAIScheduler() {
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
       const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
       
-      // Calculate the week range from the selected date (Monday to Sunday)
-      // Find the Monday of the week containing startDate
-      const weekStart = new Date(startDate);
-      weekStart.setHours(0, 0, 0, 0);
-      const dayOfWeek = weekStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
-      weekStart.setDate(weekStart.getDate() + daysToMonday);
+      // Use the selected date as the base for rescheduling
+      // For rescheduling, we want to use the selected date directly, not always go to Monday
+      // This allows users to reschedule tasks starting from any selected date
+      const selectedDate = new Date(startDate);
+      selectedDate.setHours(0, 0, 0, 0);
       
-      // Determine the actual start date: if the week start is today or in the past, start from tomorrow
-      // Otherwise, start from the week start date
+      // Determine the actual start date: if the selected date is today or in the past, start from tomorrow
+      // Otherwise, start from the selected date
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const scheduleStartDate = weekStart.getTime() <= today.getTime() 
+      const scheduleStartDate = selectedDate.getTime() <= today.getTime() 
         ? (() => {
-            // Week start is today or in the past, start from tomorrow
+            // Selected date is today or in the past, start from tomorrow
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(0, 0, 0, 0);
             return tomorrow;
           })()
-        : weekStart; // Week start is in the future, use it
+        : selectedDate; // Selected date is in the future, use it
       
-      // Calculate end date: Sunday of the selected week
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6); // Sunday (6 days after Monday)
+      // Calculate end date: 7 days from the start date (one week)
+      const weekEnd = new Date(scheduleStartDate);
+      weekEnd.setDate(weekEnd.getDate() + 6); // 7 days total (start date + 6 more days)
       weekEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks within the selected week
