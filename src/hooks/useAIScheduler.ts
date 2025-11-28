@@ -409,10 +409,29 @@ export function useAIScheduler() {
     };
     
     // Pre-populate dailyHours with existing scheduled tasks
+    // BUT: If we're rescheduling within a date range, exclude tasks being rescheduled
+    // This ensures we don't double-count tasks that are being rescheduled
+    const tasksBeingRescheduled = tasksToSchedule ? new Set(tasksToSchedule.map(t => t.id)) : new Set();
+    
     tasks.forEach(task => {
       if (task.scheduledDate && task.status !== 'done') {
+        // Skip tasks that are being rescheduled (they'll be rescheduled)
+        if (tasksBeingRescheduled.has(task.id)) {
+          return; // Skip this task, it's being rescheduled
+        }
+        
         const taskDate = new Date(task.scheduledDate);
         const dateKey = getDateKey(taskDate);
+        
+        // If we're rescheduling within a date range, clear hours for those days
+        // This ensures we start fresh for the rescheduled days
+        if (dateRange && taskDate >= dateRange.startDate && taskDate <= dateRange.endDate) {
+          // This task is in the reschedule range but not being rescheduled
+          // Keep it in the tracking (it's an existing task outside the reschedule)
+          // Actually, if it's in the range, we should exclude it too
+          return; // Skip tasks in the reschedule range
+        }
+        
         const taskHours = getTaskHours(task);
         const currentHours = dailyHours.get(dateKey) || 0;
         dailyHours.set(dateKey, currentHours + taskHours);
@@ -558,15 +577,17 @@ export function useAIScheduler() {
     };
     
     // Helper: Add task hours to daily tracking
+    // This is called when scheduling a task, so we track the hours for that day
     const addToDailyHours = (date: Date, taskHours: number, task: Task): void => {
       const dateKey = getDateKey(date);
       const currentHours = dailyHours.get(dateKey) || 0;
-      dailyHours.set(dateKey, currentHours + taskHours);
+      const newHours = currentHours + taskHours;
+      dailyHours.set(dateKey, newHours);
       
-      // Track tasks per day
-      const tasksForDay = dailyTasks.get(dateKey) || [];
-      tasksForDay.push(task);
-      dailyTasks.set(dateKey, tasksForDay);
+      // Also track the task in dailyTasks for time slot calculations
+      const dayTasks = dailyTasks.get(dateKey) || [];
+      dayTasks.push(task);
+      dailyTasks.set(dateKey, dayTasks);
       
       // Check if this day now exceeds the limit (for tracking/reporting)
       // Note: Allow exactly 5 hours for efficient packing
