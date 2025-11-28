@@ -1807,6 +1807,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         });
         
         toast.success('Folder created');
+        try {
+          await syncFoldersFromServer(currentWorkspaceId, true);
+        } catch (syncError) {
+          logger.error('Failed to refresh folders after creation:', syncError);
+        }
+        debouncedSync(true);
       } catch (error) {
         logger.error('Failed to save folder to server:', error);
         // Keep the optimistic update, but mark it for sync
@@ -1822,7 +1828,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       logger.warn('No workspace or access token, saving folder locally only');
       toast.success('Folder created (offline)');
     }
-  }, [workspaceId, accessToken, availableTags, addAvailableTag]);
+  }, [workspaceId, accessToken, availableTags, addAvailableTag, debouncedSync]);
 
   const updateFolder = useCallback(async (folderId: string, updates: Partial<Folder>) => {
     // Find the folder to get the old name
@@ -1987,12 +1993,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         return updated;
       });
       toast.success('Folder updated');
+      try {
+        if (currentWorkspaceId) {
+          await syncFoldersFromServer(currentWorkspaceId, true);
+        } else if (workspaceId) {
+          await syncFoldersFromServer(workspaceId, true);
+        }
+      } catch (syncError) {
+        logger.error('Failed to refresh folders after update:', syncError);
+      }
+      debouncedSync(true);
     } catch (error) {
       logger.error('Failed to update folder on server:', error);
       // Keep the optimistic update, but mark it for sync
       toast.error('Folder updated offline, will sync when online');
     }
-  }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, addAvailableTag, removeAvailableTag]);
+  }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, addAvailableTag, removeAvailableTag, debouncedSync]);
 
   // Expose ensureWorkspace for manual triggering (moved before deleteFolder to avoid initialization error)
   const ensureWorkspace = useCallback(async (): Promise<string | null> => {
@@ -2077,6 +2093,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
     
     const folderName = folderToDelete.name;
+    let lastWorkspaceUsed: string | null = null;
     let serverDeleteSuccess = false;
 
     // Try to delete folder from server first (source of truth)
@@ -2085,6 +2102,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       try {
         // Ensure workspace exists before deleting folder
         let currentWorkspaceId = workspaceId;
+        lastWorkspaceUsed = currentWorkspaceId ?? null;
         if (!currentWorkspaceId) {
           const validWorkspaceId = await ensureWorkspace();
           if (!validWorkspaceId) {
@@ -2092,6 +2110,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             logger.warn('Workspace not available, proceeding with local deletion only');
           } else {
             currentWorkspaceId = validWorkspaceId;
+            lastWorkspaceUsed = validWorkspaceId;
           }
         }
 
@@ -2100,6 +2119,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           try {
             await api.deleteFolder(currentWorkspaceId, folderId);
             serverDeleteSuccess = true;
+            lastWorkspaceUsed = currentWorkspaceId;
           } catch (deleteError) {
             const errorMessage = deleteError instanceof Error ? deleteError.message : String(deleteError);
             // If workspace not found, try to ensure it exists and retry
@@ -2116,6 +2136,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                   // Retry deleting with valid workspace ID
                   await api.deleteFolder(validWorkspaceId, folderId);
                   serverDeleteSuccess = true;
+                  lastWorkspaceUsed = validWorkspaceId;
                   // Update workspace ID in state if it changed
                   if (workspaceId !== validWorkspaceId) {
                     setWorkspaceId(validWorkspaceId);
@@ -2181,7 +2202,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     } else {
       toast.success('Folder deleted (offline)');
     }
-  }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag, ensureWorkspace, createWorkspaceIfNeeded, setWorkspaceId]);
+
+    if (serverDeleteSuccess && lastWorkspaceUsed) {
+      try {
+        await syncFoldersFromServer(lastWorkspaceUsed, true);
+      } catch (syncError) {
+        logger.error('Failed to refresh folders after deletion:', syncError);
+      }
+      debouncedSync(true);
+    }
+  }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag, ensureWorkspace, createWorkspaceIfNeeded, setWorkspaceId, debouncedSync]);
 
   const updateHoursSettings = useCallback(async (settings: Partial<HoursSettings>) => {
     const updatedSettings = { ...hoursSettings, ...settings };

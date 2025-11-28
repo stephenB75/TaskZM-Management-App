@@ -48,7 +48,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
@@ -542,7 +542,7 @@ function AppContent() {
         />
         <main className="flex-1 overflow-hidden relative flex">
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
-          <div className="lg:hidden h-full flex-1 flex flex-col" style={{ paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER }}>
+          <div className="lg:hidden h-full flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
               {currentView === 'dashboard' && (
                 <DashboardView 
