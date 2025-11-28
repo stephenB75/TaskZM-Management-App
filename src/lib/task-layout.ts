@@ -9,7 +9,59 @@ export interface TaskLayoutSpacing {
   marginTop: number;
 }
 
-export function buildTaskLayouts(tasks: Task[], minGapOverride?: number): TaskLayoutSpacing[] {
+// Helper: Calculate approximate task height based on duration and components
+// This matches the logic in DraggableTaskCard for consistency
+function estimateTaskHeight(task: Task): number {
+  const duration = getDurationMinutes(task);
+  const hasDescription = !!task.description;
+  const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
+  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  
+  // Get standard height based on duration
+  let baseHeight: number;
+  if (duration < 45) {
+    baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px
+  } else if (duration < 60) {
+    baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px
+  } else {
+    // Long tasks: use duration-based heights
+    if (duration >= 180) {
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px
+    } else if (duration >= 150) {
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins; // 425px
+    } else if (duration >= 120) {
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins; // 350px
+    } else if (duration >= 90) {
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins; // 275px
+    } else {
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px
+    }
+  }
+  
+  // Add component heights (simplified estimation)
+  if (hasDescription) {
+    const estimatedLines = task.description ? Math.ceil(task.description.length / 50) : 1;
+    baseHeight += Math.max(estimatedLines * 16, 16) + (hasAssignedUsers && !hasSubtasks ? 0 : 6);
+  }
+  if (hasAssignedUsers && duration >= 45) {
+    // For medium/long tasks, assigned users are absolutely positioned, so they don't add height
+    // Only add spacing if description is present
+    if (hasDescription && !hasSubtasks) {
+      baseHeight += 20 + 16; // base + reduced spacing
+    } else if (!hasDescription) {
+      baseHeight += 20 + 20; // base + standard spacing
+    }
+  }
+  if (hasSubtasks) {
+    const subtaskCount = Math.min(task.subtasks.length, 3);
+    baseHeight += subtaskCount * 14 + (subtaskCount > 1 ? (subtaskCount - 1) * 4 : 0) + (hasDescription ? 6 : 0);
+  }
+  
+  // Enforce max height
+  return Math.min(baseHeight, TASK_CARD_HEIGHT_CONFIG.maxHeight);
+}
+
+export function buildTaskLayouts(tasks: Task[], minGapOverride?: number, useTimeBasedSpacing: boolean = false): TaskLayoutSpacing[] {
   if (!Array.isArray(tasks) || tasks.length === 0) {
     return [];
   }
@@ -17,25 +69,66 @@ export function buildTaskLayouts(tasks: Task[], minGapOverride?: number): TaskLa
   const pixelsPerMinute = TASK_CARD_LAYOUT_METRICS.pixelsPerMinute;
   const minGapPx = typeof minGapOverride === 'number' ? minGapOverride : TASK_CARD_LAYOUT_METRICS.minGapPx;
 
-  const firstStartMinutes = getStartMinutes(tasks[0]);
+  // Sort tasks by scheduled time to ensure proper ordering
+  const sortedTasks = [...tasks].sort((a, b) => {
+    const timeA = getStartMinutes(a);
+    const timeB = getStartMinutes(b);
+    // Tasks with times come first, sorted by time
+    if (timeA !== null && timeB !== null) {
+      return timeA - timeB;
+    }
+    if (timeA !== null) return -1;
+    if (timeB !== null) return 1;
+    // Both have no time, maintain original order
+    return 0;
+  });
+
+  // If not using time-based spacing, just stack tasks with minimum gap
+  if (!useTimeBasedSpacing) {
+    return sortedTasks.map((task, index) => ({
+      task,
+      marginTop: index === 0 ? 0 : minGapPx,
+    }));
+  }
+
+  // Time-based spacing (for timeline view)
+  const firstStartMinutes = getStartMinutes(sortedTasks[0]);
   let previousEndMinutes = firstStartMinutes ?? DEFAULT_DAY_START_MINUTES;
 
-  return tasks.map((task, index) => {
+  return sortedTasks.map((task, index) => {
     const startMinutes = getStartMinutes(task);
     const duration = getDurationMinutes(task);
 
-    let marginTop = index === 0 ? 0 : minGapPx;
+    let marginTop = 0;
 
-    if (startMinutes !== null) {
-      if (index === 0) {
+    if (index === 0) {
+      // First task: no margin
+      if (startMinutes !== null) {
         previousEndMinutes = startMinutes;
       }
-      const gapMinutes = Math.max(0, startMinutes - previousEndMinutes);
-      const gapPixels = gapMinutes * pixelsPerMinute;
-      marginTop = index === 0 ? Math.max(gapPixels, 0) : Math.max(gapPixels, minGapPx);
-      previousEndMinutes = Math.max(previousEndMinutes, startMinutes + duration);
+      marginTop = 0;
     } else {
-      previousEndMinutes += duration;
+      if (startMinutes !== null) {
+        // Calculate gap based on time difference between tasks
+        const gapMinutes = startMinutes - previousEndMinutes;
+        
+        if (gapMinutes > 0) {
+          // There's a time gap: use time-based spacing (pixels per minute)
+          const gapPixels = gapMinutes * pixelsPerMinute;
+          marginTop = Math.max(gapPixels, minGapPx);
+        } else {
+          // Tasks overlap or are at same time: use minimum gap
+          marginTop = minGapPx;
+        }
+        
+        // Update previous end time to the end of this task
+        previousEndMinutes = startMinutes + duration;
+      } else {
+        // Task without scheduled time: stack with minimum gap
+        marginTop = minGapPx;
+        // Estimate end time based on previous task end + duration
+        previousEndMinutes += duration;
+      }
     }
 
     return {

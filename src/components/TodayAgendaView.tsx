@@ -114,7 +114,7 @@ export function TodayAgendaView({
     });
   }, [incompleteTasks]);
 
-  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks), [todayTasks]);
+  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, undefined, true), [todayTasks]); // Use time-based spacing for timeline view
 
   // Auto-scroll to current time on mount and when tasks change
   useEffect(() => {

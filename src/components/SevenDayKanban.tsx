@@ -454,7 +454,7 @@ export function SevenDayKanban({
       return null;
     }
     const dayTasks = getTasksForDay(currentColumn.dateString);
-    const dayLayouts = buildTaskLayouts(dayTasks);
+    const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
     const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
 
     return (
@@ -638,7 +638,7 @@ export function SevenDayKanban({
                 const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
                       const globalIndex = groupIndex * 7 + columnIndex;
                       const isSecondWeek = groupIndex === 1;
-                      const dayLayouts = buildTaskLayouts(dayTasks);
+                      const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
 
                 return (
                   <motion.div
