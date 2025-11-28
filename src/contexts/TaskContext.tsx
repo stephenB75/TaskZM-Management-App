@@ -1020,9 +1020,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Debounce helper to prevent multiple rapid syncs
   const lastEventSyncRef = useRef<number>(0);
-  const DEBOUNCE_INTERVAL = 10000; // Only sync once per 10 seconds from events - reduced for better cross-device sync
+  const DEBOUNCE_INTERVAL = 2000; // Only sync once per 2 seconds from events - reduced for better cross-device sync
   const lastFullSyncRef = useRef<number>(0);
-  const FULL_SYNC_INTERVAL = 60000; // Full sync (all resources) every 1 minute - reduced for better cross-device sync
+  const FULL_SYNC_INTERVAL = 30000; // Full sync (all resources) every 30 seconds - reduced for better cross-device sync
 
   const debouncedSync = useCallback(async (fullSync: boolean = false) => {
     if (!workspaceId || !accessToken) return;
@@ -1393,8 +1393,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         
         // Reload from server to get the authoritative version
         await loadTasksFromServer(validWorkspaceId);
-        // Trigger immediate sync to notify other devices (debounced)
+        // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
         debouncedSync(false);
+        // Also trigger a direct sync after a short delay to ensure other devices get updates quickly
+        setTimeout(() => {
+          if (workspaceId && accessToken) {
+            syncWithServer(workspaceId, false).catch(err => {
+              logger.debug('Background sync after task update:', err);
+            });
+          }
+        }, 1000);
         
         if (nextOccurrenceTask) {
           toast.success('Next occurrence created', {
@@ -1422,8 +1430,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 await api.saveTask(validWorkspaceId, nextOccurrenceTask);
               }
               await loadTasksFromServer(validWorkspaceId);
-              // Trigger immediate sync to notify other devices (debounced)
+              // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
               debouncedSync(false);
+              // Also trigger a direct sync after a short delay to ensure other devices get updates quickly
+              setTimeout(() => {
+                if (workspaceId && accessToken) {
+                  syncWithServer(workspaceId, false).catch(err => {
+                    logger.debug('Background sync after task update retry:', err);
+                  });
+                }
+              }, 1000);
               if (nextOccurrenceTask) {
                 toast.success('Next occurrence created', {
                   description: `Task "${nextOccurrenceTask.title}" scheduled for ${new Date(nextOccurrenceTask.scheduledDate!).toLocaleDateString()}`,

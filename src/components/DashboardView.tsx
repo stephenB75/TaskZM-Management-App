@@ -449,7 +449,15 @@ export function DashboardView({
     return (dayOfWeek + 6) % 7; // Convert to Monday=0, Sunday=6
   };
 
-  const [mobileDayIndex, setMobileDayIndex] = useState(getCurrentDayIndex());
+  // Calculate tomorrow's day index in the week (Monday = 0, Sunday = 6)
+  const getTomorrowDayIndex = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayOfWeek = tomorrow.getDay(); // 0 (Sun) - 6 (Sat)
+    return (dayOfWeek + 6) % 7; // Convert to Monday=0, Sunday=6
+  };
+
+  const [mobileDayIndex, setMobileDayIndex] = useState(getTomorrowDayIndex());
   const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleType, setRescheduleType] = useState<"day" | "week" | "month" | null>(null);
@@ -489,10 +497,10 @@ export function DashboardView({
 
   const weekColumns = getWeekColumns(mobileWeekOffset);
 
-  // Update day index to current day when returning to current week
+  // Update day index to tomorrow when returning to current week
   useEffect(() => {
     if (mobileWeekOffset === 0) {
-      setMobileDayIndex(getCurrentDayIndex());
+      setMobileDayIndex(getTomorrowDayIndex());
     }
   }, [mobileWeekOffset]);
 
@@ -503,9 +511,9 @@ export function DashboardView({
     } else {
       const newOffset = Math.max(0, mobileWeekOffset - 1);
       setMobileWeekOffset(newOffset);
-      // If returning to current week (offset 0), set to current day index
+      // If returning to current week (offset 0), set to tomorrow's day index
       if (newOffset === 0) {
-        setMobileDayIndex(getCurrentDayIndex());
+        setMobileDayIndex(getTomorrowDayIndex());
       } else {
         setMobileDayIndex(0); // Reset to first day when going to previous week
       }
