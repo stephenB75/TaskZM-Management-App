@@ -324,7 +324,7 @@ export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
   },
   {
     icon: BarChart3,
-    text: "Analytics Dashboard (30-day history)",
+    text: "Analytics Dashboard",
     included: true,
     highlight: true,
   },
@@ -383,7 +383,7 @@ export const PRO_MONTHLY_FEATURES_LIST = [
   "Task Hours & Time Tracking",
   "Auto Task Rollover",
   "Advanced Pomodoro Timer",
-  "Analytics Dashboard (30-day history)",
+  "Analytics Dashboard",
 ];
 
 export const PRO_YEARLY_FEATURES_LIST = [

@@ -120,7 +120,7 @@ export function TermsOfServiceDialog({
                     <li>Task Hours & Time Tracking</li>
                     <li>Auto Task Rollover</li>
                     <li>Advanced Pomodoro (history, stats, custom intervals)</li>
-                    <li>Analytics Dashboard (30-day history)</li>
+                    <li>Analytics Dashboard</li>
                   </ul>
                 </div>
                 <div>
