@@ -63,14 +63,10 @@ export function PomodoroTimer({
     return () => {
       unregisterCallback(taskId);
     };
-  }, [taskId, initialTime, estimatedTime, taskTitle, initializeTimer, registerCallback, unregisterCallback]);
-
-  // Update work duration when estimatedTime changes
-  useEffect(() => {
-    if (estimatedTime && estimatedTime > 0) {
-      setWorkDuration(taskId, estimatedTime);
-    }
-  }, [taskId, estimatedTime, setWorkDuration]);
+  }, [taskId, initialTime, estimatedTime, taskTitle, initializeTimer, registerCallback, unregisterCallback, onTimeUpdate]);
+  
+  // Note: Removed redundant useEffect that directly called setWorkDuration
+  // initializeTimer already handles setting work duration when estimatedTime is provided
 
   const toggleTimer = async () => {
     if (timerState.isRunning) {

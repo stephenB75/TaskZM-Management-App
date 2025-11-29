@@ -11,10 +11,15 @@ export function setAccessToken(token: string | null) {
 }
 
 function getHeaders() {
-  return {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${accessToken || publicAnonKey}`,
   };
+  
+  // Note: X-Request-ID header removed due to CORS policy restrictions
+  // The server's CORS configuration doesn't allow this custom header
+  
+  return headers;
 }
 
 // Auth API
@@ -188,10 +193,9 @@ export async function getTasks(
     }
 
     const url = `${API_BASE}/tasks/${workspaceId}${params.toString() ? `?${params.toString()}` : ''}`;
-    const headers = { ...getHeaders() };
-    if (options?.ifModifiedSince) {
-      headers['If-Modified-Since'] = options.ifModifiedSince;
-    }
+    const headers = getHeaders();
+    // Note: If-Modified-Since header removed due to CORS policy restrictions
+    // Using query parameter instead for conditional requests
 
     const response = await fetch(url, {
       method: 'GET',
@@ -246,9 +250,21 @@ export async function getTasks(
   } catch (error) {
     // Network errors or other fetch failures
     const errorObj = error instanceof Error ? error : new Error('Network error');
+    // Check if it's a network/fetch error
+    const isNetworkError = errorObj.message.includes('fetch') || 
+                          errorObj.message.includes('Network') ||
+                          errorObj.message.includes('Failed to fetch') ||
+                          errorObj.name === 'TypeError';
+    
+    if (isNetworkError) {
+      // Network errors are logged in TaskContext with backoff, so we suppress repeated warnings here
+      // Only log at debug level to avoid console spam
+      logger.debug('Network error fetching tasks:', { workspaceId, error: errorObj.message });
+      return { tasks: [], error: new Error('Failed to fetch - check your internet connection') };
+    }
+    
     logger.warn('Backend unavailable:', { workspaceId, error: errorObj.message });
     // Return error in response object so sync can handle it gracefully
-    return { tasks: [], error: errorObj };
     return { tasks: [], error: errorObj };
   }
 }
@@ -416,10 +432,9 @@ export async function getProjects(
     }
 
     const url = `${API_BASE}/projects/${workspaceId}${params.toString() ? `?${params.toString()}` : ''}`;
-    const headers = { ...getHeaders() };
-    if (options?.ifModifiedSince) {
-      headers['If-Modified-Since'] = options.ifModifiedSince;
-    }
+    const headers = getHeaders();
+    // Note: If-Modified-Since header removed due to CORS policy restrictions
+    // Using query parameter instead for conditional requests
 
     const response = await fetch(url, {
       method: 'GET',
@@ -507,10 +522,9 @@ export async function getFolders(
     }
 
     const url = `${API_BASE}/folders/${workspaceId}${params.toString() ? `?${params.toString()}` : ''}`;
-    const headers = { ...getHeaders() };
-    if (options?.ifModifiedSince) {
-      headers['If-Modified-Since'] = options.ifModifiedSince;
-    }
+    const headers = getHeaders();
+    // Note: If-Modified-Since header removed due to CORS policy restrictions
+    // Using query parameter instead for conditional requests
 
     const response = await fetch(url, {
       method: 'GET',
@@ -605,13 +619,18 @@ export async function saveFolder(workspaceId: string, folder: Partial<Folder>): 
       } else {
         errorMessage = 'Workspace or endpoint not found. Please refresh the page.';
       }
+      // Log 404s as debug instead of warnings - endpoint may not exist on server (expected for some deployments)
+      logger.debug('Save folder endpoint not found (404):', { error: errorMessage, status: response.status, workspaceId });
     } else if (response.status === 401) {
       errorMessage = 'Authentication required. Please sign in again.';
+      logger.error('Save folder error:', { error: errorMessage, status: response.status, workspaceId });
     } else if (response.status === 403) {
       errorMessage = 'You do not have permission to create folders in this workspace.';
+      logger.error('Save folder error:', { error: errorMessage, status: response.status, workspaceId });
+    } else {
+      logger.error('Save folder error:', { error: errorMessage, status: response.status, workspaceId });
     }
-
-    logger.error('Save folder error:', { error: errorMessage, status: response.status, workspaceId });
+    
     throw new Error(errorMessage);
   }
 

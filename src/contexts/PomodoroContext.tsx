@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { logger } from '../lib/logger';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import {
@@ -93,7 +93,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     return workDurationsRef.current[taskId] || DURATIONS.work;
   };
 
-  const setWorkDuration = (taskId: string, durationMinutes: number) => {
+  const setWorkDuration = useCallback((taskId: string, durationMinutes: number) => {
     // Clamp duration between 5 minutes and 120 minutes (2 hours)
     const clampedMinutes = Math.max(5, Math.min(120, durationMinutes));
     const durationSeconds = clampedMinutes * 60;
@@ -116,9 +116,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
       return prev;
     });
-  };
+  }, []); // setTimers is stable from useState, refs are stable
 
-  const initializeTimer = (taskId: string, initialTime: number, estimatedTime?: number) => {
+  const initializeTimer = useCallback((taskId: string, initialTime: number, estimatedTime?: number) => {
     // Set custom work duration if estimated time is provided
     if (estimatedTime && estimatedTime > 0) {
       setWorkDuration(taskId, estimatedTime);
@@ -160,7 +160,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       // If timer is running, don't reset - it will sync after completion/pause
       return prev;
     });
-  };
+  }, [setWorkDuration]); // setWorkDuration is stable (uses refs), so this should be stable
 
   const startTimer = (taskId: string) => {
     setTimers(prev => {

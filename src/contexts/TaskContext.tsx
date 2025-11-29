@@ -20,6 +20,9 @@ import {
   WORKSPACE_SYNC_INTERVAL_MAX_MS,
   WORKSPACE_ACTIVITY_TIMEOUT_MS,
   WORKSPACE_SYNC_NO_CHANGE_THRESHOLD,
+  WORKSPACE_NETWORK_ERROR_THRESHOLD,
+  WORKSPACE_NETWORK_ERROR_BACKOFF_BASE_MS,
+  WORKSPACE_NETWORK_ERROR_BACKOFF_MAX_MS,
 } from '../lib/layout-constants';
 import {
   TOAST_DURATION_MEDIUM_MS,
@@ -128,7 +131,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Start with idle interval (2 minutes)
   const syncLockRef = useRef<boolean>(false); // Prevent concurrent sync operations
   const consecutiveNoChangeSyncsRef = useRef<number>(0); // Track backoff when no changes detected
+  const consecutiveNetworkErrorsRef = useRef<number>(0); // Track consecutive network errors for backoff
   const syncIntervalRef = useRef<number>(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Keep latest interval in ref to avoid stale closures
+  const lastErrorToastRef = useRef<{ message: string; timestamp: number } | null>(null); // Track last error toast to prevent duplicates
+  const lastNetworkErrorLogRef = useRef<number>(0); // Track last network error log time to suppress repeated warnings
   
   // Activity tracking for adaptive polling
   const lastActivityRef = useRef<number>(Date.now());
@@ -649,6 +655,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 const errorMessage = saveError instanceof Error ? saveError.message : String(saveError);
                 // If workspace doesn't exist, try to ensure it exists and retry
                 if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
+                  // Check if this is likely an endpoint issue (404) vs workspace issue
+                  const isEndpoint404 = errorMessage.includes('endpoint not found') || errorMessage.includes('404');
+                  
+                  if (isEndpoint404) {
+                    // Endpoint doesn't exist on server - skip silently (expected for some deployments)
+                    logger.debug('Folders endpoint not available on server, skipping folder sync');
+                    continue;
+                  }
+                  
                   logger.debug('Workspace not found when saving folder, ensuring workspace exists...');
                   try {
                     const validWorkspaceId = await ensureWorkspace();
@@ -831,10 +846,25 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const ERROR_TOAST_COOLDOWN = 5000; // Don't show same error within 5 seconds
+
   const syncWithServer = useCallback(
     async (wsId?: string, silent: boolean = false) => {
       const targetWorkspaceId = wsId || workspaceId;
       if (!targetWorkspaceId || !accessToken) return;
+
+      // Check if browser is offline
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        if (!silent) {
+          const now = Date.now();
+          // Only log offline status once per minute to avoid spam
+          if (now - lastNetworkErrorLogRef.current > 60000) {
+            logger.debug('Sync skipped: browser is offline');
+            lastNetworkErrorLogRef.current = now;
+          }
+        }
+        return;
+      }
 
       // Prevent concurrent sync operations
       if (syncLockRef.current) {
@@ -861,7 +891,53 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
         // If there was an error, handle it
         if (error) {
-          logger.error('Sync error:', error);
+          const isNetworkError = error.message.includes('Failed to fetch') || 
+                                error.message.includes('Network') ||
+                                error.message.includes('timeout') ||
+                                error.name === 'TypeError';
+          
+          if (isNetworkError) {
+            consecutiveNetworkErrorsRef.current += 1;
+            
+            // Suppress repeated network error warnings (only log once per 30 seconds)
+            const now = Date.now();
+            if (now - lastNetworkErrorLogRef.current > 30000) {
+              logger.warn('Network error fetching tasks:', {
+                workspaceId: targetWorkspaceId,
+                error: error.message,
+                consecutiveErrors: consecutiveNetworkErrorsRef.current,
+              });
+              lastNetworkErrorLogRef.current = now;
+            }
+            
+            // Implement exponential backoff for network errors
+            if (consecutiveNetworkErrorsRef.current >= WORKSPACE_NETWORK_ERROR_THRESHOLD) {
+              const backoffSteps = consecutiveNetworkErrorsRef.current - WORKSPACE_NETWORK_ERROR_THRESHOLD + 1;
+              const proposedInterval = Math.min(
+                WORKSPACE_NETWORK_ERROR_BACKOFF_BASE_MS * Math.pow(2, backoffSteps - 1),
+                WORKSPACE_NETWORK_ERROR_BACKOFF_MAX_MS
+              );
+              
+              if (proposedInterval > syncIntervalRef.current) {
+                logger.debug(
+                  `Network errors detected (${consecutiveNetworkErrorsRef.current}), backing off to ${proposedInterval / 1000}s`
+                );
+                setSyncInterval(proposedInterval);
+              }
+            }
+          } else {
+            // Non-network errors: reset network error counter
+            consecutiveNetworkErrorsRef.current = 0;
+            
+            // Log detailed error information for debugging
+            logger.error('Sync error details:', {
+              error: error.message,
+              workspaceId: targetWorkspaceId,
+              hasAccessToken: !!accessToken,
+              errorType: error.name,
+              stack: error.stack,
+            });
+          }
           
           // For authentication errors, don't update timestamp - force retry
           // For other errors, still update timestamp to prevent getting stuck
@@ -873,19 +949,46 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             setLastSync(new Date());
           }
           
-          if (!silent) {
-            if (error.message.includes('Authentication')) {
-              toast.error('Authentication failed', {
-                description: 'Please sign in again to continue.',
-              });
-            } else {
-              toast.error('Failed to sync with server', {
-                description: error.message || 'Please check your internet connection',
-              });
+          if (!silent && !isNetworkError) {
+            // Only show non-network error toasts (network errors are handled silently with backoff)
+            const errorMessage = error.message || 'Please check your internet connection';
+            const now = Date.now();
+            
+            // Only show error toast if it's different from last one or enough time has passed
+            const shouldShowError = !lastErrorToastRef.current || 
+                                   lastErrorToastRef.current.message !== errorMessage ||
+                                   (now - lastErrorToastRef.current.timestamp) > ERROR_TOAST_COOLDOWN;
+            
+            if (shouldShowError) {
+              if (error.message.includes('Authentication')) {
+                toast.error('Authentication failed', {
+                  description: 'Please sign in again to continue.',
+                });
+                lastErrorToastRef.current = { message: 'Authentication failed', timestamp: now };
+              } else {
+                // Provide more helpful error messages
+                let userFriendlyMessage = errorMessage;
+                if (errorMessage.includes('timeout')) {
+                  userFriendlyMessage = 'Server is taking too long to respond. Please try again.';
+                } else if (errorMessage.includes('CORS')) {
+                  userFriendlyMessage = 'Connection blocked. Please check your network settings.';
+                }
+                
+                toast.error('Failed to sync with server', {
+                  description: userFriendlyMessage,
+                });
+                lastErrorToastRef.current = { message: errorMessage, timestamp: now };
+              }
             }
           }
           return;
         }
+        
+        // Clear error toast ref on successful sync
+        lastErrorToastRef.current = null;
+        
+        // Reset network error counter on successful sync
+        consecutiveNetworkErrorsRef.current = 0;
 
         const syncTimestamp = lastModified || new Date().toISOString();
         lastSyncTimestampsRef.current.tasks = syncTimestamp;
@@ -920,6 +1023,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
         // Data changed - reset backoff and align interval to activity state
         consecutiveNoChangeSyncsRef.current = 0;
+        consecutiveNetworkErrorsRef.current = 0; // Reset network error counter on successful sync
         const desiredInterval = isActiveRef.current
           ? WORKSPACE_SYNC_INTERVAL_ACTIVE_MS
           : WORKSPACE_SYNC_INTERVAL_IDLE_MS;
@@ -945,9 +1049,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         logger.error('Unexpected sync error:', error);
         // On error, keep current state (might be offline)
         if (!silent) {
-          toast.error('Failed to sync with server', {
-            description: 'Please check your internet connection',
-          });
+          const errorMessage = 'Please check your internet connection';
+          const now = Date.now();
+          
+          // Only show error toast if it's different from last one or enough time has passed
+          const shouldShowError = !lastErrorToastRef.current || 
+                                 lastErrorToastRef.current.message !== errorMessage ||
+                                 (now - lastErrorToastRef.current.timestamp) > ERROR_TOAST_COOLDOWN;
+          
+          if (shouldShowError) {
+            toast.error('Failed to sync with server', {
+              description: errorMessage,
+            });
+            lastErrorToastRef.current = { message: errorMessage, timestamp: now };
+          }
         }
       } finally {
         setIsSyncing(false);
@@ -961,21 +1076,33 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
+    // Throttle activity handler to reduce performance impact
+    let activityThrottleTimeout: NodeJS.Timeout | null = null;
+    const THROTTLE_MS = 1000; // Only process activity once per second
+
     const handleActivity = () => {
       lastActivityRef.current = Date.now();
-      if (!isActiveRef.current) {
-        isActiveRef.current = true;
-        // Switch to active interval (30 seconds)
-        setSyncInterval(WORKSPACE_SYNC_INTERVAL_ACTIVE_MS);
-        logger.debug('User activity detected, switching to active sync interval (30 sec)');
-      }
+      
+      // Throttle state updates to prevent excessive re-renders
+      if (activityThrottleTimeout) return;
+      
+      activityThrottleTimeout = setTimeout(() => {
+        activityThrottleTimeout = null;
+        if (!isActiveRef.current) {
+          isActiveRef.current = true;
+          // Switch to active interval (30 seconds)
+          setSyncInterval(WORKSPACE_SYNC_INTERVAL_ACTIVE_MS);
+          logger.debug('User activity detected, switching to active sync interval (30 sec)');
+        }
+      }, THROTTLE_MS);
     };
 
     // Track user activity - improved for mobile devices
+    // Use fewer, less frequent events to reduce performance impact
     const events = [
-      'mousedown', 'mousemove', 'keypress', 'scroll', 
-      'touchstart', 'touchmove', 'touchend', 'click',
-      'pointerdown', 'pointermove', 'pointerup' // Pointer events work on both desktop and mobile
+      'mousedown', 'keypress', 'scroll', 
+      'touchstart', 'click',
+      'pointerdown', 'pointerup' // Removed high-frequency events (mousemove, touchmove, pointermove)
     ];
     events.forEach(event => {
       document.addEventListener(event, handleActivity, { passive: true });
@@ -992,11 +1119,36 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     }, 60000); // Check every minute
 
+    // Listen for online/offline events to reset network error counter
+    const handleOnline = () => {
+      logger.debug('Browser came back online, resetting network error counter');
+      consecutiveNetworkErrorsRef.current = 0;
+      // Reset sync interval to normal when back online
+      const desiredInterval = isActiveRef.current
+        ? WORKSPACE_SYNC_INTERVAL_ACTIVE_MS
+        : WORKSPACE_SYNC_INTERVAL_IDLE_MS;
+      if (syncIntervalRef.current !== desiredInterval) {
+        setSyncInterval(desiredInterval);
+      }
+    };
+    
+    const handleOffline = () => {
+      logger.debug('Browser went offline');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     return () => {
       events.forEach(event => {
         document.removeEventListener(event, handleActivity);
       });
       clearInterval(activityCheckInterval);
+      if (activityThrottleTimeout) {
+        clearTimeout(activityThrottleTimeout);
+      }
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [autoSyncEnabled, workspaceId, accessToken]);
 
@@ -2521,6 +2673,43 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 export function useTasks() {
   const context = useContext(TaskContext);
   if (context === undefined) {
+    // During React Fast Refresh (HMR), providers can temporarily unmount
+    // Return a safe default instead of throwing to prevent crashes
+    if (import.meta.env.DEV) {
+      console.warn('useTasks called outside TaskProvider (likely HMR issue), returning default');
+      return {
+        tasks: [],
+        projects: [],
+        folders: [],
+        availableTags: [],
+        filters: {},
+        viewConfig: { groupBy: 'none', sortBy: 'dueDate', sortOrder: 'asc', showCompleted: true },
+        hoursSettings: {
+          weekdayHours: { work: { start: '09:00', end: '17:00', enabled: true }, personal: { start: '08:00', end: '22:00', enabled: true }, projects: { start: '09:00', end: '17:00', enabled: true } },
+          weekendHours: { work: { start: '09:00', end: '17:00', enabled: false }, personal: { start: '08:00', end: '22:00', enabled: true }, projects: { start: '09:00', end: '17:00', enabled: false } },
+        },
+        rolloverSettings: { enabled: false, maxHours: 5 },
+        workspaceId: null,
+        isSyncing: false,
+        lastSync: null,
+        addTask: async () => {},
+        updateTask: async () => {},
+        deleteTask: async () => {},
+        addProject: async () => {},
+        updateProject: async () => {},
+        addFolder: async () => {},
+        updateFolder: async () => {},
+        deleteFolder: async () => {},
+        addAvailableTag: async () => {},
+        removeAvailableTag: async () => {},
+        setFilters: () => {},
+        setViewConfig: () => {},
+        updateHoursSettings: async () => {},
+        updateRolloverSettings: async () => {},
+        syncWithServer: async () => {},
+        ensureWorkspace: async () => null,
+      };
+    }
     throw new Error('useTasks must be used within a TaskProvider');
   }
   return context;

@@ -273,6 +273,9 @@ export const WORKSPACE_SYNC_INTERVAL_IDLE_MS = 120000; // Idle sync interval (2 
 export const WORKSPACE_SYNC_INTERVAL_MAX_MS = 300000; // Maximum auto-sync backoff interval (5 minutes) to avoid hammering Supabase
 export const WORKSPACE_SYNC_NO_CHANGE_THRESHOLD = 3; // Number of consecutive no-change syncs before increasing interval
 export const WORKSPACE_ACTIVITY_TIMEOUT_MS = 120000; // Timeout to consider user inactive (2 minutes) - reduced to switch to idle faster
+export const WORKSPACE_NETWORK_ERROR_THRESHOLD = 2; // Number of consecutive network errors before backing off
+export const WORKSPACE_NETWORK_ERROR_BACKOFF_BASE_MS = 60000; // Base backoff time for network errors (1 minute)
+export const WORKSPACE_NETWORK_ERROR_BACKOFF_MAX_MS = 600000; // Maximum backoff time for network errors (10 minutes)
 
 // Settings Panel constants
 export const SETTINGS_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
