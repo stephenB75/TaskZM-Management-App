@@ -60,9 +60,8 @@ function Switch({
         "relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "touch-manipulation select-none",
-        // Sizing - pill shape with 2:1 ratio
-        "h-5 w-10",
-        "md:h-6 md:w-12",
+        // Sizing - pill shape
+        "h-6 w-11",
         // Background colors - inverted for dark mode
         isChecked ? "bg-primary dark:bg-primary" : "bg-[var(--switch-background)] dark:bg-gray-600",
         // Disabled state
@@ -78,13 +77,12 @@ function Switch({
       <span
         className={cn(
           "block rounded-full bg-white dark:bg-gray-200 shadow-md transition-transform duration-200 ease-in-out",
-          // Mobile sizing
-          "h-4 w-4",
-          "md:h-5 md:w-5",
+          // Thumb sizing
+          "h-5 w-5",
           // Position - moves from left to right
           isChecked 
-            ? "translate-x-5 md:translate-x-[1.625rem]" 
-            : "translate-x-0.5"
+            ? "translate-x-5" 
+            : "translate-x-1"
         )}
         aria-hidden="true"
       />
