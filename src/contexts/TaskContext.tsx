@@ -862,6 +862,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // If there was an error, handle it
         if (error) {
           logger.error('Sync error:', error);
+          
+          // For authentication errors, don't update timestamp - force retry
+          // For other errors, still update timestamp to prevent getting stuck
+          if (!error.message.includes('Authentication')) {
+            // Update timestamp even on error to prevent infinite retry loops
+            const errorTimestamp = new Date().toISOString();
+            lastSyncTimestampsRef.current.tasks = errorTimestamp;
+            localStorage.setItem(`last_sync_timestamp_tasks_${targetWorkspaceId}`, errorTimestamp);
+            setLastSync(new Date());
+          }
+          
           if (!silent) {
             if (error.message.includes('Authentication')) {
               toast.error('Authentication failed', {
@@ -1937,6 +1948,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           return updated;
         });
         toast.success('Folder updated');
+        // Trigger immediate sync to notify other devices
+        try {
+          await syncFoldersFromServer(currentWorkspaceId, true);
+        } catch (syncError) {
+          logger.error('Failed to refresh folders after update:', syncError);
+        }
+        debouncedSync(true);
       } catch (error) {
         logger.error('Failed to update folder on server:', error);
         // Keep the optimistic update, but mark it for sync
@@ -1965,48 +1983,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       });
       toast.success('Folder updated (offline)');
       return;
-    }
-
-    // Optimistic update: update state immediately
-    setFolders(prev => {
-      const updated = prev.map(folder =>
-        folder.id === folderId
-          ? { ...folder, ...updates, updatedAt: new Date().toISOString(), pendingSync: true, synced: false }
-          : folder
-      );
-      saveToLocalStorage('folders', updated);
-      return updated;
-    });
-
-    // Update in Supabase (source of truth)
-    try {
-      const updatedFolder = await api.updateFolder(workspaceId, folderId, updates);
-      const normalizedUpdatedFolder: Folder = {
-        ...updatedFolder,
-        pendingSync: false,
-        synced: true,
-      };
-      // Update state with server response to ensure we have the exact server version
-      setFolders(prev => {
-        const updated = prev.map(f => f.id === folderId ? normalizedUpdatedFolder : f);
-        saveToLocalStorage('folders', updated);
-        return updated;
-      });
-      toast.success('Folder updated');
-      try {
-        if (currentWorkspaceId) {
-          await syncFoldersFromServer(currentWorkspaceId, true);
-        } else if (workspaceId) {
-          await syncFoldersFromServer(workspaceId, true);
-        }
-      } catch (syncError) {
-        logger.error('Failed to refresh folders after update:', syncError);
-      }
-      debouncedSync(true);
-    } catch (error) {
-      logger.error('Failed to update folder on server:', error);
-      // Keep the optimistic update, but mark it for sync
-      toast.error('Folder updated offline, will sync when online');
     }
   }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, addAvailableTag, removeAvailableTag, debouncedSync]);
 

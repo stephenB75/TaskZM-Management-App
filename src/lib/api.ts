@@ -247,6 +247,8 @@ export async function getTasks(
     // Network errors or other fetch failures
     const errorObj = error instanceof Error ? error : new Error('Network error');
     logger.warn('Backend unavailable:', { workspaceId, error: errorObj.message });
+    // Return error in response object so sync can handle it gracefully
+    return { tasks: [], error: errorObj };
     return { tasks: [], error: errorObj };
   }
 }
