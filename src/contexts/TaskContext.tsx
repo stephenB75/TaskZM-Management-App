@@ -1163,13 +1163,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Only sync tasks on regular interval (most frequently changing)
         await syncWithServer(workspaceId, true); // Silent sync
         
-        // Sync other resources less frequently (every 3rd interval for idle, every 2nd for active)
+        // Sync folders more frequently (every interval) for better cross-device sync
+        // Projects and settings change less frequently, so sync them every 2-3 intervals
         const syncCount = Math.floor(Date.now() / syncInterval);
-        if (syncCount % (isActiveRef.current ? 2 : 3) === 0) {
-          // Sync projects, folders, and settings less frequently
+        const shouldSyncOtherResources = syncCount % (isActiveRef.current ? 2 : 3) === 0;
+        
+        // Always sync folders (they change more frequently than projects/settings)
+        await syncFoldersFromServer(workspaceId, true);
+        
+        // Sync projects and settings less frequently
+        if (shouldSyncOtherResources) {
           await Promise.all([
             syncProjectsFromServer(workspaceId),
-            syncFoldersFromServer(workspaceId, true),
             syncSettingsFromServer(workspaceId),
           ]);
         }
@@ -1975,7 +1980,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         } catch (syncError) {
           logger.error('Failed to refresh folders after creation:', syncError);
         }
+        // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
         debouncedSync(true);
+        // Also trigger a direct folder sync after a short delay to ensure other devices get updates quickly
+        setTimeout(() => {
+          if (currentWorkspaceId && accessToken) {
+            syncFoldersFromServer(currentWorkspaceId, true).catch(err => {
+              logger.debug('Background folder sync after creation:', err);
+            });
+          }
+        }, 1000); // 1 second delay to allow server to process
       } catch (error) {
         logger.error('Failed to save folder to server:', error);
         // Keep the optimistic update, but mark it for sync
@@ -2106,7 +2120,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         } catch (syncError) {
           logger.error('Failed to refresh folders after update:', syncError);
         }
+        // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
         debouncedSync(true);
+        // Also trigger a direct folder sync after a short delay to ensure other devices get updates quickly
+        setTimeout(() => {
+          if (currentWorkspaceId && accessToken) {
+            syncFoldersFromServer(currentWorkspaceId, true).catch(err => {
+              logger.debug('Background folder sync after update:', err);
+            });
+          }
+        }, 1000); // 1 second delay to allow server to process
       } catch (error) {
         logger.error('Failed to update folder on server:', error);
         // Keep the optimistic update, but mark it for sync
@@ -2337,7 +2360,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       } catch (syncError) {
         logger.error('Failed to refresh folders after deletion:', syncError);
       }
+      // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
       debouncedSync(true);
+      // Also trigger a direct folder sync after a short delay to ensure other devices get updates quickly
+      setTimeout(() => {
+        if (lastWorkspaceUsed && accessToken) {
+          syncFoldersFromServer(lastWorkspaceUsed, true).catch(err => {
+            logger.debug('Background folder sync after deletion:', err);
+          });
+        }
+      }, 1000); // 1 second delay to allow server to process
     }
   }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag, ensureWorkspace, createWorkspaceIfNeeded, setWorkspaceId, debouncedSync]);
 
