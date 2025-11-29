@@ -165,7 +165,7 @@ function MetricCard({
           {value}
         </div>
         {subtitle && (
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground">
             {subtitle}
           </div>
         )}

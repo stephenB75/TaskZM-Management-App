@@ -71,11 +71,11 @@ export const TIMELINE_PADDING = {
   desktop: 16, // Timeline padding on desktop
 } as const;
 
-// Mobile Text Sizes
+// Mobile Text Sizes (increased by 1 point for better readability)
 export const MOBILE_TEXT_SIZES = {
-  xsmall: 10, // text-[10px]
-  small: 11, // text-[11px]
-  base: 12, // text-xs = 12px
+  xsmall: 11, // text-[11px] (was 10px)
+  small: 12, // text-[12px] (was 11px)
+  base: 13, // text-[13px] (was 12px)
 } as const;
 
 // Mobile Spacing
