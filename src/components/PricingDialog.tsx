@@ -39,6 +39,7 @@ import {
 import * as api from "../lib/api";
 import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured } from "../lib/revenuecat";
 import { logger } from "../lib/logger";
+import { detectCountryFromLocale, getCountryName } from "../lib/country-detection";
 
 interface DialogOffering {
   priceString: string;
@@ -423,14 +424,28 @@ export function PricingDialog({
         logger.debug('RevenueCat configuration timeout or error (continuing):', configError);
       }
       
+      // Detect user's country for helpful hint
+      const detectedCountry = detectCountryFromLocale();
+      const countryHint = detectedCountry 
+        ? ` Please select your country (${getCountryName(detectedCountry)} or other) in the payment form to activate the fields.`
+        : ' Please select your country in the payment form first to activate the payment fields.';
+      
       // Purchase through RevenueCat with timeout
       toast.info('Connecting to payment provider...', {
-        duration: 3000,
+        duration: 2000,
       });
+      
+      // Show helpful hint about country selection
+      setTimeout(() => {
+        toast.info('Payment Form Tip', {
+          description: `You'll be redirected to the payment form.${countryHint}`,
+          duration: 5000,
+        });
+      }, 2500);
       
       const purchasePromise = purchaseProSubscription('monthly');
       const purchaseTimeout = new Promise<{ success: boolean; error?: string }>((_, reject) =>
-        setTimeout(() => reject(new Error('Purchase request timed out. Please try again.')), 30000)
+        setTimeout(() => reject(new Error('Purchase request timed out. The payment provider may be experiencing delays. Please try again.')), 50000)
       );
       
       const result = await Promise.race([purchasePromise, purchaseTimeout]);
@@ -499,14 +514,28 @@ export function PricingDialog({
         logger.debug('RevenueCat configuration timeout or error (continuing):', configError);
       }
       
+      // Detect user's country for helpful hint
+      const detectedCountry = detectCountryFromLocale();
+      const countryHint = detectedCountry 
+        ? ` Please select your country (${getCountryName(detectedCountry)} or other) in the payment form to activate the fields.`
+        : ' Please select your country in the payment form first to activate the payment fields.';
+      
       // Purchase through RevenueCat with timeout
       toast.info('Connecting to payment provider...', {
-        duration: 3000,
+        duration: 2000,
       });
+      
+      // Show helpful hint about country selection
+      setTimeout(() => {
+        toast.info('Payment Form Tip', {
+          description: `You'll be redirected to the payment form.${countryHint}`,
+          duration: 5000,
+        });
+      }, 2500);
       
       const purchasePromise = purchaseProSubscription('yearly');
       const purchaseTimeout = new Promise<{ success: boolean; error?: string }>((_, reject) =>
-        setTimeout(() => reject(new Error('Purchase request timed out. Please try again.')), 30000)
+        setTimeout(() => reject(new Error('Purchase request timed out. The payment provider may be experiencing delays. Please try again.')), 50000)
       );
       
       const result = await Promise.race([purchasePromise, purchaseTimeout]);
@@ -897,12 +926,20 @@ export function PricingDialog({
             )}
           </div>
 
-          <div className="mt-3 md:mt-4 p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
-            <p className="text-[11px] md:text-xs text-center text-gray-700 dark:text-foreground leading-snug">
-              {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
-              <span className="font-medium text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
-              {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
-            </p>
+          <div className="mt-3 md:mt-4 space-y-2">
+            <div className="p-2 md:p-2.5 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 shadow-sm">
+              <p className="text-[10px] md:text-[11px] text-center text-blue-800 dark:text-blue-200 leading-snug flex items-center justify-center gap-1.5">
+                <span className="font-semibold">💡 Payment Tip:</span>
+                <span>When redirected to the payment form, please select your country first to activate the payment fields.</span>
+              </p>
+            </div>
+            <div className="p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
+              <p className="text-[11px] md:text-xs text-center text-gray-700 dark:text-foreground leading-snug">
+                {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
+                <span className="font-medium text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
+                {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
+              </p>
+            </div>
           </div>
         </div>
       </DialogContent>

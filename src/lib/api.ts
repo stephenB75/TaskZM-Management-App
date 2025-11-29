@@ -630,7 +630,7 @@ export async function saveFolder(workspaceId: string, folder: Partial<Folder>): 
     } else {
       logger.error('Save folder error:', { error: errorMessage, status: response.status, workspaceId });
     }
-    
+
     throw new Error(errorMessage);
   }
 

@@ -263,7 +263,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                   (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
                 const subtaskTopSpacing = hasDescription ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing : 0;
                 baseHeight += subtaskHeight + subtaskTopSpacing;
-              }
+                }
               
               // Ensure height is within bounds (minimum 80px, maximum 550px)
               const minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px minimum
@@ -420,7 +420,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           // For today, use drop time as preferred placement time
           // findNextAvailableSlot will ensure it's after current time when searching
           // This allows us to try placing at the drop position first, then search from current time if needed
-          requestedTime = dropTime;
+              requestedTime = dropTime;
         }
       }
       
@@ -574,10 +574,10 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         if (!requestedTime) {
           // Use default time (9 AM or category start) as the preferred placement time
           // findNextAvailableSlot will start searching from current time but try to place at this default time
-          requestedTime = new Date(today);
-          if (categoryHours) {
-            requestedTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
-          } else {
+            requestedTime = new Date(today);
+            if (categoryHours) {
+              requestedTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
+            } else {
             // Use default hour (9 AM) as the preferred placement time
             requestedTime.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.defaultHour, 0, 0, 0);
           }

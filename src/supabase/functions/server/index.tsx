@@ -2425,24 +2425,35 @@ app.post("/make-server-65e6e67f/create-checkout-session", async (c) => {
 
     const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
     
-    // Create Stripe checkout session
+    // Logo URL - should be publicly accessible
+    const logoUrl = `${appUrl}/taskzm-logo.png`;
+    
+    // Create Stripe checkout session with improved configuration
+    const checkoutParams = new URLSearchParams({
+      'mode': 'subscription',
+      'payment_method_types[]': 'card',
+      'line_items[0][price]': selectedPriceId,
+      'line_items[0][quantity]': '1',
+      'customer_email': '', // Will be collected in checkout form
+      'success_url': `${appUrl}/settings?session_id={CHECKOUT_SESSION_ID}`,
+      'cancel_url': `${appUrl}/settings?canceled=true`,
+      'metadata[userId]': userId,
+      'metadata[priceId]': priceId,
+      // Billing address collection - 'auto' attempts to pre-fill based on IP/location
+      'billing_address_collection': 'auto',
+      // Payment method collection - always collect payment method
+      'payment_method_collection': 'always',
+      // Logo for checkout page (must be publicly accessible HTTPS URL)
+      'images[]': logoUrl,
+    });
+    
     const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${stripeSecretKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        'mode': 'subscription',
-        'payment_method_types[]': 'card',
-        'line_items[0][price]': selectedPriceId,
-        'line_items[0][quantity]': '1',
-        'customer_email': '', // Will be collected in checkout form
-        'success_url': `${appUrl}/settings?session_id={CHECKOUT_SESSION_ID}`,
-        'cancel_url': `${appUrl}/settings?canceled=true`,
-        'metadata[userId]': userId,
-        'metadata[priceId]': priceId,
-      }),
+      body: checkoutParams,
     });
 
     if (!response.ok) {

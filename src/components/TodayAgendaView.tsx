@@ -307,11 +307,11 @@ export function TodayAgendaView({
     // Step 2: Now add component heights on top of the standard base height
     
     // Auto-adjust: Add height for badge wrapping
-    baseHeight += badgeWrapHeight;
-    
+      baseHeight += badgeWrapHeight;
+      
     // Auto-adjust: Add height for description (if description exists)
     // Calculate actual description height based on content, with minimal padding
-    if (hasDescription) {
+      if (hasDescription) {
       const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
       const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
       // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
@@ -322,20 +322,20 @@ export function TodayAgendaView({
         ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap
         : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
       const descriptionHeight = descriptionContentHeight + descriptionBottomPadding;
-      baseHeight += descriptionHeight;
-    }
-    
+        baseHeight += descriptionHeight;
+      }
+      
     // Auto-adjust: Add height for assigned users (if present)
-    if (hasAssignedUsers) {
+      if (hasAssignedUsers) {
       const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base;
       const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
         ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced
         : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard;
       baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
-    }
-    
+      }
+      
     // Auto-adjust: Add height for subtasks (if present)
-    if (hasSubtasks) {
+      if (hasSubtasks) {
       const subtaskCount = Math.min(task.subtasks.length, 3);
       const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight;
       const subtaskSpacing = isMobile 
@@ -345,8 +345,8 @@ export function TodayAgendaView({
         (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
       const subtaskTopSpacing = hasDescription ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing : 0;
       baseHeight += subtaskHeight + subtaskTopSpacing;
-    }
-    
+      }
+      
     // Step 3: Enforce bounds - minimum based on task category, maximum 550px
     let minHeight: number;
     if (isShortTask) {
@@ -498,23 +498,23 @@ export function TodayAgendaView({
                       }}
                     >
                       <DraggableTodayAgendaTask
-                        task={task}
-                        index={index}
-                        totalTasks={todayTasks.length}
-                        onClick={handleTaskClick}
-                        getTaskHeight={getTaskHeight}
-                        getTaskTime={getTaskTime}
-                        getPriorityColor={getPriorityColor}
-                        isNextUp={task.id === nextUpTaskId}
-                        onComplete={() => {
-                          if (confettiTimeoutRef.current) {
-                            clearTimeout(confettiTimeoutRef.current);
-                          }
-                          if (!showConfetti) {
-                            setShowConfetti(true);
-                          }
-                        }}
-                      />
+                      task={task}
+                      index={index}
+                      totalTasks={todayTasks.length}
+                      onClick={handleTaskClick}
+                      getTaskHeight={getTaskHeight}
+                      getTaskTime={getTaskTime}
+                      getPriorityColor={getPriorityColor}
+                      isNextUp={task.id === nextUpTaskId}
+                      onComplete={() => {
+                        if (confettiTimeoutRef.current) {
+                          clearTimeout(confettiTimeoutRef.current);
+                        }
+                        if (!showConfetti) {
+                          setShowConfetti(true);
+                        }
+                      }}
+                    />
                     </div>
                   ))}
                 </div>

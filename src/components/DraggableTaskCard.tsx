@@ -263,41 +263,41 @@ export const DraggableTaskCard = React.forwardRef<
       // Step 2: Start with the standard height as the base
       // Components will ADD to this, never reduce it
       let baseHeight = standardHeightForThisDuration;
-      
+        
       // Step 2: Now add component heights on top of the standard base height
       
       // AUTO-ADJUST: Badge wrapping (if badges wrap to second line)
       if (badgeWrapHeight > 0) {
         baseHeight += badgeWrapHeight;
       }
-      
+        
       // AUTO-ADJUST: Description (if description exists)
       // Calculate actual description height based on content, with minimal padding
-      if (hasDescription) {
+        if (hasDescription) {
         const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
-        const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
+          const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
         // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
         const actualLines = Math.max(estimatedLines, 1);
         const descriptionContentHeight = actualLines * lineHeight;
         // Add minimal bottom padding only when needed (0px if assigned users follow, 6px otherwise)
-        const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
+          const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
           ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap
           : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
         const descriptionHeight = descriptionContentHeight + descriptionBottomPadding;
         baseHeight += descriptionHeight;
-      }
-      
+        }
+        
       // AUTO-ADJUST: Assigned users (if present)
       // For short tasks (< 45 mins), assigned users are in the inline bottom row, so they add to height
       if (hasAssignedUsers && isShortTask) {
         const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base; // 20px for avatar + name
         // Use reduced spacing (16px) when description is present and no subtasks (description has mb-0)
         // Use standard spacing (20px) otherwise
-        const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
+          const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
           ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced // 16px
           : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard; // 20px
         baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
-      }
+        }
       // For medium/long tasks (>= 45 mins), assigned users are absolutely positioned at bottom
       // We need to reserve space at the bottom to prevent overlap with content
       // Reserve: assigned user height (20px) + bottom position (4-8px) + small buffer (4px) = ~28-32px
@@ -329,24 +329,24 @@ export const DraggableTaskCard = React.forwardRef<
         hasTrackedTimeFull;
       if (trackedTimeAtBottom) {
         baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime;
-      }
-      
+        }
+        
       // AUTO-ADJUST: Subtasks (if present)
       // Calculate subtask height with minimal spacing between items
-      if (hasSubtasks) {
-        const subtaskCount = Math.min(task.subtasks.length, 3);
+        if (hasSubtasks) {
+          const subtaskCount = Math.min(task.subtasks.length, 3);
         const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight; // 14px per item
         const subtaskSpacing = isMobile 
           ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.mobile // 2px on mobile
           : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.desktop; // 4px on desktop
         // Calculate total subtask height: items + spacing between items
-        const subtaskHeight = subtaskCount * subtaskItemHeight + 
-          (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
+          const subtaskHeight = subtaskCount * subtaskItemHeight + 
+            (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
         // Add top spacing (6px) only when description is present
         const subtaskTopSpacing = hasDescription ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing : 0;
         baseHeight += subtaskHeight + subtaskTopSpacing;
-      }
-      
+        }
+        
       // Step 3: Enforce bounds - the standard height IS the absolute minimum
       // Since we started with standardHeight and only added to it, baseHeight should always be >= standardHeight
       // But we enforce it anyway to be safe

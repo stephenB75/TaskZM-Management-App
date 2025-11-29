@@ -539,10 +539,10 @@ export function SevenDayKanban({
                             }}
                           >
                             <DraggableTaskCard
-                              task={task}
-                              onClick={() => handleTaskClick(task)}
-                              droppableId={currentColumn.dateString}
-                            />
+                            task={task}
+                            onClick={() => handleTaskClick(task)}
+                            droppableId={currentColumn.dateString}
+                          />
                           </div>
                         ))
                       )}

@@ -1095,9 +1095,10 @@ export async function purchaseProSubscription(
     try {
       // For Web Billing, this call should generate a checkout URL
       // Add timeout to prevent hanging if RevenueCat/Stripe is slow
+      // Increased timeout to 45 seconds to account for slow network/Stripe checkout generation
       const purchasePromise = purchasesInstance.purchasePackage(selectedPackage);
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Purchase request timed out after 25 seconds. Please try again.')), 25000);
+        setTimeout(() => reject(new Error('Purchase request timed out after 45 seconds. The payment provider may be experiencing delays. Please try again.')), 45000);
       });
       
       purchaseResult = await Promise.race([purchasePromise, timeoutPromise]);
