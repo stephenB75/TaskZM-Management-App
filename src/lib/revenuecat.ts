@@ -81,26 +81,27 @@ export async function configureRevenueCat(userId: string, forceReconfigure = fal
     isConfigured = true;
     console.log('✅ RevenueCat configured');
     
-    // Verify configuration by checking if we can get offerings
+    // Verify configuration asynchronously (non-blocking) to avoid delays
     // Note: "No available adapters" warning is expected for Web Billing on web platform
     // Web Billing doesn't use adapters - it's a hosted checkout solution
-    try {
-      const testOfferings = await purchasesInstance.getOfferings();
-      console.log('✅ RevenueCat configuration verified, offerings accessible');
-      // Check if offerings have packages (this confirms Web Billing is working)
-      if (testOfferings?.current?.availablePackages?.length > 0) {
-        console.log(`✅ Web Billing configured: ${testOfferings.current.availablePackages.length} package(s) available`);
-      }
-    } catch (testError: any) {
-      const errorMsg = testError?.message || String(testError || '');
-      // Only warn about adapter issues if it's NOT the expected "No available adapters" message
-      // For Web Billing, "No available adapters" is normal and can be ignored
-      if ((errorMsg.includes('adapter') || errorMsg.includes('No available')) && 
-          !errorMsg.includes('No available adapters')) {
-        console.warn('⚠️ RevenueCat configuration issue detected:', errorMsg);
-      }
-      // If it's just "No available adapters", that's expected for Web Billing - don't warn
-    }
+    purchasesInstance.getOfferings()
+      .then((testOfferings) => {
+        console.log('✅ RevenueCat configuration verified, offerings accessible');
+        // Check if offerings have packages (this confirms Web Billing is working)
+        if (testOfferings?.current?.availablePackages?.length > 0) {
+          console.log(`✅ Web Billing configured: ${testOfferings.current.availablePackages.length} package(s) available`);
+        }
+      })
+      .catch((testError: any) => {
+        const errorMsg = testError?.message || String(testError || '');
+        // Only warn about adapter issues if it's NOT the expected "No available adapters" message
+        // For Web Billing, "No available adapters" is normal and can be ignored
+        if ((errorMsg.includes('adapter') || errorMsg.includes('No available')) && 
+            !errorMsg.includes('No available adapters')) {
+          console.warn('⚠️ RevenueCat configuration issue detected:', errorMsg);
+        }
+        // If it's just "No available adapters", that's expected for Web Billing - don't warn
+      });
   } catch (error) {
     console.error('❌ RevenueCat configuration error:', error);
     purchasesInstance = null;
@@ -1093,7 +1094,13 @@ export async function purchaseProSubscription(
     let purchaseResult;
     try {
       // For Web Billing, this call should generate a checkout URL
-      purchaseResult = await purchasesInstance.purchasePackage(selectedPackage);
+      // Add timeout to prevent hanging if RevenueCat/Stripe is slow
+      const purchasePromise = purchasesInstance.purchasePackage(selectedPackage);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Purchase request timed out after 25 seconds. Please try again.')), 25000);
+      });
+      
+      purchaseResult = await Promise.race([purchasePromise, timeoutPromise]);
       
       console.log('📦 Purchase result (success path):', {
         type: typeof purchaseResult,

@@ -162,6 +162,10 @@ export function PricingDialog({
   React.useEffect(() => {
     if (open && user?.id) {
       loadOfferings();
+      // Pre-configure RevenueCat when dialog opens to avoid delays during purchase
+      configureRevenueCat(user.id).catch((error) => {
+        logger.debug('RevenueCat pre-configuration failed (non-blocking):', error);
+      });
     }
   }, [open, user?.id, loadOfferings]);
 
@@ -400,11 +404,36 @@ export function PricingDialog({
         throw new Error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
       }
 
-      // Ensure RevenueCat is configured
-      await configureRevenueCat(user.id);
+      // Show immediate feedback
+      toast.info('Preparing payment form...', {
+        duration: 2000,
+      });
+
+      // RevenueCat should already be configured from dialog open, but ensure it's ready
+      // Use a timeout to prevent hanging if RevenueCat is slow
+      const configurePromise = configureRevenueCat(user.id);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Configuration timeout')), 5000)
+      );
       
-      // Purchase through RevenueCat
-      const result = await purchaseProSubscription('monthly');
+      try {
+        await Promise.race([configurePromise, timeoutPromise]);
+      } catch (configError) {
+        // If configuration times out, continue anyway - it might already be configured
+        logger.debug('RevenueCat configuration timeout or error (continuing):', configError);
+      }
+      
+      // Purchase through RevenueCat with timeout
+      toast.info('Connecting to payment provider...', {
+        duration: 3000,
+      });
+      
+      const purchasePromise = purchaseProSubscription('monthly');
+      const purchaseTimeout = new Promise<{ success: boolean; error?: string }>((_, reject) =>
+        setTimeout(() => reject(new Error('Purchase request timed out. Please try again.')), 30000)
+      );
+      
+      const result = await Promise.race([purchasePromise, purchaseTimeout]);
       
       if (!result.success) {
         // Don't show error toast for user cancellation - it's not an error
@@ -451,11 +480,36 @@ export function PricingDialog({
         throw new Error(SUBSCRIPTION_UI_TEXT.errors.subscriptionNotAvailableDesc);
       }
 
-      // Ensure RevenueCat is configured
-      await configureRevenueCat(user.id);
+      // Show immediate feedback
+      toast.info('Preparing payment form...', {
+        duration: 2000,
+      });
+
+      // RevenueCat should already be configured from dialog open, but ensure it's ready
+      // Use a timeout to prevent hanging if RevenueCat is slow
+      const configurePromise = configureRevenueCat(user.id);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Configuration timeout')), 5000)
+      );
       
-      // Purchase through RevenueCat
-      const result = await purchaseProSubscription('yearly');
+      try {
+        await Promise.race([configurePromise, timeoutPromise]);
+      } catch (configError) {
+        // If configuration times out, continue anyway - it might already be configured
+        logger.debug('RevenueCat configuration timeout or error (continuing):', configError);
+      }
+      
+      // Purchase through RevenueCat with timeout
+      toast.info('Connecting to payment provider...', {
+        duration: 3000,
+      });
+      
+      const purchasePromise = purchaseProSubscription('yearly');
+      const purchaseTimeout = new Promise<{ success: boolean; error?: string }>((_, reject) =>
+        setTimeout(() => reject(new Error('Purchase request timed out. Please try again.')), 30000)
+      );
+      
+      const result = await Promise.race([purchasePromise, purchaseTimeout]);
       
       if (!result.success) {
         // Don't show error toast for user cancellation - it's not an error

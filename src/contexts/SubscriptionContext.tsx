@@ -507,6 +507,28 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 export function useSubscription() {
   const context = useContext(SubscriptionContext);
   if (context === undefined) {
+    // During React Fast Refresh (HMR), providers can temporarily unmount
+    // Return a safe default instead of throwing to prevent crashes
+    if (import.meta.env.DEV) {
+      console.warn('useSubscription called outside SubscriptionProvider (likely HMR issue), returning default');
+      return {
+        subscription: {
+          tier: 'free',
+          status: 'active',
+          startDate: null,
+          endDate: null,
+          cancelAtPeriodEnd: false,
+          billingPeriod: null,
+        },
+        features: getFeatures('free'),
+        isLoading: true,
+        upgradeToPro: async () => {},
+        cancelSubscription: async () => {},
+        downgradeToFree: async () => {},
+        refreshSubscription: async () => {},
+        hasFeature: () => false,
+      };
+    }
     throw new Error(SUBSCRIPTION_UI_TEXT.context.hookError);
   }
   return context;
