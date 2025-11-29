@@ -233,7 +233,7 @@ export function AppSidebar({
   return (
     <>
       {/* Desktop Icon Navbar - Always visible on desktop */}
-      <div className="hidden md:flex w-16 border-r border-primary/10 bg-gradient-to-b from-white via-[#FAF9FC] to-[#F9F7FD] dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex-col h-full">
+      <div className="hidden md:flex w-16 border-r border-primary/20 bg-gradient-to-b from-[#F3F0F9] via-[#E6D5F0] to-[#D4C5F9] dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex-col h-full">
         {iconNavContent}
       </div>
 

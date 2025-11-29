@@ -581,7 +581,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
       {/* Search Bar */}
       <div 
-        className="border-b border-primary/10"
+        className="border-b border-primary/20 bg-muted/40 dark:bg-card/60"
         style={{ 
           paddingLeft: PANEL_PADDING,
           paddingRight: PANEL_PADDING,
@@ -591,7 +591,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       >
         <div className="relative">
           <Search 
-            className="absolute top-1/2 -translate-y-1/2 text-muted-foreground" 
+            className="absolute top-1/2 -translate-y-1/2 text-primary/70" 
             style={{ 
               left: FOLDER_PANEL_SEARCH_ICON_LEFT,
               width: FOLDER_PANEL_ICON_SIZE_SMALL,
@@ -643,7 +643,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               }}
             >
               <Folder 
-                className="mx-auto text-muted-foreground opacity-50" 
+                className="mx-auto text-primary/50" 
                 style={{ 
                   width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
                   height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
@@ -651,7 +651,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 }} 
               />
               <p 
-                className="text-muted-foreground"
+                className="text-muted-foreground dark:text-muted-foreground"
                 style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
               >
                 {searchQuery
