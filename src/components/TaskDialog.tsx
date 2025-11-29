@@ -56,15 +56,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "./ui/popover";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "./ui/accordion";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
+import { Switch } from "./ui/switch";
+import { Slider } from "./ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { PomodoroTimer } from "./PomodoroTimer";
 import {
   cn,
@@ -265,19 +262,19 @@ function FixedMiniCalendar({
         </Button>
       </div>
 
-      {/* Week day headers */}
+      {/* Week day headers - Fixed alignment */}
       <div className="grid grid-cols-7 gap-1 mb-1">
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-[10px] font-medium text-muted-foreground py-1"
+            className="text-center text-[10px] font-medium text-muted-foreground py-1 flex items-center justify-center"
           >
             {day}
           </div>
         ))}
       </div>
 
-      {/* Date grid - showing 35 days (5 weeks) */}
+      {/* Date grid - showing 35 days (5 weeks) - Fixed alignment */}
       <div className="grid grid-cols-7 gap-1">
         {days.map((date, index) => {
           const dateStr = date.toISOString().split('T')[0];
@@ -293,7 +290,7 @@ function FixedMiniCalendar({
               type="button"
               onClick={() => onDateSelect(date, activeField)}
               className={cn(
-                "h-8 w-8 rounded-md text-xs font-medium transition-all hover:scale-110",
+                "h-8 w-full rounded-md text-xs font-medium transition-all hover:scale-105 flex items-center justify-center",
                 isSelectedScheduled && activeField === "scheduled"
                   ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
                   : isSelectedDue && activeField === "due"
@@ -1363,12 +1360,12 @@ export function TaskDialog({
         }
       }}
     >
-      <DialogContent className={`max-w-3xl max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full ${UI_GRADIENT_COLORS.dialog.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
-        <DialogHeader className="flex-shrink-0 pb-4 border-b border-primary/10">
-          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+      <DialogContent className={`max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full ${UI_GRADIENT_COLORS.dialog.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
+        <DialogHeader className="flex-shrink-0 pb-4 sm:pb-5 md:pb-6 border-b border-primary/10">
+          <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             {task ? "Edit Task" : "Create New Task"}
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+          <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
             {task
               ? "Update the task details below."
               : "Fill in the details to create a new task."}
@@ -1380,267 +1377,245 @@ export function TaskDialog({
             e.preventDefault();
             handleSubmit(e as any);
           }}
-          className="flex-1 overflow-y-auto pr-2"
+          className="flex-1 overflow-hidden flex flex-col"
         >
-          <div className="space-y-6 py-4">
-            {/* Basic Information - Always Visible */}
-            <div className="space-y-4 bg-white/60 dark:bg-card/40 rounded-lg p-4 border border-primary/10">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-semibold">Title *</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Task title"
-                  autoFocus
-                  className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
-                />
-              </div>
+          {/* Tabbed Interface */}
+          <Tabs defaultValue="basic" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="w-full justify-start px-4 sm:px-6 mb-4 bg-transparent border-b border-primary/10 rounded-none h-auto py-2 sm:py-3">
+              <TabsTrigger value="basic" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Basic Info</span>
+                <span className="sm:hidden">Basic</span>
+              </TabsTrigger>
+              <TabsTrigger value="scheduling" className="text-xs sm:text-sm">
+                <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">Schedule</span>
+                <span className="sm:hidden">Time</span>
+              </TabsTrigger>
+              <TabsTrigger value="organization" className="text-xs sm:text-sm">
+                <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">Organize</span>
+                <span className="sm:hidden">Tags</span>
+              </TabsTrigger>
+              <TabsTrigger value="advanced" className="text-xs sm:text-sm">
+                <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                <span className="hidden sm:inline">Advanced</span>
+                <span className="sm:hidden">More</span>
+              </TabsTrigger>
+            </TabsList>
 
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-semibold">Description</Label>
-                <RichTextEditor
-                  value={description}
-                  onChange={setDescription}
-                  placeholder="Add a description..."
-                  rows={3}
-                  className="focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status" className="text-sm font-semibold">Status</Label>
-                  <Select
-                    value={status}
-                    onValueChange={(value) =>
-                      setStatus(value as TaskStatus)
-                    }
-                  >
-                    <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                      <SelectItem value="todo">To Do</SelectItem>
-                      <SelectItem value="in-progress">In Progress</SelectItem>
-                      <SelectItem value="done">Done</SelectItem>
-                      <SelectItem value="on-hold">On Hold</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 px-4 sm:px-6 pb-4">
+              {/* Basic Info Tab - Redesigned Flow */}
+              <TabsContent value="basic" className="mt-0 space-y-4 sm:space-y-5">
+                {/* Step 1: Name the Task */}
+                <div className="space-y-3 sm:space-y-4 bg-white dark:bg-card rounded-lg p-4 sm:p-5 border-2 border-primary/30 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-xs font-bold text-primary">1</span>
+                    </div>
+                    <Label htmlFor="title" className="text-base font-semibold text-foreground">Task Name *</Label>
+                  </div>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter task name..."
+                    autoFocus
+                    className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-11 text-base"
+                  />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="priority" className="text-sm font-semibold">Priority</Label>
-                  <Select
-                    value={priority}
-                    onValueChange={(value) =>
-                      setPriority(value as TaskPriority)
-                    }
-                  >
-                    <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                {/* Step 2: Quick Actions Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <Label htmlFor="status" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-primary">2</span>
+                      </div>
+                      Status
+                    </Label>
+                    <Select
+                      value={status}
+                      onValueChange={(value) =>
+                        setStatus(value as TaskStatus)
+                      }
+                    >
+                      <SelectTrigger className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                        <SelectItem value="todo">To Do</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="done">Done</SelectItem>
+                        <SelectItem value="on-hold">On Hold</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {/* Folder Selector */}
-              {folders.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2">
-                    <Folder className="w-4 h-4 text-primary" />
-                    Folder
-                  </Label>
-                  <Select
-                    value={folderId || "none"}
-                    onValueChange={(value) => {
-                      const newFolderId = value === "none" ? null : value;
-                      setFolderId(newFolderId);
-                      
-                      // Also add folder name as a tag when folder is selected
-                      if (newFolderId && folders && Array.isArray(folders)) {
-                        try {
-                          const selectedFolder = folders.find(f => f && f.id === newFolderId);
-                          if (selectedFolder && selectedFolder.name && !tags.includes(selectedFolder.name)) {
-                            setTags([...tags, selectedFolder.name]);
-                          }
-                        } catch (error) {
-                          logger.error('Error finding selected folder:', error);
-                        }
-                      } else {
-                        // Remove folder name from tags when folder is deselected
-                        // Find the folder that was previously selected
-                        if (folderId && folders && Array.isArray(folders)) {
+                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <Label htmlFor="priority" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-primary">3</span>
+                      </div>
+                      Priority
+                    </Label>
+                    <Select
+                      value={priority}
+                      onValueChange={(value) =>
+                        setPriority(value as TaskPriority)
+                      }
+                    >
+                      <SelectTrigger className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Description - Optional */}
+                <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <Label htmlFor="description" className="text-sm font-semibold text-foreground">Description (Optional)</Label>
+                  <RichTextEditor
+                    value={description}
+                    onChange={setDescription}
+                    placeholder="Add a description..."
+                    rows={3}
+                    className="focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary"
+                  />
+                </div>
+
+                {/* Folder Selector */}
+                {folders.length > 0 && (
+                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                      <Folder className="w-4 h-4 text-primary" />
+                      Folder
+                    </Label>
+                    <Select
+                      value={folderId || "none"}
+                      onValueChange={(value) => {
+                        const newFolderId = value === "none" ? null : value;
+                        setFolderId(newFolderId);
+                        
+                        // Also add folder name as a tag when folder is selected
+                        if (newFolderId && folders && Array.isArray(folders)) {
                           try {
-                            const previousFolder = folders.find(f => f && f.id === folderId);
-                            if (previousFolder && previousFolder.name && tags.includes(previousFolder.name)) {
-                              setTags(tags.filter(tag => tag !== previousFolder.name));
+                            const selectedFolder = folders.find(f => f && f.id === newFolderId);
+                            if (selectedFolder && selectedFolder.name && !tags.includes(selectedFolder.name)) {
+                              setTags([...tags, selectedFolder.name]);
                             }
                           } catch (error) {
-                            logger.error('Error finding previous folder:', error);
+                            logger.error('Error finding selected folder:', error);
+                          }
+                        } else {
+                          // Remove folder name from tags when folder is deselected
+                          // Find the folder that was previously selected
+                          if (folderId && folders && Array.isArray(folders)) {
+                            try {
+                              const previousFolder = folders.find(f => f && f.id === folderId);
+                              if (previousFolder && previousFolder.name && tags.includes(previousFolder.name)) {
+                                setTags(tags.filter(tag => tag !== previousFolder.name));
+                              }
+                            } catch (error) {
+                              logger.error('Error finding previous folder:', error);
+                            }
                           }
                         }
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20">
-                      <SelectValue placeholder="No folder" />
-                    </SelectTrigger>
-                    <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                      <SelectItem value="none">No folder</SelectItem>
-                      {folders && Array.isArray(folders) ? folders
-                        .filter(folder => folder && folder.id && folder.name)
-                        .map((folder) => (
-                          <SelectItem key={folder.id} value={folder.id}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded"
-                                style={{ backgroundColor: folder.color || UI_FOLDER_COLORS.fallback }}
-                              />
-                              <span>{folder.name}</span>
-                            </div>
-                          </SelectItem>
-                        )) : null}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-
-            {/* Accordion Sections */}
-            <Accordion type="multiple" defaultValue={["scheduling"]} className="space-y-3">
-              {/* Scheduling Section */}
-              <AccordionItem value="scheduling" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-card/40 overflow-hidden">
-                <AccordionTrigger className="px-4 hover:no-underline hover:bg-primary/5 dark:hover:bg-primary/10">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="w-4 h-4 text-primary" />
-                    <span className="font-semibold">Scheduling & Timing</span>
+                      }}
+                    >
+                      <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectValue placeholder="No folder" />
+                      </SelectTrigger>
+                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                        <SelectItem value="none">No folder</SelectItem>
+                        {folders && Array.isArray(folders) ? folders
+                          .filter(folder => folder && folder.id && folder.name)
+                          .map((folder) => (
+                            <SelectItem key={folder.id} value={folder.id}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-3 h-3 rounded"
+                                  style={{ backgroundColor: folder.color || UI_FOLDER_COLORS.fallback }}
+                                />
+                                <span>{folder.name}</span>
+                              </div>
+                            </SelectItem>
+                          )) : null}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 space-y-4">
-                  {/* Fixed Mini Calendar */}
-                  <FixedMiniCalendar
-                    scheduledDate={scheduledDate}
-                    dueDate={dueDate}
-                    activeField={activeDateField}
-                    onDateSelect={(date, field) => {
-                      if (!date) {
-                        // Clear action
-                        if (field === "scheduled") {
-                          setScheduledDate(undefined);
-                          setScheduledMonth("");
-                          setScheduledDay("");
-                          setScheduledYear("");
-                          setScheduledTime("");
-                          setScheduledHours("");
-                          setScheduledMinutes("");
-                        } else {
-                          setDueDate(undefined);
-                          setDueMonth("");
-                          setDueDay("");
-                          setDueYear("");
-                        }
-                      } else {
-                        // Set date
-                        if (field === "scheduled") {
-                          setScheduledDate(date);
-                          setScheduledMonth((date.getMonth() + 1).toString());
-                          setScheduledDay(date.getDate().toString());
-                          setScheduledYear(date.getFullYear().toString());
-                        } else {
-                          setDueDate(date);
-                          setDueMonth((date.getMonth() + 1).toString());
-                          setDueDay(date.getDate().toString());
-                          setDueYear(date.getFullYear().toString());
-                        }
-                      }
-                    }}
-                    onFieldChange={setActiveDateField}
-                  />
+                )}
+              </TabsContent>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Scheduled Date */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-semibold flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4 text-primary" />
-                          Scheduled Date
-                        </Label>
-                        {scheduledDate && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setScheduledDate(undefined);
-                              setScheduledMonth("");
-                              setScheduledDay("");
-                              setScheduledYear("");
-                              setScheduledTime("");
-                              setScheduledHours("");
-                              setScheduledMinutes("");
-                            }}
-                            className="h-6 text-xs text-muted-foreground hover:text-foreground"
-                          >
-                            Clear
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Date Input */}
-                      <Input
-                        type="text"
-                        placeholder="MM/DD/YYYY"
-                        value={scheduledDate ? 
-                          `${(scheduledDate.getMonth() + 1).toString().padStart(2, '0')}/${scheduledDate.getDate().toString().padStart(2, '0')}/${scheduledDate.getFullYear()}` 
-                          : ''}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          // Allow typing date in MM/DD/YYYY format
-                          if (value.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
-                            const [month, day, year] = value.split('/').map(Number);
-                            if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900) {
-                              const date = new Date(year, month - 1, day);
-                              if (!isNaN(date.getTime())) {
-                                setScheduledDate(date);
-                                setScheduledMonth(month.toString());
-                                setScheduledDay(day.toString());
-                                setScheduledYear(year.toString());
-                                setActiveDateField("scheduled");
-                              }
-                            }
-                          } else if (value === '') {
+              {/* Scheduling Tab - Step 2: Select Date */}
+              <TabsContent value="scheduling" className="mt-0 space-y-4 sm:space-y-5">
+                <div className="space-y-4 sm:space-y-5">
+                  {/* Fixed Mini Calendar - Keep as is per requirements */}
+                  <div className="w-full flex justify-center py-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <FixedMiniCalendar
+                      scheduledDate={scheduledDate}
+                      dueDate={dueDate}
+                      activeField={activeDateField}
+                      onDateSelect={(date, field) => {
+                        if (!date) {
+                          // Clear action
+                          if (field === "scheduled") {
                             setScheduledDate(undefined);
                             setScheduledMonth("");
                             setScheduledDay("");
                             setScheduledYear("");
+                            setScheduledTime("");
+                            setScheduledHours("");
+                            setScheduledMinutes("");
+                          } else {
+                            setDueDate(undefined);
+                            setDueMonth("");
+                            setDueDay("");
+                            setDueYear("");
                           }
-                        }}
-                        onBlur={(e) => {
-                          // Validate on blur
-                          const value = e.target.value;
-                          if (value && !value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                            // If invalid format, try to parse or clear
-                            const date = new Date(value);
-                            if (!isNaN(date.getTime())) {
-                              setScheduledDate(date);
-                              setScheduledMonth((date.getMonth() + 1).toString());
-                              setScheduledDay(date.getDate().toString());
-                              setScheduledYear(date.getFullYear().toString());
-                              setActiveDateField("scheduled");
-                              // Update input to correct format
-                              e.target.value = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
-                            }
+                        } else {
+                          // Set date
+                          if (field === "scheduled") {
+                            setScheduledDate(date);
+                            setScheduledMonth((date.getMonth() + 1).toString());
+                            setScheduledDay(date.getDate().toString());
+                            setScheduledYear(date.getFullYear().toString());
+                          } else {
+                            setDueDate(date);
+                            setDueMonth((date.getMonth() + 1).toString());
+                            setDueDay(date.getDate().toString());
+                            setDueYear(date.getFullYear().toString());
                           }
-                        }}
-                        className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20 text-sm"
-                      />
+                        }
+                      }}
+                      onFieldChange={setActiveDateField}
+                    />
+                  </div>
+
+                  {/* Time Selection - Two Column Layout */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    {/* Scheduled Date & Time */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                        <CalendarIcon className="w-4 h-4 text-primary" />
+                        Scheduled Date & Time
+                      </Label>
+                      {scheduledDate && (
+                        <div className="text-xs text-muted-foreground bg-primary/10 rounded px-2 py-1">
+                          {scheduledDate.toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                          {scheduledTime && ` at ${scheduledTime}`}
+                        </div>
+                      )}
 
                       {/* Time Picker */}
                       {scheduledDate && (
@@ -1667,10 +1642,9 @@ export function TaskDialog({
                             )}
                           </div>
                           {/* Inline layout: Format toggle, Hour, Minute, AM/PM */}
-                          {/* Single line layout - no wrapping */}
-                          <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 flex-nowrap w-full overflow-visible">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full">
                             {/* Time Format Toggle */}
-                            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                               <Button
                                 type="button"
                                 variant={timeFormat === "12hr" ? "default" : "outline"}
@@ -1707,7 +1681,7 @@ export function TaskDialog({
                                     }
                                   }
                                 }}
-                                className="h-6 sm:h-7 md:h-9 px-2 sm:px-2.5 md:px-3 text-[10px] sm:text-xs md:text-sm"
+                                className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
                               >
                                 12HR
                               </Button>
@@ -1737,14 +1711,14 @@ export function TaskDialog({
                                     }
                                   }
                                 }}
-                                className="h-6 sm:h-7 md:h-9 px-2 sm:px-2.5 md:px-3 text-[10px] sm:text-xs md:text-sm"
+                                className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
                               >
                                 24HR
                               </Button>
                             </div>
 
                             {/* Hour Select */}
-                            <div className="flex-1 min-w-[60px] sm:min-w-[80px] md:min-w-[90px] relative z-10">
+                            <div className="flex-1 min-w-[70px] sm:min-w-[90px] relative z-10">
                               <Select
                                 value={scheduledHours || undefined}
                                 onValueChange={(value) => {
@@ -1759,7 +1733,7 @@ export function TaskDialog({
                                   }
                                 }}
                               >
-                                <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer">
+                                <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 h-9 sm:h-10 text-sm cursor-pointer">
                                   <SelectValue placeholder="Hour" />
                                 </SelectTrigger>
                                 <SelectContent 
@@ -1786,7 +1760,7 @@ export function TaskDialog({
                             </div>
 
                             {/* Minute Select */}
-                            <div className="flex-1 min-w-[60px] sm:min-w-[80px] md:min-w-[90px] relative z-20">
+                            <div className="flex-1 min-w-[70px] sm:min-w-[90px] relative z-20">
                               <Select
                                 value={
                                   scheduledMinutes && scheduledMinutes.length > 0 
@@ -1812,7 +1786,7 @@ export function TaskDialog({
                                 disabled={false}
                               >
                                 <SelectTrigger 
-                                  className="bg-white dark:bg-card/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer pointer-events-auto"
+                                  className="bg-white dark:bg-card/80 border-primary/20 h-9 sm:h-10 text-sm cursor-pointer pointer-events-auto"
                                   aria-label="Select minutes"
                                 >
                                   <SelectValue placeholder="Min" />
@@ -1839,7 +1813,7 @@ export function TaskDialog({
 
                             {/* AM/PM Select (only for 12HR format) */}
                             {timeFormat === "12hr" && (
-                              <div className="flex-1 min-w-[50px] sm:min-w-[64px] md:min-w-[75px] relative z-10">
+                              <div className="flex-1 min-w-[70px] sm:min-w-[90px] relative z-10">
                                 <Select
                                   value={timePeriod || "AM"}
                                   onValueChange={(value) => {
@@ -1853,7 +1827,7 @@ export function TaskDialog({
                                     }
                                   }}
                                 >
-                                  <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 h-6 sm:h-7 md:h-9 text-[10px] sm:text-xs md:text-sm cursor-pointer">
+                                  <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 h-9 sm:h-10 text-sm cursor-pointer">
                                     <SelectValue placeholder="AM/PM" />
                                   </SelectTrigger>
                                   <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -1874,7 +1848,7 @@ export function TaskDialog({
                     </div>
 
                     {/* Due Date */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-semibold flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-primary" />
@@ -1944,65 +1918,73 @@ export function TaskDialog({
                             }
                           }
                         }}
-                        className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20 text-sm"
+                        className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10"
                       />
                     </div>
                   </div>
 
-                  {/* Estimated Time */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary" />
-                      Estimated Time
-                    </Label>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <Input
-                          id="estimatedHours"
-                          type="number"
-                          value={estimatedHours}
-                          onChange={(e) =>
-                            setEstimatedHours(e.target.value)
+                  {/* Estimated Time with Slider */}
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-primary" />
+                        Estimated Time
+                      </Label>
+                      <div className="text-sm font-medium text-primary">
+                        {estimatedHours}h {estimatedMinutes}m
+                      </div>
+                    </div>
+                    
+                    {/* Hours Slider */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Hours</span>
+                        <span>{estimatedHours}</span>
+                      </div>
+                      <Slider
+                        value={[parseInt(estimatedHours) || 0]}
+                        onValueChange={(values) => setEstimatedHours(values[0].toString())}
+                        min={0}
+                        max={8}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Minutes Slider */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Minutes</span>
+                        <span>{estimatedMinutes}</span>
+                      </div>
+                      <Slider
+                        value={[parseInt(estimatedMinutes) || 0]}
+                        onValueChange={(values) => {
+                          const value = values[0];
+                          if (value >= 0 && value <= 59) {
+                            setEstimatedMinutes(value.toString());
                           }
-                          placeholder="0"
-                          min="0"
-                          className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
-                        />
-                        <Label className="text-xs text-muted-foreground mt-1 block">Hours</Label>
-                      </div>
-                      <div className="flex-1">
-                        <Input
-                          id="estimatedMinutes"
-                          type="number"
-                          value={estimatedMinutes}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "" || (parseInt(value) >= 0 && parseInt(value) <= 59)) {
-                              setEstimatedMinutes(value);
-                            }
-                          }}
-                          placeholder="0"
-                          min="0"
-                          max="59"
-                          className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
-                        />
-                        <Label className="text-xs text-muted-foreground mt-1 block">Minutes</Label>
-                      </div>
+                        }}
+                        min={0}
+                        max={59}
+                        step={5}
+                        className="w-full"
+                      />
                     </div>
                   </div>
 
                   {/* Timezone Selector */}
                   {scheduledDate && (
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Globe className="w-3 h-3" />
+                    <div className="space-y-2 sm:space-y-3">
+                      <Label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5" />
                         Timezone
                       </Label>
                       <Select
                         value={timezone}
                         onValueChange={setTimezone}
                       >
-                        <SelectTrigger className="h-9 bg-white dark:bg-card/80 border-primary/20">
+                        <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent 
@@ -2036,318 +2018,309 @@ export function TaskDialog({
                         )}
                     </div>
                   )}
-                </AccordionContent>
-              </AccordionItem>
+                </div>
+              </TabsContent>
 
-              {/* Organization Section */}
-              <AccordionItem value="organization" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-card/40 overflow-hidden">
-                <AccordionTrigger className="px-4 hover:no-underline hover:bg-primary/5 dark:hover:bg-primary/10">
-                  <div className="flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-primary" />
-                    <span className="font-semibold">Organization</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 space-y-4">
-                  {/* Tags */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-primary" />
-                      Tags
-                    </Label>
-                    
-                    {/* Select from available tags */}
-                    {availableTags && availableTags.length > 0 && (
-                      <Select
-                        value={selectedTagValue || undefined}
-                        onValueChange={(value) => {
-                          if (value && value !== "none" && !tags.includes(value)) {
-                            setTags([...tags, value]);
-                            // Reset the select after adding tag
-                            setSelectedTagValue("");
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20">
-                          <SelectValue placeholder="Select a tag to add..." />
-                        </SelectTrigger>
-                        <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                          {availableTags
-                            .filter((tag) => !tags.includes(tag))
-                            .map((tag) => (
-                              <SelectItem key={tag} value={tag}>
-                                {tag}
-                              </SelectItem>
-                            ))}
-                          {availableTags.filter((tag) => !tags.includes(tag)).length === 0 && (
-                            <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
-                              All available tags have been added
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <Input
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyPress={(e) =>
-                          e.key === "Enter" &&
-                          (e.preventDefault(), addTag())
-                        }
-                        placeholder="Or type a new tag..."
-                        className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
-                      />
-                      <Button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addTag();
-                        }}
-                        variant="outline"
-                        size="icon"
-                        className="border-primary/20 hover:border-primary/40"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-
-                    {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {tags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="cursor-pointer hover:bg-destructive/10 border-primary/20"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              removeTag(tag);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                removeTag(tag);
-                              }
-                            }}
-                            tabIndex={0}
-                            role="button"
-                            aria-label={`Remove tag: ${tag}`}
-                          >
-                            {tag} <X className="w-3 h-3 ml-1" />
-                          </Badge>
-                        ))}
+              {/* Organization Tab - Step 3: Assign User, Step 4: Create Subtask, Step 5: Add Dependency */}
+              <TabsContent value="organization" className="mt-0 space-y-4 sm:space-y-5">
+                {/* Step 3: Assign User */}
+                {teamMembers.length > 0 && (
+                  <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary">3</span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Subtasks */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold flex items-center gap-2">
-                      <ListChecks className="w-4 h-4 text-primary" />
-                      Subtasks
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={subtaskInput}
-                        onChange={(e) =>
-                          setSubtaskInput(e.target.value)
-                        }
-                        onKeyPress={(e) =>
-                          e.key === "Enter" &&
-                          (e.preventDefault(), addSubtask())
-                        }
-                        placeholder="Add a subtask..."
-                        className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20"
-                      />
-                      <Button
-                        type="button"
-                        onClick={addSubtask}
-                        variant="outline"
-                        size="icon"
-                        className="border-primary/20 hover:border-primary/40"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
+                      <Label className="text-base font-semibold text-foreground flex items-center gap-2">
+                        <Users className="w-4 h-4 text-primary" />
+                        Assign To Team Member
+                      </Label>
                     </div>
-                    {subtasks.length > 0 && (
-                      <div className="space-y-2 mt-2">
-                        {subtasks.map((subtask) => {
-                          const subtaskAssignees = (subtask.assignedTo || []).map(id => getTeamMember(id)).filter(Boolean);
-                          return (
-                            <div
-                              key={subtask.id}
-                              className="flex items-start gap-2 p-2 rounded-lg bg-white/50 dark:bg-card/50 border border-primary/10"
-                            >
-                              <Checkbox
-                                checked={subtask.completed}
-                                onCheckedChange={() =>
-                                  toggleSubtask(subtask.id)
-                                }
-                                className="mt-1"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <span
-                                  className={cn(
-                                    "text-sm block",
-                                    subtask.completed &&
-                                      "line-through text-muted-foreground",
-                                  )}
-                                >
-                                  {subtask.title}
-                                </span>
-                                {/* Subtask Assignment */}
-                                {teamMembers.length > 0 && (
-                                  <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                                    <Select
-                                      value={undefined}
-                                      onValueChange={(value) => {
-                                        if (value) {
-                                          assignSubtaskToMember(subtask.id, value);
-                                        }
-                                      }}
-                                    >
-                                      <SelectTrigger className="h-6 text-xs border-primary/20 bg-white dark:bg-card/80">
-                                        <SelectValue placeholder="Assign..." />
-                                      </SelectTrigger>
-                                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                                        {teamMembers
-                                          .filter(
-                                            (member) =>
-                                              !subtask.assignedTo?.includes(member.id)
-                                          )
-                                          .map((member) => (
-                                            <SelectItem
-                                              key={member.id}
-                                              value={member.id}
-                                            >
-                                              <div className="flex items-center gap-2">
-                                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
-                                                  {member.name
-                                                    .split(" ")
-                                                    .map((n) => n[0])
-                                                    .join("")
-                                                    .toUpperCase()}
-                                                </div>
-                                                <span className="text-xs">{member.name}</span>
-                                              </div>
-                                            </SelectItem>
-                                          ))}
-                                      </SelectContent>
-                                    </Select>
-                                    {subtaskAssignees.length > 0 && (
-                                      <div className="flex items-center gap-1 flex-wrap">
-                                        {subtaskAssignees.map((member) => (
-                                          <Badge
-                                            key={member.id}
-                                            variant="secondary"
-                                            className="text-[10px] h-5 px-1.5 cursor-pointer hover:bg-destructive/10 border-primary/20"
-                                            onClick={() =>
-                                              assignSubtaskToMember(
-                                                subtask.id,
-                                                member.id
-                                              )
-                                            }
-                                          >
-                                            <div className="flex items-center gap-1">
-                                              <div className="w-3 h-3 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[8px] font-medium">
-                                                {member.name
-                                                  .split(" ")
-                                                  .map((n) => n[0])
-                                                  .join("")
-                                                  .toUpperCase()}
-                                              </div>
-                                              <span className="text-[10px]">{member.name}</span>
-                                              <X className="w-2.5 h-2.5 ml-0.5" />
-                                            </div>
-                                          </Badge>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                    <Select
+                      value={selectedAssigneeValue || undefined}
+                      onValueChange={(value) => {
+                        if (value && !assignedTo.includes(value)) {
+                          setAssignedTo([...assignedTo, value]);
+                          setSelectedAssigneeValue("");
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectValue placeholder="Select team member..." />
+                      </SelectTrigger>
+                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                        {teamMembers
+                          .filter((member) => !assignedTo.includes(member.id))
+                          .map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-xs font-medium">
+                                  {member.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase()}
+                                </div>
+                                <span>{member.name}</span>
                               </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeSubtask(subtask.id)}
-                                className="h-7 w-7 p-0 flex-shrink-0"
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+
+                    {assignedTo.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {assignedTo.map((memberId) => {
+                          const member = getTeamMember(memberId);
+                          if (!member) return null;
+                          return (
+                            <Badge
+                              key={memberId}
+                              variant="secondary"
+                              className="cursor-pointer hover:bg-destructive/10 border-2 border-primary/30 px-3 py-1"
+                              onClick={() =>
+                                setAssignedTo(assignedTo.filter((id) => id !== memberId))
+                              }
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
+                                  {getInitials(member.name)}
+                                </div>
+                                <span>{member.name}</span>
+                                <X className="w-3 h-3 ml-1" />
+                              </div>
+                            </Badge>
                           );
                         })}
                       </div>
                     )}
                   </div>
-                </AccordionContent>
-              </AccordionItem>
+                )}
 
-              {/* Advanced Options Section */}
-              <AccordionItem value="advanced" className="border border-primary/20 rounded-lg bg-white/60 dark:bg-card/40 overflow-hidden">
-                <AccordionTrigger className="px-4 hover:no-underline hover:bg-primary/5 dark:hover:bg-primary/10">
-                  <div className="flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-primary" />
-                    <span className="font-semibold">Advanced Options</span>
+                {/* Step 4: Create Subtask */}
+                <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-xs font-bold text-primary">4</span>
+                    </div>
+                    <Label className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <ListChecks className="w-4 h-4 text-primary" />
+                      Create Subtask
+                    </Label>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 space-y-4">
-                  {/* Recurrence */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Repeat className="w-4 h-4 text-primary" />
-                      <Label className="text-sm font-semibold">Repeat Task</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={subtaskInput}
+                      onChange={(e) => setSubtaskInput(e.target.value)}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(), addSubtask())
+                      }
+                      placeholder="Enter subtask name..."
+                      className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10"
+                    />
+                    <Button
+                      type="button"
+                      onClick={addSubtask}
+                      variant="outline"
+                      size="icon"
+                      className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 w-10"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {subtasks.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      {subtasks.map((subtask) => {
+                        return (
+                          <div
+                            key={subtask.id}
+                            className="flex items-start gap-2 p-2 rounded-lg bg-primary/5 dark:bg-card border-2 border-primary/20"
+                          >
+                            <Checkbox
+                              checked={subtask.completed}
+                              onCheckedChange={() => toggleSubtask(subtask.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span
+                                className={cn(
+                                  "text-sm block",
+                                  subtask.completed && "line-through text-muted-foreground",
+                                )}
+                              >
+                                {subtask.title}
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeSubtask(subtask.id)}
+                              className="h-7 w-7 p-0 flex-shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Step 5: Add Dependency */}
+                <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-xs font-bold text-primary">5</span>
+                    </div>
+                    <Label className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Link2 className="w-4 h-4 text-primary" />
+                      Add Dependency
+                    </Label>
+                  </div>
+                  {availableTasksForDependencies.length > 0 ? (
+                    <Select
+                      value={selectedDependencyValue || undefined}
+                      onValueChange={(value) => {
+                        if (value) {
+                          addDependency(value);
+                          setSelectedDependencyValue("");
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectValue placeholder="Select a task..." />
+                      </SelectTrigger>
+                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                        {availableTasksForDependencies
+                          .filter((t) => !dependencies.includes(t.id))
+                          .map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs border-primary/30">
+                                  {t.status}
+                                </Badge>
+                                <span className="truncate">{t.title}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      No available tasks to add as dependencies
+                    </p>
+                  )}
+
+                  {dependencies.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      {dependencies.map((depId) => {
+                        const depTask = tasks.find((t) => t.id === depId);
+                        if (!depTask) return null;
+                        const isComplete = depTask.status === "done";
+                        return (
+                          <div
+                            key={depId}
+                            className={cn(
+                              "flex items-center gap-2 p-2 rounded-lg border-2",
+                              isComplete
+                                ? "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                                : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800",
+                            )}
+                          >
+                            {isComplete ? (
+                              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-xs">✓</span>
+                              </div>
+                            ) : (
+                              <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm truncate">{depTask.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Status: {depTask.status} · Priority: {depTask.priority}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeDependency(depId)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Advanced Tab */}
+              <TabsContent value="advanced" className="mt-0 space-y-4 sm:space-y-5">
+                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  {/* Recurrence with Toggle */}
+                  <div className="space-y-4 sm:space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Repeat className="w-4 h-4 text-primary" />
+                        <Label className="text-sm font-semibold">Repeat Task</Label>
+                      </div>
+                      <Switch
+                        checked={recurrenceType !== "none"}
+                        onCheckedChange={(checked) => {
+                          if (!checked) {
+                            setRecurrenceType("none");
+                            setRecurrenceDaysOfWeek([]);
+                            setRecurrenceDayOfMonth(undefined);
+                            setRecurrenceEndDate(undefined);
+                          } else {
+                            setRecurrenceType("daily");
+                          }
+                        }}
+                      />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Frequency</Label>
-                        <Select
-                          value={recurrenceType}
-                          onValueChange={(value) => {
-                            try {
-                              const newType = value as RecurrenceType;
-                              
-                              // Batch state updates to prevent race conditions
-                              // React 18 automatically batches these, but we'll do it explicitly for safety
-                              setRecurrenceType(newType);
-                              
-                              // Reset related fields when changing type to prevent crashes
-                              if (newType === "none") {
-                                setRecurrenceDaysOfWeek([]);
-                                setRecurrenceDayOfMonth(undefined);
-                                setRecurrenceEndDate(undefined);
-                              } else if (newType === "daily") {
-                                setRecurrenceDaysOfWeek([]);
-                                setRecurrenceDayOfMonth(undefined);
-                                // Keep end date for daily
-                              } else if (newType === "weekly") {
-                                setRecurrenceDayOfMonth(undefined);
-                                // Keep daysOfWeek if already set, otherwise initialize empty
-                                // No need to reset if already empty
-                              } else if (newType === "monthly") {
-                                setRecurrenceDaysOfWeek([]);
-                                // Set default day of month if not already set
-                                setRecurrenceDayOfMonth((prev) => prev || 1);
-                              }
-                            } catch (error) {
-                              logger.error('Error setting recurrence type:', error);
-                              toast.error('Failed to set recurrence type', {
-                                description: error instanceof Error ? error.message : 'Please try again',
-                                duration: TOAST_DURATION_SHORT_MS,
-                              });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20">
+                    {recurrenceType !== "none" && (
+                      <div className="space-y-4 sm:space-y-5 pl-6 border-l-2 border-primary/20">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs sm:text-sm font-medium">Frequency</Label>
+                            <Select
+                              value={recurrenceType}
+                              onValueChange={(value) => {
+                                try {
+                                  const newType = value as RecurrenceType;
+                                  setRecurrenceType(newType);
+                                  
+                                  if (newType === "none") {
+                                    setRecurrenceDaysOfWeek([]);
+                                    setRecurrenceDayOfMonth(undefined);
+                                    setRecurrenceEndDate(undefined);
+                                  } else if (newType === "daily") {
+                                    setRecurrenceDaysOfWeek([]);
+                                    setRecurrenceDayOfMonth(undefined);
+                                  } else if (newType === "weekly") {
+                                    setRecurrenceDayOfMonth(undefined);
+                                  } else if (newType === "monthly") {
+                                    setRecurrenceDaysOfWeek([]);
+                                    setRecurrenceDayOfMonth((prev) => prev || 1);
+                                  }
+                                } catch (error) {
+                                  logger.error('Error setting recurrence type:', error);
+                                  toast.error('Failed to set recurrence type', {
+                                    description: error instanceof Error ? error.message : 'Please try again',
+                                    duration: TOAST_DURATION_SHORT_MS,
+                                  });
+                                }
+                              }}
+                            >
+                          <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                            <SelectItem value="none">Does not repeat</SelectItem>
                             <SelectItem value="daily">Daily</SelectItem>
                             <SelectItem value="weekly">Weekly</SelectItem>
                             <SelectItem value="monthly">Monthly</SelectItem>
@@ -2355,34 +2328,23 @@ export function TaskDialog({
                         </Select>
                       </div>
 
-                      {recurrenceType !== "none" && (
-                        <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">Every</Label>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              id="recurrenceInterval"
-                              type="number"
-                              value={recurrenceInterval}
-                              onChange={(e) =>
-                                setRecurrenceInterval(
-                                  parseInt(e.target.value) || 1,
-                                )
-                              }
-                              min="1"
-                              max="30"
-                              className="flex-1 bg-white dark:bg-card/80 border-primary/20"
-                            />
-                            <span className="text-sm text-muted-foreground whitespace-nowrap">
-                              {recurrenceType === "daily" && "day(s)"}
-                              {recurrenceType === "weekly" && "week(s)"}
-                              {recurrenceType === "monthly" && "month(s)"}
-                            </span>
-                          </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Repeat Every</span>
+                          <span className="font-medium text-primary">{recurrenceInterval} {recurrenceType === "daily" ? "day(s)" : recurrenceType === "weekly" ? "week(s)" : "month(s)"}</span>
                         </div>
-                      )}
+                        <Slider
+                          value={[recurrenceInterval]}
+                          onValueChange={(values) => setRecurrenceInterval(values[0])}
+                          min={1}
+                          max={30}
+                          step={1}
+                          className="w-full"
+                        />
+                      </div>
                     </div>
 
-                    {/* Weekly: Days of Week */}
+                        {/* Weekly: Days of Week */}
                     {recurrenceType === "weekly" && (
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Repeat on</Label>
@@ -2430,7 +2392,7 @@ export function TaskDialog({
                             setRecurrenceDayOfMonth(parseInt(value))
                           }
                         >
-                          <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20">
+                          <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent 
@@ -2507,24 +2469,26 @@ export function TaskDialog({
                       </div>
                     )}
 
-                    {/* Recurrence Summary */}
-                    {recurrenceType !== "none" && (
-                      <div className="p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                        <p className="text-xs text-muted-foreground">
-                          {recurrenceType === "daily" &&
-                            `Repeats every ${recurrenceInterval} day${recurrenceInterval > 1 ? "s" : ""}`}
-                          {recurrenceType === "weekly" && (
-                            <>
-                              Repeats every {recurrenceInterval} week{recurrenceInterval > 1 ? "s" : ""}
-                              {recurrenceDaysOfWeek.length > 0 &&
-                                ` on ${recurrenceDaysOfWeek.map((d) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]).join(", ")}`}
-                            </>
-                          )}
-                          {recurrenceType === "monthly" &&
-                            `Repeats every ${recurrenceInterval} month${recurrenceInterval > 1 ? "s" : ""} on day ${recurrenceDayOfMonth || 1}`}
-                          {recurrenceEndDate &&
-                            ` until ${formatDate(recurrenceEndDate.toISOString())}`}
-                        </p>
+                        {/* Recurrence Summary */}
+                        {recurrenceType !== "none" && (
+                          <div className="p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                            <p className="text-xs text-muted-foreground">
+                              {recurrenceType === "daily" &&
+                                `Repeats every ${recurrenceInterval} day${recurrenceInterval > 1 ? "s" : ""}`}
+                              {recurrenceType === "weekly" && (
+                                <>
+                                  Repeats every {recurrenceInterval} week{recurrenceInterval > 1 ? "s" : ""}
+                                  {recurrenceDaysOfWeek.length > 0 &&
+                                    ` on ${recurrenceDaysOfWeek.map((d) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]).join(", ")}`}
+                                </>
+                              )}
+                              {recurrenceType === "monthly" &&
+                                `Repeats every ${recurrenceInterval} month${recurrenceInterval > 1 ? "s" : ""} on day ${recurrenceDayOfMonth || 1}`}
+                              {recurrenceEndDate &&
+                                ` until ${formatDate(recurrenceEndDate.toISOString())}`}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2552,7 +2516,7 @@ export function TaskDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20">
+                        <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
                           <SelectValue placeholder="Add assignee..." />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2628,7 +2592,7 @@ export function TaskDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20">
+                        <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
                           <SelectValue placeholder="Add a dependency..." />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2744,34 +2708,34 @@ export function TaskDialog({
                       </div>
                     </>
                   )}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
 
-          {/* Footer Actions */}
-          <div className="flex justify-between items-center gap-1.5 sm:gap-2 pt-4 sm:pt-6 pb-2 border-t border-primary/10 sticky bottom-0 bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+          {/* Footer Actions - Single Set for All Tabs */}
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6 pb-2 sm:pb-3 border-t-2 border-primary/30 bg-white dark:bg-card">
+            {/* Left side - Action buttons (only for edit mode) */}
             {task && (
-              <div className="flex gap-1.5 sm:gap-2">
+              <div className="flex gap-2 sm:gap-3 order-2 sm:order-1">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleDuplicate}
-                  className="gap-1 sm:gap-2 border-primary/20 hover:border-primary/40 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                  className="gap-1.5 sm:gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 px-4 text-sm font-medium"
                 >
-                  <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <Copy className="w-4 h-4" />
                   <span className="hidden sm:inline">Duplicate</span>
                   <span className="sm:hidden">Dup</span>
                 </Button>
-                {/* Hide delete button for done tasks - they're already in archive */}
                 {task.status !== "done" && (
                   <Button
                     type="button"
                     variant="destructive"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                    className="gap-1.5 sm:gap-2 h-10 px-4 text-sm font-medium"
                   >
-                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <Trash2 className="w-4 h-4" />
                     <span className="hidden sm:inline">Delete</span>
                     <span className="sm:hidden">Del</span>
                   </Button>
@@ -2779,20 +2743,19 @@ export function TaskDialog({
               </div>
             )}
 
-            {!task && <div />}
-
-            <div className="flex gap-1.5 sm:gap-2">
+            {/* Right side - Cancel and Submit */}
+            <div className="flex gap-2 sm:gap-3 order-1 sm:order-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-primary/20 hover:border-primary/40 h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm"
+                className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 px-5 text-sm font-medium flex-1 sm:flex-initial"
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
-                className="bg-primary hover:bg-primary/90 h-8 sm:h-9 px-3 sm:px-4 text-xs sm:text-sm"
+                className="bg-primary hover:bg-primary/90 text-white h-10 px-5 text-sm font-medium flex-1 sm:flex-initial min-w-[140px] shadow-md"
               >
                 {task ? "Update Task" : "Create Task"}
               </Button>
