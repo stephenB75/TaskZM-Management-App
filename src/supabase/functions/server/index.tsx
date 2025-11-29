@@ -709,6 +709,51 @@ app.delete("/make-server-65e6e67f/projects/:workspaceId/:projectId", async (c) =
   }
 });
 
+// Helper to ensure a workspace record exists when accessing folders.
+// This is primarily for backward compatibility with older workspace IDs
+// that might not have had KV metadata fully initialized.
+async function ensureWorkspaceForFolders(workspaceId: string, userId: string) {
+  // First try to read the current owner key
+  let workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+
+  if (!workspaceOwner) {
+    console.log(
+      `⚠️ Workspace ${workspaceId} has no owner when accessing folders. ` +
+      `Auto-creating workspace metadata for user ${userId}.`
+    );
+
+    // Try to get an existing name, otherwise fall back to a generic one
+    let workspaceName = (await kv.get(`workspace_${workspaceId}_name`)) || "My Workspace";
+
+    // Best‑effort attempt to get user name for nicer default
+    try {
+      const supabase = getSupabaseClient();
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+      if (!userError && userData?.user?.user_metadata?.name) {
+        workspaceName = `${userData.user.user_metadata.name}'s Workspace`;
+      }
+    } catch (err) {
+      console.warn("Failed to fetch user metadata while auto‑creating workspace, using generic name:", err);
+    }
+
+    const membersArray = [userId];
+
+    await Promise.all([
+      // Link user to this workspace as their primary workspace
+      kv.set(`user_${userId}_workspace`, workspaceId),
+      // Initialize workspace metadata
+      kv.set(`workspace_${workspaceId}_owner`, userId),
+      kv.set(`workspace_${workspaceId}_members`, JSON.stringify(membersArray)),
+      kv.set(`workspace_${workspaceId}_name`, workspaceName),
+    ]);
+
+    workspaceOwner = userId;
+    console.log(`✅ Auto‑created workspace metadata for ${workspaceId} owned by ${userId}`);
+  }
+
+  return workspaceOwner;
+}
+
 // Get all folders for a workspace
 app.get("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
   try {
@@ -719,8 +764,8 @@ app.get("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
 
     const workspaceId = c.req.param("workspaceId");
 
-    // Verify workspace exists
-    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    // Verify workspace exists (auto‑create metadata if missing for compatibility)
+    const workspaceOwner = await ensureWorkspaceForFolders(workspaceId, userId);
     if (!workspaceOwner) {
       return c.json({ error: "Workspace not found" }, 404);
     }
@@ -753,8 +798,8 @@ app.post("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
     const workspaceId = c.req.param("workspaceId");
     const folder = await c.req.json();
 
-    // Verify workspace exists
-    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    // Verify workspace exists (auto‑create metadata if missing for compatibility)
+    const workspaceOwner = await ensureWorkspaceForFolders(workspaceId, userId);
     if (!workspaceOwner) {
       return c.json({ error: "Workspace not found" }, 404);
     }
@@ -802,8 +847,8 @@ app.put("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => {
     const folderId = c.req.param("folderId");
     const updates = await c.req.json();
 
-    // Verify workspace exists
-    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    // Verify workspace exists (auto‑create metadata if missing for compatibility)
+    const workspaceOwner = await ensureWorkspaceForFolders(workspaceId, userId);
     if (!workspaceOwner) {
       return c.json({ error: "Workspace not found" }, 404);
     }
@@ -846,8 +891,8 @@ app.delete("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => 
     const workspaceId = c.req.param("workspaceId");
     const folderId = c.req.param("folderId");
 
-    // Verify workspace exists
-    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    // Verify workspace exists (auto‑create metadata if missing for compatibility)
+    const workspaceOwner = await ensureWorkspaceForFolders(workspaceId, userId);
     if (!workspaceOwner) {
       return c.json({ error: "Workspace not found" }, 404);
     }
