@@ -103,7 +103,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { syncWithServer, isSyncing, lastSync, hoursSettings, updateHoursSettings, rolloverSettings, updateRolloverSettings, availableTags, addAvailableTag, removeAvailableTag } = useTasks();
   const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks } = useAI();
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
-  const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar } = useCalendar();
+  const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
   const { awards, earnedAwards, getAwardProgress } = useAwards();
   const { permission, settings: notificationSettings, badgeCount, requestPermission, updateSettings: updateNotificationSettings } = useNotifications();
   const [dayType, setDayType] = useState<'weekday' | 'weekend'>('weekday');
@@ -842,9 +842,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                 <p className="text-xs text-muted-foreground mb-3">
                   • Google Calendar OAuth sync<br />
-                  • Outlook Calendar OAuth sync (Coming Soon)<br />
                   • Apple Calendar CalDAV sync<br />
-                  • Automatic bidirectional sync (every 30s)
+                  • Automatic sync when tasks are created or updated<br />
+                  • Manual sync all tasks
                 </p>
                   <Button 
                     size="sm" 
@@ -934,18 +934,41 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
             <Separator />
 
-            <Button 
-              size="sm" 
-              className="w-full"
-              onClick={() => {
-                if (calendarStatus.google) syncAllTasksToCalendar('google');
-                else if (calendarStatus.apple) syncAllTasksToCalendar('apple');
-              }}
-              disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.apple)}
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              {isCalendarSyncing ? 'Syncing...' : 'Sync All Tasks'}
-            </Button>
+            <div className="space-y-2">
+              <Button 
+                size="sm" 
+                className="w-full"
+                onClick={() => {
+                  if (calendarStatus.google) syncAllTasksToCalendar('google');
+                  else if (calendarStatus.apple) syncAllTasksToCalendar('apple');
+                }}
+                disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.apple)}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                {isCalendarSyncing ? 'Syncing...' : 'Sync All Tasks'}
+              </Button>
+              
+              {lastCalendarSync && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Last synced: {new Date(lastCalendarSync).toLocaleString()}
+                </p>
+              )}
+              
+              {(calendarStatus.google || calendarStatus.apple) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    await checkCalendarStatus();
+                    toast.success('Calendar status refreshed');
+                  }}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh Status
+                </Button>
+              )}
+            </div>
           </AccordionContent>
         </AccordionItem>
 

@@ -382,7 +382,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/calendar/apple/setup`, {
+      const url = `${BASE_URL}/calendar/apple/setup`;
+      console.log('Calling Apple Calendar setup endpoint:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -393,6 +396,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           username: credentials.email,
           appPassword: credentials.appPassword,
         }),
+      });
+      
+      console.log('Apple Calendar setup response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        ok: response.ok,
       });
 
       if (!response.ok) {

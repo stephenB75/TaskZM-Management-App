@@ -18,6 +18,7 @@ import {
   ListChecks,
   Copy,
   Folder,
+  RefreshCw,
 } from "lucide-react";
 import {
   Dialog,
@@ -74,6 +75,7 @@ import {
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
+import { useCalendar } from "../contexts/CalendarContext";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
@@ -363,6 +365,7 @@ export function TaskDialog({
   } = useTasks();
   const { teamMembers, getTeamMember } = useTeam();
   const { hasFeature } = useSubscription();
+  const { calendarStatus, syncTask: syncTaskToCalendar, isSyncing: isCalendarSyncing } = useCalendar();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
@@ -1119,10 +1122,32 @@ export function TaskDialog({
     }
 
     // No conflict, proceed with submission
+    let savedTask: Task;
     if (task) {
       await updateTask(task.id, taskData);
+      savedTask = { ...task, ...taskData };
     } else {
-      await addTask(taskData);
+      savedTask = await addTask(taskData);
+    }
+
+    // Auto-sync to calendar if task has scheduled date and calendar is connected
+    if (finalScheduledDate && hasFeature('calendarSync')) {
+      // Only sync to Google and Apple Calendar
+      const providersToSync: Array<'google' | 'apple'> = [];
+      if (calendarStatus.google) providersToSync.push('google');
+      if (calendarStatus.apple) providersToSync.push('apple');
+      
+      if (providersToSync.length > 0) {
+        // Sync to all connected providers
+        for (const provider of providersToSync) {
+          try {
+            await syncTaskToCalendar(savedTask.id, provider);
+          } catch (error) {
+            // Silently fail - don't block task creation/update
+            logger.debug('Failed to sync task to calendar:', error);
+          }
+        }
+      }
     }
 
     onClose();

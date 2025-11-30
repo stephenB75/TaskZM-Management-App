@@ -2141,11 +2141,14 @@ app.get("/make-server-65e6e67f/calendar/status", async (c) => {
 
 // Apple Calendar CalDAV connection setup
 app.post("/make-server-65e6e67f/calendar/apple/setup", async (c) => {
+  console.log('Apple Calendar setup endpoint called');
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
+      console.log('Apple Calendar setup - unauthorized:', { authError, userId });
       return c.json({ error: 'Unauthorized' }, 401);
     }
+    console.log('Apple Calendar setup - authorized for user:', userId);
 
     let caldavUrl: string;
     let username: string;
