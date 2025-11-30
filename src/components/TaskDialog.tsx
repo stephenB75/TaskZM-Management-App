@@ -18,7 +18,6 @@ import {
   ListChecks,
   Copy,
   Folder,
-  RefreshCw,
 } from "lucide-react";
 import {
   Dialog,
@@ -365,7 +364,7 @@ export function TaskDialog({
   } = useTasks();
   const { teamMembers, getTeamMember } = useTeam();
   const { hasFeature } = useSubscription();
-  const { calendarStatus, syncTask: syncTaskToCalendar, isSyncing: isCalendarSyncing } = useCalendar();
+  const { calendarStatus, syncTask: syncTaskToCalendar } = useCalendar();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
