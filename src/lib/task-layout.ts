@@ -1,6 +1,7 @@
 import type { Task } from '../types';
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_LAYOUT_METRICS } from './task-card-constants';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
+import { getTaskMinutes } from './daily-hours-utils';
 
 const DEFAULT_DAY_START_MINUTES = TASK_CALCULATION_CONSTANTS.dragDrop.hourMin * 60;
 
@@ -146,8 +147,8 @@ function getStartMinutes(task: Task): number | null {
 }
 
 function getDurationMinutes(task: Task): number {
-  return typeof task.estimatedTime === 'number' && task.estimatedTime > 0
-    ? task.estimatedTime
-    : TASK_CARD_HEIGHT_CONFIG.defaultDuration;
+  // Use AI Duration Estimator instead of hardcoded fallback
+  // This ensures consistent duration calculation across the app
+  return getTaskMinutes(task);
 }
 

@@ -235,8 +235,8 @@ export const DraggableTaskCard = React.forwardRef<
       
       // STANDARD HEIGHT CALCULATION: Use standard heights first, then auto-adjust for components
       // Step 1: Calculate the standard height for this duration (this is the MINIMUM BASE)
-      // Handle null/undefined estimatedTime by using defaultDuration (30 mins = short task)
-      const effectiveEstimatedTime = currentEstimatedTimeValue ?? TASK_CARD_HEIGHT_CONFIG.defaultDuration;
+      // Use AI Duration Estimator instead of hardcoded fallback
+      const effectiveEstimatedTime = hasEstimatedTime ? currentEstimatedTimeValue! : getTaskMinutes(task);
       
       // Calculate standard height ONCE - this is the absolute minimum for this duration
       let standardHeightForThisDuration: number;
@@ -248,7 +248,8 @@ export const DraggableTaskCard = React.forwardRef<
         standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px standard
       } else {
         // Long tasks (>= 60 mins): Use standard heights at defined points
-        const timeValue = currentEstimatedTimeValue ?? TASK_CARD_HEIGHT_CONFIG.defaultDuration;
+        // Use AI Duration Estimator instead of hardcoded fallback
+        const timeValue = hasEstimatedTime ? currentEstimatedTimeValue! : getTaskMinutes(task);
         if (timeValue >= 180) {
           standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px standard
         } else if (timeValue >= 150) {
