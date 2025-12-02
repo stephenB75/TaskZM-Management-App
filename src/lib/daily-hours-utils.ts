@@ -15,47 +15,65 @@ import {
 
 /**
  * Estimate task duration in hours
- * Uses the same logic as useAIScheduler for consistency
- * Formula: Base × Effort × Priority × Complexity
+ * 
+ * This is the core AI Duration Estimator that works with all AI scheduling functions.
+ * It uses a formula-based approach: Base × Effort × Priority × Complexity
+ * 
+ * Integration Points:
+ * - scheduleAllTasks: Uses getTaskHours() for new task scheduling
+ * - generateSchedulePlan: Uses getTaskHours() for plan generation
+ * - rescheduleDay/Week/Month: Uses getTaskHours() for rescheduling
+ * - calculateDailyHours: Uses estimateTaskHours() for hour tracking
+ * - time-conflict.ts: Uses getTaskMinutes() for conflict detection
+ * 
+ * @param task - The task to estimate duration for
+ * @returns Estimated duration in hours
  */
 export function estimateTaskHours(task: Task): number {
-  // Priority 1: If estimated time is explicitly set by user, use it directly
+  // Validate task input
+  if (!task || typeof task !== 'object') {
+    console.warn('⚠️ estimateTaskHours: Invalid task provided', task);
+    return BASE_TASK_DURATION_MINUTES / 60; // Return base duration as fallback
+  }
+
+  // Priority 1: If user has explicitly set estimated time, use it directly
   // IMPORTANT: Check for null/undefined explicitly, not just truthy (0 is falsy but valid)
   if (task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0) {
-    console.log('⏱️ AI Duration Estimator: Using user-set estimated time', {
-      taskId: task.id,
-      taskTitle: task.title,
-      estimatedTime: task.estimatedTime,
-      hours: task.estimatedTime / 60,
-    });
-    return task.estimatedTime / 60; // Convert minutes to hours
+    const userSetHours = task.estimatedTime / 60;
+    return userSetHours;
   }
   
-  // Priority 2: Formula-based estimation using effort + priority + complexity
-  console.log('⏱️ AI Duration Estimator: Starting formula calculation', {
-    taskId: task.id,
-    taskTitle: task.title,
-    priority: task.priority,
-  });
-  
+  // Priority 2: Formula-based estimation using AI analysis
+  // Get effort score from verb analysis (1-5 scale)
   const { effortScore, primaryVerb } = analyzeTaskVerbs(task);
+  
+  // Get complexity score from task properties (1-5 scale)
   const complexityScore = calculateComplexity(task);
   
-  console.log('⏱️ AI Duration Estimator: Verb analysis result', {
-    taskId: task.id,
-    taskTitle: task.title,
-    effortScore,
-    primaryVerb,
-    complexityScore,
-  });
+  // Get priority multiplier
+  const priorityMultiplier = PRIORITY_MULTIPLIERS[task.priority] || PRIORITY_MULTIPLIERS.medium;
   
-  // Formula: Base × Effort × Priority × Complexity
+  // Formula: Base × (Effort / Normalization) × Priority × (Complexity / Normalization)
+  // This ensures:
+  // - Base duration is the starting point
+  // - Effort score (1-5) is normalized to a multiplier (0.4-2.0)
+  // - Priority multiplier adjusts based on urgency
+  // - Complexity score (1-5) is normalized to a multiplier (0.4-2.0)
   let estimatedMinutes = BASE_TASK_DURATION_MINUTES;
-  estimatedMinutes *= (effortScore / EFFORT_NORMALIZATION_DIVISOR);
-  estimatedMinutes *= PRIORITY_MULTIPLIERS[task.priority] || 1.0;
-  estimatedMinutes *= (complexityScore / COMPLEXITY_NORMALIZATION_DIVISOR);
   
-  // Apply verb-specific adjustments for known action types (maintains existing behavior)
+  // Apply effort multiplier (normalized from 1-5 scale to 0.4-2.0)
+  const effortMultiplier = effortScore / EFFORT_NORMALIZATION_DIVISOR;
+  estimatedMinutes *= effortMultiplier;
+  
+  // Apply priority multiplier
+  estimatedMinutes *= priorityMultiplier;
+  
+  // Apply complexity multiplier (normalized from 1-5 scale to 0.4-2.0)
+  const complexityMultiplier = complexityScore / COMPLEXITY_NORMALIZATION_DIVISOR;
+  estimatedMinutes *= complexityMultiplier;
+  
+  // Apply verb-specific adjustments for known action types
+  // This refines the estimate based on the type of action (meeting, review, development, etc.)
   estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
   
   // Clamp between minimum and maximum task duration
@@ -64,17 +82,10 @@ export function estimateTaskHours(task: Task): number {
   // Round to nearest interval for cleaner scheduling
   estimatedMinutes = Math.round(estimatedMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
   
+  // Convert to hours
   const estimatedHours = estimatedMinutes / 60;
   
-  console.log('⏱️ AI Duration Estimator: Final calculation', {
-    taskId: task.id,
-    taskTitle: task.title,
-    estimatedMinutes,
-    estimatedHours,
-    formula: `Base(${BASE_TASK_DURATION_MINUTES}) × Effort(${effortScore}/${EFFORT_NORMALIZATION_DIVISOR}=${(effortScore / EFFORT_NORMALIZATION_DIVISOR).toFixed(2)}) × Priority(${PRIORITY_MULTIPLIERS[task.priority]}) × Complexity(${complexityScore}/${COMPLEXITY_NORMALIZATION_DIVISOR}=${(complexityScore / COMPLEXITY_NORMALIZATION_DIVISOR).toFixed(2)})`,
-  });
-  
-  return estimatedHours; // Convert to hours (maintains interface compatibility)
+  return estimatedHours;
 }
 
 /**
@@ -99,7 +110,7 @@ export function calculateDailyHours(
     return isDateInRecurrence(task, targetDate);
   });
   
-  // Calculate total hours
+  // Calculate total hours using AI estimator
   let totalHours = 0;
   for (const task of dateTasks) {
     totalHours += estimateTaskHours(task);
@@ -158,36 +169,49 @@ export { MAX_HOURS_PER_DAY };
 
 /**
  * Get task duration in hours using AI estimator
- * This is a convenience wrapper around estimateTaskHours
+ * 
+ * This is the primary function used by AI scheduling functions.
+ * It wraps estimateTaskHours() and provides a clean interface.
+ * 
+ * Used by:
+ * - scheduleAllTasks: For scheduling new tasks
+ * - generateSchedulePlan: For generating schedule plans
+ * - rescheduleDay/Week/Month: For rescheduling tasks
+ * - All AI scheduling operations
+ * 
+ * @param task - The task to get duration for
+ * @returns Duration in hours
  */
 export function getTaskHours(task: Task): number {
-  console.log('🔍 getTaskHours called for task:', {
-    id: task.id,
-    title: task.title,
-    hasEstimatedTime: task.estimatedTime !== null && task.estimatedTime !== undefined,
-    estimatedTime: task.estimatedTime,
-    willUseFormula: !(task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0),
-  });
+  if (!task) {
+    console.warn('⚠️ getTaskHours: No task provided');
+    return BASE_TASK_DURATION_MINUTES / 60;
+  }
   
-  const result = estimateTaskHours(task);
-  
-  console.log('✅ getTaskHours result:', {
-    taskId: task.id,
-    taskTitle: task.title,
-    hours: result,
-    minutes: Math.round(result * 60),
-  });
-  
-  return result;
+  return estimateTaskHours(task);
 }
 
 /**
  * Get task duration in minutes using AI estimator
+ * 
  * This is the shared utility function used across the app
- * to ensure consistent duration calculations
+ * to ensure consistent duration calculations.
+ * 
+ * Used by:
+ * - time-conflict.ts: For conflict detection
+ * - task-layout.ts: For layout calculations
+ * - Display components: For height calculations
+ * - All duration-related operations
+ * 
+ * @param task - The task to get duration for
+ * @returns Duration in minutes (rounded)
  */
 export function getTaskMinutes(task: Task): number {
+  if (!task) {
+    console.warn('⚠️ getTaskMinutes: No task provided');
+    return BASE_TASK_DURATION_MINUTES;
+  }
+  
   const hours = estimateTaskHours(task);
   return Math.round(hours * 60); // Convert hours to minutes, rounded
 }
-
