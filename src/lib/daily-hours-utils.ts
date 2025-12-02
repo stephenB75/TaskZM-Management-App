@@ -40,6 +40,12 @@ export function estimateTaskHours(task: Task): number {
   // IMPORTANT: Check for null/undefined explicitly, not just truthy (0 is falsy but valid)
   if (task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0) {
     const userSetHours = task.estimatedTime / 60;
+    console.log('✅ estimateTaskHours: Using user-set estimated time', {
+      taskId: task.id,
+      taskTitle: task.title,
+      estimatedTimeMinutes: task.estimatedTime,
+      estimatedHours: userSetHours,
+    });
     return userSetHours;
   }
   
@@ -74,6 +80,7 @@ export function estimateTaskHours(task: Task): number {
   
   // Apply verb-specific adjustments for known action types
   // This refines the estimate based on the type of action (meeting, review, development, etc.)
+  const beforeAdjustment = estimatedMinutes;
   estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
   
   // Clamp between minimum and maximum task duration
@@ -84,6 +91,24 @@ export function estimateTaskHours(task: Task): number {
   
   // Convert to hours
   const estimatedHours = estimatedMinutes / 60;
+  
+  // Log the estimation process for debugging
+  console.log('🤖 estimateTaskHours: AI Duration Estimation', {
+    taskId: task.id,
+    taskTitle: task.title,
+    taskPriority: task.priority,
+    primaryVerb,
+    effortScore: effortScore.toFixed(2),
+    complexityScore: complexityScore.toFixed(2),
+    priorityMultiplier: priorityMultiplier.toFixed(2),
+    baseMinutes: BASE_TASK_DURATION_MINUTES,
+    effortMultiplier: effortMultiplier.toFixed(2),
+    complexityMultiplier: complexityMultiplier.toFixed(2),
+    beforeAdjustment: beforeAdjustment.toFixed(2),
+    afterAdjustment: estimatedMinutes.toFixed(2),
+    finalMinutes: estimatedMinutes,
+    finalHours: estimatedHours.toFixed(2),
+  });
   
   return estimatedHours;
 }

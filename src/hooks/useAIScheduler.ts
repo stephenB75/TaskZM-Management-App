@@ -355,6 +355,16 @@ export function useAIScheduler() {
         const currentHours = dailyHours.get(dateKey) || 0;
         dailyHours.set(dateKey, currentHours + taskHours);
         
+        // Log AI estimator usage for pre-populating daily hours
+        console.log('📊 Pre-populating daily hours: Using AI Duration Estimator', {
+          taskId: task.id,
+          taskTitle: task.title,
+          date: dateKey,
+          taskHours: taskHours.toFixed(2),
+          currentHours: currentHours.toFixed(2),
+          newTotalHours: (currentHours + taskHours).toFixed(2),
+        });
+        
         // Track existing tasks per day
         const tasksForDay = dailyTasks.get(dateKey) || [];
         tasksForDay.push(task);
@@ -695,6 +705,17 @@ export function useAIScheduler() {
       // Get task hours using AI Duration Estimator
       // This integrates with all AI scheduling functions (scheduleAllTasks, generateSchedulePlan, rescheduleDay/Week/Month)
       const taskHours = getTaskHours(task);
+      
+      // Log AI estimator usage for debugging
+      console.log('📅 generateSchedulePlan: Using AI Duration Estimator', {
+        taskId: task.id,
+        taskTitle: task.title,
+        taskPriority: task.priority,
+        hasUserEstimatedTime: task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0,
+        userEstimatedTime: task.estimatedTime,
+        aiEstimatedHours: taskHours,
+        aiEstimatedMinutes: Math.round(taskHours * 60),
+      });
       
       // PRIORITY 1: If enforcing minimum hours, ALWAYS try to fill days that don't meet minimum first
       // This ensures we meet the 5-hour requirement per day

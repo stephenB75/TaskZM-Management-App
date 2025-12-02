@@ -108,7 +108,6 @@ const VERB_EFFORT_MAP: Record<string, number> = {
   'launch': 3.2,
   'release': 3.0,
   'publish': 2.5,
-  'submit': 1.8,
   'deliver': 2.5,
   'ship': 2.0,
   'distribute': 2.2,
