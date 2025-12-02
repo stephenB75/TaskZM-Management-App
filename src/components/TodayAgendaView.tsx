@@ -115,9 +115,9 @@ export function TodayAgendaView({
     });
   }, [incompleteTasks]);
 
-  // Use mobile-specific minimum gap for better spacing on mobile devices
-  const mobileMinGap = isMobile ? 12 : undefined; // 12px minimum gap on mobile, use default on desktop
-  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, mobileMinGap, true), [todayTasks, mobileMinGap]); // Use time-based spacing for timeline view
+  // Use consistent minimum gap for tight spacing on both mobile and desktop
+  const minGap = 2; // 2px minimum gap for tight spacing on both mobile and desktop
+  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, minGap, true), [todayTasks, minGap]); // Use time-based spacing for timeline view
 
   // Auto-scroll to current time on mount and when tasks change
   useEffect(() => {
@@ -502,7 +502,7 @@ export function TodayAgendaView({
                     <div
                       key={task.id}
                       style={{
-                        marginTop: index === 0 ? 0 : `${Math.max(marginTop, isMobile ? 12 : 4)}px`, // Ensure minimum 12px gap on mobile, 4px on desktop
+                        marginTop: index === 0 ? 0 : `${Math.max(marginTop, 2)}px`, // Ensure minimum 2px gap for tight spacing on both mobile and desktop
                       }}
                     >
                       <DraggableTodayAgendaTask
