@@ -168,7 +168,13 @@ export function InboxView() {
   };
 
   const handleScheduleAll = async () => {
+    console.log('🎬 handleScheduleAll CALLED', { 
+      unscheduledTasksCount: unscheduledTasks.length,
+      unscheduledTasks: unscheduledTasks.map(t => ({ id: t.id, title: t.title, dueDate: t.dueDate }))
+    });
+    
     if (unscheduledTasks.length === 0) {
+      console.log('⚠️ No tasks to schedule - inbox is empty');
       toast.info("No tasks to schedule", {
         description: "Your inbox is empty!",
       });
@@ -183,6 +189,12 @@ export function InboxView() {
     );
 
     try {
+      console.log('🎯 About to call scheduleAllTasks', {
+        period: 'twoWeeks',
+        onlyWithoutDueDate: true,
+        forceCategoryHours: true
+      });
+      
       // Schedule only tasks without due dates for a two week period, using category hours
       const result = await scheduleAllTasks({ 
         period: 'twoWeeks',

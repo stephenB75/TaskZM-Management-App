@@ -9,9 +9,10 @@ const MAX_HOURS_PER_DAY = 5;
  * Uses the same logic as useAIScheduler for consistency
  * Formula: Base × Effort × Priority × Complexity
  */
-function estimateTaskHours(task: Task): number {
+export function estimateTaskHours(task: Task): number {
   // Priority 1: If estimated time is explicitly set by user, use it directly
-  if (task.estimatedTime && task.estimatedTime > 0) {
+  // IMPORTANT: Check for null/undefined explicitly, not just truthy (0 is falsy but valid)
+  if (task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0) {
     return task.estimatedTime / 60; // Convert minutes to hours
   }
   
@@ -126,6 +127,14 @@ export function getDailyHoursWarningLevel(
 }
 
 export { MAX_HOURS_PER_DAY };
+
+/**
+ * Get task duration in hours using AI estimator
+ * This is a convenience wrapper around estimateTaskHours
+ */
+export function getTaskHours(task: Task): number {
+  return estimateTaskHours(task);
+}
 
 /**
  * Get task duration in minutes using AI estimator

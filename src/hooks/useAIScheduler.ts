@@ -5,7 +5,7 @@ import { isTaskBlocked, calculateDependencyDepth } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
-import { analyzeTaskVerbs, calculateComplexity, applyVerbSpecificAdjustments } from '../lib/verb-analysis';
+import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
 import type { Task } from '../types';
 
@@ -316,160 +316,10 @@ export function useAIScheduler() {
     const dailyTasks: Map<string, Task[]> = new Map();
     
     // Helper: Intelligently estimate task duration based on task properties
-    // This needs to be defined before we use it to pre-populate dailyHours
-    // IMPORTANT: This function NEVER uses default time - it either uses:
-    // Task duration estimation using formula: Base × Effort × Priority × Complexity
+    // Use shared AI Duration Estimator functions from daily-hours-utils
+    // These functions use the formula: Base × Effort × Priority × Complexity
     // Effort and complexity are automatically calculated from verb analysis and task properties
-    const estimateTaskHours = (task: Task): number => {
-      // Priority 1: If estimated time is explicitly set by user, use it directly
-      if (task.estimatedTime && task.estimatedTime > 0) {
-        // Always log this - critical for debugging
-        console.log('⏱️ AI Duration Estimator: Using user-set estimated time', {
-          taskId: task.id,
-          taskTitle: task.title,
-          estimatedTime: task.estimatedTime,
-          hours: task.estimatedTime / 60,
-        });
-        logger.info('⏱️ AI Duration Estimator: Using user-set estimated time', {
-          taskId: task.id,
-          taskTitle: task.title,
-          estimatedTime: task.estimatedTime,
-        });
-        return task.estimatedTime / 60; // Convert minutes to hours
-      }
-      
-      // Priority 2: Formula-based estimation using effort + priority + complexity
-      let effortScore: number;
-      let primaryVerb: string;
-      let complexityScore: number;
-      
-      try {
-        const verbAnalysis = analyzeTaskVerbs(task);
-        effortScore = verbAnalysis.effortScore;
-        primaryVerb = verbAnalysis.primaryVerb;
-      } catch (error) {
-        console.error('❌ Error in analyzeTaskVerbs:', error);
-        // Fallback to default medium effort
-        effortScore = 2.5;
-        primaryVerb = 'unknown';
-      }
-      
-      try {
-        complexityScore = calculateComplexity(task);
-      } catch (error) {
-        console.error('❌ Error in calculateComplexity:', error);
-        // Fallback to default complexity
-        complexityScore = 2.0;
-      }
-      
-      // Always log this - critical for debugging
-      console.log('⏱️ AI Duration Estimator: Calculating duration', {
-        taskId: task.id,
-        taskTitle: task.title,
-        effortScore,
-        primaryVerb,
-        complexityScore,
-        priority: task.priority,
-      });
-      logger.info('⏱️ AI Duration Estimator: Calculating duration', {
-        taskId: task.id,
-        taskTitle: task.title,
-        effortScore,
-        primaryVerb,
-        complexityScore,
-        priority: task.priority,
-      });
-      
-      // Priority multiplier (existing values maintained)
-      const priorityMultiplier = {
-        urgent: 0.7,
-        high: 1.0,
-        medium: 1.5,
-        low: 2.0
-      };
-      
-      // Base time in minutes (30 minutes default)
-      const baseMinutes = 30;
-      
-      // Formula: Base × Effort × Priority × Complexity
-      let estimatedMinutes = baseMinutes;
-      estimatedMinutes *= (effortScore / 2.5); // Normalize effort (2.5 is middle of 1-5 scale)
-      estimatedMinutes *= priorityMultiplier[task.priority] || 1.0;
-      estimatedMinutes *= (complexityScore / 2.5); // Normalize complexity
-      
-      // Apply verb-specific adjustments for known action types (maintains existing behavior)
-      try {
-        estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
-      } catch (error) {
-        console.error('❌ Error in applyVerbSpecificAdjustments:', error);
-        // Continue with current estimatedMinutes if adjustment fails
-      }
-      
-      // Clamp between 15 minutes (minimum) and 300 minutes (5 hours maximum)
-      estimatedMinutes = Math.max(15, Math.min(300, estimatedMinutes));
-      
-      // Round to nearest 15 minutes for cleaner scheduling
-      estimatedMinutes = Math.round(estimatedMinutes / 15) * 15;
-      
-      const estimatedHours = estimatedMinutes / 60;
-      
-      // Always log this - critical for debugging
-      console.log('⏱️ AI Duration Estimator: Final calculation', {
-        taskId: task.id,
-        taskTitle: task.title,
-        estimatedMinutes,
-        estimatedHours,
-        formula: `Base(${baseMinutes}) × Effort(${effortScore}/2.5=${(effortScore / 2.5).toFixed(2)}) × Priority(${priorityMultiplier[task.priority]}) × Complexity(${complexityScore}/2.5=${(complexityScore / 2.5).toFixed(2)})`,
-      });
-      logger.info('⏱️ AI Duration Estimator: Final calculation', {
-        taskId: task.id,
-        taskTitle: task.title,
-        estimatedMinutes,
-        estimatedHours,
-        minutes: estimatedMinutes,
-        hours: estimatedHours,
-      });
-      
-      return estimatedHours; // Convert to hours (maintains interface compatibility)
-    };
-    
-    // Helper: Get task duration in hours (using intelligent estimation)
-    const getTaskHours = (task: Task): number => {
-      // Always log this - critical for debugging
-      console.log('🔍 getTaskHours called for task:', {
-        id: task.id,
-        title: task.title,
-        hasEstimatedTime: !!task.estimatedTime,
-        estimatedTime: task.estimatedTime,
-      });
-      logger.debug('🔍 getTaskHours called', {
-        taskId: task.id,
-        taskTitle: task.title,
-        hasEstimatedTime: !!task.estimatedTime,
-      });
-      
-      const result = estimateTaskHours(task);
-      
-      console.log('✅ getTaskHours result:', {
-        taskId: task.id,
-        taskTitle: task.title,
-        hours: result,
-        minutes: result * 60,
-      });
-      logger.debug('✅ getTaskHours result', {
-        taskId: task.id,
-        hours: result,
-        minutes: result * 60,
-      });
-      return result;
-    };
-    
-    // Helper: Get task duration in minutes (using intelligent estimation)
-    // This ensures consistent duration calculations across all AI functions
-    const getTaskMinutes = (task: Task): number => {
-      const hours = getTaskHours(task);
-      return Math.round(hours * 60); // Convert hours to minutes, rounded
-    };
+    // The functions are imported from daily-hours-utils.ts to ensure consistency across the app
     
     // Pre-populate dailyHours with existing scheduled tasks
     // BUT: If we're rescheduling within a date range, exclude tasks being rescheduled
@@ -723,6 +573,8 @@ export function useAIScheduler() {
         id: task.id,
         title: task.title,
         priority: task.priority,
+        hasEstimatedTime: !!task.estimatedTime,
+        estimatedTime: task.estimatedTime,
       });
       // Determine scheduling based on priority and status (if priority-based scheduling is enabled)
       // When rescheduling within a date range, distribute tasks evenly across days
@@ -846,7 +698,7 @@ export function useAIScheduler() {
         }
       }
       
-      // Get task hours first
+      // Get task hours using AI Duration Estimator
       const taskHours = getTaskHours(task);
       
       // PRIORITY 1: If enforcing minimum hours, ALWAYS try to fill days that don't meet minimum first
@@ -1510,17 +1362,27 @@ export function useAIScheduler() {
     onlyWithoutDueDate?: boolean;
     period?: 'day' | 'twoWeeks';
   }): Promise<ScheduleResult> => {
+    console.log('🎬 scheduleAllTasks CALLED', { options });
     setIsScheduling(true);
     try {
       // Filter tasks: only schedule tasks without due dates if requested
       let tasksToSchedule: Task[] | undefined = undefined;
       if (options?.onlyWithoutDueDate) {
         const unscheduledTasks = getUnscheduledTasks();
+        console.log('🔍 Filtering tasks without due dates', {
+          totalUnscheduled: unscheduledTasks.length,
+          tasks: unscheduledTasks.map(t => ({ id: t.id, title: t.title, dueDate: t.dueDate }))
+        });
         tasksToSchedule = unscheduledTasks.filter(task => !task.dueDate);
+        console.log('✅ Filtered tasks (no due dates)', {
+          count: tasksToSchedule.length,
+          tasks: tasksToSchedule.map(t => ({ id: t.id, title: t.title }))
+        });
       }
       
       // Validate that we have tasks to schedule
       if (tasksToSchedule && tasksToSchedule.length === 0) {
+        console.log('⚠️ No tasks to schedule after filtering - returning empty result');
         return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
       }
       
@@ -1566,7 +1428,8 @@ export function useAIScheduler() {
       }
       return result;
     } catch (error) {
-      console.error('Error in scheduleAllTasks:', error);
+      console.error('❌ ERROR in scheduleAllTasks:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       throw error;
     } finally {
       setIsScheduling(false);
