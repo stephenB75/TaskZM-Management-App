@@ -609,16 +609,16 @@ iframe[data-payment-element] {
   right: auto !important;
   bottom: auto !important;
   
-  /* Responsive sizing - full width, auto height */
+  /* Responsive sizing - full width, fixed height for consistent form layout */
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  height: auto !important;
-  min-height: 500px !important;
+  /* Use fixed height to ensure form fields stay together */
+  height: 500px !important;
   
-  /* Desktop: taller minimum height for better form visibility */
+  /* Desktop: taller for better form visibility */
   @media (min-width: 768px) {
-    min-height: 600px !important;
+    height: 600px !important;
   }
   
   /* Fix border and display */
@@ -637,7 +637,7 @@ iframe[data-payment-element] {
   box-sizing: border-box !important;
   
   /* Smooth transitions */
-  transition: height 0.3s ease-in-out !important;
+  transition: opacity 0.3s ease-in-out !important;
   
   /* Ensure proper background */
   background: transparent !important;
@@ -650,6 +650,9 @@ iframe[data-payment-element] {
   
   /* Remove any default spacing */
   vertical-align: top !important;
+  
+  /* Ensure iframe content is not clipped */
+  overflow: visible !important;
 }
 
 /* Fix for Stripe Checkout embedded forms - body/html level */
@@ -684,8 +687,8 @@ html[data-payment-form] {
   /* Fix pointer events */
   pointer-events: auto !important;
   
-  /* Prevent overflow issues */
-  overflow: hidden !important;
+  /* Allow content to be visible - don't clip iframe content */
+  overflow: visible !important;
   
   /* Ensure proper stacking */
   z-index: 1 !important;
@@ -708,6 +711,9 @@ html[data-payment-form] {
   
   /* Ensure iframe fits perfectly */
   display: block !important;
+  
+  /* Ensure container doesn't interfere with iframe content */
+  isolation: isolate !important;
 }
 
 /* RevenueCat Web Billing iframes - enhanced styling with proper spacing */
@@ -719,16 +725,16 @@ iframe[src*="pay.stripe.com"] {
   min-width: 100% !important;
   max-width: 100% !important;
   
-  /* Responsive height - adapts to content */
-  height: auto !important;
-  min-height: 600px !important;
+  /* Fixed height to ensure form fields render correctly together */
+  /* Use fixed height instead of auto to prevent layout shifts */
+  height: 600px !important;
   
   /* Desktop: taller for better visibility */
   @media (min-width: 768px) {
-    min-height: 700px !important;
+    height: 700px !important;
   }
   
-  /* Ensure no scaling */
+  /* Ensure no scaling that could misalign form fields */
   transform: scale(1) !important;
   transform-origin: top left !important;
   
@@ -745,6 +751,12 @@ iframe[src*="pay.stripe.com"] {
   /* Ensure no gaps */
   display: block !important;
   vertical-align: top !important;
+  
+  /* Ensure iframe content is not clipped */
+  overflow: visible !important;
+  
+  /* Prevent any CSS that could affect form field layout inside iframe */
+  box-sizing: border-box !important;
 }
 
 /* Payment form loading state */
