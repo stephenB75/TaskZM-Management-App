@@ -51,13 +51,33 @@ export function estimateTaskHours(task: Task): number {
   
   // Priority 2: Formula-based estimation using AI analysis
   // Get effort score from verb analysis (1-5 scale)
-  const { effortScore, primaryVerb } = analyzeTaskVerbs(task);
+  const verbAnalysis = analyzeTaskVerbs(task);
+  let effortScore = verbAnalysis.effortScore;
+  let primaryVerb = verbAnalysis.primaryVerb || '';
+  
+  // Validate effort score
+  if (typeof effortScore !== 'number' || isNaN(effortScore) || !isFinite(effortScore)) {
+    console.warn('⚠️ estimateTaskHours: Invalid effort score, using default', { effortScore, verbAnalysis });
+    effortScore = 2.5;
+  }
   
   // Get complexity score from task properties (1-5 scale)
-  const complexityScore = calculateComplexity(task);
+  let complexityScore = calculateComplexity(task);
+  
+  // Validate complexity score
+  if (typeof complexityScore !== 'number' || isNaN(complexityScore) || !isFinite(complexityScore)) {
+    console.warn('⚠️ estimateTaskHours: Invalid complexity score, using default', { complexityScore });
+    complexityScore = 2.5;
+  }
   
   // Get priority multiplier
-  const priorityMultiplier = PRIORITY_MULTIPLIERS[task.priority] || PRIORITY_MULTIPLIERS.medium;
+  let priorityMultiplier = PRIORITY_MULTIPLIERS[task.priority] || PRIORITY_MULTIPLIERS.medium;
+  
+  // Validate priority multiplier
+  if (typeof priorityMultiplier !== 'number' || isNaN(priorityMultiplier) || !isFinite(priorityMultiplier)) {
+    console.warn('⚠️ estimateTaskHours: Invalid priority multiplier, using default', { priorityMultiplier, priority: task.priority });
+    priorityMultiplier = PRIORITY_MULTIPLIERS.medium;
+  }
   
   // Formula: Base × (Effort / Normalization) × Priority × (Complexity / Normalization)
   // This ensures:
@@ -83,6 +103,12 @@ export function estimateTaskHours(task: Task): number {
   const beforeAdjustment = estimatedMinutes;
   estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
   
+  // Validate estimated minutes before clamping
+  if (typeof estimatedMinutes !== 'number' || isNaN(estimatedMinutes) || !isFinite(estimatedMinutes)) {
+    console.warn('⚠️ estimateTaskHours: Invalid estimated minutes after calculation, using base', { estimatedMinutes });
+    estimatedMinutes = BASE_TASK_DURATION_MINUTES;
+  }
+  
   // Clamp between minimum and maximum task duration
   estimatedMinutes = Math.max(MIN_TASK_DURATION_MINUTES, Math.min(MAX_TASK_DURATION_MINUTES, estimatedMinutes));
   
@@ -90,7 +116,19 @@ export function estimateTaskHours(task: Task): number {
   estimatedMinutes = Math.round(estimatedMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
   
   // Convert to hours
-  const estimatedHours = estimatedMinutes / 60;
+  let estimatedHours = estimatedMinutes / 60;
+  
+  // Final validation - ensure we return a valid number
+  if (typeof estimatedHours !== 'number' || isNaN(estimatedHours) || !isFinite(estimatedHours) || estimatedHours <= 0) {
+    console.warn('⚠️ estimateTaskHours: Invalid final hours calculated, using base duration', { 
+      estimatedHours, 
+      estimatedMinutes,
+      effortScore,
+      complexityScore,
+      priorityMultiplier 
+    });
+    estimatedHours = BASE_TASK_DURATION_MINUTES / 60;
+  }
   
   // Log the estimation process for debugging
   console.log('🤖 estimateTaskHours: AI Duration Estimation', {

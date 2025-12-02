@@ -392,17 +392,25 @@ function matchesVerb(word: string): { verb: string; effort: number } | null {
  * Now handles verb variations (writing/write, developing/develop, etc.)
  */
 export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb: string } {
+  // Validate task input
+  if (!task) {
+    console.warn('⚠️ analyzeTaskVerbs: No task provided');
+    return { effortScore: 2.5, primaryVerb: 'unknown' };
+  }
+  
   // Combine title and description for analysis
-  const text = `${task.title || ''} ${task.description || ''}`.toLowerCase().trim();
+  const title = (task.title || '').trim();
+  const description = (task.description || '').trim();
+  const text = `${title} ${description}`.toLowerCase().trim();
   
   console.log('🔬 analyzeTaskVerbs: Analyzing text', {
     taskId: task.id,
-    taskTitle: task.title,
+    taskTitle: title,
     text,
     textLength: text.length,
   });
   
-  if (!text) {
+  if (!text || text.length === 0) {
     console.log('⚠️ analyzeTaskVerbs: No text to analyze, using default');
     return { effortScore: 2.5, primaryVerb: 'unknown' };
   }
@@ -459,7 +467,7 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
   if (foundVerbs.length === 0) {
     console.log('⚠️ analyzeTaskVerbs: No verbs found, using default effort', {
       taskId: task.id,
-      taskTitle: task.title,
+      taskTitle: title,
       wordsChecked: words.length,
       allWords: words.slice(0, 20), // Show first 20 words for debugging
       availableVerbs: ACTION_VERBS.slice(0, 10), // Show sample of available verbs
@@ -468,13 +476,22 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
   }
   
   // Use the first significant verb found (earliest in text)
-  const primaryVerb = foundVerbs[0].verb;
-  let effortScore = foundVerbs[0].effort;
+  const primaryVerb = foundVerbs[0]?.verb || 'unknown';
+  let effortScore = foundVerbs[0]?.effort || 2.5;
   
   // If multiple verbs found, use the highest effort (most complex action)
   if (foundVerbs.length > 1) {
-    const maxEffort = Math.max(...foundVerbs.map(v => v.effort));
-    effortScore = maxEffort;
+    const efforts = foundVerbs.map(v => v.effort).filter(e => typeof e === 'number' && !isNaN(e));
+    if (efforts.length > 0) {
+      const maxEffort = Math.max(...efforts);
+      effortScore = maxEffort;
+    }
+  }
+  
+  // Validate effort score is a valid number
+  if (typeof effortScore !== 'number' || isNaN(effortScore) || !isFinite(effortScore)) {
+    console.warn('⚠️ analyzeTaskVerbs: Invalid effort score, using default', { effortScore, foundVerbs });
+    effortScore = 2.5;
   }
   
   // Clamp effort score between 1.0 and 5.0
@@ -482,13 +499,16 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
   
   console.log('✅ analyzeTaskVerbs: Final result', {
     taskId: task.id,
-    taskTitle: task.title,
+    taskTitle: title,
     primaryVerb,
     effortScore,
     totalVerbsFound: foundVerbs.length,
   });
   
-  return { effortScore, primaryVerb };
+  return { 
+    effortScore: typeof effortScore === 'number' && !isNaN(effortScore) ? effortScore : 2.5, 
+    primaryVerb: primaryVerb || 'unknown' 
+  };
 }
 
 /**
@@ -496,28 +516,33 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
  * Returns a score between 1.0 and 5.0
  */
 export function calculateComplexity(task: Task): number {
+  if (!task) {
+    console.warn('⚠️ calculateComplexity: No task provided');
+    return 2.5; // Default medium complexity
+  }
+  
   let complexity = 1.0; // Base complexity
   
   // Add complexity for subtasks
-  if (task.subtasks && task.subtasks.length > 0) {
+  if (Array.isArray(task.subtasks) && task.subtasks.length > 0) {
     const subtaskComplexity = Math.min(task.subtasks.length * 0.5, 2.0); // Max +2.0 for 4+ subtasks
     complexity += subtaskComplexity;
   }
   
   // Add complexity for dependencies
-  if (task.dependencies && task.dependencies.length > 0) {
+  if (Array.isArray(task.dependencies) && task.dependencies.length > 0) {
     const dependencyComplexity = Math.min(task.dependencies.length * 0.5, 1.0); // Max +1.0 for 2+ dependencies
     complexity += dependencyComplexity;
   }
   
   // Add complexity for long descriptions
-  if (task.description && task.description.length > 500) {
+  if (task.description && typeof task.description === 'string' && task.description.length > 500) {
     complexity += 0.5;
   }
   
   // Add complexity for complexity-indicating tags
-  if (task.tags && task.tags.length > 0) {
-    const tagLower = task.tags.map(t => t.toLowerCase());
+  if (Array.isArray(task.tags) && task.tags.length > 0) {
+    const tagLower = task.tags.map(t => String(t).toLowerCase()).filter(Boolean);
     if (tagLower.some(t => ['complex', 'difficult', 'large', 'major', 'challenging'].includes(t))) {
       complexity += 0.5;
     }
@@ -526,6 +551,12 @@ export function calculateComplexity(task: Task): number {
   // Reduce complexity for in-progress tasks (work already done)
   if (task.status === 'in-progress') {
     complexity -= 0.3;
+  }
+  
+  // Validate complexity is a valid number
+  if (typeof complexity !== 'number' || isNaN(complexity) || !isFinite(complexity)) {
+    console.warn('⚠️ calculateComplexity: Invalid complexity calculated, using default', { complexity, task });
+    complexity = 2.5;
   }
   
   // Clamp between 1.0 and 5.0
