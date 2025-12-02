@@ -1,11 +1,13 @@
 import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
+import { analyzeTaskVerbs, calculateComplexity, applyVerbSpecificAdjustments } from './verb-analysis';
 
 const MAX_HOURS_PER_DAY = 5;
 
 /**
  * Estimate task duration in hours
  * Uses the same logic as useAIScheduler for consistency
+ * Formula: Base × Effort × Priority × Complexity
  */
 function estimateTaskHours(task: Task): number {
   // Priority 1: If estimated time is explicitly set by user, use it directly
@@ -13,87 +15,37 @@ function estimateTaskHours(task: Task): number {
     return task.estimatedTime / 60; // Convert minutes to hours
   }
   
-  // Priority 2: Intelligent estimation based on task properties
-  // Starting with 30 minutes as base
-  let estimatedMinutes = 30;
+  // Priority 2: Formula-based estimation using effort + priority + complexity
+  const { effortScore, primaryVerb } = analyzeTaskVerbs(task);
+  const complexityScore = calculateComplexity(task);
   
-  // Factor 1: Priority-based time adjustment
+  // Priority multiplier (existing values maintained)
   const priorityMultiplier = {
-    urgent: 0.7,   // 30 * 0.7 = 21 minutes base
-    high: 1.0,      // 30 minutes base
-    medium: 1.5,   // 45 minutes base
-    low: 2.0       // 60 minutes base
+    urgent: 0.7,
+    high: 1.0,
+    medium: 1.5,
+    low: 2.0
   };
+  
+  // Base time in minutes (30 minutes default)
+  const baseMinutes = 30;
+  
+  // Formula: Base × Effort × Priority × Complexity
+  let estimatedMinutes = baseMinutes;
+  estimatedMinutes *= (effortScore / 2.5); // Normalize effort (2.5 is middle of 1-5 scale)
   estimatedMinutes *= priorityMultiplier[task.priority] || 1.0;
+  estimatedMinutes *= (complexityScore / 2.5); // Normalize complexity
   
-  // Factor 2: Description length
-  if (task.description) {
-    const descLength = task.description.length;
-    if (descLength > 500) {
-      estimatedMinutes *= 1.8;
-    } else if (descLength > 200) {
-      estimatedMinutes *= 1.4;
-    } else if (descLength > 50) {
-      estimatedMinutes *= 1.2;
-    }
-  }
-  
-  // Factor 3: Subtasks
-  if (task.subtasks && task.subtasks.length > 0) {
-    estimatedMinutes += task.subtasks.length * 15;
-  }
-  
-  // Factor 4: Title keywords analysis
-  const titleLower = task.title.toLowerCase();
-  const titleWords = titleLower.split(/\s+/);
-  
-  if (titleWords.some(word => ['meeting', 'call', 'conference', 'standup', 'sync'].includes(word))) {
-    estimatedMinutes = Math.max(estimatedMinutes, 30);
-    estimatedMinutes = Math.min(estimatedMinutes, 90);
-  } else if (titleWords.some(word => ['review', 'check', 'verify', 'audit'].includes(word))) {
-    estimatedMinutes = Math.max(estimatedMinutes, 15);
-    estimatedMinutes = Math.min(estimatedMinutes, 45);
-  } else if (titleWords.some(word => ['plan', 'design', 'architecture', 'strategy', 'research'].includes(word))) {
-    estimatedMinutes = Math.max(estimatedMinutes, 60);
-    estimatedMinutes = Math.min(estimatedMinutes, 180);
-  } else if (titleWords.some(word => ['write', 'draft', 'create', 'document', 'blog'].includes(word))) {
-    estimatedMinutes = Math.max(estimatedMinutes, 45);
-    estimatedMinutes = Math.min(estimatedMinutes, 120);
-  } else if (titleWords.some(word => ['code', 'develop', 'implement', 'build', 'fix', 'debug'].includes(word))) {
-    estimatedMinutes = Math.max(estimatedMinutes, 60);
-    estimatedMinutes = Math.min(estimatedMinutes, 240);
-  } else if (titleWords.some(word => ['project', 'feature', 'module', 'system'].includes(word))) {
-    estimatedMinutes = Math.max(estimatedMinutes, 120);
-    estimatedMinutes = Math.min(estimatedMinutes, 300);
-  }
-  
-  // Factor 5: Status-based adjustment
-  if (task.status === 'in-progress') {
-    estimatedMinutes *= 0.6;
-  }
-  
-  // Factor 6: Dependencies
-  if (task.dependencies && task.dependencies.length > 0) {
-    estimatedMinutes *= 1.2;
-  }
-  
-  // Factor 7: Tags-based adjustment
-  if (task.tags && task.tags.length > 0) {
-    const tagLower = task.tags.map(t => t.toLowerCase());
-    if (tagLower.some(t => ['quick', 'simple', 'easy', 'small'].includes(t))) {
-      estimatedMinutes *= 0.6;
-    } else if (tagLower.some(t => ['complex', 'difficult', 'large', 'major'].includes(t))) {
-      estimatedMinutes *= 2.0;
-    }
-  }
+  // Apply verb-specific adjustments for known action types (maintains existing behavior)
+  estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
   
   // Clamp between 15 minutes (minimum) and 300 minutes (5 hours maximum)
   estimatedMinutes = Math.max(15, Math.min(300, estimatedMinutes));
   
-  // Round to nearest 15 minutes
+  // Round to nearest 15 minutes for cleaner scheduling
   estimatedMinutes = Math.round(estimatedMinutes / 15) * 15;
   
-  return estimatedMinutes / 60; // Convert to hours
+  return estimatedMinutes / 60; // Convert to hours (maintains interface compatibility)
 }
 
 /**

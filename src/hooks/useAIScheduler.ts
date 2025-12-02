@@ -5,6 +5,7 @@ import { isTaskBlocked, calculateDependencyDepth } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
+import { analyzeTaskVerbs, calculateComplexity, applyVerbSpecificAdjustments } from '../lib/verb-analysis';
 import type { Task } from '../types';
 
 export interface SchedulePlan {
@@ -287,105 +288,37 @@ export function useAIScheduler() {
     // Helper: Intelligently estimate task duration based on task properties
     // This needs to be defined before we use it to pre-populate dailyHours
     // IMPORTANT: This function NEVER uses default time - it either uses:
-    // 1. task.estimatedTime if explicitly set by user
-    // 2. Intelligent estimation based on task properties (priority, description, subtasks, keywords, etc.)
-    // The 30-minute base is just a starting point that gets adjusted by multiple factors
+    // Task duration estimation using formula: Base × Effort × Priority × Complexity
+    // Effort and complexity are automatically calculated from verb analysis and task properties
     const estimateTaskHours = (task: Task): number => {
       // Priority 1: If estimated time is explicitly set by user, use it directly
       if (task.estimatedTime && task.estimatedTime > 0) {
         return task.estimatedTime / 60; // Convert minutes to hours
       }
       
-      // Priority 2: Intelligent estimation based on task properties
-      // Starting with 30 minutes as base, but this gets heavily modified by factors below
-      let estimatedMinutes = 30; // Base estimate (NOT a default - gets adjusted)
+      // Priority 2: Formula-based estimation using effort + priority + complexity
+      const { effortScore, primaryVerb } = analyzeTaskVerbs(task);
+      const complexityScore = calculateComplexity(task);
       
-      // Factor 1: Priority-based time adjustment
+      // Priority multiplier (existing values maintained)
       const priorityMultiplier = {
-        urgent: 0.7,   // 30 * 0.7 = 21 minutes base
-        high: 1.0,     // 30 minutes base
-        medium: 1.5,   // 45 minutes base
-        low: 2.0       // 60 minutes base
+        urgent: 0.7,
+        high: 1.0,
+        medium: 1.5,
+        low: 2.0
       };
+      
+      // Base time in minutes (30 minutes default)
+      const baseMinutes = 30;
+      
+      // Formula: Base × Effort × Priority × Complexity
+      let estimatedMinutes = baseMinutes;
+      estimatedMinutes *= (effortScore / 2.5); // Normalize effort (2.5 is middle of 1-5 scale)
       estimatedMinutes *= priorityMultiplier[task.priority] || 1.0;
+      estimatedMinutes *= (complexityScore / 2.5); // Normalize complexity
       
-      // Factor 2: Description length (more detail = potentially longer task)
-      if (task.description) {
-        const descLength = task.description.length;
-        if (descLength > 500) {
-          estimatedMinutes *= 1.8; // Detailed descriptions = complex tasks
-        } else if (descLength > 200) {
-          estimatedMinutes *= 1.4;
-        } else if (descLength > 50) {
-          estimatedMinutes *= 1.2;
-        }
-      }
-      
-      // Factor 3: Subtasks (more subtasks = longer task)
-      if (task.subtasks && task.subtasks.length > 0) {
-        const subtaskCount = task.subtasks.length;
-        // Each subtask adds ~15 minutes
-        estimatedMinutes += subtaskCount * 15;
-      }
-      
-      // Factor 4: Title keywords analysis
-      const titleLower = task.title.toLowerCase();
-      const titleWords = titleLower.split(/\s+/);
-      
-      // Meeting/Conference/Call keywords = 30-60 minutes
-      if (titleWords.some(word => ['meeting', 'call', 'conference', 'standup', 'sync'].includes(word))) {
-        estimatedMinutes = Math.max(estimatedMinutes, 30);
-        estimatedMinutes = Math.min(estimatedMinutes, 90);
-      }
-      // Review keywords = 15-45 minutes
-      else if (titleWords.some(word => ['review', 'check', 'verify', 'audit'].includes(word))) {
-        estimatedMinutes = Math.max(estimatedMinutes, 15);
-        estimatedMinutes = Math.min(estimatedMinutes, 45);
-      }
-      // Plan/Design/Architecture keywords = 60-180 minutes
-      else if (titleWords.some(word => ['plan', 'design', 'architecture', 'strategy', 'research'].includes(word))) {
-        estimatedMinutes = Math.max(estimatedMinutes, 60);
-        estimatedMinutes = Math.min(estimatedMinutes, 180);
-      }
-      // Write/Draft keywords = 45-120 minutes
-      else if (titleWords.some(word => ['write', 'draft', 'create', 'document', 'blog'].includes(word))) {
-        estimatedMinutes = Math.max(estimatedMinutes, 45);
-        estimatedMinutes = Math.min(estimatedMinutes, 120);
-      }
-      // Code/Development keywords = 60-240 minutes
-      else if (titleWords.some(word => ['code', 'develop', 'implement', 'build', 'fix', 'debug'].includes(word))) {
-        estimatedMinutes = Math.max(estimatedMinutes, 60);
-        estimatedMinutes = Math.min(estimatedMinutes, 240);
-      }
-      // Project keywords = 120-300 minutes
-      else if (titleWords.some(word => ['project', 'feature', 'module', 'system'].includes(word))) {
-        estimatedMinutes = Math.max(estimatedMinutes, 120);
-        estimatedMinutes = Math.min(estimatedMinutes, 300);
-      }
-      
-      // Factor 5: Status-based adjustment
-      if (task.status === 'in-progress') {
-        // If task has been in progress, estimate remaining time
-        estimatedMinutes *= 0.6;
-      }
-      
-      // Factor 6: Dependencies (tasks with dependencies might be more complex)
-      if (task.dependencies && task.dependencies.length > 0) {
-        estimatedMinutes *= 1.2; // Slightly longer due to coordination
-      }
-      
-      // Factor 7: Tags-based adjustment
-      if (task.tags && task.tags.length > 0) {
-        const tagLower = task.tags.map(t => t.toLowerCase());
-        // Quick/Simple tags = shorter
-        if (tagLower.some(t => ['quick', 'simple', 'easy', 'small'].includes(t))) {
-          estimatedMinutes *= 0.6;
-        }
-        // Complex/Difficult tags = longer
-        else if (tagLower.some(t => ['complex', 'difficult', 'large', 'major'].includes(t))) {
-          estimatedMinutes *= 2.0;
-        }
-      }
+      // Apply verb-specific adjustments for known action types (maintains existing behavior)
+      estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
       
       // Clamp between 15 minutes (minimum) and 300 minutes (5 hours maximum)
       estimatedMinutes = Math.max(15, Math.min(300, estimatedMinutes));
@@ -393,7 +326,7 @@ export function useAIScheduler() {
       // Round to nearest 15 minutes for cleaner scheduling
       estimatedMinutes = Math.round(estimatedMinutes / 15) * 15;
       
-      return estimatedMinutes / 60; // Convert to hours
+      return estimatedMinutes / 60; // Convert to hours (maintains interface compatibility)
     };
     
     // Helper: Get task duration in hours (using intelligent estimation)
