@@ -127,3 +127,13 @@ export function getDailyHoursWarningLevel(
 
 export { MAX_HOURS_PER_DAY };
 
+/**
+ * Get task duration in minutes using AI estimator
+ * This is the shared utility function used across the app
+ * to ensure consistent duration calculations
+ */
+export function getTaskMinutes(task: Task): number {
+  const hours = estimateTaskHours(task);
+  return Math.round(hours * 60); // Convert hours to minutes, rounded
+}
+

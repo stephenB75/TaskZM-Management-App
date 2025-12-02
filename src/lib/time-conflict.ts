@@ -1,6 +1,7 @@
 import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
+import { getTaskMinutes } from './daily-hours-utils';
 
 /**
  * Options for finding next available slot
@@ -42,7 +43,7 @@ export function checkTimeConflict(
     if (!existingTask.scheduledDate) continue;
 
     const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-    const existingTaskDuration = (existingTask.estimatedTime || 30) * 60 * 1000;
+    const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000; // Use AI estimator
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
 
     // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
@@ -86,7 +87,7 @@ export function findNextAvailableSlot(
     .map((task) => ({
       task,
       start: new Date(task.scheduledDate!).getTime(),
-      end: new Date(task.scheduledDate!).getTime() + ((task.estimatedTime || 30) * 60 * 1000),
+      end: new Date(task.scheduledDate!).getTime() + (getTaskMinutes(task) * 60 * 1000), // Use AI estimator
     }))
     .sort((a, b) => a.start - b.start);
 
@@ -250,7 +251,7 @@ export function reorganizeAllTasksForDate(
     .map((task) => ({
       task,
       start: new Date(task.scheduledDate!).getTime(),
-      end: new Date(task.scheduledDate!).getTime() + ((task.estimatedTime || 30) * 60 * 1000),
+      end: new Date(task.scheduledDate!).getTime() + (getTaskMinutes(task) * 60 * 1000), // Use AI estimator
     }))
     .sort((a, b) => a.start - b.start);
 
@@ -293,7 +294,7 @@ export function reorganizeAllTasksForDate(
   // So any task before lastScheduledEnd will be moved forward
   for (const taskInfo of sortedTasks) {
     const task = taskInfo.task;
-    const taskDuration = (task.estimatedTime || 30) * 60 * 1000;
+    const taskDuration = getTaskMinutes(task) * 60 * 1000; // Use AI estimator
     
     // Check if task overlaps with previous task or is before the earliest allowed time
     // (lastScheduledEnd is set to current time for today, so tasks before current time will be moved)
@@ -317,7 +318,7 @@ export function reorganizeAllTasksForDate(
       const newTime = findNextAvailableSlot(
         task.id,
         candidateTime,
-        task.estimatedTime || 30,
+        getTaskMinutes(task), // Use AI estimator
         allTasks,
         options
       );
@@ -381,7 +382,7 @@ export function reorganizeConflictingTasks(
     if (!task.scheduledDate) continue;
     
     const existingTaskStart = new Date(task.scheduledDate).getTime();
-    const existingTaskDuration = (task.estimatedTime || 30) * 60 * 1000;
+    const existingTaskDuration = getTaskMinutes(task) * 60 * 1000; // Use AI estimator
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
     
     // Check for overlap
@@ -421,7 +422,7 @@ export function reorganizeConflictingTasks(
     const newTime = findNextAvailableSlot(
       conflicting.task.id,
       candidateTime,
-      conflicting.task.estimatedTime || 30,
+      getTaskMinutes(conflicting.task), // Use AI estimator
       allTasks,
       options
     );
@@ -434,7 +435,7 @@ export function reorganizeConflictingTasks(
       });
       
       // Update last scheduled end for next iteration
-      const conflictingTaskDuration = (conflicting.task.estimatedTime || 30) * 60 * 1000;
+      const conflictingTaskDuration = getTaskMinutes(conflicting.task) * 60 * 1000; // Use AI estimator
       lastScheduledEnd = newTime.getTime() + conflictingTaskDuration;
     }
   }

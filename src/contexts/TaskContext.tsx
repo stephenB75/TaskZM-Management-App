@@ -8,6 +8,7 @@ import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
 import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
+import { getTaskMinutes } from '../lib/daily-hours-utils';
 import type { Task, Project, Folder, TaskFilters, ViewConfig, HoursSettings, RolloverSettings } from '../types';
 import {
   WORKSPACE_MAX_RETRIES,
@@ -2601,7 +2602,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           }
           
           // Get task duration
-          const taskDuration = task.estimatedTime || 30; // Default to 30 minutes
+          const taskDuration = getTaskMinutes(task); // Use AI estimator
           
           // Combine existing tasks with previously scheduled rollover tasks
           // This ensures findNextAvailableSlot knows about all scheduled tasks

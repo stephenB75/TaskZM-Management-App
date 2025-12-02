@@ -480,7 +480,18 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 export function useCalendar() {
   const context = useContext(CalendarContext);
   if (context === undefined) {
-    throw new Error('useCalendar must be used within a CalendarProvider');
+    // Return fallback values instead of throwing to prevent app crashes
+    console.warn('useCalendar called outside CalendarProvider, using fallback values');
+    return {
+      calendarStatus: { google: false, outlook: false, apple: false },
+      isSyncing: false,
+      lastSync: null,
+      connectCalendar: async () => {},
+      disconnectCalendar: async () => {},
+      syncTask: async () => {},
+      syncAllTasks: async () => {},
+      checkCalendarStatus: async () => {},
+    };
   }
   return context;
 }

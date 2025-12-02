@@ -4,7 +4,7 @@ import { useTasks } from './TaskContext';
 import { DraggableTaskCard } from '../components/DraggableTaskCard';
 import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
-import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from '../lib/daily-hours-utils';
+import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
 import { TASK_CARD_LAYOUT_METRICS, TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS } from '../lib/task-card-constants';
@@ -151,7 +151,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         
         // Get category hours if applicable
         const categoryHours = getCategoryHoursForTask(task, today, hoursSettings);
-        const taskDuration = task.estimatedTime || 30; // Default to 30 minutes if not specified
+        const taskDuration = getTaskMinutes(task); // Use AI estimator
         
         // For today, always start from current time (rounded up to next 15-minute slot)
         // This ensures we never schedule tasks in the past
@@ -213,7 +213,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               .map((t) => ({
                 task: t,
                 start: new Date(t.scheduledDate!).getTime(),
-                end: new Date(t.scheduledDate!).getTime() + ((t.estimatedTime || 30) * 60 * 1000),
+                end: new Date(t.scheduledDate!).getTime() + (getTaskMinutes(t) * 60 * 1000), // Use AI estimator
               }))
               .sort((a, b) => a.start - b.start);
             
@@ -765,7 +765,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     
     // Get category hours if applicable
     const categoryHours = getCategoryHoursForTask(task, targetDate, hoursSettings);
-    const taskDuration = task.estimatedTime || 30;
+    const taskDuration = getTaskMinutes(task); // Use AI estimator
     
     // Check if task is being dragged from today agenda timeline
     // If so, try to calculate time from drop position
@@ -879,7 +879,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         .map((t) => ({
           task: t,
           start: new Date(t.scheduledDate!).getTime(),
-          end: new Date(t.scheduledDate!).getTime() + ((t.estimatedTime || 30) * 60 * 1000),
+          end: new Date(t.scheduledDate!).getTime() + (getTaskMinutes(t) * 60 * 1000), // Use AI estimator
         }))
         .sort((a, b) => a.start - b.start);
       
