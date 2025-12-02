@@ -39,7 +39,6 @@ import {
 import * as api from "../lib/api";
 import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured } from "../lib/revenuecat";
 import { logger } from "../lib/logger";
-import { detectCountryFromLocale, getCountryName } from "../lib/country-detection";
 
 interface DialogOffering {
   priceString: string;
@@ -424,24 +423,10 @@ export function PricingDialog({
         logger.debug('RevenueCat configuration timeout or error (continuing):', configError);
       }
       
-      // Detect user's country for helpful hint
-      const detectedCountry = detectCountryFromLocale();
-      const countryHint = detectedCountry 
-        ? ` Please select your country (${getCountryName(detectedCountry)} or other) in the payment form to activate the fields.`
-        : ' Please select your country in the payment form first to activate the payment fields.';
-      
       // Purchase through RevenueCat with timeout
       toast.info('Connecting to payment provider...', {
         duration: 2000,
       });
-      
-      // Show helpful hint about country selection
-      setTimeout(() => {
-        toast.info('Payment Form Tip', {
-          description: `You'll be redirected to the payment form.${countryHint}`,
-          duration: 5000,
-        });
-      }, 2500);
       
       const purchasePromise = purchaseProSubscription('monthly');
       const purchaseTimeout = new Promise<{ success: boolean; error?: string }>((_, reject) =>
@@ -514,24 +499,10 @@ export function PricingDialog({
         logger.debug('RevenueCat configuration timeout or error (continuing):', configError);
       }
       
-      // Detect user's country for helpful hint
-      const detectedCountry = detectCountryFromLocale();
-      const countryHint = detectedCountry 
-        ? ` IMPORTANT: Click the country dropdown at the top of the payment form and select your country (${getCountryName(detectedCountry)} or other) to activate all form fields.`
-        : ' IMPORTANT: Click the country dropdown at the top of the payment form and select your country first. This will activate all payment fields.';
-      
       // Purchase through RevenueCat with timeout
       toast.info('Connecting to payment provider...', {
         duration: 2000,
       });
-      
-      // Show helpful hint about country selection - more prominent and clear
-      setTimeout(() => {
-        toast.warning('Payment Form Instructions', {
-          description: `You'll be redirected to Stripe Checkout.${countryHint} The form fields will be disabled until you select your country.`,
-          duration: 8000,
-        });
-      }, 2500);
       
       const purchasePromise = purchaseProSubscription('yearly');
       const purchaseTimeout = new Promise<{ success: boolean; error?: string }>((_, reject) =>
@@ -926,13 +897,7 @@ export function PricingDialog({
             )}
           </div>
 
-          <div className="mt-3 md:mt-4 space-y-2">
-            <div className="p-2 md:p-2.5 bg-amber-50 dark:bg-amber-950/30 rounded-lg border-2 border-amber-300 dark:border-amber-800 shadow-sm">
-              <p className="text-[10px] md:text-[11px] text-center text-amber-900 dark:text-amber-200 leading-snug flex flex-col items-center justify-center gap-1">
-                <span className="font-bold">💳 Payment Instructions:</span>
-                <span>When redirected to Stripe Checkout, <strong>select your country first</strong> from the dropdown. This activates all payment fields. The form is secure (HTTPS) and your payment information is encrypted.</span>
-              </p>
-            </div>
+          <div className="mt-3 md:mt-4">
             <div className="p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
               <p className="text-[11px] md:text-xs text-center text-gray-700 dark:text-foreground leading-snug">
                 {SUBSCRIPTION_UI_TEXT.footer.message}{' '}

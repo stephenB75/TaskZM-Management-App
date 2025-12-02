@@ -650,6 +650,9 @@ iframe[data-payment-element] {
   
   /* Remove any default spacing */
   vertical-align: top !important;
+  
+  /* Ensure iframe content renders correctly without spacing issues */
+  overflow: hidden !important;
 }
 
 /* Fix for Stripe Checkout embedded forms - body/html level */
@@ -745,6 +748,9 @@ iframe[src*="pay.stripe.com"] {
   /* Ensure no gaps */
   display: block !important;
   vertical-align: top !important;
+  
+  /* Ensure iframe content renders correctly */
+  overflow: hidden !important;
 }
 
 /* Payment form loading state */
