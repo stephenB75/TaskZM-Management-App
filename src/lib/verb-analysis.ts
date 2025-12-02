@@ -43,6 +43,27 @@ const VERB_EFFORT_MAP: Record<string, number> = {
   'organize': 2.2,
   'sort': 1.8,
   'filter': 1.8,
+  'add': 1.8,
+  'remove': 1.8,
+  'delete': 1.5,
+  'change': 2.0,
+  'modify': 2.2,
+  'improve': 2.5,
+  'complete': 2.0,
+  'finish': 2.0,
+  'submit': 1.8,
+  'approve': 1.5,
+  'reject': 1.5,
+  'confirm': 1.5,
+  'cancel': 1.2,
+  'schedule': 2.0,
+  'book': 1.8,
+  'reserve': 1.8,
+  'register': 2.0,
+  'sign': 1.2,
+  'agree': 1.0,
+  'accept': 1.5,
+  'decline': 1.2,
   
   // High effort (3-4)
   'develop': 3.5,
@@ -69,6 +90,28 @@ const VERB_EFFORT_MAP: Record<string, number> = {
   'meet': 2.0,
   'call': 2.0,
   'discuss': 2.2,
+  'coordinate': 2.5,
+  'collaborate': 2.8,
+  'communicate': 2.0,
+  'train': 3.0,
+  'learn': 3.0,
+  'study': 2.8,
+  'practice': 2.5,
+  'rehearse': 2.5,
+  'compile': 2.8,
+  'collect': 2.0,
+  'gather': 2.0,
+  'assemble': 2.5,
+  'construct': 3.2,
+  'establish': 3.0,
+  'found': 3.5,
+  'launch': 3.2,
+  'release': 3.0,
+  'publish': 2.5,
+  'submit': 1.8,
+  'deliver': 2.5,
+  'ship': 2.0,
+  'distribute': 2.2,
   
   // Very high effort (4-5)
   'architect': 4.5,
@@ -103,77 +146,241 @@ const VERB_CATEGORIES = {
 };
 
 /**
- * Get base verb form from a word (simple stemming)
- * Handles common verb variations: -ing, -ed, -s, -es
+ * Irregular verb mappings (common past tense and variations)
+ */
+const IRREGULAR_VERBS: Record<string, string> = {
+  // Past tense -> base form
+  'wrote': 'write',
+  'written': 'write',
+  'built': 'build',
+  'made': 'make',
+  'did': 'do',
+  'went': 'go',
+  'got': 'get',
+  'took': 'take',
+  'came': 'come',
+  'saw': 'see',
+  'found': 'find',
+  'gave': 'give',
+  'told': 'tell',
+  'thought': 'think',
+  'knew': 'know',
+  'felt': 'feel',
+  'left': 'leave',
+  'put': 'put',
+  'set': 'set',
+  'met': 'meet',
+  'ran': 'run',
+  'began': 'begin',
+  'broke': 'break',
+  'brought': 'bring',
+  'bought': 'buy',
+  'caught': 'catch',
+  'chose': 'choose',
+  'drew': 'draw',
+  'drove': 'drive',
+  'ate': 'eat',
+  'fell': 'fall',
+  'flew': 'fly',
+  'forgot': 'forget',
+  'froze': 'freeze',
+  'grew': 'grow',
+  'heard': 'hear',
+  'held': 'hold',
+  'hid': 'hide',
+  'hit': 'hit',
+  'kept': 'keep',
+  'led': 'lead',
+  'lost': 'lose',
+  'paid': 'pay',
+  'read': 'read',
+  'rode': 'ride',
+  'rose': 'rise',
+  'said': 'say',
+  'sang': 'sing',
+  'sat': 'sit',
+  'slept': 'sleep',
+  'spoke': 'speak',
+  'spent': 'spend',
+  'stood': 'stand',
+  'stuck': 'stick',
+  'struck': 'strike',
+  'swam': 'swim',
+  'taught': 'teach',
+  'threw': 'throw',
+  'understood': 'understand',
+  'woke': 'wake',
+  'won': 'win',
+  'wore': 'wear',
+  'wound': 'wind',
+};
+
+/**
+ * Get base verb form from a word (improved stemming with irregular verb support)
+ * Handles common verb variations: -ing, -ed, -s, -es, and irregular forms
  */
 function getBaseVerb(word: string): string {
-  if (word.length < 3) return word;
+  if (word.length < 2) return word;
+  
+  const wordLower = word.toLowerCase();
+  
+  // Check irregular verbs first
+  if (IRREGULAR_VERBS[wordLower]) {
+    return IRREGULAR_VERBS[wordLower];
+  }
   
   // Remove common verb endings
-  if (word.endsWith('ing')) {
+  if (wordLower.endsWith('ing')) {
     // writing -> write, developing -> develop, running -> run
-    const base = word.slice(0, -3);
+    const base = wordLower.slice(0, -3);
+    if (base.length < 2) return wordLower;
+    
     // Handle double consonants: running -> run, but writing -> write
     if (base.length > 2 && base[base.length - 1] === base[base.length - 2]) {
-      return base.slice(0, -1);
+      const singleConsonant = base.slice(0, -1);
+      if (ACTION_VERBS.includes(singleConsonant)) {
+        return singleConsonant;
+      }
     }
+    
     // Handle -e ending verbs: writing -> write (writ + e + ing)
-    // Check if adding 'e' makes it a valid verb
     const withE = base + 'e';
     if (ACTION_VERBS.includes(withE)) {
       return withE;
     }
+    
+    // Check if base itself is a verb
+    if (ACTION_VERBS.includes(base)) {
+      return base;
+    }
+    
     return base;
   }
-  if (word.endsWith('ed')) {
+  
+  if (wordLower.endsWith('ed')) {
     // developed -> develop, created -> create, fixed -> fix
-    const base = word.slice(0, -2);
-    // Handle double consonants: planned -> plan
+    const base = wordLower.slice(0, -2);
+    if (base.length < 2) return wordLower;
+    
+    // Handle double consonants: planned -> plan, stopped -> stop
     if (base.length > 2 && base[base.length - 1] === base[base.length - 2]) {
-      return base.slice(0, -1);
+      const singleConsonant = base.slice(0, -1);
+      if (ACTION_VERBS.includes(singleConsonant)) {
+        return singleConsonant;
+      }
     }
+    
     // Handle -e ending verbs: created -> create
     const withE = base + 'e';
     if (ACTION_VERBS.includes(withE)) {
       return withE;
     }
+    
+    // Check if base itself is a verb
+    if (ACTION_VERBS.includes(base)) {
+      return base;
+    }
+    
     return base;
   }
-  if (word.endsWith('es')) {
-    // fixes -> fix, goes -> go
-    return word.slice(0, -2);
+  
+  if (wordLower.endsWith('es')) {
+    // fixes -> fix, goes -> go, watches -> watch
+    const base = wordLower.slice(0, -2);
+    if (ACTION_VERBS.includes(base)) {
+      return base;
+    }
+    // Try with 'e' for verbs like "fixes" -> "fix" (already handled) or "goes" -> "go"
+    return base;
   }
-  if (word.endsWith('s') && word.length > 3) {
-    // writes -> write, develops -> develop, fixes -> fix (already handled by 'es')
-    return word.slice(0, -1);
+  
+  if (wordLower.endsWith('s') && wordLower.length > 3) {
+    // writes -> write, develops -> develop
+    const base = wordLower.slice(0, -1);
+    if (ACTION_VERBS.includes(base)) {
+      return base;
+    }
+    return base;
   }
-  return word;
+  
+  return wordLower;
 }
 
 /**
  * Check if a word matches a verb (exact match or base form match)
+ * Improved matching with better handling of variations
  */
 function matchesVerb(word: string): { verb: string; effort: number } | null {
   if (!word || word.length < 2) return null;
   
-  // Try exact match first
-  if (ACTION_VERBS.includes(word)) {
-    return { verb: word, effort: VERB_EFFORT_MAP[word] };
+  const wordLower = word.toLowerCase().trim();
+  if (!wordLower || wordLower.length < 2) return null;
+  
+  // Try exact match first (case-insensitive)
+  if (ACTION_VERBS.includes(wordLower)) {
+    return { verb: wordLower, effort: VERB_EFFORT_MAP[wordLower] };
   }
   
-  // Try base form match (handles -ing, -ed, -s, -es endings)
-  const baseVerb = getBaseVerb(word);
-  if (baseVerb !== word && baseVerb.length >= 2 && ACTION_VERBS.includes(baseVerb)) {
-    return { verb: baseVerb, effort: VERB_EFFORT_MAP[baseVerb] };
+  // Try base form match (handles -ing, -ed, -s, -es endings and irregular verbs)
+  const baseVerb = getBaseVerb(wordLower);
+  if (baseVerb && baseVerb.length >= 2) {
+    // Check if base verb itself is in the list
+    if (ACTION_VERBS.includes(baseVerb)) {
+      return { verb: baseVerb, effort: VERB_EFFORT_MAP[baseVerb] };
+    }
+    
+    // If base verb is different from original, it means we did some transformation
+    // Try checking if the base verb with common endings would match
+    if (baseVerb !== wordLower) {
+      // Try adding common endings back and checking
+      const variations = [
+        baseVerb + 'e',  // write from writ
+        baseVerb + baseVerb[baseVerb.length - 1], // run from runn (double consonant)
+      ];
+      
+      for (const variation of variations) {
+        if (ACTION_VERBS.includes(variation)) {
+          return { verb: variation, effort: VERB_EFFORT_MAP[variation] };
+        }
+      }
+    }
   }
   
-  // Try checking if any verb is contained in the word (for compound words)
+  // Try checking if any verb is contained in the word (for compound words and variations)
   // Only check if word is longer than 3 chars to avoid false matches
-  if (word.length >= 3) {
-    for (const verb of ACTION_VERBS) {
-      // Check if verb is at the start of the word (e.g., "writing" contains "write")
-      if (word.startsWith(verb) || word.endsWith(verb)) {
+  if (wordLower.length >= 3) {
+    // Sort verbs by length (longest first) to match more specific verbs first
+    const sortedVerbs = [...ACTION_VERBS].sort((a, b) => b.length - a.length);
+    
+    for (const verb of sortedVerbs) {
+      // Check if verb is at the start of the word (most common case)
+      // e.g., "writing" starts with "writ" but we want "write"
+      // e.g., "developing" starts with "develop"
+      if (wordLower.startsWith(verb)) {
+        // Make sure it's not just a partial match (e.g., "dev" matching "develop")
+        const nextChar = wordLower[verb.length];
+        if (!nextChar || !/[a-z]/.test(nextChar) || nextChar === 'i' || nextChar === 'e') {
+          return { verb: verb, effort: VERB_EFFORT_MAP[verb] };
+        }
+      }
+      
+      // Check if verb is at the end of the word (less common but possible)
+      if (wordLower.endsWith(verb) && wordLower.length > verb.length) {
         return { verb: verb, effort: VERB_EFFORT_MAP[verb] };
+      }
+      
+      // Check if verb is contained in the word (for compound words like "code-review")
+      if (wordLower.includes(verb) && wordLower.length > verb.length + 2) {
+        // Only match if verb is a significant part of the word
+        const verbIndex = wordLower.indexOf(verb);
+        const before = wordLower[verbIndex - 1];
+        const after = wordLower[verbIndex + verb.length];
+        
+        // Match if verb is at word boundary (hyphen, space, or start/end)
+        if ((!before || before === '-' || before === '_' || before === ' ') &&
+            (!after || after === '-' || after === '_' || after === ' ')) {
+          return { verb: verb, effort: VERB_EFFORT_MAP[verb] };
+        }
       }
     }
   }
@@ -189,31 +396,75 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
   // Combine title and description for analysis
   const text = `${task.title || ''} ${task.description || ''}`.toLowerCase().trim();
   
+  console.log('🔬 analyzeTaskVerbs: Analyzing text', {
+    taskId: task.id,
+    taskTitle: task.title,
+    text,
+    textLength: text.length,
+  });
+  
   if (!text) {
+    console.log('⚠️ analyzeTaskVerbs: No text to analyze, using default');
     return { effortScore: 2.5, primaryVerb: 'unknown' };
   }
   
   // Split by spaces and also handle common separators
-  const words = text.split(/[\s\-_]+/);
+  // Improved regex to handle more cases: spaces, hyphens, underscores, and common punctuation
+  const words = text.split(/[\s\-_.,!?;:()\[\]{}'"]+/).filter(w => w.length > 0);
+  
+  console.log('🔬 analyzeTaskVerbs: Words extracted', {
+    taskId: task.id,
+    wordCount: words.length,
+    words: words.slice(0, 15), // Log first 15 words for better debugging
+    fullText: text,
+  });
   
   // Find verbs in the text
-  const foundVerbs: Array<{ verb: string; effort: number; position: number }> = [];
+  const foundVerbs: Array<{ verb: string; effort: number; position: number; originalWord: string }> = [];
   
   for (let i = 0; i < words.length; i++) {
-    // Remove punctuation and clean the word
-    let word = words[i].replace(/[.,!?;:()\[\]{}'"]/g, '').trim();
+    // Clean the word - already split by punctuation, but trim any remaining whitespace
+    let word = words[i].trim().toLowerCase();
     
     if (!word || word.length < 2) continue;
     
     // Check for verb match (exact or base form)
     const match = matchesVerb(word);
     if (match) {
-      foundVerbs.push({ verb: match.verb, effort: match.effort, position: i });
+      console.log('✅ analyzeTaskVerbs: Found verb', {
+        taskId: task.id,
+        originalWord: word,
+        matchedVerb: match.verb,
+        effort: match.effort,
+        position: i,
+      });
+      foundVerbs.push({ 
+        verb: match.verb, 
+        effort: match.effort, 
+        position: i,
+        originalWord: word 
+      });
+    } else {
+      // Log words that didn't match for debugging
+      if (words.length <= 10) { // Only log for short tasks to avoid spam
+        console.log('🔍 analyzeTaskVerbs: Word did not match verb', {
+          taskId: task.id,
+          word,
+          position: i,
+        });
+      }
     }
   }
   
   // If no verbs found, use default medium effort
   if (foundVerbs.length === 0) {
+    console.log('⚠️ analyzeTaskVerbs: No verbs found, using default effort', {
+      taskId: task.id,
+      taskTitle: task.title,
+      wordsChecked: words.length,
+      allWords: words.slice(0, 20), // Show first 20 words for debugging
+      availableVerbs: ACTION_VERBS.slice(0, 10), // Show sample of available verbs
+    });
     return { effortScore: 2.5, primaryVerb: 'unknown' };
   }
   
@@ -229,6 +480,14 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
   
   // Clamp effort score between 1.0 and 5.0
   effortScore = Math.max(1.0, Math.min(5.0, effortScore));
+  
+  console.log('✅ analyzeTaskVerbs: Final result', {
+    taskId: task.id,
+    taskTitle: task.title,
+    primaryVerb,
+    effortScore,
+    totalVerbsFound: foundVerbs.length,
+  });
   
   return { effortScore, primaryVerb };
 }

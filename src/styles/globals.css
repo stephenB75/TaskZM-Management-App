@@ -562,8 +562,14 @@ body {
   }
 }
 
-/* Fix iframe positioning and clickable area alignment for payment forms */
-/* This ensures Stripe checkout and RevenueCat payment iframes work correctly */
+/* ============================================================================
+   Payment Form Iframe Styling
+   ============================================================================
+   This ensures Stripe checkout, RevenueCat payment, and embedded payment 
+   iframes work correctly across all devices and browsers.
+   ============================================================================ */
+
+/* Base iframe reset - prevents layout issues */
 iframe {
   /* Reset any transforms that might affect positioning */
   transform: none !important;
@@ -581,15 +587,21 @@ iframe {
   -moz-transform: none !important;
   -ms-transform: none !important;
   -o-transform: none !important;
+  
+  /* Smooth rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure parent containers don't affect iframe positioning */
+/* Payment form iframes - Stripe, RevenueCat, and custom payment forms */
 iframe[src*="stripe"],
 iframe[src*="checkout"],
 iframe[src*="payment"],
 iframe[src*="revenuecat"],
 iframe[data-payment-form],
-iframe[data-checkout] {
+iframe[data-checkout],
+iframe[data-stripe-element],
+iframe[data-payment-element] {
   /* Reset positioning context */
   position: relative !important;
   top: 0 !important;
@@ -597,15 +609,24 @@ iframe[data-checkout] {
   right: auto !important;
   bottom: auto !important;
   
-  /* Ensure proper sizing */
+  /* Responsive sizing - full width, auto height */
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   height: auto !important;
   min-height: 500px !important;
   
+  /* Desktop: taller minimum height for better form visibility */
+  @media (min-width: 768px) {
+    min-height: 600px !important;
+  }
+  
   /* Fix border and display */
   border: none !important;
+  border-radius: 8px !important;
   display: block !important;
+  
+  /* Proper spacing - no extra margins that cause gaps */
   margin: 0 !important;
   padding: 0 !important;
   
@@ -614,9 +635,24 @@ iframe[data-checkout] {
   
   /* Prevent any CSS that could affect click areas */
   box-sizing: border-box !important;
+  
+  /* Smooth transitions */
+  transition: height 0.3s ease-in-out !important;
+  
+  /* Ensure proper background */
+  background: transparent !important;
+  
+  /* Prevent text selection issues */
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  
+  /* Remove any default spacing */
+  vertical-align: top !important;
 }
 
-/* Fix for Stripe Checkout embedded forms */
+/* Fix for Stripe Checkout embedded forms - body/html level */
 body[data-stripe-checkout],
 body[data-payment-form],
 html[data-stripe-checkout],
@@ -624,14 +660,20 @@ html[data-payment-form] {
   /* Ensure body/html don't have transforms affecting iframes */
   transform: none !important;
   -webkit-transform: none !important;
+  
+  /* Prevent scroll issues */
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
 
-/* Ensure payment form containers don't interfere */
+/* Payment form containers - ensure proper layout */
 [data-payment-form],
 [data-checkout-form],
 [data-stripe-checkout],
 .payment-form-container,
-.checkout-container {
+.checkout-container,
+.stripe-checkout-container,
+.revenuecat-checkout-container {
   /* Reset any transforms */
   transform: none !important;
   -webkit-transform: none !important;
@@ -643,26 +685,202 @@ html[data-payment-form] {
   pointer-events: auto !important;
   
   /* Prevent overflow issues */
-  overflow: visible !important;
+  overflow: hidden !important;
   
   /* Ensure proper stacking */
   z-index: 1 !important;
+  
+  /* Responsive width */
+  width: 100% !important;
+  max-width: 100% !important;
+  
+  /* Proper spacing - consistent padding around iframe */
+  margin: 0 !important;
+  padding: 0 !important;
+  
+  /* Remove any default spacing */
+  line-height: 0 !important;
+  font-size: 0 !important;
+  
+  /* Smooth rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Ensure iframe fits perfectly */
+  display: block !important;
 }
 
-/* Fix for RevenueCat Web Billing iframes */
-iframe[src*="revenuecat"] {
+/* RevenueCat Web Billing iframes - enhanced styling with proper spacing */
+iframe[src*="revenuecat"],
+iframe[src*="checkout.stripe.com"],
+iframe[src*="pay.stripe.com"] {
   /* Ensure full width and proper height */
   width: 100% !important;
   min-width: 100% !important;
   max-width: 100% !important;
   
-  /* Proper height calculation */
-  height: 100% !important;
+  /* Responsive height - adapts to content */
+  height: auto !important;
   min-height: 600px !important;
+  
+  /* Desktop: taller for better visibility */
+  @media (min-width: 768px) {
+    min-height: 700px !important;
+  }
   
   /* Ensure no scaling */
   transform: scale(1) !important;
   transform-origin: top left !important;
+  
+  /* Smooth loading */
+  opacity: 1 !important;
+  transition: opacity 0.3s ease-in-out !important;
+  
+  /* Remove all spacing - iframe should fit container exactly */
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+  
+  /* Ensure no gaps */
+  display: block !important;
+  vertical-align: top !important;
+}
+
+/* Payment form loading state */
+.payment-form-container.loading iframe,
+.checkout-container.loading iframe {
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+}
+
+/* Payment form error state */
+.payment-form-container.error,
+.checkout-container.error {
+  border: 2px solid #ef4444 !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+  background: #fef2f2 !important;
+}
+
+/* Mobile-specific payment form adjustments */
+@media (max-width: 767px) {
+  iframe[src*="stripe"],
+  iframe[src*="checkout"],
+  iframe[src*="payment"],
+  iframe[src*="revenuecat"] {
+    /* Mobile: slightly shorter minimum height */
+    min-height: 500px !important;
+    
+    /* Ensure full width without extra margins */
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .payment-form-container,
+  .checkout-container,
+  .stripe-checkout-container,
+  .revenuecat-checkout-container {
+    /* Mobile: full width, no padding to prevent spacing issues */
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* Tablet-specific adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  iframe[src*="stripe"],
+  iframe[src*="checkout"],
+  iframe[src*="payment"],
+  iframe[src*="revenuecat"] {
+    min-height: 650px !important;
+  }
+}
+
+/* Desktop-specific adjustments */
+@media (min-width: 1024px) {
+  iframe[src*="stripe"],
+  iframe[src*="checkout"],
+  iframe[src*="payment"],
+  iframe[src*="revenuecat"] {
+    /* Desktop: optimal height for two-column layout */
+    min-height: 700px !important;
+    max-height: 90vh !important;
+    
+    /* Ensure no spacing issues */
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .payment-form-container,
+  .checkout-container,
+  .stripe-checkout-container,
+  .revenuecat-checkout-container {
+    /* Desktop: center with max width, no padding to prevent spacing */
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* Payment form field focus states - for embedded forms */
+.payment-form-container:focus-within,
+.checkout-container:focus-within {
+  outline: 2px solid #9B87E8 !important;
+  outline-offset: 2px !important;
+  border-radius: 8px !important;
+}
+
+/* Payment form accessibility improvements */
+.payment-form-container,
+.checkout-container {
+  /* Ensure proper focus management */
+  outline: none !important;
+}
+
+/* Payment form loading spinner overlay */
+.payment-form-container::before,
+.checkout-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: none;
+  z-index: 10;
+  border-radius: 8px;
+}
+
+.payment-form-container.loading::before,
+.checkout-container.loading::before {
+  display: block;
+}
+
+/* Payment form error message styling */
+.payment-form-error {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 6px !important;
+  padding: 0.75rem 1rem !important;
+  margin-top: 1rem !important;
+  color: #991b1b !important;
+  font-size: 0.875rem !important;
+}
+
+/* Payment form success message styling */
+.payment-form-success {
+  background: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+  border-radius: 6px !important;
+  padding: 0.75rem 1rem !important;
+  margin-top: 1rem !important;
+  color: #166534 !important;
+  font-size: 0.875rem !important;
 }
 
 /* Mobile Toaster Notifications - Top Position */

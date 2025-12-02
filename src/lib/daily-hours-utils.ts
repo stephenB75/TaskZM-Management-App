@@ -22,12 +22,32 @@ export function estimateTaskHours(task: Task): number {
   // Priority 1: If estimated time is explicitly set by user, use it directly
   // IMPORTANT: Check for null/undefined explicitly, not just truthy (0 is falsy but valid)
   if (task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0) {
+    console.log('⏱️ AI Duration Estimator: Using user-set estimated time', {
+      taskId: task.id,
+      taskTitle: task.title,
+      estimatedTime: task.estimatedTime,
+      hours: task.estimatedTime / 60,
+    });
     return task.estimatedTime / 60; // Convert minutes to hours
   }
   
   // Priority 2: Formula-based estimation using effort + priority + complexity
+  console.log('⏱️ AI Duration Estimator: Starting formula calculation', {
+    taskId: task.id,
+    taskTitle: task.title,
+    priority: task.priority,
+  });
+  
   const { effortScore, primaryVerb } = analyzeTaskVerbs(task);
   const complexityScore = calculateComplexity(task);
+  
+  console.log('⏱️ AI Duration Estimator: Verb analysis result', {
+    taskId: task.id,
+    taskTitle: task.title,
+    effortScore,
+    primaryVerb,
+    complexityScore,
+  });
   
   // Formula: Base × Effort × Priority × Complexity
   let estimatedMinutes = BASE_TASK_DURATION_MINUTES;
@@ -44,7 +64,17 @@ export function estimateTaskHours(task: Task): number {
   // Round to nearest interval for cleaner scheduling
   estimatedMinutes = Math.round(estimatedMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
   
-  return estimatedMinutes / 60; // Convert to hours (maintains interface compatibility)
+  const estimatedHours = estimatedMinutes / 60;
+  
+  console.log('⏱️ AI Duration Estimator: Final calculation', {
+    taskId: task.id,
+    taskTitle: task.title,
+    estimatedMinutes,
+    estimatedHours,
+    formula: `Base(${BASE_TASK_DURATION_MINUTES}) × Effort(${effortScore}/${EFFORT_NORMALIZATION_DIVISOR}=${(effortScore / EFFORT_NORMALIZATION_DIVISOR).toFixed(2)}) × Priority(${PRIORITY_MULTIPLIERS[task.priority]}) × Complexity(${complexityScore}/${COMPLEXITY_NORMALIZATION_DIVISOR}=${(complexityScore / COMPLEXITY_NORMALIZATION_DIVISOR).toFixed(2)})`,
+  });
+  
+  return estimatedHours; // Convert to hours (maintains interface compatibility)
 }
 
 /**
@@ -131,7 +161,24 @@ export { MAX_HOURS_PER_DAY };
  * This is a convenience wrapper around estimateTaskHours
  */
 export function getTaskHours(task: Task): number {
-  return estimateTaskHours(task);
+  console.log('🔍 getTaskHours called for task:', {
+    id: task.id,
+    title: task.title,
+    hasEstimatedTime: task.estimatedTime !== null && task.estimatedTime !== undefined,
+    estimatedTime: task.estimatedTime,
+    willUseFormula: !(task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0),
+  });
+  
+  const result = estimateTaskHours(task);
+  
+  console.log('✅ getTaskHours result:', {
+    taskId: task.id,
+    taskTitle: task.title,
+    hours: result,
+    minutes: Math.round(result * 60),
+  });
+  
+  return result;
 }
 
 /**

@@ -200,10 +200,16 @@ export function InboxView() {
         period: 'twoWeeks',
         onlyWithoutDueDate: true,
         forceCategoryHours: true 
+      }).catch((error) => {
+        // Handle promise rejection explicitly
+        console.error('❌ Promise rejected in scheduleAllTasks:', error);
+        throw error;
       });
+      
       toast.dismiss(loadingToast);
-      if (result.scheduled.length > 0) {
-      toast.success("Inbox cleared!", {
+      
+      if (result && result.scheduled && result.scheduled.length > 0) {
+        toast.success("Inbox cleared!", {
           description: `Scheduled ${result.scheduled.length} task${result.scheduled.length === 1 ? "" : "s"} across the next two weeks`,
         });
       } else {
@@ -212,7 +218,7 @@ export function InboxView() {
         });
       }
 
-      if (result.exceedsLimit.length > 0) {
+      if (result && result.exceedsLimit && result.exceedsLimit.length > 0) {
         toast.warning(
           `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? "" : "s"} need manual scheduling`,
           {
@@ -222,10 +228,22 @@ export function InboxView() {
       }
     } catch (error) {
       toast.dismiss(loadingToast);
-      console.error('Error in handleScheduleAll:', error);
-      toast.error("Scheduling failed", {
-        description: error instanceof Error ? error.message : "Please try again",
-      });
+      console.error('❌ Error in handleScheduleAll:', error);
+      
+      // Filter out browser extension errors from user-facing messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isExtensionError = errorMessage.includes('message channel') || 
+                               errorMessage.includes('listener indicated') ||
+                               errorMessage.includes('asynchronous response');
+      
+      if (!isExtensionError) {
+        toast.error("Scheduling failed", {
+          description: errorMessage || "Please try again",
+        });
+      } else {
+        // Extension error - log but don't show to user, scheduler might still work
+        console.warn('⚠️ Browser extension error detected (non-critical):', errorMessage);
+      }
     }
   };
 

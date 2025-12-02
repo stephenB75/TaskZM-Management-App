@@ -2426,12 +2426,18 @@ app.post("/make-server-65e6e67f/create-checkout-session", async (c) => {
       }, 500);
     }
 
-    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
+    // Ensure APP_URL uses HTTPS for security
+    let appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
+    // Force HTTPS if not already present
+    if (!appUrl.startsWith('https://')) {
+      appUrl = appUrl.replace(/^https?:\/\//, 'https://');
+    }
     
-    // Logo URL - should be publicly accessible
+    // Logo URL - must be publicly accessible HTTPS URL
     const logoUrl = `${appUrl}/taskzm-logo.png`;
     
-    // Create Stripe checkout session with improved configuration
+    // Create Stripe checkout session with improved security and appearance configuration
+    // Note: Stripe Checkout is always served over HTTPS, which enables autofill
     const checkoutParams = new URLSearchParams({
       'mode': 'subscription',
       'payment_method_types[]': 'card',
@@ -2442,13 +2448,36 @@ app.post("/make-server-65e6e67f/create-checkout-session", async (c) => {
       'cancel_url': `${appUrl}/settings?canceled=true`,
       'metadata[userId]': userId,
       'metadata[priceId]': priceId,
-      // Billing address collection - 'auto' attempts to pre-fill based on IP/location
+      // Billing address collection - 'auto' allows pre-fill while maintaining security
       'billing_address_collection': 'auto',
       // Payment method collection - always collect payment method
       'payment_method_collection': 'always',
       // Logo for checkout page (must be publicly accessible HTTPS URL)
       'images[]': logoUrl,
+      // Enable customer creation for better security and autofill support
+      'customer_creation': 'always',
+      // Appearance customization for better UX
+      // Note: Additional styling should be configured in Stripe Dashboard → Settings → Branding
+      'ui_mode': 'hosted', // Use hosted checkout (best for security and autofill)
+      'consent_collection': 'if_required', // Only show consent if required by regulations
+      // Allow promotion codes for discounts
+      'allow_promotion_codes': 'true',
+      // Submit type - use 'pay' for subscriptions (shows "Subscribe" instead of "Pay")
+      'submit_type': 'pay',
     });
+    
+    // Only enable automatic tax if configured in Stripe account
+    // This is optional and requires Stripe Tax to be set up
+    const enableAutomaticTax = Deno.env.get('STRIPE_ENABLE_AUTOMATIC_TAX') === 'true';
+    if (enableAutomaticTax) {
+      checkoutParams.append('automatic_tax[enabled]', 'true');
+    }
+    
+    // Phone number collection is optional - enable if needed for verification
+    const enablePhoneCollection = Deno.env.get('STRIPE_COLLECT_PHONE') === 'true';
+    if (enablePhoneCollection) {
+      checkoutParams.append('phone_number_collection[enabled]', 'true');
+    }
     
     const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',

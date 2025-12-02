@@ -57,11 +57,15 @@ if (typeof window !== 'undefined') {
       
       // Suppress Chrome extension errors
       if (message.includes('message channel closed before a response was received') ||
+          message.includes('listener indicated an asynchronous response') ||
+          message.includes('asynchronous response by returning true') ||
           message.includes('checkoutUrls') ||
           message.includes('ERR_FILE_NOT_FOUND') ||
           (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||
           filename.includes('chrome-extension://') ||
+          filename.includes('moz-extension://') ||
+          filename.includes('safari-extension://') ||
           filename.includes('contentScript.bundle.js') ||
           filename.includes('content.js') ||
           filename.includes('web-client-content-script.js') ||
@@ -146,9 +150,12 @@ if (typeof window !== 'undefined') {
       
       // Suppress extension-related promise rejections
       if (message.includes('message channel closed before a response was received') ||
+          message.includes('listener indicated an asynchronous response') ||
+          message.includes('asynchronous response by returning true') ||
           message.includes('checkoutUrls') ||
           message.includes('chrome-extension://') ||
           message.includes('moz-extension://') ||
+          message.includes('safari-extension://') ||
           message.includes('ERR_FILE_NOT_FOUND') ||
           (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||

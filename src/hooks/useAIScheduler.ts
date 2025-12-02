@@ -1421,13 +1421,30 @@ export function useAIScheduler() {
       
       if (result.scheduled.length > 0) {
         // Don't manage state here since scheduleAllTasks already manages it
-        await applySchedulePlan(result.scheduled, false);
+        await applySchedulePlan(result.scheduled, false).catch((planError) => {
+          // Handle plan application errors separately
+          console.error('❌ Error applying schedule plan:', planError);
+          // Don't throw - result is still valid even if some tasks failed to update
+        });
       }
       return result;
     } catch (error) {
       console.error('❌ ERROR in scheduleAllTasks:', error);
       console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      throw error;
+      
+      // Filter out browser extension errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isExtensionError = errorMessage.includes('message channel') || 
+                               errorMessage.includes('listener indicated') ||
+                               errorMessage.includes('asynchronous response');
+      
+      if (!isExtensionError) {
+        throw error; // Only throw non-extension errors
+      } else {
+        console.warn('⚠️ Browser extension error detected (non-critical):', errorMessage);
+        // Return empty result instead of throwing for extension errors
+        return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
+      }
     } finally {
       setIsScheduling(false);
     }

@@ -929,8 +929,8 @@ export function PricingDialog({
           <div className="mt-3 md:mt-4 space-y-2">
             <div className="p-2 md:p-2.5 bg-amber-50 dark:bg-amber-950/30 rounded-lg border-2 border-amber-300 dark:border-amber-800 shadow-sm">
               <p className="text-[10px] md:text-[11px] text-center text-amber-900 dark:text-amber-200 leading-snug flex flex-col items-center justify-center gap-1">
-                <span className="font-bold">⚠️ Important Payment Instructions:</span>
-                <span>When redirected to Stripe Checkout, <strong>click the country dropdown at the top</strong> and select your country first. This will activate all payment form fields. The fields are disabled until you select your country.</span>
+                <span className="font-bold">💳 Payment Instructions:</span>
+                <span>When redirected to Stripe Checkout, <strong>select your country first</strong> from the dropdown. This activates all payment fields. The form is secure (HTTPS) and your payment information is encrypted.</span>
               </p>
             </div>
             <div className="p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
