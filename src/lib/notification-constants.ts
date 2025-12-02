@@ -20,6 +20,7 @@ export const NOTIFICATION_STORAGE_KEYS = {
   readNotifications: 'readNotifications',
   dismissedNotifications: 'dismissedNotifications',
   lastSeenPomodoroSessions: 'lastSeenPomodoroSessions',
+  lastSeenAwards: 'lastSeenAwards',
   toastNotifications: 'toastNotifications',
 } as const;
 

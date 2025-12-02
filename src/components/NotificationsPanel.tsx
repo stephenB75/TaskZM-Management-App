@@ -54,7 +54,7 @@ export function NotificationsPanel() {
   const { tasks } = useTasks();
   const { badgeCount, settings, getToastNotifications, markToastAsRead, clearToastNotification, updateBadge } = useNotifications();
   const { getTimerState } = usePomodoro();
-  const { earnedAwards } = useAwards();
+  const { earnedAwards, awards } = useAwards();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
   const [readNotifications, setReadNotifications] = useState<Set<string>>(
@@ -83,6 +83,16 @@ export function NotificationsPanel() {
   useEffect(() => {
     localStorage.setItem(NOTIFICATION_STORAGE_KEYS.lastSeenPomodoroSessions, JSON.stringify(lastSeenSessions));
   }, [lastSeenSessions]);
+
+  // Track last seen awards to detect new awards
+  const [lastSeenAwards, setLastSeenAwards] = useState<Set<string>>(
+    () => new Set(JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.lastSeenAwards) || '[]'))
+  );
+
+  // Save last seen awards to localStorage
+  useEffect(() => {
+    localStorage.setItem(NOTIFICATION_STORAGE_KEYS.lastSeenAwards, JSON.stringify(Array.from(lastSeenAwards)));
+  }, [lastSeenAwards]);
 
   // Generate notifications from tasks
   useEffect(() => {
@@ -303,7 +313,7 @@ export function NotificationsPanel() {
     }
     
     setNotifications(newNotifications);
-  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions, getToastNotifications, earnedAwards, lastSeenAwards]);
+  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions, getToastNotifications, earnedAwards, awards, lastSeenAwards]);
 
   const filteredNotifications = notifications.filter(notif => {
     if (filterType === "all") return true;
