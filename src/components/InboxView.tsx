@@ -13,6 +13,7 @@ import {
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
+import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -122,6 +123,39 @@ export function InboxView() {
   const handleQuickAdd = () => {
     if (!quickAddTitle.trim()) return;
 
+    // Create a temporary task object for AI duration estimation
+    const tempTask: Task = {
+      id: 'temp',
+      title: quickAddTitle.trim(),
+      description: "",
+      status: "todo",
+      priority: "medium",
+      tags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      projectId: "default",
+      folderId: null,
+      dueDate: null,
+      scheduledDate: null,
+      estimatedTime: null, // Explicitly null to trigger AI estimator
+      actualTime: null,
+      dependencies: [],
+      subtasks: [],
+      recurrence: { type: 'none', interval: 1 },
+      notes: '',
+      assignedTo: [],
+      createdBy: 'local',
+      completedAt: null,
+    };
+
+    // Use AI Duration Estimator to get estimated duration
+    const aiEstimatedMinutes = getTaskMinutes(tempTask);
+    
+    console.log('🤖 InboxView: AI Duration Estimator triggered for quick add task', {
+      taskTitle: quickAddTitle.trim(),
+      aiEstimatedMinutes,
+    });
+
     const newTask: Omit<Task, "id"> = {
       title: quickAddTitle.trim(),
       description: "",
@@ -130,6 +164,7 @@ export function InboxView() {
       tags: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      estimatedTime: aiEstimatedMinutes > 0 ? aiEstimatedMinutes : null,
     };
 
     addTask(newTask);

@@ -80,7 +80,7 @@ import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
-import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY } from "../lib/daily-hours-utils";
+import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from "../lib/daily-hours-utils";
 import type {
   Task,
   TaskPriority,
@@ -878,6 +878,65 @@ export function TaskDialog({
     // Ensure tags is always an array
     const taskTags = Array.isArray(tags) ? tags.filter(tag => tag && tag.trim()) : [];
 
+    // Calculate estimatedTime: use user input if provided, otherwise use AI estimator
+    let finalEstimatedTime: number | null = null;
+    if (totalMinutes > 0) {
+      // User has manually set a duration
+      finalEstimatedTime = totalMinutes;
+    } else {
+      // No user-set duration: use AI Duration Estimator
+      // Create a temporary task object for the estimator
+      const tempTask: Task = {
+        id: task?.id || 'temp',
+        title: title.trim(),
+        description: description.trim(),
+        status,
+        priority,
+        dueDate: (() => {
+          let dateToUse = dueDate;
+          if (dueMonth && dueDay && dueYear) {
+            const month = parseInt(dueMonth) - 1;
+            const day = parseInt(dueDay);
+            const year = parseInt(dueYear);
+            if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+              const constructedDate = new Date(year, month, day);
+              if (!isNaN(constructedDate.getTime())) {
+                dateToUse = constructedDate;
+              }
+            }
+          }
+          return dateToUse ? dateToUse.toISOString() : null;
+        })(),
+        scheduledDate: finalScheduledDate,
+        projectId,
+        folderId: folderId || null,
+        tags: taskTags,
+        subtasks,
+        estimatedTime: null, // Explicitly null to trigger AI estimator
+        notes: notes,
+        dependencies,
+        recurrence: recurrenceConfig,
+        assignedTo,
+        createdBy: task?.createdBy || 'local',
+        createdAt: task?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        completedAt: null,
+        actualTime: null,
+      };
+      
+      // Use AI Duration Estimator to get estimated duration
+      const aiEstimatedMinutes = getTaskMinutes(tempTask);
+      finalEstimatedTime = aiEstimatedMinutes > 0 ? aiEstimatedMinutes : null;
+      
+      console.log('🤖 TaskDialog: AI Duration Estimator triggered for new task', {
+        taskTitle: title.trim(),
+        taskDescription: description.trim(),
+        taskPriority: priority,
+        aiEstimatedMinutes,
+        finalEstimatedTime,
+      });
+    }
+
     const taskData = {
       title: title.trim(),
       description: description.trim(),
@@ -903,7 +962,7 @@ export function TaskDialog({
       folderId: folderId || null,
       tags: taskTags,
       subtasks,
-      estimatedTime: totalMinutes > 0 ? totalMinutes : null,
+      estimatedTime: finalEstimatedTime,
       notes: notes, // Preserve HTML formatting from RichTextEditor
       dependencies,
       recurrence: recurrenceConfig,
@@ -927,7 +986,8 @@ export function TaskDialog({
     // Check for time conflicts if scheduled date is set
     if (finalScheduledDate) {
       const scheduledDateTime = new Date(finalScheduledDate);
-      const taskDuration = totalMinutes > 0 ? totalMinutes : 30; // Default to 30 minutes
+      // Use finalEstimatedTime (which includes AI estimate) for conflict checking
+      const taskDuration = finalEstimatedTime || 30; // Use AI-estimated duration, fallback to 30 minutes
       const taskId = task?.id || null;
       
       // Create temporary task for category hours check
@@ -1042,18 +1102,20 @@ export function TaskDialog({
           })();
         
         // Check if estimated time has changed
+        // Use finalEstimatedTime (which includes AI estimate) for comparison
         const estimatedTimeHasChanged = task 
-          ? (task.estimatedTime || 0) !== totalMinutes
+          ? (task.estimatedTime || 0) !== (finalEstimatedTime || 0)
           : true; // New task, so it's a change
         
         // Only check daily limit if time has changed OR estimated time has changed
         // If neither changed, the task is already accounted for in daily hours
         if (timeHasChanged || estimatedTimeHasChanged) {
           // Create a temporary task object for limit checking
+          // Use finalEstimatedTime (which includes AI estimate) instead of totalMinutes
           const tempTaskForLimit: Task = {
             ...(task || {}),
             id: taskId || 'temp',
-            estimatedTime: totalMinutes > 0 ? totalMinutes : null,
+            estimatedTime: finalEstimatedTime, // Use AI-estimated duration if available
           } as Task;
           
           const limitCheck = checkDailyLimit(scheduledDateOnly, tempTaskForLimit, tasks);
