@@ -164,7 +164,7 @@ export function useAIScheduler() {
         if (!currentTask.scheduledDate) continue;
         
         const currentTaskStart = new Date(currentTask.scheduledDate);
-        const currentTaskDuration = getTaskMinutes(currentTask);
+        const currentTaskDuration = getTaskMinutes(currentTask); // Use AI estimator for existing tasks
         const currentTaskEnd = new Date(currentTaskStart);
         currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
         
@@ -178,7 +178,7 @@ export function useAIScheduler() {
           const prevTask = sortedCategoryTasks[i - 1];
           if (!prevTask.scheduledDate) continue;
           const prevTaskStart = new Date(prevTask.scheduledDate);
-          const prevTaskDuration = getTaskMinutes(prevTask);
+          const prevTaskDuration = getTaskMinutes(prevTask); // Use AI estimator for existing tasks
           gapStart = new Date(prevTaskStart);
           gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
         }
@@ -207,7 +207,7 @@ export function useAIScheduler() {
       const lastTask = sortedCategoryTasks[sortedCategoryTasks.length - 1];
       if (lastTask.scheduledDate) {
         const lastTaskStart = new Date(lastTask.scheduledDate);
-        const lastTaskDuration = getTaskMinutes(lastTask);
+        const lastTaskDuration = getTaskMinutes(lastTask); // Use AI estimator for existing tasks
         const nextAvailableTime = new Date(lastTaskStart);
         nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
         
@@ -1156,7 +1156,7 @@ export function useAIScheduler() {
               const currentTask = sortedTasks[i];
               
               const prevTaskStart = new Date(prevTask.scheduledDate!);
-              const prevTaskDuration = getTaskMinutes(prevTask);
+              const prevTaskDuration = getTaskMinutes(prevTask); // Use AI estimator for existing tasks
               const prevTaskEnd = new Date(prevTaskStart);
               prevTaskEnd.setMinutes(prevTaskEnd.getMinutes() + prevTaskDuration);
               
@@ -1180,7 +1180,7 @@ export function useAIScheduler() {
             if (sortedTasks.length > 0) {
               const lastTask = sortedTasks[sortedTasks.length - 1];
               const lastTaskStart = new Date(lastTask.scheduledDate!);
-              const lastTaskDuration = getTaskMinutes(lastTask);
+              const lastTaskDuration = getTaskMinutes(lastTask); // Use AI estimator for existing tasks
               const lastTaskEnd = new Date(lastTaskStart);
               lastTaskEnd.setMinutes(lastTaskEnd.getMinutes() + lastTaskDuration);
               
@@ -1251,7 +1251,7 @@ export function useAIScheduler() {
             if (sortedTasks.length > 0) {
               const lastTask = sortedTasks[sortedTasks.length - 1];
               const lastTaskStart = new Date(lastTask.scheduledDate!);
-              const lastTaskDuration = getTaskMinutes(lastTask);
+              const lastTaskDuration = getTaskMinutes(lastTask); // Use AI estimator for existing tasks
               const nextAvailableTime = new Date(lastTaskStart);
               nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
               
@@ -1397,7 +1397,7 @@ export function useAIScheduler() {
             if (!existingTask.scheduledDate) continue;
             
             const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-            const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000;
+            const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000; // Use AI estimator for existing tasks
             const existingTaskEnd = existingTaskStart + existingTaskDuration;
             
             // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
@@ -1415,7 +1415,7 @@ export function useAIScheduler() {
               for (const existingTask of existingTasksForDay) {
                 if (!existingTask.scheduledDate) continue;
                 const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-                const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000;
+                const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000; // Use AI estimator for existing tasks
                 const existingTaskEnd = existingTaskStart + existingTaskDuration;
                 if (existingTaskEnd > latestEndTime) {
                   latestEndTime = existingTaskEnd;

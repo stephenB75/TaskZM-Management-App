@@ -2048,16 +2048,16 @@ export function TaskDialog({
               {/* Organization Tab - Step 3: Assign Tags, Step 4: Create Subtask, Step 5: Add Dependency */}
               <TabsContent value="organization" className="mt-0 space-y-4 sm:space-y-5">
                 {/* Step 3: Assign Tags */}
-                <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">3</span>
-                    </div>
-                    <Label className="text-base font-semibold text-foreground flex items-center gap-2">
+                  <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary">3</span>
+                      </div>
+                      <Label className="text-base font-semibold text-foreground flex items-center gap-2">
                       <Tag className="w-4 h-4 text-primary" />
                       Assign Tags
-                    </Label>
-                  </div>
+                      </Label>
+                    </div>
                   
                   {/* Tag Input with Select from Available Tags */}
                   <div className="flex gap-2">
@@ -2084,7 +2084,7 @@ export function TaskDialog({
                             .filter((tag) => !tags.includes(tag))
                             .map((tag) => (
                               <SelectItem key={tag} value={tag}>
-                                <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2">
                                   <Tag className="w-3 h-3 text-primary" />
                                   <span>{tag}</span>
                                 </div>
@@ -2095,8 +2095,8 @@ export function TaskDialog({
                           <div className="flex items-center gap-2">
                             <Plus className="w-3 h-3 text-primary" />
                             <span>Create new tag</span>
-                          </div>
-                        </SelectItem>
+                              </div>
+                            </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2128,24 +2128,24 @@ export function TaskDialog({
 
                   {/* Display Selected Tags */}
                   {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
+                      <div className="flex flex-wrap gap-2 mt-2">
                       {tags.map((tag) => (
-                        <Badge
+                            <Badge
                           key={tag}
-                          variant="secondary"
-                          className="cursor-pointer hover:bg-destructive/10 border-2 border-primary/30 px-3 py-1"
+                              variant="secondary"
+                              className="cursor-pointer hover:bg-destructive/10 border-2 border-primary/30 px-3 py-1"
                           onClick={() => removeTag(tag)}
-                        >
-                          <div className="flex items-center gap-1.5">
+                            >
+                              <div className="flex items-center gap-1.5">
                             <Tag className="w-3 h-3 text-primary" />
                             <span>{tag}</span>
-                            <X className="w-3 h-3 ml-1" />
-                          </div>
-                        </Badge>
+                                <X className="w-3 h-3 ml-1" />
+                              </div>
+                            </Badge>
                       ))}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    )}
+                  </div>
 
                 {/* Step 4: Create Subtask */}
                 <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">

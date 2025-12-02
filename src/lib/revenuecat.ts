@@ -1074,7 +1074,7 @@ export async function purchaseProSubscription(
       // Ensure clean redirect - close any modals/dialogs that might interfere
       // Small delay to ensure any toasts/messages are visible before redirect
       setTimeout(() => {
-        window.location.href = checkoutUrl;
+      window.location.href = checkoutUrl;
       }, 100);
       return { 
         success: true, 
