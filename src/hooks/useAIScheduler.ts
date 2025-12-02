@@ -576,6 +576,7 @@ export function useAIScheduler() {
         priority: task.priority,
         hasEstimatedTime: !!task.estimatedTime,
         estimatedTime: task.estimatedTime,
+        willUseAIEstimator: !(task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0),
       });
       // Determine scheduling based on priority and status (if priority-based scheduling is enabled)
       // When rescheduling within a date range, distribute tasks evenly across days
@@ -700,7 +701,18 @@ export function useAIScheduler() {
       }
       
       // Get task hours using AI Duration Estimator
+      // CRITICAL: This MUST call getTaskHours which triggers the AI estimator
+      console.log(`⏱️ About to call getTaskHours for task: ${task.title}`, {
+        taskId: task.id,
+        currentEstimatedTime: task.estimatedTime,
+        willTriggerEstimator: !(task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0),
+      });
       const taskHours = getTaskHours(task);
+      console.log(`✅ getTaskHours returned for task: ${task.title}`, {
+        taskId: task.id,
+        taskHours,
+        taskMinutes: Math.round(taskHours * 60),
+      });
       
       // PRIORITY 1: If enforcing minimum hours, ALWAYS try to fill days that don't meet minimum first
       // This ensures we meet the 5-hour requirement per day

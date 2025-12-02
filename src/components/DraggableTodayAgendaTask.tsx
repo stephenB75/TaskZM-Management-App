@@ -42,6 +42,7 @@ import {
   TASK_CARD_ADDITIONAL_FONT_SIZES,
 } from "../lib/task-card-constants";
 import { Z_INDEX } from "../lib/layout-constants";
+import { getTaskMinutes } from "../lib/daily-hours-utils";
 
 interface DraggableTodayAgendaTaskProps {
   task: Task;
@@ -88,8 +89,10 @@ export function DraggableTodayAgendaTask({
   
   // Calculate dynamic height using standard heights with auto-adjustment
   // This matches the logic in DraggableTaskCard for consistency
+  // IMPORTANT: Use AI Duration Estimator instead of hardcoded fallback
   const taskCardHeight = React.useMemo(() => {
-    const duration = task.estimatedTime || TASK_CARD_HEIGHT_CONFIG.defaultDuration;
+    // Use AI estimator to get accurate duration (handles null/0/undefined cases)
+    const duration = getTaskMinutes(task);
     const maxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight;
     const currentEstimatedTimeValue = typeof task.estimatedTime === "number" ? task.estimatedTime : null;
     const hasEstimatedTime = currentEstimatedTimeValue !== null;

@@ -41,6 +41,7 @@ import {
   TASK_CARD_ADDITIONAL_FONT_SIZES,
   TASK_CARD_OPACITY,
 } from "../lib/task-card-constants";
+import { getTaskMinutes } from "../lib/daily-hours-utils";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -185,9 +186,11 @@ export const DraggableTaskCard = React.forwardRef<
     
     // Memoize card height calculation to ensure it recalculates when dependencies change
     // Calculate height directly in useMemo using standard heights from config
+    // IMPORTANT: Use AI Duration Estimator instead of hardcoded fallback
     const cardHeight = React.useMemo(() => {
       // Recalculate all computed values inside useMemo based on current dependencies
-      const duration = task.estimatedTime || TASK_CARD_HEIGHT_CONFIG.defaultDuration;
+      // Use AI estimator to get accurate duration (handles null/0/undefined cases)
+      const duration = getTaskMinutes(task);
       const maxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight;
       const currentEstimatedTimeValue = typeof task.estimatedTime === "number" ? task.estimatedTime : null;
       const hasEstimatedTime = currentEstimatedTimeValue !== null;

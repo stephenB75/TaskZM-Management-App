@@ -22,6 +22,7 @@ import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING } from "../lib/layout-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
+import { getTaskMinutes } from "../lib/daily-hours-utils";
 
 const TIMELINE_SCROLL_OFFSET_PX = 200;
 
@@ -255,8 +256,10 @@ export function TodayAgendaView({
 
   // Calculate height based on task duration
   // Auto-adjusts for: badge wrapping, assigned users, tracking, descriptions
+  // IMPORTANT: Use AI Duration Estimator instead of hardcoded fallback
   const getTaskHeight = useCallback((task: Task) => {
-    const minutes = task.estimatedTime || TASK_CARD_HEIGHT_CONFIG.defaultDuration;
+    // Use AI estimator to get accurate duration (handles null/0/undefined cases)
+    const minutes = getTaskMinutes(task);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet;
     
     // Determine task category
