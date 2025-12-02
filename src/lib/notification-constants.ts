@@ -46,6 +46,7 @@ export const NOTIFICATION_TITLES = {
   taskDueSoon: 'Task Due Soon',
   pomodoroComplete: 'Pomodoro Complete! 🍅',
   pomodoroBreak: 'Break Over! ☕',
+  awardEarned: 'Achievement Unlocked! 🏆',
 } as const;
 
 // Notification body message templates
@@ -58,6 +59,7 @@ export const NOTIFICATION_MESSAGES = {
   pomodoroBreakOver: (taskTitle: string) => `Ready to focus on "${taskTitle}" again?`,
   pomodoroSessionsCompleted: (count: number, taskTitle: string) => 
     `Completed ${count} session${count > 1 ? 's' : ''} for "${taskTitle}"`,
+  awardEarned: (awardName: string) => `You earned "${awardName}"! 🎉`,
   unreadCount: (count: number) => `${count} unread notification${count === 1 ? '' : 's'}`,
   defaultTaskTitle: 'Task', // Fallback task title when task title is missing
 } as const;
@@ -77,6 +79,7 @@ export const NOTIFICATION_PANEL_TEXT = {
     overdue: 'Overdue Tasks',
     dueSoon: 'Due Soon',
     pomodoro: 'Pomodoro',
+    award: 'Achievements',
     toast: 'App Notifications',
     placeholder: 'Filter',
   },
@@ -102,6 +105,7 @@ export const NOTIFICATION_TYPES = {
   taskDueSoon: 'task-due-soon',
   pomodoroComplete: 'pomodoro-complete',
   pomodoroBreak: 'pomodoro-break',
+  awardEarned: 'award-earned',
   system: 'system',
   toast: 'toast',
 } as const;

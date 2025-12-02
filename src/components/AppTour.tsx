@@ -49,6 +49,7 @@ interface TourStep {
     | "ai"
     | "task"
     | "features";
+  screenshot?: string; // Path to screenshot image
 }
 
 // Function to create tour steps with dynamic pricing
@@ -83,7 +84,8 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
       "Your main workspace showing the upcoming week at a glance. Each day is color-coded with calming pastel colors for easy visual scanning.",
     icon: Calendar,
     iconColor: "from-[#C9E4F7] to-[#B8E6D5]",
-    illustration: "kanban",
+    illustration: "kanban", // Fallback illustration if screenshot not found
+    screenshot: "/screenshots/kanban-board.png", // Kanban board screenshot
     features: [
       {
         icon: "👆",
@@ -205,6 +207,26 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
         title: "Priorities",
         description: "Urgent, High, Medium, Low",
       },
+      {
+        icon: "🏷️",
+        title: "Tags",
+        description: "Organize with custom tags",
+      },
+      {
+        icon: "🔄",
+        title: "Recurrence",
+        description: "Repeat tasks automatically",
+      },
+      {
+        icon: "🔗",
+        title: "Dependencies",
+        description: "Link related tasks",
+      },
+      {
+        icon: "👥",
+        title: "Team Assignment",
+        description: "Assign to team members",
+      },
     ],
   },
   {
@@ -297,7 +319,7 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
   {
     title: "Notifications & Alerts 🔔",
     description:
-      "Stay on top of your tasks with smart notifications. Get alerts for overdue tasks, tasks due soon, Pomodoro timer completions, and team updates.",
+      "Stay on top of your tasks with smart notifications. Get alerts for overdue tasks, tasks due soon, Pomodoro timer completions, achievement unlocks, and team updates.",
     icon: Clock,
     iconColor: "from-[#FFD6BA] to-[#FFA875]",
     features: [
@@ -312,6 +334,11 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
         description: "Timer notifications",
       },
       {
+        icon: "🏆",
+        title: "Achievement Unlocks",
+        description: "Celebrate your progress",
+      },
+      {
         icon: "👥",
         title: "Team Updates",
         description: "Member notifications",
@@ -319,7 +346,7 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
       {
         icon: "🔔",
         title: "Badge Counts",
-        description: "Visual indicators",
+        description: "App icon indicators",
       },
     ],
   },
@@ -545,6 +572,7 @@ export function AppTour({
     "forward" | "backward"
   >("forward");
   const [monthlyPrice, setMonthlyPrice] = useState<string>(DEFAULT_MONTHLY_PRICE);
+  const [screenshotFailed, setScreenshotFailed] = useState<Record<number, boolean>>({});
   const prevRunRef = React.useRef(false);
   const hasInitializedRef = React.useRef(false);
   const currentStepRef = React.useRef(0);
@@ -800,8 +828,33 @@ export function AppTour({
               </div>
             </div>
 
-            {/* Illustration */}
-            {step.illustration && (
+            {/* Screenshot or Illustration */}
+            {step.screenshot && !screenshotFailed[currentStep] ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className={cn(
+                  "mx-4 sm:mx-6 md:mx-8 mb-3 sm:mb-4 rounded-xl sm:rounded-2xl overflow-hidden",
+                  "bg-muted/50 border border-primary/10 shadow-lg",
+                )}
+              >
+                <img
+                  key={`screenshot-${currentStep}`}
+                  src={step.screenshot}
+                  alt={step.title}
+                  className="w-full h-auto object-contain max-h-[400px] sm:max-h-[500px] md:max-h-[600px]"
+                  loading="eager"
+                  onError={(e) => {
+                    console.warn('Screenshot failed to load, falling back to illustration:', step.screenshot);
+                    setScreenshotFailed(prev => ({ ...prev, [currentStep]: true }));
+                  }}
+                  onLoad={() => {
+                    console.log('Screenshot loaded successfully:', step.screenshot);
+                  }}
+                />
+              </motion.div>
+            ) : step.illustration && (
               <div
                 className={cn(
                   "mx-4 sm:mx-6 md:mx-8 mb-3 sm:mb-4 rounded-xl sm:rounded-2xl overflow-hidden",

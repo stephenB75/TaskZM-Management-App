@@ -8,10 +8,13 @@ import {
   Timer,
   X,
   Filter,
+  Award as AwardIcon,
 } from "lucide-react";
 import { useTasks } from "../contexts/TaskContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { usePomodoro } from "../contexts/PomodoroContext";
+import { useAwards } from "../contexts/AwardContext";
+import type { Award } from "../types";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -37,19 +40,21 @@ import {
 
 interface NotificationItem {
   id: string;
-  type: 'task-overdue' | 'task-due-soon' | 'pomodoro-complete' | 'pomodoro-break' | 'system' | 'toast-success' | 'toast-error' | 'toast-info' | 'toast-warning';
+  type: 'task-overdue' | 'task-due-soon' | 'pomodoro-complete' | 'pomodoro-break' | 'award-earned' | 'system' | 'toast-success' | 'toast-error' | 'toast-info' | 'toast-warning';
   title: string;
   message: string;
   timestamp: Date;
   read: boolean;
   taskId?: string;
   priority?: Task['priority'];
+  awardId?: string;
 }
 
 export function NotificationsPanel() {
   const { tasks } = useTasks();
   const { badgeCount, settings, getToastNotifications, markToastAsRead, clearToastNotification, updateBadge } = useNotifications();
   const { getTimerState } = usePomodoro();
+  const { earnedAwards } = useAwards();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
   const [readNotifications, setReadNotifications] = useState<Set<string>>(
@@ -235,6 +240,36 @@ export function NotificationsPanel() {
       setLastSeenSessions(updatedLastSeen);
     }
 
+    // Add award notifications - show all earned awards (not just new ones)
+    // This allows users to see their achievements in the notification panel
+    earnedAwards.forEach(userAward => {
+      const notificationId = `award_${userAward.awardId}`;
+      
+      // Skip if already dismissed
+      if (dismissedNotifications.has(notificationId)) return;
+      
+      // Find award details from awards array
+      const award = awards.find((a: Award) => a.id === userAward.awardId);
+      if (award) {
+        // Check if this is a new award (not in lastSeenAwards) - mark as unread
+        const isNew = !lastSeenAwards.has(userAward.awardId);
+        if (isNew) {
+          // Mark as seen
+          setLastSeenAwards(prev => new Set([...prev, userAward.awardId]));
+        }
+        
+        newNotifications.push({
+          id: notificationId,
+          type: NOTIFICATION_TYPES.awardEarned as NotificationItem['type'],
+          title: NOTIFICATION_TITLES.awardEarned,
+          message: NOTIFICATION_MESSAGES.awardEarned(award.name),
+          timestamp: new Date(userAward.earnedAt),
+          read: readNotifications.has(notificationId) || !isNew,
+          awardId: userAward.awardId,
+        });
+      }
+    });
+
     // Add toast notifications from storage
     const toastNotifications = getToastNotifications();
     toastNotifications.forEach(toast => {
@@ -268,12 +303,15 @@ export function NotificationsPanel() {
     }
     
     setNotifications(newNotifications);
-  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions, getToastNotifications]);
+  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions, getToastNotifications, earnedAwards, lastSeenAwards]);
 
   const filteredNotifications = notifications.filter(notif => {
     if (filterType === "all") return true;
     if (filterType === "toast") {
       return notif.type.startsWith('toast-');
+    }
+    if (filterType === "award") {
+      return notif.type === NOTIFICATION_TYPES.awardEarned;
     }
     return notif.type === filterType;
   });
@@ -329,6 +367,8 @@ export function NotificationsPanel() {
       case 'pomodoro-complete':
       case 'pomodoro-break':
         return <Timer className="w-4 h-4 text-purple-500" />;
+      case 'award-earned':
+        return <AwardIcon className="w-4 h-4 text-yellow-500" />;
       case 'toast-success':
         return <CheckCircle2 className="w-4 h-4 text-green-500" />;
       case 'toast-error':
@@ -395,6 +435,7 @@ export function NotificationsPanel() {
                 <SelectItem value={NOTIFICATION_TYPES.taskOverdue}>{NOTIFICATION_PANEL_TEXT.filters.overdue}</SelectItem>
                 <SelectItem value={NOTIFICATION_TYPES.taskDueSoon}>{NOTIFICATION_PANEL_TEXT.filters.dueSoon}</SelectItem>
                 <SelectItem value={NOTIFICATION_TYPES.pomodoroComplete}>{NOTIFICATION_PANEL_TEXT.filters.pomodoro}</SelectItem>
+                <SelectItem value={NOTIFICATION_TYPES.awardEarned}>{NOTIFICATION_PANEL_TEXT.filters.award}</SelectItem>
                 <SelectItem value="toast">{NOTIFICATION_PANEL_TEXT.filters.toast}</SelectItem>
               </SelectContent>
             </Select>
