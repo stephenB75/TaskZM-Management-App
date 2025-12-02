@@ -1,10 +1,12 @@
 /**
  * AI Scheduler Usage Tracking
- * Tracks weekly usage for free tier users (3 suggestions per week)
+ * Tracks weekly usage for free tier users
  */
 
-const USAGE_STORAGE_KEY = 'ai_scheduler_usage';
-const WEEKLY_LIMIT = 3;
+import { AI_USAGE_STORAGE_KEY, FREE_TIER_WEEKLY_AI_LIMIT } from './ai-config';
+
+const USAGE_STORAGE_KEY = AI_USAGE_STORAGE_KEY;
+const WEEKLY_LIMIT = FREE_TIER_WEEKLY_AI_LIMIT;
 
 interface UsageData {
   weekStart: string; // ISO date string for Monday of current week

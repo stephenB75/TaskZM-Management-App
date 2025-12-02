@@ -1,8 +1,17 @@
 import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
 import { analyzeTaskVerbs, calculateComplexity, applyVerbSpecificAdjustments } from './verb-analysis';
-
-const MAX_HOURS_PER_DAY = 5;
+import {
+  MAX_HOURS_PER_DAY,
+  DAILY_HOURS_WARNING_THRESHOLD,
+  BASE_TASK_DURATION_MINUTES,
+  MIN_TASK_DURATION_MINUTES,
+  MAX_TASK_DURATION_MINUTES,
+  EFFORT_NORMALIZATION_DIVISOR,
+  COMPLEXITY_NORMALIZATION_DIVISOR,
+  PRIORITY_MULTIPLIERS,
+  TIME_ROUNDING_INTERVAL_MINUTES,
+} from './ai-config';
 
 /**
  * Estimate task duration in hours
@@ -20,31 +29,20 @@ export function estimateTaskHours(task: Task): number {
   const { effortScore, primaryVerb } = analyzeTaskVerbs(task);
   const complexityScore = calculateComplexity(task);
   
-  // Priority multiplier (existing values maintained)
-  const priorityMultiplier = {
-    urgent: 0.7,
-    high: 1.0,
-    medium: 1.5,
-    low: 2.0
-  };
-  
-  // Base time in minutes (30 minutes default)
-  const baseMinutes = 30;
-  
   // Formula: Base × Effort × Priority × Complexity
-  let estimatedMinutes = baseMinutes;
-  estimatedMinutes *= (effortScore / 2.5); // Normalize effort (2.5 is middle of 1-5 scale)
-  estimatedMinutes *= priorityMultiplier[task.priority] || 1.0;
-  estimatedMinutes *= (complexityScore / 2.5); // Normalize complexity
+  let estimatedMinutes = BASE_TASK_DURATION_MINUTES;
+  estimatedMinutes *= (effortScore / EFFORT_NORMALIZATION_DIVISOR);
+  estimatedMinutes *= PRIORITY_MULTIPLIERS[task.priority] || 1.0;
+  estimatedMinutes *= (complexityScore / COMPLEXITY_NORMALIZATION_DIVISOR);
   
   // Apply verb-specific adjustments for known action types (maintains existing behavior)
   estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
   
-  // Clamp between 15 minutes (minimum) and 300 minutes (5 hours maximum)
-  estimatedMinutes = Math.max(15, Math.min(300, estimatedMinutes));
+  // Clamp between minimum and maximum task duration
+  estimatedMinutes = Math.max(MIN_TASK_DURATION_MINUTES, Math.min(MAX_TASK_DURATION_MINUTES, estimatedMinutes));
   
-  // Round to nearest 15 minutes for cleaner scheduling
-  estimatedMinutes = Math.round(estimatedMinutes / 15) * 15;
+  // Round to nearest interval for cleaner scheduling
+  estimatedMinutes = Math.round(estimatedMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
   
   return estimatedMinutes / 60; // Convert to hours (maintains interface compatibility)
 }
@@ -119,8 +117,8 @@ export function getDailyHoursWarningLevel(
     return 'error'; // Would exceed limit
   }
   
-  if (currentHours >= 4 || newTotal >= 4) {
-    return 'warning'; // Close to limit (4+ hours)
+  if (currentHours >= DAILY_HOURS_WARNING_THRESHOLD || newTotal >= DAILY_HOURS_WARNING_THRESHOLD) {
+    return 'warning'; // Close to limit
   }
   
   return 'none';

@@ -7,6 +7,22 @@ import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
+import {
+  MAX_HOURS_PER_DAY,
+  MIN_HOURS_PER_DAY,
+  DEFAULT_SCHEDULING_PERIOD_DAYS,
+  DEFAULT_WEEK_RESCHEDULE_DAYS,
+  TWO_WEEK_DAYS_OFFSET,
+  ONE_WEEK_DAYS_OFFSET,
+  TIME_ROUNDING_INTERVAL_MINUTES,
+  DEFAULT_TIME_SLOTS,
+  PRIORITY_TIME_SLOTS,
+  DEFAULT_CATEGORY_HOURS,
+  PRIORITY_WEIGHTS,
+  STATUS_WEIGHTS,
+  getCategoryFromTags,
+  isWeekend as isWeekendDate,
+} from '../lib/ai-config';
 import type { Task } from '../types';
 
 export interface SchedulePlan {
@@ -17,8 +33,8 @@ export interface SchedulePlan {
 
 export interface ScheduleResult {
   scheduled: SchedulePlan[];
-  exceedsLimit: Task[]; // Tasks that exceed the 5-hour daily limit
-  daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }>; // Days that exceed 5 hours
+  exceedsLimit: Task[]; // Tasks that exceed the daily limit
+  daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }>; // Days that exceed the daily limit
 }
 
 export function useAIScheduler() {
@@ -38,21 +54,11 @@ export function useAIScheduler() {
   // Helper: Determine task category from tags
   const getTaskCategory = (task: Task): 'work' | 'personal' | 'projects' | null => {
     if (!task.tags || task.tags.length === 0) return null;
-    
-    // Check for category tags (case-insensitive)
-    const tagLowerCase = task.tags.map(t => t.toLowerCase());
-    if (tagLowerCase.includes('work')) return 'work';
-    if (tagLowerCase.includes('personal')) return 'personal';
-    if (tagLowerCase.includes('projects') || tagLowerCase.includes('project')) return 'projects';
-    
-    return null;
+    return getCategoryFromTags(task.tags);
   };
 
   // Helper: Check if date is weekend
-  const isWeekend = (date: Date): boolean => {
-    const day = date.getDay();
-    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
-  };
+  const isWeekend = isWeekendDate;
 
   // Helper: Parse time string (HH:mm) to hours and minutes
   const parseTime = (timeStr: string): { hours: number; minutes: number } => {
@@ -86,12 +92,12 @@ export function useAIScheduler() {
     const todayDateKey = getDateKey(today);
     const isToday = scheduleDateKey === todayDateKey;
     
-    // Calculate current time rounded up to next 15 minutes (for today)
+    // Calculate current time rounded up to next interval (for today)
     let currentTimeRounded: Date | null = null;
     if (isToday) {
       currentTimeRounded = new Date(today);
       const minutes = currentTimeRounded.getMinutes();
-      const roundedMinutes = Math.ceil(minutes / 15) * 15;
+      const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
       if (roundedMinutes >= 60) {
         currentTimeRounded.setHours(currentTimeRounded.getHours() + 1, 0, 0, 0);
       } else {
@@ -106,8 +112,8 @@ export function useAIScheduler() {
     if (!categoryHours.enabled) {
       // If forcing category hours but category is disabled, use default work hours as fallback
       if (forceCategoryHours) {
-        // Return a default time slot based on category (work hours for work/projects, flexible for personal)
-        const defaultHour = category === 'personal' ? 10 : 9; // Personal tasks later, work/projects at 9 AM
+        // Return a default time slot based on category
+        const defaultHour = DEFAULT_CATEGORY_HOURS[category] || DEFAULT_CATEGORY_HOURS.work;
         const defaultTime = new Date(scheduleDate);
         defaultTime.setHours(defaultHour, 0, 0, 0);
         
@@ -361,16 +367,12 @@ export function useAIScheduler() {
     // Sort tasks by priority and status for intelligent scheduling
     // ALWAYS prioritize urgent and high priority tasks first, regardless of settings
     let sortedTasks = [...unscheduledTasks].sort((a, b) => {
-      // Priority weights: urgent=4, high=3, medium=2, low=1
       // ALWAYS prioritize urgent and high, regardless of priorityBasedScheduling setting
-      const priorityWeight = { urgent: 4, high: 3, medium: 2, low: 1 };
-      const aPriority = priorityWeight[a.priority] || 1;
-      const bPriority = priorityWeight[b.priority] || 1;
+      const aPriority = PRIORITY_WEIGHTS[a.priority] || 1;
+      const bPriority = PRIORITY_WEIGHTS[b.priority] || 1;
       
-      // Status weights: on-hold=1, todo=2, in-progress=3
-      const statusWeight = { 'on-hold': 1, todo: 2, 'in-progress': 3, done: 0 };
-      const aStatus = statusWeight[a.status] || 0;
-      const bStatus = statusWeight[b.status] || 0;
+      const aStatus = STATUS_WEIGHTS[a.status] || 0;
+      const bStatus = STATUS_WEIGHTS[b.status] || 0;
       
       // First sort by status (in-progress first)
       if (aStatus !== bStatus) return bStatus - aStatus;
@@ -444,15 +446,14 @@ export function useAIScheduler() {
     // This ensures rescheduling uses the selected date properly
     const baseDate = startDate;
     
-    const MAX_HOURS_PER_DAY = 5;
-    const MIN_HOURS_PER_DAY = 5; // Minimum hours requirement per day
+    // Use configuration constants for daily hours limits
     
     // Helper: Check if adding task would exceed daily limit
-    // Allow tasks that would make the day exactly 5 hours (for efficient packing)
+    // Allow tasks that would make the day exactly at the limit (for efficient packing)
     const wouldExceedLimit = (date: Date, taskHours: number): boolean => {
       const dateKey = getDateKey(date);
       const currentHours = dailyHours.get(dateKey) || 0;
-      // Use > to allow tasks that would make the day exactly 5 hours (efficient packing)
+      // Use > to allow tasks that would make the day exactly at the limit (efficient packing)
       return (currentHours + taskHours) > MAX_HOURS_PER_DAY;
     };
     
@@ -526,7 +527,7 @@ export function useAIScheduler() {
     };
     
     // Helper: Find next available day of preferred type (weekday/weekend)
-    const findNextPreferredDay = (startDate: Date, preferWeekend: boolean, maxDaysToSearch: number = 14): number => {
+    const findNextPreferredDay = (startDate: Date, preferWeekend: boolean, maxDaysToSearch: number = DEFAULT_SCHEDULING_PERIOD_DAYS): number => {
       let daysToAdd = 0;
       for (let i = 0; i < maxDaysToSearch; i++) {
         const testDate = new Date(startDate);
@@ -544,7 +545,7 @@ export function useAIScheduler() {
     // Calculate total days in date range for better distribution
     const totalDaysInRange = dateRange 
       ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-      : 14;
+      : DEFAULT_SCHEDULING_PERIOD_DAYS;
     
     // Track tasks scheduled per day for better distribution
     const tasksPerDayCount: Map<number, number> = new Map();
@@ -648,7 +649,7 @@ export function useAIScheduler() {
         
         // If work/projects task is scheduled on weekend, ALWAYS try to find a weekday
         if (shouldAvoidWeekend) {
-          const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
+          const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : DEFAULT_SCHEDULING_PERIOD_DAYS;
           const preferredDaysToAdd = findNextPreferredDay(baseDate, false, maxSearchDays); // false = prefer weekday
           
           // Only switch days if we found a weekday and it's within the date range
@@ -679,7 +680,7 @@ export function useAIScheduler() {
           // If category hours are disabled for the current day type, try to find a preferred day
           // When forceCategoryHours is true, we should still try to schedule on appropriate days
           if (!categoryHours.enabled) {
-            const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 7;
+            const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : DEFAULT_WEEK_RESCHEDULE_DAYS;
             const preferredDaysToAdd = findNextPreferredDay(baseDate, preferWeekend, maxSearchDays);
             
             // Only switch days if we found a preferred day and it's within the date range
@@ -744,7 +745,7 @@ export function useAIScheduler() {
           // Check if this task can fit in this day (doesn't exceed 5-hour limit)
           if (!wouldExceedLimit(dayInfo.date, taskHours)) {
             const daysDiff = Math.floor((dayInfo.date.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
-            const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : 14;
+            const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : DEFAULT_SCHEDULING_PERIOD_DAYS;
             if (daysDiff >= 0 && daysDiff < maxDays) {
               finalDaysToAdd = daysDiff;
               foundDay = true;
@@ -761,7 +762,7 @@ export function useAIScheduler() {
         // Calculate max days to search based on date range or default to 14 days
         const maxDaysToSearch = dateRange 
           ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-          : 14;
+          : DEFAULT_SCHEDULING_PERIOD_DAYS;
         let daysSearched = 0;
         
         // Build list of candidate days with available space, sorted by available hours (most space first)
@@ -957,10 +958,8 @@ export function useAIScheduler() {
                   return { hour: workStartHour, minute: 0 };
                 } else if (task.priority === 'high') {
                   return { hour: workStartHour, minute: 0 };
-                } else if (task.priority === 'medium') {
-                  return { hour: 11, minute: 0 }; // Mid-day
                 } else {
-                  return { hour: 14, minute: 0 }; // Afternoon
+                  return PRIORITY_TIME_SLOTS[task.priority] || PRIORITY_TIME_SLOTS.low;
                 }
               })();
               
@@ -1137,10 +1136,8 @@ export function useAIScheduler() {
                 return { hour: workStartHour, minute: 0 };
               } else if (task.priority === 'high') {
                 return { hour: workStartHour, minute: 0 };
-              } else if (task.priority === 'medium') {
-                return { hour: 11, minute: 0 };
               } else {
-                return { hour: 14, minute: 0 };
+                return PRIORITY_TIME_SLOTS[task.priority] || PRIORITY_TIME_SLOTS.low;
               }
             })();
             
@@ -1399,9 +1396,9 @@ export function useAIScheduler() {
           end.setHours(23, 59, 59, 999);
           dateRange = { startDate: tomorrow, endDate: end };
         } else {
-          // Two weeks (14 days) starting from tomorrow
+          // Default scheduling period starting from tomorrow
           const end = new Date(tomorrow);
-          end.setDate(end.getDate() + 13); // 14 days total (tomorrow + 13 more)
+          end.setDate(end.getDate() + TWO_WEEK_DAYS_OFFSET); // Default period total (tomorrow + offset)
           end.setHours(23, 59, 59, 999);
           dateRange = { startDate: tomorrow, endDate: end };
         }
@@ -1598,9 +1595,9 @@ export function useAIScheduler() {
           })()
         : selectedDate; // Selected date is in the future, use it
       
-      // Calculate end date: 7 days from the start date (one week)
+      // Calculate end date: one week from the start date
       const weekEnd = new Date(scheduleStartDate);
-      weekEnd.setDate(weekEnd.getDate() + 6); // 7 days total (start date + 6 more days)
+      weekEnd.setDate(weekEnd.getDate() + ONE_WEEK_DAYS_OFFSET); // One week total (start date + offset)
       weekEnd.setHours(23, 59, 59, 999);
       
       // Generate new schedule for these specific tasks within the selected week

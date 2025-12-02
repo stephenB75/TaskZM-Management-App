@@ -15,6 +15,7 @@ import {
 import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
+import { TWO_WEEK_DAYS_OFFSET } from "../lib/ai-config";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -66,7 +67,7 @@ const getTwoWeekDateRange = () => {
   const mondayOffset = (day + 6) % 7;
   start.setDate(start.getDate() - mondayOffset);
   const end = new Date(start);
-  end.setDate(end.getDate() + 13);
+  end.setDate(end.getDate() + TWO_WEEK_DAYS_OFFSET);
   end.setHours(23, 59, 59, 999);
   return { startDate: start, endDate: end };
 };
