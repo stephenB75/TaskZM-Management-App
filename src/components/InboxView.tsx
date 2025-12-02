@@ -30,6 +30,8 @@ import { TaskDialog } from "./TaskDialog";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 import type { Task } from "../types";
 
 const getTwoWeekDateRange = () => {
@@ -61,10 +63,19 @@ export function InboxView() {
   >();
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [quickAddTitle, setQuickAddTitle] = useState("");
+  const [showScheduled, setShowScheduled] = useState(false);
 
-  // Get unscheduled tasks
+  // Get unscheduled tasks (or scheduled if showScheduled is true)
   const unscheduledTasks = tasks.filter(
-    (t) => !t.scheduledDate && t.status !== "done",
+    (t) => {
+      if (showScheduled) {
+        // Show scheduled tasks that are not done
+        return t.scheduledDate && t.status !== "done";
+      } else {
+        // Show unscheduled tasks that are not done
+        return !t.scheduledDate && t.status !== "done";
+      }
+    }
   );
 
   // Apply filters
@@ -230,7 +241,10 @@ export function InboxView() {
         title="Inbox"
         panelOpen={true}
         isSidePanelHeader={true}
-        description={`${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`}
+        description={showScheduled 
+          ? `${unscheduledTasks.length} scheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
+          : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
+        }
         hideDesktopLogo
         actions={
           <div className="flex items-center gap-1.5">
@@ -378,6 +392,21 @@ export function InboxView() {
                   </SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Show Scheduled Tasks Toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-card border border-primary/20">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <Label htmlFor="show-scheduled" className="text-sm font-medium cursor-pointer">
+                    Show Scheduled Tasks
+                  </Label>
+                </div>
+                <Switch
+                  id="show-scheduled"
+                  checked={showScheduled}
+                  onCheckedChange={setShowScheduled}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -2045,80 +2045,107 @@ export function TaskDialog({
                 </div>
               </TabsContent>
 
-              {/* Organization Tab - Step 3: Assign User, Step 4: Create Subtask, Step 5: Add Dependency */}
+              {/* Organization Tab - Step 3: Assign Tags, Step 4: Create Subtask, Step 5: Add Dependency */}
               <TabsContent value="organization" className="mt-0 space-y-4 sm:space-y-5">
-                {/* Step 3: Assign User */}
-                {teamMembers.length > 0 && (
-                  <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span className="text-xs font-bold text-primary">3</span>
-                      </div>
-                      <Label className="text-base font-semibold text-foreground flex items-center gap-2">
-                        <Users className="w-4 h-4 text-primary" />
-                        Assign To Team Member
-                      </Label>
+                {/* Step 3: Assign Tags */}
+                <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-xs font-bold text-primary">3</span>
                     </div>
+                    <Label className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-primary" />
+                      Assign Tags
+                    </Label>
+                  </div>
+                  
+                  {/* Tag Input with Select from Available Tags */}
+                  <div className="flex gap-2">
                     <Select
-                      value={selectedAssigneeValue || undefined}
+                      value={selectedTagValue || undefined}
                       onValueChange={(value) => {
-                        if (value && !assignedTo.includes(value)) {
-                          setAssignedTo([...assignedTo, value]);
-                          setSelectedAssigneeValue("");
+                        if (value && value !== "new") {
+                          if (!tags.includes(value)) {
+                            setTags([...tags, value]);
+                          }
+                          setSelectedTagValue("");
+                        } else if (value === "new") {
+                          // Focus on input for new tag
+                          setSelectedTagValue("");
                         }
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
-                        <SelectValue placeholder="Select team member..." />
+                      <SelectTrigger className="flex-1 h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectValue placeholder="Select or add tag..." />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                        {teamMembers
-                          .filter((member) => !assignedTo.includes(member.id))
-                          .map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-xs font-medium">
-                                  {member.name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .toUpperCase()}
+                        {availableTags && availableTags.length > 0 ? (
+                          availableTags
+                            .filter((tag) => !tags.includes(tag))
+                            .map((tag) => (
+                              <SelectItem key={tag} value={tag}>
+                                <div className="flex items-center gap-2">
+                                  <Tag className="w-3 h-3 text-primary" />
+                                  <span>{tag}</span>
                                 </div>
-                                <span>{member.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
+                              </SelectItem>
+                            ))
+                        ) : null}
+                        <SelectItem value="new">
+                          <div className="flex items-center gap-2">
+                            <Plus className="w-3 h-3 text-primary" />
+                            <span>Create new tag</span>
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
-
-                    {assignedTo.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {assignedTo.map((memberId) => {
-                          const member = getTeamMember(memberId);
-                          if (!member) return null;
-                          return (
-                            <Badge
-                              key={memberId}
-                              variant="secondary"
-                              className="cursor-pointer hover:bg-destructive/10 border-2 border-primary/30 px-3 py-1"
-                              onClick={() =>
-                                setAssignedTo(assignedTo.filter((id) => id !== memberId))
-                              }
-                            >
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
-                                  {getInitials(member.name)}
-                                </div>
-                                <span>{member.name}</span>
-                                <X className="w-3 h-3 ml-1" />
-                              </div>
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
-                )}
+
+                  {/* New Tag Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
+                      placeholder="Enter new tag name..."
+                      className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10"
+                    />
+                    <Button
+                      type="button"
+                      onClick={addTag}
+                      variant="outline"
+                      size="icon"
+                      className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 w-10"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Display Selected Tags */}
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {tags.map((tag) => (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="cursor-pointer hover:bg-destructive/10 border-2 border-primary/30 px-3 py-1"
+                          onClick={() => removeTag(tag)}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Tag className="w-3 h-3 text-primary" />
+                            <span>{tag}</span>
+                            <X className="w-3 h-3 ml-1" />
+                          </div>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Step 4: Create Subtask */}
                 <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
@@ -2304,6 +2331,7 @@ export function TaskDialog({
                             setRecurrenceType("daily");
                           }
                         }}
+                        className="sm:h-6 sm:w-11 h-7 w-12"
                       />
                     </div>
 

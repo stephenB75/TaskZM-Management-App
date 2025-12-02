@@ -602,7 +602,11 @@ export function DraggableTodayAgendaTask({
 
             {/* Subtasks Display */}
             {task.subtasks && task.subtasks.length > 0 && (
-              <div className={cn("pt-1", isMobile ? "space-y-0.5" : "space-y-1")}>
+              <div className={cn(
+                // Add padding when subtasks are shown to prevent overlapping on shorter tasks
+                isMobile ? "pt-1.5 pb-1" : "pt-2 pb-1.5",
+                isMobile ? "space-y-0.5" : "space-y-1"
+              )}>
                 {task.subtasks.slice(0, 3).map((subtask) => {
                   const handleSubtaskToggle = async (e: React.MouseEvent) => {
                     e.stopPropagation();

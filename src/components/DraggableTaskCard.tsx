@@ -638,9 +638,8 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Subtasks Display */}
           {task.subtasks && task.subtasks.length > 0 && (
             <div className={cn(
-              // Subtasks follow description directly (description has mb-1.5 = 6px bottom margin)
-              // No additional top padding needed as description margin provides spacing
-              "pt-0",
+              // Add padding when subtasks are shown to prevent overlapping on shorter tasks
+              isMobile ? "pt-1.5 pb-1" : "pt-2 pb-1.5",
               isMobile ? "space-y-0.5" : "space-y-1"
             )}>
               {task.subtasks.slice(0, 3).map((subtask) => {

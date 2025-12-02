@@ -428,7 +428,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   variant="outline"
                   onClick={handleUpdateProfile} 
                   disabled={isUpdatingProfile || profileName.trim() === user?.name}
-                  className="w-full sm:w-auto sm:min-w-[120px]"
+                  className="w-full"
                 >
                   {isUpdatingProfile ? 'Saving…' : 'Save Profile'}
                 </Button>
@@ -436,7 +436,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   variant="destructive" 
                   size="sm" 
                   onClick={handleSignOut} 
-                  className="w-full sm:w-auto sm:min-w-[120px]"
+                  className="w-full"
                 >
                   <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                   Sign Out
