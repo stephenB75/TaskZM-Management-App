@@ -620,11 +620,11 @@ iframe[data-payment-element] {
   max-width: 100% !important;
   min-width: 0 !important;
   height: auto !important;
-  min-height: 500px !important;
+  min-height: 400px !important;
   
-  /* Desktop: taller minimum height for better form visibility */
+  /* Desktop: normal height for payment forms */
   @media (min-width: 768px) {
-    min-height: 600px !important;
+    min-height: 500px !important;
   }
   
   /* Fix border and display */
@@ -741,11 +741,11 @@ iframe[src*="pay.stripe.com"] {
   
   /* Responsive height - adapts to content */
   height: auto !important;
-  min-height: 600px !important;
+  min-height: 450px !important;
   
-  /* Desktop: taller for better visibility */
+  /* Desktop: normal height for payment forms */
   @media (min-width: 768px) {
-    min-height: 700px !important;
+    min-height: 550px !important;
   }
   
   /* Ensure no scaling that could misalign form fields */
@@ -799,8 +799,8 @@ iframe[src*="pay.stripe.com"] {
   iframe[src*="checkout"],
   iframe[src*="payment"],
   iframe[src*="revenuecat"] {
-    /* Mobile: slightly shorter minimum height */
-    min-height: 500px !important;
+    /* Mobile: normal height for payment forms */
+    min-height: 400px !important;
     
     /* Ensure full width without extra margins */
     width: 100% !important;
@@ -836,7 +836,7 @@ iframe[src*="pay.stripe.com"] {
   iframe[src*="checkout"],
   iframe[src*="payment"],
   iframe[src*="revenuecat"] {
-    min-height: 650px !important;
+    min-height: 520px !important;
   }
 }
 
@@ -846,9 +846,9 @@ iframe[src*="pay.stripe.com"] {
   iframe[src*="checkout"],
   iframe[src*="payment"],
   iframe[src*="revenuecat"] {
-    /* Desktop: optimal height for two-column layout */
-    min-height: 700px !important;
-    max-height: 90vh !important;
+    /* Desktop: normal height for payment forms */
+    min-height: 550px !important;
+    max-height: 80vh !important;
     
     /* CRITICAL: Ensure no spacing issues */
     margin: 0 !important;
