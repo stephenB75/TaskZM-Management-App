@@ -1071,7 +1071,11 @@ export async function purchaseProSubscription(
     
     if (checkoutUrl) {
       console.log('🔗 Package has checkout URL, redirecting to Stripe Checkout:', checkoutUrl);
-      window.location.href = checkoutUrl;
+      // Ensure clean redirect - close any modals/dialogs that might interfere
+      // Small delay to ensure any toasts/messages are visible before redirect
+      setTimeout(() => {
+        window.location.href = checkoutUrl;
+      }, 100);
       return { 
         success: true, 
         error: 'Redirecting to payment...' 

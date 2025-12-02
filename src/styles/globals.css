@@ -562,6 +562,109 @@ body {
   }
 }
 
+/* Fix iframe positioning and clickable area alignment for payment forms */
+/* This ensures Stripe checkout and RevenueCat payment iframes work correctly */
+iframe {
+  /* Reset any transforms that might affect positioning */
+  transform: none !important;
+  transform-origin: top left !important;
+  
+  /* Ensure proper positioning */
+  position: relative !important;
+  
+  /* Fix pointer events alignment */
+  pointer-events: auto !important;
+  
+  /* Prevent any scaling that could misalign clicks */
+  zoom: 1 !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -ms-transform: none !important;
+  -o-transform: none !important;
+}
+
+/* Ensure parent containers don't affect iframe positioning */
+iframe[src*="stripe"],
+iframe[src*="checkout"],
+iframe[src*="payment"],
+iframe[src*="revenuecat"],
+iframe[data-payment-form],
+iframe[data-checkout] {
+  /* Reset positioning context */
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  
+  /* Ensure proper sizing */
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 500px !important;
+  
+  /* Fix border and display */
+  border: none !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  
+  /* Ensure proper stacking */
+  z-index: 1 !important;
+  
+  /* Prevent any CSS that could affect click areas */
+  box-sizing: border-box !important;
+}
+
+/* Fix for Stripe Checkout embedded forms */
+body[data-stripe-checkout],
+body[data-payment-form],
+html[data-stripe-checkout],
+html[data-payment-form] {
+  /* Ensure body/html don't have transforms affecting iframes */
+  transform: none !important;
+  -webkit-transform: none !important;
+}
+
+/* Ensure payment form containers don't interfere */
+[data-payment-form],
+[data-checkout-form],
+[data-stripe-checkout],
+.payment-form-container,
+.checkout-container {
+  /* Reset any transforms */
+  transform: none !important;
+  -webkit-transform: none !important;
+  
+  /* Ensure proper positioning */
+  position: relative !important;
+  
+  /* Fix pointer events */
+  pointer-events: auto !important;
+  
+  /* Prevent overflow issues */
+  overflow: visible !important;
+  
+  /* Ensure proper stacking */
+  z-index: 1 !important;
+}
+
+/* Fix for RevenueCat Web Billing iframes */
+iframe[src*="revenuecat"] {
+  /* Ensure full width and proper height */
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  
+  /* Proper height calculation */
+  height: 100% !important;
+  min-height: 600px !important;
+  
+  /* Ensure no scaling */
+  transform: scale(1) !important;
+  transform-origin: top left !important;
+}
+
 /* Mobile Toaster Notifications - Top Position */
 @media (max-width: 767px) {
   [data-sonner-toaster][data-position="top-center"] {

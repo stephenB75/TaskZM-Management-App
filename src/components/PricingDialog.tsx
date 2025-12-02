@@ -517,19 +517,19 @@ export function PricingDialog({
       // Detect user's country for helpful hint
       const detectedCountry = detectCountryFromLocale();
       const countryHint = detectedCountry 
-        ? ` Please select your country (${getCountryName(detectedCountry)} or other) in the payment form to activate the fields.`
-        : ' Please select your country in the payment form first to activate the payment fields.';
+        ? ` IMPORTANT: Click the country dropdown at the top of the payment form and select your country (${getCountryName(detectedCountry)} or other) to activate all form fields.`
+        : ' IMPORTANT: Click the country dropdown at the top of the payment form and select your country first. This will activate all payment fields.';
       
       // Purchase through RevenueCat with timeout
       toast.info('Connecting to payment provider...', {
         duration: 2000,
       });
       
-      // Show helpful hint about country selection
+      // Show helpful hint about country selection - more prominent and clear
       setTimeout(() => {
-        toast.info('Payment Form Tip', {
-          description: `You'll be redirected to the payment form.${countryHint}`,
-          duration: 5000,
+        toast.warning('Payment Form Instructions', {
+          description: `You'll be redirected to Stripe Checkout.${countryHint} The form fields will be disabled until you select your country.`,
+          duration: 8000,
         });
       }, 2500);
       
@@ -686,10 +686,10 @@ export function PricingDialog({
                     : "border-[#9B87E8]"
                 )}
               >
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-xl" />
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-xl pointer-events-none" />
                 
                 {subscription.tier === "pro" && subscription.billingPeriod === "monthly" && (
-                  <div className="absolute top-1.5 right-1.5 z-20">
+                  <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
                     <Badge className="bg-[#9B87E8] text-white border-0 shadow-md px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium">
                       {SUBSCRIPTION_UI_TEXT.pro.button.current}
                     </Badge>
@@ -743,7 +743,7 @@ export function PricingDialog({
 
                 <Button
                   className={cn(
-                    "w-full shadow-md hover:shadow-lg transition-all duration-300 text-[11px] md:text-xs font-medium py-1.5",
+                    "w-full shadow-md hover:shadow-lg transition-all duration-300 text-[11px] md:text-xs font-medium py-1.5 relative z-20",
                     subscription.tier === "pro" && subscription.billingPeriod === "monthly"
                       ? "bg-[#9B87E8] text-white hover:bg-[#8B77D8] cursor-default"
                       : "bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white"
@@ -797,9 +797,9 @@ export function PricingDialog({
                     : "border-[#9B87E8]"
                 )}
               >
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-xl" />
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-xl pointer-events-none" />
               
-              <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5">
+              <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5 pointer-events-none">
                 {subscription.tier === "pro" && subscription.billingPeriod === "yearly" && (
                   <Badge className="bg-[#9B87E8] text-white border-0 shadow-md px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium mb-0.5">
                     {SUBSCRIPTION_UI_TEXT.pro.button.current}
@@ -884,7 +884,7 @@ export function PricingDialog({
 
                 <Button
                   className={cn(
-                    "w-full shadow-md hover:shadow-lg transition-all duration-300 text-[11px] md:text-xs font-medium py-1.5",
+                    "w-full shadow-md hover:shadow-lg transition-all duration-300 text-[11px] md:text-xs font-medium py-1.5 relative z-20",
                     subscription.tier === "pro" && subscription.billingPeriod === "yearly"
                       ? "bg-[#9B87E8] text-white hover:bg-[#8B77D8] cursor-default"
                       : "bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white"
@@ -927,10 +927,10 @@ export function PricingDialog({
           </div>
 
           <div className="mt-3 md:mt-4 space-y-2">
-            <div className="p-2 md:p-2.5 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 shadow-sm">
-              <p className="text-[10px] md:text-[11px] text-center text-blue-800 dark:text-blue-200 leading-snug flex items-center justify-center gap-1.5">
-                <span className="font-semibold">💡 Payment Tip:</span>
-                <span>When redirected to the payment form, please select your country first to activate the payment fields.</span>
+            <div className="p-2 md:p-2.5 bg-amber-50 dark:bg-amber-950/30 rounded-lg border-2 border-amber-300 dark:border-amber-800 shadow-sm">
+              <p className="text-[10px] md:text-[11px] text-center text-amber-900 dark:text-amber-200 leading-snug flex flex-col items-center justify-center gap-1">
+                <span className="font-bold">⚠️ Important Payment Instructions:</span>
+                <span>When redirected to Stripe Checkout, <strong>click the country dropdown at the top</strong> and select your country first. This will activate all payment form fields. The fields are disabled until you select your country.</span>
               </p>
             </div>
             <div className="p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
