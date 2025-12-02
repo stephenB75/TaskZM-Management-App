@@ -117,12 +117,11 @@ export function buildTaskLayouts(tasks: Task[], minGapOverride?: number, useTime
         const gapMinutes = startMinutes - previousEndMinutes;
         
         if (gapMinutes > 0) {
-          // There's a time gap: use fixed minimal spacing regardless of time difference
-          // Use a small fixed gap (2px) to keep tasks close together
-          // This prevents large gaps even when tasks are scheduled hours apart
-          marginTop = 2; // Fixed 2px gap for any time difference
+          // There's a time gap: use fixed spacing (respects minGapPx override)
+          // Always use minGapPx to ensure consistent spacing regardless of time difference
+          marginTop = minGapPx;
         } else {
-          // Tasks overlap or are at same time: use minimum gap (0px)
+          // Tasks overlap or are at same time: use minimum gap (respects minGapPx override)
           marginTop = minGapPx;
         }
         

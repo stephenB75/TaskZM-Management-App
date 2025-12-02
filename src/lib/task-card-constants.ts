@@ -167,20 +167,27 @@ export const TASK_CARD_HEIGHT_CONFIG = {
       transitionFromShort: 120, // Height at 45 mins (start of medium range)
       transitionToLong: 170, // Height at 60 mins (max for medium tasks)
     },
-    long: {
-      base: 200, // Base height for long tasks (60 mins)
-      baseWithComponents: 200, // Base height for 1-hour tasks
-      incrementPerHour: 200, // Legacy - kept for backward compatibility
-      // Standard base heights by duration - scale from 200px to 500px
-      at60mins: 200, // 60 mins - start of long range
-      at90mins: 275, // 90 mins - interpolated
-      at120mins: 350, // 120 mins - interpolated
-      at150mins: 425, // 150 mins - interpolated
-      at180mins: 500, // 180 mins - max base height
-      beyond180mins: 500, // >180 mins - cap at 500px base
-      minHeight: 200, // Minimum height for long tasks (60 mins)
-      maxHeightAfterAdjustment: 550, // Maximum height after auto-adjustment (capped at 550px)
+  long: {
+    base: 200, // Base height for long tasks (60 mins)
+    baseWithComponents: 200, // Base height for 1-hour tasks
+    incrementPerHour: 200, // Legacy - kept for backward compatibility
+    // Standard base heights by duration - scale from 200px to 500px
+    at60mins: 200, // 60 mins - start of long range
+    at90mins: 275, // 90 mins - interpolated
+    at120mins: 350, // 120 mins - interpolated
+    at150mins: 425, // 150 mins - interpolated
+    at180mins: 500, // 180 mins - max base height
+    beyond180mins: 500, // >180 mins - cap at 500px base
+    minHeight: 200, // Minimum height for long tasks (60 mins)
+    maxHeightAfterAdjustment: 550, // Maximum height after auto-adjustment (capped at 550px)
+    // Duration thresholds for height selection
+    durationThresholds: {
+      at90mins: 90, // minutes
+      at120mins: 120, // minutes
+      at150mins: 150, // minutes
+      at180mins: 180, // minutes
     },
+  },
   },
   scalingFactors: {
     short: 0.9,
@@ -222,6 +229,8 @@ export const TASK_CARD_LAYOUT_METRICS = {
     TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins /
     TASK_CARD_HEIGHT_CONFIG.thresholds.long, // 200px / 60 mins ≈ 3.33px per minute
   minGapPx: 0, // No minimum gap - tasks stack directly on top of each other for minimal spacing
+  timelineTaskSpacing: 20, // Fixed spacing between tasks in timeline view (20px)
+  timelineScrollOffset: 200, // Scroll offset for timeline view (200px)
 } as const;
 
 // Padding and Spacing

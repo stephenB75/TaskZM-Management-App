@@ -23,8 +23,7 @@ import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING }
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
-
-const TIMELINE_SCROLL_OFFSET_PX = 200;
+import { TASK_CARD_LAYOUT_METRICS } from "../lib/task-card-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -115,9 +114,9 @@ export function TodayAgendaView({
     });
   }, [incompleteTasks]);
 
-  // Use zero gap for minimal spacing - tasks will stack directly on top of each other
-  const minGap = 0; // 0px gap for minimal spacing on both mobile and desktop
-  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, minGap, true), [todayTasks, minGap]); // Use time-based spacing for timeline view
+  // Use fixed spacing between tasks (no time-based spacing)
+  const minGap = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing; // Fixed spacing from constants
+  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, minGap, false), [todayTasks, minGap]); // Disable time-based spacing
 
   // Auto-scroll to current time on mount and when tasks change
   useEffect(() => {
@@ -159,7 +158,7 @@ export function TodayAgendaView({
             const offsetMinutes = Math.max(0, currentTimeInMinutes - baselineMinutes);
             const estimatedScrollTop = Math.max(
               0,
-              offsetMinutes * TASK_CARD_LAYOUT_METRICS.pixelsPerMinute - TIMELINE_SCROLL_OFFSET_PX
+              offsetMinutes * TASK_CARD_LAYOUT_METRICS.pixelsPerMinute - TASK_CARD_LAYOUT_METRICS.timelineScrollOffset
             );
             scrollViewport.scrollTop = estimatedScrollTop;
           }
@@ -262,10 +261,10 @@ export function TodayAgendaView({
     const minutes = getTaskMinutes(task);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet;
     
-    // Determine task category
-    const isShortTask = minutes < 45;
-    const isMediumTask = minutes >= 45 && minutes < 60;
-    const isLongTask = minutes >= 60;
+    // Determine task category using constants
+    const isShortTask = minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
+    const isMediumTask = minutes >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
+    const isLongTask = minutes >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
     
     // Count badges that will be displayed in the top row
     const hasTime = !!(task.scheduledDate || task.dueDate);
@@ -276,7 +275,7 @@ export function TodayAgendaView({
     // Estimate if badges will wrap to second line
     const badgeCount = [hasTime, hasPriority, hasTag, hasDuration].filter(Boolean).length;
     const estimatedBadgeWidth = badgeCount * TASK_CARD_CALCULATIONS.badgeWidths.average;
-    const availableWidth = isMobile ? 240 : 432;
+    const availableWidth = isMobile ? TASK_CARD_CALCULATIONS.availableWidth.mobile : TASK_CARD_CALCULATIONS.availableWidth.desktop;
     const badgesWillWrap = estimatedBadgeWidth > availableWidth;
     const badgeWrapHeight = badgesWillWrap ? TASK_CARD_HEIGHT_CONFIG.componentHeights.badgeWrap : 0;
     
@@ -295,17 +294,23 @@ export function TodayAgendaView({
       baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px standard
     } else {
       // Long tasks (>= 60 mins): Use standard heights at defined points
-      if (minutes >= 180) {
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px standard
-      } else if (minutes >= 150) {
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins; // 425px standard
-      } else if (minutes >= 120) {
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins; // 350px standard (2 hours)
-      } else if (minutes >= 90) {
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins; // 275px standard
+      // Use duration threshold constants instead of hardcoded values
+      const durationThresholds = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.durationThresholds;
+      if (minutes >= durationThresholds.at180mins) {
+        // >= 180 mins: Use beyond180mins height
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins;
+      } else if (minutes >= durationThresholds.at150mins) {
+        // >= 150 mins: Use at150mins height
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins;
+      } else if (minutes >= durationThresholds.at120mins) {
+        // >= 120 mins: Use at120mins height
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins;
+      } else if (minutes >= durationThresholds.at90mins) {
+        // >= 90 mins: Use at90mins height
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins;
       } else {
-        // 60-89 mins: Use standard base height (1 hour = 200px)
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px standard
+        // 60-89 mins: Use standard base height (at60mins)
+        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins;
       }
     }
     
@@ -502,7 +507,7 @@ export function TodayAgendaView({
                     <div
                       key={task.id}
                       style={{
-                        marginTop: index === 0 ? 0 : `${Math.max(marginTop, 0)}px`, // No minimum gap - tasks stack directly for minimal spacing
+                        marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`, // Fixed spacing from constants
                       }}
                     >
                       <DraggableTodayAgendaTask
