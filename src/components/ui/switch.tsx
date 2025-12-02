@@ -60,8 +60,8 @@ function Switch({
         "relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "touch-manipulation select-none",
-        // Sizing - pill shape
-        "h-6 w-11",
+        // Sizing - pill shape (slightly taller for better proportions)
+        "h-7 w-12",
         // Background colors - inverted for dark mode
         isChecked ? "bg-primary dark:bg-primary" : "bg-[var(--switch-background)] dark:bg-gray-600",
         // Disabled state
@@ -73,16 +73,20 @@ function Switch({
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      {/* Sliding thumb */}
+      {/* Sliding thumb - pill shaped */}
       <span
         className={cn(
-          "block rounded-full bg-white dark:bg-gray-200 shadow-md transition-transform duration-200 ease-in-out",
-          // Thumb sizing
-          "h-5 w-5",
-          // Position - moves from left to right
+          "block bg-white dark:bg-gray-200 shadow-md transition-transform duration-200 ease-in-out",
+          // Pill shape - rounded-full on a rectangular element creates pill shape
+          "rounded-full",
+          // Thumb sizing - wider for pill shape (h-4 = 16px, w-6 = 24px)
+          "h-4 w-6",
+          // Position - moves from left to right with padding
+          // Container is w-12 (48px), thumb is w-6 (24px)
+          // Left: 2px padding, Right: 48px - 24px - 2px = 22px
           isChecked 
-            ? "translate-x-5" 
-            : "translate-x-1"
+            ? "translate-x-[22px]" 
+            : "translate-x-0.5"
         )}
         aria-hidden="true"
       />
