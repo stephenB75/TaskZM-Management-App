@@ -103,22 +103,26 @@ export function buildTaskLayouts(tasks: Task[], minGapOverride?: number, useTime
     let marginTop = 0;
 
     if (index === 0) {
-      // First task: no margin
-      if (startMinutes !== null) {
-        previousEndMinutes = startMinutes;
-      }
+      // First task: no margin, but update previousEndMinutes to include duration for next task calculation
       marginTop = 0;
+      if (startMinutes !== null) {
+        previousEndMinutes = startMinutes + duration; // Set to end time of first task
+      } else {
+        // Task without scheduled time: estimate end time based on duration
+        previousEndMinutes += duration;
+      }
     } else {
       if (startMinutes !== null) {
         // Calculate gap based on time difference between tasks
         const gapMinutes = startMinutes - previousEndMinutes;
         
         if (gapMinutes > 0) {
-          // There's a time gap: use time-based spacing (pixels per minute)
-          const gapPixels = gapMinutes * pixelsPerMinute;
-          marginTop = Math.max(gapPixels, minGapPx);
+          // There's a time gap: use fixed minimal spacing regardless of time difference
+          // Use a small fixed gap (2px) to keep tasks close together
+          // This prevents large gaps even when tasks are scheduled hours apart
+          marginTop = 2; // Fixed 2px gap for any time difference
         } else {
-          // Tasks overlap or are at same time: use minimum gap
+          // Tasks overlap or are at same time: use minimum gap (0px)
           marginTop = minGapPx;
         }
         

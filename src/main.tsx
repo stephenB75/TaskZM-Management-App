@@ -63,12 +63,15 @@ if (typeof window !== 'undefined') {
           message.includes('ERR_FILE_NOT_FOUND') ||
           (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||
+          (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
+          (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
           filename.includes('chrome-extension://') ||
           filename.includes('moz-extension://') ||
           filename.includes('safari-extension://') ||
           filename.includes('contentScript.bundle.js') ||
           filename.includes('content.js') ||
           filename.includes('web-client-content-script.js') ||
+          filename.includes('web-client-content-script') ||
           filename.includes('userReportLinkedCandidate.json')) {
         event.preventDefault();
         // Completely silent - these are browser extension errors, not app errors
@@ -159,10 +162,13 @@ if (typeof window !== 'undefined') {
           message.includes('ERR_FILE_NOT_FOUND') ||
           (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||
+          (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
+          (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
           stack.includes('content.js') ||
           stack.includes('contentScript') ||
           stack.includes('contentScript.bundle.js') ||
           stack.includes('web-client-content-script') ||
+          stack.includes('web-client-content-script.js') ||
           stack.includes('userReportLinkedCandidate')) {
         event.preventDefault();
         // Completely silent - these are browser extension errors, not app errors
