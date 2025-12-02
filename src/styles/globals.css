@@ -578,7 +578,7 @@ iframe {
   /* Ensure proper positioning */
   position: relative !important;
   
-  /* Fix pointer events alignment */
+  /* Fix pointer events alignment - CRITICAL for form interaction */
   pointer-events: auto !important;
   
   /* Prevent any scaling that could misalign clicks */
@@ -591,6 +591,12 @@ iframe {
   /* Smooth rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Remove default iframe spacing */
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  display: block !important;
 }
 
 /* Payment form iframes - Stripe, RevenueCat, and custom payment forms */
@@ -626,11 +632,11 @@ iframe[data-payment-element] {
   border-radius: 8px !important;
   display: block !important;
   
-  /* Proper spacing - no extra margins that cause gaps */
+  /* CRITICAL: Remove all spacing that causes gaps between form fields */
   margin: 0 !important;
   padding: 0 !important;
   
-  /* Ensure proper stacking */
+  /* Ensure proper stacking - but allow interaction */
   z-index: 1 !important;
   
   /* Prevent any CSS that could affect click areas */
@@ -642,7 +648,10 @@ iframe[data-payment-element] {
   /* Ensure proper background */
   background: transparent !important;
   
-  /* Prevent text selection issues */
+  /* CRITICAL: Allow user interaction with form fields inside iframe */
+  pointer-events: auto !important;
+  
+  /* Prevent text selection on iframe itself (but allow inside) */
   -webkit-user-select: none !important;
   -moz-user-select: none !important;
   -ms-user-select: none !important;
@@ -651,8 +660,12 @@ iframe[data-payment-element] {
   /* Remove any default spacing */
   vertical-align: top !important;
   
-  /* Ensure iframe content renders correctly without spacing issues */
-  overflow: hidden !important;
+  /* Ensure iframe content renders correctly - allow scrolling inside iframe */
+  overflow: visible !important;
+  
+  /* Remove any whitespace that could cause spacing issues */
+  line-height: 0 !important;
+  font-size: 0 !important;
 }
 
 /* Fix for Stripe Checkout embedded forms - body/html level */
@@ -684,11 +697,11 @@ html[data-payment-form] {
   /* Ensure proper positioning */
   position: relative !important;
   
-  /* Fix pointer events */
+  /* CRITICAL: Allow interaction with iframe and its contents */
   pointer-events: auto !important;
   
-  /* Prevent overflow issues */
-  overflow: hidden !important;
+  /* Allow iframe content to be visible and scrollable */
+  overflow: visible !important;
   
   /* Ensure proper stacking */
   z-index: 1 !important;
@@ -697,11 +710,11 @@ html[data-payment-form] {
   width: 100% !important;
   max-width: 100% !important;
   
-  /* Proper spacing - consistent padding around iframe */
+  /* CRITICAL: Remove all spacing that causes gaps */
   margin: 0 !important;
   padding: 0 !important;
   
-  /* Remove any default spacing */
+  /* Remove any default spacing that could create gaps */
   line-height: 0 !important;
   font-size: 0 !important;
   
@@ -709,8 +722,12 @@ html[data-payment-form] {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   
-  /* Ensure iframe fits perfectly */
+  /* Ensure container fits iframe perfectly */
   display: block !important;
+  
+  /* Remove any border or outline that could create spacing */
+  border: none !important;
+  outline: none !important;
 }
 
 /* RevenueCat Web Billing iframes - enhanced styling with proper spacing */
@@ -731,7 +748,7 @@ iframe[src*="pay.stripe.com"] {
     min-height: 700px !important;
   }
   
-  /* Ensure no scaling */
+  /* Ensure no scaling that could misalign form fields */
   transform: scale(1) !important;
   transform-origin: top left !important;
   
@@ -739,7 +756,7 @@ iframe[src*="pay.stripe.com"] {
   opacity: 1 !important;
   transition: opacity 0.3s ease-in-out !important;
   
-  /* Remove all spacing - iframe should fit container exactly */
+  /* CRITICAL: Remove all spacing - iframe should fit container exactly */
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
@@ -749,8 +766,15 @@ iframe[src*="pay.stripe.com"] {
   display: block !important;
   vertical-align: top !important;
   
-  /* Ensure iframe content renders correctly */
-  overflow: hidden !important;
+  /* CRITICAL: Allow scrolling inside iframe for form content */
+  overflow: visible !important;
+  
+  /* CRITICAL: Ensure form fields are interactive */
+  pointer-events: auto !important;
+  
+  /* Remove whitespace that could cause spacing */
+  line-height: 0 !important;
+  font-size: 0 !important;
 }
 
 /* Payment form loading state */
@@ -783,6 +807,9 @@ iframe[src*="pay.stripe.com"] {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    
+    /* Ensure form fields are interactive on mobile */
+    pointer-events: auto !important;
   }
   
   .payment-form-container,
@@ -793,6 +820,13 @@ iframe[src*="pay.stripe.com"] {
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    
+    /* Allow interaction on mobile */
+    pointer-events: auto !important;
+    
+    /* Remove any spacing */
+    border: none !important;
+    outline: none !important;
   }
 }
 
@@ -816,9 +850,12 @@ iframe[src*="pay.stripe.com"] {
     min-height: 700px !important;
     max-height: 90vh !important;
     
-    /* Ensure no spacing issues */
+    /* CRITICAL: Ensure no spacing issues */
     margin: 0 !important;
     padding: 0 !important;
+    
+    /* Ensure form fields are interactive on desktop */
+    pointer-events: auto !important;
   }
   
   .payment-form-container,
@@ -829,6 +866,13 @@ iframe[src*="pay.stripe.com"] {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    
+    /* Allow interaction on desktop */
+    pointer-events: auto !important;
+    
+    /* Remove any spacing */
+    border: none !important;
+    outline: none !important;
   }
 }
 
@@ -845,6 +889,18 @@ iframe[src*="pay.stripe.com"] {
 .checkout-container {
   /* Ensure proper focus management */
   outline: none !important;
+  
+  /* CRITICAL: Ensure container doesn't block iframe interaction */
+  pointer-events: auto !important;
+}
+
+/* Ensure parent elements don't block iframe interaction */
+div:has(> iframe[src*="stripe"]),
+div:has(> iframe[src*="checkout"]),
+div:has(> iframe[src*="revenuecat"]) {
+  pointer-events: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* Payment form loading spinner overlay */
