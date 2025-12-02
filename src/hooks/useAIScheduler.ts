@@ -293,12 +293,47 @@ export function useAIScheduler() {
     const estimateTaskHours = (task: Task): number => {
       // Priority 1: If estimated time is explicitly set by user, use it directly
       if (task.estimatedTime && task.estimatedTime > 0) {
+        console.log('⏱️ AI Duration Estimator: Using user-set estimated time', {
+          taskId: task.id,
+          taskTitle: task.title,
+          estimatedTime: task.estimatedTime,
+          hours: task.estimatedTime / 60,
+        });
         return task.estimatedTime / 60; // Convert minutes to hours
       }
       
       // Priority 2: Formula-based estimation using effort + priority + complexity
-      const { effortScore, primaryVerb } = analyzeTaskVerbs(task);
-      const complexityScore = calculateComplexity(task);
+      let effortScore: number;
+      let primaryVerb: string;
+      let complexityScore: number;
+      
+      try {
+        const verbAnalysis = analyzeTaskVerbs(task);
+        effortScore = verbAnalysis.effortScore;
+        primaryVerb = verbAnalysis.primaryVerb;
+      } catch (error) {
+        console.error('❌ Error in analyzeTaskVerbs:', error);
+        // Fallback to default medium effort
+        effortScore = 2.5;
+        primaryVerb = 'unknown';
+      }
+      
+      try {
+        complexityScore = calculateComplexity(task);
+      } catch (error) {
+        console.error('❌ Error in calculateComplexity:', error);
+        // Fallback to default complexity
+        complexityScore = 2.0;
+      }
+      
+      console.log('⏱️ AI Duration Estimator: Calculating duration', {
+        taskId: task.id,
+        taskTitle: task.title,
+        effortScore,
+        primaryVerb,
+        complexityScore,
+        priority: task.priority,
+      });
       
       // Priority multiplier (existing values maintained)
       const priorityMultiplier = {
@@ -318,7 +353,12 @@ export function useAIScheduler() {
       estimatedMinutes *= (complexityScore / 2.5); // Normalize complexity
       
       // Apply verb-specific adjustments for known action types (maintains existing behavior)
-      estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
+      try {
+        estimatedMinutes = applyVerbSpecificAdjustments(estimatedMinutes, primaryVerb, task);
+      } catch (error) {
+        console.error('❌ Error in applyVerbSpecificAdjustments:', error);
+        // Continue with current estimatedMinutes if adjustment fails
+      }
       
       // Clamp between 15 minutes (minimum) and 300 minutes (5 hours maximum)
       estimatedMinutes = Math.max(15, Math.min(300, estimatedMinutes));
@@ -326,7 +366,17 @@ export function useAIScheduler() {
       // Round to nearest 15 minutes for cleaner scheduling
       estimatedMinutes = Math.round(estimatedMinutes / 15) * 15;
       
-      return estimatedMinutes / 60; // Convert to hours (maintains interface compatibility)
+      const estimatedHours = estimatedMinutes / 60;
+      
+      console.log('⏱️ AI Duration Estimator: Final calculation', {
+        taskId: task.id,
+        taskTitle: task.title,
+        estimatedMinutes,
+        estimatedHours,
+        formula: `Base(${baseMinutes}) × Effort(${effortScore}/2.5=${(effortScore / 2.5).toFixed(2)}) × Priority(${priorityMultiplier[task.priority]}) × Complexity(${complexityScore}/2.5=${(complexityScore / 2.5).toFixed(2)})`,
+      });
+      
+      return estimatedHours; // Convert to hours (maintains interface compatibility)
     };
     
     // Helper: Get task duration in hours (using intelligent estimation)
