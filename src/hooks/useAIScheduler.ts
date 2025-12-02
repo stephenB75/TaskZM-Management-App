@@ -6,6 +6,7 @@ import { KANBAN_TIME } from '../lib/kanban-constants';
 import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import { analyzeTaskVerbs, calculateComplexity, applyVerbSpecificAdjustments } from '../lib/verb-analysis';
+import { logger } from '../lib/logger';
 import type { Task } from '../types';
 
 export interface SchedulePlan {
@@ -163,7 +164,7 @@ export function useAIScheduler() {
         if (!currentTask.scheduledDate) continue;
         
         const currentTaskStart = new Date(currentTask.scheduledDate);
-        const currentTaskDuration = currentTask.estimatedTime || 30;
+        const currentTaskDuration = getTaskMinutes(currentTask);
         const currentTaskEnd = new Date(currentTaskStart);
         currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
         
@@ -177,7 +178,7 @@ export function useAIScheduler() {
           const prevTask = sortedCategoryTasks[i - 1];
           if (!prevTask.scheduledDate) continue;
           const prevTaskStart = new Date(prevTask.scheduledDate);
-          const prevTaskDuration = prevTask.estimatedTime || 30;
+          const prevTaskDuration = getTaskMinutes(prevTask);
           gapStart = new Date(prevTaskStart);
           gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
         }
@@ -189,8 +190,8 @@ export function useAIScheduler() {
         
         // Calculate gap duration in minutes
         const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / (1000 * 60);
-        // Use provided duration if available, otherwise fall back to task.estimatedTime
-        const taskDuration = taskDurationMinutes ?? (task.estimatedTime || 30);
+        // Use provided duration if available, otherwise use AI estimator
+        const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
         
         // If gap is large enough for this task, use it
         if (gapDuration >= taskDuration) {
@@ -206,7 +207,7 @@ export function useAIScheduler() {
       const lastTask = sortedCategoryTasks[sortedCategoryTasks.length - 1];
       if (lastTask.scheduledDate) {
         const lastTaskStart = new Date(lastTask.scheduledDate);
-        const lastTaskDuration = lastTask.estimatedTime || 30;
+        const lastTaskDuration = getTaskMinutes(lastTask);
         const nextAvailableTime = new Date(lastTaskStart);
         nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
         
@@ -265,7 +266,36 @@ export function useAIScheduler() {
     dateRange?: { startDate: Date; endDate: Date },
     options?: { forceCategoryHours?: boolean; shuffle?: boolean; enforceMinimumHours?: boolean }
   ): ScheduleResult => {
+    // Always log this - critical for debugging AI Duration Estimator
+    console.log('🚀 generateSchedulePlan called', {
+      tasksToScheduleCount: tasksToSchedule?.length || 0,
+      dateRange,
+      options,
+      timestamp: new Date().toISOString(),
+    });
+    logger.debug('🚀 generateSchedulePlan called', {
+      tasksToScheduleCount: tasksToSchedule?.length || 0,
+      dateRange,
+      options,
+    });
+    
     const unscheduledTasks = tasksToSchedule || getUnscheduledTasks();
+    
+    // Always log this - critical for debugging
+    console.log('📋 Tasks to schedule:', {
+      count: unscheduledTasks.length,
+      tasks: unscheduledTasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        priority: t.priority,
+        hasEstimatedTime: !!t.estimatedTime,
+        estimatedTime: t.estimatedTime,
+      })),
+    });
+    logger.debug('📋 Tasks to schedule', {
+      count: unscheduledTasks.length,
+      taskTitles: unscheduledTasks.map(t => t.title),
+    });
     
     if (unscheduledTasks.length === 0) {
       return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
@@ -293,11 +323,17 @@ export function useAIScheduler() {
     const estimateTaskHours = (task: Task): number => {
       // Priority 1: If estimated time is explicitly set by user, use it directly
       if (task.estimatedTime && task.estimatedTime > 0) {
+        // Always log this - critical for debugging
         console.log('⏱️ AI Duration Estimator: Using user-set estimated time', {
           taskId: task.id,
           taskTitle: task.title,
           estimatedTime: task.estimatedTime,
           hours: task.estimatedTime / 60,
+        });
+        logger.info('⏱️ AI Duration Estimator: Using user-set estimated time', {
+          taskId: task.id,
+          taskTitle: task.title,
+          estimatedTime: task.estimatedTime,
         });
         return task.estimatedTime / 60; // Convert minutes to hours
       }
@@ -326,7 +362,16 @@ export function useAIScheduler() {
         complexityScore = 2.0;
       }
       
+      // Always log this - critical for debugging
       console.log('⏱️ AI Duration Estimator: Calculating duration', {
+        taskId: task.id,
+        taskTitle: task.title,
+        effortScore,
+        primaryVerb,
+        complexityScore,
+        priority: task.priority,
+      });
+      logger.info('⏱️ AI Duration Estimator: Calculating duration', {
         taskId: task.id,
         taskTitle: task.title,
         effortScore,
@@ -368,6 +413,7 @@ export function useAIScheduler() {
       
       const estimatedHours = estimatedMinutes / 60;
       
+      // Always log this - critical for debugging
       console.log('⏱️ AI Duration Estimator: Final calculation', {
         taskId: task.id,
         taskTitle: task.title,
@@ -375,13 +421,47 @@ export function useAIScheduler() {
         estimatedHours,
         formula: `Base(${baseMinutes}) × Effort(${effortScore}/2.5=${(effortScore / 2.5).toFixed(2)}) × Priority(${priorityMultiplier[task.priority]}) × Complexity(${complexityScore}/2.5=${(complexityScore / 2.5).toFixed(2)})`,
       });
+      logger.info('⏱️ AI Duration Estimator: Final calculation', {
+        taskId: task.id,
+        taskTitle: task.title,
+        estimatedMinutes,
+        estimatedHours,
+        minutes: estimatedMinutes,
+        hours: estimatedHours,
+      });
       
       return estimatedHours; // Convert to hours (maintains interface compatibility)
     };
     
     // Helper: Get task duration in hours (using intelligent estimation)
     const getTaskHours = (task: Task): number => {
-      return estimateTaskHours(task);
+      // Always log this - critical for debugging
+      console.log('🔍 getTaskHours called for task:', {
+        id: task.id,
+        title: task.title,
+        hasEstimatedTime: !!task.estimatedTime,
+        estimatedTime: task.estimatedTime,
+      });
+      logger.debug('🔍 getTaskHours called', {
+        taskId: task.id,
+        taskTitle: task.title,
+        hasEstimatedTime: !!task.estimatedTime,
+      });
+      
+      const result = estimateTaskHours(task);
+      
+      console.log('✅ getTaskHours result:', {
+        taskId: task.id,
+        taskTitle: task.title,
+        hours: result,
+        minutes: result * 60,
+      });
+      logger.debug('✅ getTaskHours result', {
+        taskId: task.id,
+        hours: result,
+        minutes: result * 60,
+      });
+      return result;
     };
     
     // Helper: Get task duration in minutes (using intelligent estimation)
@@ -426,6 +506,8 @@ export function useAIScheduler() {
       }
     });
 
+    console.log('🔄 Starting task sorting and scheduling process');
+    
     // Sort tasks by priority and status for intelligent scheduling
     // ALWAYS prioritize urgent and high priority tasks first, regardless of settings
     let sortedTasks = [...unscheduledTasks].sort((a, b) => {
@@ -631,7 +713,17 @@ export function useAIScheduler() {
       return minDay;
     };
     
+    console.log('📝 Processing tasks for scheduling', {
+      totalTasks: sortedTasks.length,
+      taskTitles: sortedTasks.map(t => t.title),
+    });
+    
     sortedTasks.forEach((task, taskIndex) => {
+      console.log(`📌 Processing task ${taskIndex + 1}/${sortedTasks.length}:`, {
+        id: task.id,
+        title: task.title,
+        priority: task.priority,
+      });
       // Determine scheduling based on priority and status (if priority-based scheduling is enabled)
       // When rescheduling within a date range, distribute tasks evenly across days
       let daysToAdd = 0;
@@ -1064,7 +1156,7 @@ export function useAIScheduler() {
               const currentTask = sortedTasks[i];
               
               const prevTaskStart = new Date(prevTask.scheduledDate!);
-              const prevTaskDuration = prevTask.estimatedTime || 30;
+              const prevTaskDuration = getTaskMinutes(prevTask);
               const prevTaskEnd = new Date(prevTaskStart);
               prevTaskEnd.setMinutes(prevTaskEnd.getMinutes() + prevTaskDuration);
               
@@ -1088,7 +1180,7 @@ export function useAIScheduler() {
             if (sortedTasks.length > 0) {
               const lastTask = sortedTasks[sortedTasks.length - 1];
               const lastTaskStart = new Date(lastTask.scheduledDate!);
-              const lastTaskDuration = lastTask.estimatedTime || 30;
+              const lastTaskDuration = getTaskMinutes(lastTask);
               const lastTaskEnd = new Date(lastTaskStart);
               lastTaskEnd.setMinutes(lastTaskEnd.getMinutes() + lastTaskDuration);
               
@@ -1159,7 +1251,7 @@ export function useAIScheduler() {
             if (sortedTasks.length > 0) {
               const lastTask = sortedTasks[sortedTasks.length - 1];
               const lastTaskStart = new Date(lastTask.scheduledDate!);
-              const lastTaskDuration = lastTask.estimatedTime || 30;
+              const lastTaskDuration = getTaskMinutes(lastTask);
               const nextAvailableTime = new Date(lastTaskStart);
               nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
               
@@ -1305,7 +1397,7 @@ export function useAIScheduler() {
             if (!existingTask.scheduledDate) continue;
             
             const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-            const existingTaskDuration = (existingTask.estimatedTime || 30) * 60 * 1000;
+            const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000;
             const existingTaskEnd = existingTaskStart + existingTaskDuration;
             
             // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
@@ -1323,7 +1415,7 @@ export function useAIScheduler() {
               for (const existingTask of existingTasksForDay) {
                 if (!existingTask.scheduledDate) continue;
                 const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-                const existingTaskDuration = (existingTask.estimatedTime || 30) * 60 * 1000;
+                const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000;
                 const existingTaskEnd = existingTaskStart + existingTaskDuration;
                 if (existingTaskEnd > latestEndTime) {
                   latestEndTime = existingTaskEnd;
