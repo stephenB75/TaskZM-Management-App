@@ -330,7 +330,11 @@ export function TodayAgendaView({
       const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
       const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
       // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
-      const actualLines = Math.max(estimatedLines, 1);
+      // For tasks under 60 minutes, cap at 2 lines
+      const isUnder60Mins = isShortTask || isMediumTask;
+      const actualLines = isUnder60Mins 
+        ? Math.min(Math.max(estimatedLines, 1), 2) // Cap at 2 lines for tasks < 60 mins
+        : Math.max(estimatedLines, 1); // Full calculation for tasks >= 60 mins
       const descriptionContentHeight = actualLines * lineHeight;
       // Add minimal bottom padding only when needed (0px if assigned users follow, 6px otherwise)
       const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 

@@ -170,7 +170,11 @@ export function DraggableTodayAgendaTask({
       const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
       const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
       // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
-      const actualLines = Math.max(estimatedLines, 1);
+      // For tasks under 60 minutes, cap at 2 lines
+      const isUnder60Mins = isShortTask || isMediumTask;
+      const actualLines = isUnder60Mins 
+        ? Math.min(Math.max(estimatedLines, 1), 2) // Cap at 2 lines for tasks < 60 mins
+        : Math.max(estimatedLines, 1); // Full calculation for tasks >= 60 mins
       const descriptionContentHeight = actualLines * lineHeight;
       // Add minimal bottom padding only when needed (0px if assigned users follow, 6px otherwise)
       const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
@@ -578,11 +582,13 @@ export function DraggableTodayAgendaTask({
               </h3>
             </div>
 
-            {/* Row 3: Subhead (Description) - Only show if task is 1 hour or more */}
-            {task.description && task.estimatedTime && task.estimatedTime >= 60 && (
+            {/* Row 3: Subhead (Description) - Show if description exists */}
+            {task.description && (
               <div 
                 className={cn(
                   `text-gray-500 dark:text-gray-300 leading-snug break-words ${TASK_CARD_FONT_SIZES.description} ${TASK_CARD_SPACING.description}`,
+                  // For tasks under 60 minutes, limit to 2 lines
+                  (isShortTask || isMediumTask) && TASK_CARD_LINE_CLAMP.description.oneHour,
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
