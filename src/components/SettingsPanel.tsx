@@ -31,8 +31,8 @@ import { AppHeader } from './AppHeader';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import taskzmLogo from '../assets/taskzm-logo.png';
-import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS } from '../lib/ui-colors';
-import { COMMON_TEXT_SIZES } from '../lib/text-size-constants';
+import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
+import { SETTINGS_PANEL_TEXT_SIZES } from '../lib/text-size-constants';
 import {
   SETTINGS_PANEL_MOBILE_HEADER_SPACER,
   SETTINGS_PANEL_BOTTOM_PADDING_MOBILE,
@@ -410,7 +410,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     <div className="text-base font-semibold text-foreground truncate">{user?.name || '—'}</div>
                     <div className="text-sm text-muted-foreground truncate break-all">{user?.email || '—'}</div>
                   </div>
-                  <div className="flex flex-wrap gap-2 justify-center text-[11px]">
+                  <div className={`flex flex-wrap gap-2 justify-center ${SETTINGS_PANEL_TEXT_SIZES.small}`}>
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap">
                       {subscription.tier === 'pro' ? 'Pro Member' : 'Free Member'}
                     </Badge>
@@ -893,7 +893,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <div className="flex items-center justify-between gap-3 py-1">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <Label htmlFor="outlook-cal" className="text-sm cursor-pointer">Outlook Calendar</Label>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-muted text-muted-foreground border-muted-foreground/20">
+                      <Badge variant="outline" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} px-1.5 py-0 h-4 bg-muted text-muted-foreground border-muted-foreground/20`}>
                         Coming Soon
                       </Badge>
                     </div>
@@ -1030,7 +1030,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
               {permission === 'denied' && (
                 <div className="mt-3 space-y-2">
-                  <p className="text-[10px] md:text-xs text-muted-foreground font-medium">
+                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground font-medium`}>
                     Notifications are blocked. Follow these steps to enable them:
                   </p>
                   <div className="bg-background/50 border border-border rounded-md p-2.5 space-y-2">
@@ -1042,7 +1042,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       
                       if (isChrome || isEdge) {
                         return (
-                          <div className="space-y-1.5 text-[10px] md:text-xs text-muted-foreground">
+                          <div className={`space-y-1.5 ${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
                             <p className="font-medium text-foreground">Chrome/Edge:</p>
                             <ol className="list-decimal list-inside space-y-1 ml-1">
                               <li>Click the lock icon (🔒) or info icon (i) in the address bar</li>
@@ -1057,7 +1057,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         );
                       } else if (isFirefox) {
                         return (
-                          <div className="space-y-1.5 text-[10px] md:text-xs text-muted-foreground">
+                          <div className={`space-y-1.5 ${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
                             <p className="font-medium text-foreground">Firefox:</p>
                             <ol className="list-decimal list-inside space-y-1 ml-1">
                               <li>Click the lock icon (🔒) in the address bar</li>
@@ -1073,7 +1073,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         );
                       } else if (isSafari) {
                         return (
-                          <div className="space-y-1.5 text-[10px] md:text-xs text-muted-foreground">
+                          <div className={`space-y-1.5 ${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
                             <p className="font-medium text-foreground">Safari:</p>
                             <ol className="list-decimal list-inside space-y-1 ml-1">
                               <li>Safari menu → Settings (Preferences)</li>
@@ -1089,7 +1089,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         );
                       } else {
                         return (
-                          <div className="space-y-1.5 text-[10px] md:text-xs text-muted-foreground">
+                          <div className={`space-y-1.5 ${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
                             <p className="font-medium text-foreground">General Instructions:</p>
                             <ol className="list-decimal list-inside space-y-1 ml-1">
                               <li>Look for a lock icon (🔒) or info icon (i) in your browser's address bar</li>
@@ -1108,7 +1108,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
               )}
               {permission === 'default' && (
-                <p className="text-[10px] md:text-xs text-muted-foreground mt-2 leading-relaxed">
+                <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground mt-2 leading-relaxed`}>
                   Click "Enable Notifications" above to receive alerts for due and overdue tasks. A browser dialog will appear asking for permission.
                 </p>
               )}
@@ -1121,7 +1121,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                 <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                   <Label htmlFor="notifications-enabled" className="text-xs md:text-sm cursor-pointer">Enable Notifications</Label>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Turn on all notification features</p>
+                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Turn on all notification features</p>
                 </div>
                 <Switch 
                   id="notifications-enabled" 
@@ -1144,7 +1144,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                 <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                   <Label htmlFor="notifications-badge" className="text-xs md:text-sm cursor-pointer">{NOTIFICATION_PANEL_TEXT.badge.showAppIconBadge}</Label>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">{NOTIFICATION_PANEL_TEXT.badge.displayTaskCount}</p>
+                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>{NOTIFICATION_PANEL_TEXT.badge.displayTaskCount}</p>
                 </div>
                 <Switch 
                   id="notifications-badge" 
@@ -1158,7 +1158,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                 <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                   <Label htmlFor="notifications-overdue" className="text-xs md:text-sm cursor-pointer">Overdue Alerts</Label>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Notify when tasks become overdue</p>
+                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify when tasks become overdue</p>
                 </div>
                 <Switch 
                   id="notifications-overdue" 
@@ -1172,7 +1172,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                 <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                   <Label htmlFor="notifications-reminders" className="text-xs md:text-sm cursor-pointer">Due Date Reminders</Label>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Notify before tasks are due</p>
+                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify before tasks are due</p>
                 </div>
                 <Switch 
                   id="notifications-reminders" 
@@ -1200,7 +1200,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     disabled={!notificationSettings.enabled || permission !== 'granted'}
                     className="w-full h-9 text-sm"
                   />
-                  <p className="text-[10px] md:text-xs text-muted-foreground">
+                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
                     Current: {notificationSettings.reminderTime < 60 
                       ? `${notificationSettings.reminderTime} minutes` 
                       : `${Math.round(notificationSettings.reminderTime / 60)} hours`} before due date
@@ -1224,7 +1224,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   disabled={!notificationSettings.enabled || permission !== 'granted'}
                   className="w-full h-9 text-sm"
                 />
-                <p className="text-[10px] md:text-xs text-muted-foreground">
+                <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
                   How often to check for due tasks (min: 5, max: 60 minutes)
                 </p>
               </div>
@@ -1236,7 +1236,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                   <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                     <Label htmlFor="push-notif" className="text-xs md:text-sm cursor-pointer">Push Notifications</Label>
-                    <p className="text-[10px] md:text-xs text-muted-foreground">Desktop and mobile alerts</p>
+                    <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Desktop and mobile alerts</p>
                   </div>
                   <Switch 
                     id="push-notif" 
@@ -1249,7 +1249,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                   <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                     <Label htmlFor="email-notif" className="text-xs md:text-sm cursor-pointer">Email Notifications</Label>
-                    <p className="text-[10px] md:text-xs text-muted-foreground">Daily task summary emails</p>
+                    <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Daily task summary emails</p>
                   </div>
                   <Switch 
                     id="email-notif" 
@@ -1261,7 +1261,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                   <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                     <Label htmlFor="sound-notif" className="text-xs md:text-sm cursor-pointer">Sound</Label>
-                    <p className="text-[10px] md:text-xs text-muted-foreground">Play sound for notifications</p>
+                    <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Play sound for notifications</p>
                   </div>
                   <Switch 
                     id="sound-notif" 
@@ -1282,7 +1282,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     {badgeCount}
                   </Badge>
                 </div>
-                <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
+                <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground mt-1`}>
                   {badgeCount === 1 ? NOTIFICATION_PANEL_TEXT.badge.taskNeedsAttention : NOTIFICATION_PANEL_TEXT.badge.tasksNeedAttention}
                 </p>
               </div>
@@ -1319,10 +1319,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 .filter((tag) => tag.toLowerCase() !== 'urgent')
                 .map((tag, index) => {
                   const colors = [
-                    'bg-[#B4E4CE]/30',
-                    'bg-[#E6D5F0]/30',
-                    'bg-[#FDD5B4]/30',
-                    'bg-[#C9E4F7]/30',
+                    UI_TAG_COLORS.mint.class,
+                    UI_TAG_COLORS.lavender.class,
+                    UI_TAG_COLORS.peach.class,
+                    UI_TAG_COLORS.blue.class,
                   ];
                   const bgColor = colors[index % colors.length];
                   const isProtected = isProtectedTag(tag);
@@ -2007,17 +2007,17 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               {/* Summary Stats - Moved to Top */}
               <div className="grid grid-cols-3 gap-3">
-                <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
+                <div className={`text-center p-3 ${UI_AWARD_STAT_GRADIENTS.completion.className}`}>
                   <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{earnedAwards.length}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">Earned</div>
+                  <div className={`${SETTINGS_PANEL_TEXT_SIZES.awardLabel} text-muted-foreground mt-0.5 font-medium`}>Earned</div>
                 </div>
-                <div className="text-center p-3 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/50">
-                  <div className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">{Math.round((earnedAwards.length / awards.length) * 100)}%</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">Complete</div>
+                <div className={`text-center p-3 ${UI_AWARD_STAT_GRADIENTS.earned.className}`}>
+                  <div className={`text-2xl font-bold ${UI_AWARD_STAT_GRADIENTS.completion.textGradient.className}`}>{Math.round((earnedAwards.length / awards.length) * 100)}%</div>
+                  <div className={`${SETTINGS_PANEL_TEXT_SIZES.awardLabel} text-muted-foreground mt-0.5 font-medium`}>Complete</div>
                 </div>
-                <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl border border-purple-200/50 dark:border-purple-800/50">
+                <div className={`text-center p-3 ${UI_AWARD_STAT_GRADIENTS.remaining.className}`}>
                   <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{awards.length - earnedAwards.length}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">Remaining</div>
+                  <div className={`${SETTINGS_PANEL_TEXT_SIZES.awardLabel} text-muted-foreground mt-0.5 font-medium`}>Remaining</div>
                 </div>
               </div>
 
@@ -2036,7 +2036,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <h4 className="text-sm font-semibold">Completion Milestones</h4>
                         <p className="text-xs text-muted-foreground">Track your task achievements</p>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                      <Badge variant="secondary" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} ${UI_AWARD_BADGE_COLORS.blue.light} ${UI_AWARD_BADGE_COLORS.blue.text}`}>
                         {earnedAwards.filter(ea => awards.find(a => a.id === ea.awardId)?.category === 'completion').length}/{awards.filter(a => a.category === 'completion').length}
                       </Badge>
                     </div>
@@ -2082,7 +2082,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 </div>
                                 {progress && !isEarned && (
                                   <div className="mt-2">
-                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                                    <div className={`flex items-center justify-between ${SETTINGS_PANEL_TEXT_SIZES.progressLabel} text-muted-foreground mb-1`}>
                                       <span>{progress.currentProgress} / {progress.targetProgress}</span>
                                       <span>{Math.round(progress.percentage)}%</span>
                                     </div>
@@ -2114,7 +2114,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <h4 className="text-sm font-semibold">Streak Champions</h4>
                         <p className="text-xs text-muted-foreground">Build consistency habits</p>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                      <Badge variant="secondary" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} ${UI_AWARD_BADGE_COLORS.orange.light} ${UI_AWARD_BADGE_COLORS.orange.text}`}>
                         {earnedAwards.filter(ea => awards.find(a => a.id === ea.awardId)?.category === 'streak').length}/{awards.filter(a => a.category === 'streak').length}
                       </Badge>
                     </div>
@@ -2160,7 +2160,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 </div>
                                 {progress && !isEarned && (
                                   <div className="mt-2">
-                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                                    <div className={`flex items-center justify-between ${SETTINGS_PANEL_TEXT_SIZES.progressLabel} text-muted-foreground mb-1`}>
                                       <span>{progress.currentProgress} / {progress.targetProgress} days</span>
                                       <span>{Math.round(progress.percentage)}%</span>
                                     </div>
@@ -2192,7 +2192,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <h4 className="text-sm font-semibold">Focus Masters</h4>
                         <p className="text-xs text-muted-foreground">Deep work achievements</p>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                      <Badge variant="secondary" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} ${UI_AWARD_BADGE_COLORS.purple.light} ${UI_AWARD_BADGE_COLORS.purple.text}`}>
                         {earnedAwards.filter(ea => awards.find(a => a.id === ea.awardId)?.category === 'focus').length}/{awards.filter(a => a.category === 'focus').length}
                       </Badge>
                     </div>
@@ -2210,7 +2210,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             className={`
                               group p-3 rounded-lg border transition-all duration-300
                               ${isEarned 
-                                ? 'bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/40 border-purple-200 dark:border-purple-800/50' 
+                                ? UI_AWARD_BADGE_COLORS.purple.activeGradient.className 
                                 : 'bg-card border-border/50 hover:border-border'
                               }
                             `}
@@ -2238,7 +2238,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 </div>
                                 {progress && !isEarned && (
                                   <div className="mt-2">
-                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                                    <div className={`flex items-center justify-between ${SETTINGS_PANEL_TEXT_SIZES.progressLabel} text-muted-foreground mb-1`}>
                                       <span>{progress.currentProgress} / {progress.targetProgress} sessions</span>
                                       <span>{Math.round(progress.percentage)}%</span>
                                     </div>
@@ -2270,7 +2270,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <h4 className="text-sm font-semibold">Special Achievements</h4>
                         <p className="text-xs text-muted-foreground">Unique accomplishments</p>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300">
+                      <Badge variant="secondary" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} ${UI_AWARD_BADGE_COLORS.pink.light} ${UI_AWARD_BADGE_COLORS.pink.text}`}>
                         {earnedAwards.filter(ea => {
                           const award = awards.find(a => a.id === ea.awardId);
                           return award?.category === 'special' || award?.category === 'speed';
@@ -2290,7 +2290,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             className={`
                               group p-3 rounded-lg border transition-all duration-300
                               ${isEarned 
-                                ? 'bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/40 dark:to-purple-950/40 border-pink-200 dark:border-pink-800/50' 
+                                ? UI_AWARD_BADGE_COLORS.pink.activeGradient.className 
                                 : 'bg-card border-border/50 hover:border-border'
                               }
                             `}
@@ -2493,7 +2493,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <div className="flex items-start gap-2">
                     <Clock className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground/80 mb-0.5">Last Database Sync</p>
+                      <p className={`${SETTINGS_PANEL_TEXT_SIZES.versionInfo} uppercase tracking-wide text-muted-foreground/80 mb-0.5`}>Last Database Sync</p>
                       <p className="text-xs font-medium">
                         {lastSync ? new Date(lastSync).toLocaleString('en-US', { 
                           month: 'short', 
@@ -2505,7 +2505,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         }) : 'Never synced'}
                       </p>
                       {lastSync && (
-                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                        <p className={`${SETTINGS_PANEL_TEXT_SIZES.versionInfo} text-muted-foreground/70 mt-0.5`}>
                           {(() => {
                             const diffMs = Date.now() - new Date(lastSync).getTime();
                             const diffMins = Math.floor(diffMs / 60000);
@@ -2525,7 +2525,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div className="p-2.5 bg-primary/5 rounded-lg border border-primary/10">
                   <div className="flex items-start gap-2">
                     <Info className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    <p className={`${SETTINGS_PANEL_TEXT_SIZES.versionInfo} text-muted-foreground leading-relaxed`}>
                       Your tasks, projects, and settings are automatically synced to the cloud in the background. All changes are saved instantly and synchronized across your devices.
                     </p>
                   </div>

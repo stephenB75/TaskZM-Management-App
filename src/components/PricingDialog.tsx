@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { motion } from "motion/react";
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
+import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import {
   SUBSCRIPTION_UI_TEXT,
   FREE_TIER_FEATURES,
@@ -413,7 +414,7 @@ export function PricingDialog({
       // Use a timeout to prevent hanging if RevenueCat is slow
       const configurePromise = configureRevenueCat(user.id);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Configuration timeout')), 5000)
+        setTimeout(() => reject(new Error('Configuration timeout')), TIMING_CONSTANTS.timeouts.configuration)
       );
       
       try {
@@ -430,7 +431,7 @@ export function PricingDialog({
       
       const purchasePromise = purchaseProSubscription('monthly');
       const purchaseTimeout = new Promise<{ success: boolean; error?: string }>((_, reject) =>
-        setTimeout(() => reject(new Error('Purchase request timed out. The payment provider may be experiencing delays. Please try again.')), 50000)
+        setTimeout(() => reject(new Error('Purchase request timed out. The payment provider may be experiencing delays. Please try again.')), TIMING_CONSTANTS.timeouts.purchase)
       );
       
       const result = await Promise.race([purchasePromise, purchaseTimeout]);
@@ -489,7 +490,7 @@ export function PricingDialog({
       // Use a timeout to prevent hanging if RevenueCat is slow
       const configurePromise = configureRevenueCat(user.id);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Configuration timeout')), 5000)
+        setTimeout(() => reject(new Error('Configuration timeout')), TIMING_CONSTANTS.timeouts.configuration)
       );
       
       try {
@@ -506,7 +507,7 @@ export function PricingDialog({
       
       const purchasePromise = purchaseProSubscription('yearly');
       const purchaseTimeout = new Promise<{ success: boolean; error?: string }>((_, reject) =>
-        setTimeout(() => reject(new Error('Purchase request timed out. The payment provider may be experiencing delays. Please try again.')), 50000)
+        setTimeout(() => reject(new Error('Purchase request timed out. The payment provider may be experiencing delays. Please try again.')), TIMING_CONSTANTS.timeouts.purchase)
       );
       
       const result = await Promise.race([purchasePromise, purchaseTimeout]);

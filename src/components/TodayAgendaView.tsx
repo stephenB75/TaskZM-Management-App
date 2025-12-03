@@ -19,7 +19,8 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
+import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -64,7 +65,7 @@ export function TodayAgendaView({
     updateTime();
     
     // Update every minute
-    const interval = setInterval(updateTime, 60000);
+    const interval = setInterval(updateTime, TIMING_CONSTANTS.intervals.timeUpdate);
     
     return () => clearInterval(interval);
   }, []);
@@ -172,7 +173,7 @@ export function TodayAgendaView({
     };
 
     // Small delay to ensure DOM is ready
-    const timer = setTimeout(scrollToCurrentTime, 100);
+    const timer = setTimeout(scrollToCurrentTime, TIMING_CONSTANTS.delays.scroll);
     return () => clearTimeout(timer);
   }, [todayTasks]);
 
@@ -407,7 +408,7 @@ export function TodayAgendaView({
         )}
         style={{
           position: 'relative',
-          zIndex: isOver ? 100 : 1, // Ensure drop zone is above other elements when dragging over
+          zIndex: isOver ? Z_INDEX.DROP_ZONE : Z_INDEX.TIMELINE_LINE, // Ensure drop zone is above other elements when dragging over
         }}
         data-tour="today-panel"
       >
@@ -437,7 +438,7 @@ export function TodayAgendaView({
           />
             {/* Current Time Indicator - Desktop only (bottom right corner of header) */}
             <div 
-              className="hidden md:block absolute bottom-2 right-6 z-50 pointer-events-none"
+              className={`hidden md:block absolute bottom-2 right-6 z-[${Z_INDEX.TIME_INDICATOR}] pointer-events-none`}
             >
               <span className="text-xs font-medium text-primary bg-background/90 dark:bg-card/90 px-2 py-1 rounded shadow-sm border border-primary/20 backdrop-blur-sm">
                 {currentTime.toLocaleTimeString("en-US", {
@@ -471,7 +472,7 @@ export function TodayAgendaView({
           >
             {todayTasks.length === 0 ? (
               <div className={cn(
-                "flex flex-col items-center justify-center py-12 text-center min-h-[300px] pointer-events-none transition-all duration-300",
+                `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
                 isOver && "scale-105"
               )}>
                 <motion.div 

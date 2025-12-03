@@ -303,3 +303,163 @@ export const UI_NOTIFICATION_BORDER_COLORS = {
   muted: 'border-l-gray-300',
 } as const;
 
+// Tag Colors (for Settings Panel and other components)
+export const UI_TAG_COLORS = {
+  mint: {
+    hex: '#B4E4CE',
+    class: 'bg-[#B4E4CE]/30',
+    fullClass: 'bg-[#B4E4CE]',
+  },
+  lavender: {
+    hex: '#E6D5F0',
+    class: 'bg-[#E6D5F0]/30',
+    fullClass: 'bg-[#E6D5F0]',
+  },
+  peach: {
+    hex: '#FDD5B4',
+    class: 'bg-[#FDD5B4]/30',
+    fullClass: 'bg-[#FDD5B4]',
+  },
+  blue: {
+    hex: '#C9E4F7',
+    class: 'bg-[#C9E4F7]/30',
+    fullClass: 'bg-[#C9E4F7]',
+  },
+} as const;
+
+// Award Badge Colors (for Settings Panel Awards section)
+export const UI_AWARD_BADGE_COLORS = {
+  blue: {
+    light: 'bg-blue-100 dark:bg-blue-900/30',
+    text: 'text-blue-700 dark:text-blue-300',
+    gradient: {
+      from: 'from-blue-50',
+      to: 'to-cyan-50',
+      darkFrom: 'dark:from-blue-950/30',
+      darkTo: 'dark:to-cyan-950/30',
+      border: 'border-blue-200/50 dark:border-blue-800/50',
+      className: 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200/50 dark:border-blue-800/50',
+    },
+    activeGradient: {
+      className: 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/40 border-blue-200 dark:border-blue-800/50',
+    },
+  },
+  orange: {
+    light: 'bg-orange-100 dark:bg-orange-900/30',
+    text: 'text-orange-700 dark:text-orange-300',
+    gradient: {
+      from: 'from-amber-50',
+      to: 'to-orange-50',
+      darkFrom: 'dark:from-amber-950/30',
+      darkTo: 'dark:to-orange-950/30',
+      border: 'border-amber-200/50 dark:border-amber-800/50',
+      className: 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200/50 dark:border-amber-800/50',
+    },
+    activeGradient: {
+      className: 'bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/40 dark:to-red-950/40 border-orange-200 dark:border-orange-800/50',
+    },
+  },
+  purple: {
+    light: 'bg-purple-100 dark:bg-purple-900/30',
+    text: 'text-purple-700 dark:text-purple-300',
+    gradient: {
+      from: 'from-purple-50',
+      to: 'to-pink-50',
+      darkFrom: 'dark:from-purple-950/30',
+      darkTo: 'dark:to-pink-950/30',
+      border: 'border-purple-200/50 dark:border-purple-800/50',
+      className: 'bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-purple-200/50 dark:border-purple-800/50',
+    },
+    activeGradient: {
+      className: 'bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/40 dark:to-pink-950/40 border-purple-200 dark:border-purple-800/50',
+    },
+  },
+  pink: {
+    light: 'bg-pink-100 dark:bg-pink-900/30',
+    text: 'text-pink-700 dark:text-pink-300',
+    gradient: {
+      from: 'from-pink-50',
+      to: 'to-purple-50',
+      darkFrom: 'dark:from-pink-950/30',
+      darkTo: 'dark:to-purple-950/30',
+      border: 'border-pink-200/50 dark:border-pink-800/50',
+      className: 'bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 border-pink-200/50 dark:border-pink-800/50',
+    },
+    activeGradient: {
+      className: 'bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/40 dark:to-purple-950/40 border-pink-200 dark:border-pink-800/50',
+    },
+  },
+} as const;
+
+// Award Stat Gradient Colors (for Settings Panel award statistics)
+export const UI_AWARD_STAT_GRADIENTS = {
+  completion: {
+    from: 'from-blue-50',
+    to: 'to-cyan-50',
+    darkFrom: 'dark:from-blue-950/30',
+    darkTo: 'dark:to-cyan-950/30',
+    border: 'border-blue-200/50 dark:border-blue-800/50',
+    className: 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl border border-blue-200/50 dark:border-blue-800/50',
+    textGradient: {
+      from: 'from-amber-600',
+      to: 'to-orange-600',
+      className: 'bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent',
+    },
+  },
+  earned: {
+    from: 'from-amber-50',
+    to: 'to-orange-50',
+    darkFrom: 'dark:from-amber-950/30',
+    darkTo: 'dark:to-orange-950/30',
+    border: 'border-amber-200/50 dark:border-amber-800/50',
+    className: 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/50',
+  },
+  remaining: {
+    from: 'from-purple-50',
+    to: 'to-pink-50',
+    darkFrom: 'dark:from-purple-950/30',
+    darkTo: 'dark:to-pink-950/30',
+    border: 'border-purple-200/50 dark:border-purple-800/50',
+    className: 'bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl border border-purple-200/50 dark:border-purple-800/50',
+  },
+} as const;
+
+// Award Function Gradient Colors (for dynamic award gradients)
+export const UI_AWARD_FUNCTION_GRADIENTS = {
+  bronze: {
+    from: '#8A7A9A',
+    to: '#6A8AAA',
+    opacity: 0.25,
+  },
+  silver: {
+    from: '#6A8AAA',
+    to: '#5A8A7A',
+    opacity: 0.25,
+  },
+} as const;
+
+// Rich Text Mark Colors (for Today Agenda and other components)
+export const UI_RICH_TEXT_MARK_COLORS = {
+  light: {
+    background: 'bg-yellow-200',
+    className: '[&_mark]:bg-yellow-200',
+  },
+  dark: {
+    background: 'bg-yellow-800',
+    className: '[&_mark]:dark:bg-yellow-800',
+  },
+  combined: {
+    className: '[&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800 [&_mark]:px-0.5 [&_mark]:rounded',
+  },
+} as const;
+
+// Inbox Avatar Gradient Colors
+export const UI_INBOX_AVATAR_GRADIENTS = {
+  default: {
+    from: 'from-purple-100',
+    to: 'to-pink-100',
+    text: 'text-purple-700',
+    className: 'bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700',
+  },
+} as const;
+

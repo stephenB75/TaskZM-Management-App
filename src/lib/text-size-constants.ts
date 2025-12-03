@@ -47,3 +47,15 @@ export const COMMON_TEXT_SIZES = {
   labelSmall: TEXT_SIZES.xs8,
 } as const;
 
+// Settings Panel specific text sizes
+export const SETTINGS_PANEL_TEXT_SIZES = {
+  helper: TEXT_SIZES.responsive.xs10_md_xs, // text-[10px] md:text-xs - Most common
+  helperStatic: TEXT_SIZES.xs10, // text-[10px] - Static helper text
+  badge: TEXT_SIZES.xs10, // text-[10px] - Badge text
+  label: TEXT_SIZES.xs10, // text-[10px] - Label text
+  small: TEXT_SIZES.xs11, // text-[11px] - Small text
+  versionInfo: TEXT_SIZES.xs10, // text-[10px] - Version info text
+  awardLabel: TEXT_SIZES.xs10, // text-[10px] - Award labels (Earned, Complete, Remaining)
+  progressLabel: TEXT_SIZES.xs10, // text-[10px] - Progress labels
+} as const;
+

@@ -29,6 +29,7 @@ import {
 } from "./ui/select";
 import { cn } from "../lib/utils";
 import { UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
+import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import type { Task } from "../types";
 import {
   NOTIFICATION_STORAGE_KEYS,
@@ -152,7 +153,7 @@ export function NotificationsPanel() {
 
     // Tasks due soon (check both dueDate and scheduledDate)
     if (settings.dueDateReminders) {
-      const reminderTime = new Date(now.getTime() + settings.reminderTime * 60 * 1000);
+      const reminderTime = new Date(now.getTime() + settings.reminderTime * TIMING_CONSTANTS.timeConversions.minutesToMs);
       
       tasks
         .filter(task => {
@@ -178,7 +179,7 @@ export function NotificationsPanel() {
           if (!dateToUse) return;
           
           const targetDate = new Date(dateToUse);
-          const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
+          const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / TIMING_CONSTANTS.timeConversions.minutesToMs);
           
           // Distinguish between "due now" (within 5 minutes) and "upcoming" (more than 5 minutes away)
           const isDueNow = timeUntil <= 5;

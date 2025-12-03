@@ -361,10 +361,66 @@ export const Z_INDEX = {
   APP_TOUR: 10000, // z-[10000] - Used in AppTour overlay
   DROP_ZONE: 100, // z-100 - Used in TodayAgendaView for drop zone overlay
   TIME_INDICATOR: 50, // z-50 - Used in TodayAgendaView for current time indicator
+  DRAG_DROP: 99999, // z-99999 - Used in DragDropContext for drag overlay
+  NAVIGATION_MENU: 1, // z-[1] - Used in navigation-menu component
 } as const;
 
 // Max Height Constants
 export const MAX_HEIGHT = {
   SELECT: 60, // max-h-60 - Used in TaskDialog for SelectContent
+} as const;
+
+// Dialog Dimensions
+export const DIALOG_DIMENSIONS = {
+  taskDialog: {
+    maxWidth: 'max-w-3xl lg:max-w-4xl',
+    maxHeight: 'max-h-[90vh]',
+    width: 'w-[95vw] sm:w-full',
+    className: 'max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full',
+  },
+  pricingDialog: {
+    maxWidth: 'max-w-[95vw] sm:max-w-[90vw] md:max-w-[850px]',
+    maxHeight: 'max-h-[95vh]',
+    className: 'max-w-[95vw] sm:max-w-[90vw] md:max-w-[850px] max-h-[95vh] overflow-y-auto p-0 md:p-0',
+  },
+  aiRecommendation: {
+    maxWidth: 'max-w-2xl',
+    maxHeight: 'max-h-[80vh]',
+    scrollArea: 'max-h-[50vh]',
+    className: 'max-w-2xl max-h-[80vh]',
+  },
+} as const;
+
+// Component Dimensions
+export const COMPONENT_DIMENSIONS = {
+  settingsPanel: {
+    logoWidth: 'w-[120px]',
+  },
+  notificationsPanel: {
+    selectWidth: 'w-full sm:w-[180px]',
+  },
+  taskDialog: {
+    minWidth: {
+      small: 'min-w-[70px]',
+      medium: 'sm:min-w-[90px]',
+      combined: 'min-w-[70px] sm:min-w-[90px]',
+    },
+    buttonMinWidth: 'min-w-[140px]',
+  },
+  todayAgenda: {
+    dropZoneMinHeight: 'min-h-[400px]',
+    emptyStateMinHeight: 'min-h-[300px]',
+  },
+  appTour: {
+    imageMaxHeight: {
+      mobile: 'max-h-[400px]',
+      tablet: 'sm:max-h-[500px]',
+      desktop: 'md:max-h-[600px]',
+      combined: 'max-h-[400px] sm:max-h-[500px] md:max-h-[600px]',
+    },
+  },
+  aiRecommendation: {
+    containerHeight: 'h-[calc(100vh-8rem)]',
+  },
 } as const;
 
