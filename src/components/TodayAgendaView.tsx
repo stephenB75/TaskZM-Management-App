@@ -605,7 +605,7 @@ export function TodayAgendaView({
                                   className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
                                   style={{
                                     backgroundColor: UI_GRADIENT_COLORS.status.success.from,
-                                    color: actualTheme === 'dark' ? '#10b981' : '#065f46', // green-500 for dark, green-800 for light
+                                    color: actualTheme === 'dark' ? UI_TODAY_AGENDA_STATUS_COLORS.success.text.light : UI_TODAY_AGENDA_STATUS_COLORS.success.text.dark,
                                   }}
                                 >
                                   {TODAY_AGENDA_TEXT.nextUp}

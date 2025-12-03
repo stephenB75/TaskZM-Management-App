@@ -31,6 +31,8 @@ import { AppHeader } from './AppHeader';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import taskzmLogo from '../assets/taskzm-logo.png';
+import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS } from '../lib/ui-colors';
+import { COMMON_TEXT_SIZES } from '../lib/text-size-constants';
 import {
   SETTINGS_PANEL_MOBILE_HEADER_SPACER,
   SETTINGS_PANEL_BOTTOM_PADDING_MOBILE,
@@ -302,7 +304,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+    <div className={`h-full flex flex-col ${UI_SETTINGS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}>
       <AppHeader
         title="Settings"
         panelOpen={true}
@@ -356,7 +358,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* User Profile */}
         <AccordionItem 
           value="user-profile" 
-          className="border rounded-lg bg-gradient-to-br from-[#E8F5F1]/50 to-[#F3E8FF]/50 dark:from-gray-800/30 dark:to-gray-700/30 md:my-4"
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.profile.className} dark:from-gray-800/30 dark:to-gray-700/30 md:my-4`}
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -474,7 +476,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Subscription */}
         <AccordionItem 
           value="subscription" 
-          className="border rounded-lg bg-gradient-to-br from-white/80 to-[#F3E8FF]/60 dark:from-gray-800/50 dark:to-gray-700/50 md:my-4"
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.subscription.className} dark:from-gray-800/50 dark:to-gray-700/50 md:my-4`}
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -489,7 +491,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE }} className="text-primary" />
               <span>{SUBSCRIPTION_UI_TEXT.settings.sectionTitle}</span>
               {subscription.tier === 'pro' && (
-                <Badge className="bg-[#D4C5F9] text-gray-800 border-[#D4C5F9]" style={{ marginLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL }}>
+                <Badge className={`${UI_SETTINGS_BADGE_COLORS.primaryClass} text-gray-800 ${UI_SETTINGS_BADGE_COLORS.primaryBorderClass}`} style={{ marginLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL }}>
                   <Sparkles style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
                   {SUBSCRIPTION_UI_TEXT.settings.proBadge}
                 </Badge>
@@ -537,7 +539,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
                 <Badge 
                   variant={(subscription.status || 'active') === 'active' ? 'default' : 'secondary'}
-                  className={(subscription.status || 'active') === 'active' ? 'bg-[#B5E8D3] text-gray-800 border-[#B5E8D3]' : ''}
+                  className={(subscription.status || 'active') === 'active' ? `${UI_SETTINGS_BADGE_COLORS.subscriptionClass} text-gray-800 ${UI_SETTINGS_BADGE_COLORS.subscriptionBorderClass}` : ''}
                 >
                   {subscription.status 
                     ? subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1)
@@ -591,7 +593,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.aiScheduler && (
-                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -608,7 +610,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.taskHours}
                     </span>
                     {!features.taskHours && (
-                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -631,7 +633,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.analytics && (
-                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -648,7 +650,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.pomodoroTimer}
                     </span>
                     {!features.pomodoroTimer && (
-                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -665,7 +667,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.teamCollaboration}
                     </span>
                     {!features.teamFeatures && (
-                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -682,7 +684,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.calendarSync}
                     </span>
                     {!features.calendarSync && (
-                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -699,7 +701,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.autoTaskRollover}
                     </span>
                     {!features.taskRollover && (
-                      <Badge variant="outline" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground border-0" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -710,9 +712,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               {subscription.tier === 'free' && (
                 <>
                   <Separator />
-                  <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#C9E4F7]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
+                  <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
                     <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
-                      <Sparkles className="text-[#D4C5F9] flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
+                      <Sparkles className={`${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass} flex-shrink-0`} style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                       <div>
                         <p className="mb-1" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.upgradeToPro}</p>
                         <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
@@ -722,7 +724,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     </div>
                     <Button 
                       size="sm" 
-                      className="w-full bg-[#D4C5F9] hover:bg-[#D4C5F9]/90 text-gray-800"
+                      className={`w-full ${UI_SETTINGS_BADGE_COLORS.primaryClass} ${UI_SETTINGS_BADGE_COLORS.primaryHoverClass} text-gray-800`}
                       onClick={() => setShowPricingDialog(true)}
                     >
                       <Sparkles style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
@@ -817,13 +819,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Calendar Integration */}
-        <AccordionItem value="calendar" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-gradient-to-br from-[#B4E4FF]/40 to-[#E0BBE4]/40 dark:from-blue-900/25 dark:to-purple-900/25 my-2 sm:my-1.5 md:my-4" data-tour="calendar-integration">
+        <AccordionItem value="calendar" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.calendar.className} dark:from-blue-900/25 dark:to-purple-900/25 my-2 sm:my-1.5 md:my-4`} data-tour="calendar-integration">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-primary" />
               <span>Calendar Integration</span>
               {!features.calendarSync && (
-                <Badge variant="secondary" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground">
+                <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
                   PRO
                 </Badge>
               )}
@@ -835,9 +837,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <p className="text-sm text-muted-foreground">
                   Sync your tasks with Google, Outlook, and Apple Calendar with TaskZM Pro
                 </p>
-                <div className="p-4 border rounded-lg bg-gradient-to-br from-[#D4C5F9]/10 to-[#C9E4F7]/10 dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5">
+                <div className={`p-4 border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Lock className="w-4 h-4 text-[#D4C5F9]" />
+                    <Lock className={`w-4 h-4 ${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass}`} />
                     <span className="text-sm">Pro Feature</span>
                   </div>
                 <p className="text-xs text-muted-foreground mb-3">
@@ -849,7 +851,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <Button 
                     size="sm" 
                     onClick={() => setShowPricingDialog(true)}
-                    className="bg-[#D4C5F9] hover:bg-[#D4C5F9]/90 w-full"
+                    className={`${UI_SETTINGS_BADGE_COLORS.primaryClass} ${UI_SETTINGS_BADGE_COLORS.primaryHoverClass} w-full`}
                   >
                     <Sparkles className="w-3 h-3 mr-1.5" />
                     {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
@@ -973,7 +975,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Notifications */}
-        <AccordionItem value="notifications" className="border rounded-lg px-3 md:px-4 py-2 sm:py-0 md:py-0 bg-gradient-to-br from-[#FFDAB9]/40 to-[#E8F5F1]/40 dark:from-orange-900/20 dark:to-green-900/20 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="notifications" className={`border rounded-lg px-3 md:px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.notifications.className} dark:from-orange-900/20 dark:to-green-900/20 my-2 sm:my-1.5 md:my-4`}>
           <AccordionTrigger className="hover:no-underline py-3 md:py-4">
             <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
               <Bell className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
@@ -1289,7 +1291,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Tags Management */}
-        <AccordionItem value="tags" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-gradient-to-br from-[#E0BBE4]/35 to-[#D4C5F9]/35 dark:from-purple-800/25 dark:to-indigo-800/25 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="tags" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.tags.className} dark:from-purple-800/25 dark:to-indigo-800/25 my-2 sm:my-1.5 md:my-4`}>
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Tag className="w-5 h-5 text-primary" />
@@ -1350,13 +1352,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* AI Settings */}
-        <AccordionItem value="ai-settings" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-gradient-to-br from-[#C9E4F7]/35 to-[#B4E4FF]/35 dark:from-cyan-900/25 dark:to-blue-900/25 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="ai-settings" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.aiSettings.className} dark:from-cyan-900/25 dark:to-blue-900/25 my-2 sm:my-1.5 md:my-4`}>
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Sparkles className="w-5 h-5 text-primary" />
               <span>AI Scheduling</span>
               {!features.aiScheduler && (
-                <Badge variant="secondary" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground">
+                <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
                   PRO
                 </Badge>
               )}
@@ -1369,7 +1371,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   Configure AI-powered automatic task scheduling that intelligently organizes your tasks.
                 </p>
                 
-                <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#B4E4CE]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
+                <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
                   <div className="space-y-2">
                     <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
@@ -1382,7 +1384,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   <Button 
                     onClick={() => setShowPricingDialog(true)}
-                    className="w-full mt-3 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] hover:opacity-90"
+                    className={`w-full mt-3 ${UI_SETTINGS_BADGE_COLORS.gradientClass} hover:opacity-90`}
                   >
                     {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
@@ -1493,7 +1495,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Date, Time & Theme */}
-        <AccordionItem value="datetime" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-gradient-to-br from-[#F3E8FF]/45 to-[#FFDAB9]/45 dark:from-violet-900/25 dark:to-orange-900/25 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="datetime" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.datetime.className} dark:from-violet-900/25 dark:to-orange-900/25 my-2 sm:my-1.5 md:my-4`}>
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-primary" />
@@ -1565,13 +1567,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Task Rollover */}
-        <AccordionItem value="rollover" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-gradient-to-br from-[#E8F5F1]/40 to-[#C9E4F7]/40 dark:from-green-900/25 dark:to-teal-900/25 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="rollover" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.rollover.className} dark:from-green-900/25 dark:to-teal-900/25 my-2 sm:my-1.5 md:my-4`}>
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <RotateCcw className="w-5 h-5 text-primary" />
               <span>Task Rollover</span>
               {!features.taskRollover && (
-                <Badge variant="secondary" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground">
+                <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
                   PRO
                 </Badge>
               )}
@@ -1584,7 +1586,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   Automatically move incomplete tasks to the next day, ensuring nothing falls through the cracks.
                 </p>
                 
-                <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#B4E4CE]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
+                <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
                   <div className="space-y-2">
                     <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
@@ -1596,7 +1598,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   <Button 
                     onClick={() => setShowPricingDialog(true)}
-                    className="w-full mt-3 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] hover:opacity-90"
+                    className={`w-full mt-3 ${UI_SETTINGS_BADGE_COLORS.gradientClass} hover:opacity-90`}
                   >
                     {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
@@ -1644,13 +1646,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Task Category Hours */}
-        <AccordionItem value="hours" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-gradient-to-br from-[#FFDAB9]/35 to-[#E0BBE4]/35 dark:from-amber-900/25 dark:to-pink-900/25 my-2 sm:my-1.5 md:my-4">
+        <AccordionItem value="hours" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.hours.className} dark:from-amber-900/25 dark:to-pink-900/25 my-2 sm:my-1.5 md:my-4`}>
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Briefcase className="w-5 h-5 text-primary" />
               <span>Task Category Hours</span>
               {!features.taskHours && (
-                <Badge variant="secondary" className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground">
+                <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
                   PRO
                 </Badge>
               )}
@@ -1663,7 +1665,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   Set preferred working hours for different task categories (Work, Personal, Projects) with separate weekday and weekend schedules.
                 </p>
                 
-                <div className="bg-gradient-to-br from-[#D4C5F9]/10 to-[#B4E4CE]/10 border border-[#D4C5F9]/20 rounded-lg p-4">
+                <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
                   <div className="space-y-2">
                     <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
@@ -1675,7 +1677,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   <Button 
                     onClick={() => setShowPricingDialog(true)}
-                    className="w-full mt-3 bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] hover:opacity-90"
+                    className={`w-full mt-3 ${UI_SETTINGS_BADGE_COLORS.gradientClass} hover:opacity-90`}
                   >
                     {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
@@ -1717,7 +1719,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#B4E4CE]" />
+                    <div className={`w-3 h-3 rounded-full ${UI_SETTINGS_BADGE_COLORS.category.mintClass}`} />
                     <Label className="text-sm font-medium">Work Tasks</Label>
                   </div>
                   <Switch 
@@ -1797,7 +1799,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#E6D5F0]" />
+                    <div className={`w-3 h-3 rounded-full ${UI_SETTINGS_BADGE_COLORS.category.lavenderClass}`} />
                     <Label className="text-sm font-medium">Personal Tasks</Label>
                   </div>
                   <Switch 
@@ -1877,7 +1879,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#FDD5B4]" />
+                    <div className={`w-3 h-3 rounded-full ${UI_SETTINGS_BADGE_COLORS.category.peachClass}`} />
                     <Label className="text-sm font-medium">Project Tasks</Label>
                   </div>
                   <Switch 
@@ -1987,7 +1989,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Awards & Achievements */}
-        <AccordionItem value="awards" className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 bg-gradient-to-br from-[#D4C5F9]/40 to-[#FFDAB9]/40 dark:from-purple-900/30 dark:to-yellow-900/30 my-2 sm:my-1.5 md:my-4" data-tour="awards-section">
+        <AccordionItem value="awards" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.awards.className} dark:from-purple-900/30 dark:to-yellow-900/30 my-2 sm:my-1.5 md:my-4`} data-tour="awards-section">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
               <Trophy className="w-5 h-5 text-primary" />

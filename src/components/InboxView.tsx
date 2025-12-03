@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
+import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
@@ -299,7 +300,7 @@ export function InboxView() {
 
   return (
     <div
-      className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900"
+      className={`h-full flex flex-col ${UI_INBOX_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}
       data-tour="inbox-panel"
     >
       <AppHeader
@@ -315,7 +316,7 @@ export function InboxView() {
           <div className="flex items-center gap-1.5">
             <Button
               onClick={handleScheduleAll}
-              className="rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] hover:from-[#C9E4F7] hover:to-[#E6D5F0] px-2.5 sm:px-3"
+              className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2.5 sm:px-3`}
               size="sm"
               disabled={unscheduledTasks.length === 0}
             >
@@ -355,7 +356,7 @@ export function InboxView() {
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <Card className="p-4 bg-gradient-to-br from-[#C9E4F7]/30 to-[#B8E6D5]/30 border-primary/20">
+                  <Card className={`p-4 ${UI_INBOX_GRADIENTS.card.className} border-primary/20`}>
                     <div className="flex gap-2">
                       <Input
                         placeholder="Quick add task..."
@@ -490,7 +491,7 @@ export function InboxView() {
                       exit={{ opacity: 0, scale: 0.95 }}
                       className="flex flex-col items-center justify-center py-16 px-4 text-center"
                     >
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center mb-6 shadow-lg">
+                      <div className={`w-24 h-24 rounded-full ${UI_INBOX_GRADIENTS.emptyState.className} flex items-center justify-center mb-6 shadow-lg`}>
                         <Inbox className="w-12 h-12 text-primary" />
                       </div>
                       <h3 className="text-xl mb-2">

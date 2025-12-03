@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { cn } from "../lib/utils";
+import { UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
 import type { Task } from "../types";
 import {
   NOTIFICATION_STORAGE_KEYS,
@@ -413,7 +414,7 @@ export function NotificationsPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+    <div className={`h-full flex flex-col ${UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}>
       <AppHeader
         title={NOTIFICATION_PANEL_TEXT.title}
         panelOpen={true}

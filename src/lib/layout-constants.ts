@@ -359,6 +359,8 @@ export const Z_INDEX = {
   DROPDOWN: 9999, // z-[9999] - Used in Team/Folder panels dropdowns
   CONFETTI: 9999, // z-[9999] - Used in Confetti component
   APP_TOUR: 10000, // z-[10000] - Used in AppTour overlay
+  DROP_ZONE: 100, // z-100 - Used in TodayAgendaView for drop zone overlay
+  TIME_INDICATOR: 50, // z-50 - Used in TodayAgendaView for current time indicator
 } as const;
 
 // Max Height Constants
