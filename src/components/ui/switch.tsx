@@ -73,7 +73,7 @@ function Switch({
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      {/* Sliding thumb - standard toggle pattern */}
+      {/* Sliding thumb - circular (pill-shaped container, circular thumb) */}
       <span
         className={cn(
           "pointer-events-none absolute inline-block rounded-full shadow-md ring-0 transition-transform duration-200 ease-in-out",
@@ -81,12 +81,15 @@ function Switch({
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
         style={{
-          height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
-          width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
-          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`,
+          // Circular thumb: use smaller dimension for both width and height to make it perfectly circular
+          height: `${Math.min(TOGGLE_SWITCH_DIMENSIONS.thumb.height, TOGGLE_SWITCH_DIMENSIONS.thumb.width)}px`,
+          width: `${Math.min(TOGGLE_SWITCH_DIMENSIONS.thumb.height, TOGGLE_SWITCH_DIMENSIONS.thumb.width)}px`,
+          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - Math.min(TOGGLE_SWITCH_DIMENSIONS.thumb.height, TOGGLE_SWITCH_DIMENSIONS.thumb.width)) / 2}px`,
+          left: `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
+          // Calculate checked position: container width - thumb size - padding
           transform: isChecked 
-            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px)` 
-            : `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px)`,
+            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.container.width - Math.min(TOGGLE_SWITCH_DIMENSIONS.thumb.height, TOGGLE_SWITCH_DIMENSIONS.thumb.width) - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked * 2}px)` 
+            : `translateX(0px)`,
         }}
         aria-hidden="true"
       />

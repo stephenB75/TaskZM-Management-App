@@ -77,8 +77,11 @@ function CheckboxSwitch({
 
   const { width, height, thumbHeight, thumbWidth, thumbOffset } = getDimensions();
 
-  // Calculate transform translateX value for checked state
-  const translateXValue = width - thumbWidth - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked;
+  // Circular thumb: use smaller dimension for both width and height to make it perfectly circular
+  const circularThumbSize = Math.min(thumbHeight, thumbWidth);
+  
+  // Calculate transform translateX value for checked state: container width - thumb size - padding on both sides
+  const translateXValue = width - circularThumbSize - (TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked * 2);
 
   return (
     <label 
@@ -116,7 +119,7 @@ function CheckboxSwitch({
         }}
         aria-hidden="true"
       />
-      {/* Sliding thumb - standard toggle pattern */}
+      {/* Sliding thumb - circular (pill-shaped container, circular thumb) */}
       <span
         className={cn(
           "pointer-events-none absolute inline-block rounded-full shadow-md ring-0 transition-transform duration-200 ease-in-out",
@@ -124,10 +127,12 @@ function CheckboxSwitch({
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
         style={{
-          height: `${thumbHeight}px`,
-          width: `${thumbWidth}px`,
-          top: `${(height - thumbHeight) / 2}px`,
-          transform: isChecked ? `translateX(${translateXValue}px)` : `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px)`,
+          // Circular thumb: use smaller dimension for both width and height
+          height: `${circularThumbSize}px`,
+          width: `${circularThumbSize}px`,
+          top: `${(height - circularThumbSize) / 2}px`,
+          left: `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
+          transform: isChecked ? `translateX(${translateXValue}px)` : `translateX(0px)`,
         }}
         aria-hidden="true"
       />
