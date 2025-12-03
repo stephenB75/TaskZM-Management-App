@@ -766,6 +766,11 @@ iframe[src*="pay.stripe.com"] {
   display: block !important;
   vertical-align: top !important;
   
+  /* CRITICAL: Remove any spacing that could affect form field layout */
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 0 !important;
+  
   /* CRITICAL: Allow scrolling inside iframe for form content */
   overflow: visible !important;
   
@@ -894,13 +899,46 @@ iframe[src*="pay.stripe.com"] {
   pointer-events: auto !important;
 }
 
-/* Ensure parent elements don't block iframe interaction */
+/* Ensure parent elements don't block iframe interaction and remove all spacing */
 div:has(> iframe[src*="stripe"]),
 div:has(> iframe[src*="checkout"]),
-div:has(> iframe[src*="revenuecat"]) {
+div:has(> iframe[src*="revenuecat"]),
+div:has(> iframe[data-payment-form]),
+div:has(> iframe[data-stripe-element]),
+div:has(> iframe[data-payment-element]) {
   pointer-events: auto !important;
   margin: 0 !important;
   padding: 0 !important;
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 0 !important;
+  display: block !important;
+}
+
+/* Remove spacing from any wrapper divs around payment forms */
+div > div:has(> iframe[src*="stripe"]),
+div > div:has(> iframe[src*="checkout"]),
+div > div:has(> iframe[src*="revenuecat"]),
+div > div:has(> iframe[data-payment-form]),
+div > div:has(> iframe[data-stripe-element]),
+div > div:has(> iframe[data-payment-element]) {
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 0 !important;
+}
+
+/* Remove spacing from flex/grid containers that might wrap payment forms */
+.flex:has(> iframe[src*="stripe"]),
+.flex:has(> iframe[src*="checkout"]),
+.flex:has(> iframe[src*="revenuecat"]),
+.grid:has(> iframe[src*="stripe"]),
+.grid:has(> iframe[src*="checkout"]),
+.grid:has(> iframe[src*="revenuecat"]) {
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 0 !important;
 }
 
 /* Payment form loading spinner overlay */
