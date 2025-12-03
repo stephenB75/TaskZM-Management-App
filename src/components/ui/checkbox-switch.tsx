@@ -39,13 +39,13 @@ function CheckboxSwitch({
     onCheckedChange?.(newChecked);
   };
 
-  // Extract width and height from className if provided, otherwise use defaults
+  // Extract width and height from className if provided, otherwise use defaults matching Switch component
   const getDimensions = () => {
     // Check if className contains size overrides (e.g., "h-6 w-11" or "h-7 w-12")
     const sizeMatch = className?.match(/(?:^|\s)(?:h-(\d+)|w-(\d+))/g);
     if (sizeMatch) {
-      let width = 44;
-      let height = 24;
+      let width = 48; // Default w-12 (48px) to match Switch component
+      let height = 28; // Default h-7 (28px) to match Switch component
       sizeMatch.forEach(match => {
         if (match.includes('w-')) {
           const wMatch = match.match(/w-(\d+)/);
@@ -56,24 +56,35 @@ function CheckboxSwitch({
           if (hMatch) height = parseInt(hMatch[1]) * 4; // Convert Tailwind units to px
         }
       });
-      // Calculate thumb size and offset
-      const thumbSize = height - 4; // 20px for standard 24px height
-      const thumbOffset = width - thumbSize - 2; // Move thumb to right with 2px padding
-      return { width, height, thumbSize, thumbOffset };
+      // Calculate thumb size and offset to match Switch component
+      // Thumb is h-4 w-6 (16px height, 24px width) in Switch component
+      const thumbHeight = 16; // h-4
+      const thumbWidth = 24; // w-6
+      // Offset calculation: width - thumbWidth - 2px padding on right, or 0.5 (2px) on left
+      const thumbOffset = width - thumbWidth - 2; // 48 - 24 - 2 = 22px when checked
+      return { width, height, thumbHeight, thumbWidth, thumbOffset };
     }
-    return { width: 44, height: 24, thumbSize: 20, thumbOffset: 22 };
+    // Default dimensions matching Switch component: h-7 w-12
+    return { width: 48, height: 28, thumbHeight: 16, thumbWidth: 24, thumbOffset: 22 };
   };
 
-  const { width, height, thumbSize, thumbOffset } = getDimensions();
-  // Rounded rectangle: use 12px border radius (half of standard height) for significantly rounded corners
-  // This creates a rounded rectangle appearance, not a true pill
-  const borderRadius = 12;
+  const { width, height, thumbHeight, thumbWidth, thumbOffset } = getDimensions();
 
   return (
-    <label className={cn("relative inline-block", className)} style={{
-      width: `${width}px`,
-      height: `${height}px`,
-    }}>
+    <label 
+      className={cn(
+        "relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "touch-manipulation select-none",
+        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+        className
+      )}
+      style={{
+        width: `${width}px`,
+        height: `${height}px`,
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
       <input
         id={id}
         type="checkbox"
@@ -84,29 +95,28 @@ function CheckboxSwitch({
       />
       <div 
         className={cn(
-          "absolute inset-0 transition-colors duration-200 cursor-pointer",
-          "peer-checked:bg-primary dark:peer-checked:bg-primary peer-unchecked:bg-gray-300 dark:peer-unchecked:bg-gray-600",
+          "absolute inset-0 rounded-full transition-colors duration-200 ease-in-out",
+          isChecked ? "bg-primary dark:bg-primary" : "bg-[var(--switch-background)] dark:bg-gray-600",
           "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
           "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
         )}
         style={{
           width: `${width}px`,
           height: `${height}px`,
-          borderRadius: `${borderRadius}px`, // Rounded rectangle with significantly rounded corners
         }}
       >
-        <div 
+        {/* Sliding thumb - pill shaped, matching Switch component */}
+        <span
           className={cn(
-            "absolute bg-white dark:bg-gray-200 shadow-md transition-transform duration-200"
+            "absolute block bg-white dark:bg-gray-200 shadow-md transition-transform duration-200 ease-in-out rounded-full"
           )}
           style={{
-            width: `${thumbSize}px`,
-            height: `${thumbSize}px`,
-            top: '2px',
-            left: '2px',
-            borderRadius: '50%', // Perfectly circular thumb
-            transform: isChecked ? `translateX(${thumbOffset}px)` : 'translateX(0)',
+            width: `${thumbWidth}px`,
+            height: `${thumbHeight}px`,
+            top: `${(height - thumbHeight) / 2}px`, // Center vertically
+            left: isChecked ? `${thumbOffset}px` : '2px', // 2px padding when unchecked, calculated offset when checked
           }}
+          aria-hidden="true"
         />
       </div>
     </label>
