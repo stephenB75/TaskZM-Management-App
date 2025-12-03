@@ -28,7 +28,7 @@ import { motion } from "motion/react";
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
-import { UI_PRICING_DIALOG_COLORS } from "../lib/ui-colors";
+import { UI_PRICING_DIALOG_COLORS, UI_PRICING_GRADIENT_COLORS } from "../lib/ui-colors";
 import { PRICING_DIALOG_TEXT_SIZES } from "../lib/text-size-constants";
 import {
   SUBSCRIPTION_UI_TEXT,
