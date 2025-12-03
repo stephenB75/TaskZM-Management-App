@@ -81,14 +81,14 @@ function Switch({
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
         style={{
-          // Circular thumb: perfectly circular, sized to fit container with padding
+          // Circular thumb: perfectly circular, centered vertically and horizontally with proper padding
           height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
           width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
           top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`,
           left: `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
-          // Calculate checked position: container width - thumb width - padding on right
+          // Transform to checked position: move from left (2px) to right (32px) = 30px translation
           transform: isChecked 
-            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.container.width - TOGGLE_SWITCH_DIMENSIONS.thumb.width - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked * 2}px)` 
+            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px)` 
             : `translateX(0px)`,
         }}
         aria-hidden="true"
