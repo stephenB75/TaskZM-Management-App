@@ -229,15 +229,16 @@ export function BottomNav({
                 />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span 
-                    className="absolute text-white font-bold rounded-full flex items-center justify-center border-white" 
+                    className="absolute text-white font-bold rounded-full flex items-center justify-center border-white z-30 shadow-lg" 
                     style={{ 
                       backgroundColor: COLOR_BADGE_RED,
                       fontSize: NAV_BAR_BADGE_TEXT_SIZE,
                       width: NAV_BAR_BADGE_SIZE,
                       height: NAV_BAR_BADGE_SIZE,
                       borderWidth: NAV_BAR_BADGE_BORDER_WIDTH,
-                      top: NAV_BAR_BADGE_TOP_OFFSET,
-                      right: NAV_BAR_BADGE_RIGHT_OFFSET,
+                      top: '0px', // Position at top of icon container
+                      right: '0px', // Position at right edge of icon container
+                      transform: 'translate(25%, -25%)', // Shift badge outward to be clearly visible in front of icon
                     }}
                   >
                     {item.badge > 9 ? "9+" : item.badge}
