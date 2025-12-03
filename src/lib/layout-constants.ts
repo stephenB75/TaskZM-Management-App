@@ -431,11 +431,11 @@ export const TOGGLE_SWITCH_DIMENSIONS = {
     height: 20, // Reduced from 28px to 20px for better thumb fit
   },
   thumb: {
-    width: 24, // w-6 = 24px
-    height: 16, // h-4 = 16px
+    width: 16, // Reduced to match container height better
+    height: 16, // Circular thumb - same as width
   },
   thumbOffset: {
-    checked: 22, // translate-x-[22px] = 22px (48px - 24px - 2px)
+    checked: 30, // translate-x-[30px] = 30px (48px - 16px - 2px)
     unchecked: 2, // translate-x-0.5 = 2px
   },
   icon: {

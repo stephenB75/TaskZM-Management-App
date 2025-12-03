@@ -77,10 +77,10 @@ function CheckboxSwitch({
 
   const { width, height, thumbHeight, thumbWidth, thumbOffset } = getDimensions();
 
-  // Circular thumb: use smaller dimension for both width and height to make it perfectly circular
-  const circularThumbSize = Math.min(thumbHeight, thumbWidth);
+  // Circular thumb: use thumb dimensions (now both are 16px for perfect circle)
+  const circularThumbSize = TOGGLE_SWITCH_DIMENSIONS.thumb.width; // Both width and height are now 16px
   
-  // Calculate transform translateX value for checked state: container width - thumb size - padding on both sides
+  // Calculate transform translateX value for checked state: container width - thumb width - padding on both sides
   const translateXValue = width - circularThumbSize - (TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked * 2);
 
   return (
@@ -127,7 +127,7 @@ function CheckboxSwitch({
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
         style={{
-          // Circular thumb: use smaller dimension for both width and height
+          // Circular thumb: perfectly circular, sized to fit container with padding
           height: `${circularThumbSize}px`,
           width: `${circularThumbSize}px`,
           top: `${(height - circularThumbSize) / 2}px`,

@@ -81,14 +81,14 @@ function Switch({
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
         style={{
-          // Circular thumb: use smaller dimension for both width and height to make it perfectly circular
-          height: `${Math.min(TOGGLE_SWITCH_DIMENSIONS.thumb.height, TOGGLE_SWITCH_DIMENSIONS.thumb.width)}px`,
-          width: `${Math.min(TOGGLE_SWITCH_DIMENSIONS.thumb.height, TOGGLE_SWITCH_DIMENSIONS.thumb.width)}px`,
-          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - Math.min(TOGGLE_SWITCH_DIMENSIONS.thumb.height, TOGGLE_SWITCH_DIMENSIONS.thumb.width)) / 2}px`,
+          // Circular thumb: perfectly circular, sized to fit container with padding
+          height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
+          width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
+          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`,
           left: `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
-          // Calculate checked position: container width - thumb size - padding
+          // Calculate checked position: container width - thumb width - padding on right
           transform: isChecked 
-            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.container.width - Math.min(TOGGLE_SWITCH_DIMENSIONS.thumb.height, TOGGLE_SWITCH_DIMENSIONS.thumb.width) - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked * 2}px)` 
+            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.container.width - TOGGLE_SWITCH_DIMENSIONS.thumb.width - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked * 2}px)` 
             : `translateX(0px)`,
         }}
         aria-hidden="true"
