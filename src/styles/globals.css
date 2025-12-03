@@ -629,12 +629,20 @@ iframe[data-payment-element] {
   
   /* Fix border and display */
   border: none !important;
-  border-radius: 8px !important;
+  border-radius: 0 !important;
   display: block !important;
   
-  /* CRITICAL: Remove all spacing that causes gaps between form fields */
+  /* CRITICAL: Remove ALL spacing that causes gaps between form fields */
   margin: 0 !important;
+  margin-top: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
   padding: 0 !important;
+  padding-top: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
   gap: 0 !important;
   row-gap: 0 !important;
   column-gap: 0 !important;
@@ -669,6 +677,10 @@ iframe[data-payment-element] {
   /* Remove any whitespace that could cause spacing issues */
   line-height: 0 !important;
   font-size: 0 !important;
+  
+  /* Remove any spacing from iframe element itself */
+  border-spacing: 0 !important;
+  border-collapse: collapse !important;
 }
 
 /* Fix for Stripe Checkout embedded forms - body/html level */
@@ -713,9 +725,17 @@ html[data-payment-form] {
   width: 100% !important;
   max-width: 100% !important;
   
-  /* CRITICAL: Remove all spacing that causes gaps */
+  /* CRITICAL: Remove ALL spacing that causes gaps - be very explicit */
   margin: 0 !important;
+  margin-top: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
   padding: 0 !important;
+  padding-top: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
   gap: 0 !important;
   row-gap: 0 !important;
   column-gap: 0 !important;
@@ -734,6 +754,8 @@ html[data-payment-form] {
   /* Remove any border or outline that could create spacing */
   border: none !important;
   outline: none !important;
+  border-spacing: 0 !important;
+  border-collapse: collapse !important;
 }
 
 /* RevenueCat Web Billing iframes - enhanced styling with proper spacing */
@@ -967,10 +989,31 @@ div > div:has(> iframe[data-payment-element]) {
 *:has(iframe[data-payment-form]),
 *:has(iframe[data-stripe-element]) {
   margin: 0 !important;
+  margin-top: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
   padding: 0 !important;
+  padding-top: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
   gap: 0 !important;
   row-gap: 0 !important;
   column-gap: 0 !important;
+  border-spacing: 0 !important;
+}
+
+/* Additional aggressive spacing removal for all possible wrapper combinations */
+div:has(iframe[src*="stripe"]) *,
+div:has(iframe[src*="checkout"]) *,
+div:has(iframe[src*="revenuecat"]) *,
+section:has(iframe[src*="stripe"]) *,
+section:has(iframe[src*="checkout"]) *,
+form:has(iframe[src*="stripe"]) * {
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
 }
 
 /* Payment form loading spinner overlay */
