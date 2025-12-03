@@ -283,11 +283,16 @@ export const DraggableTaskCard = React.forwardRef<
         const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
           const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
         // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
-        // For tasks under 60 minutes, cap at 2 lines
-        const isUnder60Mins = isShortTask || isMediumTask;
-        const actualLines = isUnder60Mins 
-          ? Math.min(Math.max(estimatedLines, 1), 2) // Cap at 2 lines for tasks < 60 mins
-          : Math.max(estimatedLines, 1); // Full calculation for tasks >= 60 mins
+        // For tasks under 45 minutes, cap at 1 line
+        // For tasks 45-60 minutes, cap at 2 lines
+        let actualLines: number;
+        if (isShortTask) {
+          actualLines = Math.min(Math.max(estimatedLines, 1), 1); // Cap at 1 line for tasks < 45 mins
+        } else if (isMediumTask) {
+          actualLines = Math.min(Math.max(estimatedLines, 1), 2); // Cap at 2 lines for tasks 45-60 mins
+        } else {
+          actualLines = Math.max(estimatedLines, 1); // Full calculation for tasks >= 60 mins
+        }
         const descriptionContentHeight = actualLines * lineHeight;
         // Add minimal bottom padding only when needed (0px if assigned users follow, 6px otherwise)
           const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
@@ -621,8 +626,10 @@ export const DraggableTaskCard = React.forwardRef<
             <div 
               className={cn(
                 `${TASK_CARD_TEXT_COLORS.description} leading-snug break-words ${TASK_CARD_FONT_SIZES.description} px-1.5 py-1 mt-0.5`,
-                // For tasks under 60 minutes, limit to 2 lines
-                (isShortTask || isMediumTask) && TASK_CARD_LINE_CLAMP.description.oneHour,
+                // For tasks under 45 minutes, limit to 1 line
+                isShortTask && TASK_CARD_LINE_CLAMP.description.under45mins,
+                // For tasks 45-60 minutes, limit to 2 lines
+                isMediumTask && TASK_CARD_LINE_CLAMP.description.oneHour,
                 // Reduce bottom margin when assigned users are present and no subtasks to eliminate white space
                 (task.assignedTo && task.assignedTo.length > 0 && (!task.subtasks || task.subtasks.length === 0))
                   ? "mb-0" // No bottom margin when assigned users follow directly

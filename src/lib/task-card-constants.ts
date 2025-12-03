@@ -394,8 +394,9 @@ export const TASK_CARD_WIDTHS = {
 export const TASK_CARD_LINE_CLAMP = {
   title: 'line-clamp-2',
   description: {
-    oneHour: 'line-clamp-2',
-    longer: 'line-clamp-4',
+    under45mins: 'line-clamp-1', // Tasks under 45 minutes: 1 line
+    oneHour: 'line-clamp-2', // Tasks 45-60 minutes: 2 lines
+    longer: 'line-clamp-4', // Tasks 60+ minutes: 4 lines
   },
 } as const;
 
