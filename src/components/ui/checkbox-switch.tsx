@@ -56,13 +56,18 @@ function CheckboxSwitch({
           if (hMatch) height = parseInt(hMatch[1]) * 4; // Convert Tailwind units to px
         }
       });
-      return { width, height, thumbSize: height - 4, thumbOffset: width - height + 2 };
+      // Calculate thumb size and offset
+      const thumbSize = height - 4; // 20px for standard 24px height
+      const thumbOffset = width - thumbSize - 2; // Move thumb to right with 2px padding
+      return { width, height, thumbSize, thumbOffset };
     }
-    return { width: 44, height: 24, thumbSize: 20, thumbOffset: 20 };
+    return { width: 44, height: 24, thumbSize: 20, thumbOffset: 22 };
   };
 
   const { width, height, thumbSize, thumbOffset } = getDimensions();
-  const borderRadius = height / 2; // Pill shape: half the height
+  // Rounded rectangle: use 12px border radius (half of standard height) for significantly rounded corners
+  // This creates a rounded rectangle appearance, not a true pill
+  const borderRadius = 12;
 
   return (
     <label className={cn("relative inline-block", className)} style={{
@@ -80,14 +85,14 @@ function CheckboxSwitch({
       <div 
         className={cn(
           "absolute inset-0 transition-colors duration-200 cursor-pointer",
-          "peer-checked:bg-primary dark:peer-checked:bg-primary peer-unchecked:bg-[var(--switch-background)] dark:peer-unchecked:bg-gray-600",
+          "peer-checked:bg-primary dark:peer-checked:bg-primary peer-unchecked:bg-gray-300 dark:peer-unchecked:bg-gray-600",
           "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
           "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
         )}
         style={{
           width: `${width}px`,
           height: `${height}px`,
-          borderRadius: `${borderRadius}px`, // Pill shape
+          borderRadius: `${borderRadius}px`, // Rounded rectangle with significantly rounded corners
         }}
       >
         <div 
@@ -99,7 +104,7 @@ function CheckboxSwitch({
             height: `${thumbSize}px`,
             top: '2px',
             left: '2px',
-            borderRadius: `${thumbSize / 2}px`, // Circular thumb
+            borderRadius: '50%', // Perfectly circular thumb
             transform: isChecked ? `translateX(${thumbOffset}px)` : 'translateX(0)',
           }}
         />
