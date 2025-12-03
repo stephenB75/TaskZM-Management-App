@@ -463,14 +463,14 @@ export function InboxView() {
               {/* Show Scheduled Tasks Toggle */}
               <div className={cn(
                 "flex items-center justify-between rounded-lg border",
-                "p-3", // p-3 = 12px
+                TOGGLE_SWITCH_SPACING.container.padding.allClass,
                 TOGGLE_SWITCH_COLORS.card.background.light,
                 TOGGLE_SWITCH_COLORS.card.background.dark,
                 TOGGLE_SWITCH_COLORS.card.border.light,
               )}>
-                <div className="flex items-center gap-2"> {/* gap-2 = 8px */}
+                <div className={cn("flex items-center", TOGGLE_SWITCH_SPACING.container.gapClass)}>
                   <Calendar className={cn(
-                    "w-4 h-4", // w-4 h-4 = 16px
+                    TOGGLE_SWITCH_DIMENSIONS.icon.sizeClass,
                     TOGGLE_SWITCH_COLORS.text.active.light
                   )} />
                   <Label htmlFor="show-scheduled" className={cn(

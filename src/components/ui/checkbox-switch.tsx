@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "./utils";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_ANIMATIONS } from "../../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_ANIMATIONS, TOGGLE_SWITCH_EFFECTS } from "../../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../../lib/ui-colors";
 
 interface CheckboxSwitchProps {
@@ -61,7 +61,7 @@ function CheckboxSwitch({
       // Calculate thumb size and offset to match Switch component
       const thumbHeight = TOGGLE_SWITCH_DIMENSIONS.thumb.height;
       const thumbWidth = TOGGLE_SWITCH_DIMENSIONS.thumb.width;
-      // Offset calculation: width - thumbWidth - 2px padding on right
+      // Offset calculation: width - thumbWidth - unchecked offset padding
       const thumbOffset = width - thumbWidth - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked;
       return { width, height, thumbHeight, thumbWidth, thumbOffset };
     }
@@ -82,9 +82,13 @@ function CheckboxSwitch({
       className={cn(
         "relative inline-flex items-center rounded-full transition-colors ease-in-out",
         TOGGLE_SWITCH_ANIMATIONS.durationClass,
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "focus:outline-none",
+        `focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.widthClass}`,
+        "focus-visible:ring-ring",
+        `focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.offsetClass}`,
+        "focus-visible:ring-offset-background",
         "touch-manipulation select-none",
-        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+        disabled ? `${TOGGLE_SWITCH_EFFECTS.opacity.disabledClass} cursor-not-allowed` : "cursor-pointer",
         className
       )}
       style={{
@@ -107,8 +111,10 @@ function CheckboxSwitch({
           "absolute inset-0 rounded-full transition-colors ease-in-out",
           TOGGLE_SWITCH_ANIMATIONS.durationClass,
           isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
-          "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
-          "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
+          `peer-focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.widthClass}`,
+          "peer-focus-visible:ring-ring",
+          `peer-focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.offsetClass}`,
+          `peer-disabled:${TOGGLE_SWITCH_EFFECTS.opacity.disabledClass} peer-disabled:cursor-not-allowed`
         )}
         style={{
           width: `${width}px`,
@@ -119,7 +125,7 @@ function CheckboxSwitch({
         {/* Sliding thumb - pill shaped, matching Switch component */}
         <span
           className={cn(
-            "absolute block shadow-md transition-transform ease-in-out rounded-full",
+            `absolute block ${TOGGLE_SWITCH_EFFECTS.shadow.md} transition-transform ease-in-out rounded-full`,
             TOGGLE_SWITCH_COLORS.switch.thumb.light,
             TOGGLE_SWITCH_COLORS.switch.thumb.dark,
             TOGGLE_SWITCH_ANIMATIONS.durationClass

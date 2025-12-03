@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "./utils";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_ANIMATIONS } from "../../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_ANIMATIONS, TOGGLE_SWITCH_EFFECTS } from "../../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../../lib/ui-colors";
 
 interface SwitchProps {
@@ -61,14 +61,18 @@ function Switch({
         // Pill-shaped background container
         "relative inline-flex items-center rounded-full transition-colors ease-in-out",
         TOGGLE_SWITCH_ANIMATIONS.durationClass,
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "focus:outline-none",
+        `focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.widthClass}`,
+        "focus-visible:ring-ring",
+        `focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.offsetClass}`,
+        "focus-visible:ring-offset-background",
         "touch-manipulation select-none",
         // Sizing - pill shape (slightly taller for better proportions)
         "h-7 w-12", // Using fixed Tailwind classes as dynamic classes don't work
         // Background colors - inverted for dark mode
         isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
         // Disabled state
-        disabled && "opacity-50 cursor-not-allowed",
+        disabled && `${TOGGLE_SWITCH_EFFECTS.opacity.disabledClass} cursor-not-allowed`,
         !disabled && "cursor-pointer",
         className
       )}
@@ -80,7 +84,7 @@ function Switch({
       {/* Sliding thumb - pill shaped */}
       <span
         className={cn(
-          "absolute block shadow-md transition-transform ease-in-out rounded-full",
+          `absolute block ${TOGGLE_SWITCH_EFFECTS.shadow.md} transition-transform ease-in-out rounded-full`,
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
           TOGGLE_SWITCH_ANIMATIONS.durationClass,

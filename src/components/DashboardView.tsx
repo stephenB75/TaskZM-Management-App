@@ -814,8 +814,9 @@ export function DashboardView({
             {/* View Mode Toggle - Desktop Only */}
             <div className={cn(
               "hidden md:flex items-center rounded-full border",
-              "gap-2", // gap-2 = 8px
-              "px-3 py-1.5", // px-3 = 12px, py-1.5 = 6px
+              TOGGLE_SWITCH_SPACING.container.gapClass,
+              TOGGLE_SWITCH_SPACING.container.padding.horizontalClass,
+              TOGGLE_SWITCH_SPACING.container.padding.verticalClass,
               TOGGLE_SWITCH_COLORS.container.background.light,
               TOGGLE_SWITCH_COLORS.container.background.dark,
               TOGGLE_SWITCH_COLORS.container.border.light,
@@ -823,7 +824,8 @@ export function DashboardView({
             )}>
               <Calendar
                 className={cn(
-                  "w-4 h-4 transition-colors", // w-4 h-4 = 16px
+                  TOGGLE_SWITCH_DIMENSIONS.icon.sizeClass,
+                  "transition-colors",
                   viewMode === "week"
                     ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
                     : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,
@@ -845,7 +847,7 @@ export function DashboardView({
                 onCheckedChange={(checked) =>
                   setViewMode(checked ? "month" : "week")
                 }
-                className="mx-1" // mx-1 = 4px
+                className={TOGGLE_SWITCH_SPACING.container.margin.switchClass}
               />
               <span
                 className={cn(
@@ -860,7 +862,8 @@ export function DashboardView({
               </span>
               <CalendarDays
                 className={cn(
-                  "w-4 h-4 transition-colors", // w-4 h-4 = 16px
+                  TOGGLE_SWITCH_DIMENSIONS.icon.sizeClass,
+                  "transition-colors",
                   viewMode === "month"
                     ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
                     : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,

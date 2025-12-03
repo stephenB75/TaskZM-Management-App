@@ -440,6 +440,7 @@ export const TOGGLE_SWITCH_DIMENSIONS = {
   },
   icon: {
     size: 16, // w-4 h-4 = 16px
+    sizeClass: 'w-4 h-4', // Tailwind class for icon size
   },
 } as const;
 
@@ -450,10 +451,15 @@ export const TOGGLE_SWITCH_SPACING = {
       horizontal: 12, // px-3 = 12px
       vertical: 6, // py-1.5 = 6px
       all: 12, // p-3 = 12px
+      horizontalClass: 'px-3', // Tailwind class for horizontal padding
+      verticalClass: 'py-1.5', // Tailwind class for vertical padding
+      allClass: 'p-3', // Tailwind class for all padding
     },
     gap: 8, // gap-2 = 8px
+    gapClass: 'gap-2', // Tailwind class for gap
     margin: {
       switch: 4, // mx-1 = 4px
+      switchClass: 'mx-1', // Tailwind class for switch margin
     },
   },
 } as const;
@@ -470,5 +476,22 @@ export const TOGGLE_SWITCH_TEXT_SIZES = {
 export const TOGGLE_SWITCH_ANIMATIONS = {
   duration: 200, // duration-200 = 200ms
   durationClass: 'duration-200', // Tailwind class
+} as const;
+
+// Toggle Switch Visual Effects
+export const TOGGLE_SWITCH_EFFECTS = {
+  shadow: {
+    md: 'shadow-md', // Medium shadow for thumb
+  },
+  opacity: {
+    disabled: 50, // opacity-50 = 50%
+    disabledClass: 'opacity-50', // Tailwind class
+  },
+  focusRing: {
+    width: 2, // ring-2 = 2px
+    widthClass: 'ring-2', // Tailwind class
+    offset: 2, // ring-offset-2 = 2px
+    offsetClass: 'ring-offset-2', // Tailwind class
+  },
 } as const;
 
