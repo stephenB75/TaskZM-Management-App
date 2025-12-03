@@ -76,20 +76,19 @@ function Switch({
       {/* Sliding thumb - circular (pill-shaped container, circular thumb) */}
       <span
         className={cn(
-          "pointer-events-none absolute inline-block rounded-full shadow-md ring-0 transition-transform duration-200 ease-in-out",
+          "pointer-events-none absolute rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
         style={{
-          // Circular thumb: perfectly circular, centered vertically and horizontally with proper padding
+          // Circular thumb: perfectly circular, perfectly centered
           height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
           width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
-          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`,
-          left: `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
-          // Transform to checked position: move from left (2px) to right (32px) = 30px translation
-          transform: isChecked 
-            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px)` 
-            : `translateX(0px)`,
+          top: '50%',
+          left: isChecked 
+            ? `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px` 
+            : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
+          transform: `translateY(-50%)`,
         }}
         aria-hidden="true"
       />

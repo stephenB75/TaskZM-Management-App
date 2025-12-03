@@ -122,17 +122,19 @@ function CheckboxSwitch({
       {/* Sliding thumb - circular (pill-shaped container, circular thumb) */}
       <span
         className={cn(
-          "pointer-events-none absolute inline-block rounded-full shadow-md ring-0 transition-transform duration-200 ease-in-out",
+          "pointer-events-none absolute rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
         style={{
-          // Circular thumb: perfectly circular, sized to fit container with padding
+          // Circular thumb: perfectly circular, perfectly centered
           height: `${circularThumbSize}px`,
           width: `${circularThumbSize}px`,
-          top: `${(height - circularThumbSize) / 2}px`,
-          left: `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
-          transform: isChecked ? `translateX(${translateXValue}px)` : `translateX(0px)`,
+          top: '50%',
+          left: isChecked 
+            ? `${width - circularThumbSize - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px` 
+            : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
+          transform: `translateY(-50%)`,
         }}
         aria-hidden="true"
       />
