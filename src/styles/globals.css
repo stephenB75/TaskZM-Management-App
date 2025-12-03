@@ -635,6 +635,9 @@ iframe[data-payment-element] {
   /* CRITICAL: Remove all spacing that causes gaps between form fields */
   margin: 0 !important;
   padding: 0 !important;
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 0 !important;
   
   /* Ensure proper stacking - but allow interaction */
   z-index: 1 !important;
@@ -713,6 +716,11 @@ html[data-payment-form] {
   /* CRITICAL: Remove all spacing that causes gaps */
   margin: 0 !important;
   padding: 0 !important;
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 0 !important;
+  space-y: 0 !important;
+  space-x: 0 !important;
   
   /* Remove any default spacing that could create gaps */
   line-height: 0 !important;
@@ -905,7 +913,12 @@ div:has(> iframe[src*="checkout"]),
 div:has(> iframe[src*="revenuecat"]),
 div:has(> iframe[data-payment-form]),
 div:has(> iframe[data-stripe-element]),
-div:has(> iframe[data-payment-element]) {
+div:has(> iframe[data-payment-element]),
+section:has(> iframe[src*="stripe"]),
+section:has(> iframe[src*="checkout"]),
+section:has(> iframe[src*="revenuecat"]),
+form:has(> iframe[src*="stripe"]),
+form:has(> iframe[src*="checkout"]) {
   pointer-events: auto !important;
   margin: 0 !important;
   padding: 0 !important;
