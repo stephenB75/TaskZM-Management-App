@@ -719,8 +719,6 @@ html[data-payment-form] {
   gap: 0 !important;
   row-gap: 0 !important;
   column-gap: 0 !important;
-  space-y: 0 !important;
-  space-x: 0 !important;
   
   /* Remove any default spacing that could create gaps */
   line-height: 0 !important;
@@ -948,7 +946,28 @@ div > div:has(> iframe[data-payment-element]) {
 .flex:has(> iframe[src*="revenuecat"]),
 .grid:has(> iframe[src*="stripe"]),
 .grid:has(> iframe[src*="checkout"]),
-.grid:has(> iframe[src*="revenuecat"]) {
+.grid:has(> iframe[src*="revenuecat"]),
+[class*="flex"]:has(> iframe[src*="stripe"]),
+[class*="flex"]:has(> iframe[src*="checkout"]),
+[class*="flex"]:has(> iframe[src*="revenuecat"]),
+[class*="grid"]:has(> iframe[src*="stripe"]),
+[class*="grid"]:has(> iframe[src*="checkout"]),
+[class*="grid"]:has(> iframe[src*="revenuecat"]) {
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Remove spacing from any element that contains payment form iframes */
+*:has(iframe[src*="stripe"]),
+*:has(iframe[src*="checkout"]),
+*:has(iframe[src*="revenuecat"]),
+*:has(iframe[data-payment-form]),
+*:has(iframe[data-stripe-element]) {
+  margin: 0 !important;
+  padding: 0 !important;
   gap: 0 !important;
   row-gap: 0 !important;
   column-gap: 0 !important;
