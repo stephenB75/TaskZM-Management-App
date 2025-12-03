@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { CalDAVCredentialsDialog } from '../components/CalDAVCredentialsDialog';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 
 type CalendarProvider = 'google' | 'outlook' | 'apple';
 
@@ -210,7 +211,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             setTimeout(() => {
               checkCalendarStatus();
               toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar connected successfully!`);
-            }, 500);
+            }, TIMING_CONSTANTS.animations.long);
           } else if (event.data?.type === 'calendar-oauth-error' && event.data?.provider === provider) {
             window.removeEventListener('message', messageHandler);
             clearInterval(checkPopup);
@@ -237,7 +238,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           // This prevents showing error when user successfully completes OAuth
           setTimeout(() => {
             checkCalendarStatus();
-          }, 1000);
+          }, TIMING_CONSTANTS.delays.calendarCheck);
         }
       }, 500);
 

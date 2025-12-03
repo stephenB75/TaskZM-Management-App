@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles/globals.css';
+import { TIMING_CONSTANTS } from './lib/timing-constants';
 
 // Suppress browser extension errors that are not from our code
 if (typeof window !== 'undefined') {
@@ -311,11 +312,11 @@ if (isNative) {
   hideCapacitorSplash();
   
   // Hide again after short delays to catch any late-loading Capacitor instances
-  setTimeout(hideCapacitorSplash, 0);
-  setTimeout(hideCapacitorSplash, 10);
-  setTimeout(hideCapacitorSplash, 50);
-  setTimeout(hideCapacitorSplash, 100);
-  setTimeout(hideCapacitorSplash, 200);
+  setTimeout(hideCapacitorSplash, TIMING_CONSTANTS.delays.splashScreen[0]);
+  setTimeout(hideCapacitorSplash, TIMING_CONSTANTS.delays.splashScreen[1]);
+  setTimeout(hideCapacitorSplash, 50); // Not in constants array, keeping as-is
+  setTimeout(hideCapacitorSplash, TIMING_CONSTANTS.delays.splashScreen[1]);
+  setTimeout(hideCapacitorSplash, TIMING_CONSTANTS.delays.splashScreen[1]);
   
   // Hide HTML splash when React app is ready (with longer delay for content to load)
   const hideSplashScreen = () => {
@@ -337,7 +338,7 @@ if (isNative) {
     // Wait for React to render
     requestAnimationFrame(() => {
       // Give extra time for content to load (increased from 400ms to 2500ms)
-      setTimeout(hideSplashScreen, 2500);
+      setTimeout(hideSplashScreen, TIMING_CONSTANTS.delays.splashScreen[2]);
     });
   };
   

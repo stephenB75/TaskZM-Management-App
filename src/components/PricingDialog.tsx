@@ -28,6 +28,8 @@ import { motion } from "motion/react";
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
+import { UI_PRICING_DIALOG_COLORS } from "../lib/ui-colors";
+import { PRICING_DIALOG_TEXT_SIZES } from "../lib/text-size-constants";
 import {
   SUBSCRIPTION_UI_TEXT,
   FREE_TIER_FEATURES,
@@ -407,7 +409,7 @@ export function PricingDialog({
 
       // Show immediate feedback
       toast.info('Preparing payment form...', {
-        duration: 2000,
+        duration: TIMING_CONSTANTS.animations.medium * 10, // 2 seconds (2000ms)
       });
 
       // RevenueCat should already be configured from dialog open, but ensure it's ready
@@ -426,7 +428,7 @@ export function PricingDialog({
       
       // Purchase through RevenueCat with timeout
       toast.info('Connecting to payment provider...', {
-        duration: 2000,
+        duration: TIMING_CONSTANTS.animations.medium * 10, // 2 seconds (2000ms)
       });
       
       const purchasePromise = purchaseProSubscription('monthly');
@@ -483,7 +485,7 @@ export function PricingDialog({
 
       // Show immediate feedback
       toast.info('Preparing payment form...', {
-        duration: 2000,
+        duration: TIMING_CONSTANTS.animations.medium * 10, // 2 seconds (2000ms)
       });
 
       // RevenueCat should already be configured from dialog open, but ensure it's ready
@@ -502,7 +504,7 @@ export function PricingDialog({
       
       // Purchase through RevenueCat with timeout
       toast.info('Connecting to payment provider...', {
-        duration: 2000,
+        duration: TIMING_CONSTANTS.animations.medium * 10, // 2 seconds (2000ms)
       });
       
       const purchasePromise = purchaseProSubscription('yearly');
@@ -560,17 +562,17 @@ export function PricingDialog({
         <div className="p-3 md:p-4">
           <div className="mb-3 md:mb-4">
             <DialogHeader className="text-center">
-              <DialogTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent mb-1">
+              <DialogTitle className={`text-lg md:text-xl font-bold ${UI_PRICING_DIALOG_COLORS.titleGradient.className} mb-1`}>
                 {SUBSCRIPTION_UI_TEXT.title}
               </DialogTitle>
-              <DialogDescription className="text-[11px] md:text-xs mt-1 text-muted-foreground">
+              <DialogDescription className={`${PRICING_DIALOG_TEXT_SIZES.description} mt-1 text-muted-foreground`}>
                 {SUBSCRIPTION_UI_TEXT.description}
               </DialogDescription>
             </DialogHeader>
           </div>
 
           {offeringsError && (
-            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] md:text-xs text-red-700">
+            <div className={`mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 ${PRICING_DIALOG_TEXT_SIZES.description} text-red-700`}>
               {offeringsError}
             </div>
           )}
@@ -584,17 +586,17 @@ export function PricingDialog({
               className={cn(
                 "relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 bg-white dark:bg-card hover:border-gray-300 dark:hover:border-border transition-all duration-300 shadow-md hover:shadow-lg flex flex-col",
                 subscription.tier === "free"
-                  ? "border-[#B8E6D5] ring-2 ring-[#B8E6D5]/50 dark:border-[#5A8A7A] dark:ring-[#5A8A7A]/50"
+                  ? `${UI_PRICING_DIALOG_COLORS.accentBorderClass} ring-2 ${UI_PRICING_DIALOG_COLORS.accentRingClass} ${UI_PRICING_DIALOG_COLORS.accentDarkBorderClass} ${UI_PRICING_DIALOG_COLORS.accentDarkRingClass}`
                   : "border-gray-200 dark:border-border"
               )}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-foreground mb-0.5">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
-                  <p className="text-[11px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
+                  <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
                 </div>
                 {subscription.tier === "free" && (
-                  <Badge className="bg-[#B8E6D5] text-gray-800 border-[#B8E6D5] text-[9px] md:text-[10px] px-1.5 py-0.5 shadow-sm flex-shrink-0 ml-1.5">
+                  <Badge className={`${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentTextClass} ${UI_PRICING_DIALOG_COLORS.accentBorderClass} ${PRICING_DIALOG_TEXT_SIZES.badge} px-1.5 py-0.5 shadow-sm flex-shrink-0 ml-1.5`}>
                     {SUBSCRIPTION_UI_TEXT.free.button.current}
                   </Badge>
                 )}
@@ -603,18 +605,18 @@ export function PricingDialog({
               <div className="mb-2.5">
                 <div className="flex items-baseline gap-1 mb-0.5">
                   <span className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-foreground">{SUBSCRIPTION_UI_TEXT.free.price}</span>
-                  <span className="text-[10px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
+                  <span className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
                 </div>
-                <p className="text-[10px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.free.description}</p>
+                <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.free.description}</p>
               </div>
 
               <ul className="space-y-1.5 mb-2.5 flex-1 min-h-0 overflow-y-auto">
                 {freeTierFeatures.map((feature, index) => (
                   <li key={index} className="flex items-start gap-1.5 group">
-                    <div className="flex-shrink-0 w-3.5 h-3.5 rounded-full bg-[#B8E6D5] dark:bg-[#5A8A7A] flex items-center justify-center mt-0.5">
+                    <div className={`flex-shrink-0 w-3.5 h-3.5 rounded-full ${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentDarkClass} flex items-center justify-center mt-0.5`}>
                       <feature.icon className="w-2 h-2 text-gray-800 dark:text-foreground" />
                     </div>
-                    <span className="text-[11px] md:text-xs text-gray-700 dark:text-foreground leading-snug">
+                    <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground leading-snug`}>
                       {feature.text}
                     </span>
                   </li>
@@ -624,9 +626,9 @@ export function PricingDialog({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full border-2 text-[11px] md:text-xs py-1.5 font-medium transition-all duration-200",
+                  `w-full border-2 ${PRICING_DIALOG_TEXT_SIZES.description} py-1.5 font-medium transition-all duration-200`,
                   subscription.tier === "free"
-                    ? "border-[#B8E6D5] bg-[#B8E6D5]/10 text-gray-700 dark:text-foreground cursor-default"
+                    ? `${UI_PRICING_DIALOG_COLORS.accentBorderClass} ${UI_PRICING_DIALOG_COLORS.accentBgClass} text-gray-700 dark:text-foreground cursor-default`
                     : "border-gray-300 dark:border-border text-gray-700 dark:text-foreground hover:bg-gray-50 dark:hover:bg-card"
                 )}
                 disabled={subscription.tier === "free" || isDowngrading}
@@ -635,7 +637,7 @@ export function PricingDialog({
                 {isDowngrading ? (
                   <span className="flex items-center justify-center gap-1.5">
                     <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-[10px] md:text-[11px]">{SUBSCRIPTION_UI_TEXT.pro.button.downgrading}</span>
+                    <span className={PRICING_DIALOG_TEXT_SIZES.small}>{SUBSCRIPTION_UI_TEXT.pro.button.downgrading}</span>
                   </span>
                 ) : subscription.tier === "free" ? (
                   SUBSCRIPTION_UI_TEXT.free.button.current
@@ -652,17 +654,17 @@ export function PricingDialog({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
                 className={cn(
-                  "relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10 dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col",
+                  `relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 ${UI_PRICING_DIALOG_COLORS.cardGradient.light.className} ${UI_PRICING_DIALOG_COLORS.cardGradient.dark.className} overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col`,
                   subscription.tier === "pro" && subscription.billingPeriod === "monthly"
-                    ? "border-[#9B87E8] ring-2 ring-[#9B87E8]/50"
-                    : "border-[#9B87E8]"
+                    ? `${UI_PRICING_DIALOG_COLORS.cardBorder.primary} ring-2 ${UI_PRICING_DIALOG_COLORS.cardBorder.primaryRing}`
+                    : UI_PRICING_DIALOG_COLORS.cardBorder.primary
                 )}
               >
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20 rounded-bl-full blur-xl pointer-events-none" />
+                <div className={`absolute top-0 right-0 w-20 h-20 ${UI_PRICING_DIALOG_COLORS.decorativeBlur.light.className} rounded-bl-full blur-xl pointer-events-none`} />
                 
                 {subscription.tier === "pro" && subscription.billingPeriod === "monthly" && (
                   <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
-                    <Badge className="bg-[#9B87E8] text-white border-0 shadow-md px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium">
+                    <Badge className={`${UI_PRICING_DIALOG_COLORS.primaryClass} text-white border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`}>
                       {SUBSCRIPTION_UI_TEXT.pro.button.current}
                     </Badge>
                   </div>
@@ -672,12 +674,12 @@ export function PricingDialog({
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0 pr-6">
                       <div className="flex items-center gap-1 mb-0.5">
-                        <h3 className="text-base md:text-lg font-semibold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                        <h3 className={`text-base md:text-lg font-semibold ${UI_PRICING_GRADIENT_COLORS.text.className}`}>
                           {monthlyOffering.title}
                         </h3>
-                        <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 text-[#9B87E8] animate-pulse flex-shrink-0" />
+                        <Sparkles className={`w-2.5 h-2.5 md:w-3 md:h-3 ${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
                       </div>
-                      <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-1">
+                      <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground line-clamp-1`}>
                         {formatDescription(monthlyOffering.description)}
                       </p>
                     </div>
@@ -685,10 +687,10 @@ export function PricingDialog({
 
                   <div className="mb-2.5">
                     <div className="flex items-baseline gap-1 mb-0.5">
-                      <span className="text-xl md:text-2xl font-semibold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                      <span className={`text-xl md:text-2xl font-semibold ${UI_PRICING_GRADIENT_COLORS.text.className}`}>
                         {formatPrice(monthlyOffering.priceString)}
                       </span>
-                      <span className="text-[10px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
+                      <span className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
                     </div>
                   </div>
 
@@ -698,15 +700,15 @@ export function PricingDialog({
                       <div className={cn(
                         "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5",
                         feature.highlight
-                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
-                          : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
+                          ? UI_PRICING_GRADIENT_COLORS.primaryBr.className
+                          : `${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentDarkClass}`
                       )}>
                         <feature.icon className={cn(
                           "w-1.5 h-1.5",
                           feature.highlight ? "text-white" : "text-gray-800 dark:text-foreground"
                         )} />
                       </div>
-                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-foreground leading-snug">
+                      <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground leading-snug`}>
                         {feature.text}
                       </span>
                     </li>
@@ -715,10 +717,10 @@ export function PricingDialog({
 
                 <Button
                   className={cn(
-                    "w-full shadow-md hover:shadow-lg transition-all duration-300 text-[11px] md:text-xs font-medium py-1.5 relative z-20",
+                    `w-full shadow-md hover:shadow-lg transition-all duration-300 ${PRICING_DIALOG_TEXT_SIZES.description} font-medium py-1.5 relative z-20`,
                     subscription.tier === "pro" && subscription.billingPeriod === "monthly"
-                      ? "bg-[#9B87E8] text-white hover:bg-[#8B77D8] cursor-default"
-                      : "bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white"
+                      ? `${UI_PRICING_DIALOG_COLORS.primaryClass} text-white ${UI_PRICING_DIALOG_COLORS.primaryHoverClass} cursor-default`
+                      : `${UI_PRICING_DIALOG_COLORS.buttonGradient.className} ${UI_PRICING_DIALOG_COLORS.buttonGradient.hover.className} text-white`
                   )}
                   disabled={(subscription.tier === "pro" && subscription.billingPeriod === "monthly") || isUpgrading}
                   onClick={handleUpgradeMonthly}
@@ -726,7 +728,7 @@ export function PricingDialog({
                   {isUpgrading ? (
                     <span className="flex items-center justify-center gap-1.5">
                       <div className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span className="text-[10px] md:text-[11px]">{SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}</span>
+                      <span className={PRICING_DIALOG_TEXT_SIZES.small}>{SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}</span>
                     </span>
                   ) : subscription.tier === "pro" && subscription.billingPeriod === "monthly" ? (
                     SUBSCRIPTION_UI_TEXT.pro.button.current
@@ -749,7 +751,7 @@ export function PricingDialog({
                 className="relative border-2 border-gray-300 dark:border-border rounded-lg md:rounded-xl p-3 md:p-4 bg-gray-50 dark:bg-card overflow-hidden flex flex-col opacity-50"
               >
                 <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-4">
-                  <p className="text-[11px] md:text-xs text-muted-foreground text-center">
+                  <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-muted-foreground text-center`}>
                     {isLoadingOfferings ? SUBSCRIPTION_UI_TEXT.planCards.loading : SUBSCRIPTION_UI_TEXT.planCards.monthly.notAvailable}
                   </p>
                 </div>
@@ -763,21 +765,21 @@ export function PricingDialog({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
                 className={cn(
-                  "relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15 dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col",
+                  `relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 ${UI_PRICING_DIALOG_COLORS.cardGradient.medium.className} ${UI_PRICING_DIALOG_COLORS.cardGradient.mediumDark.className} overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col`,
                   subscription.tier === "pro" && subscription.billingPeriod === "yearly"
-                    ? "border-[#9B87E8] ring-2 ring-[#9B87E8]/50"
-                    : "border-[#9B87E8]"
+                    ? `${UI_PRICING_DIALOG_COLORS.cardBorder.primary} ring-2 ${UI_PRICING_DIALOG_COLORS.cardBorder.primaryRing}`
+                    : UI_PRICING_DIALOG_COLORS.cardBorder.primary
                 )}
               >
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25 rounded-bl-full blur-xl pointer-events-none" />
+                <div className={`absolute top-0 right-0 w-20 h-20 ${UI_PRICING_DIALOG_COLORS.decorativeBlur.medium.className} rounded-bl-full blur-xl pointer-events-none`} />
               
               <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5 pointer-events-none">
                 {subscription.tier === "pro" && subscription.billingPeriod === "yearly" && (
-                  <Badge className="bg-[#9B87E8] text-white border-0 shadow-md px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium mb-0.5">
+                  <Badge className={`${UI_PRICING_DIALOG_COLORS.primaryClass} text-white border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium mb-0.5`}>
                     {SUBSCRIPTION_UI_TEXT.pro.button.current}
                   </Badge>
                 )}
-                <Badge className="bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] text-white border-0 shadow-md px-1.5 py-0.5 text-[9px] md:text-[10px] font-medium">
+                <Badge className={`${UI_PRICING_DIALOG_COLORS.buttonGradient.className} text-white border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`}>
                   <Crown className="w-1.5 h-1.5 md:w-2 md:h-2 mr-0.5" />
                   {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
                 </Badge>
@@ -790,7 +792,7 @@ export function PricingDialog({
                       <h3 className="text-base md:text-lg font-semibold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                         {yearlyOffering.title}
                       </h3>
-                      <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 text-[#9B87E8] animate-pulse flex-shrink-0" />
+                      <Sparkles className={`w-2.5 h-2.5 md:w-3 md:h-3 ${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
                     </div>
                     <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-1">
                       {formatDescription(yearlyOffering.description)}
@@ -800,18 +802,18 @@ export function PricingDialog({
 
                 <div className="mb-2.5">
                   <div className="flex items-baseline gap-1 mb-0.5">
-                    <span className="text-xl md:text-2xl font-semibold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                    <span className={`text-xl md:text-2xl font-semibold ${UI_PRICING_GRADIENT_COLORS.text.className}`}>
                       {formatPrice(yearlyOffering.priceString)}
                     </span>
-                    <span className="text-[10px] md:text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
+                    <span className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
                   </div>
                   <div className="flex items-center gap-1 flex-wrap">
                     {savings.percent > 0 && (
-                      <Badge className="bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7] text-gray-800 text-[9px] md:text-[10px] font-medium px-1 py-0.5">
+                      <Badge className={`${UI_PRICING_DIALOG_COLORS.badgeGradient.className} text-gray-800 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium px-1 py-0.5`}>
                         {isLoadingOfferings ? 'Loading…' : SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings.percent, savings.amount)}
                       </Badge>
                     )}
-                    <p className="text-[10px] md:text-xs font-medium text-[#9B87E8]">
+                    <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} font-medium ${UI_PRICING_DIALOG_COLORS.primaryTextClass}`}>
                       {isLoadingOfferings
                         ? 'Loading…'
                         : SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(getYearlyPerMonthPrice())}
@@ -826,15 +828,15 @@ export function PricingDialog({
                       <div className={cn(
                         "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5",
                         feature.highlight
-                          ? "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
-                          : "bg-[#B8E6D5] dark:bg-[#5A8A7A]"
+                          ? UI_PRICING_GRADIENT_COLORS.primaryBr.className
+                          : `${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentDarkClass}`
                       )}>
                         <feature.icon className={cn(
                           "w-1.5 h-1.5",
                           feature.highlight ? "text-white" : "text-gray-800 dark:text-foreground"
                         )} />
                       </div>
-                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-foreground leading-snug">
+                      <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground leading-snug`}>
                         {feature.text}
                       </span>
                     </li>
@@ -847,7 +849,7 @@ export function PricingDialog({
                       )}>
                         <feature.icon className="w-1.5 h-1.5 text-white" />
                       </div>
-                      <span className="text-[11px] md:text-xs text-gray-700 dark:text-foreground font-medium leading-snug">
+                      <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground font-medium leading-snug`}>
                         {feature.text}
                       </span>
                     </li>
@@ -856,10 +858,10 @@ export function PricingDialog({
 
                 <Button
                   className={cn(
-                    "w-full shadow-md hover:shadow-lg transition-all duration-300 text-[11px] md:text-xs font-medium py-1.5 relative z-20",
+                    `w-full shadow-md hover:shadow-lg transition-all duration-300 ${PRICING_DIALOG_TEXT_SIZES.description} font-medium py-1.5 relative z-20`,
                     subscription.tier === "pro" && subscription.billingPeriod === "yearly"
-                      ? "bg-[#9B87E8] text-white hover:bg-[#8B77D8] cursor-default"
-                      : "bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] hover:from-[#8B77D8] hover:to-[#C4B5E9] text-white"
+                      ? `${UI_PRICING_DIALOG_COLORS.primaryClass} text-white ${UI_PRICING_DIALOG_COLORS.primaryHoverClass} cursor-default`
+                      : `${UI_PRICING_DIALOG_COLORS.buttonGradient.className} ${UI_PRICING_DIALOG_COLORS.buttonGradient.hover.className} text-white`
                   )}
                   disabled={(subscription.tier === "pro" && subscription.billingPeriod === "yearly") || isUpgrading}
                   onClick={handleUpgradeYearly}
@@ -867,7 +869,7 @@ export function PricingDialog({
                   {isUpgrading ? (
                     <span className="flex items-center justify-center gap-1.5">
                       <div className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span className="text-[10px] md:text-[11px]">{SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}</span>
+                      <span className={PRICING_DIALOG_TEXT_SIZES.small}>{SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}</span>
                     </span>
                   ) : subscription.tier === "pro" && subscription.billingPeriod === "yearly" ? (
                     SUBSCRIPTION_UI_TEXT.pro.button.current
@@ -890,7 +892,7 @@ export function PricingDialog({
                 className="relative border-2 border-gray-300 dark:border-border rounded-lg md:rounded-xl p-3 md:p-4 bg-gray-50 dark:bg-card overflow-hidden flex flex-col opacity-50"
               >
                 <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-4">
-                  <p className="text-[11px] md:text-xs text-muted-foreground text-center">
+                  <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-muted-foreground text-center`}>
                     {isLoadingOfferings ? SUBSCRIPTION_UI_TEXT.planCards.loading : SUBSCRIPTION_UI_TEXT.planCards.yearly.notAvailable}
                   </p>
                 </div>
@@ -900,7 +902,7 @@ export function PricingDialog({
 
           <div className="mt-3 md:mt-4">
             <div className="p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
-              <p className="text-[11px] md:text-xs text-center text-gray-700 dark:text-foreground leading-snug">
+              <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-gray-700 dark:text-foreground leading-snug`}>
                 {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
                 <span className="font-medium text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
                 {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}

@@ -90,6 +90,80 @@ export const UI_PRICING_GRADIENT_COLORS = {
   },
 } as const;
 
+// Pricing Dialog Colors
+export const UI_PRICING_DIALOG_COLORS = {
+  primary: '#9B87E8',
+  primaryHover: '#8B77D8',
+  primaryClass: 'bg-[#9B87E8]',
+  primaryHoverClass: 'hover:bg-[#8B77D8]',
+  primaryTextClass: 'text-[#9B87E8]',
+  secondary: '#C9E4F7',
+  secondaryClass: 'bg-[#C9E4F7]',
+  accent: '#B8E6D5',
+  accentDark: '#5A8A7A',
+  accentClass: 'bg-[#B8E6D5]',
+  accentDarkClass: 'dark:bg-[#5A8A7A]',
+  accentBorderClass: 'border-[#B8E6D5]',
+  accentRingClass: 'ring-[#B8E6D5]/50',
+  accentDarkBorderClass: 'dark:border-[#5A8A7A]',
+  accentDarkRingClass: 'dark:ring-[#5A8A7A]/50',
+  accentBgClass: 'bg-[#B8E6D5]/10',
+  accentTextClass: 'text-gray-800',
+  // Gradients
+  titleGradient: {
+    from: '#9B87E8',
+    via: '#C9E4F7',
+    to: '#B8E6D5',
+    className: 'bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent',
+  },
+  cardGradient: {
+    from: '#9B87E8',
+    via: '#C9E4F7',
+    to: '#B8E6D5',
+    light: {
+      className: 'bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10',
+    },
+    dark: {
+      className: 'dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10',
+    },
+    medium: {
+      className: 'bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15',
+    },
+    mediumDark: {
+      className: 'dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15',
+    },
+  },
+  cardBorder: {
+    primary: 'border-[#9B87E8]',
+    primaryRing: 'ring-[#9B87E8]/50',
+    accent: 'border-[#B8E6D5]',
+    accentRing: 'ring-[#B8E6D5]/50',
+  },
+  buttonGradient: {
+    from: '#9B87E8',
+    to: '#D4C5F9',
+    className: 'bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9]',
+    hover: {
+      from: '#8B77D8',
+      to: '#C4B5E9',
+      className: 'hover:from-[#8B77D8] hover:to-[#C4B5E9]',
+    },
+  },
+  badgeGradient: {
+    from: '#B8E6D5',
+    to: '#C9E4F7',
+    className: 'bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7]',
+  },
+  decorativeBlur: {
+    light: {
+      className: 'bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20',
+    },
+    medium: {
+      className: 'bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25',
+    },
+  },
+} as const;
+
 // Settings Panel Badge Gradient Colors
 export const UI_SETTINGS_BADGE_GRADIENT = {
   from: '#D4C5F9',

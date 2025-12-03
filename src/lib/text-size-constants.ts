@@ -59,3 +59,15 @@ export const SETTINGS_PANEL_TEXT_SIZES = {
   progressLabel: TEXT_SIZES.xs10, // text-[10px] - Progress labels
 } as const;
 
+// Pricing Dialog specific text sizes
+export const PRICING_DIALOG_TEXT_SIZES = {
+  description: 'text-[11px] md:text-xs', // text-[11px] md:text-xs - Dialog description
+  badge: 'text-[9px] md:text-[10px]', // text-[9px] md:text-[10px] - Badge text
+  helper: 'text-[10px] md:text-xs', // text-[10px] md:text-xs - Helper text
+  small: 'text-[10px] md:text-[11px]', // text-[10px] md:text-[11px] - Small responsive text
+  static: {
+    xs10: TEXT_SIZES.xs10, // text-[10px] - Static 10px
+    xs11: TEXT_SIZES.xs11, // text-[11px] - Static 11px
+  },
+} as const;
+

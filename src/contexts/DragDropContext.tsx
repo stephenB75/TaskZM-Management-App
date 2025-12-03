@@ -9,6 +9,7 @@ import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
 import { TASK_CARD_LAYOUT_METRICS, TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS } from '../lib/task-card-constants';
 import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -137,7 +138,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         activeElement.classList.add('animate-shake');
         setTimeout(() => {
           activeElement.classList.remove('animate-shake');
-        }, 500);
+        }, TIMING_CONSTANTS.animations.long);
       }
       return;
     }

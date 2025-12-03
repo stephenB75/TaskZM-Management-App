@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { projectId } from '../utils/supabase/info';
 import { logger } from '../lib/logger';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 
 /**
  * Hook to track demo user activity and update last activity timestamp
@@ -44,7 +45,7 @@ export function useDemoActivity() {
     updateActivity();
 
     // Update every 5 minutes while user is active
-    const interval = setInterval(updateActivity, 5 * 60 * 1000);
+    const interval = setInterval(updateActivity, TIMING_CONSTANTS.intervals.demoActivity);
 
     return () => clearInterval(interval);
   }, [user?.isDemo, user?.id, accessToken, updateActivity]);

@@ -25,6 +25,7 @@ import {
   WORKSPACE_NETWORK_ERROR_BACKOFF_BASE_MS,
   WORKSPACE_NETWORK_ERROR_BACKOFF_MAX_MS,
 } from '../lib/layout-constants';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import {
   TOAST_DURATION_MEDIUM_MS,
   TOAST_DURATION_LONG_MS,
@@ -1079,7 +1080,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     // Throttle activity handler to reduce performance impact
     let activityThrottleTimeout: NodeJS.Timeout | null = null;
-    const THROTTLE_MS = 1000; // Only process activity once per second
+    const THROTTLE_MS = TIMING_CONSTANTS.delays.throttle; // Only process activity once per second
 
     const handleActivity = () => {
       lastActivityRef.current = Date.now();
@@ -1118,7 +1119,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         setSyncInterval(WORKSPACE_SYNC_INTERVAL_IDLE_MS);
         logger.debug('User inactive, switching to idle sync interval (2 min)');
       }
-    }, 60000); // Check every minute
+    }, TIMING_CONSTANTS.intervals.activityCheck); // Check every minute
 
     // Listen for online/offline events to reset network error counter
     const handleOnline = () => {
@@ -1364,7 +1365,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             // Explicitly create workspace
             await createWorkspaceIfNeeded();
             // Wait a bit for workspace to be fully created
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.taskContext));
             const validWorkspaceId = await ensureWorkspace();
             if (validWorkspaceId) {
               logger.info('Workspace created, retrying task save with workspace ID:', validWorkspaceId);
@@ -1589,7 +1590,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             // Explicitly create workspace
             await createWorkspaceIfNeeded();
             // Wait a bit for workspace to be fully created
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.taskContext));
             const validWorkspaceId = await ensureWorkspace();
             if (validWorkspaceId) {
               logger.info('Workspace created, retrying task update with workspace ID:', validWorkspaceId);
@@ -1909,7 +1910,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               // Explicitly create workspace
               await createWorkspaceIfNeeded();
               // Wait a bit for workspace to be fully created
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.taskContext));
               const validWorkspaceId = await ensureWorkspace();
               if (validWorkspaceId) {
                 logger.info('Workspace created, retrying folder save with workspace ID:', validWorkspaceId);
@@ -2081,7 +2082,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               // Explicitly create workspace
               await createWorkspaceIfNeeded();
               // Wait a bit for workspace to be fully created
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.taskContext));
               const validWorkspaceId = await ensureWorkspace();
               if (validWorkspaceId) {
                 logger.info('Workspace created, retrying folder update with workspace ID:', validWorkspaceId);
@@ -2281,7 +2282,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 // Explicitly create workspace
                 await createWorkspaceIfNeeded();
                 // Wait a bit for workspace to be fully created
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.taskContext));
                 const validWorkspaceId = await ensureWorkspace();
                 if (validWorkspaceId) {
                   logger.info('Workspace created, retrying folder deletion with workspace ID:', validWorkspaceId);

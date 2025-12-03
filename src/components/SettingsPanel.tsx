@@ -33,6 +33,7 @@ import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import taskzmLogo from '../assets/taskzm-logo.png';
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
 import { SETTINGS_PANEL_TEXT_SIZES } from '../lib/text-size-constants';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import {
   SETTINGS_PANEL_MOBILE_HEADER_SPACER,
   SETTINGS_PANEL_BOTTOM_PADDING_MOBILE,
@@ -2508,9 +2509,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <p className={`${SETTINGS_PANEL_TEXT_SIZES.versionInfo} text-muted-foreground/70 mt-0.5`}>
                           {(() => {
                             const diffMs = Date.now() - new Date(lastSync).getTime();
-                            const diffMins = Math.floor(diffMs / 60000);
-                            const diffHours = Math.floor(diffMs / 3600000);
-                            const diffDays = Math.floor(diffMs / 86400000);
+                            const diffMins = Math.floor(diffMs / TIMING_CONSTANTS.timeConversions.minutesToMs);
+                            const diffHours = Math.floor(diffMs / TIMING_CONSTANTS.timeConversions.hoursToMs);
+                            const diffDays = Math.floor(diffMs / TIMING_CONSTANTS.timeConversions.daysToMs);
                             
                             if (diffMins < 1) return 'Just now';
                             if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;

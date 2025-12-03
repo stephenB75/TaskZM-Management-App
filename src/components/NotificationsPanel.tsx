@@ -185,7 +185,7 @@ export function NotificationsPanel() {
           const isDueNow = timeUntil <= 5;
           const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold
             ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
-            : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
+            : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / TIMING_CONSTANTS.timeConversions.hoursToMinutes));
           
           const notificationId = `due-soon_${task.id}`;
           

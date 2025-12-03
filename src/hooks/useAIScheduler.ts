@@ -7,6 +7,7 @@ import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import {
   MAX_HOURS_PER_DAY,
   MIN_HOURS_PER_DAY,
@@ -1534,7 +1535,7 @@ export function useAIScheduler() {
       await unscheduleTasks(dayTasks);
       
       // Wait a bit for state to sync, then get fresh task data
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.aiScheduler));
       
       // Get the tasks again (they're now unscheduled) using the cloned tasks as fallback
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
@@ -1601,7 +1602,7 @@ export function useAIScheduler() {
       await unscheduleTasks(weekTasks);
       
       // Wait a bit for state to sync, then get fresh task data
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.aiScheduler));
       
       // Get the tasks again (they're now unscheduled) using the cloned tasks as fallback
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
@@ -1671,7 +1672,7 @@ export function useAIScheduler() {
       await unscheduleTasks(monthTasks);
       
       // Wait a bit for state to sync, then get fresh task data
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.aiScheduler));
       
       // Get the tasks again (they're now unscheduled) using the cloned tasks as fallback
       const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');

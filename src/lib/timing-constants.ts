@@ -47,6 +47,7 @@ export const TIMING_CONSTANTS = {
     secondsToMs: 1000, // 1 second = 1000ms
     minutesToMs: 60000, // 1 minute = 60000ms
     hoursToMs: 3600000, // 1 hour = 3600000ms
+    daysToMs: 86400000, // 1 day = 86400000ms
     minutesToSeconds: 60, // 1 minute = 60 seconds
     hoursToMinutes: 60, // 1 hour = 60 minutes
   },

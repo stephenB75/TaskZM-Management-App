@@ -16,6 +16,7 @@ import {
   NOTIFICATION_TIME_FORMATS,
   NOTIFICATION_INTERVALS,
 } from '../lib/notification-constants';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -352,7 +353,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           // Auto-close notification after 5 seconds
           setTimeout(() => {
             notification.close();
-          }, 5000);
+          }, TIMING_CONSTANTS.timeouts.notification);
           
           logger.debug('Notification sent for overdue task:', task.id, task.title);
           notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
@@ -424,10 +425,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             notification.close();
           };
           
-          // Auto-close notification after 5 seconds (or 10 seconds for due now tasks)
+          // Auto-close notification after 5 seconds (or 15 seconds for due now tasks)
           setTimeout(() => {
             notification.close();
-          }, isDueNow ? 10000 : 5000);
+          }, isDueNow ? TIMING_CONSTANTS.timeouts.notificationDueNow : TIMING_CONSTANTS.timeouts.notification);
           
           logger.debug('Notification sent for due soon task:', task.id, task.title, isDueNow ? 'due now' : timeText);
           notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
@@ -477,7 +478,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // Small delay to ensure task status updates are complete
     const timeoutId = setTimeout(() => {
       updateBadge();
-    }, 100);
+    }, TIMING_CONSTANTS.delays.notificationCheck);
     
     return () => clearTimeout(timeoutId);
   }, [tasks, settings, updateBadge]);
@@ -529,7 +530,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // Set up interval
     const interval = setInterval(() => {
       checkAndNotify();
-    }, settings.checkInterval * 60 * 1000);
+    }, settings.checkInterval * TIMING_CONSTANTS.timeConversions.minutesToMs);
 
     return () => clearInterval(interval);
   }, [settings, permission, checkAndNotify]);
