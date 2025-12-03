@@ -22,6 +22,16 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
   const checkDateOnly = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
   const baseDateOnly = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
 
+  // For recurring tasks that are completed: only show if the scheduledDate matches the exact checkDate
+  // This ensures that when a recurring task is marked as done, only that specific occurrence is affected
+  if (task.status === 'done') {
+    return (
+      baseDateOnly.getFullYear() === checkDateOnly.getFullYear() &&
+      baseDateOnly.getMonth() === checkDateOnly.getMonth() &&
+      baseDateOnly.getDate() === checkDateOnly.getDate()
+    );
+  }
+
   // Check if we're before the base date
   if (checkDateOnly < baseDateOnly) return false;
 

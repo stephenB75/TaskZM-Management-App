@@ -398,17 +398,25 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           
           const targetDate = new Date(dateToUse);
           const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
+          
+          // Distinguish between "due now" (within 5 minutes) and "upcoming" (more than 5 minutes away)
+          const isDueNow = timeUntil <= 5;
           const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
             ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
             : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
           
-          const notification = new Notification(NOTIFICATION_TITLES.taskDueSoon, {
-            body: NOTIFICATION_MESSAGES.taskDueIn(task.title, timeText),
-            icon: NOTIFICATION_ICONS.default,
-            badge: NOTIFICATION_ICONS.badge,
-            tag: `${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`,
-            requireInteraction: false,
-          });
+          const notification = new Notification(
+            isDueNow ? NOTIFICATION_TITLES.taskDueNow : NOTIFICATION_TITLES.taskUpcoming,
+            {
+              body: isDueNow 
+                ? NOTIFICATION_MESSAGES.taskDueNow(task.title)
+                : NOTIFICATION_MESSAGES.taskUpcoming(task.title, timeText),
+              icon: NOTIFICATION_ICONS.default,
+              badge: NOTIFICATION_ICONS.badge,
+              tag: `${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`,
+              requireInteraction: isDueNow, // Require interaction for tasks due now
+            }
+          );
           
           // Handle notification click - focus the app window
           notification.onclick = () => {
@@ -416,12 +424,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             notification.close();
           };
           
-          // Auto-close notification after 5 seconds
+          // Auto-close notification after 5 seconds (or 10 seconds for due now tasks)
           setTimeout(() => {
             notification.close();
-          }, 5000);
+          }, isDueNow ? 10000 : 5000);
           
-          logger.debug('Notification sent for due soon task:', task.id, task.title, timeText);
+          logger.debug('Notification sent for due soon task:', task.id, task.title, isDueNow ? 'due now' : timeText);
           notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
         } catch (error) {
           logger.error('Failed to show notification:', error);

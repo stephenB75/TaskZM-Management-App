@@ -443,8 +443,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </Button>
               </div>
 
-              {/* Input Fields */}
-              <div className="grid gap-3 sm:grid-cols-2">
+              {/* Input Fields - Stack format like save & sign out buttons */}
+              <div className="flex flex-col gap-3 w-full">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
                   <Input 

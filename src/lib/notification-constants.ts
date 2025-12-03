@@ -45,6 +45,8 @@ export const NOTIFICATION_TOAST_MESSAGES = {
 export const NOTIFICATION_TITLES = {
   taskOverdue: 'Task Overdue',
   taskDueSoon: 'Task Due Soon',
+  taskDueNow: 'Task Due Now',
+  taskUpcoming: 'Upcoming Task',
   pomodoroComplete: 'Pomodoro Complete! 🍅',
   pomodoroBreak: 'Break Over! ☕',
   awardEarned: 'Achievement Unlocked! 🏆',
@@ -54,6 +56,8 @@ export const NOTIFICATION_TITLES = {
 export const NOTIFICATION_MESSAGES = {
   taskWasDue: (taskTitle: string, dueDate: string) => `${taskTitle} was due ${dueDate}`,
   taskDueIn: (taskTitle: string, timeText: string) => `${taskTitle} is due in ${timeText}`,
+  taskDueNow: (taskTitle: string) => `${taskTitle} is due now!`,
+  taskUpcoming: (taskTitle: string, timeText: string) => `${taskTitle} is upcoming in ${timeText}`,
   timeMinutes: (minutes: number) => `${minutes} minutes`,
   timeHours: (hours: number) => `${hours} hours`,
   pomodoroComplete: (taskTitle: string) => `Great work on "${taskTitle}"! Time for a break.`,

@@ -93,14 +93,19 @@ export function TodayAgendaView({
     }
   }) : [];
 
-  // Filter out done tasks - they should not appear in Today Agenda
-  // Done tasks automatically appear in Archive view
-  const incompleteTasks = allTodayTasks.filter((task) => task.status !== "done");
+  // Show all tasks including completed ones (they will be grayed out)
+  // Completed tasks remain visible but grayed out like recurring tasks
+  const incompleteTasks = allTodayTasks;
 
-  // Sort incomplete tasks by time - use useMemo to prevent recreation on every render
+  // Sort tasks by time - use useMemo to prevent recreation on every render
   // This prevents infinite loops in useEffect dependencies
+  // Completed tasks are sorted to the end
   const todayTasks = useMemo(() => {
     return [...incompleteTasks].sort((a, b) => {
+      // Sort completed tasks to the end
+      if (a.status === "done" && b.status !== "done") return 1;
+      if (a.status !== "done" && b.status === "done") return -1;
+      
       try {
         const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
         const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;

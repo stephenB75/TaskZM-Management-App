@@ -178,6 +178,9 @@ export function NotificationsPanel() {
           
           const targetDate = new Date(dateToUse);
           const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
+          
+          // Distinguish between "due now" (within 5 minutes) and "upcoming" (more than 5 minutes away)
+          const isDueNow = timeUntil <= 5;
           const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold
             ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
             : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
@@ -192,8 +195,10 @@ export function NotificationsPanel() {
           newNotifications.push({
             id: notificationId,
             type: NOTIFICATION_TYPES.taskDueSoon as NotificationItem['type'],
-            title: NOTIFICATION_TITLES.taskDueSoon,
-            message: NOTIFICATION_MESSAGES.taskDueIn(task.title, timeText),
+            title: isDueNow ? NOTIFICATION_TITLES.taskDueNow : NOTIFICATION_TITLES.taskUpcoming,
+            message: isDueNow 
+              ? NOTIFICATION_MESSAGES.taskDueNow(task.title)
+              : NOTIFICATION_MESSAGES.taskUpcoming(task.title, timeText),
             timestamp: targetDate,
             read: readNotifications.has(notificationId),
             taskId: task.id,
