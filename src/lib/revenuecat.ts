@@ -1009,6 +1009,14 @@ export async function getCustomerInfo(): Promise<any | null> {
  * Purchase a Pro subscription through RevenueCat
  * @param packageType - 'monthly' or 'yearly'
  * @returns Purchase result with success status and error message if failed
+ * 
+ * Note on Stripe Checkout Form Field Activation:
+ * - Stripe Checkout requires country selection before payment fields become active
+ * - This is a Stripe requirement for tax calculation and compliance
+ * - Users must select their country from the dropdown first
+ * - Once country is selected, all payment fields (email, card, etc.) will activate
+ * - This behavior is expected and cannot be changed via code
+ * - To improve UX, configure "Auto-detect country" in Stripe Dashboard → Settings → Checkout
  */
 export async function purchaseProSubscription(
   packageType: 'monthly' | 'yearly'
@@ -1071,11 +1079,10 @@ export async function purchaseProSubscription(
     
     if (checkoutUrl) {
       console.log('🔗 Package has checkout URL, redirecting to Stripe Checkout:', checkoutUrl);
-      // Ensure clean redirect - close any modals/dialogs that might interfere
-      // Small delay to ensure any toasts/messages are visible before redirect
-      setTimeout(() => {
-      window.location.href = checkoutUrl;
-      }, 100);
+      // Ensure clean redirect - use window.location.replace to avoid back button issues
+      // and ensure form fields are activated immediately on Stripe's page
+      // Note: Stripe Checkout requires country selection before payment fields activate
+      window.location.replace(checkoutUrl);
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
@@ -1174,7 +1181,8 @@ export async function purchaseProSubscription(
       if (errorCheckoutUrl) {
         console.log('✅ Found checkout URL in error (Web Billing flow):', errorCheckoutUrl);
         console.log('🔗 Redirecting to Stripe Checkout...');
-        window.location.href = errorCheckoutUrl;
+        // Use window.location.replace for clean redirect
+        window.location.replace(errorCheckoutUrl);
         return { 
           success: true, 
           error: 'Redirecting to payment...' 
@@ -1185,7 +1193,8 @@ export async function purchaseProSubscription(
       const urlMatch = purchaseError?.message?.match(/https?:\/\/[^\s]+/);
       if (urlMatch && urlMatch[0]) {
         console.log('✅ Found checkout URL in error message:', urlMatch[0]);
-        window.location.href = urlMatch[0];
+        // Use window.location.replace for clean redirect
+        window.location.replace(urlMatch[0]);
         return { 
           success: true, 
           error: 'Redirecting to payment...' 
@@ -1221,7 +1230,8 @@ export async function purchaseProSubscription(
     if (resultCheckoutUrl) {
       console.log('✅ Found checkout URL in purchase result (Web Billing):', resultCheckoutUrl);
       console.log('🔗 Redirecting to Stripe Checkout...');
-      window.location.href = resultCheckoutUrl;
+      // Use window.location.replace for clean redirect and immediate form activation
+      window.location.replace(resultCheckoutUrl);
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
@@ -1362,7 +1372,8 @@ export async function purchaseProSubscription(
     if (finalCheckoutUrl) {
       console.log('✅ Found checkout URL in error (Web Billing redirect):', finalCheckoutUrl);
       console.log('🔗 Redirecting to Stripe Checkout...');
-      window.location.href = finalCheckoutUrl;
+      // Use window.location.replace for clean redirect and immediate form activation
+      window.location.replace(finalCheckoutUrl);
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
