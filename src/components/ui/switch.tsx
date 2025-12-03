@@ -63,13 +63,13 @@ function Switch({
         "transition-colors duration-200 ease-in-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        // Sizing
-        "h-7 w-12",
         // Background colors
         isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
         className
       )}
       style={{
+        width: `${TOGGLE_SWITCH_DIMENSIONS.container.width}px`,
+        height: `${TOGGLE_SWITCH_DIMENSIONS.container.height}px`,
         WebkitTapHighlightColor: 'transparent',
       }}
     >
