@@ -90,6 +90,7 @@ function CheckboxSwitch({
       style={{
         width: `${width}px`,
         height: `${height}px`,
+        borderRadius: `${height / 2}px`, // Pill shape: half the height
         WebkitTapHighlightColor: 'transparent',
       }}
     >
@@ -112,6 +113,7 @@ function CheckboxSwitch({
         style={{
           width: `${width}px`,
           height: `${height}px`,
+          borderRadius: `${height / 2}px`, // Pill shape: half the height
         }}
       >
         {/* Sliding thumb - pill shaped, matching Switch component */}
@@ -125,6 +127,7 @@ function CheckboxSwitch({
           style={{
             width: `${thumbWidth}px`,
             height: `${thumbHeight}px`,
+            borderRadius: `${thumbHeight / 2}px`, // Pill shape: half the height (circular)
             top: `${(height - thumbHeight) / 2}px`, // Center vertically
             left: isChecked ? `${thumbOffset}px` : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`, // Use constant for unchecked padding
           }}

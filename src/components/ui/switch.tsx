@@ -74,6 +74,7 @@ function Switch({
       )}
       style={{
         WebkitTapHighlightColor: 'transparent',
+        borderRadius: `${TOGGLE_SWITCH_DIMENSIONS.container.height / 2}px`, // Pill shape: half the height
       }}
     >
       {/* Sliding thumb - pill shaped */}
@@ -87,6 +88,7 @@ function Switch({
         style={{
           width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
           height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
+          borderRadius: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height / 2}px`, // Pill shape: half the height (circular)
           top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`, // Center vertically
           left: isChecked 
             ? `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px` 
