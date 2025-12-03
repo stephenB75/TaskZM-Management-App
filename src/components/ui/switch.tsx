@@ -84,11 +84,12 @@ function Switch({
           // Circular thumb: perfectly circular, perfectly centered
           height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
           width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
-          top: '50%',
+          // Calculate top position for perfect vertical centering: (container height - thumb height) / 2
+          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`,
           left: isChecked 
             ? `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px` 
             : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
-          transform: `translateY(-50%)`,
+          // Remove transform to avoid subpixel rendering issues on mobile
         }}
         aria-hidden="true"
       />

@@ -130,11 +130,12 @@ function CheckboxSwitch({
           // Circular thumb: perfectly circular, perfectly centered
           height: `${circularThumbSize}px`,
           width: `${circularThumbSize}px`,
-          top: '50%',
+          // Calculate top position for perfect vertical centering: (container height - thumb height) / 2
+          top: `${(height - circularThumbSize) / 2}px`,
           left: isChecked 
             ? `${width - circularThumbSize - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px` 
             : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
-          transform: `translateY(-50%)`,
+          // Remove transform to avoid subpixel rendering issues on mobile
         }}
         aria-hidden="true"
       />
