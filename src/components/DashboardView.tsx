@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
+import { Switch } from "./ui/switch";
 import {
   Sheet,
   SheetContent,

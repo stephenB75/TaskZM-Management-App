@@ -79,17 +79,18 @@ function Switch({
       {/* Sliding thumb - pill shaped */}
       <span
         className={cn(
-          "block shadow-md transition-transform ease-in-out rounded-full",
+          "absolute block shadow-md transition-transform ease-in-out rounded-full",
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
           TOGGLE_SWITCH_ANIMATIONS.durationClass,
-          // Thumb sizing - wider for pill shape (h-4 = 16px, w-6 = 24px)
-          "h-4 w-6", // Using fixed Tailwind classes as dynamic classes don't work
         )}
         style={{
-          transform: isChecked 
-            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px)` 
-            : `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px)`,
+          width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
+          height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
+          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`, // Center vertically
+          left: isChecked 
+            ? `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px` 
+            : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
         }}
         aria-hidden="true"
       />

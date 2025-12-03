@@ -32,7 +32,7 @@ import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
-import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
+import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import type { Task } from "../types";
 
