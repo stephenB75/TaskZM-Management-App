@@ -61,6 +61,7 @@ interface BottomNavProps {
   mobileView?: "today" | "week";
   onMobileViewChange?: (view: "today" | "week") => void;
   unscheduledCount?: number;
+  upcomingAndDueNowCount?: number;
 }
 
 export function BottomNav({
@@ -69,6 +70,7 @@ export function BottomNav({
   mobileView = "today",
   onMobileViewChange,
   unscheduledCount = 0,
+  upcomingAndDueNowCount = 0,
 }: BottomNavProps) {
   const { isSyncing } = useTasks();
   const { actualTheme } = useTheme();
@@ -92,6 +94,7 @@ export function BottomNav({
         onViewChange("today");
       },
       active: currentView === "today",
+      badge: upcomingAndDueNowCount > 0 ? upcomingAndDueNowCount : undefined,
     },
     {
       id: "week",

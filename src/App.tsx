@@ -12,7 +12,7 @@ import {
 import { Button } from './components/ui/button';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
-import { TaskProvider } from './contexts/TaskContext';
+import { TaskProvider, useTasks } from './contexts/TaskContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { AIProvider, useAI } from './contexts/AIContext';
@@ -21,7 +21,7 @@ import { DragDropProvider } from './contexts/DragDropContext';
 import { PomodoroProvider } from './contexts/PomodoroContext';
 import { TeamProvider } from './contexts/TeamContext';
 import { AwardProvider } from './contexts/AwardContext';
-import { NotificationProvider } from './contexts/NotificationContext';
+import { NotificationProvider, useNotifications } from './contexts/NotificationContext';
 import { AuthScreen } from './components/AuthScreen';
 import { InviteAcceptancePage } from './components/InviteAcceptancePage';
 import { AwardCelebration } from './components/AwardCelebration';
@@ -105,6 +105,36 @@ function AppContent() {
   }, []);
   
   const { scheduleAllTasks, unscheduledCount, isScheduling } = useAIScheduler();
+  const { tasks } = useTasks();
+  const { settings: notificationSettings } = useNotifications();
+  
+  // Calculate count of upcoming and due now tasks for mobile badge
+  const getUpcomingAndDueNowCount = () => {
+    const now = new Date();
+    const reminderTime = new Date(now.getTime() + notificationSettings.reminderTime * 60 * 1000);
+    
+    const dueSoonTasks = tasks.filter(task => {
+      if (task.status === 'done') return false;
+      
+      let targetDate: Date | null = null;
+      
+      // Check dueDate first, then scheduledDate
+      if (task.dueDate) {
+        targetDate = new Date(task.dueDate);
+      } else if (task.scheduledDate) {
+        targetDate = new Date(task.scheduledDate);
+      }
+      
+      if (!targetDate) return false;
+      
+      // Task is due soon if it's between now and reminder time
+      return targetDate >= now && targetDate <= reminderTime;
+    });
+    
+    return dueSoonTasks.length;
+  };
+  
+  const upcomingAndDueNowCount = getUpcomingAndDueNowCount();
   
   // Check for award achievements when tasks are completed
   useAwardChecker();
@@ -638,6 +668,7 @@ function AppContent() {
           mobileView={mobileView}
           onMobileViewChange={setMobileView}
           unscheduledCount={unscheduledCount}
+          upcomingAndDueNowCount={upcomingAndDueNowCount}
         />
       </div>
       
