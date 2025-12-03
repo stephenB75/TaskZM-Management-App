@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { cn } from "./utils";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_ANIMATIONS } from "../../lib/layout-constants";
+import { TOGGLE_SWITCH_COLORS } from "../../lib/ui-colors";
 
 interface SwitchProps {
   id?: string;
@@ -57,13 +59,14 @@ function Switch({
       onKeyDown={handleKeyDown}
       className={cn(
         // Pill-shaped background container
-        "relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out",
+        "relative inline-flex items-center rounded-full transition-colors ease-in-out",
+        TOGGLE_SWITCH_ANIMATIONS.durationClass,
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "touch-manipulation select-none",
         // Sizing - pill shape (slightly taller for better proportions)
-        "h-7 w-12",
+        "h-7 w-12", // Using fixed Tailwind classes as dynamic classes don't work
         // Background colors - inverted for dark mode
-        isChecked ? "bg-primary dark:bg-primary" : "bg-[var(--switch-background)] dark:bg-gray-600",
+        isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
         // Disabled state
         disabled && "opacity-50 cursor-not-allowed",
         !disabled && "cursor-pointer",
@@ -76,18 +79,18 @@ function Switch({
       {/* Sliding thumb - pill shaped */}
       <span
         className={cn(
-          "block bg-white dark:bg-gray-200 shadow-md transition-transform duration-200 ease-in-out",
-          // Pill shape - rounded-full on a rectangular element creates pill shape
-          "rounded-full",
+          "block shadow-md transition-transform ease-in-out rounded-full",
+          TOGGLE_SWITCH_COLORS.switch.thumb.light,
+          TOGGLE_SWITCH_COLORS.switch.thumb.dark,
+          TOGGLE_SWITCH_ANIMATIONS.durationClass,
           // Thumb sizing - wider for pill shape (h-4 = 16px, w-6 = 24px)
-          "h-4 w-6",
-          // Position - moves from left to right with padding
-          // Container is w-12 (48px), thumb is w-6 (24px)
-          // Left: 2px padding, Right: 48px - 24px - 2px = 22px
-          isChecked 
-            ? "translate-x-[22px]" 
-            : "translate-x-0.5"
+          "h-4 w-6", // Using fixed Tailwind classes as dynamic classes don't work
         )}
+        style={{
+          transform: isChecked 
+            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px)` 
+            : `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px)`,
+        }}
         aria-hidden="true"
       />
     </button>

@@ -537,3 +537,46 @@ export const UI_INBOX_AVATAR_GRADIENTS = {
   },
 } as const;
 
+// Toggle Switch Colors
+export const TOGGLE_SWITCH_COLORS = {
+  container: {
+    background: {
+      light: 'bg-white/80',
+      dark: 'dark:bg-gray-700/80',
+    },
+    border: {
+      light: 'border-primary/10',
+      dark: 'dark:border-gray-600/50',
+    },
+  },
+  card: {
+    background: {
+      light: 'bg-white',
+      dark: 'dark:bg-card',
+    },
+    border: {
+      light: 'border-primary/20',
+    },
+  },
+  text: {
+    active: {
+      light: 'text-primary',
+      dark: 'dark:text-primary-foreground',
+    },
+    inactive: {
+      light: 'text-muted-foreground',
+      dark: 'dark:text-gray-400',
+    },
+  },
+  switch: {
+    background: {
+      checked: 'bg-primary dark:bg-primary',
+      unchecked: 'bg-[var(--switch-background)] dark:bg-gray-600',
+    },
+    thumb: {
+      light: 'bg-white',
+      dark: 'dark:bg-gray-200',
+    },
+  },
+} as const;
+

@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { Switch } from "./ui/switch";
+import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import {
   Sheet,
   SheetContent,
@@ -44,6 +44,8 @@ import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 
 interface DashboardViewProps {
   mobileView: "today" | "week";
@@ -810,21 +812,30 @@ export function DashboardView({
         actions={
           <div className="flex items-center gap-2">
             {/* View Mode Toggle - Desktop Only */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-700/80 border border-primary/10 dark:border-gray-600/50">
+            <div className={cn(
+              "hidden md:flex items-center rounded-full border",
+              "gap-2", // gap-2 = 8px
+              "px-3 py-1.5", // px-3 = 12px, py-1.5 = 6px
+              TOGGLE_SWITCH_COLORS.container.background.light,
+              TOGGLE_SWITCH_COLORS.container.background.dark,
+              TOGGLE_SWITCH_COLORS.container.border.light,
+              TOGGLE_SWITCH_COLORS.container.border.dark,
+            )}>
               <Calendar
                 className={cn(
-                  "w-4 h-4 transition-colors",
+                  "w-4 h-4 transition-colors", // w-4 h-4 = 16px
                   viewMode === "week"
-                    ? "text-primary dark:text-primary-foreground"
-                    : "text-muted-foreground dark:text-gray-400",
+                    ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
+                    : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,
                 )}
               />
               <span
                 className={cn(
-                  "text-xs font-medium transition-colors",
+                  TOGGLE_SWITCH_TEXT_SIZES.label.small,
+                  "font-medium transition-colors",
                   viewMode === "week"
-                    ? "text-primary dark:text-primary-foreground"
-                    : "text-muted-foreground dark:text-gray-400",
+                    ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
+                    : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,
                 )}
               >
                 Week
@@ -834,24 +845,25 @@ export function DashboardView({
                 onCheckedChange={(checked) =>
                   setViewMode(checked ? "month" : "week")
                 }
-                className="mx-1"
+                className="mx-1" // mx-1 = 4px
               />
               <span
                 className={cn(
-                  "text-xs font-medium transition-colors",
+                  TOGGLE_SWITCH_TEXT_SIZES.label.small,
+                  "font-medium transition-colors",
                   viewMode === "month"
-                    ? "text-primary dark:text-primary-foreground"
-                    : "text-muted-foreground dark:text-gray-400",
+                    ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
+                    : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,
                 )}
               >
                 Month
               </span>
               <CalendarDays
                 className={cn(
-                  "w-4 h-4 transition-colors",
+                  "w-4 h-4 transition-colors", // w-4 h-4 = 16px
                   viewMode === "month"
-                    ? "text-primary dark:text-primary-foreground"
-                    : "text-muted-foreground dark:text-gray-400",
+                    ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
+                    : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,
                 )}
               />
             </div>

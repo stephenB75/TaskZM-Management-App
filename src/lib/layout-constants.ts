@@ -424,3 +424,51 @@ export const COMPONENT_DIMENSIONS = {
   },
 } as const;
 
+// Toggle Switch Dimensions
+export const TOGGLE_SWITCH_DIMENSIONS = {
+  container: {
+    width: 48, // w-12 = 48px
+    height: 28, // h-7 = 28px
+  },
+  thumb: {
+    width: 24, // w-6 = 24px
+    height: 16, // h-4 = 16px
+  },
+  thumbOffset: {
+    checked: 22, // translate-x-[22px] = 22px (48px - 24px - 2px)
+    unchecked: 2, // translate-x-0.5 = 2px
+  },
+  icon: {
+    size: 16, // w-4 h-4 = 16px
+  },
+} as const;
+
+// Toggle Switch Spacing
+export const TOGGLE_SWITCH_SPACING = {
+  container: {
+    padding: {
+      horizontal: 12, // px-3 = 12px
+      vertical: 6, // py-1.5 = 6px
+      all: 12, // p-3 = 12px
+    },
+    gap: 8, // gap-2 = 8px
+    margin: {
+      switch: 4, // mx-1 = 4px
+    },
+  },
+} as const;
+
+// Toggle Switch Text Sizes
+export const TOGGLE_SWITCH_TEXT_SIZES = {
+  label: {
+    small: 'text-xs', // 12px
+    medium: 'text-sm', // 14px
+  },
+} as const;
+
+// Toggle Switch Animations
+export const TOGGLE_SWITCH_ANIMATIONS = {
+  duration: 200, // duration-200 = 200ms
+  durationClass: 'duration-200', // Tailwind class
+} as const;
+

@@ -32,7 +32,7 @@ import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
-import { Switch } from "./ui/switch";
+import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Label } from "./ui/label";
 import type { Task } from "../types";
 
@@ -460,10 +460,22 @@ export function InboxView() {
               </Select>
 
               {/* Show Scheduled Tasks Toggle */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-card border border-primary/20">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <Label htmlFor="show-scheduled" className="text-sm font-medium cursor-pointer">
+              <div className={cn(
+                "flex items-center justify-between rounded-lg border",
+                "p-3", // p-3 = 12px
+                TOGGLE_SWITCH_COLORS.card.background.light,
+                TOGGLE_SWITCH_COLORS.card.background.dark,
+                TOGGLE_SWITCH_COLORS.card.border.light,
+              )}>
+                <div className="flex items-center gap-2"> {/* gap-2 = 8px */}
+                  <Calendar className={cn(
+                    "w-4 h-4", // w-4 h-4 = 16px
+                    TOGGLE_SWITCH_COLORS.text.active.light
+                  )} />
+                  <Label htmlFor="show-scheduled" className={cn(
+                    TOGGLE_SWITCH_TEXT_SIZES.label.medium,
+                    "font-medium cursor-pointer"
+                  )}>
                     Show Scheduled Tasks
                   </Label>
                 </div>
