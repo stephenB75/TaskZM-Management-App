@@ -428,7 +428,7 @@ export const COMPONENT_DIMENSIONS = {
 export const TOGGLE_SWITCH_DIMENSIONS = {
   container: {
     width: 48, // w-12 = 48px
-    height: 28, // h-7 = 28px
+    height: 20, // Reduced from 28px to 20px for better thumb fit
   },
   thumb: {
     width: 24, // w-6 = 24px
