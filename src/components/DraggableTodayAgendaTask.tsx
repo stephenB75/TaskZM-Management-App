@@ -87,6 +87,12 @@ export function DraggableTodayAgendaTask({
     [task.subtasks]
   );
   
+  // Calculate task duration categories for use in both height calculation and JSX render
+  const estimatedTimeValue = typeof task.estimatedTime === "number" ? task.estimatedTime : null;
+  const isShortTask = typeof estimatedTimeValue === "number" && estimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
+  const isMediumTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && estimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
+  const isLongTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
+  
   // Calculate dynamic height using standard heights with auto-adjustment
   // This matches the logic in DraggableTaskCard for consistency
   // IMPORTANT: Use AI Duration Estimator instead of hardcoded fallback
@@ -96,9 +102,6 @@ export function DraggableTodayAgendaTask({
     const maxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight;
     const currentEstimatedTimeValue = typeof task.estimatedTime === "number" ? task.estimatedTime : null;
     const hasEstimatedTime = currentEstimatedTimeValue !== null;
-    const isShortTask = typeof currentEstimatedTimeValue === "number" && currentEstimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
-    const isMediumTask = typeof currentEstimatedTimeValue === "number" && currentEstimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && currentEstimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
-    const isLongTask = typeof currentEstimatedTimeValue === "number" && currentEstimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
     const currentCanUsePomodoro = canUsePomodoro;
     const currentPomodoroIsRunning = currentCanUsePomodoro && timerState.isRunning;
     const currentShowTrackingBadgeTopRow =

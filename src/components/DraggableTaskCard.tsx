@@ -138,8 +138,10 @@ export const DraggableTaskCard = React.forwardRef<
     );
     const estimatedTimeValue = typeof task.estimatedTime === "number" ? task.estimatedTime : null;
     const hasEstimatedTime = estimatedTimeValue !== null;
-    const isShortTask = typeof estimatedTimeValue === "number" && estimatedTimeValue < 45;
-    const isLongTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= 60;
+    // Calculate task duration categories for use in both height calculation and JSX render
+    const isShortTask = typeof estimatedTimeValue === "number" && estimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
+    const isMediumTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && estimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
+    const isLongTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
     const canUsePomodoro = hasFeature("pomodoroTimer");
     const pomodoroIsRunning = canUsePomodoro && timerState.isRunning;
     const showTrackingBadgeTopRow =
