@@ -58,45 +58,35 @@ function Switch({
       onClick={handleToggle}
       onKeyDown={handleKeyDown}
       className={cn(
-        // Pill-shaped background container
-        "relative inline-flex items-center rounded-full transition-colors ease-in-out",
-        TOGGLE_SWITCH_ANIMATIONS.durationClass,
-        "focus:outline-none",
-        `focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.widthClass}`,
-        "focus-visible:ring-ring",
-        `focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.offsetClass}`,
-        "focus-visible:ring-offset-background",
-        "touch-manipulation select-none",
-        // Sizing - pill shape (slightly taller for better proportions)
-        "h-7 w-12", // Using fixed Tailwind classes as dynamic classes don't work
-        // Background colors - inverted for dark mode
+        // Standard toggle switch container
+        "peer relative inline-flex shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+        "transition-colors duration-200 ease-in-out",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        // Sizing
+        "h-7 w-12",
+        // Background colors
         isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
-        // Disabled state
-        disabled && `${TOGGLE_SWITCH_EFFECTS.opacity.disabledClass} cursor-not-allowed`,
-        !disabled && "cursor-pointer",
         className
       )}
       style={{
         WebkitTapHighlightColor: 'transparent',
-        borderRadius: `${TOGGLE_SWITCH_DIMENSIONS.container.height / 2}px`, // Pill shape: half the height
       }}
     >
-      {/* Sliding thumb - pill shaped */}
+      {/* Sliding thumb - standard toggle pattern */}
       <span
         className={cn(
-          `absolute block ${TOGGLE_SWITCH_EFFECTS.shadow.md} transition-transform ease-in-out rounded-full`,
+          "pointer-events-none absolute inline-block rounded-full shadow-md ring-0 transition-transform duration-200 ease-in-out",
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
-          TOGGLE_SWITCH_ANIMATIONS.durationClass,
         )}
         style={{
-          width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
           height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
-          borderRadius: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height / 2}px`, // Pill shape: half the height (circular)
-          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`, // Center vertically
-          left: isChecked 
-            ? `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px` 
-            : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
+          width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
+          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`,
+          transform: isChecked 
+            ? `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px)` 
+            : `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px)`,
         }}
         aria-hidden="true"
       />

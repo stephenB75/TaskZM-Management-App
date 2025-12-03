@@ -77,24 +77,21 @@ function CheckboxSwitch({
 
   const { width, height, thumbHeight, thumbWidth, thumbOffset } = getDimensions();
 
+  // Calculate transform translateX value for checked state
+  const translateXValue = width - thumbWidth - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked;
+
   return (
     <label 
       className={cn(
-        "relative inline-flex items-center rounded-full transition-colors ease-in-out",
-        TOGGLE_SWITCH_ANIMATIONS.durationClass,
-        "focus:outline-none",
-        `focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.widthClass}`,
-        "focus-visible:ring-ring",
-        `focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.offsetClass}`,
-        "focus-visible:ring-offset-background",
-        "touch-manipulation select-none",
-        disabled ? `${TOGGLE_SWITCH_EFFECTS.opacity.disabledClass} cursor-not-allowed` : "cursor-pointer",
+        "peer relative inline-flex shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+        "transition-colors duration-200 ease-in-out",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       style={{
-        width: `${width}px`,
         height: `${height}px`,
-        borderRadius: `${height / 2}px`, // Pill shape: half the height
+        width: `${width}px`,
         WebkitTapHighlightColor: 'transparent',
       }}
     >
@@ -106,40 +103,34 @@ function CheckboxSwitch({
         disabled={disabled}
         className="sr-only peer"
       />
-      <div 
+      {/* Background track */}
+      <span
         className={cn(
-          "absolute inset-0 rounded-full transition-colors ease-in-out",
-          TOGGLE_SWITCH_ANIMATIONS.durationClass,
+          "absolute inset-0 rounded-full transition-colors duration-200 ease-in-out",
           isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
-          `peer-focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.widthClass}`,
-          "peer-focus-visible:ring-ring",
-          `peer-focus-visible:${TOGGLE_SWITCH_EFFECTS.focusRing.offsetClass}`,
-          `peer-disabled:${TOGGLE_SWITCH_EFFECTS.opacity.disabledClass} peer-disabled:cursor-not-allowed`
+          "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
         )}
         style={{
-          width: `${width}px`,
           height: `${height}px`,
-          borderRadius: `${height / 2}px`, // Pill shape: half the height
+          width: `${width}px`,
         }}
-      >
-        {/* Sliding thumb - pill shaped, matching Switch component */}
-        <span
-          className={cn(
-            `absolute block ${TOGGLE_SWITCH_EFFECTS.shadow.md} transition-transform ease-in-out rounded-full`,
-            TOGGLE_SWITCH_COLORS.switch.thumb.light,
-            TOGGLE_SWITCH_COLORS.switch.thumb.dark,
-            TOGGLE_SWITCH_ANIMATIONS.durationClass
-          )}
-          style={{
-            width: `${thumbWidth}px`,
-            height: `${thumbHeight}px`,
-            borderRadius: `${thumbHeight / 2}px`, // Pill shape: half the height (circular)
-            top: `${(height - thumbHeight) / 2}px`, // Center vertically
-            left: isChecked ? `${thumbOffset}px` : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`, // Use constant for unchecked padding
-          }}
-          aria-hidden="true"
-        />
-      </div>
+        aria-hidden="true"
+      />
+      {/* Sliding thumb - standard toggle pattern */}
+      <span
+        className={cn(
+          "pointer-events-none absolute inline-block rounded-full shadow-md ring-0 transition-transform duration-200 ease-in-out",
+          TOGGLE_SWITCH_COLORS.switch.thumb.light,
+          TOGGLE_SWITCH_COLORS.switch.thumb.dark,
+        )}
+        style={{
+          height: `${thumbHeight}px`,
+          width: `${thumbWidth}px`,
+          top: `${(height - thumbHeight) / 2}px`,
+          transform: isChecked ? `translateX(${translateXValue}px)` : `translateX(${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px)`,
+        }}
+        aria-hidden="true"
+      />
     </label>
   );
 }
