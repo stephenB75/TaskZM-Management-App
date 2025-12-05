@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Archive,
@@ -26,11 +26,22 @@ import {
 import { TaskDialog } from "./TaskDialog";
 import { cn, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getInitials } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
+import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 import type { Task } from "../types";
 
 export function ArchiveView() {
-  const { tasks, updateTask, deleteTask } = useTasks();
+  const { tasks, updateTask, deleteTask, bulkDeleteTasks } = useTasks();
   const { getTeamMember } = useTeam();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,6 +53,8 @@ export function ArchiveView() {
   >();
   const [isTaskDialogOpen, setIsTaskDialogOpen] =
     useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Get completed tasks
   const completedTasks = tasks.filter(
@@ -184,6 +197,44 @@ export function ArchiveView() {
     deleteTask(task.id);
   };
 
+  const handleToggleSelect = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTaskIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTaskIds.size === sortedTasks.length) {
+      setSelectedTaskIds(new Set());
+    } else {
+      setSelectedTaskIds(new Set(sortedTasks.map(t => t.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTaskIds.size === 0) return;
+    const taskIdsArray = Array.from(selectedTaskIds);
+    await bulkDeleteTasks(taskIdsArray);
+    setSelectedTaskIds(new Set());
+    setShowBulkDeleteConfirm(false);
+  };
+
+  // Clear selection when tasks change (e.g., after deletion or filter change)
+  useEffect(() => {
+    setSelectedTaskIds(prev => {
+      const currentTaskIds = new Set(sortedTasks.map(t => t.id));
+      const filtered = new Set([...prev].filter(id => currentTaskIds.has(id)));
+      return filtered.size !== prev.size ? filtered : prev;
+    });
+  }, [sortedTasks]);
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "urgent":
@@ -224,6 +275,39 @@ export function ArchiveView() {
         isSidePanelHeader={true}
         description={`${completedTasks.length} completed ${completedTasks.length === 1 ? "task" : "tasks"}`}
         hideDesktopLogo
+        actions={
+          selectedTaskIds.size > 0 ? (
+            <div className="flex items-center gap-1.5">
+              <Button
+                onClick={handleSelectAll}
+                variant="outline"
+                className="rounded-full px-2.5 sm:px-3"
+                size="sm"
+              >
+                <span className="hidden sm:inline">
+                  {selectedTaskIds.size === sortedTasks.length ? "Deselect All" : "Select All"}
+                </span>
+                <span className="sm:hidden">
+                  {selectedTaskIds.size === sortedTasks.length ? "Deselect" : "Select All"}
+                </span>
+              </Button>
+              <Button
+                onClick={() => setShowBulkDeleteConfirm(true)}
+                variant="destructive"
+                className="rounded-full px-2.5 sm:px-3"
+                size="sm"
+              >
+                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  Delete ({selectedTaskIds.size})
+                </span>
+                <span className="sm:hidden">
+                  {selectedTaskIds.size}
+                </span>
+              </Button>
+            </div>
+          ) : undefined
+        }
       />
       {/* Spacer for fixed header on mobile */}
 
@@ -347,6 +431,22 @@ export function ArchiveView() {
                           onClick={() => handleTaskClick(task)}
                         >
                           <div className="flex items-start gap-2 md:gap-2.5">
+                            <Checkbox
+                              checked={selectedTaskIds.has(task.id)}
+                              onCheckedChange={() => {
+                                setSelectedTaskIds(prev => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(task.id)) {
+                                    newSet.delete(task.id);
+                                  } else {
+                                    newSet.add(task.id);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-0.5"
+                            />
                             {/* Checkmark Icon */}
                             <div className="w-7 h-7 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
                               <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -466,6 +566,25 @@ export function ArchiveView() {
         }}
         task={selectedTask}
       />
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Tasks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedTaskIds.size} task{selectedTaskIds.size === 1 ? '' : 's'}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

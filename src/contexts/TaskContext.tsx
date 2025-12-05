@@ -67,6 +67,7 @@ interface TaskContextType {
   addTask: (task: Partial<Task>) => Promise<void>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
+  bulkDeleteTasks: (taskIds: string[]) => Promise<void>;
   addProject: (project: Partial<Project>) => Promise<void>;
   updateProject: (projectId: string, updates: Partial<Project>) => Promise<void>;
   addFolder: (folder: Partial<Folder>) => Promise<void>;
@@ -1694,6 +1695,44 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaceId, accessToken, updateActivity]);
 
+  const bulkDeleteTasks = useCallback(async (taskIds: string[]) => {
+    if (taskIds.length === 0) return;
+    
+    updateActivity(); // Track demo user activity
+    
+    // Delete from Supabase FIRST (source of truth)
+    if (workspaceId && accessToken) {
+      try {
+        // Delete all tasks in parallel
+        await Promise.all(
+          taskIds.map(taskId => api.deleteTask(workspaceId, taskId))
+        );
+        // Reload from server to get the authoritative version
+        await loadTasksFromServer(workspaceId);
+        // Trigger immediate sync to notify other devices (debounced)
+        debouncedSync(false);
+        toast.success(`${taskIds.length} task${taskIds.length === 1 ? '' : 's'} deleted`);
+      } catch (error) {
+        logger.error('Failed to delete tasks from server:', error);
+        // Fallback: delete locally
+        setTasks(prev => {
+          const updated = prev.filter(task => !taskIds.includes(task.id));
+          saveToLocalStorage('tasks', updated);
+          return updated;
+        });
+        toast.error(`${taskIds.length} task${taskIds.length === 1 ? '' : 's'} deleted offline, will sync when online`);
+      }
+    } else {
+      // No workspace/auth - delete locally only
+      setTasks(prev => {
+        const updated = prev.filter(task => !taskIds.includes(task.id));
+        saveToLocalStorage('tasks', updated);
+        return updated;
+      });
+      toast.success(`${taskIds.length} task${taskIds.length === 1 ? '' : 's'} deleted (offline)`);
+    }
+  }, [workspaceId, accessToken, updateActivity]);
+
   const addProject = useCallback(async (projectData: Partial<Project>) => {
     const newProject: Project = {
       id: generateId(),
@@ -2684,6 +2723,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         addTask,
         updateTask,
         deleteTask,
+        bulkDeleteTasks,
         addProject,
         updateProject,
         addFolder,

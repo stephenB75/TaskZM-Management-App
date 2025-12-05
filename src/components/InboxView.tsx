@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Inbox,
@@ -34,7 +34,19 @@ import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
+import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
+import { Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 import type { Task } from "../types";
 
 const getTwoWeekDateRange = () => {
@@ -50,7 +62,7 @@ const getTwoWeekDateRange = () => {
 };
 
 export function InboxView() {
-  const { tasks, addTask } = useTasks();
+  const { tasks, addTask, bulkDeleteTasks } = useTasks();
   const { getTeamMember } = useTeam();
   const { scheduleAllTasks } = useAIScheduler();
   const isMobile = useIsMobile();
@@ -67,6 +79,8 @@ export function InboxView() {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [quickAddTitle, setQuickAddTitle] = useState("");
   const [showScheduled, setShowScheduled] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Get unscheduled tasks (or scheduled if showScheduled is true)
   const unscheduledTasks = tasks.filter(
@@ -284,6 +298,44 @@ export function InboxView() {
     }
   };
 
+  const handleToggleSelect = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTaskIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTaskIds.size === sortedTasks.length) {
+      setSelectedTaskIds(new Set());
+    } else {
+      setSelectedTaskIds(new Set(sortedTasks.map(t => t.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTaskIds.size === 0) return;
+    const taskIdsArray = Array.from(selectedTaskIds);
+    await bulkDeleteTasks(taskIdsArray);
+    setSelectedTaskIds(new Set());
+    setShowBulkDeleteConfirm(false);
+  };
+
+  // Clear selection when tasks change (e.g., after deletion or filter change)
+  useEffect(() => {
+    setSelectedTaskIds(prev => {
+      const currentTaskIds = new Set(sortedTasks.map(t => t.id));
+      const filtered = new Set([...prev].filter(id => currentTaskIds.has(id)));
+      return filtered.size !== prev.size ? filtered : prev;
+    });
+  }, [sortedTasks]);
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "urgent":
@@ -315,30 +367,64 @@ export function InboxView() {
         hideDesktopLogo
         actions={
           <div className="flex items-center gap-1.5">
-            <Button
-              onClick={handleScheduleAll}
-              className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2.5 sm:px-3`}
-              size="sm"
-              disabled={unscheduledTasks.length === 0}
-            >
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-              <span className="hidden sm:inline">
-                Schedule All
-              </span>
-            </Button>
-            <Button
-              onClick={() => {
-                setSelectedTask(undefined);
-                setIsTaskDialogOpen(true);
-              }}
-              className="hidden sm:flex rounded-full px-2.5 sm:px-3"
-              size="sm"
-            >
-              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline ml-2">
-                New Task
-              </span>
-            </Button>
+            {selectedTaskIds.size > 0 ? (
+              <>
+                <Button
+                  onClick={handleSelectAll}
+                  variant="outline"
+                  className="rounded-full px-2.5 sm:px-3"
+                  size="sm"
+                >
+                  <span className="hidden sm:inline">
+                    {selectedTaskIds.size === sortedTasks.length ? "Deselect All" : "Select All"}
+                  </span>
+                  <span className="sm:hidden">
+                    {selectedTaskIds.size === sortedTasks.length ? "Deselect" : "Select All"}
+                  </span>
+                </Button>
+                <Button
+                  onClick={() => setShowBulkDeleteConfirm(true)}
+                  variant="destructive"
+                  className="rounded-full px-2.5 sm:px-3"
+                  size="sm"
+                >
+                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    Delete ({selectedTaskIds.size})
+                  </span>
+                  <span className="sm:hidden">
+                    {selectedTaskIds.size}
+                  </span>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={handleScheduleAll}
+                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2.5 sm:px-3`}
+                  size="sm"
+                  disabled={unscheduledTasks.length === 0}
+                >
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    Schedule All
+                  </span>
+                </Button>
+                <Button
+                  onClick={() => {
+                    setSelectedTask(undefined);
+                    setIsTaskDialogOpen(true);
+                  }}
+                  className="hidden sm:flex rounded-full px-2.5 sm:px-3"
+                  size="sm"
+                >
+                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline ml-2">
+                    New Task
+                  </span>
+                </Button>
+              </>
+            )}
           </div>
         }
       />
@@ -557,6 +643,22 @@ export function InboxView() {
                           onClick={() => handleTaskClick(task)}
                         >
                           <div className="flex items-start gap-2 md:gap-3">
+                            <Checkbox
+                              checked={selectedTaskIds.has(task.id)}
+                              onCheckedChange={() => {
+                                setSelectedTaskIds(prev => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(task.id)) {
+                                    newSet.delete(task.id);
+                                  } else {
+                                    newSet.add(task.id);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-0.5"
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <h4 className="font-medium text-sm leading-tight">
@@ -738,6 +840,25 @@ export function InboxView() {
         }}
         task={selectedTask}
       />
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Tasks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedTaskIds.size} task{selectedTaskIds.size === 1 ? '' : 's'}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
