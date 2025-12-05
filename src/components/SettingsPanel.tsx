@@ -2371,7 +2371,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
               <Button 
                 size="sm" 
-                className="w-full bg-primary/20 hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40 text-foreground border border-primary/30"
+                className="w-full bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 text-primary-foreground border border-primary/20 shadow-sm"
                 onClick={handleStartTour}
               >
                 <Compass className="w-4 h-4 mr-2" />

@@ -71,12 +71,14 @@ function Switch({
         width: `${TOGGLE_SWITCH_DIMENSIONS.container.width}px`,
         height: `${TOGGLE_SWITCH_DIMENSIONS.container.height}px`,
         WebkitTapHighlightColor: 'transparent',
+        // Ensure box-sizing is content-box to account for border in calculations
+        boxSizing: 'border-box',
       }}
     >
       {/* Sliding thumb - circular (pill-shaped container, circular thumb) */}
       <span
         className={cn(
-          "pointer-events-none absolute rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
+          "pointer-events-none absolute rounded-full shadow-md ring-0 transition-all duration-200 ease-in-out",
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
@@ -84,12 +86,13 @@ function Switch({
           // Circular thumb: perfectly circular, perfectly centered
           height: `${TOGGLE_SWITCH_DIMENSIONS.thumb.height}px`,
           width: `${TOGGLE_SWITCH_DIMENSIONS.thumb.width}px`,
-          // Calculate top position for perfect vertical centering: (container height - thumb height) / 2
-          top: `${(TOGGLE_SWITCH_DIMENSIONS.container.height - TOGGLE_SWITCH_DIMENSIONS.thumb.height) / 2}px`,
+          // Perfect vertical centering using 50% + translateY(-50%)
+          top: '50%',
+          transform: 'translateY(-50%)',
+          // Perfect horizontal positioning
           left: isChecked 
             ? `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked}px` 
             : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
-          // Remove transform to avoid subpixel rendering issues on mobile
         }}
         aria-hidden="true"
       />

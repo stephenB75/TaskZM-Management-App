@@ -435,8 +435,11 @@ export const TOGGLE_SWITCH_DIMENSIONS = {
     height: 14, // Circular thumb - same as width
   },
   thumbOffset: {
-    checked: 32, // translate-x-[32px] = 32px (48px - 14px - 2px)
+    // Calculate offsets: container width (48px) - thumb width (14px) - padding (2px) = 32px for checked
+    // For unchecked: 2px padding from left edge
+    // For checked: container width - thumb width - right padding = 48 - 14 - 2 = 32px
     unchecked: 2, // 2px padding from left edge
+    checked: 32, // 32px from left (48px - 14px - 2px) for right-aligned when checked
   },
   icon: {
     size: 16, // w-4 h-4 = 16px
