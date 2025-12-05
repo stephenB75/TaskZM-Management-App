@@ -1606,7 +1606,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    const updatedTask = { ...currentTask, ...updates, updatedAt: new Date().toISOString() };
+    // Preserve recurrence property when updating task - don't let updates overwrite it unless explicitly changed
+    // This ensures recurring tasks maintain their recurrence pattern when marked complete
+    const updatedTask = { 
+      ...currentTask, 
+      ...updates, 
+      updatedAt: new Date().toISOString(),
+      // Explicitly preserve recurrence if it's not being changed
+      recurrence: updates.recurrence !== undefined ? updates.recurrence : currentTask.recurrence
+    };
     let nextOccurrenceTask: Task | null = null;
     
     // Check if task is being marked as complete (status changing to 'done')
@@ -1636,7 +1644,24 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Generate next occurrence for recurring tasks when marked complete
     // This happens regardless of how the task was marked complete (via status or completedAt)
     // IMPORTANT: Only create next occurrence if the task is actually being marked complete (not already done)
-    if (isBeingMarkedComplete && currentTask.recurrence && currentTask.recurrence.type !== 'none' && currentTask.status !== 'done') {
+    // Also ensure the updatedTask still has recurrence (it might have been preserved above)
+    const hasRecurrence = (updatedTask.recurrence && updatedTask.recurrence.type !== 'none') || 
+                          (currentTask.recurrence && currentTask.recurrence.type !== 'none');
+    
+    if (isBeingMarkedComplete && hasRecurrence && currentTask.status !== 'done') {
+      // Use the recurrence from updatedTask if available, otherwise use currentTask
+      const taskRecurrence = updatedTask.recurrence && updatedTask.recurrence.type !== 'none' 
+        ? updatedTask.recurrence 
+        : currentTask.recurrence;
+      
+      if (!taskRecurrence || taskRecurrence.type === 'none') {
+        logger.warn('Recurring task marked complete but recurrence is missing or none', {
+          taskId,
+          taskTitle: currentTask.title,
+          updatedTaskRecurrence: updatedTask.recurrence,
+          currentTaskRecurrence: currentTask.recurrence
+        });
+      } else {
       // Prevent concurrent next occurrence creation for the same task
       // This handles race conditions when user clicks complete multiple times rapidly
       if (nextOccurrenceCreationLock.current.has(taskId)) {
@@ -1652,7 +1677,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // Calculate next occurrence from TODAY (completion date), not from original scheduled date
           // This ensures the next task appears on the correct future date
           const completionDate = new Date(); // Today - when the task is being marked complete
-          const nextOccurrence = calculateNextOccurrence(currentTask, completionDate);
+          // Create a task object with the correct recurrence for calculation
+          const taskForCalculation: Task = {
+            ...currentTask,
+            recurrence: taskRecurrence
+          };
+          const nextOccurrence = calculateNextOccurrence(taskForCalculation, completionDate);
           
           if (nextOccurrence) {
             const nextOccurrenceDateStr = nextOccurrence.toISOString();
@@ -1668,12 +1698,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               if (t.title !== currentTask.title) return false;
               
               // Must have the same recurrence pattern
-              if (!t.recurrence || t.recurrence.type !== currentTask.recurrence.type) return false;
-              if (t.recurrence.interval !== currentTask.recurrence.interval) return false;
+              if (!t.recurrence || t.recurrence.type !== taskRecurrence.type) return false;
+              if (t.recurrence.interval !== taskRecurrence.interval) return false;
               
               // For weekly tasks, also check daysOfWeek (sort arrays for comparison)
-              if (currentTask.recurrence.type === 'weekly') {
-                const currentDays = (currentTask.recurrence.daysOfWeek || []).sort();
+              if (taskRecurrence.type === 'weekly') {
+                const currentDays = (taskRecurrence.daysOfWeek || []).sort();
                 const taskDays = (t.recurrence.daysOfWeek || []).sort();
                 if (JSON.stringify(currentDays) !== JSON.stringify(taskDays)) {
                   return false;
@@ -1681,8 +1711,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               }
               
               // For monthly tasks, also check dayOfMonth
-              if (currentTask.recurrence.type === 'monthly' && 
-                  t.recurrence.dayOfMonth !== currentTask.recurrence.dayOfMonth) {
+              if (taskRecurrence.type === 'monthly' && 
+                  t.recurrence.dayOfMonth !== taskRecurrence.dayOfMonth) {
                 return false;
               }
               
@@ -1699,6 +1729,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             if (!existingNextOccurrence) {
               // Create new task instance for the next occurrence
               // The current task stays done on its scheduled date, new instance continues the series
+              // IMPORTANT: Preserve the recurrence pattern in the next occurrence
               nextOccurrenceTask = {
                 ...currentTask,
                 id: generateId(),
@@ -1707,6 +1738,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 completedAt: null,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                recurrence: taskRecurrence, // Ensure recurrence is preserved
               };
             } else {
               // Next occurrence already exists - log for debugging but don't create duplicate
