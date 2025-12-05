@@ -1,4 +1,5 @@
 import type { Task, RecurrenceConfig } from '../types';
+import { TIMING_CONSTANTS } from './timing-constants';
 
 /**
  * Check if a date matches a task's recurrence pattern
@@ -42,7 +43,7 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
   }
 
   const recurrence = task.recurrence;
-  const daysDiff = Math.floor((checkDateOnly.getTime() - baseDateOnly.getTime()) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.floor((checkDateOnly.getTime() - baseDateOnly.getTime()) / TIMING_CONSTANTS.timeConversions.daysToMs);
 
   switch (recurrence.type) {
     case 'daily':
@@ -66,19 +67,19 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
           firstOccurrence.setDate(baseDateOnly.getDate() + (nextDayInWeek - baseDayOfWeek));
         } else {
           // First occurrence is in the next week
-          firstOccurrence.setDate(baseDateOnly.getDate() + (7 - baseDayOfWeek + sortedDays[0]));
+          firstOccurrence.setDate(baseDateOnly.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek - baseDayOfWeek + sortedDays[0]));
         }
         firstOccurrence.setHours(0, 0, 0, 0);
         
         // Calculate weeks difference from first occurrence
-        const weeksFromFirst = Math.floor((checkDateOnly.getTime() - firstOccurrence.getTime()) / (1000 * 60 * 60 * 24 * 7));
+        const weeksFromFirst = Math.floor((checkDateOnly.getTime() - firstOccurrence.getTime()) / TIMING_CONSTANTS.timeConversions.weeksToMs);
         
         // Check if we're on a valid interval week and the day matches
         return weeksFromFirst >= 0 && weeksFromFirst % recurrence.interval === 0;
       }
       // Fallback: simple weekly interval (same day of week every interval weeks)
       if (checkDateOnly.getDay() !== baseDateOnly.getDay()) return false;
-      return daysDiff >= 0 && Math.floor(daysDiff / 7) % recurrence.interval === 0;
+      return daysDiff >= 0 && Math.floor(daysDiff / TIMING_CONSTANTS.calendar.daysPerWeek) % recurrence.interval === 0;
 
     case 'monthly':
       if (recurrence.dayOfMonth) {

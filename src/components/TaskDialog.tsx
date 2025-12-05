@@ -78,6 +78,7 @@ import { useCalendar } from "../contexts/CalendarContext";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
+import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from "../lib/daily-hours-utils";
@@ -844,15 +845,18 @@ export function TaskDialog({
         });
         return;
       }
-      if (recurrenceType === "monthly" && (!recurrenceDayOfMonth || recurrenceDayOfMonth < 1 || recurrenceDayOfMonth > 31)) {
+      if (recurrenceType === "monthly" && (!recurrenceDayOfMonth || 
+          recurrenceDayOfMonth < TIMING_CONSTANTS.calendar.minDayOfMonth || 
+          recurrenceDayOfMonth > TIMING_CONSTANTS.calendar.maxDayOfMonth)) {
         toast.error("Monthly Recurrence Required", {
-          description: "Please select a valid day of the month (1-31) for monthly recurrence.",
+          description: `Please select a valid day of the month (${TIMING_CONSTANTS.calendar.minDayOfMonth}-${TIMING_CONSTANTS.calendar.maxDayOfMonth}) for monthly recurrence.`,
         });
         return;
       }
-      if (recurrenceInterval < 1 || recurrenceInterval > 365) {
+      if (recurrenceInterval < TIMING_CONSTANTS.calendar.minRecurrenceInterval || 
+          recurrenceInterval > TIMING_CONSTANTS.calendar.maxRecurrenceInterval) {
         toast.error("Invalid Recurrence Interval", {
-          description: "Recurrence interval must be between 1 and 365.",
+          description: `Recurrence interval must be between ${TIMING_CONSTANTS.calendar.minRecurrenceInterval} and ${TIMING_CONSTANTS.calendar.maxRecurrenceInterval}.`,
         });
         return;
       }

@@ -1505,10 +1505,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       case 'weekly':
         if (task.recurrence.daysOfWeek && Array.isArray(task.recurrence.daysOfWeek) && task.recurrence.daysOfWeek.length > 0) {
           // Validate days of week
-          const validDays = task.recurrence.daysOfWeek.filter(day => typeof day === 'number' && day >= 0 && day <= 6);
+          const validDays = task.recurrence.daysOfWeek.filter(day => 
+            typeof day === 'number' && 
+            day >= TIMING_CONSTANTS.calendar.minDayOfWeek && 
+            day <= TIMING_CONSTANTS.calendar.maxDayOfWeek
+          );
           if (validDays.length === 0) {
             // Fallback: add interval weeks
-            nextDate.setDate(nextDate.getDate() + (7 * task.recurrence.interval));
+            nextDate.setDate(nextDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * task.recurrence.interval));
             break;
           }
 
@@ -1523,21 +1527,24 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           } else {
             // Next occurrence is in the following interval week
             // Calculate days until the first valid day in the next interval week
-            const daysUntilNextWeek = 7 - currentDay;
+            const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
             const daysToFirstDay = sortedDays[0];
             // Add (interval - 1) full weeks after the first week
-            const daysToAdd = daysUntilNextWeek + daysToFirstDay + (7 * (task.recurrence.interval - 1));
+            const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (task.recurrence.interval - 1));
             nextDate.setDate(nextDate.getDate() + daysToAdd);
           }
         } else {
           // Fallback: add interval weeks (same day of week)
           // If calculating from today, ensure we move to the next interval week
-          nextDate.setDate(nextDate.getDate() + (7 * task.recurrence.interval));
+          nextDate.setDate(nextDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * task.recurrence.interval));
         }
         break;
       
       case 'monthly':
-        if (task.recurrence.dayOfMonth && typeof task.recurrence.dayOfMonth === 'number' && task.recurrence.dayOfMonth >= 1 && task.recurrence.dayOfMonth <= 31) {
+        if (task.recurrence.dayOfMonth && 
+            typeof task.recurrence.dayOfMonth === 'number' && 
+            task.recurrence.dayOfMonth >= TIMING_CONSTANTS.calendar.minDayOfMonth && 
+            task.recurrence.dayOfMonth <= TIMING_CONSTANTS.calendar.maxDayOfMonth) {
           // Add interval months from the base date
           nextDate.setMonth(nextDate.getMonth() + task.recurrence.interval);
           // Set to the specified day of month, adjusting if needed (e.g., Jan 31 -> Feb 28)
@@ -1717,7 +1724,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // This prevents race conditions from rapid clicks
           setTimeout(() => {
             nextOccurrenceCreationLock.current.delete(taskId);
-          }, 2000); // 2 second lock to prevent rapid duplicate creation
+          }, TIMING_CONSTANTS.recurrence.nextOccurrenceLockTimeout); // Lock timeout to prevent rapid duplicate creation
         }
       }
     }

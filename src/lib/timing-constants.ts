@@ -48,8 +48,26 @@ export const TIMING_CONSTANTS = {
     minutesToMs: 60000, // 1 minute = 60000ms
     hoursToMs: 3600000, // 1 hour = 3600000ms
     daysToMs: 86400000, // 1 day = 86400000ms
+    weeksToMs: 604800000, // 1 week = 7 days = 604800000ms
     minutesToSeconds: 60, // 1 minute = 60 seconds
     hoursToMinutes: 60, // 1 hour = 60 minutes
+  },
+  
+  // Calendar constants
+  calendar: {
+    daysPerWeek: 7, // Number of days in a week
+    monthsPerYear: 12, // Number of months in a year
+    minDayOfWeek: 0, // Sunday (0) - minimum day of week index
+    maxDayOfWeek: 6, // Saturday (6) - maximum day of week index
+    minDayOfMonth: 1, // First day of month
+    maxDayOfMonth: 31, // Last day of month (maximum)
+    minRecurrenceInterval: 1, // Minimum recurrence interval
+    maxRecurrenceInterval: 365, // Maximum recurrence interval (1 year)
+  },
+  
+  // Recurrence-specific delays
+  recurrence: {
+    nextOccurrenceLockTimeout: 2000, // 2 seconds - Lock timeout to prevent duplicate next occurrence creation
   },
 } as const;
 
