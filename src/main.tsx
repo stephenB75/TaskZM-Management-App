@@ -57,10 +57,20 @@ if (typeof window !== 'undefined') {
       const filename = event.filename?.toString() || '';
       
       // Suppress Chrome extension errors
-      if (message.includes('message channel closed before a response was received') ||
+      // Check for checkoutUrls error early (can appear in message or as TypeError)
+      const hasCheckoutUrlsError = message.includes('checkoutUrls') || 
+          (event.error && (
+            (typeof event.error === 'object' && (
+              event.error?.message?.includes?.('checkoutUrls') ||
+              event.error?.toString?.()?.includes?.('checkoutUrls') ||
+              JSON.stringify(event.error).includes('checkoutUrls')
+            ))
+          ));
+      
+      if (hasCheckoutUrlsError ||
+          message.includes('message channel closed before a response was received') ||
           message.includes('listener indicated an asynchronous response') ||
           message.includes('asynchronous response by returning true') ||
-          message.includes('checkoutUrls') ||
           message.includes('ERR_FILE_NOT_FOUND') ||
           (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||
@@ -151,6 +161,20 @@ if (typeof window !== 'undefined') {
       const stack = typeof event.reason === 'object' && event.reason?.stack
         ? event.reason.stack.toString()
         : '';
+      
+      // Check error object properties for checkoutUrls
+      const hasCheckoutUrlsError = message.includes('checkoutUrls') || 
+          (typeof event.reason === 'object' && (
+            event.reason?.message?.includes?.('checkoutUrls') ||
+            event.reason?.toString?.()?.includes?.('checkoutUrls') ||
+            JSON.stringify(event.reason).includes('checkoutUrls')
+          ));
+      
+      // Suppress checkoutUrls errors from browser extensions (check early)
+      if (hasCheckoutUrlsError) {
+        event.preventDefault();
+        return false;
+      }
       
       // Suppress extension-related promise rejections
       if (message.includes('message channel closed before a response was received') ||
