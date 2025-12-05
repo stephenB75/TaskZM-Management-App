@@ -1662,9 +1662,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           currentTaskRecurrence: currentTask.recurrence
         });
       } else {
-      // Prevent concurrent next occurrence creation for the same task
-      // This handles race conditions when user clicks complete multiple times rapidly
-      if (nextOccurrenceCreationLock.current.has(taskId)) {
+        // Prevent concurrent next occurrence creation for the same task
+        // This handles race conditions when user clicks complete multiple times rapidly
+        if (nextOccurrenceCreationLock.current.has(taskId)) {
         logger.debug('Next occurrence creation already in progress for this task, skipping duplicate', {
           taskId,
           taskTitle: currentTask.title
@@ -1759,7 +1759,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           }, TIMING_CONSTANTS.recurrence.nextOccurrenceLockTimeout); // Lock timeout to prevent rapid duplicate creation
         }
       }
-    }
+      } // Close else block for taskRecurrence check
+    } // Close if block for isBeingMarkedComplete
 
     // Save to Supabase FIRST (source of truth)
     if (workspaceId && accessToken) {
