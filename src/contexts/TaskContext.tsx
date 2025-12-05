@@ -91,6 +91,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
   const { updateActivity } = useDemoActivity(); // Track demo user activity
   const [tasks, setTasks] = useState<Task[]>([]);
+  // Lock to prevent concurrent next occurrence creation for the same task
+  const nextOccurrenceCreationLock = useRef<Set<string>>(new Set());
   const [projects, setProjects] = useState<Project[]>([
     {
       id: DEFAULT_PROJECT_ID,
@@ -138,6 +140,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const syncIntervalRef = useRef<number>(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Keep latest interval in ref to avoid stale closures
   const lastErrorToastRef = useRef<{ message: string; timestamp: number } | null>(null); // Track last error toast to prevent duplicates
   const lastNetworkErrorLogRef = useRef<number>(0); // Track last network error log time to suppress repeated warnings
+  // Lock to prevent concurrent next occurrence creation for the same task
+  const nextOccurrenceCreationLock = useRef<Set<string>>(new Set());
   
   // Activity tracking for adaptive polling
   const lastActivityRef = useRef<number>(Date.now());
@@ -405,6 +409,69 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [user, accessToken]);
 
+  // Deduplicate recurring task occurrences
+  // Removes duplicate tasks that have the same title, recurrence pattern, and scheduled date
+  function deduplicateRecurringTasks(tasks: Task[]): Task[] {
+    const seen = new Map<string, Task>();
+    
+    for (const task of tasks) {
+      // Only check recurring tasks
+      if (!task.recurrence || task.recurrence.type === 'none') {
+        continue;
+      }
+      
+      // Create a unique key for this recurring task occurrence
+      // Format: title|type|interval|daysOfWeek|dayOfMonth|scheduledDate
+      const daysOfWeekKey = task.recurrence.daysOfWeek 
+        ? JSON.stringify([...task.recurrence.daysOfWeek].sort())
+        : '';
+      const dayOfMonthKey = task.recurrence.dayOfMonth || '';
+      const key = `${task.title}|${task.recurrence.type}|${task.recurrence.interval}|${daysOfWeekKey}|${dayOfMonthKey}|${task.scheduledDate || ''}`;
+      
+      // If we've seen this key before, keep the one with the most recent updatedAt
+      if (seen.has(key)) {
+        const existing = seen.get(key)!;
+        const existingDate = new Date(existing.updatedAt);
+        const currentDate = new Date(task.updatedAt);
+        
+        // Keep the most recently updated one, or if same, keep the one that's not done
+        if (currentDate > existingDate || (currentDate.getTime() === existingDate.getTime() && task.status !== 'done' && existing.status === 'done')) {
+          seen.set(key, task);
+        }
+      } else {
+        seen.set(key, task);
+      }
+    }
+    
+    // Return deduplicated tasks
+    const deduplicated = new Set(seen.values());
+    const duplicatesRemoved = tasks.length - deduplicated.size;
+    
+    if (duplicatesRemoved > 0) {
+      logger.warn(`Removed ${duplicatesRemoved} duplicate recurring task occurrence(s)`);
+    }
+    
+    // Return all tasks, but replace duplicates with the deduplicated versions
+    const deduplicatedMap = new Map(seen.values().map(t => [t.id, t]));
+    return tasks.map(task => {
+      // If this task is a recurring task, check if we have a deduplicated version
+      if (task.recurrence && task.recurrence.type !== 'none') {
+        const daysOfWeekKey = task.recurrence.daysOfWeek 
+          ? JSON.stringify([...task.recurrence.daysOfWeek].sort())
+          : '';
+        const dayOfMonthKey = task.recurrence.dayOfMonth || '';
+        const key = `${task.title}|${task.recurrence.type}|${task.recurrence.interval}|${daysOfWeekKey}|${dayOfMonthKey}|${task.scheduledDate || ''}`;
+        const deduplicatedTask = seen.get(key);
+        
+        // If this task is not the one we're keeping, return null to filter it out
+        if (deduplicatedTask && deduplicatedTask.id !== task.id) {
+          return null;
+        }
+      }
+      return task;
+    }).filter((task): task is Task => task !== null);
+  }
+
   // Load tasks from Supabase (source of truth)
   async function loadTasksFromServer(wsId: string): Promise<Task[]> {
     // Validate workspace ID
@@ -459,11 +526,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       
       // No error - process the tasks
       if (serverTasks && serverTasks.length > 0) {
+        // Deduplicate recurring task occurrences before using server data
+        const deduplicatedTasks = deduplicateRecurringTasks(serverTasks);
+        
         // Server has data - use it as source of truth
-        logger.info(`Loaded ${serverTasks.length} tasks from server`);
-        setTasks(serverTasks);
-        // Always update localStorage with server data (overwrite any stale local data)
-        saveToLocalStorage('tasks', serverTasks, user?.id);
+        logger.info(`Loaded ${serverTasks.length} tasks from server${deduplicatedTasks.length !== serverTasks.length ? ` (deduplicated to ${deduplicatedTasks.length})` : ''}`);
+        setTasks(deduplicatedTasks);
+        // Always update localStorage with deduplicated server data (overwrite any stale local data)
+        saveToLocalStorage('tasks', deduplicatedTasks, user?.id);
         setLastSync(new Date());
         
         // Store sync timestamp and ETag for next delta sync
@@ -475,7 +545,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Clear any sync flags to ensure fresh sync on next load
         const syncFlagKey = `synced_local_data_${wsId}`;
         localStorage.removeItem(syncFlagKey);
-        return serverTasks;
+        return deduplicatedTasks;
       } else {
         // No server data - this is valid (workspace exists but has no tasks)
         logger.info('No tasks found on server (workspace may be empty)');
@@ -495,9 +565,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // After syncing, reload from server to get authoritative data
           const refreshedResult = await api.getTasks(wsId);
           if (!refreshedResult.error && refreshedResult.tasks && refreshedResult.tasks.length > 0) {
-            setTasks(refreshedResult.tasks);
-            saveToLocalStorage('tasks', refreshedResult.tasks, user?.id);
-            return refreshedResult.tasks;
+            // Deduplicate recurring task occurrences
+            const deduplicatedTasks = deduplicateRecurringTasks(refreshedResult.tasks);
+            setTasks(deduplicatedTasks);
+            saveToLocalStorage('tasks', deduplicatedTasks, user?.id);
+            return deduplicatedTasks;
           }
         }
         // No tasks in server or localStorage - this is valid for a new workspace
@@ -1560,70 +1632,94 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // This happens regardless of how the task was marked complete (via status or completedAt)
     // IMPORTANT: Only create next occurrence if the task is actually being marked complete (not already done)
     if (isBeingMarkedComplete && currentTask.recurrence && currentTask.recurrence.type !== 'none' && currentTask.status !== 'done') {
-      // Calculate next occurrence from TODAY (completion date), not from original scheduled date
-      // This ensures the next task appears on the correct future date
-      const completionDate = new Date(); // Today - when the task is being marked complete
-      const nextOccurrence = calculateNextOccurrence(currentTask, completionDate);
-      
-      if (nextOccurrence) {
-        const nextOccurrenceDateStr = nextOccurrence.toISOString();
-        
-        // Check if a next occurrence already exists to prevent duplicates
-        // Look for a task with matching recurrence pattern, title, and the next scheduled date
-        const existingNextOccurrence = tasks.find(t => {
-          // Must be a different task
-          if (t.id === taskId) return false;
-          
-          // Must have the same title (same task series)
-          if (t.title !== currentTask.title) return false;
-          
-          // Must have the same recurrence pattern
-          if (!t.recurrence || t.recurrence.type !== currentTask.recurrence.type) return false;
-          if (t.recurrence.interval !== currentTask.recurrence.interval) return false;
-          
-          // For weekly tasks, also check daysOfWeek
-          if (currentTask.recurrence.type === 'weekly' && 
-              JSON.stringify(t.recurrence.daysOfWeek) !== JSON.stringify(currentTask.recurrence.daysOfWeek)) {
-            return false;
-          }
-          
-          // For monthly tasks, also check dayOfMonth
-          if (currentTask.recurrence.type === 'monthly' && 
-              t.recurrence.dayOfMonth !== currentTask.recurrence.dayOfMonth) {
-            return false;
-          }
-          
-          // Must have the same scheduled date as the next occurrence
-          if (t.scheduledDate !== nextOccurrenceDateStr) return false;
-          
-          // Must be active (not completed) - this is the next occurrence we're looking for
-          if (t.status === 'done') return false;
-          
-          return true;
+      // Prevent concurrent next occurrence creation for the same task
+      // This handles race conditions when user clicks complete multiple times rapidly
+      if (nextOccurrenceCreationLock.current.has(taskId)) {
+        logger.debug('Next occurrence creation already in progress for this task, skipping duplicate', {
+          taskId,
+          taskTitle: currentTask.title
         });
+      } else {
+        // Acquire lock
+        nextOccurrenceCreationLock.current.add(taskId);
+        
+        try {
+          // Calculate next occurrence from TODAY (completion date), not from original scheduled date
+          // This ensures the next task appears on the correct future date
+          const completionDate = new Date(); // Today - when the task is being marked complete
+          const nextOccurrence = calculateNextOccurrence(currentTask, completionDate);
+          
+          if (nextOccurrence) {
+            const nextOccurrenceDateStr = nextOccurrence.toISOString();
+            
+            // Check if a next occurrence already exists to prevent duplicates
+            // Look for a task with matching recurrence pattern, title, and the next scheduled date
+            // Use a more comprehensive check that includes checking all tasks, not just current state
+            const existingNextOccurrence = tasks.find(t => {
+              // Must be a different task
+              if (t.id === taskId) return false;
+              
+              // Must have the same title (same task series)
+              if (t.title !== currentTask.title) return false;
+              
+              // Must have the same recurrence pattern
+              if (!t.recurrence || t.recurrence.type !== currentTask.recurrence.type) return false;
+              if (t.recurrence.interval !== currentTask.recurrence.interval) return false;
+              
+              // For weekly tasks, also check daysOfWeek (sort arrays for comparison)
+              if (currentTask.recurrence.type === 'weekly') {
+                const currentDays = (currentTask.recurrence.daysOfWeek || []).sort();
+                const taskDays = (t.recurrence.daysOfWeek || []).sort();
+                if (JSON.stringify(currentDays) !== JSON.stringify(taskDays)) {
+                  return false;
+                }
+              }
+              
+              // For monthly tasks, also check dayOfMonth
+              if (currentTask.recurrence.type === 'monthly' && 
+                  t.recurrence.dayOfMonth !== currentTask.recurrence.dayOfMonth) {
+                return false;
+              }
+              
+              // Must have the same scheduled date as the next occurrence
+              if (t.scheduledDate !== nextOccurrenceDateStr) return false;
+              
+              // Must be active (not completed) - this is the next occurrence we're looking for
+              if (t.status === 'done') return false;
+              
+              return true;
+            });
 
-        // Only create next occurrence if it doesn't already exist
-        if (!existingNextOccurrence) {
-          // Create new task instance for the next occurrence
-          // The current task stays done on its scheduled date, new instance continues the series
-          nextOccurrenceTask = {
-            ...currentTask,
-            id: generateId(),
-            status: 'todo',
-            scheduledDate: nextOccurrence.toISOString(),
-            completedAt: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-        } else {
-          // Next occurrence already exists - log for debugging but don't create duplicate
-          logger.debug('Next occurrence already exists, skipping creation to prevent duplicate', {
-            currentTaskId: currentTask.id,
-            currentScheduledDate: currentTask.scheduledDate,
-            nextOccurrenceDate: nextOccurrenceDateStr,
-            existingTaskId: existingNextOccurrence.id,
-            existingTaskScheduledDate: existingNextOccurrence.scheduledDate
-          });
+            // Only create next occurrence if it doesn't already exist
+            if (!existingNextOccurrence) {
+              // Create new task instance for the next occurrence
+              // The current task stays done on its scheduled date, new instance continues the series
+              nextOccurrenceTask = {
+                ...currentTask,
+                id: generateId(),
+                status: 'todo',
+                scheduledDate: nextOccurrence.toISOString(),
+                completedAt: null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              };
+            } else {
+              // Next occurrence already exists - log for debugging but don't create duplicate
+              logger.debug('Next occurrence already exists, skipping creation to prevent duplicate', {
+                currentTaskId: currentTask.id,
+                currentScheduledDate: currentTask.scheduledDate,
+                nextOccurrenceDate: nextOccurrenceDateStr,
+                existingTaskId: existingNextOccurrence.id,
+                existingTaskScheduledDate: existingNextOccurrence.scheduledDate
+              });
+            }
+          }
+        } finally {
+          // Release lock after a short delay to ensure server save completes
+          // This prevents race conditions from rapid clicks
+          setTimeout(() => {
+            nextOccurrenceCreationLock.current.delete(taskId);
+          }, 2000); // 2 second lock to prevent rapid duplicate creation
         }
       }
     }
