@@ -140,8 +140,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const syncIntervalRef = useRef<number>(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Keep latest interval in ref to avoid stale closures
   const lastErrorToastRef = useRef<{ message: string; timestamp: number } | null>(null); // Track last error toast to prevent duplicates
   const lastNetworkErrorLogRef = useRef<number>(0); // Track last network error log time to suppress repeated warnings
-  // Lock to prevent concurrent next occurrence creation for the same task
-  const nextOccurrenceCreationLock = useRef<Set<string>>(new Set());
   
   // Activity tracking for adaptive polling
   const lastActivityRef = useRef<number>(Date.now());
