@@ -1406,19 +1406,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Helper function to calculate next occurrence date for recurring tasks
   // This calculates the next occurrence AFTER the current scheduledDate
-  const calculateNextOccurrence = useCallback((task: Task): Date | null => {
+  const calculateNextOccurrence = useCallback((task: Task, fromDate?: Date): Date | null => {
     if (!task.recurrence || task.recurrence.type === 'none') return null;
-    if (!task.scheduledDate) return null;
+    
+    // Use provided fromDate (completion date) or fall back to scheduledDate
+    // When a task is marked complete, we calculate from TODAY, not the original scheduled date
+    const baseDate = fromDate ? new Date(fromDate) : (task.scheduledDate ? new Date(task.scheduledDate) : null);
+    if (!baseDate || isNaN(baseDate.getTime())) {
+      console.error('calculateNextOccurrence: Invalid base date', fromDate || task.scheduledDate);
+      return null;
+    }
 
     // Validate recurrence interval
     if (typeof task.recurrence.interval !== 'number' || task.recurrence.interval < 1) {
       console.error('calculateNextOccurrence: Invalid recurrence interval', task.recurrence.interval);
-      return null;
-    }
-
-    const baseDate = new Date(task.scheduledDate);
-    if (isNaN(baseDate.getTime())) {
-      console.error('calculateNextOccurrence: Invalid scheduledDate', task.scheduledDate);
       return null;
     }
 
@@ -1444,27 +1445,30 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const currentDay = nextDate.getDay();
           const sortedDays = [...validDays].sort((a, b) => a - b);
           
-          // Find next day in current week
+          // Find next day in current week (after today)
           const nextDayInWeek = sortedDays.find(day => day > currentDay);
           if (nextDayInWeek !== undefined) {
             // Next occurrence is in the same week
             nextDate.setDate(nextDate.getDate() + (nextDayInWeek - currentDay));
           } else {
             // Next occurrence is in the following interval week
+            // Calculate days until the first valid day in the next interval week
             const daysUntilNextWeek = 7 - currentDay;
             const daysToFirstDay = sortedDays[0];
+            // Add (interval - 1) full weeks after the first week
             const daysToAdd = daysUntilNextWeek + daysToFirstDay + (7 * (task.recurrence.interval - 1));
             nextDate.setDate(nextDate.getDate() + daysToAdd);
           }
         } else {
           // Fallback: add interval weeks (same day of week)
+          // If calculating from today, ensure we move to the next interval week
           nextDate.setDate(nextDate.getDate() + (7 * task.recurrence.interval));
         }
         break;
       
       case 'monthly':
         if (task.recurrence.dayOfMonth && typeof task.recurrence.dayOfMonth === 'number' && task.recurrence.dayOfMonth >= 1 && task.recurrence.dayOfMonth <= 31) {
-          // Add interval months
+          // Add interval months from the base date
           nextDate.setMonth(nextDate.getMonth() + task.recurrence.interval);
           // Set to the specified day of month, adjusting if needed (e.g., Jan 31 -> Feb 28)
           const maxDayInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
@@ -1472,7 +1476,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           nextDate.setDate(dayOfMonth);
         } else {
           // Fallback: add interval months (same day of month)
+          // If the day doesn't exist in the target month (e.g., Jan 31 -> Feb), adjust to last day
+          const originalDay = nextDate.getDate();
           nextDate.setMonth(nextDate.getMonth() + task.recurrence.interval);
+          const maxDayInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+          if (originalDay > maxDayInMonth) {
+            nextDate.setDate(maxDayInMonth);
+          }
         }
         break;
       
@@ -1549,20 +1559,39 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Generate next occurrence for recurring tasks when marked complete
     // This happens regardless of how the task was marked complete (via status or completedAt)
     // IMPORTANT: Only create next occurrence if the task is actually being marked complete (not already done)
-    if (isBeingMarkedComplete && currentTask.recurrence.type !== 'none' && currentTask.status !== 'done') {
-      const nextOccurrence = calculateNextOccurrence(currentTask);
+    if (isBeingMarkedComplete && currentTask.recurrence && currentTask.recurrence.type !== 'none' && currentTask.status !== 'done') {
+      // Calculate next occurrence from TODAY (completion date), not from original scheduled date
+      // This ensures the next task appears on the correct future date
+      const completionDate = new Date(); // Today - when the task is being marked complete
+      const nextOccurrence = calculateNextOccurrence(currentTask, completionDate);
+      
       if (nextOccurrence) {
         const nextOccurrenceDateStr = nextOccurrence.toISOString();
         
         // Check if a next occurrence already exists to prevent duplicates
-        // Look for a task with matching recurrence pattern and the next scheduled date
+        // Look for a task with matching recurrence pattern, title, and the next scheduled date
         const existingNextOccurrence = tasks.find(t => {
           // Must be a different task
           if (t.id === taskId) return false;
           
+          // Must have the same title (same task series)
+          if (t.title !== currentTask.title) return false;
+          
           // Must have the same recurrence pattern
           if (!t.recurrence || t.recurrence.type !== currentTask.recurrence.type) return false;
           if (t.recurrence.interval !== currentTask.recurrence.interval) return false;
+          
+          // For weekly tasks, also check daysOfWeek
+          if (currentTask.recurrence.type === 'weekly' && 
+              JSON.stringify(t.recurrence.daysOfWeek) !== JSON.stringify(currentTask.recurrence.daysOfWeek)) {
+            return false;
+          }
+          
+          // For monthly tasks, also check dayOfMonth
+          if (currentTask.recurrence.type === 'monthly' && 
+              t.recurrence.dayOfMonth !== currentTask.recurrence.dayOfMonth) {
+            return false;
+          }
           
           // Must have the same scheduled date as the next occurrence
           if (t.scheduledDate !== nextOccurrenceDateStr) return false;
@@ -1570,8 +1599,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // Must be active (not completed) - this is the next occurrence we're looking for
           if (t.status === 'done') return false;
           
-          // Additional check: same title helps identify it's part of the same series
-          // But we don't require exact match since titles might vary slightly
           return true;
         });
 
