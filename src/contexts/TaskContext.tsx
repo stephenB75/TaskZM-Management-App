@@ -1548,20 +1548,56 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     
     // Generate next occurrence for recurring tasks when marked complete
     // This happens regardless of how the task was marked complete (via status or completedAt)
-    if (isBeingMarkedComplete && currentTask.recurrence.type !== 'none') {
+    // IMPORTANT: Only create next occurrence if the task is actually being marked complete (not already done)
+    if (isBeingMarkedComplete && currentTask.recurrence.type !== 'none' && currentTask.status !== 'done') {
       const nextOccurrence = calculateNextOccurrence(currentTask);
       if (nextOccurrence) {
-        // Create new task instance for the next occurrence
-        // The current task stays done on its scheduled date, new instance continues the series
-        nextOccurrenceTask = {
-          ...currentTask,
-          id: generateId(),
-          status: 'todo',
-          scheduledDate: nextOccurrence.toISOString(),
-          completedAt: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+        const nextOccurrenceDateStr = nextOccurrence.toISOString();
+        
+        // Check if a next occurrence already exists to prevent duplicates
+        // Look for a task with matching recurrence pattern and the next scheduled date
+        const existingNextOccurrence = tasks.find(t => {
+          // Must be a different task
+          if (t.id === taskId) return false;
+          
+          // Must have the same recurrence pattern
+          if (!t.recurrence || t.recurrence.type !== currentTask.recurrence.type) return false;
+          if (t.recurrence.interval !== currentTask.recurrence.interval) return false;
+          
+          // Must have the same scheduled date as the next occurrence
+          if (t.scheduledDate !== nextOccurrenceDateStr) return false;
+          
+          // Must be active (not completed) - this is the next occurrence we're looking for
+          if (t.status === 'done') return false;
+          
+          // Additional check: same title helps identify it's part of the same series
+          // But we don't require exact match since titles might vary slightly
+          return true;
+        });
+
+        // Only create next occurrence if it doesn't already exist
+        if (!existingNextOccurrence) {
+          // Create new task instance for the next occurrence
+          // The current task stays done on its scheduled date, new instance continues the series
+          nextOccurrenceTask = {
+            ...currentTask,
+            id: generateId(),
+            status: 'todo',
+            scheduledDate: nextOccurrence.toISOString(),
+            completedAt: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+        } else {
+          // Next occurrence already exists - log for debugging but don't create duplicate
+          logger.debug('Next occurrence already exists, skipping creation to prevent duplicate', {
+            currentTaskId: currentTask.id,
+            currentScheduledDate: currentTask.scheduledDate,
+            nextOccurrenceDate: nextOccurrenceDateStr,
+            existingTaskId: existingNextOccurrence.id,
+            existingTaskScheduledDate: existingNextOccurrence.scheduledDate
+          });
+        }
       }
     }
 
