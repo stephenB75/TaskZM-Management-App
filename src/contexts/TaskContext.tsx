@@ -1805,8 +1805,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 existingTaskScheduledDate: existingNextOccurrence.scheduledDate
               });
             }
-          }
-        } finally {
+          } finally {
           // Release lock after a short delay to ensure server save completes
           // This prevents race conditions from rapid clicks
           setTimeout(() => {
