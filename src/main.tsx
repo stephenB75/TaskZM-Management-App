@@ -189,7 +189,14 @@ if (typeof window !== 'undefined') {
           (message.includes('observe') && message.includes('MutationObserver')) ||
           (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
           (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
+          (message.includes('Cannot read properties of undefined') && (
+            message.includes('checkoutUrls') ||
+            stack.includes('content.js') ||
+            stack.includes('background.js') ||
+            stack.includes('contentScript')
+          )) ||
           stack.includes('content.js') ||
+          stack.includes('background.js') ||
           stack.includes('contentScript') ||
           stack.includes('contentScript.bundle.js') ||
           stack.includes('web-client-content-script') ||
@@ -197,6 +204,15 @@ if (typeof window !== 'undefined') {
           stack.includes('userReportLinkedCandidate')) {
         event.preventDefault();
         // Completely silent - these are browser extension errors, not app errors
+        return false;
+      }
+      
+      // Suppress expected 404 network errors from API calls (folders, team members)
+      // These are handled gracefully by returning empty arrays
+      if ((message.includes('404') || message.includes('Not Found') || message.includes('Failed to load resource')) && 
+          (stack.includes('folders') || stack.includes('team') || stack.includes('members') || stack.includes('supabase.co') || stack.includes('api.ts'))) {
+        event.preventDefault();
+        // Completely silent - these are expected for new workspaces
         return false;
       }
       
