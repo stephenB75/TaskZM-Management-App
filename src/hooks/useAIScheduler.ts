@@ -133,19 +133,21 @@ export function useAIScheduler() {
           const currentDay = firstDate.getDay();
           const sortedDays = [...task.recurrence.daysOfWeek].sort((a, b) => a - b);
           
-          // Find the next matching day in the current week
+          // Find the next matching day (including today if it matches)
+          // For first occurrence, we want to include today if it's one of the days
           const nextDayInWeek = sortedDays.find(day => day >= currentDay);
           if (nextDayInWeek !== undefined) {
+            // Found a day in the current week (including today)
             firstDate.setDate(firstDate.getDate() + (nextDayInWeek - currentDay));
           } else {
-            // First occurrence is in the next week
+            // First occurrence is in the next interval week
             const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
             const daysToFirstDay = sortedDays[0];
             const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (task.recurrence.interval - 1));
             firstDate.setDate(firstDate.getDate() + daysToAdd);
           }
         } else {
-          // Simple weekly: same day of week
+          // Simple weekly: same day of week every interval weeks
           firstDate.setDate(firstDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * task.recurrence.interval));
         }
         break;

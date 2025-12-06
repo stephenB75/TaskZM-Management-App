@@ -1436,16 +1436,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const currentDay = nextDate.getDay();
           const sortedDays = [...recurrence.daysOfWeek].sort((a, b) => a - b);
           
+          // Find the next day in the current week (after today)
+          // If today is one of the days, we want the next occurrence, not today again
           const nextDayInWeek = sortedDays.find(day => day > currentDay);
           if (nextDayInWeek !== undefined) {
+            // Found a day later in the current week
             nextDate.setDate(nextDate.getDate() + (nextDayInWeek - currentDay));
           } else {
+            // No more days in current week, go to first day of next interval week
             const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
             const daysToFirstDay = sortedDays[0];
+            // Add: days to end of week + days to first day + (interval - 1) full weeks
             const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (recurrence.interval - 1));
             nextDate.setDate(nextDate.getDate() + daysToAdd);
           }
         } else {
+          // Simple weekly: same day of week every interval weeks
           nextDate.setDate(nextDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * recurrence.interval));
         }
         break;

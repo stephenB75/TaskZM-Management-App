@@ -55,26 +55,40 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
         const checkDayOfWeek = checkDateOnly.getDay();
         if (!recurrence.daysOfWeek.includes(checkDayOfWeek)) return false;
 
-        // Find the first occurrence of any of the specified days in the base week
+        // Find the first occurrence of any of the specified days starting from the base date
         let firstOccurrence = new Date(baseDateOnly);
         const baseDayOfWeek = baseDateOnly.getDay();
         
-        // Find the first matching day in the base week (or next week if needed)
+        // Find the first matching day on or after the base date
         const sortedDays = [...recurrence.daysOfWeek].sort((a, b) => a - b);
         const nextDayInWeek = sortedDays.find(day => day >= baseDayOfWeek);
         
         if (nextDayInWeek !== undefined) {
+          // Found a day in the current week (including today if it matches)
           firstOccurrence.setDate(baseDateOnly.getDate() + (nextDayInWeek - baseDayOfWeek));
         } else {
-          // First occurrence is in the next week
-          firstOccurrence.setDate(baseDateOnly.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek - baseDayOfWeek + sortedDays[0]));
+          // First occurrence is in the next interval week
+          const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - baseDayOfWeek;
+          const daysToFirstDay = sortedDays[0];
+          const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (recurrence.interval - 1));
+          firstOccurrence.setDate(baseDateOnly.getDate() + daysToAdd);
         }
         firstOccurrence.setHours(0, 0, 0, 0);
         
-        // Calculate weeks difference from first occurrence
-        const weeksFromFirst = Math.floor((checkDateOnly.getTime() - firstOccurrence.getTime()) / TIMING_CONSTANTS.timeConversions.weeksToMs);
+        // Calculate the week number (0-based) from the first occurrence
+        // All days in the same week as the first occurrence are in week 0
+        // All days in the week that is interval weeks later are in week interval, etc.
+        const firstOccurrenceWeekStart = new Date(firstOccurrence);
+        firstOccurrenceWeekStart.setDate(firstOccurrence.getDate() - firstOccurrence.getDay()); // Start of week (Sunday)
+        
+        const checkDateWeekStart = new Date(checkDateOnly);
+        checkDateWeekStart.setDate(checkDateOnly.getDate() - checkDateOnly.getDay()); // Start of week (Sunday)
+        
+        // Calculate weeks difference from first occurrence week
+        const weeksFromFirst = Math.floor((checkDateWeekStart.getTime() - firstOccurrenceWeekStart.getTime()) / TIMING_CONSTANTS.timeConversions.weeksToMs);
         
         // Check if we're on a valid interval week and the day matches
+        // All days in week 0, interval, 2*interval, etc. should match
         return weeksFromFirst >= 0 && weeksFromFirst % recurrence.interval === 0;
       }
       // Fallback: simple weekly interval (same day of week every interval weeks)
