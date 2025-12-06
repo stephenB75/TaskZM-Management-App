@@ -50,12 +50,6 @@ import {
 } from "./ui/select";
 import { UI_GRADIENT_COLORS, UI_FOLDER_COLORS } from "../lib/ui-colors";
 import { Z_INDEX, MAX_HEIGHT } from "../lib/layout-constants";
-import { Calendar } from "./ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./ui/popover";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
@@ -345,6 +339,201 @@ function FixedMiniCalendar({
   );
 }
 
+// Single Date Mini Calendar Component - For recurrence end date
+function SingleDateMiniCalendar({
+  selectedDate,
+  onDateSelect,
+  label = "Select Date",
+}: {
+  selectedDate: Date | undefined;
+  onDateSelect: (date: Date | undefined) => void;
+  label?: string;
+}) {
+  const [viewDate, setViewDate] = useState(() => {
+    if (selectedDate) return selectedDate;
+    return new Date();
+  });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Sync view date when selected date changes
+  useEffect(() => {
+    if (selectedDate) {
+      setViewDate(selectedDate);
+    } else if (!selectedDate) {
+      setViewDate(new Date());
+    }
+  }, [selectedDate]);
+
+  // Generate days for the current month view
+  const getDays = () => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDay = firstDay.getDay(); // 0 = Sunday
+    
+    const days: Date[] = [];
+    const startDate = new Date(year, month, 1);
+    
+    // Adjust to start from a Sunday
+    const daysToSubtract = startDay;
+    startDate.setDate(startDate.getDate() - daysToSubtract);
+    
+    // Generate 35 days (5 weeks) for a full calendar grid
+    for (let i = 0; i < 35; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      days.push(date);
+    }
+    
+    return days;
+  };
+
+  const days = getDays();
+  const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const goToPreviousMonth = () => {
+    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
+  };
+
+  const goToToday = () => {
+    setViewDate(new Date());
+  };
+
+  const isToday = (date: Date) => {
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  };
+
+  const isSelected = (date: Date) => {
+    if (!selectedDate) return false;
+    return date.getDate() === selectedDate.getDate() &&
+           date.getMonth() === selectedDate.getMonth() &&
+           date.getFullYear() === selectedDate.getFullYear();
+  };
+
+  const isCurrentMonth = (date: Date) => {
+    return date.getMonth() === viewDate.getMonth() &&
+           date.getFullYear() === viewDate.getFullYear();
+  };
+
+  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+  return (
+    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3 border-2 border-primary/30 shadow-lg">
+      {/* Calendar Header */}
+      <div className="flex items-center justify-between mb-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={goToPreviousMonth}
+          className="h-7 w-7"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">{monthName}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={goToToday}
+            className="h-6 px-2 text-xs text-primary hover:bg-primary/10"
+          >
+            Today
+          </Button>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={goToNextMonth}
+          className="h-7 w-7"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Week day headers - Fixed alignment */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {weekDays.map((day) => (
+          <div
+            key={day}
+            className="text-center text-[10px] font-medium text-muted-foreground py-1 flex items-center justify-center"
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Date grid - showing 35 days (5 weeks) - Fixed alignment */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date, index) => {
+          const dateStr = date.toISOString().split('T')[0];
+          const day = date.getDate();
+          const isTodayDate = isToday(date);
+          const isSelectedDate = isSelected(date);
+          const isCurrentMonthDate = isCurrentMonth(date);
+
+          return (
+            <button
+              key={`${dateStr}-${index}`}
+              type="button"
+              onClick={() => onDateSelect(date)}
+              className={cn(
+                "h-8 w-full rounded-md text-xs font-medium transition-all hover:scale-105 flex items-center justify-center",
+                isSelectedDate
+                  ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
+                  : isTodayDate
+                  ? "bg-primary/20 text-primary font-bold ring-1 ring-primary/30"
+                  : isCurrentMonthDate
+                  ? "text-foreground hover:bg-primary/10"
+                  : "text-muted-foreground/50 hover:bg-muted/50"
+              )}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected date info */}
+      {selectedDate && (
+        <div className="mt-3 pt-3 border-t border-primary/20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-medium text-foreground">
+              {selectedDate.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onDateSelect(undefined);
+            }}
+            className="h-6 px-2 text-xs"
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TaskDialog({
   open,
   onClose,
@@ -423,7 +612,6 @@ export function TaskDialog({
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<
     Date | undefined
   >();
-  const [recurrenceEndDateOpen, setRecurrenceEndDateOpen] = useState(false);
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] =
     useState(false);
@@ -2531,59 +2719,20 @@ export function TaskDialog({
                     {recurrenceType !== "none" && (
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Ends</Label>
-                        <Popover open={recurrenceEndDateOpen} onOpenChange={setRecurrenceEndDateOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="w-full justify-start text-left bg-white dark:bg-card/80 border-primary/20"
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {recurrenceEndDate && recurrenceEndDate instanceof Date && !isNaN(recurrenceEndDate.getTime())
-                                ? formatDate(recurrenceEndDate.toISOString())
-                                : "Never (ongoing)"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 shadow-xl border-2 border-primary/30 bg-white dark:bg-popover" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={recurrenceEndDate}
-                              onSelect={(date) => {
-                                setRecurrenceEndDate(date);
-                                if (date) {
-                                  setRecurrenceEndDateOpen(false);
-                                }
-                              }}
-                              initialFocus
-                            />
-                            {recurrenceEndDate && recurrenceEndDate instanceof Date && !isNaN(recurrenceEndDate.getTime()) && (
-                              <div className="px-4 py-3 border-t border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 flex flex-col gap-2">
-                                <div className="flex items-center justify-center gap-2">
-                                  <CalendarIcon className="h-4 w-4 text-primary" />
-                                  <span className="text-sm font-medium text-foreground">
-                                    {recurrenceEndDate.toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric'
-                                    })}
-                                  </span>
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full"
-                                  onClick={() => {
-                                    setRecurrenceEndDate(undefined);
-                                    setRecurrenceEndDateOpen(false);
-                                  }}
-                                >
-                                  Clear end date
-                                </Button>
-                              </div>
-                            )}
-                          </PopoverContent>
-                        </Popover>
+                        <div className="w-full flex justify-center py-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                          <SingleDateMiniCalendar
+                            selectedDate={recurrenceEndDate}
+                            onDateSelect={(date) => {
+                              setRecurrenceEndDate(date);
+                            }}
+                            label="End Date"
+                          />
+                        </div>
+                        {!recurrenceEndDate && (
+                          <p className="text-xs text-muted-foreground text-center">
+                            No end date set - task will repeat indefinitely
+                          </p>
+                        )}
                       </div>
                     )}
 
