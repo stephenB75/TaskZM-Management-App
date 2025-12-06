@@ -1353,6 +1353,117 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('focus', handleFocus);
   }, [autoSyncEnabled, workspaceId, accessToken, debouncedSync]);
 
+  // Helper function to calculate the next occurrence date from a given date
+  // MUST be defined before addTask and generateAllOccurrences
+  const calculateNextOccurrenceDate = useCallback((recurrence: RecurrenceConfig, fromDate: Date): Date | null => {
+    if (!recurrence || recurrence.type === 'none') return null;
+
+    const nextDate = new Date(fromDate);
+    nextDate.setHours(0, 0, 0, 0);
+
+    switch (recurrence.type) {
+      case 'daily':
+        nextDate.setDate(nextDate.getDate() + recurrence.interval);
+        break;
+      
+      case 'weekly':
+        if (recurrence.daysOfWeek && Array.isArray(recurrence.daysOfWeek) && recurrence.daysOfWeek.length > 0) {
+          const currentDay = nextDate.getDay();
+          const sortedDays = [...recurrence.daysOfWeek].sort((a, b) => a - b);
+          
+          const nextDayInWeek = sortedDays.find(day => day > currentDay);
+          if (nextDayInWeek !== undefined) {
+            nextDate.setDate(nextDate.getDate() + (nextDayInWeek - currentDay));
+          } else {
+            const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
+            const daysToFirstDay = sortedDays[0];
+            const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (recurrence.interval - 1));
+            nextDate.setDate(nextDate.getDate() + daysToAdd);
+          }
+        } else {
+          nextDate.setDate(nextDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * recurrence.interval));
+        }
+        break;
+      
+      case 'monthly':
+        if (recurrence.dayOfMonth) {
+          nextDate.setMonth(nextDate.getMonth() + recurrence.interval);
+          const maxDayInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+          const dayOfMonth = Math.min(recurrence.dayOfMonth, maxDayInMonth);
+          nextDate.setDate(dayOfMonth);
+        } else {
+          nextDate.setMonth(nextDate.getMonth() + recurrence.interval);
+          const maxDayInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+          const originalDay = fromDate.getDate();
+          if (originalDay > maxDayInMonth) {
+            nextDate.setDate(maxDayInMonth);
+          }
+        }
+        break;
+      
+      default:
+        return null;
+    }
+
+    return nextDate;
+  }, []);
+
+  // Helper function to generate all occurrences for a recurring task
+  // This creates a series of individual task instances, one for each occurrence
+  // MUST be defined before addTask
+  const generateAllOccurrences = useCallback((task: Task): Task[] => {
+    if (!task.recurrence || task.recurrence.type === 'none' || !task.scheduledDate) {
+      return [task]; // Not recurring, return single task
+    }
+
+    const occurrences: Task[] = [];
+    const startDate = new Date(task.scheduledDate);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = task.recurrence.endDate ? new Date(task.recurrence.endDate) : null;
+    if (endDate) {
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    // Limit to 365 occurrences to prevent excessive task creation
+    const maxOccurrences = 365;
+    let currentDate = new Date(startDate);
+    let occurrenceCount = 0;
+
+    while (occurrenceCount < maxOccurrences) {
+      // Check if we've passed the end date
+      if (endDate && currentDate > endDate) {
+        break;
+      }
+
+      // Create a task instance for this occurrence
+      // Each instance is independent with recurrence.type = 'none'
+      const occurrenceTask: Task = {
+        ...task,
+        id: generateId(),
+        scheduledDate: currentDate.toISOString(),
+        status: 'todo',
+        completedAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        // Mark as non-recurring so it only appears on its exact scheduled date
+        recurrence: { type: 'none', interval: 1 },
+      };
+
+      occurrences.push(occurrenceTask);
+      occurrenceCount++;
+
+      // Calculate next occurrence date
+      const nextDate = calculateNextOccurrenceDate(task.recurrence, currentDate);
+      if (!nextDate || nextDate <= currentDate) {
+        break; // No more occurrences possible
+      }
+      currentDate = nextDate;
+    }
+
+    return occurrences;
+  }, [calculateNextOccurrenceDate]);
+
   const addTask = useCallback(async (taskData: Partial<Task>) => {
     updateActivity(); // Track demo user activity
     
@@ -1486,115 +1597,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       toast.success('Task created (offline)');
     }
   }, [user, workspaceId, accessToken, updateActivity, generateAllOccurrences]);
-
-  // Helper function to calculate the next occurrence date from a given date
-  const calculateNextOccurrenceDate = useCallback((recurrence: RecurrenceConfig, fromDate: Date): Date | null => {
-    if (!recurrence || recurrence.type === 'none') return null;
-
-    const nextDate = new Date(fromDate);
-    nextDate.setHours(0, 0, 0, 0);
-
-    switch (recurrence.type) {
-      case 'daily':
-        nextDate.setDate(nextDate.getDate() + recurrence.interval);
-        break;
-      
-      case 'weekly':
-        if (recurrence.daysOfWeek && Array.isArray(recurrence.daysOfWeek) && recurrence.daysOfWeek.length > 0) {
-          const currentDay = nextDate.getDay();
-          const sortedDays = [...recurrence.daysOfWeek].sort((a, b) => a - b);
-          
-          const nextDayInWeek = sortedDays.find(day => day > currentDay);
-          if (nextDayInWeek !== undefined) {
-            nextDate.setDate(nextDate.getDate() + (nextDayInWeek - currentDay));
-          } else {
-            const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
-            const daysToFirstDay = sortedDays[0];
-            const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (recurrence.interval - 1));
-            nextDate.setDate(nextDate.getDate() + daysToAdd);
-          }
-        } else {
-          nextDate.setDate(nextDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * recurrence.interval));
-        }
-        break;
-      
-      case 'monthly':
-        if (recurrence.dayOfMonth) {
-          nextDate.setMonth(nextDate.getMonth() + recurrence.interval);
-          const maxDayInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
-          const dayOfMonth = Math.min(recurrence.dayOfMonth, maxDayInMonth);
-          nextDate.setDate(dayOfMonth);
-        } else {
-          nextDate.setMonth(nextDate.getMonth() + recurrence.interval);
-          const maxDayInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
-          const originalDay = fromDate.getDate();
-          if (originalDay > maxDayInMonth) {
-            nextDate.setDate(maxDayInMonth);
-          }
-        }
-        break;
-      
-      default:
-        return null;
-    }
-
-    return nextDate;
-  }, []);
-
-  // Helper function to generate all occurrences for a recurring task
-  // This creates a series of individual task instances, one for each occurrence
-  const generateAllOccurrences = useCallback((task: Task): Task[] => {
-    if (!task.recurrence || task.recurrence.type === 'none' || !task.scheduledDate) {
-      return [task]; // Not recurring, return single task
-    }
-
-    const occurrences: Task[] = [];
-    const startDate = new Date(task.scheduledDate);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const endDate = task.recurrence.endDate ? new Date(task.recurrence.endDate) : null;
-    if (endDate) {
-      endDate.setHours(23, 59, 59, 999);
-    }
-
-    // Limit to 365 occurrences to prevent excessive task creation
-    const maxOccurrences = 365;
-    let currentDate = new Date(startDate);
-    let occurrenceCount = 0;
-
-    while (occurrenceCount < maxOccurrences) {
-      // Check if we've passed the end date
-      if (endDate && currentDate > endDate) {
-        break;
-      }
-
-      // Create a task instance for this occurrence
-      // Each instance is independent with recurrence.type = 'none'
-      const occurrenceTask: Task = {
-        ...task,
-        id: generateId(),
-        scheduledDate: currentDate.toISOString(),
-        status: 'todo',
-        completedAt: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        // Mark as non-recurring so it only appears on its exact scheduled date
-        recurrence: { type: 'none', interval: 1 },
-      };
-
-      occurrences.push(occurrenceTask);
-      occurrenceCount++;
-
-      // Calculate next occurrence date
-      const nextDate = calculateNextOccurrenceDate(task.recurrence, currentDate);
-      if (!nextDate || nextDate <= currentDate) {
-        break; // No more occurrences possible
-      }
-      currentDate = nextDate;
-    }
-
-    return occurrences;
-  }, [calculateNextOccurrenceDate]);
 
   // Helper function to calculate next occurrence date for recurring tasks
   // This calculates the next occurrence AFTER the current scheduledDate
