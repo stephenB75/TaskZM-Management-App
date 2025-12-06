@@ -24,6 +24,20 @@ import {
   getCategoryFromTags,
   isWeekend as isWeekendDate,
 } from '../lib/ai-config';
+import {
+  DEFAULT_WEEKDAY_WORK_START,
+  DEFAULT_WEEKDAY_WORK_END,
+  DEFAULT_WEEKDAY_PERSONAL_START,
+  DEFAULT_WEEKDAY_PERSONAL_END,
+  DEFAULT_WEEKDAY_PROJECTS_START,
+  DEFAULT_WEEKDAY_PROJECTS_END,
+  DEFAULT_WEEKEND_WORK_START,
+  DEFAULT_WEEKEND_WORK_END,
+  DEFAULT_WEEKEND_PERSONAL_START,
+  DEFAULT_WEEKEND_PERSONAL_END,
+  DEFAULT_WEEKEND_PROJECTS_START,
+  DEFAULT_WEEKEND_PROJECTS_END,
+} from '../lib/business-constants';
 import type { Task } from '../types';
 
 export interface SchedulePlan {
@@ -933,20 +947,88 @@ export function useAIScheduler() {
           const taskHours = getTaskHours(task);
           const taskDurationMinutes = Math.round(taskHours * 60); // Convert hours back to minutes
           
-          // Default work hours: 9 AM to 5 PM
-          const workStartHour = 9;
-          const workEndHour = 17;
+          // Determine default hours based on task category
+          // Even if category hours are disabled, we should still use category-appropriate defaults
+          const category = getTaskCategory(task);
+          const isWeekendDate = isWeekend(scheduleDate);
+          
+          // Get default hours from constants based on category and day type
+          let defaultStartTimeStr: string;
+          let defaultEndTimeStr: string;
+          
+          if (category) {
+            // Try to get category hours from settings (even if disabled, we can use them as defaults)
+            const dayHours = isWeekendDate ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
+            const categoryHours = dayHours[category];
+            
+            if (categoryHours) {
+              // Use category hours as defaults (even if disabled)
+              // This ensures personal tasks use evening hours (18:00-22:00) even if category hours are disabled
+              defaultStartTimeStr = categoryHours.start;
+              defaultEndTimeStr = categoryHours.end;
+            } else {
+              // Fall back to default constants from business-constants.ts
+              if (isWeekendDate) {
+                if (category === 'work') {
+                  defaultStartTimeStr = DEFAULT_WEEKEND_WORK_START;
+                  defaultEndTimeStr = DEFAULT_WEEKEND_WORK_END;
+                } else if (category === 'personal') {
+                  defaultStartTimeStr = DEFAULT_WEEKEND_PERSONAL_START;
+                  defaultEndTimeStr = DEFAULT_WEEKEND_PERSONAL_END;
+                } else if (category === 'projects') {
+                  defaultStartTimeStr = DEFAULT_WEEKEND_PROJECTS_START;
+                  defaultEndTimeStr = DEFAULT_WEEKEND_PROJECTS_END;
+                } else {
+                  defaultStartTimeStr = DEFAULT_WEEKEND_WORK_START;
+                  defaultEndTimeStr = DEFAULT_WEEKEND_WORK_END;
+                }
+              } else {
+                if (category === 'work') {
+                  defaultStartTimeStr = DEFAULT_WEEKDAY_WORK_START;
+                  defaultEndTimeStr = DEFAULT_WEEKDAY_WORK_END;
+                } else if (category === 'personal') {
+                  defaultStartTimeStr = DEFAULT_WEEKDAY_PERSONAL_START;
+                  defaultEndTimeStr = DEFAULT_WEEKDAY_PERSONAL_END;
+                } else if (category === 'projects') {
+                  defaultStartTimeStr = DEFAULT_WEEKDAY_PROJECTS_START;
+                  defaultEndTimeStr = DEFAULT_WEEKDAY_PROJECTS_END;
+                } else {
+                  defaultStartTimeStr = DEFAULT_WEEKDAY_WORK_START;
+                  defaultEndTimeStr = DEFAULT_WEEKDAY_WORK_END;
+                }
+              }
+            }
+          } else {
+            // No category - use work hours as default
+            if (isWeekendDate) {
+              defaultStartTimeStr = DEFAULT_WEEKEND_WORK_START;
+              defaultEndTimeStr = DEFAULT_WEEKEND_WORK_END;
+            } else {
+              defaultStartTimeStr = DEFAULT_WEEKDAY_WORK_START;
+              defaultEndTimeStr = DEFAULT_WEEKDAY_WORK_END;
+            }
+          }
+          
+          // Parse time strings to hours
+          const startTime = parseTime(defaultStartTimeStr);
+          const endTime = parseTime(defaultEndTimeStr);
+          const defaultStartHour = startTime.hours;
+          const defaultEndHour = endTime.hours;
+          
+          // Default work hours: use category-appropriate defaults
+          const workStartHour = defaultStartHour;
+          const workEndHour = defaultEndHour;
           
           // Helper: Find available time slot - prioritizes filling gaps in schedule
           const findAvailableTimeSlot = (): { hour: number; minute: number } => {
-            // Determine the earliest time we can schedule (current time if today, otherwise work start)
+            // Determine the earliest time we can schedule (current time if today, otherwise category start)
             const today = new Date();
             const scheduleDateKey = getDateKey(scheduleDate);
             const todayDateKey = getDateKey(today);
             const isToday = scheduleDateKey === todayDateKey;
             
             // If scheduling for today, start from current time (rounded up to next 15 minutes)
-            // Otherwise, start from work start hour
+            // Otherwise, start from category start hour
             let earliestTime: Date;
             if (isToday) {
               earliestTime = new Date(today);
@@ -958,7 +1040,7 @@ export function useAIScheduler() {
               } else {
                 earliestTime.setMinutes(roundedMinutes, 0, 0);
               }
-              // Don't schedule before work hours
+              // Don't schedule before category start hours
               if (earliestTime.getHours() < workStartHour) {
                 earliestTime.setHours(workStartHour, 0, 0, 0);
               }
@@ -968,8 +1050,14 @@ export function useAIScheduler() {
             }
             
             // If no existing tasks, use priority-based initial time (but not before earliestTime)
+            // For personal tasks, prefer later in the day even for high priority
             if (existingTasksForDay.length === 0) {
               const priorityTime = (() => {
+                // For personal tasks, use category start hour (evening) regardless of priority
+                if (category === 'personal') {
+                  return { hour: workStartHour, minute: 0 };
+                }
+                // For other categories, use priority-based times
                 if (task.status === 'in-progress' || task.priority === 'urgent') {
                   return { hour: workStartHour, minute: 0 };
                 } else if (task.priority === 'high') {
