@@ -91,10 +91,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
   const { updateActivity } = useDemoActivity(); // Track demo user activity
   const [tasks, setTasks] = useState<Task[]>([]);
-  // Lock to prevent concurrent next occurrence creation for the same task
-  const nextOccurrenceCreationLock = useRef<Set<string>>(new Set());
-  // Track pending next occurrences that are being created to prevent duplicates
-  const pendingNextOccurrences = useRef<Map<string, { title: string; scheduledDate: string; recurrence: RecurrenceConfig }>>(new Map());
   const [projects, setProjects] = useState<Project[]>([
     {
       id: DEFAULT_PROJECT_ID,
@@ -1538,12 +1534,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        await api.saveTask(validWorkspaceId, newTask);
+        // If this is a recurring task, generate all occurrences upfront
+        // Each occurrence will be a separate task instance with recurrence.type = 'none'
+        const tasksToSave = generateAllOccurrences(newTask);
+        
+        // Save all occurrences to server
+        await Promise.all(
+          tasksToSave.map(task => api.saveTask(validWorkspaceId, task))
+        );
+        
         // Reload from server to get the authoritative version
         await loadTasksFromServer(validWorkspaceId);
         // Trigger immediate sync to notify other devices (debounced)
         debouncedSync(false);
-        toast.success('Task created');
+        toast.success(tasksToSave.length > 1 ? `${tasksToSave.length} occurrences created` : 'Task created');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to save task to server:', error);
@@ -1741,7 +1745,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       // Explicitly preserve recurrence if it's not being changed
       recurrence: updates.recurrence !== undefined ? updates.recurrence : currentTask.recurrence
     };
-    let nextOccurrenceTask: Task | null = null;
     
     // Check if task is being marked as complete (status changing to 'done')
     const isBeingMarkedComplete = (updates.status === 'done' && currentTask.status !== 'done') ||
@@ -1810,64 +1813,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         
         await api.saveTask(validWorkspaceId, updatedTask);
         
-        // Save next occurrence task to server if created
-        if (nextOccurrenceTask) {
-          try {
-            // CRITICAL: Double-check server state before saving to prevent duplicates
-            // This is a final safety check in case duplicates were created by concurrent calls
-            const serverTasksResult = await api.getTasks(validWorkspaceId);
-            if (!serverTasksResult.error && serverTasksResult.tasks) {
-              const duplicateOnServer = serverTasksResult.tasks.find(t => {
-                // Must be a different task
-                if (t.id === nextOccurrenceTask.id) return false;
-                // Must have same title
-                if (t.title !== nextOccurrenceTask.title) return false;
-                // Must have same recurrence pattern
-                if (!t.recurrence || t.recurrence.type !== nextOccurrenceTask.recurrence.type) return false;
-                if (t.recurrence.interval !== nextOccurrenceTask.recurrence.interval) return false;
-                // Must have same scheduled date
-                if (t.scheduledDate !== nextOccurrenceTask.scheduledDate) return false;
-                // Must be active (not done)
-                if (t.status === 'done') return false;
-                return true;
-              });
-              
-              if (duplicateOnServer) {
-                logger.warn('Duplicate next occurrence found on server, skipping save to prevent duplicate', {
-                  taskId: nextOccurrenceTask.id,
-                  duplicateId: duplicateOnServer.id,
-                  scheduledDate: nextOccurrenceTask.scheduledDate,
-                  title: nextOccurrenceTask.title
-                });
-                // Clear pending and don't save
-                if (occurrenceKeyForCleanup) {
-                  pendingNextOccurrences.current.delete(occurrenceKeyForCleanup);
-                }
-                nextOccurrenceTask = null; // Don't save duplicate
-              } else {
-                // No duplicate on server, safe to save
-                await api.saveTask(validWorkspaceId, nextOccurrenceTask);
-                // Clear the pending occurrence after successful save
-                if (occurrenceKeyForCleanup) {
-                  pendingNextOccurrences.current.delete(occurrenceKeyForCleanup);
-                }
-              }
-            } else {
-              // If we can't check server, save anyway (better to have it than miss it)
-              await api.saveTask(validWorkspaceId, nextOccurrenceTask);
-              if (occurrenceKeyForCleanup) {
-                pendingNextOccurrences.current.delete(occurrenceKeyForCleanup);
-              }
-            }
-          } catch (saveError) {
-            logger.error('Failed to save next occurrence task:', saveError);
-            // Clear pending on error so it can be retried
-            if (occurrenceKeyForCleanup) {
-              pendingNextOccurrences.current.delete(occurrenceKeyForCleanup);
-            }
-          }
-        }
-        
         // Reload from server to get the authoritative version
         await loadTasksFromServer(validWorkspaceId);
         // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
@@ -1880,12 +1825,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             });
           }
         }, 1000);
-        
-        if (nextOccurrenceTask) {
-          toast.success('Next occurrence created', {
-            description: `Task "${nextOccurrenceTask.title}" scheduled for ${new Date(nextOccurrenceTask.scheduledDate!).toLocaleDateString()}`,
-          });
-        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to update task on server:', error);
@@ -1903,9 +1842,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               logger.info('Workspace created, retrying task update with workspace ID:', validWorkspaceId);
               // Retry saving with valid workspace ID
               await api.saveTask(validWorkspaceId, updatedTask);
-              if (nextOccurrenceTask) {
-                await api.saveTask(validWorkspaceId, nextOccurrenceTask);
-              }
               await loadTasksFromServer(validWorkspaceId);
               // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
               debouncedSync(false);
@@ -1917,11 +1853,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                   });
                 }
               }, 1000);
-              if (nextOccurrenceTask) {
-                toast.success('Next occurrence created', {
-                  description: `Task "${nextOccurrenceTask.title}" scheduled for ${new Date(nextOccurrenceTask.scheduledDate!).toLocaleDateString()}`,
-                });
-              }
               return;
             } else {
               logger.error('Workspace creation failed - no workspace ID returned');
@@ -1940,10 +1871,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             return task;
           });
           
-          if (nextOccurrenceTask) {
-            updated.push(nextOccurrenceTask);
-          }
-          
           saveToLocalStorage('tasks', updated);
           return updated;
         });
@@ -1959,15 +1886,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           return task;
         });
         
-        if (nextOccurrenceTask) {
-          updated.push(nextOccurrenceTask);
-        }
-        
         saveToLocalStorage('tasks', updated);
         return updated;
       });
     }
-  }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrence]);
+  }, [tasks, workspaceId, accessToken, updateActivity]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     updateActivity(); // Track demo user activity
