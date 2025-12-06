@@ -1079,10 +1079,31 @@ export async function purchaseProSubscription(
     
     if (checkoutUrl) {
       console.log('🔗 Package has checkout URL, redirecting to Stripe Checkout:', checkoutUrl);
-      // Ensure clean redirect - use window.location.replace to avoid back button issues
-      // and ensure form fields are activated immediately on Stripe's page
-      // Note: Stripe Checkout requires country selection before payment fields activate
-      window.location.replace(checkoutUrl);
+      // Clear any overlays, modals, or z-index issues before redirect
+      // This ensures Stripe's checkout page form fields are fully clickable
+      try {
+        // Remove any high z-index overlays that might interfere
+        const overlays = document.querySelectorAll('[style*="z-index"]');
+        overlays.forEach((overlay) => {
+          const zIndex = window.getComputedStyle(overlay as HTMLElement).zIndex;
+          if (parseInt(zIndex) > 1000) {
+            (overlay as HTMLElement).style.pointerEvents = 'none';
+            (overlay as HTMLElement).style.display = 'none';
+          }
+        });
+        
+        // Clear any pointer-events: none that might block clicks
+        document.body.style.pointerEvents = 'auto';
+        
+        // Small delay to ensure DOM is clean before redirect
+        await new Promise(resolve => setTimeout(resolve, 50));
+      } catch (cleanupError) {
+        console.debug('Cleanup before redirect (non-critical):', cleanupError);
+      }
+      
+      // Use window.location.href for better compatibility with form field activation
+      // This ensures the redirect is clean and form fields are immediately clickable
+      window.location.href = checkoutUrl;
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
@@ -1181,8 +1202,15 @@ export async function purchaseProSubscription(
       if (errorCheckoutUrl) {
         console.log('✅ Found checkout URL in error (Web Billing flow):', errorCheckoutUrl);
         console.log('🔗 Redirecting to Stripe Checkout...');
-        // Use window.location.replace for clean redirect
-        window.location.replace(errorCheckoutUrl);
+        // Clear any overlays before redirect to ensure form fields are clickable
+        try {
+          document.body.style.pointerEvents = 'auto';
+          await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (cleanupError) {
+          console.debug('Cleanup before redirect (non-critical):', cleanupError);
+        }
+        // Use window.location.href for better form field activation
+        window.location.href = errorCheckoutUrl;
         return { 
           success: true, 
           error: 'Redirecting to payment...' 
@@ -1193,8 +1221,15 @@ export async function purchaseProSubscription(
       const urlMatch = purchaseError?.message?.match(/https?:\/\/[^\s]+/);
       if (urlMatch && urlMatch[0]) {
         console.log('✅ Found checkout URL in error message:', urlMatch[0]);
-        // Use window.location.replace for clean redirect
-        window.location.replace(urlMatch[0]);
+        // Clear any overlays before redirect
+        try {
+          document.body.style.pointerEvents = 'auto';
+          await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (cleanupError) {
+          console.debug('Cleanup before redirect (non-critical):', cleanupError);
+        }
+        // Use window.location.href for better form field activation
+        window.location.href = urlMatch[0];
         return { 
           success: true, 
           error: 'Redirecting to payment...' 
@@ -1230,8 +1265,29 @@ export async function purchaseProSubscription(
     if (resultCheckoutUrl) {
       console.log('✅ Found checkout URL in purchase result (Web Billing):', resultCheckoutUrl);
       console.log('🔗 Redirecting to Stripe Checkout...');
-      // Use window.location.replace for clean redirect and immediate form activation
-      window.location.replace(resultCheckoutUrl);
+      // Clear any overlays, modals, or z-index issues before redirect
+      // This ensures Stripe's checkout page form fields are fully clickable
+      try {
+        // Remove any high z-index overlays that might interfere
+        const overlays = document.querySelectorAll('[style*="z-index"]');
+        overlays.forEach((overlay) => {
+          const zIndex = window.getComputedStyle(overlay as HTMLElement).zIndex;
+          if (parseInt(zIndex) > 1000) {
+            (overlay as HTMLElement).style.pointerEvents = 'none';
+            (overlay as HTMLElement).style.display = 'none';
+          }
+        });
+        
+        // Clear any pointer-events: none that might block clicks
+        document.body.style.pointerEvents = 'auto';
+        
+        // Small delay to ensure DOM is clean before redirect
+        await new Promise(resolve => setTimeout(resolve, 50));
+      } catch (cleanupError) {
+        console.debug('Cleanup before redirect (non-critical):', cleanupError);
+      }
+      // Use window.location.href for better compatibility with form field activation
+      window.location.href = resultCheckoutUrl;
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
@@ -1372,8 +1428,15 @@ export async function purchaseProSubscription(
     if (finalCheckoutUrl) {
       console.log('✅ Found checkout URL in error (Web Billing redirect):', finalCheckoutUrl);
       console.log('🔗 Redirecting to Stripe Checkout...');
-      // Use window.location.replace for clean redirect and immediate form activation
-      window.location.replace(finalCheckoutUrl);
+      // Clear any overlays before redirect
+      try {
+        document.body.style.pointerEvents = 'auto';
+        await new Promise(resolve => setTimeout(resolve, 50));
+      } catch (cleanupError) {
+        console.debug('Cleanup before redirect (non-critical):', cleanupError);
+      }
+      // Use window.location.href for better form field activation
+      window.location.href = finalCheckoutUrl;
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
