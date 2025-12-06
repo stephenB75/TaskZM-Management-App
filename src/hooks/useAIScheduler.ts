@@ -73,25 +73,35 @@ export function useAIScheduler() {
       // Exclude blocked tasks
       if (isTaskBlocked(t, tasks)) return false;
       
-      // Include tasks without scheduledDate
+      // ALWAYS include recurring tasks that don't have a scheduledDate
+      // Recurring tasks need a base scheduledDate to function properly
+      if (t.recurrence && t.recurrence.type !== 'none' && !t.scheduledDate) {
+        return true;
+      }
+      
+      // Include non-recurring tasks without scheduledDate
       if (!t.scheduledDate) return true;
       
-      // Include recurring tasks that need scheduling:
-      // 1. Must have recurrence config (type !== 'none')
-      // 2. Either no scheduledDate OR scheduledDate is in the past (needs next occurrence)
+      // Include recurring tasks that need rescheduling:
+      // If scheduled date is today or in the past, it needs to be rescheduled to next occurrence
       if (t.recurrence && t.recurrence.type !== 'none') {
-        const scheduledDate = new Date(t.scheduledDate);
-        scheduledDate.setHours(0, 0, 0, 0);
-        
-        // If scheduled date is today or in the past, it needs to be rescheduled to next occurrence
-        // This ensures recurring tasks are properly scheduled for future dates
-        if (scheduledDate <= today) {
+        try {
+          const scheduledDate = new Date(t.scheduledDate);
+          scheduledDate.setHours(0, 0, 0, 0);
+          
+          // If scheduled date is today or in the past, it needs to be rescheduled to next occurrence
+          // This ensures recurring tasks are properly scheduled for future dates
+          if (scheduledDate <= today) {
+            return true;
+          }
+          
+          // If scheduled date is in the future, don't reschedule (already properly scheduled)
+          return false;
+        } catch (error) {
+          // If date parsing fails, include the task to be rescheduled
+          logger.warn('Error parsing scheduledDate for recurring task, including in schedule:', { taskId: t.id, scheduledDate: t.scheduledDate });
           return true;
         }
-        
-        // If scheduled date is in the future, check if it's within the scheduling window
-        // Recurring tasks should be rescheduled if their current scheduledDate is too far in the past
-        return false; // Already scheduled for future, don't reschedule
       }
       
       // For non-recurring tasks, only include if they don't have a scheduledDate
@@ -412,6 +422,10 @@ export function useAIScheduler() {
         priority: t.priority,
         hasEstimatedTime: !!t.estimatedTime,
         estimatedTime: t.estimatedTime,
+        isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
+        recurrenceType: t.recurrence?.type,
+        hasScheduledDate: !!t.scheduledDate,
+        scheduledDate: t.scheduledDate,
       })),
     });
     logger.debug('📋 Tasks to schedule', {
@@ -963,23 +977,59 @@ export function useAIScheduler() {
         // Otherwise, use the calculated date
         let scheduleDate: Date;
         if (task.recurrence && task.recurrence.type !== 'none') {
-          // Calculate the first occurrence date based on recurrence pattern
-          const calculatedDate = new Date(baseDate);
-          calculatedDate.setDate(calculatedDate.getDate() + finalDaysToAdd);
-          const firstOccurrence = calculateFirstOccurrenceDate(task, calculatedDate);
+          // For recurring tasks, calculate the first occurrence date from today (or baseDate if provided)
+          // This ensures the scheduledDate is set to the correct base date for the recurrence pattern
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // If task doesn't have a scheduledDate, calculate from today
+          // If task has a scheduledDate in the past, calculate from today to get next occurrence
+          // Otherwise, use the existing scheduledDate as the base
+          let fromDate: Date;
+          if (!task.scheduledDate) {
+            // No scheduledDate: calculate first occurrence from today
+            fromDate = today;
+          } else {
+            try {
+              const existingDate = new Date(task.scheduledDate);
+              existingDate.setHours(0, 0, 0, 0);
+              // If existing date is today or in the past, calculate from today
+              // Otherwise, use existing date as base
+              fromDate = existingDate <= today ? today : existingDate;
+            } catch {
+              // If date parsing fails, use today
+              fromDate = today;
+            }
+          }
+          
+          const firstOccurrence = calculateFirstOccurrenceDate(task, fromDate);
           
           if (firstOccurrence) {
-            // Use the first occurrence date, but ensure it's within the date range
+            // Ensure the first occurrence is within the scheduling date range
             if (!dateRange || (firstOccurrence >= startDate && firstOccurrence <= endDate)) {
               scheduleDate = firstOccurrence;
-              reason = `${reason} - scheduled to first occurrence date`;
+              reason = `${reason} - scheduled to first occurrence date (${firstOccurrence.toISOString().split('T')[0]})`;
             } else {
-              // If first occurrence is outside range, use calculated date
-              scheduleDate = calculatedDate;
+              // If first occurrence is outside range, try to find the next occurrence within range
+              // Start from the startDate and calculate first occurrence from there
+              const rangeFirstOccurrence = calculateFirstOccurrenceDate(task, startDate);
+              if (rangeFirstOccurrence && rangeFirstOccurrence <= endDate) {
+                scheduleDate = rangeFirstOccurrence;
+                reason = `${reason} - scheduled to first occurrence within date range`;
+              } else {
+                // Fallback: use the calculated date from scheduler
+                const calculatedDate = new Date(baseDate);
+                calculatedDate.setDate(calculatedDate.getDate() + finalDaysToAdd);
+                scheduleDate = calculatedDate;
+                reason = `${reason} - first occurrence outside range, using calculated date`;
+              }
             }
           } else {
             // Fallback to calculated date if first occurrence couldn't be calculated
+            const calculatedDate = new Date(baseDate);
+            calculatedDate.setDate(calculatedDate.getDate() + finalDaysToAdd);
             scheduleDate = calculatedDate;
+            logger.warn('Could not calculate first occurrence for recurring task, using calculated date', { taskId: task.id, recurrence: task.recurrence });
           }
         } else {
           // Non-recurring task: use calculated date
