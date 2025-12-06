@@ -1425,8 +1425,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       endDate.setHours(23, 59, 59, 999);
     }
 
-    // Limit to 365 occurrences to prevent excessive task creation
-    const maxOccurrences = 365;
+    // Limit occurrences to prevent excessive task creation
+    const maxOccurrences = TIMING_CONSTANTS.calendar.maxOccurrences;
     let currentDate = new Date(startDate);
     let occurrenceCount = 0;
 
@@ -1612,7 +1612,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
 
     // Validate recurrence interval
-    if (typeof task.recurrence.interval !== 'number' || task.recurrence.interval < 1) {
+    if (typeof task.recurrence.interval !== 'number' || 
+        task.recurrence.interval < TIMING_CONSTANTS.calendar.minRecurrenceInterval ||
+        task.recurrence.interval > TIMING_CONSTANTS.calendar.maxRecurrenceInterval) {
       console.error('calculateNextOccurrence: Invalid recurrence interval', task.recurrence.interval);
       return null;
     }

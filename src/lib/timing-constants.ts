@@ -63,6 +63,7 @@ export const TIMING_CONSTANTS = {
     maxDayOfMonth: 31, // Last day of month (maximum)
     minRecurrenceInterval: 1, // Minimum recurrence interval
     maxRecurrenceInterval: 365, // Maximum recurrence interval (1 year)
+    maxOccurrences: 365, // Maximum number of occurrences to pre-create for a recurring task
   },
   
   // Recurrence-specific delays
