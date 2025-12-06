@@ -1731,21 +1731,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         const existingCompletedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
         if (existingCompletedOccurrence) {
           logger.debug('Completed occurrence already exists, skipping creation', { completedOccurrenceId });
-          // Release lock
-          nextOccurrenceCreationLock.current.delete(taskId);
-          return;
+          // Don't create completed occurrence, but still need to check/update main task
+          // Continue with next occurrence logic below
+        } else {
+          // 1. Create completed occurrence (stays visible, grayed out on original date)
+          completedOccurrence = {
+            ...currentTask,
+            id: completedOccurrenceId,
+            recurrence: { type: 'none', interval: 1 }, // Mark as non-recurring
+            status: 'done',
+            completedAt: completedAt,
+            updatedAt: completedAt,
+            // Keep original scheduledDate so it appears on the correct date
+          };
         }
-        
-        // 1. Create completed occurrence (stays visible, grayed out on original date)
-        completedOccurrence = {
-          ...currentTask,
-          id: completedOccurrenceId,
-          recurrence: { type: 'none', interval: 1 }, // Mark as non-recurring
-          status: 'done',
-          completedAt: completedAt,
-          updatedAt: completedAt,
-          // Keep original scheduledDate so it appears on the correct date
-        };
         
         // 2. Calculate next occurrence date
         const nextDate = calculateNextOccurrenceDate(currentTask.recurrence, scheduledDate);
@@ -1769,8 +1768,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             nextOccurrenceTask = null;
           } else {
             // Check if a task with same ID already exists at the next date
+            // Exclude completed occurrences (they have _completed_ in their ID)
             const existingNextOccurrence = tasks.find(t => {
               if (t.id !== taskId) return false; // Must be same task ID
+              if (t.id.includes('_completed_')) return false; // Exclude completed occurrences
               if (!t.scheduledDate) return false;
               const tDateKey = new Date(t.scheduledDate).toISOString().split('T')[0];
               return tDateKey === nextDateKey && t.status !== 'done'; // Same date and not completed
@@ -1871,14 +1872,39 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        // Save completed occurrence if created
+        // Save completed occurrence if created (only if it doesn't already exist)
         if (completedOccurrence) {
-          await api.saveTask(validWorkspaceId, completedOccurrence);
+          // Double-check it doesn't exist before saving
+          const existingCompleted = tasks.find(t => t.id === completedOccurrence.id);
+          if (!existingCompleted) {
+            await api.saveTask(validWorkspaceId, completedOccurrence);
+          } else {
+            logger.debug('Completed occurrence already exists in tasks, skipping save', { id: completedOccurrence.id });
+          }
         }
         
         // Save next occurrence task if created, otherwise save the updated task
-        const taskToSave = nextOccurrenceTask || updatedTask;
-        await api.saveTask(validWorkspaceId, taskToSave);
+        // Only save if we're actually updating the task (not just marking as done when next occurrence already exists)
+        if (nextOccurrenceTask || (!nextOccurrenceTask && !isRecurringTask)) {
+          const taskToSave = nextOccurrenceTask || updatedTask;
+          // For recurring tasks, only update if the scheduled date actually changed
+          if (isRecurringTask && nextOccurrenceTask) {
+            const currentScheduledDate = currentTask.scheduledDate ? new Date(currentTask.scheduledDate).toISOString().split('T')[0] : null;
+            const newScheduledDate = nextOccurrenceTask.scheduledDate ? new Date(nextOccurrenceTask.scheduledDate).toISOString().split('T')[0] : null;
+            if (currentScheduledDate === newScheduledDate) {
+              logger.debug('Task scheduled date unchanged, skipping save to prevent duplicate', { 
+                taskId, 
+                scheduledDate: newScheduledDate 
+              });
+            } else {
+              await api.saveTask(validWorkspaceId, taskToSave);
+            }
+          } else {
+            await api.saveTask(validWorkspaceId, taskToSave);
+          }
+        } else {
+          logger.debug('Skipping task save - next occurrence already exists and no update needed', { taskId });
+        }
         
         // Release lock after save completes
         if (isRecurringTask && isBeingMarkedComplete) {
