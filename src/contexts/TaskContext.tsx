@@ -1449,7 +1449,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             if (validWorkspaceId) {
               logger.info('Workspace created, retrying task save with workspace ID:', validWorkspaceId);
               // Retry saving with valid workspace ID
-              await api.saveTask(validWorkspaceId, newTask);
+              const tasksToSave = generateAllOccurrences(newTask);
+              await Promise.all(
+                tasksToSave.map(task => api.saveTask(validWorkspaceId, task))
+              );
               await loadTasksFromServer(validWorkspaceId);
               // Trigger immediate sync to notify other devices (debounced)
               debouncedSync(false);
@@ -1464,8 +1467,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
         
         // Fallback: save locally and cache
+        const tasksToSave = generateAllOccurrences(newTask);
         setTasks(prev => {
-          const updated = [...prev, newTask];
+          const updated = [...prev, ...tasksToSave];
           saveToLocalStorage('tasks', updated);
           return updated;
         });
@@ -1473,14 +1477,124 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     } else {
       // No workspace/auth - save locally only
+      const tasksToSave = generateAllOccurrences(newTask);
       setTasks(prev => {
-        const updated = [...prev, newTask];
+        const updated = [...prev, ...tasksToSave];
         saveToLocalStorage('tasks', updated);
         return updated;
       });
       toast.success('Task created (offline)');
     }
-  }, [user, workspaceId, accessToken, updateActivity]);
+  }, [user, workspaceId, accessToken, updateActivity, generateAllOccurrences]);
+
+  // Helper function to calculate the next occurrence date from a given date
+  const calculateNextOccurrenceDate = useCallback((recurrence: RecurrenceConfig, fromDate: Date): Date | null => {
+    if (!recurrence || recurrence.type === 'none') return null;
+
+    const nextDate = new Date(fromDate);
+    nextDate.setHours(0, 0, 0, 0);
+
+    switch (recurrence.type) {
+      case 'daily':
+        nextDate.setDate(nextDate.getDate() + recurrence.interval);
+        break;
+      
+      case 'weekly':
+        if (recurrence.daysOfWeek && Array.isArray(recurrence.daysOfWeek) && recurrence.daysOfWeek.length > 0) {
+          const currentDay = nextDate.getDay();
+          const sortedDays = [...recurrence.daysOfWeek].sort((a, b) => a - b);
+          
+          const nextDayInWeek = sortedDays.find(day => day > currentDay);
+          if (nextDayInWeek !== undefined) {
+            nextDate.setDate(nextDate.getDate() + (nextDayInWeek - currentDay));
+          } else {
+            const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
+            const daysToFirstDay = sortedDays[0];
+            const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (recurrence.interval - 1));
+            nextDate.setDate(nextDate.getDate() + daysToAdd);
+          }
+        } else {
+          nextDate.setDate(nextDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * recurrence.interval));
+        }
+        break;
+      
+      case 'monthly':
+        if (recurrence.dayOfMonth) {
+          nextDate.setMonth(nextDate.getMonth() + recurrence.interval);
+          const maxDayInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+          const dayOfMonth = Math.min(recurrence.dayOfMonth, maxDayInMonth);
+          nextDate.setDate(dayOfMonth);
+        } else {
+          nextDate.setMonth(nextDate.getMonth() + recurrence.interval);
+          const maxDayInMonth = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+          const originalDay = fromDate.getDate();
+          if (originalDay > maxDayInMonth) {
+            nextDate.setDate(maxDayInMonth);
+          }
+        }
+        break;
+      
+      default:
+        return null;
+    }
+
+    return nextDate;
+  }, []);
+
+  // Helper function to generate all occurrences for a recurring task
+  // This creates a series of individual task instances, one for each occurrence
+  const generateAllOccurrences = useCallback((task: Task): Task[] => {
+    if (!task.recurrence || task.recurrence.type === 'none' || !task.scheduledDate) {
+      return [task]; // Not recurring, return single task
+    }
+
+    const occurrences: Task[] = [];
+    const startDate = new Date(task.scheduledDate);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = task.recurrence.endDate ? new Date(task.recurrence.endDate) : null;
+    if (endDate) {
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    // Limit to 365 occurrences to prevent excessive task creation
+    const maxOccurrences = 365;
+    let currentDate = new Date(startDate);
+    let occurrenceCount = 0;
+
+    while (occurrenceCount < maxOccurrences) {
+      // Check if we've passed the end date
+      if (endDate && currentDate > endDate) {
+        break;
+      }
+
+      // Create a task instance for this occurrence
+      // Each instance is independent with recurrence.type = 'none'
+      const occurrenceTask: Task = {
+        ...task,
+        id: generateId(),
+        scheduledDate: currentDate.toISOString(),
+        status: 'todo',
+        completedAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        // Mark as non-recurring so it only appears on its exact scheduled date
+        recurrence: { type: 'none', interval: 1 },
+      };
+
+      occurrences.push(occurrenceTask);
+      occurrenceCount++;
+
+      // Calculate next occurrence date
+      const nextDate = calculateNextOccurrenceDate(task.recurrence, currentDate);
+      if (!nextDate || nextDate <= currentDate) {
+        break; // No more occurrences possible
+      }
+      currentDate = nextDate;
+    }
+
+    return occurrences;
+  }, [calculateNextOccurrenceDate]);
 
   // Helper function to calculate next occurrence date for recurring tasks
   // This calculates the next occurrence AFTER the current scheduledDate
@@ -1649,179 +1763,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // Generate next occurrence for recurring tasks when marked complete
-    // This happens regardless of how the task was marked complete (via status or completedAt)
-    // IMPORTANT: Only create next occurrence if the task is actually being marked complete (not already done)
-    // Also ensure the updatedTask still has recurrence (it might have been preserved above)
-    const hasRecurrence = (updatedTask.recurrence && updatedTask.recurrence.type !== 'none') || 
-                          (currentTask.recurrence && currentTask.recurrence.type !== 'none');
+    // NOTE: Recurring tasks now work differently - all occurrences are pre-created when the task is first created
+    // Each occurrence is a separate task instance with recurrence.type = 'none'
+    // When one is marked complete, only that specific instance is affected
+    // No need to create next occurrences here - they already exist
     
-    if (isBeingMarkedComplete && hasRecurrence && currentTask.status !== 'done') {
-      // Use the recurrence from updatedTask if available, otherwise use currentTask
-      const taskRecurrence = updatedTask.recurrence && updatedTask.recurrence.type !== 'none' 
-        ? updatedTask.recurrence 
-        : currentTask.recurrence;
-      
-      // Store these in variables accessible in finally block
-      let calculatedNextOccurrence: Date | null = null;
-      let occurrenceKeyForCleanup: string | null = null;
-      
-      if (!taskRecurrence || taskRecurrence.type === 'none') {
-        logger.warn('Recurring task marked complete but recurrence is missing or none', {
-          taskId,
-          taskTitle: currentTask.title,
-          updatedTaskRecurrence: updatedTask.recurrence,
-          currentTaskRecurrence: currentTask.recurrence
-        });
-        } else {
-        // Prevent concurrent next occurrence creation for the same task
-        // This handles race conditions when user clicks complete multiple times rapidly
-        if (nextOccurrenceCreationLock.current.has(taskId)) {
-          logger.debug('Next occurrence creation already in progress for this task, skipping duplicate', {
-            taskId,
-            taskTitle: currentTask.title
-          });
-        } else {
-          // Acquire lock IMMEDIATELY before any async operations
-          nextOccurrenceCreationLock.current.add(taskId);
-          
-          try {
-            // Calculate next occurrence from TODAY (completion date), not from original scheduled date
-            // This ensures the next task appears on the correct future date
-            const completionDate = new Date(); // Today - when the task is being marked complete
-            // Create a task object with the correct recurrence for calculation
-            const taskForCalculation: Task = {
-              ...currentTask,
-              recurrence: taskRecurrence
-            };
-            calculatedNextOccurrence = calculateNextOccurrence(taskForCalculation, completionDate);
-            const nextOccurrence = calculatedNextOccurrence;
-            
-            // If no next occurrence (e.g., end date reached), exit early
-            if (!nextOccurrence) {
-              return;
-            }
-            
-            // Process next occurrence creation
-            const nextOccurrenceDateStr = nextOccurrence.toISOString();
-            
-            // Create a unique key for this next occurrence to check for duplicates
-            const recurrenceKey = taskRecurrence.type === 'weekly' 
-              ? JSON.stringify((taskRecurrence.daysOfWeek || []).sort())
-              : taskRecurrence.type === 'monthly'
-              ? String(taskRecurrence.dayOfMonth || '')
-              : '';
-            const occurrenceKey = `${currentTask.title}|${taskRecurrence.type}|${taskRecurrence.interval}|${recurrenceKey}|${nextOccurrenceDateStr}`;
-            occurrenceKeyForCleanup = occurrenceKey; // Store for cleanup in finally block
-            
-            // CRITICAL: Check if this next occurrence is already pending creation FIRST
-            // This must happen before any async operations to prevent race conditions
-            if (pendingNextOccurrences.current.has(occurrenceKey)) {
-              logger.debug('Next occurrence is already pending creation, skipping duplicate', {
-                taskId,
-                taskTitle: currentTask.title,
-                nextOccurrenceDate: nextOccurrenceDateStr,
-                occurrenceKey
-              });
-              return; // Exit early - don't create duplicate
-            }
-            
-            // Check if a next occurrence already exists to prevent duplicates
-            // Look for a task with matching recurrence pattern, title, and the next scheduled date
-            // Use a more comprehensive check that includes checking all tasks, not just current state
-            const existingNextOccurrence = tasks.find(t => {
-              // Must be a different task
-              if (t.id === taskId) return false;
-              
-              // Must have the same title (same task series)
-              if (t.title !== currentTask.title) return false;
-              
-              // Must have the same recurrence pattern
-              if (!t.recurrence || t.recurrence.type !== taskRecurrence.type) return false;
-              if (t.recurrence.interval !== taskRecurrence.interval) return false;
-              
-              // For weekly tasks, also check daysOfWeek (sort arrays for comparison)
-              if (taskRecurrence.type === 'weekly') {
-                const currentDays = (taskRecurrence.daysOfWeek || []).sort();
-                const taskDays = (t.recurrence.daysOfWeek || []).sort();
-                if (JSON.stringify(currentDays) !== JSON.stringify(taskDays)) {
-                  return false;
-                }
-              }
-              
-              // For monthly tasks, also check dayOfMonth
-              if (taskRecurrence.type === 'monthly' && 
-                  t.recurrence.dayOfMonth !== taskRecurrence.dayOfMonth) {
-                return false;
-              }
-              
-              // Must have the same scheduled date as the next occurrence
-              if (t.scheduledDate !== nextOccurrenceDateStr) return false;
-              
-              // Must be active (not completed) - this is the next occurrence we're looking for
-              if (t.status === 'done') return false;
-              
-              return true;
-            });
-
-            // Only create next occurrence if it doesn't already exist
-            if (!existingNextOccurrence) {
-              // Mark this occurrence as pending IMMEDIATELY to prevent duplicate creation
-              // This must happen synchronously before any async operations
-              // CRITICAL: Set pending BEFORE creating the task object
-              pendingNextOccurrences.current.set(occurrenceKey, {
-                title: currentTask.title,
-                scheduledDate: nextOccurrenceDateStr,
-                recurrence: taskRecurrence
-              });
-              
-              // Create new task instance for the next occurrence
-              // The current task stays done on its scheduled date, new instance continues the series
-              // IMPORTANT: Preserve the recurrence pattern in the next occurrence
-              nextOccurrenceTask = {
-                ...currentTask,
-                id: generateId(),
-                status: 'todo',
-                scheduledDate: nextOccurrence.toISOString(),
-                completedAt: null,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                recurrence: taskRecurrence, // Ensure recurrence is preserved
-              };
-              
-              logger.debug('Creating next occurrence for recurring task', {
-                currentTaskId: currentTask.id,
-                currentScheduledDate: currentTask.scheduledDate,
-                nextOccurrenceDate: nextOccurrenceDateStr,
-                occurrenceKey
-              });
-            } else {
-              // Next occurrence already exists - log for debugging but don't create duplicate
-              logger.debug('Next occurrence already exists, skipping creation to prevent duplicate', {
-                currentTaskId: currentTask.id,
-                currentScheduledDate: currentTask.scheduledDate,
-                nextOccurrenceDate: nextOccurrenceDateStr,
-                existingTaskId: existingNextOccurrence.id,
-                existingTaskScheduledDate: existingNextOccurrence.scheduledDate
-              });
-            }
-          } finally {
-          // Release lock after a short delay to ensure server save completes
-          // This prevents race conditions from rapid clicks
-          setTimeout(() => {
-            nextOccurrenceCreationLock.current.delete(taskId);
-            // Also clear the pending occurrence after a longer delay to ensure it's saved
-            if (occurrenceKeyForCleanup) {
-              setTimeout(() => {
-                pendingNextOccurrences.current.delete(occurrenceKeyForCleanup!);
-              }, TIMING_CONSTANTS.recurrence.nextOccurrenceLockTimeout * 2); // Clear pending after lock timeout * 2
-            }
-          }, TIMING_CONSTANTS.recurrence.nextOccurrenceLockTimeout); // Lock timeout to prevent rapid duplicate creation
-        }
-      }
-      } // Close else block for taskRecurrence check
-    } // Close if block for isBeingMarkedComplete
-
     // Save to Supabase FIRST (source of truth)
     if (workspaceId && accessToken) {
       try {
