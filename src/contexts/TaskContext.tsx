@@ -407,15 +407,39 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Deduplicate recurring task occurrences
   // Removes duplicate tasks that have the same title, recurrence pattern, and scheduled date
+  // Also handles pre-created occurrences (recurrence.type = 'none') by matching title and scheduledDate
   function deduplicateRecurringTasks(tasks: Task[]): Task[] {
     const seen = new Map<string, Task>();
+    const seenPreCreated = new Map<string, Task>(); // For pre-created occurrences (type = 'none')
     
     for (const task of tasks) {
-      // Only check recurring tasks
-      if (!task.recurrence || task.recurrence.type === 'none') {
+      if (!task.recurrence) {
+        continue; // Skip tasks without recurrence config
+      }
+      
+      // Handle pre-created occurrences (recurrence.type = 'none' with scheduledDate)
+      // These are individual instances from a recurring series
+      if (task.recurrence.type === 'none' && task.scheduledDate) {
+        // Create a key based on title and scheduledDate only
+        // This catches duplicates of pre-created occurrences
+        const key = `${task.title}|${task.scheduledDate}`;
+        
+        if (seenPreCreated.has(key)) {
+          const existing = seenPreCreated.get(key)!;
+          const existingDate = new Date(existing.updatedAt);
+          const currentDate = new Date(task.updatedAt);
+          
+          // Keep the most recently updated one, or if same, keep the one that's not done
+          if (currentDate > existingDate || (currentDate.getTime() === existingDate.getTime() && task.status !== 'done' && existing.status === 'done')) {
+            seenPreCreated.set(key, task);
+          }
+        } else {
+          seenPreCreated.set(key, task);
+        }
         continue;
       }
       
+      // Handle active recurring tasks (recurrence.type !== 'none')
       // Create a unique key for this recurring task occurrence
       // Format: title|type|interval|daysOfWeek|dayOfMonth|scheduledDate
       const daysOfWeekKey = task.recurrence.daysOfWeek 
@@ -439,33 +463,43 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // Return deduplicated tasks
-    const deduplicated = new Set(seen.values());
-    const duplicatesRemoved = tasks.length - deduplicated.size;
+    // Count duplicates removed
+    const allSeenTasks = new Set([...seen.values(), ...seenPreCreated.values()]);
+    const duplicatesRemoved = tasks.length - allSeenTasks.size;
     
     if (duplicatesRemoved > 0) {
       logger.warn(`Removed ${duplicatesRemoved} duplicate recurring task occurrence(s)`);
     }
     
-    // Return all tasks, but replace duplicates with the deduplicated versions
-    const deduplicatedMap = new Map(seen.values().map(t => [t.id, t]));
-    return tasks.map(task => {
-      // If this task is a recurring task, check if we have a deduplicated version
-      if (task.recurrence && task.recurrence.type !== 'none') {
+    // Return all tasks, but filter out duplicates
+    return tasks.filter(task => {
+      if (!task.recurrence) {
+        return true; // Keep tasks without recurrence
+      }
+      
+      // Check pre-created occurrences (type = 'none' with scheduledDate)
+      if (task.recurrence.type === 'none' && task.scheduledDate) {
+        const key = `${task.title}|${task.scheduledDate}`;
+        const deduplicatedTask = seenPreCreated.get(key);
+        // Keep only if this is the task we're keeping
+        return deduplicatedTask?.id === task.id;
+      }
+      
+      // Check active recurring tasks (type !== 'none')
+      if (task.recurrence.type !== 'none') {
         const daysOfWeekKey = task.recurrence.daysOfWeek 
           ? JSON.stringify([...task.recurrence.daysOfWeek].sort())
           : '';
         const dayOfMonthKey = task.recurrence.dayOfMonth || '';
         const key = `${task.title}|${task.recurrence.type}|${task.recurrence.interval}|${daysOfWeekKey}|${dayOfMonthKey}|${task.scheduledDate || ''}`;
         const deduplicatedTask = seen.get(key);
-        
-        // If this task is not the one we're keeping, return null to filter it out
-        if (deduplicatedTask && deduplicatedTask.id !== task.id) {
-          return null;
-        }
+        // Keep only if this is the task we're keeping
+        return deduplicatedTask?.id === task.id;
       }
-      return task;
-    }).filter((task): task is Task => task !== null);
+      
+      // Keep tasks that don't match either pattern
+      return true;
+    });
   }
 
   // Load tasks from Supabase (source of truth)
@@ -1460,6 +1494,54 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return occurrences;
   }, [calculateNextOccurrenceDate]);
 
+  // Helper function to filter out duplicate occurrences before saving
+  // Checks server for existing tasks with same title and scheduledDate
+  const filterDuplicateOccurrences = useCallback(async (
+    tasksToSave: Task[],
+    workspaceId: string
+  ): Promise<Task[]> => {
+    // Validate input
+    if (!Array.isArray(tasksToSave)) {
+      logger.warn('filterDuplicateOccurrences: tasksToSave is not an array', tasksToSave);
+      return [];
+    }
+    
+    if (!workspaceId || typeof workspaceId !== 'string') {
+      logger.warn('filterDuplicateOccurrences: invalid workspaceId', workspaceId);
+      return tasksToSave; // Return original if workspaceId is invalid
+    }
+    
+    try {
+      const existingTasksResult = await api.getTasks(workspaceId);
+      const existingTasks = Array.isArray(existingTasksResult?.tasks) ? existingTasksResult.tasks : [];
+      const existingTaskKeys = new Set(
+        existingTasks
+          .filter(t => t && t.recurrence?.type === 'none' && t.scheduledDate)
+          .map(t => `${t.title}|${t.scheduledDate}`)
+      );
+      
+      // Filter out tasks that already exist (same title and scheduledDate)
+      return tasksToSave.filter(task => {
+        if (!task) return false; // Skip invalid tasks
+        if (task.recurrence?.type === 'none' && task.scheduledDate) {
+          const key = `${task.title}|${task.scheduledDate}`;
+          if (existingTaskKeys.has(key)) {
+            logger.debug('Skipping duplicate occurrence that already exists on server', {
+              title: task.title,
+              scheduledDate: task.scheduledDate
+            });
+            return false;
+          }
+        }
+        return true;
+      });
+    } catch (error) {
+      logger.error('Failed to check for duplicate occurrences, saving all:', error);
+      // If check fails, save all to avoid missing tasks
+      return tasksToSave;
+    }
+  }, []);
+
   const addTask = useCallback(async (taskData: Partial<Task>) => {
     updateActivity(); // Track demo user activity
     
@@ -1538,16 +1620,23 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Each occurrence will be a separate task instance with recurrence.type = 'none'
         const tasksToSave = generateAllOccurrences(newTask);
         
-        // Save all occurrences to server
-        await Promise.all(
-          tasksToSave.map(task => api.saveTask(validWorkspaceId, task))
-        );
+        // Before saving, check for existing duplicates on the server to prevent creating duplicates
+        // This is especially important for recurring tasks that may have been partially created
+        const tasksToSaveFiltered = await filterDuplicateOccurrences(tasksToSave, validWorkspaceId);
+        
+        // Save only non-duplicate occurrences to server
+        if (tasksToSaveFiltered && tasksToSaveFiltered.length > 0) {
+          await Promise.all(
+            tasksToSaveFiltered.map(task => api.saveTask(validWorkspaceId, task))
+          );
+        }
         
         // Reload from server to get the authoritative version
         await loadTasksFromServer(validWorkspaceId);
         // Trigger immediate sync to notify other devices (debounced)
         debouncedSync(false);
-        toast.success(tasksToSave.length > 1 ? `${tasksToSave.length} occurrences created` : 'Task created');
+        const savedCount = tasksToSaveFiltered?.length || tasksToSave?.length || 0;
+        toast.success(savedCount > 1 ? `${savedCount} occurrences created` : 'Task created');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to save task to server:', error);
@@ -1565,9 +1654,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               logger.info('Workspace created, retrying task save with workspace ID:', validWorkspaceId);
               // Retry saving with valid workspace ID
               const tasksToSave = generateAllOccurrences(newTask);
-              await Promise.all(
-                tasksToSave.map(task => api.saveTask(validWorkspaceId, task))
-              );
+              const tasksToSaveFiltered = await filterDuplicateOccurrences(tasksToSave, validWorkspaceId);
+              
+              if (tasksToSaveFiltered && tasksToSaveFiltered.length > 0) {
+                await Promise.all(
+                  tasksToSaveFiltered.map(task => api.saveTask(validWorkspaceId, task))
+                );
+              }
               await loadTasksFromServer(validWorkspaceId);
               // Trigger immediate sync to notify other devices (debounced)
               debouncedSync(false);
