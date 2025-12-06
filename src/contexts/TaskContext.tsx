@@ -415,10 +415,36 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // Removes duplicate tasks that have the same title, recurrence pattern, and scheduled date
   // Also handles pre-created occurrences (recurrence.type = 'none') by matching title and scheduledDate
   function deduplicateRecurringTasks(tasks: Task[]): Task[] {
+    // First, deduplicate by task ID (most important - same ID should only appear once)
+    const tasksById = new Map<string, Task>();
+    const duplicateIds: string[] = [];
+    
+    for (const task of tasks) {
+      if (tasksById.has(task.id)) {
+        // Same ID found - keep the most recently updated one
+        const existing = tasksById.get(task.id)!;
+        const existingDate = new Date(existing.updatedAt);
+        const currentDate = new Date(task.updatedAt);
+        
+        if (currentDate > existingDate) {
+          tasksById.set(task.id, task);
+          duplicateIds.push(task.id);
+        } else {
+          duplicateIds.push(task.id);
+        }
+      } else {
+        tasksById.set(task.id, task);
+      }
+    }
+    
+    // Now deduplicate by recurrence pattern (for tasks with same title/config but different IDs)
     const seenActiveRecurring = new Map<string, Task>(); // For active recurring tasks (type !== 'none')
     const seenCompletedOccurrences = new Map<string, Task>(); // For completed occurrences (type = 'none' AND status = 'done')
     
-    for (const task of tasks) {
+    // Use the deduplicated-by-ID tasks
+    const uniqueByIdTasks = Array.from(tasksById.values());
+    
+    for (const task of uniqueByIdTasks) {
       if (!task.recurrence) {
         continue; // Skip tasks without recurrence config
       }
@@ -475,12 +501,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const allSeenTasks = new Set([...seenActiveRecurring.values(), ...seenCompletedOccurrences.values()]);
     const duplicatesRemoved = tasks.length - allSeenTasks.size;
     
-    if (duplicatesRemoved > 0) {
-      logger.warn(`Removed ${duplicatesRemoved} duplicate recurring task occurrence(s)`);
+    if (duplicatesRemoved > 0 || duplicateIds.length > 0) {
+      logger.warn(`Removed ${duplicatesRemoved} duplicate recurring task occurrence(s)${duplicateIds.length > 0 ? ` and ${duplicateIds.length} duplicate task ID(s)` : ''}`);
     }
     
     // Return all tasks, but filter out duplicates
-    return tasks.filter(task => {
+    return uniqueByIdTasks.filter(task => {
       if (!task.recurrence) {
         return true; // Keep tasks without recurrence
       }
