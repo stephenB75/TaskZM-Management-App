@@ -3,6 +3,14 @@
  * Centralized magic numbers for task-related calculations (badge widths, heights, drag-drop, etc.)
  */
 
+import { DEFAULT_WEEKDAY_WORK_START, AI_SCHEDULER_MAX_END_HOUR } from './business-constants';
+
+// Helper to parse time string to hour
+const parseTimeToHour = (timeStr: string): number => {
+  const [hours] = timeStr.split(':').map(Number);
+  return hours;
+};
+
 // Badge Calculation Constants
 export const TASK_CALCULATION_CONSTANTS = {
   badge: {
@@ -44,14 +52,14 @@ export const TASK_CALCULATION_CONSTANTS = {
   // Drag and Drop Constants
   dragDrop: {
     activationDistance: 10, // px - activation distance for drag (increased for easier initiation)
-    defaultHour: 9, // Default hour for scheduling
+    defaultHour: parseTimeToHour(DEFAULT_WEEKDAY_WORK_START), // Default work start hour for scheduling
     hourMin: 8, // Minimum hour for scheduling
-    hourMax: 23, // Maximum hour for scheduling
+    hourMax: AI_SCHEDULER_MAX_END_HOUR, // Maximum hour for scheduling (from business-constants)
   },
   
   // Time Conflict Constants
   timeConflict: {
-    maxHour: 23,
+    maxHour: AI_SCHEDULER_MAX_END_HOUR, // Maximum hour (from business-constants)
     maxMinute: 0,
   },
 } as const;

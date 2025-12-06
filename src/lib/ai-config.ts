@@ -4,6 +4,27 @@
  * These values can be made user-configurable in the future
  */
 
+import {
+  DEFAULT_WEEKDAY_WORK_START,
+  DEFAULT_WEEKDAY_WORK_END,
+  DEFAULT_WEEKDAY_PERSONAL_START,
+  DEFAULT_WEEKDAY_PERSONAL_END,
+  DEFAULT_WEEKDAY_PROJECTS_START,
+  DEFAULT_WEEKDAY_PROJECTS_END,
+  DEFAULT_WEEKEND_WORK_START,
+  DEFAULT_WEEKEND_WORK_END,
+  DEFAULT_WEEKEND_PERSONAL_START,
+  DEFAULT_WEEKEND_PERSONAL_END,
+  DEFAULT_WEEKEND_PROJECTS_START,
+  DEFAULT_WEEKEND_PROJECTS_END,
+} from './business-constants';
+
+// Helper to parse time string to hour
+const parseTimeToHour = (timeStr: string): number => {
+  const [hours] = timeStr.split(':').map(Number);
+  return hours;
+};
+
 // ============================================================================
 // Daily Hours Configuration
 // ============================================================================
@@ -84,23 +105,23 @@ export const DEFAULT_TIME_SLOTS = 5;
 /**
  * Default time slots based on task priority
  * These are fallback times when category hours are not available
- * TODO: These should respect user's work hours settings
+ * Uses default work hours from business-constants.ts
  */
 export const PRIORITY_TIME_SLOTS = {
-  urgent: { hour: 9, minute: 0 },   // 9:00 AM
-  high: { hour: 11, minute: 0 },     // 11:00 AM (mid-day)
-  medium: { hour: 11, minute: 0 },    // 11:00 AM (mid-day)
-  low: { hour: 14, minute: 0 },     // 2:00 PM (afternoon)
+  urgent: { hour: parseTimeToHour(DEFAULT_WEEKDAY_WORK_START), minute: 0 },   // Work start time
+  high: { hour: 11, minute: 0 },     // 11:00 AM (mid-day) - between work start and end
+  medium: { hour: 11, minute: 0 },    // 11:00 AM (mid-day) - between work start and end
+  low: { hour: 14, minute: 0 },     // 2:00 PM (afternoon) - between work start and end
 } as const;
 
 /**
  * Default hours for category-based scheduling when category hours are disabled
- * TODO: These should use user's work hours settings
+ * Uses default category hours from business-constants.ts
  */
 export const DEFAULT_CATEGORY_HOURS = {
-  work: 9,        // 9:00 AM
-  personal: 10,   // 10:00 AM
-  projects: 9,    // 9:00 AM
+  work: parseTimeToHour(DEFAULT_WEEKDAY_WORK_START),        // Work start hour
+  personal: parseTimeToHour(DEFAULT_WEEKDAY_PERSONAL_START),   // Personal start hour
+  projects: parseTimeToHour(DEFAULT_WEEKDAY_PROJECTS_START),    // Projects start hour
 } as const;
 
 // ============================================================================

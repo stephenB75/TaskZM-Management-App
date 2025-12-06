@@ -65,6 +65,7 @@ import {
   getIncompleteDependencies,
   getInitials,
 } from "../lib/utils";
+import { MINUTES_PER_HOUR, HOURS_PER_DAY } from "../lib/business-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -829,8 +830,8 @@ export function TaskDialog({
         );
         // Convert minutes to hours and minutes
         if (task.estimatedTime) {
-          const hours = Math.floor(task.estimatedTime / 60);
-          const minutes = task.estimatedTime % 60;
+          const hours = Math.floor(task.estimatedTime / MINUTES_PER_HOUR);
+          const minutes = task.estimatedTime % MINUTES_PER_HOUR;
           setEstimatedHours(String(hours));
           setEstimatedMinutes(String(minutes));
         } else {
@@ -983,7 +984,7 @@ export function TaskDialog({
           }
           
           // Validate parsed time values
-          if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+          if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < HOURS_PER_DAY && minutes >= 0 && minutes < MINUTES_PER_HOUR) {
             dateWithTime.setHours(hours, minutes, 0, 0);
           }
         } else if (scheduledTime) {
@@ -1214,7 +1215,7 @@ export function TaskDialog({
           }
         );
         
-        if (alternativeTime.getHours() < 24) {
+        if (alternativeTime.getHours() < HOURS_PER_DAY) {
           setPendingTaskData({
             taskData,
             requestedTime: scheduledDateTime,
@@ -1258,7 +1259,7 @@ export function TaskDialog({
           );
           
           // Only show dialog if alternative time is different and valid
-          if (alternativeTime.getTime() !== scheduledDateTime.getTime() && alternativeTime.getHours() < 24) {
+          if (alternativeTime.getTime() !== scheduledDateTime.getTime() && alternativeTime.getHours() < HOURS_PER_DAY) {
             // Store the pending task data and show dialog
             setPendingTaskData({
               taskData,
@@ -1504,7 +1505,7 @@ export function TaskDialog({
           actualTime: minutes,
         });
         toast.success(
-          `Time tracked: ${Math.floor(minutes / 60)}h ${minutes % 60}m`,
+          `Time tracked: ${Math.floor(minutes / MINUTES_PER_HOUR)}h ${minutes % MINUTES_PER_HOUR}m`,
         );
       } catch (error) {
         // Error handled by toast

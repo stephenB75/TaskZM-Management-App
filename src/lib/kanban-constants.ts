@@ -3,6 +3,14 @@
  * Centralized configuration for week/kanban view styling, colors, dimensions, and calculations
  */
 
+import { DEFAULT_WEEKDAY_WORK_START } from './business-constants';
+
+// Helper to parse time string to hour
+const parseTimeToHour = (timeStr: string): number => {
+  const [hours] = timeStr.split(':').map(Number);
+  return hours;
+};
+
 // Day Column Colors
 export const KANBAN_DAY_COLORS = {
   monday: {
@@ -173,7 +181,7 @@ export const KANBAN_SCROLL = {
 
 // Time Constants
 export const KANBAN_TIME = {
-  defaultHour: 9, // 9 AM default time for new tasks
+  defaultHour: parseTimeToHour(DEFAULT_WEEKDAY_WORK_START), // Default work start time for new tasks
   daysInWeek: 14,
 } as const;
 

@@ -49,7 +49,11 @@ import {
   DEFAULT_WEEKEND_PERSONAL_END,
   DEFAULT_WEEKEND_PROJECTS_START,
   DEFAULT_WEEKEND_PROJECTS_END,
+  MINUTES_PER_HOUR,
+  MILLISECONDS_PER_MINUTE,
+  HOURS_PER_DAY,
 } from '../lib/business-constants';
+import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
 
 interface TaskContextType {
@@ -2780,7 +2784,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           if (categoryHours) {
             // Start from category hours start time, but not before current time
             const categoryStartMinutes = categoryHours.start;
-            const categoryStartHours = Math.floor(categoryStartMinutes / 60);
+            const categoryStartHours = Math.floor(categoryStartMinutes / MINUTES_PER_HOUR);
             const categoryStartMins = categoryStartMinutes % 60;
             
             startTime = new Date(today);
@@ -2789,9 +2793,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             // If category start is before current time, use current time (rounded up)
             if (startTime.getTime() < now.getTime()) {
               const currentMinutes = now.getMinutes();
-              const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+              const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
               startTime = new Date(now);
-              if (roundedMinutes >= 60) {
+              if (roundedMinutes >= MINUTES_PER_HOUR) {
                 startTime.setHours(startTime.getHours() + 1);
                 startTime.setMinutes(0);
               } else {
@@ -2801,17 +2805,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               startTime.setMilliseconds(0);
               
               // Ensure we're still within category hours
-              const currentTotalMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+              const currentTotalMinutes = startTime.getHours() * MINUTES_PER_HOUR + startTime.getMinutes();
               if (currentTotalMinutes < categoryHours.start) {
-                startTime.setHours(Math.floor(categoryHours.start / 60), categoryHours.start % 60, 0, 0);
+                startTime.setHours(Math.floor(categoryHours.start / MINUTES_PER_HOUR), categoryHours.start % MINUTES_PER_HOUR, 0, 0);
               }
             }
           } else {
             // No category hours - start from current time (rounded up) or 9:00 AM, whichever is later
             const currentMinutes = now.getMinutes();
-            const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+            const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
             startTime = new Date(now);
-            if (roundedMinutes >= 60) {
+            if (roundedMinutes >= MINUTES_PER_HOUR) {
               startTime.setHours(startTime.getHours() + 1);
               startTime.setMinutes(0);
             } else {
@@ -2820,11 +2824,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             startTime.setSeconds(0);
             startTime.setMilliseconds(0);
             
-            // Ensure not before 9:00 AM
-            const nineAM = new Date(today);
-            nineAM.setHours(9, 0, 0, 0);
-            if (startTime.getTime() < nineAM.getTime()) {
-              startTime = nineAM;
+            // Ensure not before default work start time
+            const workStartTime = new Date(today);
+            const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
+            workStartTime.setHours(workStartHour, 0, 0, 0);
+            if (startTime.getTime() < workStartTime.getTime()) {
+              startTime = workStartTime;
             }
           }
           
@@ -2873,7 +2878,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           if (availableSlot.getDate() === today.getDate() && 
               availableSlot.getMonth() === today.getMonth() && 
               availableSlot.getFullYear() === today.getFullYear() &&
-              availableSlot.getHours() < 24) {
+              availableSlot.getHours() < HOURS_PER_DAY) {
             // Use the available slot time
             await updateTask(task.id, { scheduledDate: availableSlot.toISOString() });
             
@@ -2885,7 +2890,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             scheduledRolloverTasks.push(scheduledTask);
             
             // Update last scheduled end time for chronological ordering
-            const taskEndTime = availableSlot.getTime() + (taskDuration * 60 * 1000);
+            const taskEndTime = availableSlot.getTime() + (taskDuration * MILLISECONDS_PER_MINUTE);
             lastScheduledEnd = taskEndTime;
             
             rolledCount++;
@@ -2968,8 +2973,16 @@ export function useTasks() {
         filters: {},
         viewConfig: { groupBy: 'none', sortBy: 'dueDate', sortOrder: 'asc', showCompleted: true },
         hoursSettings: {
-          weekdayHours: { work: { start: '09:00', end: '17:00', enabled: true }, personal: { start: '08:00', end: '22:00', enabled: true }, projects: { start: '09:00', end: '17:00', enabled: true } },
-          weekendHours: { work: { start: '09:00', end: '17:00', enabled: false }, personal: { start: '08:00', end: '22:00', enabled: true }, projects: { start: '09:00', end: '17:00', enabled: false } },
+          weekdayHours: { 
+            work: { start: DEFAULT_WEEKDAY_WORK_START, end: DEFAULT_WEEKDAY_WORK_END, enabled: true }, 
+            personal: { start: DEFAULT_WEEKDAY_PERSONAL_START, end: DEFAULT_WEEKDAY_PERSONAL_END, enabled: true }, 
+            projects: { start: DEFAULT_WEEKDAY_PROJECTS_START, end: DEFAULT_WEEKDAY_PROJECTS_END, enabled: true } 
+          },
+          weekendHours: { 
+            work: { start: DEFAULT_WEEKEND_WORK_START, end: DEFAULT_WEEKEND_WORK_END, enabled: false }, 
+            personal: { start: DEFAULT_WEEKEND_PERSONAL_START, end: DEFAULT_WEEKEND_PERSONAL_END, enabled: true }, 
+            projects: { start: DEFAULT_WEEKEND_PROJECTS_START, end: DEFAULT_WEEKEND_PROJECTS_END, enabled: false } 
+          },
         },
         rolloverSettings: { enabled: false, maxHours: 5 },
         workspaceId: null,

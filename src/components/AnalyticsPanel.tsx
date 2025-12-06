@@ -42,6 +42,7 @@ import {
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { TIME_PERIODS } from "../lib/business-constants";
 import {
   COLOR_PRIMARY,
   COLOR_SUCCESS,
@@ -371,10 +372,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       } catch {}
     });
 
-    const morningTasks = hourCounts.slice(6, 12).reduce((a, b) => a + b, 0);
-    const afternoonTasks = hourCounts.slice(12, 18).reduce((a, b) => a + b, 0);
-    const eveningTasks = hourCounts.slice(18, 22).reduce((a, b) => a + b, 0);
-    const nightTasks = [...hourCounts.slice(0, 6), ...hourCounts.slice(22, 24)].reduce((a, b) => a + b, 0);
+    const morningTasks = hourCounts.slice(TIME_PERIODS.MORNING_START, TIME_PERIODS.MORNING_END).reduce((a, b) => a + b, 0);
+    const afternoonTasks = hourCounts.slice(TIME_PERIODS.AFTERNOON_START, TIME_PERIODS.AFTERNOON_END).reduce((a, b) => a + b, 0);
+    const eveningTasks = hourCounts.slice(TIME_PERIODS.EVENING_START, TIME_PERIODS.EVENING_END).reduce((a, b) => a + b, 0);
+    const nightTasks = [...hourCounts.slice(TIME_PERIODS.DAY_START, TIME_PERIODS.DAY_END), ...hourCounts.slice(TIME_PERIODS.NIGHT_START, TIME_PERIODS.NIGHT_END)].reduce((a, b) => a + b, 0);
 
     const maxCount = hourCounts.length > 0 ? Math.max(...hourCounts) : 0;
     const peakHour = maxCount > 0 ? hourCounts.indexOf(maxCount) : 12;

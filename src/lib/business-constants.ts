@@ -47,6 +47,29 @@ export const AI_SCHEDULER_TIME_SLOT_INTERVAL = 15; // Minutes - time slots are 1
 export const AI_SCHEDULER_MIN_START_HOUR = 6; // Earliest hour to schedule tasks (6 AM)
 export const AI_SCHEDULER_MAX_END_HOUR = 23; // Latest hour to schedule tasks (11 PM)
 
+// Time Conversion Constants
+export const MINUTES_PER_HOUR = 60;
+export const SECONDS_PER_MINUTE = 60;
+export const MILLISECONDS_PER_SECOND = 1000;
+export const MILLISECONDS_PER_MINUTE = 60 * 1000; // 60 seconds * 1000 ms
+export const MILLISECONDS_PER_HOUR = 60 * 60 * 1000; // 60 minutes * 60 seconds * 1000 ms
+export const HOURS_PER_DAY = 24;
+export const MINUTES_PER_DAY = 24 * 60; // 24 hours * 60 minutes
+
+// Time Period Definitions (for analytics)
+export const TIME_PERIODS = {
+  MORNING_START: 6, // 6 AM
+  MORNING_END: 12, // 12 PM (noon)
+  AFTERNOON_START: 12, // 12 PM (noon)
+  AFTERNOON_END: 18, // 6 PM
+  EVENING_START: 18, // 6 PM
+  EVENING_END: 22, // 10 PM
+  NIGHT_START: 22, // 10 PM
+  NIGHT_END: 24, // 12 AM (midnight)
+  DAY_START: 0, // 12 AM (midnight)
+  DAY_END: 6, // 6 AM
+} as const;
+
 // Award System Constants
 export const AWARD_COMPLETION_THRESHOLDS = {
   FIRST: 1,

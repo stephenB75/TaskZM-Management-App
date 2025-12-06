@@ -37,6 +37,10 @@ import {
   DEFAULT_WEEKEND_PERSONAL_END,
   DEFAULT_WEEKEND_PROJECTS_START,
   DEFAULT_WEEKEND_PROJECTS_END,
+  MINUTES_PER_HOUR,
+  HOURS_PER_DAY,
+  MILLISECONDS_PER_MINUTE,
+  MILLISECONDS_PER_HOUR,
 } from '../lib/business-constants';
 import type { Task } from '../types';
 
@@ -569,7 +573,7 @@ export function useAIScheduler() {
     
     // Calculate total days in date range for better distribution
     const totalDaysInRange = dateRange 
-      ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      ? Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_HOUR / HOURS_PER_DAY) + 1
       : DEFAULT_SCHEDULING_PERIOD_DAYS;
     
     // Track tasks scheduled per day for better distribution
@@ -640,11 +644,11 @@ export function useAIScheduler() {
         // If suggested date is after due date, schedule closer to due date
         // But respect the date range constraint
         if (suggestedDate > dueDate) {
-          const daysDiff = Math.max(0, Math.floor((dueDate.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24)));
+          const daysDiff = Math.max(0, Math.floor((dueDate.getTime() - baseDate.getTime()) / MILLISECONDS_PER_HOUR / HOURS_PER_DAY));
           const newDaysToAdd = Math.max(0, daysDiff);
           
           // Only adjust if the new date is within the allowed range
-          if (!dateRange || (new Date(baseDate.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) >= startDate && 
+          if (!dateRange || (new Date(baseDate.getTime() + newDaysToAdd * HOURS_PER_DAY * MILLISECONDS_PER_HOUR) >= startDate && 
                              new Date(baseDate.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) <= endDate)) {
             daysToAdd = newDaysToAdd;
             reason = 'Due date approaching - prioritized';
@@ -931,7 +935,7 @@ export function useAIScheduler() {
           );
           
           // If a valid slot was found (not 24:00 or later), use it
-          if (availableSlot.getHours() < 24) {
+          if (availableSlot.getHours() < HOURS_PER_DAY) {
             scheduleDate.setTime(availableSlot.getTime());
             reason = `${categoryTime.reason} - placed in available slot`;
           } else {
@@ -1034,8 +1038,8 @@ export function useAIScheduler() {
               earliestTime = new Date(today);
               // Round up to next 15-minute interval
               const minutes = earliestTime.getMinutes();
-              const roundedMinutes = Math.ceil(minutes / 15) * 15;
-              if (roundedMinutes >= 60) {
+              const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+              if (roundedMinutes >= MINUTES_PER_HOUR) {
                 earliestTime.setHours(earliestTime.getHours() + 1, 0, 0, 0);
               } else {
                 earliestTime.setMinutes(roundedMinutes, 0, 0);
@@ -1094,7 +1098,7 @@ export function useAIScheduler() {
               const firstTaskStart = new Date(firstTask.scheduledDate!);
               let gapStart = new Date(earliestTime);
               if (gapStart < firstTaskStart) {
-                const gapDuration = (firstTaskStart.getTime() - gapStart.getTime()) / (1000 * 60);
+                const gapDuration = (firstTaskStart.getTime() - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
                 if (gapDuration >= taskDurationMinutes) {
                   availableGaps.push({
                     start: gapStart,
@@ -1119,7 +1123,7 @@ export function useAIScheduler() {
               
               // Calculate gap
               const gapStart = new Date(prevTaskEnd);
-              const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / (1000 * 60);
+              const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
               
               // If gap is large enough for this task, add it to available gaps
               if (gapDuration >= taskDurationMinutes) {
@@ -1143,7 +1147,7 @@ export function useAIScheduler() {
               workEnd.setHours(workEndHour, 0, 0, 0);
               
               if (lastTaskEnd < workEnd) {
-                const gapDuration = (workEnd.getTime() - lastTaskEnd.getTime()) / (1000 * 60);
+                const gapDuration = (workEnd.getTime() - lastTaskEnd.getTime()) / MILLISECONDS_PER_MINUTE;
                 if (gapDuration >= taskDurationMinutes) {
                   availableGaps.push({
                     start: lastTaskEnd,
@@ -1266,7 +1270,7 @@ export function useAIScheduler() {
           
           // Create proposed time from availableSlot
           const proposedTime = new Date(scheduleDate);
-          let proposedMinute = Math.round(availableSlot.minute / 15) * 15;
+          let proposedMinute = Math.round(availableSlot.minute / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
           let proposedHour = availableSlot.hour;
           if (proposedMinute >= 60) {
             proposedHour += 1;
@@ -1314,12 +1318,12 @@ export function useAIScheduler() {
           );
           
           // If a valid slot was found (not 24:00 or later), use it
-          if (finalSlot.getHours() < 24) {
+          if (finalSlot.getHours() < HOURS_PER_DAY) {
             scheduleDate.setTime(finalSlot.getTime());
           } else {
             // Fall back to availableSlot if findNextAvailableSlot couldn't find a slot
             // This shouldn't happen often, but handle gracefully
-            let selectedMinute = Math.round(availableSlot.minute / 15) * 15;
+            let selectedMinute = Math.round(availableSlot.minute / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
             let selectedHour = availableSlot.hour;
             if (selectedMinute >= 60) {
               selectedHour += 1;
@@ -1343,14 +1347,14 @@ export function useAIScheduler() {
           // Verify no double booking - check for time overlaps with existing tasks
           const newTaskStart = scheduleDate.getTime();
           const newTaskDuration = taskDurationMinutes;
-          const newTaskEnd = newTaskStart + (newTaskDuration * 60 * 1000);
+          const newTaskEnd = newTaskStart + (newTaskDuration * MILLISECONDS_PER_MINUTE);
           
           let hasConflict = false;
           for (const existingTask of existingTasksForDay) {
             if (!existingTask.scheduledDate) continue;
             
             const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-            const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000; // Use AI estimator for existing tasks
+            const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE; // Use AI estimator for existing tasks
             const existingTaskEnd = existingTaskStart + existingTaskDuration;
             
             // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
@@ -1368,7 +1372,7 @@ export function useAIScheduler() {
               for (const existingTask of existingTasksForDay) {
                 if (!existingTask.scheduledDate) continue;
                 const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-                const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000; // Use AI estimator for existing tasks
+                const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE; // Use AI estimator for existing tasks
                 const existingTaskEnd = existingTaskStart + existingTaskDuration;
                 if (existingTaskEnd > latestEndTime) {
                   latestEndTime = existingTaskEnd;
@@ -1380,7 +1384,7 @@ export function useAIScheduler() {
               scheduleDate.setHours(conflictFreeDate.getHours(), conflictFreeDate.getMinutes(), 0, 0);
               
               // Round to nearest 15 minutes
-              const roundedMinutes = Math.round(scheduleDate.getMinutes() / 15) * 15;
+              const roundedMinutes = Math.round(scheduleDate.getMinutes() / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
               scheduleDate.setMinutes(roundedMinutes);
               
               // Ensure we don't exceed work hours

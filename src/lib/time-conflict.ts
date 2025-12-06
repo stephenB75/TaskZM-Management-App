@@ -2,6 +2,8 @@ import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
 import { getTaskMinutes } from './daily-hours-utils';
+import { DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MINUTES_PER_HOUR, HOURS_PER_DAY } from './business-constants';
+import { TIME_ROUNDING_INTERVAL_MINUTES } from './ai-config';
 
 /**
  * Options for finding next available slot
@@ -43,7 +45,7 @@ export function checkTimeConflict(
     if (!existingTask.scheduledDate) continue;
 
     const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-    const existingTaskDuration = getTaskMinutes(existingTask) * 60 * 1000; // Use AI estimator
+    const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE; // Use AI estimator
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
 
     // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
@@ -87,7 +89,7 @@ export function findNextAvailableSlot(
     .map((task) => ({
       task,
       start: new Date(task.scheduledDate!).getTime(),
-      end: new Date(task.scheduledDate!).getTime() + (getTaskMinutes(task) * 60 * 1000), // Use AI estimator
+      end: new Date(task.scheduledDate!).getTime() + (getTaskMinutes(task) * MILLISECONDS_PER_MINUTE), // Use AI estimator
     }))
     .sort((a, b) => a.start - b.start);
 
@@ -99,7 +101,7 @@ export function findNextAvailableSlot(
   if (options?.ensureAfterCurrentTime && isToday) {
     // Start from current time (rounded up to next 15-minute slot)
     const currentMinutes = now.getMinutes();
-    const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+    const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
     const currentTimeRounded = new Date(now);
     if (roundedMinutes >= 60) {
       currentTimeRounded.setHours(currentTimeRounded.getHours() + 1);
@@ -129,9 +131,9 @@ export function findNextAvailableSlot(
     let effectiveStart = start;
     if (isToday && options?.ensureAfterCurrentTime) {
       const currentMinutes = now.getMinutes();
-      const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+      const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
       const currentTimeRounded = new Date(now);
-      if (roundedMinutes >= 60) {
+      if (roundedMinutes >= MINUTES_PER_HOUR) {
         currentTimeRounded.setHours(currentTimeRounded.getHours() + 1);
         currentTimeRounded.setMinutes(0);
       } else {
@@ -143,10 +145,10 @@ export function findNextAvailableSlot(
     
     // If candidate is before effective start, move to effective start
     if (candidateTotalMinutes < effectiveStart) {
-      candidateTime.setHours(Math.floor(effectiveStart / 60), effectiveStart % 60, 0, 0);
-      // Round up to next 15-minute slot
-      const roundedMinutes = Math.ceil((effectiveStart % 60) / 15) * 15;
-      if (roundedMinutes >= 60) {
+      candidateTime.setHours(Math.floor(effectiveStart / MINUTES_PER_HOUR), effectiveStart % MINUTES_PER_HOUR, 0, 0);
+      // Round up to next interval slot
+      const roundedMinutes = Math.ceil((effectiveStart % MINUTES_PER_HOUR) / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+      if (roundedMinutes >= MINUTES_PER_HOUR) {
         candidateTime.setHours(candidateTime.getHours() + 1);
         candidateTime.setMinutes(0);
       } else {
@@ -161,7 +163,7 @@ export function findNextAvailableSlot(
   // Try to find a slot after the candidate time
   while (candidateTime.getHours() < maxHour || (candidateTime.getHours() === maxHour && candidateTime.getMinutes() <= maxMinute)) {
     const candidateStart = candidateTime.getTime();
-    const candidateEnd = candidateStart + (taskDuration * 60 * 1000);
+    const candidateEnd = candidateStart + (taskDuration * MILLISECONDS_PER_MINUTE);
 
     // Check category hours constraint
     if (options?.categoryHours) {
@@ -174,10 +176,10 @@ export function findNextAvailableSlot(
         // Task doesn't fit in category hours, try to move to next available slot
         // Move to category start if before, or skip if after
         if (candidateTotalMinutes < options.categoryHours.start) {
-          candidateTime.setHours(Math.floor(options.categoryHours.start / 60), options.categoryHours.start % 60, 0, 0);
-          // Round to nearest 15-minute slot
-          const roundedMinutes = Math.ceil((options.categoryHours.start % 60) / 15) * 15;
-          if (roundedMinutes >= 60) {
+          candidateTime.setHours(Math.floor(options.categoryHours.start / MINUTES_PER_HOUR), options.categoryHours.start % MINUTES_PER_HOUR, 0, 0);
+          // Round to nearest interval slot
+          const roundedMinutes = Math.ceil((options.categoryHours.start % MINUTES_PER_HOUR) / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+          if (roundedMinutes >= MINUTES_PER_HOUR) {
             candidateTime.setHours(candidateTime.getHours() + 1);
             candidateTime.setMinutes(0);
           } else {
@@ -201,7 +203,7 @@ export function findNextAvailableSlot(
         // Round to nearest 15-minute slot
         const minutes = candidateTime.getMinutes();
         const roundedMinutes = Math.ceil(minutes / 15) * 15;
-        if (roundedMinutes >= 60) {
+        if (roundedMinutes >= MINUTES_PER_HOUR) {
           candidateTime.setHours(candidateTime.getHours() + 1);
           candidateTime.setMinutes(0);
         } else {
@@ -251,7 +253,7 @@ export function reorganizeAllTasksForDate(
     .map((task) => ({
       task,
       start: new Date(task.scheduledDate!).getTime(),
-      end: new Date(task.scheduledDate!).getTime() + (getTaskMinutes(task) * 60 * 1000), // Use AI estimator
+      end: new Date(task.scheduledDate!).getTime() + (getTaskMinutes(task) * MILLISECONDS_PER_MINUTE), // Use AI estimator
     }))
     .sort((a, b) => a.start - b.start);
 
@@ -265,7 +267,7 @@ export function reorganizeAllTasksForDate(
   if (options?.ensureAfterCurrentTime && isToday) {
     // Start from current time (rounded up to next 15-minute slot)
     const currentMinutes = now.getMinutes();
-    const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+    const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
     const earliestTime = new Date(now);
     if (roundedMinutes >= 60) {
       earliestTime.setHours(earliestTime.getHours() + 1);
@@ -280,12 +282,13 @@ export function reorganizeAllTasksForDate(
     // Start from category start time
     const { start } = options.categoryHours;
     const categoryStart = new Date(targetDate);
-    categoryStart.setHours(Math.floor(start / 60), start % 60, 0, 0);
+    categoryStart.setHours(Math.floor(start / MINUTES_PER_HOUR), start % MINUTES_PER_HOUR, 0, 0);
     lastScheduledEnd = categoryStart.getTime();
   } else {
-    // Start from 8 AM
+    // Start from default work start time
     const defaultStart = new Date(targetDate);
-    defaultStart.setHours(8, 0, 0, 0);
+    const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
+    defaultStart.setHours(workStartHour, 0, 0, 0);
     lastScheduledEnd = defaultStart.getTime();
   }
 
@@ -294,7 +297,7 @@ export function reorganizeAllTasksForDate(
   // So any task before lastScheduledEnd will be moved forward
   for (const taskInfo of sortedTasks) {
     const task = taskInfo.task;
-    const taskDuration = getTaskMinutes(task) * 60 * 1000; // Use AI estimator
+    const taskDuration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
     
     // Check if task overlaps with previous task or is before the earliest allowed time
     // (lastScheduledEnd is set to current time for today, so tasks before current time will be moved)
@@ -305,7 +308,7 @@ export function reorganizeAllTasksForDate(
       // Round to nearest 15-minute slot
       const minutes = candidateTime.getMinutes();
       const roundedMinutes = Math.ceil(minutes / 15) * 15;
-      if (roundedMinutes >= 60) {
+      if (roundedMinutes >= MINUTES_PER_HOUR) {
         candidateTime.setHours(candidateTime.getHours() + 1);
         candidateTime.setMinutes(0);
       } else {
@@ -324,7 +327,7 @@ export function reorganizeAllTasksForDate(
       );
 
       // Check if a valid slot was found
-      if (newTime.getHours() < 24) {
+      if (newTime.getHours() < HOURS_PER_DAY) {
         reorganizations.push({
           taskId: task.id,
           newTime,
@@ -435,7 +438,7 @@ export function reorganizeConflictingTasks(
       });
       
       // Update last scheduled end for next iteration
-      const conflictingTaskDuration = getTaskMinutes(conflicting.task) * 60 * 1000; // Use AI estimator
+      const conflictingTaskDuration = getTaskMinutes(conflicting.task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
       lastScheduledEnd = newTime.getTime() + conflictingTaskDuration;
     }
   }
