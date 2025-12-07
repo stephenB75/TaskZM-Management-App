@@ -116,16 +116,24 @@ export function useAIScheduler() {
 
   // Helper: Calculate the first occurrence date for a recurring task
   // This ensures recurring tasks are scheduled to a date that matches their recurrence pattern
+  // IMPORTANT: Always returns a date in the future (after fromDate), never today or in the past
   const calculateFirstOccurrenceDate = (task: Task, fromDate: Date): Date | null => {
     if (!task.recurrence || task.recurrence.type === 'none') return null;
 
     const firstDate = new Date(fromDate);
     firstDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     switch (task.recurrence.type) {
       case 'daily':
-        // For daily, first occurrence is the next day (or today if fromDate is today)
+        // For daily, first occurrence is always the next interval day(s) from fromDate
+        // If fromDate is today, this ensures we schedule for tomorrow or later
         firstDate.setDate(firstDate.getDate() + task.recurrence.interval);
+        // Ensure it's at least tomorrow (AI scheduler starts from tomorrow)
+        if (firstDate <= today) {
+          firstDate.setDate(today.getDate() + task.recurrence.interval);
+        }
         break;
       
       case 'weekly':
@@ -133,22 +141,44 @@ export function useAIScheduler() {
           const currentDay = firstDate.getDay();
           const sortedDays = [...task.recurrence.daysOfWeek].sort((a, b) => a - b);
           
-          // Find the next matching day (including today if it matches)
-          // For first occurrence, we want to include today if it's one of the days
-          const nextDayInWeek = sortedDays.find(day => day >= currentDay);
+          // Find the next matching day AFTER today (not today)
+          // This ensures we always schedule for a future date
+          const nextDayInWeek = sortedDays.find(day => day > currentDay);
           if (nextDayInWeek !== undefined) {
-            // Found a day in the current week (including today)
+            // Found a day later in the current week
             firstDate.setDate(firstDate.getDate() + (nextDayInWeek - currentDay));
           } else {
-            // First occurrence is in the next interval week
+            // No more days in current week, go to first day of next interval week
             const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
             const daysToFirstDay = sortedDays[0];
             const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (task.recurrence.interval - 1));
             firstDate.setDate(firstDate.getDate() + daysToAdd);
           }
+          // Ensure it's at least tomorrow
+          if (firstDate <= today) {
+            // If we calculated today or earlier, find the next occurrence
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowDay = tomorrow.getDay();
+            const nextDayAfterTomorrow = sortedDays.find(day => day > tomorrowDay);
+            if (nextDayAfterTomorrow !== undefined) {
+              firstDate.setTime(tomorrow.getTime());
+              firstDate.setDate(firstDate.getDate() + (nextDayAfterTomorrow - tomorrowDay));
+            } else {
+              const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - tomorrowDay;
+              const daysToFirstDay = sortedDays[0];
+              const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (task.recurrence.interval - 1));
+              firstDate.setTime(tomorrow.getTime());
+              firstDate.setDate(firstDate.getDate() + daysToAdd);
+            }
+          }
         } else {
           // Simple weekly: same day of week every interval weeks
           firstDate.setDate(firstDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * task.recurrence.interval));
+          // Ensure it's at least tomorrow
+          if (firstDate <= today) {
+            firstDate.setDate(firstDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * task.recurrence.interval));
+          }
         }
         break;
       
@@ -979,30 +1009,21 @@ export function useAIScheduler() {
         // Otherwise, use the calculated date
         let scheduleDate: Date;
         if (task.recurrence && task.recurrence.type !== 'none') {
-          // For recurring tasks, calculate the first occurrence date from today (or baseDate if provided)
+          // For recurring tasks, calculate the first occurrence date from startDate (tomorrow or selected date)
           // This ensures the scheduledDate is set to the correct base date for the recurrence pattern
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          // Always calculate from startDate (which is tomorrow by default) to ensure future scheduling
+          const fromDate = new Date(startDate);
+          fromDate.setHours(0, 0, 0, 0);
           
-          // If task doesn't have a scheduledDate, calculate from today
-          // If task has a scheduledDate in the past, calculate from today to get next occurrence
-          // Otherwise, use the existing scheduledDate as the base
-          let fromDate: Date;
-          if (!task.scheduledDate) {
-            // No scheduledDate: calculate first occurrence from today
-            fromDate = today;
-          } else {
-            try {
-              const existingDate = new Date(task.scheduledDate);
-              existingDate.setHours(0, 0, 0, 0);
-              // If existing date is today or in the past, calculate from today
-              // Otherwise, use existing date as base
-              fromDate = existingDate <= today ? today : existingDate;
-            } catch {
-              // If date parsing fails, use today
-              fromDate = today;
-            }
-          }
+          logger.debug('Calculating first occurrence for recurring task', {
+            taskId: task.id,
+            taskTitle: task.title,
+            recurrenceType: task.recurrence.type,
+            fromDate: fromDate.toISOString().split('T')[0],
+            startDate: startDate.toISOString().split('T')[0],
+            hasScheduledDate: !!task.scheduledDate,
+            scheduledDate: task.scheduledDate,
+          });
           
           const firstOccurrence = calculateFirstOccurrenceDate(task, fromDate);
           
@@ -1011,6 +1032,10 @@ export function useAIScheduler() {
             if (!dateRange || (firstOccurrence >= startDate && firstOccurrence <= endDate)) {
               scheduleDate = firstOccurrence;
               reason = `${reason} - scheduled to first occurrence date (${firstOccurrence.toISOString().split('T')[0]})`;
+              logger.debug('Recurring task scheduled to first occurrence', {
+                taskId: task.id,
+                firstOccurrence: firstOccurrence.toISOString().split('T')[0],
+              });
             } else {
               // If first occurrence is outside range, try to find the next occurrence within range
               // Start from the startDate and calculate first occurrence from there
@@ -1018,12 +1043,23 @@ export function useAIScheduler() {
               if (rangeFirstOccurrence && rangeFirstOccurrence <= endDate) {
                 scheduleDate = rangeFirstOccurrence;
                 reason = `${reason} - scheduled to first occurrence within date range`;
+                logger.debug('Recurring task scheduled to first occurrence within range', {
+                  taskId: task.id,
+                  rangeFirstOccurrence: rangeFirstOccurrence.toISOString().split('T')[0],
+                });
               } else {
                 // Fallback: use the calculated date from scheduler
                 const calculatedDate = new Date(baseDate);
                 calculatedDate.setDate(calculatedDate.getDate() + finalDaysToAdd);
                 scheduleDate = calculatedDate;
                 reason = `${reason} - first occurrence outside range, using calculated date`;
+                logger.warn('Recurring task first occurrence outside range, using calculated date', {
+                  taskId: task.id,
+                  firstOccurrence: firstOccurrence.toISOString().split('T')[0],
+                  calculatedDate: calculatedDate.toISOString().split('T')[0],
+                  startDate: startDate.toISOString().split('T')[0],
+                  endDate: endDate.toISOString().split('T')[0],
+                });
               }
             }
           } else {
@@ -1031,7 +1067,11 @@ export function useAIScheduler() {
             const calculatedDate = new Date(baseDate);
             calculatedDate.setDate(calculatedDate.getDate() + finalDaysToAdd);
             scheduleDate = calculatedDate;
-            logger.warn('Could not calculate first occurrence for recurring task, using calculated date', { taskId: task.id, recurrence: task.recurrence });
+            logger.warn('Could not calculate first occurrence for recurring task, using calculated date', {
+              taskId: task.id,
+              recurrence: task.recurrence,
+              calculatedDate: calculatedDate.toISOString().split('T')[0],
+            });
           }
         } else {
           // Non-recurring task: use calculated date
