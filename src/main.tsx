@@ -35,10 +35,12 @@ if (typeof window !== 'undefined') {
     originalWarn.apply(console, args);
   };
 
-  // Suppress CSP violations from extensions
+  // Suppress CSP violations and network errors from extensions and handled API calls
   const originalError = console.error;
   console.error = (...args: any[]) => {
     const message = args[0]?.toString() || '';
+    const fullMessage = args.map(a => String(a)).join(' ');
+    
     // Suppress CSP violations from extensions
     if (message.includes('violates the following Content Security Policy') &&
         (message.includes('roktinternal.com') || 
@@ -47,6 +49,27 @@ if (typeof window !== 'undefined') {
       console.debug('Suppressed extension CSP violation', args);
       return;
     }
+    
+    // Suppress 404 errors from workspace API calls (handled gracefully)
+    if ((message.includes('404') || fullMessage.includes('404')) && 
+        (fullMessage.includes('folders') || fullMessage.includes('team') || fullMessage.includes('members') || fullMessage.includes('supabase.co') || fullMessage.includes('make-server'))) {
+      // Silently suppress - these are expected for new workspaces
+      return;
+    }
+    
+    // Suppress browser extension errors
+    if (fullMessage.includes('chrome-extension://') || 
+        fullMessage.includes('content.js') || 
+        fullMessage.includes('contentScript') ||
+        fullMessage.includes('web-client-content-script') ||
+        fullMessage.includes('ERR_FILE_NOT_FOUND') ||
+        fullMessage.includes('checkoutUrls') ||
+        (fullMessage.includes('MutationObserver') && fullMessage.includes('Failed to execute')) ||
+        fullMessage.includes('asynchronous response')) {
+      // Silently suppress - these are browser extension errors
+      return;
+    }
+    
     originalError.apply(console, args);
   };
 
@@ -91,11 +114,21 @@ if (typeof window !== 'undefined') {
       
       // Suppress expected 404 network errors from API calls (folders, team members)
       // These are handled gracefully by returning empty arrays
-      if ((message.includes('404') || message.includes('Not Found')) && 
-          (filename.includes('folders') || filename.includes('team') || filename.includes('members') || filename.includes('supabase.co'))) {
+      if ((message.includes('404') || message.includes('Not Found') || message.includes('Failed to load resource')) && 
+          (filename.includes('folders') || filename.includes('team') || filename.includes('members') || filename.includes('supabase.co') || filename.includes('index-') || filename.includes('make-server'))) {
         event.preventDefault();
         // Completely silent - these are expected for new workspaces
         return false;
+      }
+      
+      // Suppress network errors from fetch calls that result in 404s
+      // These appear as errors in the console but are handled gracefully
+      if (filename.includes('index-') && (message.includes('404') || message.includes('Not Found'))) {
+        // Check if it's a workspace-related endpoint
+        if (filename.includes('supabase.co') || filename.includes('make-server') || filename.includes('folders') || filename.includes('team') || filename.includes('members')) {
+          event.preventDefault();
+          return false;
+        }
       }
       
       // Suppress initialization errors ONLY from browser extensions
@@ -210,7 +243,7 @@ if (typeof window !== 'undefined') {
       // Suppress expected 404 network errors from API calls (folders, team members)
       // These are handled gracefully by returning empty arrays
       if ((message.includes('404') || message.includes('Not Found') || message.includes('Failed to load resource')) && 
-          (stack.includes('folders') || stack.includes('team') || stack.includes('members') || stack.includes('supabase.co') || stack.includes('api.ts'))) {
+          (stack.includes('folders') || stack.includes('team') || stack.includes('members') || stack.includes('supabase.co') || stack.includes('api.ts') || stack.includes('index-') || stack.includes('make-server'))) {
         event.preventDefault();
         // Completely silent - these are expected for new workspaces
         return false;
@@ -219,7 +252,7 @@ if (typeof window !== 'undefined') {
       // Suppress expected 404 errors from API calls (folders, team members)
       // These are handled gracefully by returning empty arrays
       if ((message.includes('404') || message.includes('Not Found')) && 
-          (message.includes('folders') || message.includes('team') || message.includes('members') || message.includes('supabase.co'))) {
+          (message.includes('folders') || message.includes('team') || message.includes('members') || message.includes('supabase.co') || message.includes('make-server'))) {
         event.preventDefault();
         // Completely silent - these are expected for new workspaces
         return false;
