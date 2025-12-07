@@ -50,6 +50,8 @@ import {
   MILLISECONDS_PER_HOUR,
   MILLISECONDS_PER_DAY,
   PERCENTAGE_MULTIPLIER,
+  LAST_7_DAYS_OFFSET,
+  DAYS_IN_WEEK,
 } from "../lib/business-constants";
 import {
   COLOR_PRIMARY,
@@ -273,7 +275,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       : 0;
 
     // Last 7 days time tracking (or up to dateRangeLimit if set)
-    const daysToShow = dateRangeLimit && dateRangeLimit < 7 ? dateRangeLimit : 7;
+    const daysToShow = dateRangeLimit && dateRangeLimit < DAYS_IN_WEEK ? dateRangeLimit : DAYS_IN_WEEK;
     const last7DaysTime = Array.from({ length: daysToShow }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (daysToShow - 1 - i));
@@ -419,9 +421,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       .slice(0, 5);
 
     // Task per day progress
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const last7Days = Array.from({ length: DAYS_IN_WEEK }, (_, i) => {
       const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
+      date.setDate(date.getDate() - (LAST_7_DAYS_OFFSET - i));
       date.setHours(0, 0, 0, 0);
       return date;
     });
@@ -797,7 +799,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                                         const item = analytics.statusDistribution.find((d: any) => d?.name === value);
                                         if (!item || typeof item.value !== 'number') return `${value}: 0%`;
                                         const percent = analytics.totalTasks > 0 
-                                          ? ((item.value / analytics.totalTasks) * 100).toFixed(0) 
+                                          ? ((item.value / analytics.totalTasks) * PERCENTAGE_MULTIPLIER).toFixed(0) 
                                           : '0';
                                         return `${value}: ${percent}%`;
                                       } catch (error) {

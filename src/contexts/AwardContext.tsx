@@ -10,6 +10,16 @@ import {
   COLOR_AWARD_LEGENDARY,
   COLOR_AWARD_STREAK,
 } from '../lib/color-theme';
+import {
+  DAYS_IN_WEEK,
+  TWO_WEEKS_DAYS,
+  DAYS_IN_MONTH_APPROX,
+  TIME_PERIODS,
+  AWARD_COMPLETION_THRESHOLDS,
+  PERCENTAGE_MULTIPLIER,
+  MINUTES_PER_HOUR,
+} from '../lib/business-constants';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 
 interface AwardContextType {
   awards: Award[];
@@ -71,7 +81,7 @@ const ALL_AWARDS: Award[] = [
     description: 'Complete 100 tasks',
     icon: 'trophy',
     category: 'completion',
-    requirement: 100,
+    requirement: AWARD_COMPLETION_THRESHOLDS.CENTURY,
     rarity: 'epic',
     color: COLOR_AWARD_EPIC,
   },
@@ -110,30 +120,30 @@ const ALL_AWARDS: Award[] = [
   {
     id: 'streak_7',
     name: 'Week Warrior',
-    description: 'Complete tasks 7 days in a row',
+    description: `Complete tasks ${DAYS_IN_WEEK} days in a row`,
     icon: 'trending-up',
     category: 'streak',
-    requirement: 7,
+    requirement: DAYS_IN_WEEK,
     rarity: 'rare',
     color: COLOR_AWARD_STREAK,
   },
   {
     id: 'streak_14',
     name: 'Fortnight Focus',
-    description: 'Complete tasks 14 days in a row',
+    description: `Complete tasks ${TWO_WEEKS_DAYS} days in a row`,
     icon: 'activity',
     category: 'streak',
-    requirement: 14,
+    requirement: TWO_WEEKS_DAYS,
     rarity: 'epic',
     color: COLOR_AWARD_STREAK,
   },
   {
     id: 'streak_30',
     name: 'Unstoppable Force',
-    description: 'Complete tasks 30 days in a row',
+    description: `Complete tasks ${DAYS_IN_MONTH_APPROX} days in a row`,
     icon: 'award',
     category: 'streak',
-    requirement: 30,
+    requirement: DAYS_IN_MONTH_APPROX,
     rarity: 'legendary',
     color: COLOR_AWARD_STREAK,
   },
@@ -165,7 +175,7 @@ const ALL_AWARDS: Award[] = [
     description: 'Complete 100 Pomodoro sessions',
     icon: 'zap',
     category: 'focus',
-    requirement: 100,
+    requirement: AWARD_COMPLETION_THRESHOLDS.CENTURY,
     rarity: 'epic',
     color: '#7B68EE',
   },
@@ -196,7 +206,7 @@ const ALL_AWARDS: Award[] = [
   {
     id: 'early_bird',
     name: 'Early Riser',
-    description: 'Complete a task before 6 AM',
+    description: `Complete a task before ${TIME_PERIODS.DAY_END} AM`,
     icon: 'sunrise',
     category: 'special',
     requirement: 1,
@@ -341,7 +351,7 @@ export function AwardProvider({ children }: { children: ReactNode }) {
             // Check if any task was completed in under 1 hour
             earned = completedTasks.some(t => {
               if (!t.actualTime) return false;
-              return t.actualTime < 60;
+              return t.actualTime < MINUTES_PER_HOUR;
             });
           } else if (award.id === 'daily_dozen') {
             // Check if 12 tasks completed in one day
@@ -361,7 +371,7 @@ export function AwardProvider({ children }: { children: ReactNode }) {
             earned = completedTasks.some(t => {
               if (!t.completedAt) return false;
               const hour = new Date(t.completedAt).getHours();
-              return hour < 6;
+              return hour < TIME_PERIODS.DAY_END;
             });
           } else if (award.id === 'night_owl') {
             earned = completedTasks.some(t => {
@@ -373,7 +383,8 @@ export function AwardProvider({ children }: { children: ReactNode }) {
             const weekendTasks = completedTasks.filter(t => {
               if (!t.completedAt) return false;
               const day = new Date(t.completedAt).getDay();
-              return day === 0 || day === 6;
+              // Check if day is Sunday (0) or Saturday (6) using timing constants
+              return day === TIMING_CONSTANTS.calendar.minDayOfWeek || day === TIMING_CONSTANTS.calendar.maxDayOfWeek;
             });
             earned = weekendTasks.length >= 10;
           } else if (award.id === 'perfectionist') {
@@ -415,7 +426,7 @@ export function AwardProvider({ children }: { children: ReactNode }) {
         awardId,
         currentProgress: award.requirement,
         targetProgress: award.requirement,
-        percentage: 100,
+        percentage: PERCENTAGE_MULTIPLIER,
       };
     }
 
@@ -440,7 +451,7 @@ export function AwardProvider({ children }: { children: ReactNode }) {
       awardId,
       currentProgress,
       targetProgress: award.requirement,
-      percentage: Math.min((currentProgress / award.requirement) * 100, 100),
+      percentage: Math.min((currentProgress / award.requirement) * PERCENTAGE_MULTIPLIER, PERCENTAGE_MULTIPLIER),
     };
   }, [tasks, earnedAwards, getCurrentStreak, getPomodoroCount]);
 

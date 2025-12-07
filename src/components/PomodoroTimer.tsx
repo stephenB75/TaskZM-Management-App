@@ -18,6 +18,8 @@ import {
   POMODORO_SHORT_BREAK_DURATION,
   POMODORO_LONG_BREAK_DURATION,
   SECONDS_PER_MINUTE,
+  MINUTES_PER_HOUR,
+  PERCENTAGE_MULTIPLIER,
 } from "../lib/business-constants";
 
 type TimerMode = "work" | "shortBreak" | "longBreak";
@@ -97,12 +99,12 @@ export function PomodoroTimer({
     // We need to track the initial duration, but since we can't easily get it,
     // we'll use estimatedTime if available, otherwise default
     const initialDuration = timerState.mode === 'work' 
-      ? (estimatedTime ? estimatedTime * 60 : DURATIONS.work)
+      ? (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)
       : DURATIONS[timerState.mode];
     
     // Calculate how much time has elapsed
     const elapsed = initialDuration - timerState.timeLeft;
-    return Math.min(100, Math.max(0, (elapsed / initialDuration) * 100));
+    return Math.min(PERCENTAGE_MULTIPLIER, Math.max(0, (elapsed / initialDuration) * PERCENTAGE_MULTIPLIER));
   };
 
   const getModeColor = () => {
@@ -293,7 +295,7 @@ export function PomodoroTimer({
         {(timerState.isRunning ||
           timerState.timeLeft !==
             (timerState.mode === 'work' 
-              ? (estimatedTime ? estimatedTime * 60 : DURATIONS.work)
+              ? (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)
               : DURATIONS[timerState.mode])) && (
           <Button
             size="sm"
@@ -311,8 +313,8 @@ export function PomodoroTimer({
       {timerState.totalTimeTracked > 0 && (
         <div className="text-center text-xs text-muted-foreground">
           Total tracked:{" "}
-          {Math.floor(timerState.totalTimeTracked / 60)}h{" "}
-          {timerState.totalTimeTracked % 60}m
+          {Math.floor(timerState.totalTimeTracked / MINUTES_PER_HOUR)}h{" "}
+          {timerState.totalTimeTracked % MINUTES_PER_HOUR}m
         </div>
       )}
     </div>

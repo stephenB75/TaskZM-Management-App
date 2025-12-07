@@ -49,6 +49,7 @@ import {
   DEFAULT_WEEKEND_PERSONAL_END,
   DEFAULT_WEEKEND_PROJECTS_START,
   DEFAULT_WEEKEND_PROJECTS_END,
+  SYNC_INTERVAL_30_SECONDS,
   MINUTES_PER_HOUR,
   MILLISECONDS_PER_MINUTE,
   HOURS_PER_DAY,
@@ -1047,7 +1048,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             
             // Suppress repeated network error warnings (only log once per 30 seconds)
             const now = Date.now();
-            if (now - lastNetworkErrorLogRef.current > 30000) {
+            if (now - lastNetworkErrorLogRef.current > SYNC_INTERVAL_30_SECONDS) {
               logger.warn('Network error fetching tasks:', {
                 workspaceId: targetWorkspaceId,
                 error: error.message,
@@ -1336,7 +1337,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const lastEventSyncRef = useRef<number>(0);
   const DEBOUNCE_INTERVAL = 2000; // Only sync once per 2 seconds from events - reduced for better cross-device sync
   const lastFullSyncRef = useRef<number>(0);
-  const FULL_SYNC_INTERVAL = 30000; // Full sync (all resources) every 30 seconds - reduced for better cross-device sync
+  const FULL_SYNC_INTERVAL = SYNC_INTERVAL_30_SECONDS; // Full sync (all resources) every 30 seconds - reduced for better cross-device sync
 
   const debouncedSync = useCallback(async (fullSync: boolean = false) => {
     if (!workspaceId || !accessToken) return;
@@ -2943,7 +2944,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             // Start from category hours start time, but not before current time
             const categoryStartMinutes = categoryHours.start;
             const categoryStartHours = Math.floor(categoryStartMinutes / MINUTES_PER_HOUR);
-            const categoryStartMins = categoryStartMinutes % 60;
+            const categoryStartMins = categoryStartMinutes % MINUTES_PER_HOUR;
             
             startTime = new Date(today);
             startTime.setHours(categoryStartHours, categoryStartMins, 0, 0);

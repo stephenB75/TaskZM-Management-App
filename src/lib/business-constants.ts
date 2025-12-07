@@ -40,6 +40,9 @@ export const DEFAULT_NOTIFICATION_CHECK_INTERVAL = 15; // Minutes between checks
 // Percentage and Calculation Constants
 export const PERCENTAGE_MULTIPLIER = 100; // For converting decimals to percentages
 
+// Sync and Interval Constants (in milliseconds)
+export const SYNC_INTERVAL_30_SECONDS = 30 * MILLISECONDS_PER_SECOND; // 30 seconds in milliseconds
+
 // Task Duration Thresholds
 export const TASK_DURATION_SHORT_THRESHOLD = 45; // Minutes - tasks under this are considered "short"
 export const TASK_DURATION_MEDIUM_THRESHOLD = 120; // Minutes - tasks under this are considered "medium"
@@ -59,6 +62,17 @@ export const MILLISECONDS_PER_HOUR = 60 * 60 * 1000; // 60 minutes * 60 seconds 
 export const HOURS_PER_DAY = 24;
 export const MINUTES_PER_DAY = 24 * 60; // 24 hours * 60 minutes
 export const MILLISECONDS_PER_DAY = HOURS_PER_DAY * MILLISECONDS_PER_HOUR; // 24 hours * 60 minutes * 60 seconds * 1000 ms
+
+// Date/Time Constants
+export const END_OF_DAY_HOUR = 23;
+export const END_OF_DAY_MINUTE = 59;
+export const END_OF_DAY_SECOND = 59;
+export const END_OF_DAY_MILLISECOND = 999;
+
+// Day Offset Constants
+export const DAYS_IN_WEEK = 7;
+export const TWO_WEEKS_DAYS = 14; // 2 weeks = 14 days
+export const LAST_7_DAYS_OFFSET = 6; // For calculating last 7 days (0-6)
 
 // Time Period Definitions (for analytics)
 export const TIME_PERIODS = {

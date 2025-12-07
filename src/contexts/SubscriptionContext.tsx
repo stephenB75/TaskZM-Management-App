@@ -5,6 +5,7 @@ import * as api from '../lib/api';
 import { toast } from 'sonner';
 import { SUBSCRIPTION_UI_TEXT, SUBSCRIPTION_STORAGE_KEY_PREFIX, SUBSCRIPTION_SYNC_INTERVAL } from '../lib/subscription-constants';
 import { configureRevenueCat, resetRevenueCat, getCustomerInfo as getRevenueCatCustomerInfo, isRevenueCatConfigured } from '../lib/revenuecat';
+import { DAYS_IN_MONTH_APPROX } from '../lib/business-constants';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo;
@@ -32,7 +33,7 @@ const getFeatures = (tier: SubscriptionTier, billingPeriod?: 'monthly' | 'yearly
       aiSchedulerLimit: undefined, // Unlimited for pro
       taskHours: true,
       analytics: true,
-      analyticsDaysLimit: isYearly ? undefined : 30, // Unlimited for yearly, 30 days for monthly
+      analyticsDaysLimit: isYearly ? undefined : DAYS_IN_MONTH_APPROX, // Unlimited for yearly, DAYS_IN_MONTH_APPROX days for monthly
       taskRollover: true,
       pomodoroTimer: true, // Advanced for pro
       teamFeatures: isYearly, // Only for yearly

@@ -16,6 +16,15 @@ import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
 import { TWO_WEEK_DAYS_OFFSET } from "../lib/ai-config";
+import {
+  END_OF_DAY_HOUR,
+  END_OF_DAY_MINUTE,
+  END_OF_DAY_SECOND,
+  END_OF_DAY_MILLISECOND,
+  DAYS_IN_WEEK,
+  TWO_WEEKS_DAYS,
+  DAYS_IN_MONTH_APPROX,
+} from "../lib/business-constants";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -64,7 +73,7 @@ const getTwoWeekDateRange = () => {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   const day = start.getDay();
-  const mondayOffset = (day + 6) % 7;
+  const mondayOffset = (day + (DAYS_IN_WEEK - 1)) % DAYS_IN_WEEK;
   start.setDate(start.getDate() - mondayOffset);
   const end = new Date(start);
   end.setDate(end.getDate() + TWO_WEEK_DAYS_OFFSET);
@@ -149,28 +158,28 @@ export function AIRecommendationPanel({
       // For day suggestions, start from tomorrow
       const start = new Date(tomorrow);
       const end = new Date(tomorrow);
-      end.setHours(23, 59, 59, 999);
+      end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'week') {
       // For week suggestions, start from tomorrow and span 7 days
       const start = new Date(tomorrow);
       const end = new Date(tomorrow);
-      end.setDate(end.getDate() + 6); // 7 days total (tomorrow + 6 more)
-      end.setHours(23, 59, 59, 999);
+      end.setDate(end.getDate() + (DAYS_IN_WEEK - 1)); // 7 days total (tomorrow + 6 more)
+      end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'month') {
       // For month suggestions, start from tomorrow and span 30 days
       const start = new Date(tomorrow);
       const end = new Date(tomorrow);
-      end.setDate(end.getDate() + 29); // 30 days total (tomorrow + 29 more)
-      end.setHours(23, 59, 59, 999);
+      end.setDate(end.getDate() + (DAYS_IN_MONTH_APPROX - 1)); // 30 days total (tomorrow + 29 more)
+      end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else {
       // Two weeks (default) - start from tomorrow
       const start = new Date(tomorrow);
       const end = new Date(tomorrow);
-      end.setDate(end.getDate() + 13); // 14 days total (tomorrow + 13 more)
-      end.setHours(23, 59, 59, 999);
+      end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1)); // 14 days total (tomorrow + 13 more)
+      end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     }
     
@@ -217,28 +226,28 @@ export function AIRecommendationPanel({
       // For day suggestions, start from tomorrow
       const start = new Date(tomorrow);
       const end = new Date(tomorrow);
-      end.setHours(23, 59, 59, 999);
+      end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'week') {
       // For week suggestions, start from tomorrow and span 7 days
       const start = new Date(tomorrow);
       const end = new Date(tomorrow);
-      end.setDate(end.getDate() + 6); // 7 days total (tomorrow + 6 more)
-      end.setHours(23, 59, 59, 999);
+      end.setDate(end.getDate() + (DAYS_IN_WEEK - 1)); // 7 days total (tomorrow + 6 more)
+      end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'month') {
       // For month suggestions, start from tomorrow and span 30 days
       const start = new Date(tomorrow);
       const end = new Date(tomorrow);
-      end.setDate(end.getDate() + 29); // 30 days total (tomorrow + 29 more)
-      end.setHours(23, 59, 59, 999);
+      end.setDate(end.getDate() + (DAYS_IN_MONTH_APPROX - 1)); // 30 days total (tomorrow + 29 more)
+      end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else {
       // Two weeks (default) - start from tomorrow
       const start = new Date(tomorrow);
       const end = new Date(tomorrow);
-      end.setDate(end.getDate() + 13); // 14 days total (tomorrow + 13 more)
-      end.setHours(23, 59, 59, 999);
+      end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1)); // 14 days total (tomorrow + 13 more)
+      end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     }
     

@@ -15,6 +15,14 @@ import { useTeam } from "../contexts/TeamContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { PRIORITY_WEIGHTS } from "../lib/ai-config";
+import {
+  END_OF_DAY_HOUR,
+  END_OF_DAY_MINUTE,
+  END_OF_DAY_SECOND,
+  END_OF_DAY_MILLISECOND,
+  TWO_WEEKS_DAYS,
+  DAYS_IN_WEEK,
+} from "../lib/business-constants";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -54,11 +62,11 @@ const getTwoWeekDateRange = () => {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   const day = start.getDay();
-  const mondayOffset = (day + 6) % 7;
+  const mondayOffset = (day + (DAYS_IN_WEEK - 1)) % DAYS_IN_WEEK;
   start.setDate(start.getDate() - mondayOffset);
   const end = new Date(start);
-  end.setDate(end.getDate() + 13);
-  end.setHours(23, 59, 59, 999);
+  end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1));
+  end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
   return { startDate: start, endDate: end };
 };
 

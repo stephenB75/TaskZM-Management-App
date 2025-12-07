@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
 import * as api from '../lib/api';
 import { toast } from 'sonner';
+import { DAYS_IN_WEEK } from '../lib/business-constants';
 
 interface TeamContextType {
   teamMembers: User[];
@@ -253,7 +254,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       
       // Update expiration date in local state
       const newExpiresAt = new Date();
-      newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+      newExpiresAt.setDate(newExpiresAt.getDate() + DAYS_IN_WEEK);
       
       setTeamMembers(prev =>
         prev.map(m =>

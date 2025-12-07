@@ -125,9 +125,9 @@ export const DraggableTaskCard = React.forwardRef<
     // Format duration display
     const formatDuration = (minutes: number | null) => {
       if (!minutes) return null;
-      if (minutes >= 60) {
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
+      if (minutes >= MINUTES_PER_HOUR) {
+        const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+        const mins = minutes % MINUTES_PER_HOUR;
         return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
       }
       return `${minutes}m`;
@@ -163,8 +163,8 @@ export const DraggableTaskCard = React.forwardRef<
     // Format timer display (actualTime tracked)
     const formatTimer = (minutes: number | null) => {
       if (!minutes) return null;
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
+      const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+      const mins = minutes % MINUTES_PER_HOUR;
       if (hours > 0) {
         return `${hours}:${mins.toString().padStart(2, "0")}`;
       }

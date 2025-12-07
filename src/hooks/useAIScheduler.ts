@@ -41,6 +41,9 @@ import {
   HOURS_PER_DAY,
   MILLISECONDS_PER_MINUTE,
   MILLISECONDS_PER_HOUR,
+  MILLISECONDS_PER_DAY,
+  TWO_WEEKS_DAYS,
+  DAYS_IN_WEEK,
 } from '../lib/business-constants';
 import type { Task, RecurrenceConfig } from '../types';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
@@ -307,7 +310,7 @@ export function useAIScheduler() {
       currentTimeRounded = new Date(today);
       const minutes = currentTimeRounded.getMinutes();
       const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-      if (roundedMinutes >= 60) {
+      if (roundedMinutes >= MINUTES_PER_HOUR) {
         currentTimeRounded.setHours(currentTimeRounded.getHours() + 1, 0, 0, 0);
       } else {
         currentTimeRounded.setMinutes(roundedMinutes, 0, 0);
@@ -348,8 +351,8 @@ export function useAIScheduler() {
     const endTime = parseTime(categoryHours.end);
 
     // Calculate total available hours
-    const totalMinutes = (endTime.hours * 60 + endTime.minutes) - (startTime.hours * 60 + startTime.minutes);
-    const totalHours = totalMinutes / 60;
+    const totalMinutes = (endTime.hours * MINUTES_PER_HOUR + endTime.minutes) - (startTime.hours * MINUTES_PER_HOUR + startTime.minutes);
+    const totalHours = totalMinutes / MINUTES_PER_HOUR;
 
     // Get existing tasks in the same category for this day
     // existingTasksForDay now includes tasks from the current plan, so this should see all tasks
@@ -408,7 +411,7 @@ export function useAIScheduler() {
         }
         
         // Calculate gap duration in minutes
-        const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / (1000 * 60);
+        const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
         // Use provided duration if available, otherwise use AI estimator
         const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
         
@@ -462,11 +465,11 @@ export function useAIScheduler() {
     const offsetHours = (totalHours / numSlots) * slotPosition;
 
     const finalHours = Math.floor(startTime.hours + offsetHours);
-    const finalMinutes = Math.round((startTime.hours + offsetHours - finalHours) * 60 + startTime.minutes);
+    const finalMinutes = Math.round((startTime.hours + offsetHours - finalHours) * MINUTES_PER_HOUR + startTime.minutes);
     
     // Ensure we don't exceed category end time
-    const categoryEndMinutes = endTime.hours * 60 + endTime.minutes;
-    const finalTotalMinutes = finalHours * 60 + finalMinutes;
+    const categoryEndMinutes = endTime.hours * MINUTES_PER_HOUR + endTime.minutes;
+    const finalTotalMinutes = finalHours * MINUTES_PER_HOUR + finalMinutes;
     if (finalTotalMinutes >= categoryEndMinutes) {
       // Use category start time if we've exceeded
       return {
@@ -628,12 +631,12 @@ export function useAIScheduler() {
     })();
     
     // Determine end date: use provided dateRange end, or default to 14th day from tomorrow
-    // "From tomorrow up to 14th day" means: tomorrow (day 1) through day 14 = 14 days total
+    // "From tomorrow up to 14th day" means: tomorrow (day 1) through day 14 = TWO_WEEKS_DAYS days total
     // So end date is tomorrow + 13 days (the 14th day)
     const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
       const future = new Date(startDate);
       // Add 13 days to get to the 14th day (tomorrow is day 1, so day 14 is 13 days from tomorrow)
-      future.setDate(future.getDate() + 13);
+      future.setDate(future.getDate() + (TWO_WEEKS_DAYS - 1));
       return future;
     })();
     
@@ -813,7 +816,7 @@ export function useAIScheduler() {
           
           // Only adjust if the new date is within the allowed range
           if (!dateRange || (new Date(baseDate.getTime() + newDaysToAdd * HOURS_PER_DAY * MILLISECONDS_PER_HOUR) >= startDate && 
-                             new Date(baseDate.getTime() + newDaysToAdd * 24 * 60 * 60 * 1000) <= endDate)) {
+                             new Date(baseDate.getTime() + newDaysToAdd * MILLISECONDS_PER_DAY) <= endDate)) {
             daysToAdd = newDaysToAdd;
             reason = 'Due date approaching - prioritized';
           }
@@ -835,7 +838,7 @@ export function useAIScheduler() {
         
         // If work/projects task is scheduled on weekend, ALWAYS try to find a weekday
         if (shouldAvoidWeekend) {
-          const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : DEFAULT_SCHEDULING_PERIOD_DAYS;
+          const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY) : DEFAULT_SCHEDULING_PERIOD_DAYS;
           const preferredDaysToAdd = findNextPreferredDay(baseDate, false, maxSearchDays); // false = prefer weekday
           
           // Only switch days if we found a weekday and it's within the date range
@@ -866,7 +869,7 @@ export function useAIScheduler() {
           // If category hours are disabled for the current day type, try to find a preferred day
           // When forceCategoryHours is true, we should still try to schedule on appropriate days
           if (!categoryHours.enabled) {
-            const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : DEFAULT_WEEK_RESCHEDULE_DAYS;
+            const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY) : DEFAULT_WEEK_RESCHEDULE_DAYS;
             const preferredDaysToAdd = findNextPreferredDay(baseDate, preferWeekend, maxSearchDays);
             
             // Only switch days if we found a preferred day and it's within the date range
@@ -918,7 +921,7 @@ export function useAIScheduler() {
           // If first occurrence is valid and fits, use it directly
           if (isWithinRange && !wouldExceed) {
             // Calculate daysToAdd based on first occurrence
-            const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+            const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
             daysToAdd = daysDiff;
             foundDay = true;
             reason = `Recurring task - scheduled to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]})`;
@@ -973,8 +976,8 @@ export function useAIScheduler() {
         for (const dayInfo of daysNeedingHours) {
           // Check if this task can fit in this day (doesn't exceed 5-hour limit)
           if (!wouldExceedLimit(dayInfo.date, taskHours)) {
-            const daysDiff = Math.floor((dayInfo.date.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
-            const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : DEFAULT_SCHEDULING_PERIOD_DAYS;
+            const daysDiff = Math.floor((dayInfo.date.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
+            const maxDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY) : DEFAULT_SCHEDULING_PERIOD_DAYS;
             if (daysDiff >= 0 && daysDiff < maxDays) {
               finalDaysToAdd = daysDiff;
               foundDay = true;
@@ -989,9 +992,9 @@ export function useAIScheduler() {
       // This ensures tasks are distributed to wherever there's available time
       // Skip this for recurring tasks that already have a valid first occurrence
       if (!foundDay) {
-        // Calculate max days to search based on date range or default to 14 days
+        // Calculate max days to search based on date range or default to TWO_WEEKS_DAYS days
         const maxDaysToSearch = dateRange 
-          ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+          ? Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY)
           : DEFAULT_SCHEDULING_PERIOD_DAYS;
         let daysSearched = 0;
         
@@ -1055,7 +1058,7 @@ export function useAIScheduler() {
           const isWithinRange = !dateRange || (recurringFirstOccurrence >= startDate && recurringFirstOccurrence <= endDate);
           if (isWithinRange) {
             // Use the first occurrence date even if it exceeds limits
-            const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+            const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
             finalDaysToAdd = daysDiff;
             foundDay = true;
             reason = `Recurring task - scheduled to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]}) - may exceed daily limit`;
@@ -1084,7 +1087,7 @@ export function useAIScheduler() {
       if (!foundDay && isRecurringTask && recurringFirstOccurrence) {
         const isWithinRange = !dateRange || (recurringFirstOccurrence >= startDate && recurringFirstOccurrence <= endDate);
         if (isWithinRange) {
-          const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+          const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
           finalDaysToAdd = daysDiff;
           foundDay = true;
           reason = `Recurring task - scheduled to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]})`;
@@ -1154,7 +1157,7 @@ export function useAIScheduler() {
         
         // Use consistent duration calculation for all scheduling operations
         const taskHours = getTaskHours(task);
-        const taskDurationMinutes = Math.round(taskHours * 60); // Convert hours to minutes
+        const taskDurationMinutes = Math.round(taskHours * MINUTES_PER_HOUR); // Convert hours to minutes
         
         // Pass allTasksForDay (including tasks in current plan) to getCategoryTimeSlot
         // This ensures it can find gaps and distribute tasks correctly
@@ -1228,7 +1231,7 @@ export function useAIScheduler() {
           // Use allTasksForDay (already calculated above) which includes tasks from current plan
           // Use consistent duration calculation: convert hours to minutes
           const taskHours = getTaskHours(task);
-          const taskDurationMinutes = Math.round(taskHours * 60); // Convert hours back to minutes
+          const taskDurationMinutes = Math.round(taskHours * MINUTES_PER_HOUR); // Convert hours back to minutes
           
           // Determine default hours based on task category
           // Even if category hours are disabled, we should still use category-appropriate defaults
@@ -1553,7 +1556,7 @@ export function useAIScheduler() {
           const proposedTime = new Date(scheduleDate);
           let proposedMinute = Math.round(availableSlot.minute / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
           let proposedHour = availableSlot.hour;
-          if (proposedMinute >= 60) {
+          if (proposedMinute >= MINUTES_PER_HOUR) {
             proposedHour += 1;
             proposedMinute = 0;
           }
@@ -1606,17 +1609,17 @@ export function useAIScheduler() {
             // This shouldn't happen often, but handle gracefully
             let selectedMinute = Math.round(availableSlot.minute / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
             let selectedHour = availableSlot.hour;
-            if (selectedMinute >= 60) {
+            if (selectedMinute >= MINUTES_PER_HOUR) {
               selectedHour += 1;
               selectedMinute = 0;
             }
             // Ensure time doesn't exceed work hours or category hours
             if (effectiveCategoryHours) {
-              const maxHour = Math.floor(effectiveCategoryHours.end / 60);
-              const maxMinute = effectiveCategoryHours.end % 60;
+              const maxHour = Math.floor(effectiveCategoryHours.end / MINUTES_PER_HOUR);
+              const maxMinute = effectiveCategoryHours.end % MINUTES_PER_HOUR;
               if (selectedHour > maxHour || (selectedHour === maxHour && selectedMinute > maxMinute)) {
-                selectedHour = Math.floor(effectiveCategoryHours.start / 60);
-                selectedMinute = effectiveCategoryHours.start % 60;
+                selectedHour = Math.floor(effectiveCategoryHours.start / MINUTES_PER_HOUR);
+                selectedMinute = effectiveCategoryHours.start % MINUTES_PER_HOUR;
               }
             } else if (selectedHour >= workEndHour) {
               selectedHour = workEndHour - 1;
@@ -1858,7 +1861,8 @@ export function useAIScheduler() {
     const weekStart = new Date(startDate);
     weekStart.setHours(0, 0, 0, 0);
     const dayOfWeek = weekStart.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days; otherwise go to Monday
+    // Use constants for Monday calculation: if Sunday (0), go back (DAYS_IN_WEEK - 1) days; otherwise go to Monday
+    const daysToMonday = dayOfWeek === 0 ? -(DAYS_IN_WEEK - 1) : 1 - dayOfWeek;
     weekStart.setDate(weekStart.getDate() + daysToMonday);
     
     const endDate = new Date(weekStart);

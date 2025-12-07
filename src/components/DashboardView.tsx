@@ -14,6 +14,14 @@ import {
   ChevronRight,
   RefreshCw,
 } from "lucide-react";
+import {
+  END_OF_DAY_HOUR,
+  END_OF_DAY_MINUTE,
+  END_OF_DAY_SECOND,
+  END_OF_DAY_MILLISECOND,
+  TWO_WEEKS_DAYS,
+  DAYS_IN_WEEK,
+} from "../lib/business-constants";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import {
@@ -67,11 +75,11 @@ const getTwoWeekDateRange = () => {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   const day = start.getDay();
-  const mondayOffset = (day + 6) % 7;
+  const mondayOffset = (day + (DAYS_IN_WEEK - 1)) % DAYS_IN_WEEK;
   start.setDate(start.getDate() - mondayOffset);
   const end = new Date(start);
-  end.setDate(end.getDate() + 13);
-  end.setHours(23, 59, 59, 999);
+  end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1));
+  end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
   return { startDate: start, endDate: end };
 };
 
@@ -581,8 +589,8 @@ export function DashboardView({
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
     const end = new Date(tomorrow);
-    end.setDate(end.getDate() + 13); // 14 days total (tomorrow + 13 more)
-    end.setHours(23, 59, 59, 999);
+    end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1)); // 14 days total (tomorrow + 13 more)
+    end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
     const range = { startDate: tomorrow, endDate: end };
     const result = generateSchedulePlan(undefined, range, { 
       forceCategoryHours: true,

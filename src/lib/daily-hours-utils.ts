@@ -33,13 +33,13 @@ export function estimateTaskHours(task: Task): number {
   // Validate task input
   if (!task || typeof task !== 'object') {
     console.warn('⚠️ estimateTaskHours: Invalid task provided', task);
-    return BASE_TASK_DURATION_MINUTES / 60; // Return base duration as fallback
+    return BASE_TASK_DURATION_MINUTES / MINUTES_PER_HOUR; // Return base duration as fallback
   }
 
   // Priority 1: If user has explicitly set estimated time, use it directly
   // IMPORTANT: Check for null/undefined explicitly, not just truthy (0 is falsy but valid)
   if (task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0) {
-    const userSetHours = task.estimatedTime / 60;
+    const userSetHours = task.estimatedTime / MINUTES_PER_HOUR;
     console.log('✅ estimateTaskHours: Using user-set estimated time', {
       taskId: task.id,
       taskTitle: task.title,
@@ -127,7 +127,7 @@ export function estimateTaskHours(task: Task): number {
       complexityScore,
       priorityMultiplier 
     });
-    estimatedHours = BASE_TASK_DURATION_MINUTES / 60;
+    estimatedHours = BASE_TASK_DURATION_MINUTES / MINUTES_PER_HOUR;
   }
   
   // Log the estimation process for debugging
@@ -248,7 +248,7 @@ export { MAX_HOURS_PER_DAY };
 export function getTaskHours(task: Task): number {
   if (!task) {
     console.warn('⚠️ getTaskHours: No task provided');
-    return BASE_TASK_DURATION_MINUTES / 60;
+    return BASE_TASK_DURATION_MINUTES / MINUTES_PER_HOUR;
   }
   
   return estimateTaskHours(task);
@@ -276,5 +276,5 @@ export function getTaskMinutes(task: Task): number {
   }
   
   const hours = estimateTaskHours(task);
-  return Math.round(hours * 60); // Convert hours to minutes, rounded
+  return Math.round(hours * MINUTES_PER_HOUR); // Convert hours to minutes, rounded
 }
