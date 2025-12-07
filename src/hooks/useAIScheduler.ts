@@ -66,25 +66,45 @@ export function useAIScheduler() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
-    return tasks.filter(t => {
+    const filtered = tasks.filter(t => {
       // Exclude done tasks
-      if (t.status === 'done') return false;
+      if (t.status === 'done') {
+        return false;
+      }
       
       // Exclude blocked tasks
-      if (isTaskBlocked(t, tasks)) return false;
+      if (isTaskBlocked(t, tasks)) {
+        return false;
+      }
+      
+      // Check if this is a recurring task
+      const isRecurring = t.recurrence && t.recurrence.type !== 'none';
       
       // ALWAYS include recurring tasks that don't have a scheduledDate
       // Recurring tasks need a base scheduledDate to function properly
-      if (t.recurrence && t.recurrence.type !== 'none' && !t.scheduledDate) {
+      if (isRecurring && !t.scheduledDate) {
+        console.log('🔄 Including recurring task without scheduledDate:', {
+          taskId: t.id,
+          title: t.title,
+          recurrenceType: t.recurrence.type,
+          recurrenceInterval: t.recurrence.interval,
+        });
+        logger.debug('Including recurring task without scheduledDate', {
+          taskId: t.id,
+          title: t.title,
+          recurrenceType: t.recurrence.type,
+        });
         return true;
       }
       
       // Include non-recurring tasks without scheduledDate
-      if (!t.scheduledDate) return true;
+      if (!t.scheduledDate && !isRecurring) {
+        return true;
+      }
       
       // Include recurring tasks that need rescheduling:
       // If scheduled date is today or in the past, it needs to be rescheduled to next occurrence
-      if (t.recurrence && t.recurrence.type !== 'none') {
+      if (isRecurring && t.scheduledDate) {
         try {
           const scheduledDate = new Date(t.scheduledDate);
           scheduledDate.setHours(0, 0, 0, 0);
@@ -92,14 +112,44 @@ export function useAIScheduler() {
           // If scheduled date is today or in the past, it needs to be rescheduled to next occurrence
           // This ensures recurring tasks are properly scheduled for future dates
           if (scheduledDate <= today) {
+            console.log('🔄 Including recurring task with past/today scheduledDate:', {
+              taskId: t.id,
+              title: t.title,
+              recurrenceType: t.recurrence.type,
+              scheduledDate: t.scheduledDate,
+              scheduledDateKey: scheduledDate.toISOString().split('T')[0],
+              todayKey: today.toISOString().split('T')[0],
+            });
+            logger.debug('Including recurring task with past/today scheduledDate', {
+              taskId: t.id,
+              title: t.title,
+              scheduledDate: t.scheduledDate,
+            });
             return true;
           }
           
           // If scheduled date is in the future, don't reschedule (already properly scheduled)
+          console.log('⏭️ Skipping recurring task with future scheduledDate:', {
+            taskId: t.id,
+            title: t.title,
+            scheduledDate: t.scheduledDate,
+            scheduledDateKey: scheduledDate.toISOString().split('T')[0],
+            todayKey: today.toISOString().split('T')[0],
+          });
           return false;
         } catch (error) {
           // If date parsing fails, include the task to be rescheduled
-          logger.warn('Error parsing scheduledDate for recurring task, including in schedule:', { taskId: t.id, scheduledDate: t.scheduledDate });
+          console.error('❌ Error parsing scheduledDate for recurring task, including in schedule:', {
+            taskId: t.id,
+            title: t.title,
+            scheduledDate: t.scheduledDate,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          logger.warn('Error parsing scheduledDate for recurring task, including in schedule:', {
+            taskId: t.id,
+            scheduledDate: t.scheduledDate,
+            error,
+          });
           return true;
         }
       }
@@ -107,6 +157,27 @@ export function useAIScheduler() {
       // For non-recurring tasks, only include if they don't have a scheduledDate
       return false;
     });
+    
+    console.log('📋 getUnscheduledTasks result:', {
+      totalTasks: tasks.length,
+      unscheduledCount: filtered.length,
+      recurringTasksIncluded: filtered.filter(t => t.recurrence && t.recurrence.type !== 'none').length,
+      recurringTasks: filtered
+        .filter(t => t.recurrence && t.recurrence.type !== 'none')
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          recurrenceType: t.recurrence.type,
+          scheduledDate: t.scheduledDate,
+        })),
+    });
+    logger.debug('getUnscheduledTasks result', {
+      totalTasks: tasks.length,
+      unscheduledCount: filtered.length,
+      recurringTasksIncluded: filtered.filter(t => t.recurrence && t.recurrence.type !== 'none').length,
+    });
+    
+    return filtered;
   };
 
   // Helper: Get date key for tracking (YYYY-MM-DD)
@@ -118,12 +189,28 @@ export function useAIScheduler() {
   // This ensures recurring tasks are scheduled to a date that matches their recurrence pattern
   // IMPORTANT: Always returns a date in the future (after fromDate), never today or in the past
   const calculateFirstOccurrenceDate = (task: Task, fromDate: Date): Date | null => {
-    if (!task.recurrence || task.recurrence.type === 'none') return null;
+    if (!task.recurrence || task.recurrence.type === 'none') {
+      console.log('⚠️ calculateFirstOccurrenceDate: Task has no recurrence', {
+        taskId: task.id,
+        title: task.title,
+        recurrence: task.recurrence,
+      });
+      return null;
+    }
 
     const firstDate = new Date(fromDate);
     firstDate.setHours(0, 0, 0, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    console.log('📅 calculateFirstOccurrenceDate called', {
+      taskId: task.id,
+      title: task.title,
+      recurrenceType: task.recurrence.type,
+      recurrenceInterval: task.recurrence.interval,
+      fromDate: fromDate.toISOString().split('T')[0],
+      today: today.toISOString().split('T')[0],
+    });
 
     switch (task.recurrence.type) {
       case 'daily':
@@ -134,6 +221,12 @@ export function useAIScheduler() {
         if (firstDate <= today) {
           firstDate.setDate(today.getDate() + task.recurrence.interval);
         }
+        console.log('📅 Daily recurrence calculated', {
+          taskId: task.id,
+          fromDate: fromDate.toISOString().split('T')[0],
+          firstOccurrence: firstDate.toISOString().split('T')[0],
+          interval: task.recurrence.interval,
+        });
         break;
       
       case 'weekly':
@@ -203,9 +296,22 @@ export function useAIScheduler() {
         break;
       
       default:
+        console.log('⚠️ calculateFirstOccurrenceDate: Unknown recurrence type', {
+          taskId: task.id,
+          recurrenceType: task.recurrence.type,
+        });
         return null;
     }
 
+    console.log('✅ calculateFirstOccurrenceDate result', {
+      taskId: task.id,
+      title: task.title,
+      recurrenceType: task.recurrence.type,
+      fromDate: fromDate.toISOString().split('T')[0],
+      firstOccurrence: firstDate.toISOString().split('T')[0],
+      isFuture: firstDate > today,
+    });
+    
     return firstDate;
   };
 
