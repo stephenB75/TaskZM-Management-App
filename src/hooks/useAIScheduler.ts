@@ -1111,34 +1111,42 @@ export function useAIScheduler() {
         const dateKey = getDateKey(scheduleDate);
         const existingTasksForDay = dailyTasks.get(dateKey) || [];
         
+        // Get tasks from the current plan that are scheduled for the same day
+        // This ensures tasks scheduled in the same batch see each other for time slot distribution
+        const tasksInPlanSameDay = plan
+          .filter(p => {
+            const pDateKey = getDateKey(p.scheduledDate);
+            return pDateKey === dateKey;
+          })
+          .map(p => p.task); // Convert plan entries to tasks
+        
+        // Combine existing tasks with tasks in the current plan for this day
+        // This ensures getCategoryTimeSlot can see all tasks scheduled for this day
+        const allTasksForDay = [...existingTasksForDay, ...tasksInPlanSameDay];
+        
         // Count tasks in the same category that are already scheduled (including tasks scheduled earlier in this batch)
         // This ensures tasks scheduled in the same batch get different time slots
         const category = getTaskCategory(task);
-        const categoryTasksCount = existingTasksForDay.filter(t => {
+        const categoryTasksCount = allTasksForDay.filter(t => {
           const cat = getTaskCategory(t);
           return cat === category;
         }).length;
         
-        // Also count tasks in the current plan that are scheduled for the same day and category
-        // This prevents multiple recurring tasks from getting the same time slot
-        const tasksInPlanSameDayCategory = plan.filter(p => {
-          const pDateKey = getDateKey(p.scheduledDate);
-          const pCategory = getTaskCategory(p.task);
-          return pDateKey === dateKey && pCategory === category;
-        }).length;
+        // Use the category task count for time slot calculation
+        let timeSlot = categoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
         
-        // Use the total count (existing + in current plan) for time slot calculation
-        const totalCategoryTasksCount = categoryTasksCount + tasksInPlanSameDayCategory;
-        let timeSlot = totalCategoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
         // Use consistent duration calculation for all scheduling operations
         const taskHours = getTaskHours(task);
         const taskDurationMinutes = Math.round(taskHours * 60); // Convert hours to minutes
+        
+        // Pass allTasksForDay (including tasks in current plan) to getCategoryTimeSlot
+        // This ensures it can find gaps and distribute tasks correctly
         const categoryTime = getCategoryTimeSlot(
           task,
           scheduleDate,
           timeSlot,
           options?.forceCategoryHours ?? false,
-          existingTasksForDay,
+          allTasksForDay, // Include tasks from current plan
           taskDurationMinutes // Pass consistent duration for gap checking
         );
         
@@ -1200,8 +1208,7 @@ export function useAIScheduler() {
           }
         } else {
           // Find available time slot by checking existing scheduled tasks for this day
-          const dateKey = getDateKey(scheduleDate);
-          const existingTasksForDay = dailyTasks.get(dateKey) || [];
+          // Use allTasksForDay (already calculated above) which includes tasks from current plan
           // Use consistent duration calculation: convert hours to minutes
           const taskHours = getTaskHours(task);
           const taskDurationMinutes = Math.round(taskHours * 60); // Convert hours back to minutes
@@ -1310,7 +1317,8 @@ export function useAIScheduler() {
             
             // If no existing tasks, use priority-based initial time (but not before earliestTime)
             // For personal tasks, prefer later in the day even for high priority
-            if (existingTasksForDay.length === 0) {
+            // Use allTasksForDay (includes tasks from current plan) to avoid scheduling conflicts
+            if (allTasksForDay.length === 0) {
               const priorityTime = (() => {
                 // For personal tasks, use category start hour (evening) regardless of priority
                 if (category === 'personal') {
@@ -1338,7 +1346,8 @@ export function useAIScheduler() {
             }
             
             // Sort existing tasks by scheduled time
-            const sortedTasks = [...existingTasksForDay].sort((a, b) => {
+            // Use allTasksForDay (includes tasks from current plan) to avoid scheduling conflicts
+            const sortedTasks = [...allTasksForDay].sort((a, b) => {
               const timeA = new Date(a.scheduledDate!).getTime();
               const timeB = new Date(b.scheduledDate!).getTime();
               return timeA - timeB;
