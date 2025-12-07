@@ -2104,12 +2104,15 @@ export function useAIScheduler() {
           });
         }
         
-        // CRITICAL: One final direct check - iterate through plan and check for exact time matches
+        // CRITICAL: One final direct check - iterate through plan and check for ALL conflicts
         // This is a last-resort check to catch any conflicts that findNextAvailableSlot might have missed
+        // We need to check ALL tasks in the plan, not just the first conflict
+        let maxConflictEnd = scheduleDate.getTime();
+        let hasConflict = false;
         const scheduleTimeMs = scheduleDate.getTime();
         const scheduleEndMs = scheduleTimeMs + (taskDurationMinutes * MILLISECONDS_PER_MINUTE);
         
-        let directConflictFound = false;
+        // First pass: Find all conflicts and track the latest end time
         for (const planItem of plan) {
           if (!planItem.scheduledDate) continue;
           if (planItem.task.id === task.id) continue; // Skip self
@@ -2132,33 +2135,103 @@ export function useAIScheduler() {
           const overlaps = scheduleTimeMs < planEndMs && scheduleEndMs > planTimeMs;
           
           if (sameStartTime || overlaps) {
-            directConflictFound = true;
+            hasConflict = true;
+            // Track the latest end time of all conflicts
+            maxConflictEnd = Math.max(maxConflictEnd, planEndMs);
+            
             if (import.meta.env.DEV) {
               logger.error('🚨 DIRECT CONFLICT DETECTED BEFORE ADDING TO PLAN!', {
                 currentTask: { id: task.id, title: task.title, time: scheduleDate.toISOString() },
                 conflictingTask: { id: planItem.task.id, title: planItem.task.title, time: planScheduledDate.toISOString() },
                 sameStartTime,
                 overlaps,
+                planEndMs: new Date(planEndMs).toISOString(),
+                maxConflictEnd: new Date(maxConflictEnd).toISOString(),
               });
             }
-            // Move to after the conflicting task
-            scheduleDate.setTime(planEndMs + MILLISECONDS_PER_MINUTE);
-            // Round to nearest interval
-            const roundedMinutes = Math.round(scheduleDate.getMinutes() / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-            scheduleDate.setMinutes(roundedMinutes);
-            scheduleDate.setSeconds(0, 0);
-            scheduleDate.setMilliseconds(0);
-            break; // Only move past the first conflict, then re-check
           }
         }
         
-        // If we found a conflict and adjusted, log it
-        if (directConflictFound && import.meta.env.DEV) {
-          logger.debug('Direct conflict resolved - time adjusted', {
-            taskId: task.id,
-            taskTitle: task.title,
-            finalTime: scheduleDate.toISOString(),
-          });
+        // If conflicts found, move to after ALL conflicting tasks
+        if (hasConflict) {
+          // Move to after the latest conflict end time, plus a 1-minute buffer
+          scheduleDate.setTime(maxConflictEnd + MILLISECONDS_PER_MINUTE);
+          // Round up to nearest interval to ensure we're past the conflict
+          const minutes = scheduleDate.getMinutes();
+          const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+          if (roundedMinutes >= MINUTES_PER_HOUR) {
+            scheduleDate.setHours(scheduleDate.getHours() + 1);
+            scheduleDate.setMinutes(0);
+          } else {
+            scheduleDate.setMinutes(roundedMinutes);
+          }
+          scheduleDate.setSeconds(0, 0);
+          scheduleDate.setMilliseconds(0);
+          
+          // CRITICAL: Re-check for conflicts after adjustment (in case we moved into another conflict)
+          // This is a recursive check to ensure we don't create new conflicts
+          const adjustedTimeMs = scheduleDate.getTime();
+          const adjustedEndMs = adjustedTimeMs + (taskDurationMinutes * MILLISECONDS_PER_MINUTE);
+          let stillHasConflict = false;
+          let newMaxConflictEnd = adjustedTimeMs;
+          
+          for (const planItem of plan) {
+            if (!planItem.scheduledDate) continue;
+            if (planItem.task.id === task.id) continue;
+            
+            const planScheduledDate = planItem.scheduledDate instanceof Date 
+              ? planItem.scheduledDate 
+              : new Date(planItem.scheduledDate);
+            const planDateKey = getDateKey(planScheduledDate);
+            
+            if (planDateKey !== dateKey) continue;
+            
+            const planTimeMs = planScheduledDate.getTime();
+            const planTaskDuration = getTaskMinutes(planItem.task) * MILLISECONDS_PER_MINUTE;
+            const planEndMs = planTimeMs + planTaskDuration;
+            
+            const sameStartTime = Math.abs(planTimeMs - adjustedTimeMs) < MILLISECONDS_PER_MINUTE;
+            const overlaps = adjustedTimeMs < planEndMs && adjustedEndMs > planTimeMs;
+            
+            if (sameStartTime || overlaps) {
+              stillHasConflict = true;
+              newMaxConflictEnd = Math.max(newMaxConflictEnd, planEndMs);
+            }
+          }
+          
+          // If still has conflict, move again (this should be rare, but handle it)
+          if (stillHasConflict) {
+            scheduleDate.setTime(newMaxConflictEnd + MILLISECONDS_PER_MINUTE);
+            const minutes = scheduleDate.getMinutes();
+            const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+            if (roundedMinutes >= MINUTES_PER_HOUR) {
+              scheduleDate.setHours(scheduleDate.getHours() + 1);
+              scheduleDate.setMinutes(0);
+            } else {
+              scheduleDate.setMinutes(roundedMinutes);
+            }
+            scheduleDate.setSeconds(0, 0);
+            scheduleDate.setMilliseconds(0);
+            
+            if (import.meta.env.DEV) {
+              logger.warn('Direct conflict required second adjustment', {
+                taskId: task.id,
+                taskTitle: task.title,
+                finalTime: scheduleDate.toISOString(),
+              });
+            }
+          }
+          
+          if (import.meta.env.DEV) {
+            logger.debug('Direct conflict resolved - time adjusted', {
+              taskId: task.id,
+              taskTitle: task.title,
+              originalTime: new Date(scheduleTimeMs).toISOString(),
+              finalTime: scheduleDate.toISOString(),
+              conflictsFound: hasConflict,
+              stillHasConflict,
+            });
+          }
         }
         
         // Schedule the task (we've verified it has no conflicts)
