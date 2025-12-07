@@ -362,7 +362,21 @@ export function useAIScheduler() {
 
     // Get existing tasks in the same category for this day
     // existingTasksForDay now includes tasks from the current plan, so this should see all tasks
-    const sameCategoryTasks = existingTasksForDay.filter(t => getTaskCategory(t) === category);
+    // CRITICAL: Filter to only include tasks with valid scheduled times (not midnight)
+    // This ensures we see tasks that have been fully scheduled, not just tasks with dates
+    // This is the KEY fix - tasks from the plan must be visible here!
+    const sameCategoryTasks = existingTasksForDay.filter(t => {
+      const cat = getTaskCategory(t);
+      if (cat !== category) return false;
+      if (!t.scheduledDate) return false;
+      // Parse and verify the scheduled time is valid (not just midnight)
+      const scheduledDate = typeof t.scheduledDate === 'string' 
+        ? new Date(t.scheduledDate)
+        : new Date(t.scheduledDate);
+      // Only include tasks with valid times (not just midnight/00:00:00)
+      // This is critical - we must see tasks from the plan that have been scheduled!
+      return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+    });
     
     // Determine the earliest time we can schedule
     const categoryStart = new Date(scheduleDate);
@@ -381,9 +395,13 @@ export function useAIScheduler() {
     // to ensure tasks are distributed based on actual existing tasks, not just the slot number
     if (sameCategoryTasks.length > 0) {
       // Sort existing tasks by scheduled time
+      // CRITICAL: Ensure we parse scheduledDate correctly (could be ISO string or Date object)
+      // This is especially important for tasks from the plan which are ISO strings
       const sortedCategoryTasks = [...sameCategoryTasks].sort((a, b) => {
         if (!a.scheduledDate || !b.scheduledDate) return 0;
-        return new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime();
+        const aDate = typeof a.scheduledDate === 'string' ? new Date(a.scheduledDate) : new Date(a.scheduledDate);
+        const bDate = typeof b.scheduledDate === 'string' ? new Date(b.scheduledDate) : new Date(b.scheduledDate);
+        return aDate.getTime() - bDate.getTime();
       });
       
       // Find gaps between existing category tasks
@@ -1169,20 +1187,29 @@ export function useAIScheduler() {
         // IMPORTANT: Create task objects with scheduledDate set from the plan, so getCategoryTimeSlot
         // and findNextAvailableSlot can see their scheduled times and avoid conflicts
         // CRITICAL: Only include tasks that have a valid scheduledDate with a time (not just midnight)
+        // CRITICAL FIX: Ensure we capture the EXACT scheduled time from tasks already in the plan
+        // This is the key to preventing duplicate scheduling times
         const tasksInPlanSameDay = plan
           .filter(p => {
+            if (!p.scheduledDate) return false;
             const pDateKey = getDateKey(p.scheduledDate);
             if (pDateKey !== dateKey) return false;
             // Only include tasks that have a scheduled time set (not just the date at midnight)
             // This ensures we only count tasks that have been fully scheduled
-            const scheduledTime = p.scheduledDate;
+            // CRITICAL: Parse the scheduledDate to ensure we're checking the actual time
+            const scheduledTime = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
             const hasTimeSet = scheduledTime.getHours() !== 0 || scheduledTime.getMinutes() !== 0;
             return hasTimeSet;
           })
           .map(p => {
             // Create a task object with scheduledDate set from the plan
-            // This ensures getCategoryTimeSlot and findNextAvailableSlot can see the scheduled time
-            const taskWithDate = { ...p.task, scheduledDate: p.scheduledDate.toISOString() };
+            // CRITICAL: Use the EXACT scheduledDate from the plan entry, preserving the time
+            // Convert to ISO string to ensure consistency, but preserve the exact time
+            const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+            const taskWithDate = { 
+              ...p.task, 
+              scheduledDate: planScheduledDate.toISOString() 
+            };
             return taskWithDate;
           });
         
