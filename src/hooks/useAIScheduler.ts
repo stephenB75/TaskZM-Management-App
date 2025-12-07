@@ -998,6 +998,7 @@ export function useAIScheduler() {
       // This ensures recurring tasks are scheduled to their correct occurrence date, not just any available day
       const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
       let recurringFirstOccurrence: Date | null = null;
+      let foundDay = false; // Declare foundDay early for recurring task logic
       
       if (isRecurringTask) {
         const fromDate = new Date(startDate);
@@ -1027,7 +1028,17 @@ export function useAIScheduler() {
           });
           
           // If first occurrence is valid and fits, use it directly
-          if (isWithinRange && !wouldExceed) {
+          const conditionMet = isWithinRange && !wouldExceed;
+          console.log('🔍 Recurring task condition check', {
+            taskId: task.id,
+            isWithinRange,
+            wouldExceed,
+            conditionMet,
+            isWithinRangeType: typeof isWithinRange,
+            wouldExceedType: typeof wouldExceed,
+          });
+          
+          if (conditionMet) {
             // Calculate daysToAdd based on first occurrence
             const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
             daysToAdd = daysDiff;
@@ -1037,6 +1048,14 @@ export function useAIScheduler() {
               taskId: task.id,
               firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
               daysToAdd,
+              foundDay,
+            });
+          } else {
+            console.log('❌ Recurring task first occurrence condition not met', {
+              taskId: task.id,
+              isWithinRange,
+              wouldExceed,
+              conditionMet,
             });
           }
         }
