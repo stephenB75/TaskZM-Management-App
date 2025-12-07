@@ -1403,7 +1403,12 @@ export function useAIScheduler() {
         // This is the key to preventing duplicate scheduling times
         const tasksInPlanSameDay = plan
           .filter(p => {
-            if (!p.scheduledDate) return false;
+            if (!p.scheduledDate) {
+              if (import.meta.env.DEV) {
+                logger.debug('Plan item has no scheduledDate', { taskId: p.task.id, taskTitle: p.task.title });
+              }
+              return false;
+            }
             const pDateKey = getDateKey(p.scheduledDate);
             if (pDateKey !== dateKey) return false;
             // Only include tasks that have a scheduled time set (not just the date at midnight)
@@ -1411,6 +1416,14 @@ export function useAIScheduler() {
             // CRITICAL: Parse the scheduledDate to ensure we're checking the actual time
             const scheduledTime = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
             const hasTimeSet = scheduledTime.getHours() !== 0 || scheduledTime.getMinutes() !== 0;
+            if (!hasTimeSet && import.meta.env.DEV) {
+              logger.debug('Plan item has no time set (midnight)', { 
+                taskId: p.task.id, 
+                taskTitle: p.task.title,
+                scheduledDate: p.scheduledDate,
+                scheduledTime: scheduledTime.toISOString()
+              });
+            }
             return hasTimeSet;
           })
           .map(p => {
@@ -1422,8 +1435,41 @@ export function useAIScheduler() {
               ...p.task, 
               scheduledDate: planScheduledDate.toISOString() 
             };
+            
+            // CRITICAL DEBUG: Log the conversion for recurring tasks
+            if (import.meta.env.DEV && (task.recurrence && task.recurrence.type !== 'none')) {
+              logger.debug('Task from plan converted for conflict check', {
+                currentTaskId: task.id,
+                currentTaskTitle: task.title,
+                planTaskId: taskWithDate.id,
+                planTaskTitle: taskWithDate.title,
+                planTaskScheduledDate: taskWithDate.scheduledDate,
+                planTaskScheduledTime: new Date(taskWithDate.scheduledDate).toLocaleTimeString(),
+                originalPlanScheduledDate: p.scheduledDate,
+                originalPlanScheduledDateType: typeof p.scheduledDate,
+              });
+            }
+            
             return taskWithDate;
           });
+        
+        // CRITICAL DEBUG: Log tasks in plan for this day
+        if (import.meta.env.DEV && isRecurringTask) {
+          logger.debug('Tasks in plan for same day', {
+            taskId: task.id,
+            taskTitle: task.title,
+            dateKey,
+            planLength: plan.length,
+            tasksInPlanSameDayCount: tasksInPlanSameDay.length,
+            tasksInPlanSameDay: tasksInPlanSameDay.map(t => ({
+              id: t.id,
+              title: t.title,
+              scheduledDate: t.scheduledDate,
+              scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+              category: getTaskCategory(t),
+            })),
+          });
+        }
         
         // Combine existing tasks with tasks in the current plan for this day
         // This ensures getCategoryTimeSlot can see all tasks scheduled for this day
@@ -2451,6 +2497,24 @@ export function useAIScheduler() {
         // Schedule the task (we've verified it has no conflicts)
         plan.push({ task, scheduledDate: scheduleDate, reason });
         addToDailyHours(scheduleDate, taskHours, task);
+        
+        // CRITICAL DEBUG: Log when task is added to plan
+        if (import.meta.env.DEV) {
+          logger.debug('Task added to plan', {
+            taskId: task.id,
+            taskTitle: task.title,
+            isRecurringTask: !!(task.recurrence && task.recurrence.type !== 'none'),
+            scheduledDate: scheduleDate.toISOString(),
+            scheduledTime: scheduleDate.toLocaleTimeString(),
+            planLength: plan.length,
+            tasksInPlanSameDayCount: plan.filter(p => {
+              if (!p.scheduledDate) return false;
+              const pDateKey = getDateKey(p.scheduledDate);
+              const scheduleDateKey = getDateKey(scheduleDate);
+              return pDateKey === scheduleDateKey;
+            }).length,
+          });
+        }
         
         // Track tasks per day for distribution
         const scheduledDayIndex = finalDaysToAdd;
