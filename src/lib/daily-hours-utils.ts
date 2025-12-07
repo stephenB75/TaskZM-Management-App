@@ -12,6 +12,7 @@ import {
   PRIORITY_MULTIPLIERS,
   TIME_ROUNDING_INTERVAL_MINUTES,
 } from './ai-config';
+import { MINUTES_PER_HOUR } from './business-constants';
 
 /**
  * Estimate task duration in hours

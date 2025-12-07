@@ -42,6 +42,7 @@ import {
   TASK_CARD_OPACITY,
 } from "../lib/task-card-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
+import { MINUTES_PER_HOUR } from "../lib/business-constants";
 
 interface DraggableTaskCardProps {
   task: Task;
