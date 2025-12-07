@@ -1233,6 +1233,19 @@ export function useAIScheduler() {
           taskDurationMinutes // Pass consistent duration for gap checking
         );
         
+        // CRITICAL: Define validTasksForDay BEFORE the if/else blocks so it's available everywhere
+        // This ensures conflict detection works in all code paths, including the final safeguard
+        const validTasksForDay = allTasksForDay.filter(t => {
+          if (!t.scheduledDate) return false;
+          // Parse and verify the scheduled time is valid
+          const scheduledDate = typeof t.scheduledDate === 'string' 
+            ? new Date(t.scheduledDate)
+            : new Date(t.scheduledDate);
+          // Only include tasks with valid times (not just midnight/00:00:00)
+          // This ensures we see all scheduled tasks regardless of category
+          return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+        });
+        
         if (categoryTime) {
           // Use category hours if available and respectHours is enabled
           // But first, use findNextAvailableSlot to find actual open time slot
@@ -1269,21 +1282,8 @@ export function useAIScheduler() {
           // so it can see tasks being scheduled in the same batch and avoid conflicts
           // taskDurationMinutes already calculated above for consistency
           
-          // CRITICAL: Verify that tasks from plan have valid scheduled times before passing to findNextAvailableSlot
-          // This ensures conflict detection works correctly
-          // IMPORTANT: Include ALL tasks for the day (not just same category) to detect conflicts across categories
-          const validTasksForDay = allTasksForDay.filter(t => {
-            if (!t.scheduledDate) return false;
-            // Parse and verify the scheduled time is valid
-            const scheduledDate = typeof t.scheduledDate === 'string' 
-              ? new Date(t.scheduledDate)
-              : new Date(t.scheduledDate);
-            // Only include tasks with valid times (not just midnight/00:00:00)
-            // This ensures we see all scheduled tasks regardless of category
-            return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
-          });
-          
           // Debug: Log tasks being checked for conflicts (especially for recurring tasks)
+          // Note: validTasksForDay is now defined before this block
           if (import.meta.env.DEV && isRecurringTask) {
             logger.debug('Recurring task conflict check', {
               taskId: task.id,
@@ -1745,17 +1745,7 @@ export function useAIScheduler() {
           // Use findNextAvailableSlot to find actual open slot with category hours
           // IMPORTANT: Pass allTasksForDay (which includes tasks from current plan) to findNextAvailableSlot
           // so it can see tasks being scheduled in the same batch and avoid conflicts
-          // CRITICAL: Verify that tasks from plan have valid scheduled times before passing to findNextAvailableSlot
-          const validTasksForDay = allTasksForDay.filter(t => {
-            if (!t.scheduledDate) return false;
-            // Parse and verify the scheduled time is valid
-            const scheduledDate = typeof t.scheduledDate === 'string' 
-              ? new Date(t.scheduledDate)
-              : new Date(t.scheduledDate);
-            // Only include tasks with valid times (not just midnight/00:00:00)
-            return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
-          });
-          
+          // Note: validTasksForDay is now defined before this block
           const finalSlot = findNextAvailableSlot(
             task.id,
             proposedTime,
@@ -1860,18 +1850,12 @@ export function useAIScheduler() {
         
         // CRITICAL: Final safeguard - ALWAYS run findNextAvailableSlot one more time before adding to plan
         // This ensures we catch any conflicts that might have been missed, especially for recurring tasks
-        // Use allTasksForDay which includes tasks from current plan
+        // Use validTasksForDay which includes all tasks from current plan with valid scheduled times
         const finalSafeguardSlot = findNextAvailableSlot(
           task.id,
           scheduleDate,
           taskDurationMinutes,
-          validTasksForDay.length > 0 ? validTasksForDay : allTasksForDay.filter(t => {
-            if (!t.scheduledDate) return false;
-            const scheduledDate = typeof t.scheduledDate === 'string' 
-              ? new Date(t.scheduledDate)
-              : new Date(t.scheduledDate);
-            return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
-          }),
+          validTasksForDay, // Use validated tasks which includes tasks from current plan
           {
             ensureAfterCurrentTime: false,
             categoryHours: undefined, // Remove constraints for final check
