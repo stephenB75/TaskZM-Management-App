@@ -194,28 +194,37 @@ export function findNextAvailableSlot(
     }
 
     // Check if this slot conflicts with any existing task
+    // IMPORTANT: Check ALL conflicts, not just the first one, to ensure we move past all overlapping tasks
     let hasConflict = false;
+    let maxConflictEnd = candidateStart; // Track the latest end time of all conflicts
+    
     for (const existing of sortedTasks) {
+      // Check for overlap: candidate overlaps if it starts before existing ends AND ends after existing starts
       if (candidateStart < existing.end && candidateEnd > existing.start) {
         hasConflict = true;
-        // Move candidate time to after this conflicting task
-        candidateTime = new Date(existing.end);
-        // Round to nearest 15-minute slot
-        const minutes = candidateTime.getMinutes();
-        const roundedMinutes = Math.ceil(minutes / 15) * 15;
-        if (roundedMinutes >= MINUTES_PER_HOUR) {
-          candidateTime.setHours(candidateTime.getHours() + 1);
-          candidateTime.setMinutes(0);
-        } else {
-          candidateTime.setMinutes(roundedMinutes);
-        }
-        break;
+        // Track the latest end time of all conflicts to move past all overlapping tasks
+        maxConflictEnd = Math.max(maxConflictEnd, existing.end);
       }
     }
 
     if (!hasConflict) {
       return candidateTime;
     }
+    
+    // Move candidate time to after ALL conflicting tasks (not just the first one)
+    // Add a small buffer (1 minute) to ensure we don't schedule exactly at the end time
+    candidateTime = new Date(maxConflictEnd + MILLISECONDS_PER_MINUTE);
+    // Round to nearest 15-minute slot (rounding up to ensure we're past the conflict)
+    const minutes = candidateTime.getMinutes();
+    const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+    if (roundedMinutes >= MINUTES_PER_HOUR) {
+      candidateTime.setHours(candidateTime.getHours() + 1);
+      candidateTime.setMinutes(0);
+    } else {
+      candidateTime.setMinutes(roundedMinutes);
+    }
+    candidateTime.setSeconds(0);
+    candidateTime.setMilliseconds(0);
   }
 
   // If no slot found, return a time that indicates failure (24:00 or later)

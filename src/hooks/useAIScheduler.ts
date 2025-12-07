@@ -1151,15 +1151,21 @@ export function useAIScheduler() {
         // Get tasks from the current plan that are scheduled for the same day
         // This ensures tasks scheduled in the same batch see each other for time slot distribution
         // IMPORTANT: Create task objects with scheduledDate set from the plan, so getCategoryTimeSlot
-        // can see their scheduled times and distribute tasks correctly
+        // and findNextAvailableSlot can see their scheduled times and avoid conflicts
+        // CRITICAL: Only include tasks that have a valid scheduledDate with a time (not just midnight)
         const tasksInPlanSameDay = plan
           .filter(p => {
             const pDateKey = getDateKey(p.scheduledDate);
-            return pDateKey === dateKey;
+            if (pDateKey !== dateKey) return false;
+            // Only include tasks that have a scheduled time set (not just the date at midnight)
+            // This ensures we only count tasks that have been fully scheduled
+            const scheduledTime = p.scheduledDate;
+            const hasTimeSet = scheduledTime.getHours() !== 0 || scheduledTime.getMinutes() !== 0;
+            return hasTimeSet;
           })
           .map(p => {
             // Create a task object with scheduledDate set from the plan
-            // This ensures getCategoryTimeSlot can see the scheduled time and distribute tasks correctly
+            // This ensures getCategoryTimeSlot and findNextAvailableSlot can see the scheduled time
             const taskWithDate = { ...p.task, scheduledDate: p.scheduledDate.toISOString() };
             return taskWithDate;
           });
