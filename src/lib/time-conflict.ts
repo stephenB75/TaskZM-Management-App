@@ -80,6 +80,23 @@ export function findNextAvailableSlot(
 ): Date {
   const targetDate = new Date(requestedTime);
   targetDate.setHours(0, 0, 0, 0);
+  
+  // CRITICAL DEBUG: Log what tasks are being checked
+  if (import.meta.env.DEV && allTasks.length > 0) {
+    console.debug('findNextAvailableSlot - checking tasks', {
+      taskId,
+      requestedTime: requestedTime.toISOString(),
+      taskDuration,
+      allTasksCount: allTasks.length,
+      allTasks: allTasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        scheduledDate: t.scheduledDate,
+        scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+        scheduledDateType: typeof t.scheduledDate,
+      })),
+    });
+  }
 
   // Get all tasks scheduled for the target date (excluding the current task)
   // CRITICAL: Include ALL tasks regardless of category to detect conflicts across categories
@@ -88,9 +105,45 @@ export function findNextAvailableSlot(
     if (taskId && task.id === taskId) return false;
     if (task.status === 'done') return false;
     if (!task.scheduledDate) return false; // Must have a scheduled date
+    
+    // CRITICAL: Parse scheduledDate to check if it's for the target date
+    // Handle both ISO strings and Date objects
+    const taskScheduledDate = typeof task.scheduledDate === 'string'
+      ? new Date(task.scheduledDate)
+      : new Date(task.scheduledDate);
+    
+    // Normalize to start of day for comparison
+    const taskDate = new Date(taskScheduledDate);
+    taskDate.setHours(0, 0, 0, 0);
+    
     // Check if this task applies to the target date (works for both recurring and non-recurring)
-    return isDateInRecurrence(task, targetDate);
+    // For non-recurring tasks, check if the scheduled date matches
+    // For recurring tasks, use isDateInRecurrence
+    if (task.recurrence && task.recurrence.type !== 'none') {
+      return isDateInRecurrence(task, targetDate);
+    } else {
+      // Non-recurring task - check if scheduled date matches target date
+      return taskDate.getTime() === targetDate.getTime();
+    }
   });
+  
+  // CRITICAL DEBUG: Log what tasks were found
+  if (import.meta.env.DEV && allTasks.length > 0) {
+    console.debug('findNextAvailableSlot - dateTasks filtered', {
+      taskId,
+      requestedTime: requestedTime.toISOString(),
+      targetDate: targetDate.toISOString(),
+      allTasksCount: allTasks.length,
+      dateTasksCount: dateTasks.length,
+      dateTasks: dateTasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        scheduledDate: t.scheduledDate,
+        scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+        isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
+      })),
+    });
+  }
 
   // Sort tasks by scheduled time
   // IMPORTANT: Ensure we properly parse scheduledDate (could be ISO string or Date object)
@@ -120,7 +173,7 @@ export function findNextAvailableSlot(
     const currentMinutes = now.getMinutes();
     const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
     const currentTimeRounded = new Date(now);
-    if (roundedMinutes >= 60) {
+    if (roundedMinutes >= MINUTES_PER_HOUR) {
       currentTimeRounded.setHours(currentTimeRounded.getHours() + 1);
       currentTimeRounded.setMinutes(0);
     } else {
@@ -141,7 +194,7 @@ export function findNextAvailableSlot(
     const { start, end } = options.categoryHours;
     const candidateHour = candidateTime.getHours();
     const candidateMinute = candidateTime.getMinutes();
-    const candidateTotalMinutes = candidateHour * 60 + candidateMinute;
+      const candidateTotalMinutes = candidateHour * MINUTES_PER_HOUR + candidateMinute;
     
     // For today, ensure we respect both current time AND category hours
     // The effective start is the later of: current time or category start
@@ -156,7 +209,7 @@ export function findNextAvailableSlot(
       } else {
         currentTimeRounded.setMinutes(roundedMinutes);
       }
-      const currentTotalMinutes = currentTimeRounded.getHours() * 60 + currentTimeRounded.getMinutes();
+      const currentTotalMinutes = currentTimeRounded.getHours() * MINUTES_PER_HOUR + currentTimeRounded.getMinutes();
       effectiveStart = Math.max(start, currentTotalMinutes);
     }
     
@@ -186,7 +239,7 @@ export function findNextAvailableSlot(
     if (options?.categoryHours) {
       const candidateHour = candidateTime.getHours();
       const candidateMinute = candidateTime.getMinutes();
-      const candidateTotalMinutes = candidateHour * 60 + candidateMinute;
+      const candidateTotalMinutes = candidateHour * MINUTES_PER_HOUR + candidateMinute;
       const taskEndMinutes = candidateTotalMinutes + taskDuration;
       
       if (candidateTotalMinutes < options.categoryHours.start || taskEndMinutes > options.categoryHours.end) {
@@ -221,27 +274,63 @@ export function findNextAvailableSlot(
       const overlaps = candidateStart < existing.end && candidateEnd > existing.start;
       const sameStartTime = candidateStart === existing.start;
       
-      if (overlaps || sameStartTime) {
+      // CRITICAL: Also check if candidate starts exactly at existing start (even if durations don't overlap)
+      // This ensures we never schedule two tasks at the exact same time
+      const exactSameTime = candidateStart === existing.start;
+      
+      if (overlaps || sameStartTime || exactSameTime) {
         hasConflict = true;
         // Track the latest end time of all conflicts to move past all overlapping tasks
         maxConflictEnd = Math.max(maxConflictEnd, existing.end);
         
-        // Debug logging in development
+        // Debug logging in development - ALWAYS log conflicts
         if (import.meta.env.DEV) {
-          console.debug('Conflict detected in findNextAvailableSlot', {
+          console.debug('🔴 Conflict detected in findNextAvailableSlot', {
             candidateTime: new Date(candidateStart).toISOString(),
+            candidateEnd: new Date(candidateEnd).toISOString(),
             existingTask: existing.task.id,
+            existingTaskTitle: existing.task.title,
             existingStart: new Date(existing.start).toISOString(),
             existingEnd: new Date(existing.end).toISOString(),
             overlaps,
             sameStartTime,
+            exactSameTime,
             maxConflictEnd: new Date(maxConflictEnd).toISOString(),
           });
         }
       }
     }
+    
+    // CRITICAL DEBUG: Log if no conflicts were found
+    if (import.meta.env.DEV && !hasConflict && sortedTasks.length > 0) {
+      console.debug('✅ No conflict found in findNextAvailableSlot', {
+        candidateTime: new Date(candidateStart).toISOString(),
+        candidateEnd: new Date(candidateEnd).toISOString(),
+        sortedTasksCount: sortedTasks.length,
+        sortedTasks: sortedTasks.map(t => ({
+          id: t.task.id,
+          title: t.task.title,
+          start: new Date(t.start).toISOString(),
+          end: new Date(t.end).toISOString(),
+        })),
+      });
+    }
 
     if (!hasConflict) {
+      // CRITICAL DEBUG: Log if no conflicts were found
+      if (import.meta.env.DEV && sortedTasks.length > 0) {
+        console.debug('✅ No conflict found in findNextAvailableSlot', {
+          candidateTime: new Date(candidateStart).toISOString(),
+          candidateEnd: new Date(candidateEnd).toISOString(),
+          sortedTasksCount: sortedTasks.length,
+          sortedTasks: sortedTasks.map(t => ({
+            id: t.task.id,
+            title: t.task.title,
+            start: new Date(t.start).toISOString(),
+            end: new Date(t.end).toISOString(),
+          })),
+        });
+      }
       return candidateTime;
     }
     
@@ -320,7 +409,7 @@ export function reorganizeAllTasksForDate(
     const currentMinutes = now.getMinutes();
     const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
     const earliestTime = new Date(now);
-    if (roundedMinutes >= 60) {
+    if (roundedMinutes >= MINUTES_PER_HOUR) {
       earliestTime.setHours(earliestTime.getHours() + 1);
       earliestTime.setMinutes(0);
     } else {
@@ -467,8 +556,8 @@ export function reorganizeConflictingTasks(
     
     // Round to nearest 15-minute slot
     const minutes = candidateTime.getMinutes();
-    const roundedMinutes = Math.ceil(minutes / 15) * 15;
-    if (roundedMinutes >= 60) {
+    const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+    if (roundedMinutes >= MINUTES_PER_HOUR) {
       candidateTime.setHours(candidateTime.getHours() + 1);
       candidateTime.setMinutes(0);
     } else {

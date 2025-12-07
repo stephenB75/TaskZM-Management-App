@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { logger } from './logger';
 import type { Task, TaskPriority, TaskStatus, RecurrenceConfig } from '../types';
+import { MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_DAY, MINUTES_PER_HOUR, HOURS_PER_DAY, DAYS_IN_WEEK, PERCENTAGE_MULTIPLIER, SECONDS_PER_MINUTE, SECONDS_PER_HOUR } from './business-constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -29,14 +30,14 @@ export function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  const diffMins = Math.floor(diffMs / MILLISECONDS_PER_MINUTE);
+  const diffHours = Math.floor(diffMs / MILLISECONDS_PER_HOUR);
+  const diffDays = Math.floor(diffMs / MILLISECONDS_PER_DAY);
 
   if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < MINUTES_PER_HOUR) return `${diffMins}m ago`;
+  if (diffHours < HOURS_PER_DAY) return `${diffHours}h ago`;
+  if (diffDays < DAYS_IN_WEEK) return `${diffDays}d ago`;
   return formatDate(dateStr);
 }
 
@@ -44,7 +45,7 @@ export function getWeekDates(startDate?: Date): Date[] {
   const start = startDate || new Date();
   const dates: Date[] = [];
   
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < DAYS_IN_WEEK; i++) {
     const date = new Date(start);
     date.setDate(start.getDate() + i);
     dates.push(date);
@@ -96,11 +97,11 @@ export function getStatusColor(status: TaskStatus): string {
 
 export function calculateProgress(task: Task): number {
   if (!task.subtasks || task.subtasks.length === 0) {
-    return task.status === 'done' ? 100 : 0;
+    return task.status === 'done' ? PERCENTAGE_MULTIPLIER : 0;
   }
   
   const completed = task.subtasks.filter(st => st.completed).length;
-  return Math.round((completed / task.subtasks.length) * 100);
+  return Math.round((completed / task.subtasks.length) * PERCENTAGE_MULTIPLIER);
 }
 
 export function generateId(): string {
@@ -109,9 +110,9 @@ export function generateId(): string {
 
 // Time utilities
 export function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
+  const hours = Math.floor(seconds / SECONDS_PER_HOUR);
+  const minutes = Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+  const secs = seconds % SECONDS_PER_MINUTE;
 
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
@@ -131,7 +132,7 @@ export function parseDuration(durationStr: string): number {
   const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
   const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
 
-  return hours * 3600 + minutes * 60 + seconds;
+  return hours * SECONDS_PER_HOUR + minutes * SECONDS_PER_MINUTE + seconds;
 }
 
 // Filter and search utilities

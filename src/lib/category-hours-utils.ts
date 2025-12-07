@@ -1,4 +1,5 @@
 import type { Task, HoursSettings } from '../types';
+import { MINUTES_PER_HOUR } from './business-constants';
 
 /**
  * Get task category from tags
@@ -34,7 +35,7 @@ export function isWeekend(date: Date): boolean {
  */
 export function parseTimeToMinutes(timeStr: string): number {
   const [hours, minutes] = timeStr.split(':').map(Number);
-  return (hours || 0) * 60 + (minutes || 0);
+  return (hours || 0) * MINUTES_PER_HOUR + (minutes || 0);
 }
 
 /**

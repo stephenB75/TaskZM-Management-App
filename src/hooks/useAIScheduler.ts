@@ -1300,6 +1300,25 @@ export function useAIScheduler() {
             });
           }
           
+          // CRITICAL DEBUG: Log what tasks are being passed to findNextAvailableSlot
+          if (import.meta.env.DEV) {
+            logger.debug('findNextAvailableSlot called', {
+              taskId: task.id,
+              taskTitle: task.title,
+              isRecurringTask,
+              proposedTime: proposedTime.toISOString(),
+              taskDurationMinutes,
+              validTasksForDayCount: validTasksForDay.length,
+              validTasksForDay: validTasksForDay.map(t => ({
+                id: t.id,
+                title: t.title,
+                scheduledDate: t.scheduledDate,
+                scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+                category: getTaskCategory(t),
+              })),
+            });
+          }
+          
           const availableSlot = findNextAvailableSlot(
             task.id,
             proposedTime,
@@ -1313,6 +1332,20 @@ export function useAIScheduler() {
               } : undefined,
             }
           );
+          
+          // CRITICAL DEBUG: Log the result
+          if (import.meta.env.DEV) {
+            const timeDifference = Math.abs(availableSlot.getTime() - proposedTime.getTime());
+            logger.debug('findNextAvailableSlot result', {
+              taskId: task.id,
+              taskTitle: task.title,
+              isRecurringTask,
+              proposedTime: proposedTime.toISOString(),
+              availableSlot: availableSlot.toISOString(),
+              timeDifferenceMinutes: Math.round(timeDifference / MILLISECONDS_PER_MINUTE),
+              wasAdjusted: timeDifference > MILLISECONDS_PER_MINUTE,
+            });
+          }
           
           // ALWAYS use findNextAvailableSlot result, even if it's different from proposed time
           // This ensures we never schedule at the same time as existing tasks

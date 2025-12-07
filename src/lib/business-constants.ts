@@ -40,11 +40,13 @@ export const DEFAULT_NOTIFICATION_CHECK_INTERVAL = 15; // Minutes between checks
 // Time Conversion Constants (must be defined first as they're used by other constants)
 export const MINUTES_PER_HOUR = 60;
 export const SECONDS_PER_MINUTE = 60;
-export const MILLISECONDS_PER_SECOND = 1000;
-export const MILLISECONDS_PER_MINUTE = 60 * 1000; // 60 seconds * 1000 ms
-export const MILLISECONDS_PER_HOUR = 60 * 60 * 1000; // 60 minutes * 60 seconds * 1000 ms
 export const HOURS_PER_DAY = 24;
-export const MINUTES_PER_DAY = 24 * 60; // 24 hours * 60 minutes
+export const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR; // 60 seconds * 60 minutes
+export const SECONDS_PER_DAY = SECONDS_PER_HOUR * HOURS_PER_DAY; // 24 hours * 60 minutes * 60 seconds
+export const MILLISECONDS_PER_SECOND = 1000;
+export const MILLISECONDS_PER_MINUTE = SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND; // 60 seconds * 1000 ms
+export const MILLISECONDS_PER_HOUR = SECONDS_PER_HOUR * MILLISECONDS_PER_SECOND; // 60 minutes * 60 seconds * 1000 ms
+export const MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR; // 24 hours * 60 minutes
 export const MILLISECONDS_PER_DAY = HOURS_PER_DAY * MILLISECONDS_PER_HOUR; // 24 hours * 60 minutes * 60 seconds * 1000 ms
 
 // Percentage and Calculation Constants
