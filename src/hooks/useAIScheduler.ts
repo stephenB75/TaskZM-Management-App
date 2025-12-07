@@ -352,6 +352,7 @@ export function useAIScheduler() {
     const totalHours = totalMinutes / 60;
 
     // Get existing tasks in the same category for this day
+    // existingTasksForDay now includes tasks from the current plan, so this should see all tasks
     const sameCategoryTasks = existingTasksForDay.filter(t => getTaskCategory(t) === category);
     
     // Determine the earliest time we can schedule
@@ -366,6 +367,9 @@ export function useAIScheduler() {
     }
     
     // If there are existing tasks in this category, try to find gaps or distribute evenly
+    // IMPORTANT: Use sameCategoryTasks.length (not timeSlot) to ensure proper distribution
+    // The timeSlot parameter is already calculated based on categoryTasksCount, but we need
+    // to ensure tasks are distributed based on actual existing tasks, not just the slot number
     if (sameCategoryTasks.length > 0) {
       // Sort existing tasks by scheduled time
       const sortedCategoryTasks = [...sameCategoryTasks].sort((a, b) => {
@@ -447,8 +451,14 @@ export function useAIScheduler() {
     
     // No existing tasks or no gaps - distribute evenly across the available time window
     // Use more slots for better distribution (5 slots instead of 3)
+    // IMPORTANT: Use sameCategoryTasks.length (not timeSlot parameter) to ensure proper distribution
+    // when multiple tasks are scheduled in the same batch. The timeSlot parameter might not reflect
+    // tasks already in the plan that are being processed.
     const numSlots = 5;
-    const slotPosition = timeSlot % numSlots; // 0, 1, 2, 3, or 4
+    // Use the actual count of same category tasks (which includes tasks from current plan via allTasksForDay)
+    // This ensures tasks scheduled in the same batch get different time slots
+    const actualSlotPosition = sameCategoryTasks.length % numSlots;
+    const slotPosition = actualSlotPosition; // Use actual count, not just timeSlot parameter
     const offsetHours = (totalHours / numSlots) * slotPosition;
 
     const finalHours = Math.floor(startTime.hours + offsetHours);
@@ -1113,12 +1123,19 @@ export function useAIScheduler() {
         
         // Get tasks from the current plan that are scheduled for the same day
         // This ensures tasks scheduled in the same batch see each other for time slot distribution
+        // IMPORTANT: Create task objects with scheduledDate set from the plan, so getCategoryTimeSlot
+        // can see their scheduled times and distribute tasks correctly
         const tasksInPlanSameDay = plan
           .filter(p => {
             const pDateKey = getDateKey(p.scheduledDate);
             return pDateKey === dateKey;
           })
-          .map(p => p.task); // Convert plan entries to tasks
+          .map(p => {
+            // Create a task object with scheduledDate set from the plan
+            // This ensures getCategoryTimeSlot can see the scheduled time and distribute tasks correctly
+            const taskWithDate = { ...p.task, scheduledDate: p.scheduledDate.toISOString() };
+            return taskWithDate;
+          });
         
         // Combine existing tasks with tasks in the current plan for this day
         // This ensures getCategoryTimeSlot can see all tasks scheduled for this day
