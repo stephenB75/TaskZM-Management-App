@@ -463,8 +463,51 @@ export function useAIScheduler() {
           ? new Date(lastTask.scheduledDate)
           : new Date(lastTask.scheduledDate);
         const lastTaskDuration = getTaskMinutes(lastTask); // Use AI estimator for existing tasks
-        const nextAvailableTime = new Date(lastTaskStart);
+        let nextAvailableTime = new Date(lastTaskStart);
         nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
+        
+        // CRITICAL: Check if this time conflicts with any other tasks from the plan
+        // Even though we're placing after the last task, there might be tasks in the plan
+        // that were scheduled after this last task but before we calculated nextAvailableTime
+        const nextAvailableTimeMs = nextAvailableTime.getTime();
+        const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
+        const nextAvailableEndMs = nextAvailableTimeMs + (taskDuration * MILLISECONDS_PER_MINUTE);
+        
+        // Check all tasks in existingTasksForDay (which includes tasks from the plan) for conflicts
+        let maxConflictEnd = nextAvailableTimeMs;
+        let hasConflict = false;
+        
+        for (const existingTask of existingTasksForDay) {
+          if (!existingTask.scheduledDate) continue;
+          const existingCat = getTaskCategory(existingTask);
+          if (existingCat !== category) continue;
+          
+          // Only check tasks with valid scheduled times (not midnight)
+          const existingTaskScheduledDate = typeof existingTask.scheduledDate === 'string'
+            ? new Date(existingTask.scheduledDate)
+            : new Date(existingTask.scheduledDate);
+          const hasValidTime = !isNaN(existingTaskScheduledDate.getTime()) && 
+            (existingTaskScheduledDate.getHours() !== 0 || existingTaskScheduledDate.getMinutes() !== 0);
+          if (!hasValidTime) continue;
+          
+          const existingTaskStart = existingTaskScheduledDate.getTime();
+          const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE;
+          const existingTaskEnd = existingTaskStart + existingTaskDuration;
+          
+          // Check for exact same start time or overlap
+          const sameStartTime = Math.abs(existingTaskStart - nextAvailableTimeMs) < MILLISECONDS_PER_MINUTE;
+          const overlaps = nextAvailableTimeMs < existingTaskEnd && nextAvailableEndMs > existingTaskStart;
+          
+          if (sameStartTime || overlaps) {
+            hasConflict = true;
+            maxConflictEnd = Math.max(maxConflictEnd, existingTaskEnd);
+          }
+        }
+        
+        // If conflicts found, move to after ALL conflicting tasks
+        if (hasConflict) {
+          nextAvailableTime = new Date(maxConflictEnd + MILLISECONDS_PER_MINUTE);
+        }
         
         // CRITICAL: Round to nearest interval to avoid scheduling at odd times
         const roundedMinutes = Math.ceil(nextAvailableTime.getMinutes() / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
@@ -481,11 +524,13 @@ export function useAIScheduler() {
           nextAvailableTime.setTime(currentTimeRounded.getTime());
         }
         
-        // Ensure we don't exceed category end time
+        // Ensure we don't exceed category end time (check that task END time fits)
         const categoryEnd = new Date(scheduleDate);
         categoryEnd.setHours(endTime.hours, endTime.minutes, 0, 0);
+        const categoryEndMs = categoryEnd.getTime();
+        const nextAvailableEndAfterAdjustment = nextAvailableTime.getTime() + (taskDuration * MILLISECONDS_PER_MINUTE);
         
-        if (nextAvailableTime <= categoryEnd) {
+        if (nextAvailableEndAfterAdjustment <= categoryEndMs) {
           return {
             hours: nextAvailableTime.getHours(),
             minutes: nextAvailableTime.getMinutes(),
@@ -529,6 +574,8 @@ export function useAIScheduler() {
     // If tasks are not sorted, we might return a time that conflicts with earlier-checked tasks
     // BUG FIX 2: Filter to only include tasks with valid scheduled times (not midnight)
     // This matches the gap-finding logic which excludes midnight-time tasks
+    // CRITICAL: Use existingTasksForDay which is passed as a parameter - this should include tasks from the plan
+    // when called from generateSchedulePlan, but we need to verify it's the combined list
     const sameCategoryTasksForConflictCheck = existingTasksForDay
       .filter(t => {
         if (!t.scheduledDate) return false;
