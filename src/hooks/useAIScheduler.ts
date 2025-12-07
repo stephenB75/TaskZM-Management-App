@@ -519,6 +519,30 @@ export function useAIScheduler() {
       return shuffled;
     };
 
+    // Determine start date: use provided dateRange start, or default to beginning of tomorrow
+    // AI scheduling should always start from the next day (tomorrow), not today
+    // IMPORTANT: Define startDate and endDate BEFORE using them in the loop below
+    const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
+      // Default to beginning of tomorrow (00:00:00) to schedule from next day
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      return tomorrow;
+    })();
+    
+    // Determine end date: use provided dateRange end, or default to 14th day from tomorrow
+    // "From tomorrow up to 14th day" means: tomorrow (day 1) through day 14 = TWO_WEEKS_DAYS days total
+    // So end date is tomorrow + 13 days (the 14th day)
+    const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
+      const future = new Date(startDate);
+      // Add 13 days to get to the 14th day (tomorrow is day 1, so day 14 is 13 days from tomorrow)
+      future.setDate(future.getDate() + (TWO_WEEKS_DAYS - 1));
+      return future;
+    })();
+    
+    // Ensure end date is at end of day
+    endDate.setHours(23, 59, 59, 999);
+    
     // Initialize dailyHours with already scheduled tasks
     const dailyHours: Map<string, number> = new Map();
     const dailyTasks: Map<string, Task[]> = new Map();
@@ -641,31 +665,9 @@ export function useAIScheduler() {
     const exceedsLimit: Task[] = [];
     const daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }> = [];
     
-    // Determine start date: use provided dateRange start, or default to beginning of tomorrow
-    // AI scheduling should always start from the next day (tomorrow), not today
-    const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
-      // Default to beginning of tomorrow (00:00:00) to schedule from next day
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      return tomorrow;
-    })();
-    
-    // Determine end date: use provided dateRange end, or default to 14th day from tomorrow
-    // "From tomorrow up to 14th day" means: tomorrow (day 1) through day 14 = TWO_WEEKS_DAYS days total
-    // So end date is tomorrow + 13 days (the 14th day)
-    const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
-      const future = new Date(startDate);
-      // Add 13 days to get to the 14th day (tomorrow is day 1, so day 14 is 13 days from tomorrow)
-      future.setDate(future.getDate() + (TWO_WEEKS_DAYS - 1));
-      return future;
-    })();
-    
-    // Ensure end date is at end of day
-    endDate.setHours(23, 59, 59, 999);
-    
     // Use startDate as the base for scheduling (selected date for rescheduling, or tomorrow for new scheduling)
     // This ensures rescheduling uses the selected date properly
+    // Note: startDate and endDate are already defined above (before the dailyTasks population loop)
     const baseDate = startDate;
     
     // Use configuration constants for daily hours limits
