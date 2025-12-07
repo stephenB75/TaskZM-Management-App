@@ -455,14 +455,13 @@ export function useAIScheduler() {
     
     // No existing tasks or no gaps - distribute evenly across the available time window
     // Use more slots for better distribution (5 slots instead of 3)
-    // IMPORTANT: Use sameCategoryTasks.length (not timeSlot parameter) to ensure proper distribution
-    // when multiple tasks are scheduled in the same batch. The timeSlot parameter might not reflect
-    // tasks already in the plan that are being processed.
+    // IMPORTANT: Use the timeSlot parameter that was calculated based on totalCategoryTasksCount
+    // This ensures tasks scheduled in the same batch get different time slots based on their
+    // position in the batch, not just the count of existing tasks
     const numSlots = 5;
-    // Use the actual count of same category tasks (which includes tasks from current plan via allTasksForDay)
-    // This ensures tasks scheduled in the same batch get different time slots
-    const actualSlotPosition = sameCategoryTasks.length % numSlots;
-    const slotPosition = actualSlotPosition; // Use actual count, not just timeSlot parameter
+    // Use the timeSlot parameter that was passed in, which is already calculated based on
+    // existingCategoryTasksCount + planCategoryTasksCount, ensuring proper distribution
+    const slotPosition = timeSlot % numSlots;
     const offsetHours = (totalHours / numSlots) * slotPosition;
 
     const finalHours = Math.floor(startTime.hours + offsetHours);
@@ -1174,15 +1173,28 @@ export function useAIScheduler() {
         // IMPORTANT: Count tasks that have a scheduledDate set (from plan or existing tasks)
         // This ensures recurring tasks being scheduled in the same batch see each other
         const category = getTaskCategory(task);
-        const categoryTasksCount = allTasksForDay.filter(t => {
+        
+        // Count existing tasks in the same category that have a scheduledDate
+        const existingCategoryTasksCount = existingTasksForDay.filter(t => {
           const cat = getTaskCategory(t);
-          // Only count tasks that have a scheduledDate (either from existing tasks or from plan)
           return cat === category && t.scheduledDate;
         }).length;
         
-        // Use the category task count for time slot calculation
+        // Count tasks in the current plan that are in the same category and same day
+        // These tasks are being scheduled in the same batch, so we need to count them
+        // to ensure proper time slot distribution
+        const planCategoryTasksCount = tasksInPlanSameDay.filter(t => {
+          const cat = getTaskCategory(t);
+          return cat === category;
+        }).length;
+        
+        // Total category tasks = existing + tasks in current plan (including the one we're about to add)
+        // This ensures each task in the batch gets a different time slot
+        const totalCategoryTasksCount = existingCategoryTasksCount + planCategoryTasksCount;
+        
+        // Use the total category task count for time slot calculation
         // This ensures recurring tasks scheduled in the same batch get different slots
-        let timeSlot = categoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
+        let timeSlot = totalCategoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
         
         // Use consistent duration calculation for all scheduling operations
         const taskHours = getTaskHours(task);
