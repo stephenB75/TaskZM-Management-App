@@ -267,11 +267,20 @@ export function useAIScheduler() {
           }
         } else {
           // Simple weekly: same day of week every interval weeks
+          const fromDayOfWeek = firstDate.getDay();
           firstDate.setDate(firstDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * task.recurrence.interval));
           // Ensure it's at least tomorrow
           if (firstDate <= today) {
             firstDate.setDate(firstDate.getDate() + (TIMING_CONSTANTS.calendar.daysPerWeek * task.recurrence.interval));
           }
+          console.log('📅 Weekly recurrence (no daysOfWeek) calculated', {
+            taskId: task.id,
+            fromDate: fromDate.toISOString().split('T')[0],
+            fromDayOfWeek,
+            firstOccurrence: firstDate.toISOString().split('T')[0],
+            firstOccurrenceDayOfWeek: firstDate.getDay(),
+            interval: task.recurrence.interval,
+          });
         }
         break;
       
@@ -985,12 +994,61 @@ export function useAIScheduler() {
         aiEstimatedMinutes: Math.round(taskHours * 60),
       });
       
+      // SPECIAL HANDLING FOR RECURRING TASKS: Calculate first occurrence date FIRST
+      // This ensures recurring tasks are scheduled to their correct occurrence date, not just any available day
+      const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
+      let recurringFirstOccurrence: Date | null = null;
+      
+      if (isRecurringTask) {
+        const fromDate = new Date(startDate);
+        fromDate.setHours(0, 0, 0, 0);
+        
+        console.log('🔄 Processing recurring task - calculating first occurrence', {
+          taskId: task.id,
+          title: task.title,
+          recurrenceType: task.recurrence.type,
+          fromDate: fromDate.toISOString().split('T')[0],
+        });
+        
+        recurringFirstOccurrence = calculateFirstOccurrenceDate(task, fromDate);
+        
+        if (recurringFirstOccurrence) {
+          // Check if first occurrence fits within date range and doesn't exceed limits
+          const firstOccurrenceKey = getDateKey(recurringFirstOccurrence);
+          const isWithinRange = !dateRange || (recurringFirstOccurrence >= startDate && recurringFirstOccurrence <= endDate);
+          const wouldExceed = wouldExceedLimit(recurringFirstOccurrence, taskHours);
+          
+          console.log('🔄 Recurring task first occurrence check', {
+            taskId: task.id,
+            firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+            isWithinRange,
+            wouldExceed,
+            taskHours,
+          });
+          
+          // If first occurrence is valid and fits, use it directly
+          if (isWithinRange && !wouldExceed) {
+            // Calculate daysToAdd based on first occurrence
+            const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+            daysToAdd = daysDiff;
+            foundDay = true;
+            reason = `Recurring task - scheduled to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]})`;
+            console.log('✅ Recurring task first occurrence is valid, using it', {
+              taskId: task.id,
+              firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+              daysToAdd,
+            });
+          }
+        }
+      }
+      
       // PRIORITY 1: If enforcing minimum hours, ALWAYS try to fill days that don't meet minimum first
       // This ensures we meet the 5-hour requirement per day
-      let foundDay = false;
+      // Skip this for recurring tasks that already have a valid first occurrence
       let finalDaysToAdd = daysToAdd;
       
-      if (options?.enforceMinimumHours) {
+      // Only search for days if recurring task doesn't already have a valid first occurrence
+      if (!foundDay && options?.enforceMinimumHours) {
         // Find ALL days that need hours to reach minimum, sorted by hours needed (most needed first)
         const daysNeedingHours: Array<{ date: Date; hoursNeeded: number; currentHours: number }> = [];
         const currentDate = new Date(startDate);
@@ -1041,6 +1099,7 @@ export function useAIScheduler() {
       
       // PRIORITY 2: If not found yet, search for days with available time slots
       // This ensures tasks are distributed to wherever there's available time
+      // Skip this for recurring tasks that already have a valid first occurrence
       if (!foundDay) {
         // Calculate max days to search based on date range or default to 14 days
         const maxDaysToSearch = dateRange 
@@ -1100,85 +1159,57 @@ export function useAIScheduler() {
       }
       
       // If no available day found within search window, add to exceedsLimit and skip
+      // EXCEPT for recurring tasks - they should always be scheduled to their first occurrence
       if (!foundDay) {
-        exceedsLimit.push(task);
-      } else {
-        // Update reason if we had to move to a later day
-        if (finalDaysToAdd > daysToAdd) {
-          if (!reason.includes('Due date') && !reason.includes('moved') && !reason.includes('minimum hours')) {
+        // For recurring tasks, try to use the first occurrence even if it exceeds limits
+        // This ensures recurring tasks are always scheduled, even if they need to exceed the daily limit
+        if (isRecurringTask && recurringFirstOccurrence) {
+          const isWithinRange = !dateRange || (recurringFirstOccurrence >= startDate && recurringFirstOccurrence <= endDate);
+          if (isWithinRange) {
+            // Use the first occurrence date even if it exceeds limits
+            const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+            finalDaysToAdd = daysDiff;
+            foundDay = true;
+            reason = `Recurring task - scheduled to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]}) - may exceed daily limit`;
+            console.log('⚠️ Recurring task scheduled despite exceeding limit', {
+              taskId: task.id,
+              firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+              taskHours,
+            });
+          } else {
+            // First occurrence is outside range - add to exceedsLimit
+            console.log('❌ Recurring task first occurrence outside date range', {
+              taskId: task.id,
+              firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+              startDate: startDate.toISOString().split('T')[0],
+              endDate: endDate.toISOString().split('T')[0],
+            });
+            exceedsLimit.push(task);
+          }
+        } else {
+          exceedsLimit.push(task);
+        }
+      }
+      
+      if (foundDay) {
+        // Update reason if we had to move to a later day (for non-recurring tasks)
+        if (finalDaysToAdd > daysToAdd && !isRecurringTask) {
+          if (!reason.includes('Due date') && !reason.includes('moved') && !reason.includes('minimum hours') && !reason.includes('Recurring task')) {
             reason = `${reason} - moved to available slot (5-hour limit)`;
           }
         }
         
         // Calculate time slot intelligently based on task duration and existing schedule
-        // For recurring tasks, calculate the first occurrence date that matches the recurrence pattern
+        // For recurring tasks, use the pre-calculated first occurrence date
         // Otherwise, use the calculated date
         let scheduleDate: Date;
-        if (task.recurrence && task.recurrence.type !== 'none') {
-          // For recurring tasks, calculate the first occurrence date from startDate (tomorrow or selected date)
-          // This ensures the scheduledDate is set to the correct base date for the recurrence pattern
-          // Always calculate from startDate (which is tomorrow by default) to ensure future scheduling
-          const fromDate = new Date(startDate);
-          fromDate.setHours(0, 0, 0, 0);
-          
-          logger.debug('Calculating first occurrence for recurring task', {
+        if (isRecurringTask && recurringFirstOccurrence) {
+          // Use the pre-calculated first occurrence
+          scheduleDate = recurringFirstOccurrence;
+          console.log('✅ Using pre-calculated first occurrence for recurring task', {
             taskId: task.id,
-            taskTitle: task.title,
-            recurrenceType: task.recurrence.type,
-            fromDate: fromDate.toISOString().split('T')[0],
-            startDate: startDate.toISOString().split('T')[0],
-            hasScheduledDate: !!task.scheduledDate,
-            scheduledDate: task.scheduledDate,
+            firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
           });
-          
-          const firstOccurrence = calculateFirstOccurrenceDate(task, fromDate);
-          
-          if (firstOccurrence) {
-            // Ensure the first occurrence is within the scheduling date range
-            if (!dateRange || (firstOccurrence >= startDate && firstOccurrence <= endDate)) {
-              scheduleDate = firstOccurrence;
-              reason = `${reason} - scheduled to first occurrence date (${firstOccurrence.toISOString().split('T')[0]})`;
-              logger.debug('Recurring task scheduled to first occurrence', {
-                taskId: task.id,
-                firstOccurrence: firstOccurrence.toISOString().split('T')[0],
-              });
-            } else {
-              // If first occurrence is outside range, try to find the next occurrence within range
-              // Start from the startDate and calculate first occurrence from there
-              const rangeFirstOccurrence = calculateFirstOccurrenceDate(task, startDate);
-              if (rangeFirstOccurrence && rangeFirstOccurrence <= endDate) {
-                scheduleDate = rangeFirstOccurrence;
-                reason = `${reason} - scheduled to first occurrence within date range`;
-                logger.debug('Recurring task scheduled to first occurrence within range', {
-                  taskId: task.id,
-                  rangeFirstOccurrence: rangeFirstOccurrence.toISOString().split('T')[0],
-                });
-              } else {
-                // Fallback: use the calculated date from scheduler
-                const calculatedDate = new Date(baseDate);
-                calculatedDate.setDate(calculatedDate.getDate() + finalDaysToAdd);
-                scheduleDate = calculatedDate;
-                reason = `${reason} - first occurrence outside range, using calculated date`;
-                logger.warn('Recurring task first occurrence outside range, using calculated date', {
-                  taskId: task.id,
-                  firstOccurrence: firstOccurrence.toISOString().split('T')[0],
-                  calculatedDate: calculatedDate.toISOString().split('T')[0],
-                  startDate: startDate.toISOString().split('T')[0],
-                  endDate: endDate.toISOString().split('T')[0],
-                });
-              }
-            }
-          } else {
-            // Fallback to calculated date if first occurrence couldn't be calculated
-            const calculatedDate = new Date(baseDate);
-            calculatedDate.setDate(calculatedDate.getDate() + finalDaysToAdd);
-            scheduleDate = calculatedDate;
-            logger.warn('Could not calculate first occurrence for recurring task, using calculated date', {
-              taskId: task.id,
-              recurrence: task.recurrence,
-              calculatedDate: calculatedDate.toISOString().split('T')[0],
-            });
-          }
         } else {
           // Non-recurring task: use calculated date
           scheduleDate = new Date(baseDate);
@@ -1728,6 +1759,15 @@ export function useAIScheduler() {
         }
         
         // Schedule the task (we've already verified it fits and has no conflicts)
+        console.log('✅ Adding task to schedule plan', {
+          taskId: task.id,
+          title: task.title,
+          isRecurring: !!(task.recurrence && task.recurrence.type !== 'none'),
+          recurrenceType: task.recurrence?.type,
+          scheduledDate: scheduleDate.toISOString(),
+          scheduledDateKey: scheduleDate.toISOString().split('T')[0],
+          reason,
+        });
         plan.push({ task, scheduledDate: scheduleDate, reason });
         addToDailyHours(scheduleDate, taskHours, task);
         
@@ -1752,6 +1792,16 @@ export function useAIScheduler() {
       }
       
       // Apply all scheduled dates
+      console.log('📝 applySchedulePlan: Applying schedule to tasks', {
+        planLength: plan.length,
+        tasks: plan.map(p => ({
+          taskId: p.task.id,
+          title: p.task.title,
+          isRecurring: !!(p.task.recurrence && p.task.recurrence.type !== 'none'),
+          scheduledDate: p.scheduledDate.toISOString(),
+        })),
+      });
+      
       for (const { task, scheduledDate } of plan) {
         // Validate task and scheduledDate
         if (!task || !task.id) {
@@ -1765,9 +1815,21 @@ export function useAIScheduler() {
         }
         
         try {
+          console.log('💾 Updating task with scheduledDate', {
+            taskId: task.id,
+            title: task.title,
+            isRecurring: !!(task.recurrence && task.recurrence.type !== 'none'),
+            scheduledDate: scheduledDate.toISOString(),
+            scheduledDateKey: scheduledDate.toISOString().split('T')[0],
+          });
           await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
+          console.log('✅ Task updated successfully', {
+            taskId: task.id,
+            title: task.title,
+            scheduledDate: scheduledDate.toISOString(),
+          });
         } catch (taskError) {
-          console.error(`Error updating task ${task.id}:`, taskError);
+          console.error(`❌ Error updating task ${task.id}:`, taskError);
           // Continue with other tasks even if one fails
         }
       }
