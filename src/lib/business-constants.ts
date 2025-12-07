@@ -37,6 +37,9 @@ export const DEFAULT_WEEKEND_PROJECTS_END = '18:00';
 export const DEFAULT_NOTIFICATION_REMINDER_TIME = 60; // Minutes before due date
 export const DEFAULT_NOTIFICATION_CHECK_INTERVAL = 15; // Minutes between checks
 
+// Percentage and Calculation Constants
+export const PERCENTAGE_MULTIPLIER = 100; // For converting decimals to percentages
+
 // Task Duration Thresholds
 export const TASK_DURATION_SHORT_THRESHOLD = 45; // Minutes - tasks under this are considered "short"
 export const TASK_DURATION_MEDIUM_THRESHOLD = 120; // Minutes - tasks under this are considered "medium"
