@@ -1971,10 +1971,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 scheduledDate: newScheduledDate 
               });
             } else {
-              console.log('💾 Saving next occurrence task', {
-                taskId: nextOccurrenceTask.id,
-                scheduledDate: nextOccurrenceTask.scheduledDate,
-              });
               await api.saveTask(validWorkspaceId, taskToSave);
             }
           } else {
@@ -1982,21 +1978,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           }
         } else if (!isRecurringTask || hasScheduledDateUpdate) {
           // Save non-recurring tasks, or recurring tasks when scheduledDate is being updated
-          console.log('💾 Saving task update', {
-            taskId: taskToSave.id,
-            isRecurring: isRecurringTask,
-            hasScheduledDateUpdate,
-            scheduledDate: taskToSave.scheduledDate,
-            updates: Object.keys(updates),
-          });
           await api.saveTask(validWorkspaceId, taskToSave);
         } else {
           // Recurring task update without scheduledDate change and not creating next occurrence
           // This might be a status change or other update - still save it
-          console.log('💾 Saving recurring task update (non-scheduledDate change)', {
-            taskId: taskToSave.id,
-            updates: Object.keys(updates),
-          });
           await api.saveTask(validWorkspaceId, taskToSave);
         }
         
