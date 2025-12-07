@@ -8,6 +8,7 @@ import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hou
 import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { isDateInRecurrence } from '../lib/recurrence';
 import {
   MAX_HOURS_PER_DAY,
   MIN_HOURS_PER_DAY,
@@ -533,35 +534,55 @@ export function useAIScheduler() {
     // This ensures we don't double-count tasks that are being rescheduled
     const tasksBeingRescheduled = tasksToSchedule ? new Set(tasksToSchedule.map(t => t.id)) : new Set();
     
+    // IMPORTANT: Use isDateInRecurrence to properly include both recurring and non-recurring tasks
+    // This ensures recurring tasks are included for all days they occur on, not just their base scheduledDate
     tasks.forEach(task => {
-      if (task.scheduledDate && task.status !== 'done') {
-        // Skip tasks that are being rescheduled (they'll be rescheduled)
-        if (tasksBeingRescheduled.has(task.id)) {
-          return; // Skip this task, it's being rescheduled
-        }
-        
-        const taskDate = new Date(task.scheduledDate);
-        const dateKey = getDateKey(taskDate);
+      if (task.status === 'done') {
+        return; // Skip done tasks
+      }
+      
+      // Skip tasks that are being rescheduled (they'll be rescheduled)
+      if (tasksBeingRescheduled.has(task.id)) {
+        return; // Skip this task, it's being rescheduled
+      }
+      
+      // For tasks without scheduledDate, skip (they'll be scheduled)
+      if (!task.scheduledDate) {
+        return;
+      }
+      
+      // Check all days in the date range to see if this task applies
+      // This ensures recurring tasks are included for all days they occur on
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateKey = getDateKey(currentDate);
         
         // If we're rescheduling within a date range, clear hours for those days
         // This ensures we start fresh for the rescheduled days
-        if (dateRange && taskDate >= dateRange.startDate && taskDate <= dateRange.endDate) {
-          // This task is in the reschedule range but not being rescheduled
-          // Keep it in the tracking (it's an existing task outside the reschedule)
-          // Actually, if it's in the range, we should exclude it too
-          return; // Skip tasks in the reschedule range
+        if (dateRange && currentDate >= dateRange.startDate && currentDate <= dateRange.endDate) {
+          // Skip tasks in the reschedule range
+          currentDate.setDate(currentDate.getDate() + 1);
+          continue;
         }
         
-        const taskHours = getTaskHours(task);
-        const currentHours = dailyHours.get(dateKey) || 0;
-        dailyHours.set(dateKey, currentHours + taskHours);
+        // Check if this task applies to this date (works for both recurring and non-recurring)
+        // Use isDateInRecurrence which handles both cases correctly
+        if (isDateInRecurrence(task, currentDate)) {
+          const taskHours = getTaskHours(task);
+          const currentHours = dailyHours.get(dateKey) || 0;
+          dailyHours.set(dateKey, currentHours + taskHours);
+          
+          // Track existing tasks per day
+          // This ensures both recurring and non-recurring tasks are included
+          const tasksForDay = dailyTasks.get(dateKey) || [];
+          // Only add if not already in the list (avoid duplicates for recurring tasks)
+          if (!tasksForDay.find(t => t.id === task.id)) {
+            tasksForDay.push(task);
+            dailyTasks.set(dateKey, tasksForDay);
+          }
+        }
         
-        // Track daily hours for pre-population
-        
-        // Track existing tasks per day
-        const tasksForDay = dailyTasks.get(dateKey) || [];
-        tasksForDay.push(task);
-        dailyTasks.set(dateKey, tasksForDay);
+        currentDate.setDate(currentDate.getDate() + 1);
       }
     });
 
@@ -1148,13 +1169,17 @@ export function useAIScheduler() {
         
         // Count tasks in the same category that are already scheduled (including tasks scheduled earlier in this batch)
         // This ensures tasks scheduled in the same batch get different time slots
+        // IMPORTANT: Count tasks that have a scheduledDate set (from plan or existing tasks)
+        // This ensures recurring tasks being scheduled in the same batch see each other
         const category = getTaskCategory(task);
         const categoryTasksCount = allTasksForDay.filter(t => {
           const cat = getTaskCategory(t);
-          return cat === category;
+          // Only count tasks that have a scheduledDate (either from existing tasks or from plan)
+          return cat === category && t.scheduledDate;
         }).length;
         
         // Use the category task count for time slot calculation
+        // This ensures recurring tasks scheduled in the same batch get different slots
         let timeSlot = categoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
         
         // Use consistent duration calculation for all scheduling operations
@@ -1204,12 +1229,14 @@ export function useAIScheduler() {
           
           // Find the actual available slot using findNextAvailableSlot
           // This ensures we find open slots, respect current time for today, and use category hours
+          // IMPORTANT: Pass allTasksForDay (which includes tasks from current plan) to findNextAvailableSlot
+          // so it can see tasks being scheduled in the same batch and avoid conflicts
           // taskDurationMinutes already calculated above for consistency
           const availableSlot = findNextAvailableSlot(
             task.id,
             proposedTime,
             taskDurationMinutes,
-            tasks,
+            allTasksForDay, // Use allTasksForDay instead of tasks to include tasks from current plan
             {
               ensureAfterCurrentTime: isToday,
               categoryHours: categoryHours ? {
@@ -1589,11 +1616,13 @@ export function useAIScheduler() {
           }
           
           // Use findNextAvailableSlot to find actual open slot with category hours
+          // IMPORTANT: Pass allTasksForDay (which includes tasks from current plan) to findNextAvailableSlot
+          // so it can see tasks being scheduled in the same batch and avoid conflicts
           const finalSlot = findNextAvailableSlot(
             task.id,
             proposedTime,
             taskDurationMinutes,
-            tasks,
+            allTasksForDay, // Use allTasksForDay instead of tasks to include tasks from current plan
             {
               ensureAfterCurrentTime: isToday,
               categoryHours: effectiveCategoryHours ? {
