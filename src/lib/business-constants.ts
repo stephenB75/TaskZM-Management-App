@@ -37,6 +37,16 @@ export const DEFAULT_WEEKEND_PROJECTS_END = '18:00';
 export const DEFAULT_NOTIFICATION_REMINDER_TIME = 60; // Minutes before due date
 export const DEFAULT_NOTIFICATION_CHECK_INTERVAL = 15; // Minutes between checks
 
+// Time Conversion Constants (must be defined first as they're used by other constants)
+export const MINUTES_PER_HOUR = 60;
+export const SECONDS_PER_MINUTE = 60;
+export const MILLISECONDS_PER_SECOND = 1000;
+export const MILLISECONDS_PER_MINUTE = 60 * 1000; // 60 seconds * 1000 ms
+export const MILLISECONDS_PER_HOUR = 60 * 60 * 1000; // 60 minutes * 60 seconds * 1000 ms
+export const HOURS_PER_DAY = 24;
+export const MINUTES_PER_DAY = 24 * 60; // 24 hours * 60 minutes
+export const MILLISECONDS_PER_DAY = HOURS_PER_DAY * MILLISECONDS_PER_HOUR; // 24 hours * 60 minutes * 60 seconds * 1000 ms
+
 // Percentage and Calculation Constants
 export const PERCENTAGE_MULTIPLIER = 100; // For converting decimals to percentages
 
@@ -52,16 +62,6 @@ export const TASK_DURATION_LONG_THRESHOLD = 240; // Minutes - tasks under this a
 export const AI_SCHEDULER_TIME_SLOT_INTERVAL = 15; // Minutes - time slots are 15 minutes apart
 export const AI_SCHEDULER_MIN_START_HOUR = 6; // Earliest hour to schedule tasks (6 AM)
 export const AI_SCHEDULER_MAX_END_HOUR = 23; // Latest hour to schedule tasks (11 PM)
-
-// Time Conversion Constants
-export const MINUTES_PER_HOUR = 60;
-export const SECONDS_PER_MINUTE = 60;
-export const MILLISECONDS_PER_SECOND = 1000;
-export const MILLISECONDS_PER_MINUTE = 60 * 1000; // 60 seconds * 1000 ms
-export const MILLISECONDS_PER_HOUR = 60 * 60 * 1000; // 60 minutes * 60 seconds * 1000 ms
-export const HOURS_PER_DAY = 24;
-export const MINUTES_PER_DAY = 24 * 60; // 24 hours * 60 minutes
-export const MILLISECONDS_PER_DAY = HOURS_PER_DAY * MILLISECONDS_PER_HOUR; // 24 hours * 60 minutes * 60 seconds * 1000 ms
 
 // Date/Time Constants
 export const END_OF_DAY_HOUR = 23;
