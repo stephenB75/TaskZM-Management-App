@@ -1381,17 +1381,42 @@ export function useAIScheduler() {
         // Try to get category-based time slot first
         // For rescheduling with shuffle, distribute tasks more evenly across category hours
         const dateKey = getDateKey(scheduleDate);
-        // IMPORTANT: Filter existing tasks to only include those with valid scheduled times
-        // This ensures we see all existing tasks that are actually scheduled, not just tasks at midnight
+        // CRITICAL FIX: Filter existing tasks to include recurring tasks for ALL days they occur on
+        // The issue: dailyTasks includes recurring tasks for all days via isDateInRecurrence,
+        // but we were filtering by exact scheduledDate match, which excluded recurring tasks on other days
+        // Solution: For recurring tasks, check if they apply to this date using isDateInRecurrence
+        // For non-recurring tasks, check if scheduledDate matches and has a valid time
         const existingTasksForDay = (dailyTasks.get(dateKey) || []).filter(t => {
-          if (!t.scheduledDate) return false;
-          // Parse and verify the scheduled time is valid
-          const scheduledDate = typeof t.scheduledDate === 'string' 
-            ? new Date(t.scheduledDate)
-            : new Date(t.scheduledDate);
-          // Only include tasks with valid times (not just midnight/00:00:00)
-          // This ensures recurring tasks see all existing scheduled tasks
-          return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+          // Check if this is a recurring task
+          const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+          
+          if (isRecurring) {
+            // For recurring tasks, check if they apply to this date using isDateInRecurrence
+            // This ensures recurring tasks are visible on ALL days they occur, not just their base scheduledDate
+            if (!isDateInRecurrence(t, scheduleDate)) {
+              return false;
+            }
+            // Also verify the task has a scheduledDate (base date for recurrence)
+            if (!t.scheduledDate) return false;
+            // Parse the base scheduledDate to get the time
+            const baseScheduledDate = typeof t.scheduledDate === 'string' 
+              ? new Date(t.scheduledDate)
+              : new Date(t.scheduledDate);
+            // For recurring tasks, use the time from the base scheduledDate
+            // Only include if it has a valid time (not just midnight/00:00:00)
+            return !isNaN(baseScheduledDate.getTime()) && (baseScheduledDate.getHours() !== 0 || baseScheduledDate.getMinutes() !== 0);
+          } else {
+            // For non-recurring tasks, check if scheduledDate matches this date and has a valid time
+            if (!t.scheduledDate) return false;
+            const scheduledDate = typeof t.scheduledDate === 'string' 
+              ? new Date(t.scheduledDate)
+              : new Date(t.scheduledDate);
+            // Check if the scheduled date matches the target date
+            const scheduledDateKey = getDateKey(scheduledDate);
+            if (scheduledDateKey !== dateKey) return false;
+            // Only include tasks with valid times (not just midnight/00:00:00)
+            return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+          }
         });
         
         // Get tasks from the current plan that are scheduled for the same day
