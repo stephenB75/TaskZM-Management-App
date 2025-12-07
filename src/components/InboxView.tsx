@@ -14,6 +14,7 @@ import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
+import { PRIORITY_WEIGHTS } from "../lib/ai-config";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -118,14 +119,9 @@ export function InboxView() {
 
   // Sort by priority
   const sortedTasks = [...filteredTasks].sort((a, b) => {
-    const priorityWeight = {
-      urgent: 4,
-      high: 3,
-      medium: 2,
-      low: 1,
-    };
-    const aPriority = priorityWeight[a.priority] || 1;
-    const bPriority = priorityWeight[b.priority] || 1;
+    // Use PRIORITY_WEIGHTS from ai-config.ts instead of hardcoded values
+    const aPriority = PRIORITY_WEIGHTS[a.priority] || 1;
+    const bPriority = PRIORITY_WEIGHTS[b.priority] || 1;
 
     if (aPriority !== bPriority) return bPriority - aPriority;
 

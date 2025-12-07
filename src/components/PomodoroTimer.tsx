@@ -13,6 +13,12 @@ import { Progress } from "./ui/progress";
 import { cn } from "../lib/utils";
 import { usePomodoro } from "../contexts/PomodoroContext";
 import { useTheme } from "../contexts/ThemeContext";
+import {
+  POMODORO_WORK_DURATION,
+  POMODORO_SHORT_BREAK_DURATION,
+  POMODORO_LONG_BREAK_DURATION,
+  SECONDS_PER_MINUTE,
+} from "../lib/business-constants";
 
 type TimerMode = "work" | "shortBreak" | "longBreak";
 
@@ -27,9 +33,9 @@ interface PomodoroTimerProps {
 }
 
 const DURATIONS = {
-  work: 25 * 60, // 25 minutes
-  shortBreak: 5 * 60, // 5 minutes
-  longBreak: 15 * 60, // 15 minutes
+  work: POMODORO_WORK_DURATION, // 25 minutes
+  shortBreak: POMODORO_SHORT_BREAK_DURATION, // 5 minutes
+  longBreak: POMODORO_LONG_BREAK_DURATION, // 15 minutes
 };
 
 export function PomodoroTimer({
@@ -81,8 +87,8 @@ export function PomodoroTimer({
   };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const mins = Math.floor(seconds / SECONDS_PER_MINUTE);
+    const secs = seconds % SECONDS_PER_MINUTE;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 

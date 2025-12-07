@@ -42,7 +42,15 @@ import {
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { TIME_PERIODS } from "../lib/business-constants";
+import {
+  TIME_PERIODS,
+  MINUTES_PER_HOUR,
+  HOURS_PER_DAY,
+  MILLISECONDS_PER_MINUTE,
+  MILLISECONDS_PER_HOUR,
+  MILLISECONDS_PER_DAY,
+  PERCENTAGE_MULTIPLIER,
+} from "../lib/business-constants";
 import {
   COLOR_PRIMARY,
   COLOR_SUCCESS,
@@ -100,8 +108,8 @@ function CustomTooltip({ active, payload, label }: any) {
         {payload.map((entry: any, index: number) => {
           const formatValue = (value: number) => {
             if (entry.dataKey?.includes('Time') || entry.dataKey?.includes('minutes') || entry.dataKey?.includes('hours')) {
-              const hours = Math.floor(value / 60);
-              const minutes = Math.round(value % 60);
+              const hours = Math.floor(value / MINUTES_PER_HOUR);
+              const minutes = Math.round(value % MINUTES_PER_HOUR);
               return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
             }
             return value.toLocaleString();
@@ -200,7 +208,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   // Calculate date range limit
   const dateRangeLimit = features?.analyticsDaysLimit;
   const maxDate = dateRangeLimit 
-    ? new Date(Date.now() - (dateRangeLimit - 1) * 24 * 60 * 60 * 1000) // dateRangeLimit days ago
+    ? new Date(Date.now() - (dateRangeLimit - 1) * MILLISECONDS_PER_DAY) // dateRangeLimit days ago
     : null; // null means unlimited
 
   // Compute analytics FIRST before using it in useEffect hooks
@@ -296,7 +304,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       }, 0);
       return {
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        hours: (timeTracked / 60).toFixed(1),
+        hours: (timeTracked / MINUTES_PER_HOUR).toFixed(1),
         minutes: timeTracked,
       };
     });
@@ -329,7 +337,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     const completedTasks = filteredTasks.filter((t) => t?.status === "done").length;
     const inProgressTasks = filteredTasks.filter((t) => t?.status === "in-progress").length;
     const todoTasks = filteredTasks.filter((t) => t?.status === "todo").length;
-    const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+    const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * PERCENTAGE_MULTIPLIER : 0;
 
     // Status distribution for pie chart - ensure all values are valid numbers
     const statusDistribution = [
@@ -359,14 +367,14 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       }));
 
     // Time patterns (using filtered tasks)
-    const hourCounts = new Array(24).fill(0);
+    const hourCounts = new Array(HOURS_PER_DAY).fill(0);
     filteredTasks.filter((t) => t?.completedAt).forEach((task) => {
       try {
         if (task?.completedAt) {
           const completedDate = new Date(task.completedAt);
           if (!isNaN(completedDate.getTime())) {
             const hour = completedDate.getHours();
-            if (hour >= 0 && hour < 24) hourCounts[hour]++;
+            if (hour >= 0 && hour < HOURS_PER_DAY) hourCounts[hour]++;
           }
         }
       } catch {}
@@ -460,7 +468,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               const totalProjectTasks = projectTasks.length;
               const completedProjectTasks = projectTasks.filter((t) => t?.status === "done").length;
               const projectCompletionRate = totalProjectTasks > 0
-                ? (completedProjectTasks / totalProjectTasks) * 100
+                ? (completedProjectTasks / totalProjectTasks) * PERCENTAGE_MULTIPLIER
                 : 0;
               return {
                 name: project.name || 'Unnamed Project',
@@ -501,7 +509,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           } catch {
             return acc;
           }
-        }, 0) / completedWithDates.length / (1000 * 60 * 60 * 24)
+        }, 0) / completedWithDates.length / MILLISECONDS_PER_DAY
       : 0;
 
     return {
@@ -675,15 +683,15 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               />
               <MetricCard
                 title="Time Tracked"
-                value={`${Math.floor(analytics.totalTimeTracked / 60)}h`}
-                subtitle={`${Math.round(analytics.totalTimeTracked % 60)}m total`}
+                value={`${Math.floor(analytics.totalTimeTracked / MINUTES_PER_HOUR)}h`}
+                subtitle={`${Math.round(analytics.totalTimeTracked % MINUTES_PER_HOUR)}m total`}
                 icon={Timer}
                 color={COLOR_INFO}
               />
               <MetricCard
                 title="This Week"
-                value={`${Math.floor(analytics.weeklyTimeTracked / 60)}h`}
-                subtitle={`${Math.round(analytics.weeklyTimeTracked % 60)}m`}
+                value={`${Math.floor(analytics.weeklyTimeTracked / MINUTES_PER_HOUR)}h`}
+                subtitle={`${Math.round(analytics.weeklyTimeTracked % MINUTES_PER_HOUR)}m`}
                 icon={Calendar}
                 color={COLOR_WARNING}
               />

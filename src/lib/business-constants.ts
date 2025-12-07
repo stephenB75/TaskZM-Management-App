@@ -55,6 +55,7 @@ export const MILLISECONDS_PER_MINUTE = 60 * 1000; // 60 seconds * 1000 ms
 export const MILLISECONDS_PER_HOUR = 60 * 60 * 1000; // 60 minutes * 60 seconds * 1000 ms
 export const HOURS_PER_DAY = 24;
 export const MINUTES_PER_DAY = 24 * 60; // 24 hours * 60 minutes
+export const MILLISECONDS_PER_DAY = HOURS_PER_DAY * MILLISECONDS_PER_HOUR; // 24 hours * 60 minutes * 60 seconds * 1000 ms
 
 // Time Period Definitions (for analytics)
 export const TIME_PERIODS = {
