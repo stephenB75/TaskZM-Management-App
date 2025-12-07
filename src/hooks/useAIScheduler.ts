@@ -1797,56 +1797,54 @@ export function useAIScheduler() {
             scheduleDate.setHours(selectedHour, selectedMinute, 0, 0);
           }
           
-          // Verify no double booking - check for time overlaps with existing tasks
-          const newTaskStart = scheduleDate.getTime();
-          const newTaskDuration = taskDurationMinutes;
-          const newTaskEnd = newTaskStart + (newTaskDuration * MILLISECONDS_PER_MINUTE);
-          
-          let hasConflict = false;
-          for (const existingTask of existingTasksForDay) {
-            if (!existingTask.scheduledDate) continue;
-            
-            const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-            const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE; // Use AI estimator for existing tasks
-            const existingTaskEnd = existingTaskStart + existingTaskDuration;
-            
-            // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
-            if (newTaskStart < existingTaskEnd && newTaskEnd > existingTaskStart) {
-              hasConflict = true;
-              break;
+          // CRITICAL: Final conflict check using findNextAvailableSlot to ensure no conflicts
+          // This is a safeguard to catch any conflicts that might have been missed
+          // IMPORTANT: Use allTasksForDay (includes tasks from current plan) not just existingTasksForDay
+          const finalConflictCheck = findNextAvailableSlot(
+            task.id,
+            scheduleDate,
+            taskDurationMinutes,
+            validTasksForDay, // Use validated tasks which includes tasks from current plan
+            {
+              ensureAfterCurrentTime: false, // Already handled by earlier logic
+              categoryHours: effectiveCategoryHours ? {
+                start: effectiveCategoryHours.start,
+                end: effectiveCategoryHours.end,
+              } : undefined,
             }
-          }
+          );
           
-          // If conflict found, find next available slot after all existing tasks
-          if (hasConflict) {
-            if (existingTasksForDay.length > 0) {
-              // Find the latest task end time
-              let latestEndTime = 0;
-              for (const existingTask of existingTasksForDay) {
-                if (!existingTask.scheduledDate) continue;
-                const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
-                const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE; // Use AI estimator for existing tasks
-                const existingTaskEnd = existingTaskStart + existingTaskDuration;
-                if (existingTaskEnd > latestEndTime) {
-                  latestEndTime = existingTaskEnd;
-                }
+          // ALWAYS use the conflict-free slot from findNextAvailableSlot
+          // This ensures we never schedule at the same time as existing tasks
+          if (finalConflictCheck.getHours() < HOURS_PER_DAY) {
+            const originalTime = scheduleDate.getTime();
+            const conflictFreeTime = finalConflictCheck.getTime();
+            const timeDifference = Math.abs(conflictFreeTime - originalTime);
+            
+            // If the time was adjusted, log it (especially for recurring tasks)
+            if (timeDifference > MILLISECONDS_PER_MINUTE) {
+              if (isRecurringTask && import.meta.env.DEV) {
+                logger.debug('Recurring task final conflict check adjusted time', {
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  originalTime: new Date(originalTime).toISOString(),
+                  conflictFreeTime: new Date(conflictFreeTime).toISOString(),
+                  timeDifferenceMinutes: Math.round(timeDifference / MILLISECONDS_PER_MINUTE),
+                });
               }
-              
-              // Schedule after the latest task
-              const conflictFreeDate = new Date(latestEndTime);
-              scheduleDate.setHours(conflictFreeDate.getHours(), conflictFreeDate.getMinutes(), 0, 0);
-              
+              scheduleDate.setTime(conflictFreeTime);
               // Round to nearest 15 minutes
               const roundedMinutes = Math.round(scheduleDate.getMinutes() / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
               scheduleDate.setMinutes(roundedMinutes);
-              
-              // Ensure we don't exceed work hours
-              if (scheduleDate.getHours() >= workEndHour) {
-                // Move to next day
-                scheduleDate.setDate(scheduleDate.getDate() + 1);
-                scheduleDate.setHours(workStartHour, 0, 0, 0);
-              }
             }
+          } else {
+            // This should never happen if findNextAvailableSlot worked correctly earlier
+            logger.error('CRITICAL: Final conflict check found no slot', {
+              taskId: task.id,
+              taskTitle: task.title,
+              isRecurringTask,
+              scheduleDate: scheduleDate.toISOString(),
+            });
           }
           
           // Update reason with time information
@@ -1857,6 +1855,44 @@ export function useAIScheduler() {
               hour12: true 
             });
             reason = `${reason} - scheduled at ${timeStr}`;
+          }
+        }
+        
+        // CRITICAL: Final safeguard - ALWAYS run findNextAvailableSlot one more time before adding to plan
+        // This ensures we catch any conflicts that might have been missed, especially for recurring tasks
+        // Use allTasksForDay which includes tasks from current plan
+        const finalSafeguardSlot = findNextAvailableSlot(
+          task.id,
+          scheduleDate,
+          taskDurationMinutes,
+          validTasksForDay.length > 0 ? validTasksForDay : allTasksForDay.filter(t => {
+            if (!t.scheduledDate) return false;
+            const scheduledDate = typeof t.scheduledDate === 'string' 
+              ? new Date(t.scheduledDate)
+              : new Date(t.scheduledDate);
+            return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+          }),
+          {
+            ensureAfterCurrentTime: false,
+            categoryHours: undefined, // Remove constraints for final check
+          }
+        );
+        
+        // ALWAYS use the final safeguard slot if it's valid
+        if (finalSafeguardSlot.getHours() < HOURS_PER_DAY) {
+          const originalTime = scheduleDate.getTime();
+          const safeguardTime = finalSafeguardSlot.getTime();
+          if (Math.abs(safeguardTime - originalTime) > MILLISECONDS_PER_MINUTE) {
+            // Time was adjusted - this means there was a conflict
+            if (isRecurringTask && import.meta.env.DEV) {
+              logger.debug('Recurring task final safeguard adjusted time', {
+                taskId: task.id,
+                taskTitle: task.title,
+                originalTime: new Date(originalTime).toISOString(),
+                safeguardTime: new Date(safeguardTime).toISOString(),
+              });
+            }
+            scheduleDate.setTime(safeguardTime);
           }
         }
         
