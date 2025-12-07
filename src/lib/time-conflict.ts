@@ -82,9 +82,13 @@ export function findNextAvailableSlot(
   targetDate.setHours(0, 0, 0, 0);
 
   // Get all tasks scheduled for the target date (excluding the current task)
+  // CRITICAL: Include ALL tasks regardless of category to detect conflicts across categories
+  // This ensures recurring tasks see regular tasks and vice versa
   const dateTasks = allTasks.filter((task) => {
     if (taskId && task.id === taskId) return false;
     if (task.status === 'done') return false;
+    if (!task.scheduledDate) return false; // Must have a scheduled date
+    // Check if this task applies to the target date (works for both recurring and non-recurring)
     return isDateInRecurrence(task, targetDate);
   });
 

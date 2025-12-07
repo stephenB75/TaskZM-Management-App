@@ -1151,7 +1151,18 @@ export function useAIScheduler() {
         // Try to get category-based time slot first
         // For rescheduling with shuffle, distribute tasks more evenly across category hours
         const dateKey = getDateKey(scheduleDate);
-        const existingTasksForDay = dailyTasks.get(dateKey) || [];
+        // IMPORTANT: Filter existing tasks to only include those with valid scheduled times
+        // This ensures we see all existing tasks that are actually scheduled, not just tasks at midnight
+        const existingTasksForDay = (dailyTasks.get(dateKey) || []).filter(t => {
+          if (!t.scheduledDate) return false;
+          // Parse and verify the scheduled time is valid
+          const scheduledDate = typeof t.scheduledDate === 'string' 
+            ? new Date(t.scheduledDate)
+            : new Date(t.scheduledDate);
+          // Only include tasks with valid times (not just midnight/00:00:00)
+          // This ensures recurring tasks see all existing scheduled tasks
+          return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+        });
         
         // Get tasks from the current plan that are scheduled for the same day
         // This ensures tasks scheduled in the same batch see each other for time slot distribution
@@ -1260,6 +1271,7 @@ export function useAIScheduler() {
           
           // CRITICAL: Verify that tasks from plan have valid scheduled times before passing to findNextAvailableSlot
           // This ensures conflict detection works correctly
+          // IMPORTANT: Include ALL tasks for the day (not just same category) to detect conflicts across categories
           const validTasksForDay = allTasksForDay.filter(t => {
             if (!t.scheduledDate) return false;
             // Parse and verify the scheduled time is valid
@@ -1267,8 +1279,26 @@ export function useAIScheduler() {
               ? new Date(t.scheduledDate)
               : new Date(t.scheduledDate);
             // Only include tasks with valid times (not just midnight/00:00:00)
+            // This ensures we see all scheduled tasks regardless of category
             return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
           });
+          
+          // Debug: Log tasks being checked for conflicts (especially for recurring tasks)
+          if (import.meta.env.DEV && isRecurringTask) {
+            logger.debug('Recurring task conflict check', {
+              taskId: task.id,
+              taskTitle: task.title,
+              proposedTime: proposedTime.toISOString(),
+              validTasksForDayCount: validTasksForDay.length,
+              validTasks: validTasksForDay.map(t => ({
+                id: t.id,
+                title: t.title,
+                category: getTaskCategory(t),
+                scheduledDate: t.scheduledDate,
+                scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+              })),
+            });
+          }
           
           const availableSlot = findNextAvailableSlot(
             task.id,
@@ -1286,13 +1316,26 @@ export function useAIScheduler() {
           
           // ALWAYS use findNextAvailableSlot result, even if it's different from proposed time
           // This ensures we never schedule at the same time as existing tasks
+          // CRITICAL: For recurring tasks, we MUST use the conflict-free slot, never the proposed time
           if (availableSlot.getHours() < HOURS_PER_DAY) {
             scheduleDate.setTime(availableSlot.getTime());
             // Check if the slot was moved from the proposed time (indicates conflict was detected)
             const proposedTimeMs = proposedTime.getTime();
             const availableSlotMs = availableSlot.getTime();
-            if (Math.abs(availableSlotMs - proposedTimeMs) > MILLISECONDS_PER_MINUTE) { // More than 1 minute difference
+            const timeDifference = Math.abs(availableSlotMs - proposedTimeMs);
+            
+            if (timeDifference > MILLISECONDS_PER_MINUTE) { // More than 1 minute difference
               reason = `${categoryTime.reason} - moved to available slot (conflict avoided)`;
+              // Log for recurring tasks to help debug
+              if (isRecurringTask && import.meta.env.DEV) {
+                logger.debug('Recurring task time adjusted due to conflict', {
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  proposedTime: proposedTime.toISOString(),
+                  finalTime: availableSlot.toISOString(),
+                  timeDifferenceMinutes: Math.round(timeDifference / MILLISECONDS_PER_MINUTE),
+                });
+              }
             } else {
               reason = `${categoryTime.reason} - placed in available slot`;
             }
@@ -1301,12 +1344,43 @@ export function useAIScheduler() {
             logger.warn('No available slot found for task', {
               taskId: task.id,
               taskTitle: task.title,
+              isRecurringTask,
               proposedTime: proposedTime.toISOString(),
               categoryTime: `${categoryTime.hours}:${categoryTime.minutes}`,
+              validTasksForDayCount: validTasksForDay.length,
             });
-            // Fall back to proposed time if no slot found (shouldn't happen, but handle gracefully)
-            scheduleDate.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
-            reason = categoryTime.reason;
+            // CRITICAL: For recurring tasks, we should NOT fall back to proposed time if it conflicts
+            // Instead, try to find ANY available slot by removing category hour constraints
+            if (isRecurringTask) {
+              // Try again without category hours constraint to find any available slot
+              const fallbackSlot = findNextAvailableSlot(
+                task.id,
+                proposedTime,
+                taskDurationMinutes,
+                validTasksForDay,
+                {
+                  ensureAfterCurrentTime: isToday,
+                  categoryHours: undefined, // Remove category hours constraint
+                }
+              );
+              if (fallbackSlot.getHours() < HOURS_PER_DAY) {
+                scheduleDate.setTime(fallbackSlot.getTime());
+                reason = `${categoryTime.reason} - moved to available slot (category hours constraint removed)`;
+              } else {
+                // Still no slot - this is a critical error
+                logger.error('CRITICAL: No available slot found for recurring task even without category hours', {
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  proposedTime: proposedTime.toISOString(),
+                });
+                scheduleDate.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
+                reason = categoryTime.reason;
+              }
+            } else {
+              // Fall back to proposed time if no slot found (shouldn't happen, but handle gracefully)
+              scheduleDate.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
+              reason = categoryTime.reason;
+            }
           }
         } else {
           // Find available time slot by checking existing scheduled tasks for this day
