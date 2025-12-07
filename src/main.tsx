@@ -429,6 +429,15 @@ if (isNative) {
 
 // Safe root element access with error handling
 // Wrap entire app initialization in try-catch to prevent crashes
+// Also ensure splash screen is hidden and body gets loaded class even on error
+const ensureSplashHidden = () => {
+  const splashEl = document.getElementById('initial-splash');
+  if (splashEl) {
+    splashEl.classList.add('hidden');
+  }
+  document.body.classList.add('loaded');
+};
+
 try {
   const rootElement = document.getElementById('root');
   if (!rootElement) {
@@ -442,15 +451,22 @@ try {
         <App />
       </React.StrictMode>
     );
+    // Ensure splash is hidden after rendering
+    setTimeout(ensureSplashHidden, 100);
   } else {
     ReactDOM.createRoot(rootElement).render(
       <React.StrictMode>
         <App />
       </React.StrictMode>
     );
+    // Ensure splash is hidden after rendering
+    setTimeout(ensureSplashHidden, 100);
   }
 } catch (error) {
   console.error('Fatal error during app initialization:', error);
+  // Always hide splash and enable body scrolling even on error
+  ensureSplashHidden();
+  
   // Show a user-friendly error message
   const rootElement = document.getElementById('root') || document.body;
   rootElement.innerHTML = `
@@ -473,6 +489,7 @@ try {
 }
 
 // Additional fallback: Hide splash after React renders (web only)
+// This ensures splash is always hidden even if React fails to render
 if (!isNative) {
   // Use a longer timeout as final fallback (increased from 2000ms to 3500ms)
   setTimeout(() => {
@@ -487,4 +504,22 @@ if (!isNative) {
       }, 500);
     }
   }, 3500);
+  
+  // Aggressive fallback: Force hide splash and enable body scrolling after 5 seconds
+  // This ensures components are always visible even if something goes wrong
+  setTimeout(() => {
+    const splashEl = document.getElementById('initial-splash');
+    if (splashEl) {
+      splashEl.classList.add('hidden');
+      splashEl.style.display = 'none';
+      splashEl.style.visibility = 'hidden';
+      splashEl.style.opacity = '0';
+      splashEl.style.pointerEvents = 'none';
+      if (splashEl.parentNode) {
+        splashEl.remove();
+      }
+    }
+    document.body.classList.add('loaded');
+    document.body.style.overflow = 'auto';
+  }, 5000);
 }
