@@ -1210,6 +1210,23 @@ export function useAIScheduler() {
         }
       }
       
+      // FINAL SAFEGUARD: For recurring tasks, if we still don't have foundDay but have a first occurrence,
+      // force it to be scheduled (recurring tasks MUST have a scheduledDate to function)
+      if (!foundDay && isRecurringTask && recurringFirstOccurrence) {
+        const isWithinRange = !dateRange || (recurringFirstOccurrence >= startDate && recurringFirstOccurrence <= endDate);
+        if (isWithinRange) {
+          const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+          finalDaysToAdd = daysDiff;
+          foundDay = true;
+          reason = `Recurring task - FORCED to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]}) - safeguard`;
+          console.log('🛡️ FORCING recurring task to be scheduled (safeguard)', {
+            taskId: task.id,
+            firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+            daysToAdd: finalDaysToAdd,
+          });
+        }
+      }
+      
       if (foundDay) {
         // Update reason if we had to move to a later day (for non-recurring tasks)
         if (finalDaysToAdd > daysToAdd && !isRecurringTask) {
@@ -1228,6 +1245,7 @@ export function useAIScheduler() {
           console.log('✅ Using pre-calculated first occurrence for recurring task', {
             taskId: task.id,
             firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+            foundDay,
           });
         } else {
           // Non-recurring task: use calculated date

@@ -1952,11 +1952,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
         
         // Save next occurrence task if created, otherwise save the updated task
-        // Only save if we're actually updating the task (not just marking as done when next occurrence already exists)
-        if (nextOccurrenceTask || (!nextOccurrenceTask && !isRecurringTask)) {
-          const taskToSave = nextOccurrenceTask || updatedTask;
+        // Always save if:
+        // 1. We created a next occurrence task (recurring task marked complete)
+        // 2. We're updating a non-recurring task
+        // 3. We're updating a recurring task's scheduledDate (not marking complete)
+        const taskToSave = nextOccurrenceTask || updatedTask;
+        const hasScheduledDateUpdate = updates.scheduledDate !== undefined;
+        
+        if (nextOccurrenceTask) {
+          // We created a next occurrence - always save it
           // For recurring tasks, only update if the scheduled date actually changed
-          if (isRecurringTask && nextOccurrenceTask) {
+          if (isRecurringTask) {
             const currentScheduledDate = currentTask.scheduledDate ? new Date(currentTask.scheduledDate).toISOString().split('T')[0] : null;
             const newScheduledDate = nextOccurrenceTask.scheduledDate ? new Date(nextOccurrenceTask.scheduledDate).toISOString().split('T')[0] : null;
             if (currentScheduledDate === newScheduledDate) {
@@ -1965,13 +1971,33 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 scheduledDate: newScheduledDate 
               });
             } else {
+              console.log('💾 Saving next occurrence task', {
+                taskId: nextOccurrenceTask.id,
+                scheduledDate: nextOccurrenceTask.scheduledDate,
+              });
               await api.saveTask(validWorkspaceId, taskToSave);
             }
           } else {
             await api.saveTask(validWorkspaceId, taskToSave);
           }
+        } else if (!isRecurringTask || hasScheduledDateUpdate) {
+          // Save non-recurring tasks, or recurring tasks when scheduledDate is being updated
+          console.log('💾 Saving task update', {
+            taskId: taskToSave.id,
+            isRecurring: isRecurringTask,
+            hasScheduledDateUpdate,
+            scheduledDate: taskToSave.scheduledDate,
+            updates: Object.keys(updates),
+          });
+          await api.saveTask(validWorkspaceId, taskToSave);
         } else {
-          logger.debug('Skipping task save - next occurrence already exists and no update needed', { taskId });
+          // Recurring task update without scheduledDate change and not creating next occurrence
+          // This might be a status change or other update - still save it
+          console.log('💾 Saving recurring task update (non-scheduledDate change)', {
+            taskId: taskToSave.id,
+            updates: Object.keys(updates),
+          });
+          await api.saveTask(validWorkspaceId, taskToSave);
         }
         
         // Release lock after save completes
