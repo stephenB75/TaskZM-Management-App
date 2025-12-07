@@ -409,7 +409,11 @@ export function useAIScheduler() {
         const currentTask = sortedCategoryTasks[i];
         if (!currentTask.scheduledDate) continue;
         
-        const currentTaskStart = new Date(currentTask.scheduledDate);
+        // CRITICAL: Parse scheduledDate correctly (could be ISO string or Date object)
+        // This is especially important for tasks from the plan which are ISO strings
+        const currentTaskStart = typeof currentTask.scheduledDate === 'string'
+          ? new Date(currentTask.scheduledDate)
+          : new Date(currentTask.scheduledDate);
         const currentTaskDuration = getTaskMinutes(currentTask); // Use AI estimator for existing tasks
         const currentTaskEnd = new Date(currentTaskStart);
         currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
@@ -509,6 +513,147 @@ export function useAIScheduler() {
     const roundedFinalMinutes = Math.round(finalMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
     const adjustedFinalHours = finalHours + Math.floor(roundedFinalMinutes / MINUTES_PER_HOUR);
     const adjustedFinalMinutes = roundedFinalMinutes % MINUTES_PER_HOUR;
+    
+    // CRITICAL: Before returning, check if this time conflicts with any tasks from the plan
+    // This is a safeguard to prevent returning the same time when tasks are being scheduled in the same batch
+    // Even if sameCategoryTasks was empty or didn't find gaps, we need to check if the calculated time
+    // conflicts with tasks that are already in the plan (which might have been scheduled just before this call)
+    const calculatedTime = new Date(scheduleDate);
+    calculatedTime.setHours(adjustedFinalHours, adjustedFinalMinutes, 0, 0);
+    const calculatedTimeMs = calculatedTime.getTime();
+    const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
+    const calculatedEndMs = calculatedTimeMs + (taskDuration * MILLISECONDS_PER_MINUTE);
+    
+    // BUG FIX 1: Sort tasks by scheduled time before checking conflicts
+    // This ensures we check all conflicts and find the maximum conflict end time
+    // If tasks are not sorted, we might return a time that conflicts with earlier-checked tasks
+    // BUG FIX 2: Filter to only include tasks with valid scheduled times (not midnight)
+    // This matches the gap-finding logic which excludes midnight-time tasks
+    const sameCategoryTasksForConflictCheck = existingTasksForDay
+      .filter(t => {
+        if (!t.scheduledDate) return false;
+        const existingCat = getTaskCategory(t);
+        if (existingCat !== category) return false;
+        // CRITICAL: Only include tasks with valid scheduled times (not just midnight/00:00:00)
+        // This matches the gap-finding logic at lines 368-379 which excludes midnight-time tasks
+        // This prevents false conflicts with tasks that have dates but no actual scheduled times
+        const scheduledDate = typeof t.scheduledDate === 'string'
+          ? new Date(t.scheduledDate)
+          : new Date(t.scheduledDate);
+        const hasValidTime = !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+        return hasValidTime;
+      })
+      .map(t => {
+        const existingTaskStart = typeof t.scheduledDate === 'string'
+          ? new Date(t.scheduledDate).getTime()
+          : new Date(t.scheduledDate).getTime();
+        const existingTaskDuration = getTaskMinutes(t) * MILLISECONDS_PER_MINUTE;
+        const existingTaskEnd = existingTaskStart + existingTaskDuration;
+        return {
+          task: t,
+          start: existingTaskStart,
+          end: existingTaskEnd,
+        };
+      })
+      .sort((a, b) => a.start - b.start); // Sort by start time
+    
+    // Check for conflicts with all tasks and track the maximum conflict end time
+    let hasConflict = false;
+    let maxConflictEnd = calculatedTimeMs;
+    
+    for (const existingTaskInfo of sameCategoryTasksForConflictCheck) {
+      // Check for exact same start time or overlap
+      const sameStartTime = Math.abs(existingTaskInfo.start - calculatedTimeMs) < MILLISECONDS_PER_MINUTE;
+      const overlaps = calculatedTimeMs < existingTaskInfo.end && calculatedEndMs > existingTaskInfo.start;
+      
+      if (sameStartTime || overlaps) {
+        hasConflict = true;
+        // Track the latest end time of all conflicts (not just the first one)
+        maxConflictEnd = Math.max(maxConflictEnd, existingTaskInfo.end);
+      }
+    }
+    
+    // If conflicts found, move to after ALL conflicting tasks
+    if (hasConflict) {
+      // Move to after the latest conflict end time, plus a 1-minute buffer
+      const conflictFreeTime = new Date(maxConflictEnd + MILLISECONDS_PER_MINUTE);
+      // Round up to nearest interval
+      const conflictMinutes = conflictFreeTime.getMinutes();
+      const roundedConflictMinutes = Math.ceil(conflictMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+      if (roundedConflictMinutes >= MINUTES_PER_HOUR) {
+        conflictFreeTime.setHours(conflictFreeTime.getHours() + 1, 0, 0, 0);
+      } else {
+        conflictFreeTime.setMinutes(roundedConflictMinutes, 0, 0);
+      }
+      conflictFreeTime.setSeconds(0, 0);
+      conflictFreeTime.setMilliseconds(0);
+      
+      // BUG FIX 2: Check that the task's END time (start + duration) fits within category hours
+      // The previous check only verified the start time, which could allow tasks to exceed category end
+      const conflictFreeTimeMs = conflictFreeTime.getTime();
+      const conflictFreeEndMs = conflictFreeTimeMs + (taskDuration * MILLISECONDS_PER_MINUTE);
+      const categoryEnd = new Date(scheduleDate);
+      categoryEnd.setHours(endTime.hours, endTime.minutes, 0, 0);
+      const categoryEndMs = categoryEnd.getTime();
+      
+      // Only return the conflict-free time if the entire task (start + duration) fits within category hours
+      if (conflictFreeEndMs <= categoryEndMs) {
+        return {
+          hours: conflictFreeTime.getHours(),
+          minutes: conflictFreeTime.getMinutes(),
+          reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled after conflict (from getCategoryTimeSlot)`
+        };
+      }
+      
+      // BUG FIX 1: If conflict-free time (including duration) exceeds category end, we cannot return
+      // the original calculated time as it still conflicts. Instead, try to find a gap earlier in the day
+      // that fits both the task duration and category hours, or return null to let findNextAvailableSlot handle it
+      
+      // Try to find a gap before the conflicts that fits the task
+      // We'll check gaps between existing tasks, working backwards from the first conflict
+      for (let i = sameCategoryTasksForConflictCheck.length - 1; i >= 0; i--) {
+        const taskBeforeGap = sameCategoryTasksForConflictCheck[i];
+        const gapEnd = taskBeforeGap.start; // Gap ends where this task starts
+        
+        // Find the task before this one (or category start if this is the first task)
+        let gapStart: number;
+        if (i === 0) {
+          gapStart = earliestAllowedTime.getTime();
+        } else {
+          const prevTask = sameCategoryTasksForConflictCheck[i - 1];
+          gapStart = prevTask.end;
+        }
+        
+        // Calculate gap duration
+        const gapDuration = (gapEnd - gapStart) / MILLISECONDS_PER_MINUTE;
+        
+        // If gap is large enough and the task would fit within category hours
+        if (gapDuration >= taskDuration) {
+          const gapTime = new Date(gapStart);
+          const gapTimeMs = gapTime.getTime();
+          const gapEndMs = gapTimeMs + (taskDuration * MILLISECONDS_PER_MINUTE);
+          
+          // Ensure the gap time fits within category hours
+          if (gapEndMs <= categoryEndMs) {
+            // Round to nearest interval
+            const gapMinutes = gapTime.getMinutes();
+            const roundedGapMinutes = Math.round(gapMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+            const adjustedGapHours = gapTime.getHours() + Math.floor(roundedGapMinutes / MINUTES_PER_HOUR);
+            const adjustedGapMinutes = roundedGapMinutes % MINUTES_PER_HOUR;
+            
+            return {
+              hours: adjustedGapHours,
+              minutes: adjustedGapMinutes,
+              reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled in gap before conflict (from getCategoryTimeSlot)`
+            };
+          }
+        }
+      }
+      
+      // If no suitable gap found, return null to let findNextAvailableSlot handle it
+      // This prevents returning a conflicting time
+      return null;
+    }
     
     // Ensure we don't exceed category end time
     const categoryEndMinutes = endTime.hours * MINUTES_PER_HOUR + endTime.minutes;
@@ -1257,13 +1402,35 @@ export function useAIScheduler() {
           return cat === category;
         }).length;
         
-        // Total category tasks = existing + tasks in current plan (including the one we're about to add)
-        // This ensures each task in the batch gets a different time slot
+        // Total category tasks = existing + tasks in current plan
+        // CRITICAL: Do NOT include the current task being scheduled in the count
+        // The timeSlot should be based on tasks already scheduled, not including the current one
+        // This ensures proper distribution: Task A gets slot 0, Task B gets slot 1, etc.
         const totalCategoryTasksCount = existingCategoryTasksCount + planCategoryTasksCount;
         
         // Use the total category task count for time slot calculation
         // This ensures recurring tasks scheduled in the same batch get different slots
+        // IMPORTANT: This gives us the slot number for the NEXT task (the current one being scheduled)
         let timeSlot = totalCategoryTasksCount % DEFAULT_TIME_SLOTS; // Use category-specific slot count (DEFAULT_TIME_SLOTS slots for better distribution)
+        
+        // CRITICAL DEBUG: Log time slot calculation for recurring tasks
+        if (import.meta.env.DEV && isRecurringTask) {
+          logger.debug('Time slot calculation for recurring task', {
+            taskId: task.id,
+            taskTitle: task.title,
+            category,
+            existingCategoryTasksCount,
+            planCategoryTasksCount,
+            totalCategoryTasksCount,
+            timeSlot,
+            tasksInPlanSameDay: tasksInPlanSameDay.map(t => ({
+              id: t.id,
+              title: t.title,
+              scheduledDate: t.scheduledDate,
+              scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+            })),
+          });
+        }
         
         // Use consistent duration calculation for all scheduling operations
         const taskHours = getTaskHours(task);
