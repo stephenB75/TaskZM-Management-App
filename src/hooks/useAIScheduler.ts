@@ -1110,12 +1110,26 @@ export function useAIScheduler() {
         // For rescheduling with shuffle, distribute tasks more evenly across category hours
         const dateKey = getDateKey(scheduleDate);
         const existingTasksForDay = dailyTasks.get(dateKey) || [];
+        
+        // Count tasks in the same category that are already scheduled (including tasks scheduled earlier in this batch)
+        // This ensures tasks scheduled in the same batch get different time slots
+        const category = getTaskCategory(task);
         const categoryTasksCount = existingTasksForDay.filter(t => {
           const cat = getTaskCategory(t);
-          return cat === getTaskCategory(task);
+          return cat === category;
         }).length;
         
-        let timeSlot = categoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
+        // Also count tasks in the current plan that are scheduled for the same day and category
+        // This prevents multiple recurring tasks from getting the same time slot
+        const tasksInPlanSameDayCategory = plan.filter(p => {
+          const pDateKey = getDateKey(p.scheduledDate);
+          const pCategory = getTaskCategory(p.task);
+          return pDateKey === dateKey && pCategory === category;
+        }).length;
+        
+        // Use the total count (existing + in current plan) for time slot calculation
+        const totalCategoryTasksCount = categoryTasksCount + tasksInPlanSameDayCategory;
+        let timeSlot = totalCategoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
         // Use consistent duration calculation for all scheduling operations
         const taskHours = getTaskHours(task);
         const taskDurationMinutes = Math.round(taskHours * 60); // Convert hours to minutes
