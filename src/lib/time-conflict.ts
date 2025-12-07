@@ -116,15 +116,32 @@ export function findNextAvailableSlot(
     const taskDate = new Date(taskScheduledDate);
     taskDate.setHours(0, 0, 0, 0);
     
-    // Check if this task applies to the target date (works for both recurring and non-recurring)
-    // For non-recurring tasks, check if the scheduled date matches
-    // For recurring tasks, use isDateInRecurrence
+    // CRITICAL FIX: For conflict detection, we ALWAYS check if the scheduled date matches the target date
+    // This works for both recurring and non-recurring tasks because:
+    // - Non-recurring tasks: scheduledDate is the exact date they occur
+    // - Recurring tasks in the plan: scheduledDate is set to a specific occurrence date
+    // - Existing recurring tasks: We still check scheduledDate first, then fall back to recurrence pattern
+    // 
+    // The key insight: If a task has a scheduledDate that matches the target date, it applies to that date
+    // regardless of whether it's recurring or not. For recurring tasks that haven't been scheduled yet,
+    // we would use isDateInRecurrence, but tasks passed to findNextAvailableSlot should already have
+    // a scheduledDate set (either from the plan or from existing scheduled tasks).
+    const scheduledDateMatches = taskDate.getTime() === targetDate.getTime();
+    
+    // If scheduled date matches, include it (this covers both recurring and non-recurring tasks with scheduled dates)
+    if (scheduledDateMatches) {
+      return true;
+    }
+    
+    // If scheduled date doesn't match but task is recurring, check if target date matches recurrence pattern
+    // This handles the case where an existing recurring task might apply to the target date via its pattern
+    // even if its scheduledDate is different (though this should be rare in practice)
     if (task.recurrence && task.recurrence.type !== 'none') {
       return isDateInRecurrence(task, targetDate);
-    } else {
-      // Non-recurring task - check if scheduled date matches target date
-      return taskDate.getTime() === targetDate.getTime();
     }
+    
+    // Non-recurring task with different scheduled date - doesn't apply to target date
+    return false;
   });
   
   // CRITICAL DEBUG: Log what tasks were found
@@ -269,16 +286,25 @@ export function findNextAvailableSlot(
     let maxConflictEnd = candidateStart; // Track the latest end time of all conflicts
     
     for (const existing of sortedTasks) {
-      // Check for overlap: candidate overlaps if it starts before existing ends AND ends after existing starts
-      // Also check for exact same start time (which is also a conflict)
+      // CRITICAL: Check for conflicts with multiple conditions to catch all edge cases
+      // 1. Overlap: candidate starts before existing ends AND ends after existing starts
       const overlaps = candidateStart < existing.end && candidateEnd > existing.start;
+      
+      // 2. Exact same start time (most common case for duplicate scheduling)
       const sameStartTime = candidateStart === existing.start;
       
-      // CRITICAL: Also check if candidate starts exactly at existing start (even if durations don't overlap)
-      // This ensures we never schedule two tasks at the exact same time
-      const exactSameTime = candidateStart === existing.start;
+      // 3. Candidate starts slightly before existing but still overlaps
+      const startsBeforeAndOverlaps = candidateStart < existing.start && candidateEnd > existing.start;
       
-      if (overlaps || sameStartTime || exactSameTime) {
+      // 4. Candidate starts at or very close to existing start (within 1 minute tolerance)
+      // This catches rounding issues or time precision problems
+      const timeDifference = Math.abs(candidateStart - existing.start);
+      const withinOneMinute = timeDifference < MILLISECONDS_PER_MINUTE;
+      
+      // 5. Candidate ends at or very close to existing start (within 1 minute)
+      const endsAtExistingStart = Math.abs(candidateEnd - existing.start) < MILLISECONDS_PER_MINUTE;
+      
+      if (overlaps || sameStartTime || startsBeforeAndOverlaps || withinOneMinute || endsAtExistingStart) {
         hasConflict = true;
         // Track the latest end time of all conflicts to move past all overlapping tasks
         maxConflictEnd = Math.max(maxConflictEnd, existing.end);
@@ -294,7 +320,10 @@ export function findNextAvailableSlot(
             existingEnd: new Date(existing.end).toISOString(),
             overlaps,
             sameStartTime,
-            exactSameTime,
+            startsBeforeAndOverlaps,
+            withinOneMinute,
+            endsAtExistingStart,
+            timeDifferenceMs: timeDifference,
             maxConflictEnd: new Date(maxConflictEnd).toISOString(),
           });
         }
