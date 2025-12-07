@@ -73,6 +73,7 @@ export const END_OF_DAY_MILLISECOND = 999;
 export const DAYS_IN_WEEK = 7;
 export const TWO_WEEKS_DAYS = 14; // 2 weeks = 14 days
 export const LAST_7_DAYS_OFFSET = 6; // For calculating last 7 days (0-6)
+export const DAYS_IN_MONTH_APPROX = 30; // Approximate days in a month for scheduling
 
 // Time Period Definitions (for analytics)
 export const TIME_PERIODS = {

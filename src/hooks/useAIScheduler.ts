@@ -1107,12 +1107,14 @@ export function useAIScheduler() {
         }
         
         // Calculate time slot intelligently based on task duration and existing schedule
-        // For recurring tasks, use the pre-calculated first occurrence date
+        // For recurring tasks, use the pre-calculated first occurrence date (but reset time to midnight)
         // Otherwise, use the calculated date
         let scheduleDate: Date;
         if (isRecurringTask && recurringFirstOccurrence) {
-          // Use the pre-calculated first occurrence
-          scheduleDate = recurringFirstOccurrence;
+          // Use the pre-calculated first occurrence date, but ensure time is reset to midnight
+          // This allows the category time slot logic to properly assign the time
+          scheduleDate = new Date(recurringFirstOccurrence);
+          scheduleDate.setHours(0, 0, 0, 0);
         } else {
           // Non-recurring task: use calculated date
           scheduleDate = new Date(baseDate);
