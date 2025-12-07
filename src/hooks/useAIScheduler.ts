@@ -1977,19 +1977,58 @@ export function useAIScheduler() {
           })
           .map(p => {
             const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
-            return { 
-              ...p.task, 
-              scheduledDate: planScheduledDate.toISOString() 
+            // CRITICAL: Create a new task object with the scheduledDate as an ISO string
+            // This ensures findNextAvailableSlot can correctly parse it
+            const taskWithScheduledDate = {
+              ...p.task,
+              scheduledDate: planScheduledDate.toISOString()
             };
-          });
+            // CRITICAL: Ensure the scheduledDate is properly set and not null/undefined
+            if (!taskWithScheduledDate.scheduledDate) {
+              logger.error('CRITICAL: Task in plan has no scheduledDate after conversion', {
+                taskId: p.task.id,
+                taskTitle: p.task.title,
+                originalScheduledDate: p.scheduledDate,
+              });
+              return null;
+            }
+            return taskWithScheduledDate;
+          })
+          .filter((t): t is Task => t !== null); // Remove any null entries
         
         // Combine with existing tasks to get the most up-to-date list
-        const updatedValidTasksForDay = [...existingTasksForDay, ...updatedTasksInPlanSameDay].filter(t => {
+        // CRITICAL: Remove duplicates by task ID (plan tasks take precedence as they have the most recent scheduled times)
+        const taskMap = new Map<string, Task>();
+        
+        // First, add existing tasks
+        existingTasksForDay.forEach(t => {
+          if (t.id && t.scheduledDate) {
+            taskMap.set(t.id, t);
+          }
+        });
+        
+        // Then, add/overwrite with tasks from plan (these have the most recent scheduled times)
+        updatedTasksInPlanSameDay.forEach(t => {
+          if (t.id && t.scheduledDate) {
+            taskMap.set(t.id, t);
+          }
+        });
+        
+        const updatedValidTasksForDay = Array.from(taskMap.values()).filter(t => {
           if (!t.scheduledDate) return false;
           const scheduledDate = typeof t.scheduledDate === 'string' 
             ? new Date(t.scheduledDate)
             : new Date(t.scheduledDate);
-          return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+          const isValid = !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+          if (!isValid && import.meta.env.DEV) {
+            logger.debug('Filtered out task with invalid scheduledDate in final safeguard', {
+              taskId: t.id,
+              taskTitle: t.title,
+              scheduledDate: t.scheduledDate,
+              scheduledDateType: typeof t.scheduledDate,
+            });
+          }
+          return isValid;
         });
         
         // CRITICAL DEBUG: Log what tasks are being checked in the final safeguard
@@ -2062,6 +2101,63 @@ export function useAIScheduler() {
             isRecurringTask,
             scheduleDate: scheduleDate.toISOString(),
             updatedValidTasksForDayCount: updatedValidTasksForDay.length,
+          });
+        }
+        
+        // CRITICAL: One final direct check - iterate through plan and check for exact time matches
+        // This is a last-resort check to catch any conflicts that findNextAvailableSlot might have missed
+        const scheduleTimeMs = scheduleDate.getTime();
+        const scheduleEndMs = scheduleTimeMs + (taskDurationMinutes * MILLISECONDS_PER_MINUTE);
+        
+        let directConflictFound = false;
+        for (const planItem of plan) {
+          if (!planItem.scheduledDate) continue;
+          if (planItem.task.id === task.id) continue; // Skip self
+          
+          const planScheduledDate = planItem.scheduledDate instanceof Date 
+            ? planItem.scheduledDate 
+            : new Date(planItem.scheduledDate);
+          const planDateKey = getDateKey(planScheduledDate);
+          
+          // Only check tasks on the same day
+          if (planDateKey !== dateKey) continue;
+          
+          // Check if times overlap
+          const planTimeMs = planScheduledDate.getTime();
+          const planTaskDuration = getTaskMinutes(planItem.task) * MILLISECONDS_PER_MINUTE;
+          const planEndMs = planTimeMs + planTaskDuration;
+          
+          // Check for exact same start time or overlap
+          const sameStartTime = Math.abs(planTimeMs - scheduleTimeMs) < MILLISECONDS_PER_MINUTE;
+          const overlaps = scheduleTimeMs < planEndMs && scheduleEndMs > planTimeMs;
+          
+          if (sameStartTime || overlaps) {
+            directConflictFound = true;
+            if (import.meta.env.DEV) {
+              logger.error('🚨 DIRECT CONFLICT DETECTED BEFORE ADDING TO PLAN!', {
+                currentTask: { id: task.id, title: task.title, time: scheduleDate.toISOString() },
+                conflictingTask: { id: planItem.task.id, title: planItem.task.title, time: planScheduledDate.toISOString() },
+                sameStartTime,
+                overlaps,
+              });
+            }
+            // Move to after the conflicting task
+            scheduleDate.setTime(planEndMs + MILLISECONDS_PER_MINUTE);
+            // Round to nearest interval
+            const roundedMinutes = Math.round(scheduleDate.getMinutes() / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+            scheduleDate.setMinutes(roundedMinutes);
+            scheduleDate.setSeconds(0, 0);
+            scheduleDate.setMilliseconds(0);
+            break; // Only move past the first conflict, then re-check
+          }
+        }
+        
+        // If we found a conflict and adjusted, log it
+        if (directConflictFound && import.meta.env.DEV) {
+          logger.debug('Direct conflict resolved - time adjusted', {
+            taskId: task.id,
+            taskTitle: task.title,
+            finalTime: scheduleDate.toISOString(),
           });
         }
         
