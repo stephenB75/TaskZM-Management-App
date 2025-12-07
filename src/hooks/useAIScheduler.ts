@@ -1252,11 +1252,24 @@ export function useAIScheduler() {
           // IMPORTANT: Pass allTasksForDay (which includes tasks from current plan) to findNextAvailableSlot
           // so it can see tasks being scheduled in the same batch and avoid conflicts
           // taskDurationMinutes already calculated above for consistency
+          
+          // CRITICAL: Verify that tasks from plan have valid scheduled times before passing to findNextAvailableSlot
+          // This ensures conflict detection works correctly
+          const validTasksForDay = allTasksForDay.filter(t => {
+            if (!t.scheduledDate) return false;
+            // Parse and verify the scheduled time is valid
+            const scheduledDate = typeof t.scheduledDate === 'string' 
+              ? new Date(t.scheduledDate)
+              : new Date(t.scheduledDate);
+            // Only include tasks with valid times (not just midnight/00:00:00)
+            return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+          });
+          
           const availableSlot = findNextAvailableSlot(
             task.id,
             proposedTime,
             taskDurationMinutes,
-            allTasksForDay, // Use allTasksForDay instead of tasks to include tasks from current plan
+            validTasksForDay, // Use validated tasks to ensure conflict detection works
             {
               ensureAfterCurrentTime: isToday,
               categoryHours: categoryHours ? {
@@ -1266,11 +1279,26 @@ export function useAIScheduler() {
             }
           );
           
-          // If a valid slot was found (not 24:00 or later), use it
+          // ALWAYS use findNextAvailableSlot result, even if it's different from proposed time
+          // This ensures we never schedule at the same time as existing tasks
           if (availableSlot.getHours() < HOURS_PER_DAY) {
             scheduleDate.setTime(availableSlot.getTime());
-            reason = `${categoryTime.reason} - placed in available slot`;
+            // Check if the slot was moved from the proposed time (indicates conflict was detected)
+            const proposedTimeMs = proposedTime.getTime();
+            const availableSlotMs = availableSlot.getTime();
+            if (Math.abs(availableSlotMs - proposedTimeMs) > 60000) { // More than 1 minute difference
+              reason = `${categoryTime.reason} - moved to available slot (conflict avoided)`;
+            } else {
+              reason = `${categoryTime.reason} - placed in available slot`;
+            }
           } else {
+            // No slot found - this shouldn't happen, but log it for debugging
+            logger.warn('No available slot found for task', {
+              taskId: task.id,
+              taskTitle: task.title,
+              proposedTime: proposedTime.toISOString(),
+              categoryTime: `${categoryTime.hours}:${categoryTime.minutes}`,
+            });
             // Fall back to proposed time if no slot found (shouldn't happen, but handle gracefully)
             scheduleDate.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
             reason = categoryTime.reason;
@@ -1638,11 +1666,22 @@ export function useAIScheduler() {
           // Use findNextAvailableSlot to find actual open slot with category hours
           // IMPORTANT: Pass allTasksForDay (which includes tasks from current plan) to findNextAvailableSlot
           // so it can see tasks being scheduled in the same batch and avoid conflicts
+          // CRITICAL: Verify that tasks from plan have valid scheduled times before passing to findNextAvailableSlot
+          const validTasksForDay = allTasksForDay.filter(t => {
+            if (!t.scheduledDate) return false;
+            // Parse and verify the scheduled time is valid
+            const scheduledDate = typeof t.scheduledDate === 'string' 
+              ? new Date(t.scheduledDate)
+              : new Date(t.scheduledDate);
+            // Only include tasks with valid times (not just midnight/00:00:00)
+            return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+          });
+          
           const finalSlot = findNextAvailableSlot(
             task.id,
             proposedTime,
             taskDurationMinutes,
-            allTasksForDay, // Use allTasksForDay instead of tasks to include tasks from current plan
+            validTasksForDay, // Use validated tasks to ensure conflict detection works
             {
               ensureAfterCurrentTime: isToday,
               categoryHours: effectiveCategoryHours ? {

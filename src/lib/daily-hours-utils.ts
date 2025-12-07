@@ -41,12 +41,15 @@ export function estimateTaskHours(task: Task): number {
   // IMPORTANT: Check for null/undefined explicitly, not just truthy (0 is falsy but valid)
   if (task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0) {
     const userSetHours = task.estimatedTime / MINUTES_PER_HOUR;
-    console.log('✅ estimateTaskHours: Using user-set estimated time', {
-      taskId: task.id,
-      taskTitle: task.title,
-      estimatedTimeMinutes: task.estimatedTime,
-      estimatedHours: userSetHours,
-    });
+    // Only log in development to reduce console noise
+    if (import.meta.env.DEV) {
+      console.log('✅ estimateTaskHours: Using user-set estimated time', {
+        taskId: task.id,
+        taskTitle: task.title,
+        estimatedTimeMinutes: task.estimatedTime,
+        estimatedHours: userSetHours,
+      });
+    }
     return userSetHours;
   }
   
@@ -131,23 +134,26 @@ export function estimateTaskHours(task: Task): number {
     estimatedHours = BASE_TASK_DURATION_MINUTES / MINUTES_PER_HOUR;
   }
   
-  // Log the estimation process for debugging
-  console.log('🤖 estimateTaskHours: AI Duration Estimation', {
-    taskId: task.id,
-    taskTitle: task.title,
-    taskPriority: task.priority,
-    primaryVerb,
-    effortScore: effortScore.toFixed(2),
-    complexityScore: complexityScore.toFixed(2),
-    priorityMultiplier: priorityMultiplier.toFixed(2),
-    baseMinutes: BASE_TASK_DURATION_MINUTES,
-    effortMultiplier: effortMultiplier.toFixed(2),
-    complexityMultiplier: complexityMultiplier.toFixed(2),
-    beforeAdjustment: beforeAdjustment.toFixed(2),
-    afterAdjustment: estimatedMinutes.toFixed(2),
-    finalMinutes: estimatedMinutes,
-    finalHours: estimatedHours.toFixed(2),
-  });
+  // Only log in development to reduce console noise
+  // The estimation process is called frequently during renders and scheduling
+  if (import.meta.env.DEV) {
+    console.log('🤖 estimateTaskHours: AI Duration Estimation', {
+      taskId: task.id,
+      taskTitle: task.title,
+      taskPriority: task.priority,
+      primaryVerb,
+      effortScore: effortScore.toFixed(2),
+      complexityScore: complexityScore.toFixed(2),
+      priorityMultiplier: priorityMultiplier.toFixed(2),
+      baseMinutes: BASE_TASK_DURATION_MINUTES,
+      effortMultiplier: effortMultiplier.toFixed(2),
+      complexityMultiplier: complexityMultiplier.toFixed(2),
+      beforeAdjustment: beforeAdjustment.toFixed(2),
+      afterAdjustment: estimatedMinutes.toFixed(2),
+      finalMinutes: estimatedMinutes,
+      finalHours: estimatedHours.toFixed(2),
+    });
+  }
   
   return estimatedHours;
 }

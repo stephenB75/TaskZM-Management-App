@@ -44,7 +44,12 @@ export function checkTimeConflict(
   for (const existingTask of dateTasks) {
     if (!existingTask.scheduledDate) continue;
 
-    const existingTaskStart = new Date(existingTask.scheduledDate).getTime();
+    // Parse scheduledDate - handle both ISO strings and Date objects
+    const existingTaskScheduledDate = typeof existingTask.scheduledDate === 'string'
+      ? new Date(existingTask.scheduledDate)
+      : new Date(existingTask.scheduledDate);
+    
+    const existingTaskStart = existingTaskScheduledDate.getTime();
     const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE; // Use AI estimator
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
 
@@ -84,13 +89,21 @@ export function findNextAvailableSlot(
   });
 
   // Sort tasks by scheduled time
+  // IMPORTANT: Ensure we properly parse scheduledDate (could be ISO string or Date object)
   const sortedTasks = dateTasks
     .filter((task) => task.scheduledDate)
-    .map((task) => ({
-      task,
-      start: new Date(task.scheduledDate!).getTime(),
-      end: new Date(task.scheduledDate!).getTime() + (getTaskMinutes(task) * MILLISECONDS_PER_MINUTE), // Use AI estimator
-    }))
+    .map((task) => {
+      // Parse scheduledDate - handle both ISO strings and Date objects
+      const scheduledDate = typeof task.scheduledDate === 'string' 
+        ? new Date(task.scheduledDate)
+        : new Date(task.scheduledDate);
+      
+      const start = scheduledDate.getTime();
+      const duration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+      const end = start + duration;
+      
+      return { task, start, end };
+    })
     .sort((a, b) => a.start - b.start);
 
   // Determine start time: ensure after current time if scheduling for today
@@ -200,10 +213,27 @@ export function findNextAvailableSlot(
     
     for (const existing of sortedTasks) {
       // Check for overlap: candidate overlaps if it starts before existing ends AND ends after existing starts
-      if (candidateStart < existing.end && candidateEnd > existing.start) {
+      // Also check for exact same start time (which is also a conflict)
+      const overlaps = candidateStart < existing.end && candidateEnd > existing.start;
+      const sameStartTime = candidateStart === existing.start;
+      
+      if (overlaps || sameStartTime) {
         hasConflict = true;
         // Track the latest end time of all conflicts to move past all overlapping tasks
         maxConflictEnd = Math.max(maxConflictEnd, existing.end);
+        
+        // Debug logging in development
+        if (import.meta.env.DEV) {
+          console.debug('Conflict detected in findNextAvailableSlot', {
+            candidateTime: new Date(candidateStart).toISOString(),
+            existingTask: existing.task.id,
+            existingStart: new Date(existing.start).toISOString(),
+            existingEnd: new Date(existing.end).toISOString(),
+            overlaps,
+            sameStartTime,
+            maxConflictEnd: new Date(maxConflictEnd).toISOString(),
+          });
+        }
       }
     }
 
@@ -257,13 +287,21 @@ export function reorganizeAllTasksForDate(
   });
 
   // Sort tasks by scheduled time
+  // IMPORTANT: Ensure we properly parse scheduledDate (could be ISO string or Date object)
   const sortedTasks = dateTasks
     .filter((task) => task.scheduledDate)
-    .map((task) => ({
-      task,
-      start: new Date(task.scheduledDate!).getTime(),
-      end: new Date(task.scheduledDate!).getTime() + (getTaskMinutes(task) * MILLISECONDS_PER_MINUTE), // Use AI estimator
-    }))
+    .map((task) => {
+      // Parse scheduledDate - handle both ISO strings and Date objects
+      const scheduledDate = typeof task.scheduledDate === 'string' 
+        ? new Date(task.scheduledDate)
+        : new Date(task.scheduledDate);
+      
+      const start = scheduledDate.getTime();
+      const duration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+      const end = start + duration;
+      
+      return { task, start, end };
+    })
     .sort((a, b) => a.start - b.start);
 
   const reorganizations: Array<{ taskId: string; newTime: Date }> = [];
@@ -385,7 +423,7 @@ export function reorganizeConflictingTasks(
   });
 
   const newTaskStart = scheduledTime.getTime();
-  const newTaskEnd = newTaskStart + (taskDuration * 60 * 1000);
+  const newTaskEnd = newTaskStart + (taskDuration * MILLISECONDS_PER_MINUTE);
 
   // Find all conflicting tasks
   const conflictingTasks: Array<{ task: Task; start: number; end: number }> = [];
@@ -393,8 +431,13 @@ export function reorganizeConflictingTasks(
   for (const task of dateTasks) {
     if (!task.scheduledDate) continue;
     
-    const existingTaskStart = new Date(task.scheduledDate).getTime();
-    const existingTaskDuration = getTaskMinutes(task) * 60 * 1000; // Use AI estimator
+    // Parse scheduledDate - handle both ISO strings and Date objects
+    const existingTaskScheduledDate = typeof task.scheduledDate === 'string'
+      ? new Date(task.scheduledDate)
+      : new Date(task.scheduledDate);
+    
+    const existingTaskStart = existingTaskScheduledDate.getTime();
+    const existingTaskDuration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
     
     // Check for overlap
