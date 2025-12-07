@@ -98,6 +98,13 @@ export const TIME_ROUNDING_INTERVAL_MINUTES = 15;
  */
 export const DEFAULT_TIME_SLOTS = 5;
 
+/**
+ * Number of days to distribute high priority tasks across
+ * High priority tasks are distributed across the first few days using round-robin
+ * Default: 3 days
+ */
+export const HIGH_PRIORITY_DISTRIBUTION_DAYS = 3;
+
 // ============================================================================
 // Priority-Based Time Slots
 // ============================================================================

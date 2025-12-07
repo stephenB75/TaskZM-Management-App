@@ -19,6 +19,7 @@ import {
   TIME_ROUNDING_INTERVAL_MINUTES,
   DEFAULT_TIME_SLOTS,
   PRIORITY_TIME_SLOTS,
+  HIGH_PRIORITY_DISTRIBUTION_DAYS,
   DEFAULT_CATEGORY_HOURS,
   PRIORITY_WEIGHTS,
   STATUS_WEIGHTS,
@@ -45,6 +46,10 @@ import {
   MILLISECONDS_PER_DAY,
   TWO_WEEKS_DAYS,
   DAYS_IN_WEEK,
+  END_OF_DAY_HOUR,
+  END_OF_DAY_MINUTE,
+  END_OF_DAY_SECOND,
+  END_OF_DAY_MILLISECOND,
 } from '../lib/business-constants';
 import type { Task, RecurrenceConfig } from '../types';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
@@ -454,11 +459,11 @@ export function useAIScheduler() {
     }
     
     // No existing tasks or no gaps - distribute evenly across the available time window
-    // Use more slots for better distribution (5 slots instead of 3)
+    // Use more slots for better distribution (DEFAULT_TIME_SLOTS slots)
     // IMPORTANT: Use the timeSlot parameter that was calculated based on totalCategoryTasksCount
     // This ensures tasks scheduled in the same batch get different time slots based on their
     // position in the batch, not just the count of existing tasks
-    const numSlots = 5;
+    const numSlots = DEFAULT_TIME_SLOTS;
     // Use the timeSlot parameter that was passed in, which is already calculated based on
     // existingCategoryTasksCount + planCategoryTasksCount, ensuring proper distribution
     const slotPosition = timeSlot % numSlots;
@@ -540,7 +545,7 @@ export function useAIScheduler() {
     })();
     
     // Ensure end date is at end of day
-    endDate.setHours(23, 59, 59, 999);
+    endDate.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
     
     // Initialize dailyHours with already scheduled tasks
     const dailyHours: Map<string, number> = new Map();
@@ -804,7 +809,7 @@ export function useAIScheduler() {
           reason = 'Urgent priority - scheduled first';
         } else if (task.priority === 'high') {
           // Distribute high priority tasks across first few days (0-2), but use round-robin
-          daysToAdd = Math.min(taskIndex % 3, totalDaysInRange - 1);
+          daysToAdd = Math.min(taskIndex % HIGH_PRIORITY_DISTRIBUTION_DAYS, totalDaysInRange - 1);
           reason = daysToAdd === 0 ? 'High priority - scheduled soon' : 'High priority - distributed across week';
         } else if (task.priority === 'medium') {
           // Distribute medium priority tasks evenly across the week using round-robin
@@ -1200,7 +1205,7 @@ export function useAIScheduler() {
         
         // Use the total category task count for time slot calculation
         // This ensures recurring tasks scheduled in the same batch get different slots
-        let timeSlot = totalCategoryTasksCount % 5; // Use category-specific slot count (5 slots for better distribution)
+        let timeSlot = totalCategoryTasksCount % DEFAULT_TIME_SLOTS; // Use category-specific slot count (DEFAULT_TIME_SLOTS slots for better distribution)
         
         // Use consistent duration calculation for all scheduling operations
         const taskHours = getTaskHours(task);
@@ -1286,7 +1291,7 @@ export function useAIScheduler() {
             // Check if the slot was moved from the proposed time (indicates conflict was detected)
             const proposedTimeMs = proposedTime.getTime();
             const availableSlotMs = availableSlot.getTime();
-            if (Math.abs(availableSlotMs - proposedTimeMs) > 60000) { // More than 1 minute difference
+            if (Math.abs(availableSlotMs - proposedTimeMs) > MILLISECONDS_PER_MINUTE) { // More than 1 minute difference
               reason = `${categoryTime.reason} - moved to available slot (conflict avoided)`;
             } else {
               reason = `${categoryTime.reason} - placed in available slot`;
@@ -1878,13 +1883,13 @@ export function useAIScheduler() {
         
         if (options.period === 'day') {
           const end = new Date(tomorrow);
-          end.setHours(23, 59, 59, 999);
+          end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
           dateRange = { startDate: tomorrow, endDate: end };
         } else {
           // Default scheduling period starting from tomorrow
           const end = new Date(tomorrow);
           end.setDate(end.getDate() + TWO_WEEK_DAYS_OFFSET); // Default period total (tomorrow + offset)
-          end.setHours(23, 59, 59, 999);
+          end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
           dateRange = { startDate: tomorrow, endDate: end };
         }
       }
@@ -1957,7 +1962,7 @@ export function useAIScheduler() {
     
     const endDate = new Date(weekStart);
     endDate.setDate(endDate.getDate() + (KANBAN_TIME.daysInWeek - 1));
-    endDate.setHours(23, 59, 59, 999);
+    endDate.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
     
     return tasks.filter(task => {
       if (!task.scheduledDate || task.status === 'done') return false;
@@ -1972,7 +1977,7 @@ export function useAIScheduler() {
     const year = date.getFullYear();
     const month = date.getMonth();
     const startDate = new Date(year, month, 1);
-    const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+    const endDate = new Date(year, month + 1, 0, END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND);
     
     return tasks.filter(task => {
       if (!task.scheduledDate || task.status === 'done') return false;
@@ -2031,7 +2036,7 @@ export function useAIScheduler() {
       
       // End date: end of the selected day (or tomorrow if selected day is today/past)
       const scheduleEndDate = new Date(scheduleStartDate);
-      scheduleEndDate.setHours(23, 59, 59, 999);
+      scheduleEndDate.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       
       // Generate new schedule for these specific tasks within the selected day
       // Shuffle tasks and enforce minimum hours for rescheduling
@@ -2101,7 +2106,7 @@ export function useAIScheduler() {
       // Calculate end date: one week from the start date
       const weekEnd = new Date(scheduleStartDate);
       weekEnd.setDate(weekEnd.getDate() + ONE_WEEK_DAYS_OFFSET); // One week total (start date + offset)
-      weekEnd.setHours(23, 59, 59, 999);
+      weekEnd.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       
       // Generate new schedule for these specific tasks within the selected week
       // Shuffle tasks and enforce minimum hours for rescheduling
@@ -2169,7 +2174,7 @@ export function useAIScheduler() {
         : monthStart; // Month start is in the future, use it
       
       // Calculate end date: last day of the selected month
-      const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+      const monthEnd = new Date(year, month + 1, 0, END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       
       // Generate new schedule for these specific tasks within the selected month
       // Shuffle tasks and enforce minimum hours for rescheduling

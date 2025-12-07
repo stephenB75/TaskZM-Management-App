@@ -38,7 +38,7 @@ export function checkTimeConflict(
   });
 
   const newTaskStart = scheduledTime.getTime();
-  const newTaskEnd = newTaskStart + (taskDuration * 60 * 1000);
+  const newTaskEnd = newTaskStart + (taskDuration * MILLISECONDS_PER_MINUTE);
 
   // Check for overlaps with existing tasks
   for (const existingTask of dateTasks) {
@@ -260,7 +260,7 @@ export function findNextAvailableSlot(
   // If no slot found, return a time that indicates failure (24:00 or later)
   // This allows the caller to detect that no slot was found
   const failureTime = new Date(requestedTime);
-  failureTime.setHours(24, 0, 0, 0);
+  failureTime.setHours(HOURS_PER_DAY, 0, 0, 0);
   return failureTime;
 }
 
@@ -354,7 +354,7 @@ export function reorganizeAllTasksForDate(
       
       // Round to nearest 15-minute slot
       const minutes = candidateTime.getMinutes();
-      const roundedMinutes = Math.ceil(minutes / 15) * 15;
+      const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
       if (roundedMinutes >= MINUTES_PER_HOUR) {
         candidateTime.setHours(candidateTime.getHours() + 1);
         candidateTime.setMinutes(0);
@@ -483,7 +483,7 @@ export function reorganizeConflictingTasks(
     );
 
     // Check if a valid slot was found
-    if (newTime.getHours() < 24) {
+    if (newTime.getHours() < HOURS_PER_DAY) {
       reorganizations.push({
         taskId: conflicting.task.id,
         newTime,
