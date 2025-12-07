@@ -172,6 +172,24 @@ html, body, #root {
   overflow: hidden; /* Prevent body scrolling - only content areas should scroll */
 }
 
+/* Ensure root is always visible when loaded */
+body.loaded #root {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Ensure root is visible even without loaded class (fallback) */
+#root {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
 /* Logo styling - make "task" part white in dark mode while keeping "zm" lavender */
 /* Only show logo in dark mode, remove any white background */
 .dark-logo-filter {

@@ -434,8 +434,27 @@ const ensureSplashHidden = () => {
   const splashEl = document.getElementById('initial-splash');
   if (splashEl) {
     splashEl.classList.add('hidden');
+    // Force hide with inline styles as well
+    splashEl.style.display = 'none';
+    splashEl.style.visibility = 'hidden';
+    splashEl.style.opacity = '0';
+    splashEl.style.pointerEvents = 'none';
+    splashEl.style.zIndex = '-1';
   }
   document.body.classList.add('loaded');
+  // Force enable scrolling
+  document.body.style.overflow = 'auto';
+  // Ensure root element is visible
+  const rootEl = document.getElementById('root');
+  if (rootEl) {
+    rootEl.style.display = 'block';
+    rootEl.style.visibility = 'visible';
+    rootEl.style.opacity = '1';
+    rootEl.style.position = 'relative';
+    rootEl.style.zIndex = '1';
+    rootEl.style.height = '100%';
+    rootEl.style.width = '100%';
+  }
 };
 
 try {
@@ -446,21 +465,27 @@ try {
     const fallbackRoot = document.createElement('div');
     fallbackRoot.id = 'root';
     document.body.appendChild(fallbackRoot);
-    ReactDOM.createRoot(fallbackRoot).render(
+    const root = ReactDOM.createRoot(fallbackRoot);
+    root.render(
       <React.StrictMode>
         <App />
       </React.StrictMode>
     );
-    // Ensure splash is hidden after rendering
+    // Ensure splash is hidden immediately and after rendering
+    ensureSplashHidden();
     setTimeout(ensureSplashHidden, 100);
+    setTimeout(ensureSplashHidden, 500);
   } else {
-    ReactDOM.createRoot(rootElement).render(
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
       <React.StrictMode>
         <App />
       </React.StrictMode>
     );
-    // Ensure splash is hidden after rendering
+    // Ensure splash is hidden immediately and after rendering
+    ensureSplashHidden();
     setTimeout(ensureSplashHidden, 100);
+    setTimeout(ensureSplashHidden, 500);
   }
 } catch (error) {
   console.error('Fatal error during app initialization:', error);
