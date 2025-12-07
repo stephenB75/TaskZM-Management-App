@@ -25,7 +25,10 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
 
   // For recurring tasks that are completed: only show if the scheduledDate matches the exact checkDate
   // This ensures that when a recurring task is marked as done, only that specific occurrence is affected
-  if (task.status === 'done') {
+  // Note: Completed occurrences have recurrence.type === 'none', so they won't reach this point
+  // This check is for the main recurring task that was marked as done (shouldn't happen in normal flow)
+  if (task.status === 'done' && task.recurrence.type !== 'none') {
+    // If the main recurring task is marked as done, only show on its scheduled date
     return (
       baseDateOnly.getFullYear() === checkDateOnly.getFullYear() &&
       baseDateOnly.getMonth() === checkDateOnly.getMonth() &&
