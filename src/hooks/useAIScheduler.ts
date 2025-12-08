@@ -1485,13 +1485,10 @@ export function useAIScheduler() {
           }
         });
         
-        // Get tasks from the current plan that are scheduled for the same day
-        // This ensures tasks scheduled in the same batch see each other for time slot distribution
-        // IMPORTANT: Create task objects with scheduledDate set from the plan, so getCategoryTimeSlot
-        // and findNextAvailableSlot can see their scheduled times and avoid conflicts
-        // CRITICAL: Only include tasks that have a valid scheduledDate with a time (not just midnight)
-        // CRITICAL FIX: Ensure we capture the EXACT scheduled time from tasks already in the plan
-        // This is the key to preventing duplicate scheduling times
+        // CRITICAL FIX: Get tasks from the current plan that apply to this date
+        // For recurring tasks in the plan: Use isDateInRecurrence() to check if they apply to this date
+        // For regular tasks in the plan: Check if scheduledDate matches the target date
+        // This ensures recurring tasks scheduled earlier in the batch are visible on ALL their occurrence days
         const tasksInPlanSameDay = plan
           .filter(p => {
             if (!p.scheduledDate) {
@@ -1500,8 +1497,22 @@ export function useAIScheduler() {
               }
               return false;
             }
-            const pDateKey = getDateKey(p.scheduledDate);
-            if (pDateKey !== dateKey) return false;
+            
+            // Check if this is a recurring task
+            const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
+            
+            if (isPlanTaskRecurring) {
+              // For recurring tasks, check if they apply to this date using isDateInRecurrence
+              // The plan's scheduledDate is the first occurrence, but the task applies to multiple days
+              if (!isDateInRecurrence(p.task, scheduleDate)) {
+                return false;
+              }
+            } else {
+              // For regular tasks, check if scheduledDate matches the target date
+              const pDateKey = getDateKey(p.scheduledDate);
+              if (pDateKey !== dateKey) return false;
+            }
+            
             // Only include tasks that have a scheduled time set (not just the date at midnight)
             // This ensures we only count tasks that have been fully scheduled
             // CRITICAL: Parse the scheduledDate to ensure we're checking the actual time
