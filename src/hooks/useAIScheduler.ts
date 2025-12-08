@@ -1452,38 +1452,60 @@ export function useAIScheduler() {
         // For recurring tasks: Use isDateInRecurrence() to check if they apply (they appear on multiple days)
         // For regular tasks: Check if scheduledDate matches the target date exactly
         // See: src/guidelines/AI_SCHEDULING_GUIDELINES.md Section 2
-        const existingTasksForDay = (dailyTasks.get(dateKey) || []).filter(t => {
-          // Check if this is a recurring task
-          const isRecurring = t.recurrence && t.recurrence.type !== 'none';
-          
-          if (isRecurring) {
-            // For recurring tasks, check if they apply to this date using isDateInRecurrence
-            // This ensures recurring tasks are visible on ALL days they occur, not just their base scheduledDate
-            if (!isDateInRecurrence(t, scheduleDate)) {
-              return false;
+        // CRITICAL FIX: Build existingTasksForDay and adjust scheduledDate for recurring tasks
+        // For recurring tasks, we need to set scheduledDate to the target date while preserving the time
+        // This ensures conflict detection sees recurring tasks on the correct day with the correct time
+        const existingTasksForDay = (dailyTasks.get(dateKey) || [])
+          .filter(t => {
+            // Check if this is a recurring task
+            const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+            
+            if (isRecurring) {
+              // For recurring tasks, check if they apply to this date using isDateInRecurrence
+              // This ensures recurring tasks are visible on ALL days they occur, not just their base scheduledDate
+              if (!isDateInRecurrence(t, scheduleDate)) {
+                return false;
+              }
+              // Also verify the task has a scheduledDate (base date for recurrence)
+              if (!t.scheduledDate) return false;
+              // Parse the base scheduledDate to get the time
+              const baseScheduledDate = typeof t.scheduledDate === 'string' 
+                ? new Date(t.scheduledDate)
+                : new Date(t.scheduledDate);
+              // Only include if it has a valid time (not just midnight/00:00:00)
+              return !isNaN(baseScheduledDate.getTime()) && (baseScheduledDate.getHours() !== 0 || baseScheduledDate.getMinutes() !== 0);
+            } else {
+              // For non-recurring tasks, check if scheduledDate matches this date and has a valid time
+              if (!t.scheduledDate) return false;
+              const scheduledDate = typeof t.scheduledDate === 'string' 
+                ? new Date(t.scheduledDate)
+                : new Date(t.scheduledDate);
+              // Check if the scheduled date matches the target date
+              const scheduledDateKey = getDateKey(scheduledDate);
+              if (scheduledDateKey !== dateKey) return false;
+              // Only include tasks with valid times (not just midnight/00:00:00)
+              return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
             }
-            // Also verify the task has a scheduledDate (base date for recurrence)
-            if (!t.scheduledDate) return false;
-            // Parse the base scheduledDate to get the time
-            const baseScheduledDate = typeof t.scheduledDate === 'string' 
-              ? new Date(t.scheduledDate)
-              : new Date(t.scheduledDate);
-            // For recurring tasks, use the time from the base scheduledDate
-            // Only include if it has a valid time (not just midnight/00:00:00)
-            return !isNaN(baseScheduledDate.getTime()) && (baseScheduledDate.getHours() !== 0 || baseScheduledDate.getMinutes() !== 0);
-          } else {
-            // For non-recurring tasks, check if scheduledDate matches this date and has a valid time
-            if (!t.scheduledDate) return false;
-            const scheduledDate = typeof t.scheduledDate === 'string' 
-              ? new Date(t.scheduledDate)
-              : new Date(t.scheduledDate);
-            // Check if the scheduled date matches the target date
-            const scheduledDateKey = getDateKey(scheduledDate);
-            if (scheduledDateKey !== dateKey) return false;
-            // Only include tasks with valid times (not just midnight/00:00:00)
-            return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
-          }
-        });
+          })
+          .map(t => {
+            // CRITICAL FIX: For recurring tasks, adjust scheduledDate to the target date while preserving time
+            // This ensures conflict detection sees the recurring task on the correct day
+            const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+            if (isRecurring && t.scheduledDate) {
+              const baseScheduledDate = typeof t.scheduledDate === 'string' 
+                ? new Date(t.scheduledDate)
+                : new Date(t.scheduledDate);
+              // Create a date for the target day (scheduleDate) but with the time from the base scheduledDate
+              const occurrenceDate = new Date(scheduleDate);
+              occurrenceDate.setHours(baseScheduledDate.getHours(), baseScheduledDate.getMinutes(), baseScheduledDate.getSeconds(), baseScheduledDate.getMilliseconds());
+              return {
+                ...t,
+                scheduledDate: occurrenceDate.toISOString()
+              };
+            }
+            // For non-recurring tasks, return as-is
+            return t;
+          });
         
         // CRITICAL FIX: Get tasks from the current plan that apply to this date
         // For recurring tasks in the plan: Use isDateInRecurrence() to check if they apply to this date
@@ -1595,50 +1617,81 @@ export function useAIScheduler() {
         // This ensures getCategoryTimeSlot can see all tasks scheduled for this day
         const allTasksForDay = [...existingTasksForDay, ...tasksInPlanSameDay];
         
-        // Count tasks in the same category that are already scheduled (including tasks scheduled earlier in this batch)
-        // This ensures tasks scheduled in the same batch get different time slots
-        // IMPORTANT: Count tasks that have a scheduledDate set (from plan or existing tasks)
-        // This ensures recurring tasks being scheduled in the same batch see each other
+        // CRITICAL: Count ALL tasks (recurring and regular, across all categories) for time slot distribution
+        // This ensures recurring tasks see regular tasks and vice versa when calculating time slots
+        // The goal is to distribute tasks chronologically across the day, not just within categories
         const category = getTaskCategory(task);
         
-        // Count existing tasks in the same category that have a scheduledDate
+        // Count ALL existing tasks (regardless of category) that have a scheduledDate
+        // This includes both recurring and regular tasks
+        const existingAllTasksCount = existingTasksForDay.filter(t => {
+          return t.scheduledDate && (typeof t.scheduledDate === 'string' 
+            ? new Date(t.scheduledDate).getHours() !== 0 || new Date(t.scheduledDate).getMinutes() !== 0
+            : t.scheduledDate.getHours() !== 0 || t.scheduledDate.getMinutes() !== 0);
+        }).length;
+        
+        // Count ALL tasks in the current plan for this day (regardless of category)
+        // This includes both recurring and regular tasks being scheduled in the same batch
+        const planAllTasksCount = tasksInPlanSameDay.filter(t => {
+          return t.scheduledDate && (typeof t.scheduledDate === 'string' 
+            ? new Date(t.scheduledDate).getHours() !== 0 || new Date(t.scheduledDate).getMinutes() !== 0
+            : t.scheduledDate.getHours() !== 0 || t.scheduledDate.getMinutes() !== 0);
+        }).length;
+        
+        // Total tasks = existing + tasks in current plan (ALL categories, ALL types)
+        // CRITICAL: Do NOT include the current task being scheduled in the count
+        // This ensures proper chronological distribution: Task A gets slot 0, Task B gets slot 1, etc.
+        // regardless of whether they're recurring or regular, or what category they're in
+        const totalAllTasksCount = existingAllTasksCount + planAllTasksCount;
+        
+        // Also count same-category tasks for category-specific distribution (used by getCategoryTimeSlot)
         const existingCategoryTasksCount = existingTasksForDay.filter(t => {
           const cat = getTaskCategory(t);
           return cat === category && t.scheduledDate;
         }).length;
         
-        // Count tasks in the current plan that are in the same category and same day
-        // These tasks are being scheduled in the same batch, so we need to count them
-        // to ensure proper time slot distribution
         const planCategoryTasksCount = tasksInPlanSameDay.filter(t => {
           const cat = getTaskCategory(t);
           return cat === category;
         }).length;
         
-        // Total category tasks = existing + tasks in current plan
-        // CRITICAL: Do NOT include the current task being scheduled in the count
-        // The timeSlot should be based on tasks already scheduled, not including the current one
-        // This ensures proper distribution: Task A gets slot 0, Task B gets slot 1, etc.
         const totalCategoryTasksCount = existingCategoryTasksCount + planCategoryTasksCount;
         
-        // Use the total category task count for time slot calculation
-        // This ensures recurring tasks scheduled in the same batch get different slots
+        // CRITICAL: Use total ALL tasks count for time slot calculation to ensure chronological distribution
+        // This ensures recurring tasks and regular tasks are distributed chronologically across the day
+        // regardless of category, preventing overlaps between different task types
         // IMPORTANT: This gives us the slot number for the NEXT task (the current one being scheduled)
-        let timeSlot = totalCategoryTasksCount % DEFAULT_TIME_SLOTS; // Use category-specific slot count (DEFAULT_TIME_SLOTS slots for better distribution)
+        // We use totalAllTasksCount to ensure proper chronological order across all task types
+        let timeSlot = totalAllTasksCount % DEFAULT_TIME_SLOTS; // Use total all tasks for chronological distribution
         
-        // CRITICAL DEBUG: Log time slot calculation for recurring tasks
-        if (import.meta.env.DEV && isRecurringTask) {
-          logger.debug('Time slot calculation for recurring task', {
+        // CRITICAL DEBUG: Log time slot calculation (for both recurring and regular tasks)
+        if (import.meta.env.DEV) {
+          logger.debug('Time slot calculation', {
             taskId: task.id,
             taskTitle: task.title,
+            isRecurringTask,
             category,
+            existingAllTasksCount,
+            planAllTasksCount,
+            totalAllTasksCount,
             existingCategoryTasksCount,
             planCategoryTasksCount,
             totalCategoryTasksCount,
             timeSlot,
+            allTasksForDayCount: allTasksForDay.length,
             tasksInPlanSameDay: tasksInPlanSameDay.map(t => ({
               id: t.id,
               title: t.title,
+              isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
+              category: getTaskCategory(t),
+              scheduledDate: t.scheduledDate,
+              scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+            })),
+            existingTasksForDay: existingTasksForDay.map(t => ({
+              id: t.id,
+              title: t.title,
+              isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
+              category: getTaskCategory(t),
               scheduledDate: t.scheduledDate,
               scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
             })),
