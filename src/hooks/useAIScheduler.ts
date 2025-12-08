@@ -1837,6 +1837,7 @@ export function useAIScheduler() {
           
           // CRITICAL: For recurring tasks, check conflicts on ALL occurrence days, not just the first one
           // This ensures the selected time doesn't conflict with existing tasks on any occurrence day
+          // IMPORTANT: Use allTasksForDay (which includes both existing and in-plan tasks) for consistency
           let availableSlot: Date;
           if (isRecurringTask && allOccurrenceDays && allOccurrenceDays.length > 0) {
             // For recurring tasks, we need to find a time that works for ALL occurrence days
@@ -1851,11 +1852,13 @@ export function useAIScheduler() {
               let conflictsOnAnyDay = false;
               
               for (const occurrenceDay of allOccurrenceDays) {
-                // Get all tasks for this occurrence day (existing + from plan)
+                // CRITICAL FIX: Use the same logic as existingTasksForDay and tasksInPlanSameDay
+                // to get all tasks for this occurrence day. This ensures consistency and that
+                // we see all tasks (existing and in-plan) with their scheduledDate properly adjusted.
                 const occurrenceDateKey = getDateKey(occurrenceDay);
                 
-                // Get existing tasks for this occurrence day
-                const occurrenceTasksForDay = (dailyTasks.get(occurrenceDateKey) || [])
+                // Get existing tasks for this occurrence day (same logic as existingTasksForDay above)
+                const occurrenceExistingTasks = (dailyTasks.get(occurrenceDateKey) || [])
                   .filter(t => {
                     const isRecurring = t.recurrence && t.recurrence.type !== 'none';
                     if (isRecurring) {
@@ -1892,8 +1895,8 @@ export function useAIScheduler() {
                     return t;
                   });
                 
-                // Also include tasks from the plan that apply to this occurrence day
-                const planTasksForOccurrenceDay = plan
+                // Get tasks from the plan that apply to this occurrence day (same logic as tasksInPlanSameDay above)
+                const occurrencePlanTasks = plan
                   .filter(p => {
                     if (!p.scheduledDate) return false;
                     const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
@@ -1922,44 +1925,57 @@ export function useAIScheduler() {
                     }
                   });
                 
-                const allOccurrenceTasks = [...occurrenceTasksForDay, ...planTasksForOccurrenceDay]
+                // Combine existing and plan tasks, excluding the current task being scheduled
+                const allOccurrenceTasks = [...occurrenceExistingTasks, ...occurrencePlanTasks]
                   .filter(t => t.id !== task.id && t.scheduledDate); // Exclude current task
                 
-                // Create a test time for this occurrence day
+                // CRITICAL FIX: Use findNextAvailableSlot for consistent conflict detection
+                // This ensures we use the same strict conflict detection logic as the standard path
+                // and catch all edge cases (overlaps, same start time, starts within existing, etc.)
                 const testTime = new Date(occurrenceDay);
                 testTime.setHours(candidateTime.getHours(), candidateTime.getMinutes(), candidateTime.getSeconds(), candidateTime.getMilliseconds());
                 
-                // Check for conflicts on this occurrence day
-                const testStart = testTime.getTime();
-                const testEnd = testStart + (taskDurationMinutes * MILLISECONDS_PER_MINUTE);
+                // Use findNextAvailableSlot to check if this time conflicts
+                // If the result is different from the test time, it means there's a conflict
+                const conflictCheckResult = findNextAvailableSlot(
+                  task.id,
+                  testTime,
+                  taskDurationMinutes,
+                  allOccurrenceTasks, // Use all tasks for this occurrence day (existing + from plan)
+                  {
+                    ensureAfterCurrentTime: false, // Don't check current time for future days
+                    categoryHours: categoryHours ? {
+                      start: categoryHours.start,
+                      end: categoryHours.end,
+                    } : undefined,
+                  }
+                );
                 
-                for (const existingTask of allOccurrenceTasks) {
-                  if (!existingTask.scheduledDate) continue;
-                  const existingScheduledDate = typeof existingTask.scheduledDate === 'string'
-                    ? new Date(existingTask.scheduledDate)
-                    : new Date(existingTask.scheduledDate);
-                  const existingStart = existingScheduledDate.getTime();
-                  const existingDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE;
-                  const existingEnd = existingStart + (existingDuration * MILLISECONDS_PER_MINUTE);
-                  
-                  // Check for conflict
-                  const overlaps = testStart < existingEnd && testEnd > existingStart;
-                  const sameStart = Math.abs(testStart - existingStart) < MILLISECONDS_PER_MINUTE;
-                  
-                  if (overlaps || sameStart) {
-                    conflictsOnAnyDay = true;
-                    if (import.meta.env.DEV) {
-                      logger.debug('Recurring task conflict found on occurrence day', {
-                        taskId: task.id,
-                        taskTitle: task.title,
-                        occurrenceDay: occurrenceDay.toISOString().split('T')[0],
-                        candidateTime: candidateTime.toLocaleTimeString(),
-                        conflictingTaskId: existingTask.id,
-                        conflictingTaskTitle: existingTask.title,
-                        conflictingTime: existingScheduledDate.toLocaleTimeString(),
-                      });
-                    }
-                    break;
+                // Check if the result is different from the test time (indicates conflict)
+                // Use 1 minute tolerance to account for rounding
+                const timeDifference = Math.abs(conflictCheckResult.getTime() - testTime.getTime());
+                const hasConflict = timeDifference > MILLISECONDS_PER_MINUTE; // More than 1 minute difference means conflict
+                
+                if (hasConflict) {
+                  conflictsOnAnyDay = true;
+                  if (import.meta.env.DEV) {
+                    logger.debug('Recurring task conflict found on occurrence day', {
+                      taskId: task.id,
+                      taskTitle: task.title,
+                      occurrenceDay: occurrenceDay.toISOString().split('T')[0],
+                      candidateTime: candidateTime.toLocaleTimeString(),
+                      testTime: testTime.toLocaleTimeString(),
+                      conflictCheckResult: conflictCheckResult.toLocaleTimeString(),
+                      timeDifferenceMinutes: Math.round(timeDifference / MILLISECONDS_PER_MINUTE),
+                      allOccurrenceTasksCount: allOccurrenceTasks.length,
+                      allOccurrenceTasks: allOccurrenceTasks.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        scheduledDate: t.scheduledDate,
+                        scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+                        isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
+                      })),
+                    });
                   }
                 }
                 

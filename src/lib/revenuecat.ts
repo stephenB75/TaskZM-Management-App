@@ -1079,30 +1079,67 @@ export async function purchaseProSubscription(
     
     if (checkoutUrl) {
       console.log('🔗 Package has checkout URL, redirecting to Stripe Checkout:', checkoutUrl);
-      // Clear any overlays, modals, or z-index issues before redirect
-      // This ensures Stripe's checkout page form fields are fully clickable
+      // Comprehensive cleanup to ensure Stripe Checkout form fields are fully clickable
+      // This fixes issues where clickable areas are outside the field boxes
       try {
-        // Remove any high z-index overlays that might interfere
-        const overlays = document.querySelectorAll('[style*="z-index"]');
-        overlays.forEach((overlay) => {
-          const zIndex = window.getComputedStyle(overlay as HTMLElement).zIndex;
-          if (parseInt(zIndex) > 1000) {
-            (overlay as HTMLElement).style.pointerEvents = 'none';
-            (overlay as HTMLElement).style.display = 'none';
+        // Close any open dialogs/modals that might interfere
+        const dialogs = document.querySelectorAll('[role="dialog"], [data-state="open"]');
+        dialogs.forEach((dialog) => {
+          const closeButton = dialog.querySelector('[aria-label*="close" i], [aria-label*="Close"], button[aria-label*="close" i]');
+          if (closeButton && closeButton instanceof HTMLElement) {
+            closeButton.click();
           }
         });
         
-        // Clear any pointer-events: none that might block clicks
-        document.body.style.pointerEvents = 'auto';
+        // Remove any high z-index overlays, backdrops, or modals
+        const allOverlays = document.querySelectorAll(
+          '[style*="z-index"], [class*="overlay"], [class*="backdrop"], [class*="modal"], [class*="dialog"]'
+        );
+        allOverlays.forEach((overlay) => {
+          const element = overlay as HTMLElement;
+          const zIndex = window.getComputedStyle(element).zIndex;
+          const computedZIndex = parseInt(zIndex) || 0;
+          
+          // Remove high z-index elements that could block clicks
+          if (computedZIndex > 100 || element.classList.contains('overlay') || 
+              element.classList.contains('backdrop') || element.classList.contains('modal')) {
+            element.style.pointerEvents = 'none';
+            element.style.display = 'none';
+            element.style.visibility = 'hidden';
+            element.style.opacity = '0';
+          }
+        });
         
-        // Small delay to ensure DOM is clean before redirect
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Clear pointer-events on body and html to ensure nothing blocks clicks
+        document.body.style.pointerEvents = 'auto';
+        document.documentElement.style.pointerEvents = 'auto';
+        
+        // Remove any fixed or absolute positioned elements that might overlay
+        const fixedElements = document.querySelectorAll('[style*="position: fixed"], [style*="position:absolute"]');
+        fixedElements.forEach((element) => {
+          const el = element as HTMLElement;
+          const position = window.getComputedStyle(el).position;
+          if ((position === 'fixed' || position === 'absolute') && 
+              (parseInt(window.getComputedStyle(el).zIndex) || 0) > 100) {
+            el.style.pointerEvents = 'none';
+          }
+        });
+        
+        // Ensure all inputs and form elements are accessible
+        const formElements = document.querySelectorAll('input, textarea, select, button, label');
+        formElements.forEach((element) => {
+          const el = element as HTMLElement;
+          el.style.pointerEvents = 'auto';
+        });
+        
+        // Small delay to ensure DOM cleanup completes before redirect
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (cleanupError) {
         console.debug('Cleanup before redirect (non-critical):', cleanupError);
       }
       
-      // Use window.location.href for better compatibility with form field activation
-      // This ensures the redirect is clean and form fields are immediately clickable
+      // Use window.location.href for full page navigation
+      // This ensures a clean redirect and that Stripe Checkout form fields are immediately clickable
       window.location.href = checkoutUrl;
       return { 
         success: true, 
@@ -1202,10 +1239,35 @@ export async function purchaseProSubscription(
       if (errorCheckoutUrl) {
         console.log('✅ Found checkout URL in error (Web Billing flow):', errorCheckoutUrl);
         console.log('🔗 Redirecting to Stripe Checkout...');
-        // Clear any overlays before redirect to ensure form fields are clickable
+        // Comprehensive cleanup to ensure Stripe Checkout form fields are fully clickable
         try {
+          // Close any open dialogs/modals
+          const dialogs = document.querySelectorAll('[role="dialog"], [data-state="open"]');
+          dialogs.forEach((dialog) => {
+            const closeButton = dialog.querySelector('[aria-label*="close" i], [aria-label*="Close"], button[aria-label*="close" i]');
+            if (closeButton && closeButton instanceof HTMLElement) {
+              closeButton.click();
+            }
+          });
+          
+          // Remove overlays and high z-index elements
+          const allOverlays = document.querySelectorAll(
+            '[style*="z-index"], [class*="overlay"], [class*="backdrop"], [class*="modal"], [class*="dialog"]'
+          );
+          allOverlays.forEach((overlay) => {
+            const element = overlay as HTMLElement;
+            const zIndex = window.getComputedStyle(element).zIndex;
+            if (parseInt(zIndex) > 100 || element.classList.contains('overlay') || 
+                element.classList.contains('backdrop') || element.classList.contains('modal')) {
+              element.style.pointerEvents = 'none';
+              element.style.display = 'none';
+              element.style.visibility = 'hidden';
+            }
+          });
+          
           document.body.style.pointerEvents = 'auto';
-          await new Promise(resolve => setTimeout(resolve, 50));
+          document.documentElement.style.pointerEvents = 'auto';
+          await new Promise(resolve => setTimeout(resolve, 100));
         } catch (cleanupError) {
           console.debug('Cleanup before redirect (non-critical):', cleanupError);
         }
@@ -1221,10 +1283,35 @@ export async function purchaseProSubscription(
       const urlMatch = purchaseError?.message?.match(/https?:\/\/[^\s]+/);
       if (urlMatch && urlMatch[0]) {
         console.log('✅ Found checkout URL in error message:', urlMatch[0]);
-        // Clear any overlays before redirect
+        // Comprehensive cleanup to ensure Stripe Checkout form fields are fully clickable
         try {
+          // Close any open dialogs/modals
+          const dialogs = document.querySelectorAll('[role="dialog"], [data-state="open"]');
+          dialogs.forEach((dialog) => {
+            const closeButton = dialog.querySelector('[aria-label*="close" i], [aria-label*="Close"], button[aria-label*="close" i]');
+            if (closeButton && closeButton instanceof HTMLElement) {
+              closeButton.click();
+            }
+          });
+          
+          // Remove overlays and high z-index elements
+          const allOverlays = document.querySelectorAll(
+            '[style*="z-index"], [class*="overlay"], [class*="backdrop"], [class*="modal"], [class*="dialog"]'
+          );
+          allOverlays.forEach((overlay) => {
+            const element = overlay as HTMLElement;
+            const zIndex = window.getComputedStyle(element).zIndex;
+            if (parseInt(zIndex) > 100 || element.classList.contains('overlay') || 
+                element.classList.contains('backdrop') || element.classList.contains('modal')) {
+              element.style.pointerEvents = 'none';
+              element.style.display = 'none';
+              element.style.visibility = 'hidden';
+            }
+          });
+          
           document.body.style.pointerEvents = 'auto';
-          await new Promise(resolve => setTimeout(resolve, 50));
+          document.documentElement.style.pointerEvents = 'auto';
+          await new Promise(resolve => setTimeout(resolve, 100));
         } catch (cleanupError) {
           console.debug('Cleanup before redirect (non-critical):', cleanupError);
         }
@@ -1265,28 +1352,66 @@ export async function purchaseProSubscription(
     if (resultCheckoutUrl) {
       console.log('✅ Found checkout URL in purchase result (Web Billing):', resultCheckoutUrl);
       console.log('🔗 Redirecting to Stripe Checkout...');
-      // Clear any overlays, modals, or z-index issues before redirect
-      // This ensures Stripe's checkout page form fields are fully clickable
+      // Comprehensive cleanup to ensure Stripe Checkout form fields are fully clickable
+      // This fixes issues where clickable areas are outside the field boxes
       try {
-        // Remove any high z-index overlays that might interfere
-        const overlays = document.querySelectorAll('[style*="z-index"]');
-        overlays.forEach((overlay) => {
-          const zIndex = window.getComputedStyle(overlay as HTMLElement).zIndex;
-          if (parseInt(zIndex) > 1000) {
-            (overlay as HTMLElement).style.pointerEvents = 'none';
-            (overlay as HTMLElement).style.display = 'none';
+        // Close any open dialogs/modals that might interfere
+        const dialogs = document.querySelectorAll('[role="dialog"], [data-state="open"]');
+        dialogs.forEach((dialog) => {
+          const closeButton = dialog.querySelector('[aria-label*="close" i], [aria-label*="Close"], button[aria-label*="close" i]');
+          if (closeButton && closeButton instanceof HTMLElement) {
+            closeButton.click();
           }
         });
         
-        // Clear any pointer-events: none that might block clicks
-        document.body.style.pointerEvents = 'auto';
+        // Remove any high z-index overlays, backdrops, or modals
+        const allOverlays = document.querySelectorAll(
+          '[style*="z-index"], [class*="overlay"], [class*="backdrop"], [class*="modal"], [class*="dialog"]'
+        );
+        allOverlays.forEach((overlay) => {
+          const element = overlay as HTMLElement;
+          const zIndex = window.getComputedStyle(element).zIndex;
+          const computedZIndex = parseInt(zIndex) || 0;
+          
+          // Remove high z-index elements that could block clicks
+          if (computedZIndex > 100 || element.classList.contains('overlay') || 
+              element.classList.contains('backdrop') || element.classList.contains('modal')) {
+            element.style.pointerEvents = 'none';
+            element.style.display = 'none';
+            element.style.visibility = 'hidden';
+            element.style.opacity = '0';
+          }
+        });
         
-        // Small delay to ensure DOM is clean before redirect
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Clear pointer-events on body and html to ensure nothing blocks clicks
+        document.body.style.pointerEvents = 'auto';
+        document.documentElement.style.pointerEvents = 'auto';
+        
+        // Remove any fixed or absolute positioned elements that might overlay
+        const fixedElements = document.querySelectorAll('[style*="position: fixed"], [style*="position:absolute"]');
+        fixedElements.forEach((element) => {
+          const el = element as HTMLElement;
+          const position = window.getComputedStyle(el).position;
+          if ((position === 'fixed' || position === 'absolute') && 
+              (parseInt(window.getComputedStyle(el).zIndex) || 0) > 100) {
+            el.style.pointerEvents = 'none';
+          }
+        });
+        
+        // Ensure all inputs and form elements are accessible
+        const formElements = document.querySelectorAll('input, textarea, select, button, label');
+        formElements.forEach((element) => {
+          const el = element as HTMLElement;
+          el.style.pointerEvents = 'auto';
+        });
+        
+        // Small delay to ensure DOM cleanup completes before redirect
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (cleanupError) {
         console.debug('Cleanup before redirect (non-critical):', cleanupError);
       }
-      // Use window.location.href for better compatibility with form field activation
+      // Use window.location.href for full page navigation
+      // This ensures a clean redirect and that Stripe Checkout form fields are immediately clickable
       window.location.href = resultCheckoutUrl;
       return { 
         success: true, 
