@@ -53,7 +53,7 @@ import { Z_INDEX, MAX_HEIGHT } from "../lib/layout-constants";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
-import { Switch } from "./ui/switch";
+import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Slider } from "./ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { PomodoroTimer } from "./PomodoroTimer";

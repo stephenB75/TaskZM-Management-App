@@ -1433,6 +1433,8 @@ export function useAIScheduler() {
         // CRITICAL: For recurring tasks, we need to check ALL occurrence days in the scheduling range
         // to find a time that doesn't conflict on any occurrence day
         // Otherwise, use the calculated date
+        // CRITICAL: Declare allOccurrenceDays at a higher scope so it's accessible later in the code
+        let allOccurrenceDays: Date[] | undefined = undefined;
         let scheduleDate: Date;
         if (isRecurringTask && recurringFirstOccurrence) {
           // Use the pre-calculated first occurrence date, but ensure time is reset to midnight
@@ -1444,7 +1446,7 @@ export function useAIScheduler() {
           // to ensure the selected time doesn't conflict on any occurrence day
           // This prevents scheduling a recurring task at a time that conflicts with existing tasks
           // on other occurrence days
-          const allOccurrenceDays: Date[] = [];
+          allOccurrenceDays = [];
           const currentOccurrenceDate = new Date(recurringFirstOccurrence);
           currentOccurrenceDate.setHours(0, 0, 0, 0);
           
