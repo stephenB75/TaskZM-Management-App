@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Inbox,
@@ -73,7 +73,7 @@ const getTwoWeekDateRange = () => {
 export function InboxView() {
   const { tasks, addTask, bulkDeleteTasks } = useTasks();
   const { getTeamMember } = useTeam();
-  const { scheduleAllTasks } = useAIScheduler();
+  const { scheduleAllTasks, isScheduling } = useAIScheduler();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] =
@@ -222,11 +222,19 @@ export function InboxView() {
     }
   };
 
-  const handleScheduleAll = async () => {
+  const isSchedulingRef = useRef(false);
+  
+  const handleScheduleAll = useCallback(async () => {
     console.log('🎬 handleScheduleAll CALLED', { 
       unscheduledTasksCount: unscheduledTasks.length,
       unscheduledTasks: unscheduledTasks.map(t => ({ id: t.id, title: t.title, dueDate: t.dueDate }))
     });
+    
+    // Prevent duplicate calls - if already scheduling, return early
+    if (isScheduling || isSchedulingRef.current) {
+      console.log('⚠️ Already scheduling, ignoring duplicate call', { isScheduling, isSchedulingRef: isSchedulingRef.current });
+      return;
+    }
     
     if (unscheduledTasks.length === 0) {
       console.log('⚠️ No tasks to schedule - inbox is empty');
@@ -235,6 +243,9 @@ export function InboxView() {
       });
       return;
     }
+    
+    // Set flag to prevent duplicate calls
+    isSchedulingRef.current = true;
 
     const loadingToast = toast.loading(
       "Scheduling inbox tasks...",
@@ -299,8 +310,11 @@ export function InboxView() {
         // Extension error - log but don't show to user, scheduler might still work
         console.warn('⚠️ Browser extension error detected (non-critical):', errorMessage);
       }
+    } finally {
+      // Reset flag when done
+      isSchedulingRef.current = false;
     }
-  };
+  }, [unscheduledTasks, scheduleAllTasks, isScheduling]);
 
   const handleToggleSelect = (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();

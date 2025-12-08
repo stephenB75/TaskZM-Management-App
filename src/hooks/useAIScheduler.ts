@@ -979,6 +979,26 @@ export function useAIScheduler() {
               dayTasks.push(task);
               dailyTasks.set(dateKey, dayTasks);
             }
+            
+            // Check if this day now exceeds the limit (for tracking/reporting)
+            // Note: Allow exactly 5 hours for efficient packing
+            if (newHours > MAX_HOURS_PER_DAY) {
+              // Check if we already have this day in exceedsLimit
+              const existing = daysExceedingLimit.find(d => d.date === dateKey);
+              if (!existing) {
+                const tasksForDay = dailyTasks.get(dateKey) || [];
+                daysExceedingLimit.push({
+                  date: dateKey,
+                  hours: newHours,
+                  tasks: [...tasksForDay]
+                });
+              } else {
+                // Update existing entry
+                existing.hours = newHours;
+                const tasksForDay = dailyTasks.get(dateKey) || [];
+                existing.tasks = [...tasksForDay];
+              }
+            }
           }
           
           currentDate.setDate(currentDate.getDate() + 1);
@@ -994,24 +1014,23 @@ export function useAIScheduler() {
         const dayTasks = dailyTasks.get(dateKey) || [];
         dayTasks.push(task);
         dailyTasks.set(dateKey, dayTasks);
-      }
-      
-      // Check if this day now exceeds the limit (for tracking/reporting)
-      // Note: Allow exactly 5 hours for efficient packing
-      const totalHours = currentHours + taskHours;
-      if (totalHours > MAX_HOURS_PER_DAY) {
-        // Check if we already have this day in exceedsLimit
-        const existing = daysExceedingLimit.find(d => d.date === dateKey);
-        if (!existing) {
-          daysExceedingLimit.push({
-            date: dateKey,
-            hours: totalHours,
-            tasks: [...tasksForDay]
-          });
-        } else {
-          // Update existing entry
-          existing.hours = totalHours;
-          existing.tasks = [...tasksForDay];
+        
+        // Check if this day now exceeds the limit (for tracking/reporting)
+        // Note: Allow exactly 5 hours for efficient packing
+        if (newHours > MAX_HOURS_PER_DAY) {
+          // Check if we already have this day in exceedsLimit
+          const existing = daysExceedingLimit.find(d => d.date === dateKey);
+          if (!existing) {
+            daysExceedingLimit.push({
+              date: dateKey,
+              hours: newHours,
+              tasks: [...dayTasks]
+            });
+          } else {
+            // Update existing entry
+            existing.hours = newHours;
+            existing.tasks = [...dayTasks];
+          }
         }
       }
     };
