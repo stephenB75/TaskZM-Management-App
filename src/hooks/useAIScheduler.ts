@@ -1530,23 +1530,41 @@ export function useAIScheduler() {
           })
           .map(p => {
             // Create a task object with scheduledDate set from the plan
-            // CRITICAL: Use the EXACT scheduledDate from the plan entry, preserving the time
-            // Convert to ISO string to ensure consistency, but preserve the exact time
+            // CRITICAL FIX: For recurring tasks, we need to adjust the scheduledDate to the target date
+            // while preserving the time from the first occurrence. This ensures conflict detection works correctly.
             const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+            const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
+            
+            let taskScheduledDate: string;
+            if (isPlanTaskRecurring) {
+              // For recurring tasks, create a date for the target day (scheduleDate) but with the time from the first occurrence
+              // This ensures the recurring task appears on the correct day with the correct time for conflict detection
+              const occurrenceDate = new Date(scheduleDate);
+              occurrenceDate.setHours(planScheduledDate.getHours(), planScheduledDate.getMinutes(), planScheduledDate.getSeconds(), planScheduledDate.getMilliseconds());
+              taskScheduledDate = occurrenceDate.toISOString();
+            } else {
+              // For regular tasks, use the exact scheduledDate from the plan
+              taskScheduledDate = planScheduledDate.toISOString();
+            }
+            
             const taskWithDate = { 
               ...p.task, 
-              scheduledDate: planScheduledDate.toISOString() 
+              scheduledDate: taskScheduledDate
             };
             
             // CRITICAL DEBUG: Log the conversion for recurring tasks
-            if (import.meta.env.DEV && (task.recurrence && task.recurrence.type !== 'none')) {
+            if (import.meta.env.DEV && (isPlanTaskRecurring || (task.recurrence && task.recurrence.type !== 'none'))) {
               logger.debug('Task from plan converted for conflict check', {
                 currentTaskId: task.id,
                 currentTaskTitle: task.title,
+                currentTaskIsRecurring: !!(task.recurrence && task.recurrence.type !== 'none'),
                 planTaskId: taskWithDate.id,
                 planTaskTitle: taskWithDate.title,
+                planTaskIsRecurring: isPlanTaskRecurring,
                 planTaskScheduledDate: taskWithDate.scheduledDate,
                 planTaskScheduledTime: new Date(taskWithDate.scheduledDate).toLocaleTimeString(),
+                planTaskScheduledDateKey: getDateKey(new Date(taskWithDate.scheduledDate)),
+                targetDateKey: dateKey,
                 originalPlanScheduledDate: p.scheduledDate,
                 originalPlanScheduledDateType: typeof p.scheduledDate,
               });
@@ -2328,22 +2346,54 @@ export function useAIScheduler() {
         // This ensures we catch any conflicts that might have been missed, especially for recurring tasks
         // IMPORTANT: Recalculate validTasksForDay to ensure it includes ALL tasks from the plan with their final scheduled times
         // This is critical because tasks in the plan might have had their times adjusted by previous conflict checks
+        // CRITICAL FIX: For recurring tasks in the plan, check if they apply to this date using isDateInRecurrence()
+        // This ensures recurring tasks are visible on ALL their occurrence days in the final safeguard
         const updatedTasksInPlanSameDay = plan
           .filter(p => {
             if (!p.scheduledDate) return false;
+            
+            // Check if this is a recurring task
+            const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
+            
+            if (isPlanTaskRecurring) {
+              // For recurring tasks, check if they apply to this date using isDateInRecurrence
+              if (!isDateInRecurrence(p.task, scheduleDate)) {
+                return false;
+              }
+            } else {
+              // For regular tasks, check if scheduledDate matches the target date
+              const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+              const pDateKey = getDateKey(planDate);
+              if (pDateKey !== dateKey) return false;
+            }
+            
+            // Only include tasks that have a scheduled time set (not just midnight)
             const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
-            const pDateKey = getDateKey(planDate);
-            if (pDateKey !== dateKey) return false;
             const hasTimeSet = planDate.getHours() !== 0 || planDate.getMinutes() !== 0;
             return hasTimeSet;
           })
           .map(p => {
             const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+            const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
+            
+            // CRITICAL FIX: For recurring tasks, adjust scheduledDate to the target date while preserving time
+            // This ensures conflict detection sees the recurring task on the correct day
+            let taskScheduledDate: string;
+            if (isPlanTaskRecurring) {
+              // Create a date for the target day (scheduleDate) but with the time from the first occurrence
+              const occurrenceDate = new Date(scheduleDate);
+              occurrenceDate.setHours(planScheduledDate.getHours(), planScheduledDate.getMinutes(), planScheduledDate.getSeconds(), planScheduledDate.getMilliseconds());
+              taskScheduledDate = occurrenceDate.toISOString();
+            } else {
+              // For regular tasks, use the exact scheduledDate from the plan
+              taskScheduledDate = planScheduledDate.toISOString();
+            }
+            
             // CRITICAL: Create a new task object with the scheduledDate as an ISO string
             // This ensures findNextAvailableSlot can correctly parse it
             const taskWithScheduledDate = {
               ...p.task,
-              scheduledDate: planScheduledDate.toISOString()
+              scheduledDate: taskScheduledDate
             };
             // CRITICAL: Ensure the scheduledDate is properly set and not null/undefined
             if (!taskWithScheduledDate.scheduledDate) {
@@ -2469,6 +2519,7 @@ export function useAIScheduler() {
         // CRITICAL: One final direct check - iterate through plan and check for ALL conflicts
         // This is a last-resort check to catch any conflicts that findNextAvailableSlot might have missed
         // We need to check ALL tasks in the plan, not just the first conflict
+        // CRITICAL FIX: For recurring tasks in the plan, check if they apply to this date using isDateInRecurrence()
         let maxConflictEnd = scheduleDate.getTime();
         let hasConflict = false;
         const scheduleTimeMs = scheduleDate.getTime();
@@ -2482,13 +2533,36 @@ export function useAIScheduler() {
           const planScheduledDate = planItem.scheduledDate instanceof Date 
             ? planItem.scheduledDate 
             : new Date(planItem.scheduledDate);
-          const planDateKey = getDateKey(planScheduledDate);
           
-          // Only check tasks on the same day
-          if (planDateKey !== dateKey) continue;
+          // Check if this task applies to the target date
+          const isPlanItemRecurring = planItem.task.recurrence && planItem.task.recurrence.type !== 'none';
+          let appliesToDate = false;
+          
+          if (isPlanItemRecurring) {
+            // For recurring tasks, check if they apply to this date using isDateInRecurrence
+            appliesToDate = isDateInRecurrence(planItem.task, scheduleDate);
+          } else {
+            // For regular tasks, check if scheduledDate matches the target date
+            const planDateKey = getDateKey(planScheduledDate);
+            appliesToDate = planDateKey === dateKey;
+          }
+          
+          // Only check tasks that apply to this date
+          if (!appliesToDate) continue;
           
           // Check if times overlap
-          const planTimeMs = planScheduledDate.getTime();
+          // CRITICAL FIX: For recurring tasks, use the time from the first occurrence but on the target date
+          // This ensures we check conflicts correctly for recurring tasks on their occurrence days
+          let planTimeMs: number;
+          if (isPlanItemRecurring) {
+            // For recurring tasks, create a date for the target day with the time from the first occurrence
+            const occurrenceDate = new Date(scheduleDate);
+            occurrenceDate.setHours(planScheduledDate.getHours(), planScheduledDate.getMinutes(), planScheduledDate.getSeconds(), planScheduledDate.getMilliseconds());
+            planTimeMs = occurrenceDate.getTime();
+          } else {
+            // For regular tasks, use the exact scheduledDate
+            planTimeMs = planScheduledDate.getTime();
+          }
           const planTaskDuration = getTaskMinutes(planItem.task) * MILLISECONDS_PER_MINUTE;
           const planEndMs = planTimeMs + planTaskDuration;
           
