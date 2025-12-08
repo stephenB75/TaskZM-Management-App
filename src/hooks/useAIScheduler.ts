@@ -953,16 +953,48 @@ export function useAIScheduler() {
     
     // Helper: Add task hours to daily tracking
     // This is called when scheduling a task, so we track the hours for that day
+    // CRITICAL FIX: For recurring tasks, add them to ALL days they occur on, not just the scheduled date
+    // This ensures subsequent tasks in the same batch can see recurring tasks on all their occurrence days
     const addToDailyHours = (date: Date, taskHours: number, task: Task): void => {
-      const dateKey = getDateKey(date);
-      const currentHours = dailyHours.get(dateKey) || 0;
-      const newHours = currentHours + taskHours;
-      dailyHours.set(dateKey, newHours);
+      const isRecurring = task.recurrence && task.recurrence.type !== 'none';
       
-      // Also track the task in dailyTasks for time slot calculations
-      const dayTasks = dailyTasks.get(dateKey) || [];
-      dayTasks.push(task);
-      dailyTasks.set(dateKey, dayTasks);
+      if (isRecurring) {
+        // For recurring tasks, add to ALL days they occur on within the date range
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+          const dateKey = getDateKey(currentDate);
+          
+          // Check if this recurring task applies to this date
+          if (isDateInRecurrence(task, currentDate)) {
+            // Add hours for this day
+            const currentHours = dailyHours.get(dateKey) || 0;
+            const newHours = currentHours + taskHours;
+            dailyHours.set(dateKey, newHours);
+            
+            // Add task to dailyTasks for this day (only if not already present)
+            // IMPORTANT: Keep the task's original scheduledDate (base date) for recurrence logic
+            // The filtering logic in existingTasksForDay will use isDateInRecurrence to check if it applies
+            const dayTasks = dailyTasks.get(dateKey) || [];
+            if (!dayTasks.find(t => t.id === task.id)) {
+              dayTasks.push(task);
+              dailyTasks.set(dateKey, dayTasks);
+            }
+          }
+          
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      } else {
+        // For non-recurring tasks, only add to the scheduled date
+        const dateKey = getDateKey(date);
+        const currentHours = dailyHours.get(dateKey) || 0;
+        const newHours = currentHours + taskHours;
+        dailyHours.set(dateKey, newHours);
+        
+        // Also track the task in dailyTasks for time slot calculations
+        const dayTasks = dailyTasks.get(dateKey) || [];
+        dayTasks.push(task);
+        dailyTasks.set(dateKey, dayTasks);
+      }
       
       // Check if this day now exceeds the limit (for tracking/reporting)
       // Note: Allow exactly 5 hours for efficient packing
