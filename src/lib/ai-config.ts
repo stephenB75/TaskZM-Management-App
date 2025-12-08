@@ -99,6 +99,14 @@ export const TIME_ROUNDING_INTERVAL_MINUTES = 15;
 export const DEFAULT_TIME_SLOTS = 5;
 
 /**
+ * Maximum attempts when finding a conflict-free time slot for recurring tasks
+ * This represents the maximum number of time slots to try when checking all occurrence days
+ * Default: 48 slots (12 hours * 4 slots per hour at 15-minute intervals)
+ * This ensures we try enough slots to find a valid time even in busy schedules
+ */
+export const MAX_RECURRING_TASK_SCHEDULING_ATTEMPTS = 48;
+
+/**
  * Number of days to distribute high priority tasks across
  * High priority tasks are distributed across the first few days using round-robin
  * Default: 3 days

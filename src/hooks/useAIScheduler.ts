@@ -18,6 +18,7 @@ import {
   ONE_WEEK_DAYS_OFFSET,
   TIME_ROUNDING_INTERVAL_MINUTES,
   DEFAULT_TIME_SLOTS,
+  MAX_RECURRING_TASK_SCHEDULING_ATTEMPTS,
   PRIORITY_TIME_SLOTS,
   HIGH_PRIORITY_DISTRIBUTION_DAYS,
   DEFAULT_CATEGORY_HOURS,
@@ -1429,6 +1430,8 @@ export function useAIScheduler() {
         
         // Calculate time slot intelligently based on task duration and existing schedule
         // For recurring tasks, use the pre-calculated first occurrence date (but reset time to midnight)
+        // CRITICAL: For recurring tasks, we need to check ALL occurrence days in the scheduling range
+        // to find a time that doesn't conflict on any occurrence day
         // Otherwise, use the calculated date
         let scheduleDate: Date;
         if (isRecurringTask && recurringFirstOccurrence) {
@@ -1436,6 +1439,37 @@ export function useAIScheduler() {
           // This allows the category time slot logic to properly assign the time
           scheduleDate = new Date(recurringFirstOccurrence);
           scheduleDate.setHours(0, 0, 0, 0);
+          
+          // CRITICAL: For recurring tasks, check ALL occurrence days within the scheduling range
+          // to ensure the selected time doesn't conflict on any occurrence day
+          // This prevents scheduling a recurring task at a time that conflicts with existing tasks
+          // on other occurrence days
+          const allOccurrenceDays: Date[] = [];
+          const currentOccurrenceDate = new Date(recurringFirstOccurrence);
+          currentOccurrenceDate.setHours(0, 0, 0, 0);
+          
+          // Collect all occurrence days within the scheduling range
+          while (currentOccurrenceDate <= endDate) {
+            if (isDateInRecurrence(task, currentOccurrenceDate)) {
+              allOccurrenceDays.push(new Date(currentOccurrenceDate));
+            }
+            // Move to next day
+            currentOccurrenceDate.setDate(currentOccurrenceDate.getDate() + 1);
+          }
+          
+          if (import.meta.env.DEV && allOccurrenceDays.length > 0) {
+            logger.debug('Recurring task occurrence days to check', {
+              taskId: task.id,
+              taskTitle: task.title,
+              firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+              occurrenceDaysCount: allOccurrenceDays.length,
+              occurrenceDays: allOccurrenceDays.map(d => d.toISOString().split('T')[0]),
+              dateRange: {
+                start: startDate.toISOString().split('T')[0],
+                end: endDate.toISOString().split('T')[0],
+              },
+            });
+          }
         } else {
           // Non-recurring task: use calculated date
           scheduleDate = new Date(baseDate);
@@ -1799,19 +1833,198 @@ export function useAIScheduler() {
             });
           }
           
-          const availableSlot = findNextAvailableSlot(
-            task.id,
-            proposedTime,
-            taskDurationMinutes,
-            validTasksForDay, // Use validated tasks to ensure conflict detection works
-            {
-              ensureAfterCurrentTime: isToday,
-              categoryHours: categoryHours ? {
-                start: categoryHours.start,
-                end: categoryHours.end,
-              } : undefined,
+          // CRITICAL: For recurring tasks, check conflicts on ALL occurrence days, not just the first one
+          // This ensures the selected time doesn't conflict with existing tasks on any occurrence day
+          let availableSlot: Date;
+          if (isRecurringTask && allOccurrenceDays && allOccurrenceDays.length > 0) {
+            // For recurring tasks, we need to find a time that works for ALL occurrence days
+            // Start with the proposed time and check each occurrence day
+            let candidateTime = new Date(proposedTime);
+            let foundValidTime = false;
+            const maxAttempts = MAX_RECURRING_TASK_SCHEDULING_ATTEMPTS;
+            let attempts = 0;
+            
+            while (!foundValidTime && attempts < maxAttempts) {
+              // Check if this time works for ALL occurrence days
+              let conflictsOnAnyDay = false;
+              
+              for (const occurrenceDay of allOccurrenceDays) {
+                // Get all tasks for this occurrence day (existing + from plan)
+                const occurrenceDateKey = getDateKey(occurrenceDay);
+                
+                // Get existing tasks for this occurrence day
+                const occurrenceTasksForDay = (dailyTasks.get(occurrenceDateKey) || [])
+                  .filter(t => {
+                    const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+                    if (isRecurring) {
+                      if (!isDateInRecurrence(t, occurrenceDay)) return false;
+                      if (!t.scheduledDate) return false;
+                      const baseScheduledDate = typeof t.scheduledDate === 'string' 
+                        ? new Date(t.scheduledDate)
+                        : new Date(t.scheduledDate);
+                      return !isNaN(baseScheduledDate.getTime()) && (baseScheduledDate.getHours() !== 0 || baseScheduledDate.getMinutes() !== 0);
+                    } else {
+                      if (!t.scheduledDate) return false;
+                      const scheduledDate = typeof t.scheduledDate === 'string' 
+                        ? new Date(t.scheduledDate)
+                        : new Date(t.scheduledDate);
+                      const scheduledDateKey = getDateKey(scheduledDate);
+                      if (scheduledDateKey !== occurrenceDateKey) return false;
+                      return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+                    }
+                  })
+                  .map(t => {
+                    // Adjust scheduledDate for recurring tasks to the occurrence day
+                    const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+                    if (isRecurring && t.scheduledDate) {
+                      const baseScheduledDate = typeof t.scheduledDate === 'string' 
+                        ? new Date(t.scheduledDate)
+                        : new Date(t.scheduledDate);
+                      const occurrenceDate = new Date(occurrenceDay);
+                      occurrenceDate.setHours(baseScheduledDate.getHours(), baseScheduledDate.getMinutes(), baseScheduledDate.getSeconds(), baseScheduledDate.getMilliseconds());
+                      return {
+                        ...t,
+                        scheduledDate: occurrenceDate.toISOString()
+                      };
+                    }
+                    return t;
+                  });
+                
+                // Also include tasks from the plan that apply to this occurrence day
+                const planTasksForOccurrenceDay = plan
+                  .filter(p => {
+                    if (!p.scheduledDate) return false;
+                    const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
+                    if (isPlanTaskRecurring) {
+                      return isDateInRecurrence(p.task, occurrenceDay);
+                    } else {
+                      const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+                      return getDateKey(planDate) === occurrenceDateKey;
+                    }
+                  })
+                  .map(p => {
+                    const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+                    const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
+                    if (isPlanTaskRecurring) {
+                      const occurrenceDate = new Date(occurrenceDay);
+                      occurrenceDate.setHours(planScheduledDate.getHours(), planScheduledDate.getMinutes(), planScheduledDate.getSeconds(), planScheduledDate.getMilliseconds());
+                      return {
+                        ...p.task,
+                        scheduledDate: occurrenceDate.toISOString()
+                      };
+                    } else {
+                      return {
+                        ...p.task,
+                        scheduledDate: planScheduledDate.toISOString()
+                      };
+                    }
+                  });
+                
+                const allOccurrenceTasks = [...occurrenceTasksForDay, ...planTasksForOccurrenceDay]
+                  .filter(t => t.id !== task.id && t.scheduledDate); // Exclude current task
+                
+                // Create a test time for this occurrence day
+                const testTime = new Date(occurrenceDay);
+                testTime.setHours(candidateTime.getHours(), candidateTime.getMinutes(), candidateTime.getSeconds(), candidateTime.getMilliseconds());
+                
+                // Check for conflicts on this occurrence day
+                const testStart = testTime.getTime();
+                const testEnd = testStart + (taskDurationMinutes * MILLISECONDS_PER_MINUTE);
+                
+                for (const existingTask of allOccurrenceTasks) {
+                  if (!existingTask.scheduledDate) continue;
+                  const existingScheduledDate = typeof existingTask.scheduledDate === 'string'
+                    ? new Date(existingTask.scheduledDate)
+                    : new Date(existingTask.scheduledDate);
+                  const existingStart = existingScheduledDate.getTime();
+                  const existingDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE;
+                  const existingEnd = existingStart + (existingDuration * MILLISECONDS_PER_MINUTE);
+                  
+                  // Check for conflict
+                  const overlaps = testStart < existingEnd && testEnd > existingStart;
+                  const sameStart = Math.abs(testStart - existingStart) < MILLISECONDS_PER_MINUTE;
+                  
+                  if (overlaps || sameStart) {
+                    conflictsOnAnyDay = true;
+                    if (import.meta.env.DEV) {
+                      logger.debug('Recurring task conflict found on occurrence day', {
+                        taskId: task.id,
+                        taskTitle: task.title,
+                        occurrenceDay: occurrenceDay.toISOString().split('T')[0],
+                        candidateTime: candidateTime.toLocaleTimeString(),
+                        conflictingTaskId: existingTask.id,
+                        conflictingTaskTitle: existingTask.title,
+                        conflictingTime: existingScheduledDate.toLocaleTimeString(),
+                      });
+                    }
+                    break;
+                  }
+                }
+                
+                if (conflictsOnAnyDay) break;
+              }
+              
+              if (!conflictsOnAnyDay) {
+                foundValidTime = true;
+                availableSlot = candidateTime;
+                if (import.meta.env.DEV) {
+                  logger.debug('Recurring task found valid time for all occurrence days', {
+                    taskId: task.id,
+                    taskTitle: task.title,
+                    selectedTime: candidateTime.toLocaleTimeString(),
+                    occurrenceDaysCount: allOccurrenceDays.length,
+                  });
+                }
+              } else {
+                // Move to next time slot (15 minutes later)
+                candidateTime.setMinutes(candidateTime.getMinutes() + TIME_ROUNDING_INTERVAL_MINUTES);
+                if (candidateTime.getMinutes() >= MINUTES_PER_HOUR) {
+                  candidateTime.setHours(candidateTime.getHours() + 1);
+                  candidateTime.setMinutes(0);
+                }
+                attempts++;
+              }
             }
-          );
+            
+            // If we couldn't find a time that works for all days, fall back to standard conflict detection
+            if (!foundValidTime) {
+              if (import.meta.env.DEV) {
+                logger.warn('Could not find time that works for all occurrence days, using standard conflict detection', {
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  attempts,
+                });
+              }
+              availableSlot = findNextAvailableSlot(
+                task.id,
+                proposedTime,
+                taskDurationMinutes,
+                validTasksForDay,
+                {
+                  ensureAfterCurrentTime: isToday,
+                  categoryHours: categoryHours ? {
+                    start: categoryHours.start,
+                    end: categoryHours.end,
+                  } : undefined,
+                }
+              );
+            }
+          } else {
+            // For non-recurring tasks, use standard conflict detection
+            availableSlot = findNextAvailableSlot(
+              task.id,
+              proposedTime,
+              taskDurationMinutes,
+              validTasksForDay, // Use validated tasks to ensure conflict detection works
+              {
+                ensureAfterCurrentTime: isToday,
+                categoryHours: categoryHours ? {
+                  start: categoryHours.start,
+                  end: categoryHours.end,
+                } : undefined,
+              }
+            );
+          }
           
           // CRITICAL DEBUG: Log the result
           if (import.meta.env.DEV) {

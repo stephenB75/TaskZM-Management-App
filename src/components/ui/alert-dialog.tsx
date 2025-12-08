@@ -71,7 +71,7 @@ const AlertDialogContent = React.forwardRef<
       ref={ref}
       data-slot="alert-dialog-content"
       className={cn(
-        `${UI_GRADIENT_COLORS.dialog.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border border-primary/10 p-6 shadow-lg duration-200 sm:max-w-lg`,
+        `${UI_GRADIENT_COLORS.dialog.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border border-primary/25 dark:border-primary/30 p-6 shadow-lg duration-200 sm:max-w-lg text-foreground`,
         className,
       )}
       {...props}
@@ -120,7 +120,7 @@ function AlertDialogTitle({
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
-      className={cn("text-lg font-semibold", className)}
+      className={cn("text-lg font-semibold text-foreground dark:text-foreground", className)}
       {...props}
     />
   );
@@ -135,7 +135,7 @@ function AlertDialogDescription({
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-muted-foreground text-sm dark:text-muted-foreground", className)}
       {...props}
     />
   );

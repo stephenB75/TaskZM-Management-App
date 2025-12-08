@@ -1640,11 +1640,11 @@ export function TaskDialog({
       }}
     >
       <DialogContent className={`max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full ${UI_GRADIENT_COLORS.dialog.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
-        <DialogHeader className="flex-shrink-0 pb-4 sm:pb-5 md:pb-6 border-b border-primary/10">
-          <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+        <DialogHeader className="flex-shrink-0 pb-4 sm:pb-5 md:pb-6 border-b border-primary/25 dark:border-primary/30">
+          <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground dark:text-foreground">
             {task ? "Edit Task" : "Create New Task"}
           </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
+          <DialogDescription className="text-xs sm:text-sm text-muted-foreground dark:text-muted-foreground">
             {task
               ? "Update the task details below."
               : "Fill in the details to create a new task."}
