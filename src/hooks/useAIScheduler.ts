@@ -724,6 +724,19 @@ export function useAIScheduler() {
     };
   };
 
+  /**
+   * Generate a schedule plan for unscheduled tasks
+   * 
+   * GUIDELINES REFERENCE: See src/guidelines/AI_SCHEDULING_GUIDELINES.md for complete scheduling rules
+   * 
+   * Key principles:
+   * 1. Differentiate recurring tasks (appear on multiple days) from regular tasks (single day)
+   * 2. Find available time slots by checking all tasks (existing + plan + recurring)
+   * 3. Maintain chronological order within each day
+   * 4. Respect category hours rules for each task category
+   * 5. Prevent conflicts by checking all tasks on the target date
+   * 6. Handle recurring tasks by making them visible on all occurrence days
+   */
   const generateSchedulePlan = (
     tasksToSchedule?: Task[],
     dateRange?: { startDate: Date; endDate: Date },
@@ -1429,14 +1442,16 @@ export function useAIScheduler() {
           scheduleDate.setDate(scheduleDate.getDate() + finalDaysToAdd);
         }
         
-        // Try to get category-based time slot first
-        // For rescheduling with shuffle, distribute tasks more evenly across category hours
+        // GUIDELINE 4: RESPECT CATEGORY HOURS RULES
+        // Each category (work, personal, projects) has defined hours for weekdays/weekends
+        // Tasks must be scheduled within their category's allowed hours
+        // See: src/guidelines/AI_SCHEDULING_GUIDELINES.md Section 4
         const dateKey = getDateKey(scheduleDate);
-        // CRITICAL FIX: Filter existing tasks to include recurring tasks for ALL days they occur on
-        // The issue: dailyTasks includes recurring tasks for all days via isDateInRecurrence,
-        // but we were filtering by exact scheduledDate match, which excluded recurring tasks on other days
-        // Solution: For recurring tasks, check if they apply to this date using isDateInRecurrence
-        // For non-recurring tasks, check if scheduledDate matches and has a valid time
+        // GUIDELINE 2: FIND AVAILABLE TIME - Get all tasks for the target date
+        // Must include: existing tasks + tasks in current plan + recurring tasks that apply to this date
+        // For recurring tasks: Use isDateInRecurrence() to check if they apply (they appear on multiple days)
+        // For regular tasks: Check if scheduledDate matches the target date exactly
+        // See: src/guidelines/AI_SCHEDULING_GUIDELINES.md Section 2
         const existingTasksForDay = (dailyTasks.get(dateKey) || []).filter(t => {
           // Check if this is a recurring task
           const isRecurring = t.recurrence && t.recurrence.type !== 'none';
