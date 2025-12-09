@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -433,18 +433,29 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       // Parse success response
       let data;
       try {
-        data = await response.json();
+        const responseText = await response.text();
+        console.log('Apple Calendar setup response body:', responseText);
+        data = responseText ? JSON.parse(responseText) : { success: true };
+        console.log('Apple Calendar setup parsed data:', data);
       } catch (parseError) {
         // If JSON parsing fails, still consider it a success if status is OK
         if (response.ok) {
+          console.log('Response OK but JSON parse failed, treating as success');
           data = { success: true };
         } else {
           throw new Error('Invalid response from server');
         }
       }
 
+      // Immediately update the calendar status to show connection
+      setCalendarStatus(prev => ({ ...prev, apple: true }));
+      
+      // Also refresh from server to ensure consistency
       await checkCalendarStatus();
-      toast.success('Apple Calendar connected successfully');
+      
+      toast.success('Apple Calendar connected successfully! 🎉', {
+        description: 'Your Apple Calendar is now synced with TaskZM',
+      });
       setShowCalDAVDialog(false);
     } catch (error) {
       console.error('Apple Calendar connection error:', error);
