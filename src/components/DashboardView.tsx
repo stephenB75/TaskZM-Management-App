@@ -47,6 +47,7 @@ import { AIRecommendationPanel } from "./AIRecommendationPanel";
 import { AppHeader } from "./AppHeader";
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
@@ -420,6 +421,8 @@ export function DashboardView({
   const tasksContext = useTasks();
   const subscriptionContext = useSubscription();
   const aiSchedulerContext = useAIScheduler();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
 
   // Extract values with safe defaults
   const tasks = tasksContext?.tasks || [];
