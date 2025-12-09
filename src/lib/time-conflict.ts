@@ -11,6 +11,7 @@ import { TIME_ROUNDING_INTERVAL_MINUTES } from './ai-config';
 export interface FindSlotOptions {
   ensureAfterCurrentTime?: boolean;
   categoryHours?: { start: number; end: number } | null; // in minutes from midnight
+  calendarEvents?: Array<{ start: Date; end: Date; title: string }>; // Calendar events to avoid
 }
 
 /**
@@ -291,11 +292,12 @@ export function findNextAvailableSlot(
       }
     }
 
-    // Check if this slot conflicts with any existing task
+    // Check if this slot conflicts with any existing task or calendar event
     // IMPORTANT: Check ALL conflicts, not just the first one, to ensure we move past all overlapping tasks
     let hasConflict = false;
     let maxConflictEnd = candidateStart; // Track the latest end time of all conflicts
     
+    // Check conflicts with tasks
     for (const existing of sortedTasks) {
       // CRITICAL: Check for conflicts with multiple conditions to catch all edge cases
       // 1. Overlap: candidate starts before existing ends AND ends after existing starts
@@ -346,8 +348,33 @@ export function findNextAvailableSlot(
       }
     }
     
+    // Check conflicts with calendar events
+    for (const event of calendarConflicts) {
+      const overlaps = candidateStart < event.end && candidateEnd > event.start;
+      const sameStartTime = Math.abs(candidateStart - event.start) < 1;
+      const withinOneMinute = Math.abs(candidateStart - event.start) < MILLISECONDS_PER_MINUTE;
+      
+      if (overlaps || sameStartTime || withinOneMinute) {
+        hasConflict = true;
+        maxConflictEnd = Math.max(maxConflictEnd, event.end);
+        
+        if (import.meta.env.DEV) {
+          console.debug('🔴 Calendar event conflict detected in findNextAvailableSlot', {
+            candidateTime: new Date(candidateStart).toISOString(),
+            candidateEnd: new Date(candidateEnd).toISOString(),
+            eventTitle: event.title,
+            eventStart: new Date(event.start).toISOString(),
+            eventEnd: new Date(event.end).toISOString(),
+            overlaps,
+            sameStartTime,
+            withinOneMinute,
+          });
+        }
+      }
+    }
+    
     // CRITICAL DEBUG: Log if no conflicts were found
-    if (import.meta.env.DEV && !hasConflict && sortedTasks.length > 0) {
+    if (import.meta.env.DEV && !hasConflict && (sortedTasks.length > 0 || calendarConflicts.length > 0)) {
       console.debug('✅ No conflict found in findNextAvailableSlot', {
         candidateTime: new Date(candidateStart).toISOString(),
         candidateEnd: new Date(candidateEnd).toISOString(),

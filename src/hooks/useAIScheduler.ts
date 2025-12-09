@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useTasks } from '../contexts/TaskContext';
 import { useAI } from '../contexts/AIContext';
+import { useCalendar } from '../contexts/CalendarContext';
+import { useAuth } from '../contexts/AuthContext';
 import { isTaskBlocked, calculateDependencyDepth } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { findNextAvailableSlot } from '../lib/time-conflict';
@@ -9,6 +11,7 @@ import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { isDateInRecurrence } from '../lib/recurrence';
+import { projectId } from '../utils/supabase/info';
 import {
   MAX_HOURS_PER_DAY,
   MIN_HOURS_PER_DAY,
@@ -70,7 +73,52 @@ export interface ScheduleResult {
 export function useAIScheduler() {
   const { tasks, updateTask, hoursSettings } = useTasks();
   const { settings: aiSettings } = useAI();
+  const { calendarStatus } = useCalendar();
+  const { accessToken } = useAuth();
   const [isScheduling, setIsScheduling] = useState(false);
+  
+  // Fetch calendar events for a date range
+  const fetchCalendarEvents = async (startDate: Date, endDate: Date): Promise<Array<{ start: Date; end: Date; title: string }>> => {
+    if (!accessToken) return [];
+    
+    const events: Array<{ start: Date; end: Date; title: string }> = [];
+    const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
+    
+    // Fetch events from all connected calendar providers
+    const providers: Array<'google' | 'apple'> = [];
+    if (calendarStatus.google) providers.push('google');
+    if (calendarStatus.apple) providers.push('apple');
+    
+    for (const provider of providers) {
+      try {
+        const response = await fetch(
+          `${BASE_URL}/calendar/events/${provider}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.events && Array.isArray(data.events)) {
+            for (const event of data.events) {
+              events.push({
+                start: new Date(event.start),
+                end: new Date(event.end),
+                title: event.title || 'Calendar Event',
+              });
+            }
+          }
+        }
+      } catch (error) {
+        logger.warn(`Failed to fetch ${provider} calendar events:`, error);
+      }
+    }
+    
+    return events;
+  };
 
   const getUnscheduledTasks = () => {
     const now = new Date();
@@ -738,11 +786,11 @@ export function useAIScheduler() {
    * 5. Prevent conflicts by checking all tasks on the target date
    * 6. Handle recurring tasks by making them visible on all occurrence days
    */
-  const generateSchedulePlan = (
+  const generateSchedulePlan = async (
     tasksToSchedule?: Task[],
     dateRange?: { startDate: Date; endDate: Date },
     options?: { forceCategoryHours?: boolean; shuffle?: boolean; enforceMinimumHours?: boolean }
-  ): ScheduleResult => {
+  ): Promise<ScheduleResult> => {
     // Always log this - critical for debugging AI Duration Estimator
     logger.debug('generateSchedulePlan called', {
       tasksToScheduleCount: tasksToSchedule?.length || 0,
@@ -757,6 +805,28 @@ export function useAIScheduler() {
       return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
     }
     
+    // Fetch calendar events for the date range
+    const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      return tomorrow;
+    })();
+    
+    const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
+      const future = new Date(startDate);
+      future.setDate(future.getDate() + (TWO_WEEKS_DAYS - 1));
+      return future;
+    })();
+    endDate.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
+    
+    // Fetch calendar events asynchronously
+    const calendarEvents = await fetchCalendarEvents(startDate, endDate);
+    logger.debug('Fetched calendar events for AI scheduling', {
+      eventCount: calendarEvents.length,
+      dateRange: `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`,
+    });
+    
     // Helper: Shuffle array using Fisher-Yates algorithm
     const shuffleArray = <T>(array: T[]): T[] => {
       const shuffled = [...array];
@@ -767,29 +837,7 @@ export function useAIScheduler() {
       return shuffled;
     };
 
-    // Determine start date: use provided dateRange start, or default to beginning of tomorrow
-    // AI scheduling should always start from the next day (tomorrow), not today
-    // IMPORTANT: Define startDate and endDate BEFORE using them in the loop below
-    const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
-      // Default to beginning of tomorrow (00:00:00) to schedule from next day
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      return tomorrow;
-    })();
-    
-    // Determine end date: use provided dateRange end, or default to 14th day from tomorrow
-    // "From tomorrow up to 14th day" means: tomorrow (day 1) through day 14 = TWO_WEEKS_DAYS days total
-    // So end date is tomorrow + 13 days (the 14th day)
-    const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
-      const future = new Date(startDate);
-      // Add 13 days to get to the 14th day (tomorrow is day 1, so day 14 is 13 days from tomorrow)
-      future.setDate(future.getDate() + (TWO_WEEKS_DAYS - 1));
-      return future;
-    })();
-    
-    // Ensure end date is at end of day
-    endDate.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
+    // startDate and endDate are already defined above when fetching calendar events
     
     // Initialize dailyHours with already scheduled tasks
     const dailyHours: Map<string, number> = new Map();
@@ -2052,6 +2100,15 @@ export function useAIScheduler() {
                   attempts,
                 });
               }
+              // Get calendar events for this specific day
+              const dayCalendarEvents = calendarEvents.filter(event => {
+                const eventDate = new Date(event.start);
+                eventDate.setHours(0, 0, 0, 0);
+                const scheduleDateOnly = new Date(scheduleDate);
+                scheduleDateOnly.setHours(0, 0, 0, 0);
+                return eventDate.getTime() === scheduleDateOnly.getTime();
+              });
+              
               availableSlot = findNextAvailableSlot(
                 task.id,
                 proposedTime,
@@ -2063,11 +2120,21 @@ export function useAIScheduler() {
                     start: categoryHours.start,
                     end: categoryHours.end,
                   } : undefined,
+                  calendarEvents: dayCalendarEvents,
                 }
               );
             }
           } else {
             // For non-recurring tasks, use standard conflict detection
+            // Get calendar events for this specific day
+            const dayCalendarEvents = calendarEvents.filter(event => {
+              const eventDate = new Date(event.start);
+              eventDate.setHours(0, 0, 0, 0);
+              const scheduleDateOnly = new Date(scheduleDate);
+              scheduleDateOnly.setHours(0, 0, 0, 0);
+              return eventDate.getTime() === scheduleDateOnly.getTime();
+            });
+            
             availableSlot = findNextAvailableSlot(
               task.id,
               proposedTime,
@@ -2079,6 +2146,7 @@ export function useAIScheduler() {
                   start: categoryHours.start,
                   end: categoryHours.end,
                 } : undefined,
+                calendarEvents: dayCalendarEvents,
               }
             );
           }
@@ -3162,7 +3230,7 @@ export function useAIScheduler() {
         }
       }
       
-      const result = generateSchedulePlan(
+      const result = await generateSchedulePlan(
         tasksToSchedule, 
         dateRange, 
         { 
@@ -3308,7 +3376,7 @@ export function useAIScheduler() {
       
       // Generate new schedule for these specific tasks within the selected day
       // Shuffle tasks and enforce minimum hours for rescheduling
-      const result = generateSchedulePlan(
+      const result = await generateSchedulePlan(
         tasksForReschedule,
         { startDate: scheduleStartDate, endDate: scheduleEndDate },
         { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
@@ -3378,7 +3446,7 @@ export function useAIScheduler() {
       
       // Generate new schedule for these specific tasks within the selected week
       // Shuffle tasks and enforce minimum hours for rescheduling
-      const result = generateSchedulePlan(
+      const result = await generateSchedulePlan(
         tasksForReschedule,
         { startDate: scheduleStartDate, endDate: weekEnd },
         { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
@@ -3446,7 +3514,7 @@ export function useAIScheduler() {
       
       // Generate new schedule for these specific tasks within the selected month
       // Shuffle tasks and enforce minimum hours for rescheduling
-      const result = generateSchedulePlan(
+      const result = await generateSchedulePlan(
         tasksForReschedule,
         { startDate: scheduleStartDate, endDate: monthEnd },
         { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
