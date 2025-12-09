@@ -15,6 +15,7 @@ import {
 import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
+import { useTheme } from "../contexts/ThemeContext";
 import { TWO_WEEK_DAYS_OFFSET } from "../lib/ai-config";
 import {
   END_OF_DAY_HOUR,
@@ -86,6 +87,8 @@ export function AIRecommendationPanel({
 }: AIRecommendationPanelProps) {
   const { hasFeature, features } = useSubscription();
   const { settings: aiSettings } = useAI();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const {
     generateSchedulePlan,
     applySchedulePlan,
