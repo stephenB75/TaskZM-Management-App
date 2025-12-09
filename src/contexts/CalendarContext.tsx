@@ -355,8 +355,23 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       toast.dismiss(loadingToast);
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to sync tasks');
+        // Try to parse JSON error response, but handle non-JSON responses gracefully
+        let errorMessage = `Failed to sync tasks (${response.status})`;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } else {
+            // If response is not JSON, read as text
+            const text = await response.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (parseError) {
+          // If parsing fails, use status text
+          errorMessage = response.statusText || `Server error (${response.status})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

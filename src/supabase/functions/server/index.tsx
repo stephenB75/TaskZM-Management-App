@@ -2377,8 +2377,21 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
     // Get all tasks with scheduled dates
     const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
     const tasks = tasksData
-      .map(item => JSON.parse(item.value))
-      .filter(task => task.scheduledDate && !task.archived);
+      .map(item => {
+        // Handle both JSON strings and already-parsed objects
+        if (typeof item.value === 'string') {
+          try {
+            return JSON.parse(item.value);
+          } catch (parseError) {
+            console.log(`Error parsing task ${item.key}:`, parseError);
+            return null;
+          }
+        } else if (typeof item.value === 'object' && item.value !== null) {
+          return item.value;
+        }
+        return null;
+      })
+      .filter(task => task && task.scheduledDate && !task.archived);
 
     let syncedCount = 0;
     let failedCount = 0;
@@ -2419,7 +2432,13 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
     });
   } catch (error) {
     console.log('Error syncing all tasks:', error);
-    return c.json({ error: String(error) }, 500);
+    // Properly extract error message from error object
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : typeof error === 'string' 
+        ? error 
+        : JSON.stringify(error);
+    return c.json({ error: errorMessage }, 500);
   }
 });
 

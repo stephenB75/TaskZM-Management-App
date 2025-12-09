@@ -2016,14 +2016,20 @@ export function useAIScheduler() {
                 
                 if (hasConflict) {
                   conflictsOnAnyDay = true;
+                  // CRITICAL FIX: Use the conflict-free slot returned by findNextAvailableSlot
+                  // This ensures we skip past ALL conflicts, not just increment by 15 minutes
+                  // Extract the time from the conflict-free slot (preserve date, update time)
+                  const conflictFreeTime = new Date(conflictCheckResult);
+                  candidateTime.setHours(conflictFreeTime.getHours(), conflictFreeTime.getMinutes(), conflictFreeTime.getSeconds(), conflictFreeTime.getMilliseconds());
+                  
                   if (import.meta.env.DEV) {
-                    logger.debug('Recurring task conflict found on occurrence day', {
+                    logger.debug('Recurring task conflict found on occurrence day - using conflict-free slot', {
                       taskId: task.id,
                       taskTitle: task.title,
                       occurrenceDay: occurrenceDay.toISOString().split('T')[0],
-                      candidateTime: candidateTime.toLocaleTimeString(),
-                      testTime: testTime.toLocaleTimeString(),
+                      originalCandidateTime: testTime.toLocaleTimeString(),
                       conflictCheckResult: conflictCheckResult.toLocaleTimeString(),
+                      newCandidateTime: candidateTime.toLocaleTimeString(),
                       timeDifferenceMinutes: Math.round(timeDifference / MILLISECONDS_PER_MINUTE),
                       allOccurrenceTasksCount: allOccurrenceTasks.length,
                       allOccurrenceTasks: allOccurrenceTasks.map(t => ({
@@ -2035,9 +2041,9 @@ export function useAIScheduler() {
                       })),
                     });
                   }
+                  // Break to re-check all occurrence days with the new candidate time
+                  break;
                 }
-                
-                if (conflictsOnAnyDay) break;
               }
               
               if (!conflictsOnAnyDay) {
@@ -2101,12 +2107,9 @@ export function useAIScheduler() {
                   attempts++;
                 }
               } else {
-                // Move to next time slot (15 minutes later)
-                candidateTime.setMinutes(candidateTime.getMinutes() + TIME_ROUNDING_INTERVAL_MINUTES);
-                if (candidateTime.getMinutes() >= MINUTES_PER_HOUR) {
-                  candidateTime.setHours(candidateTime.getHours() + 1);
-                  candidateTime.setMinutes(0);
-                }
+                // Conflict was found and candidateTime was already updated to the conflict-free slot
+                // Just increment attempts and continue the while loop to re-check all occurrence days
+                // with the new candidateTime
                 attempts++;
               }
             }
