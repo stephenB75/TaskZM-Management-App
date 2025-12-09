@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Plus, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTasks } from '../contexts/TaskContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useCalendar } from '../contexts/CalendarContext';
 import { useDragDrop } from '../contexts/DragDropContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
@@ -69,6 +71,8 @@ export function SevenDayKanban({
   const { activeId } = useDragDrop();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
+  const { accessToken } = useAuth();
+  const { calendarStatus } = useCalendar();
   
   // Calculate responsive column width based on viewport
   const [columnWidth, setColumnWidth] = React.useState(KANBAN_COLUMN_DIMENSIONS.width.desktop);
@@ -96,6 +100,7 @@ export function SevenDayKanban({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, Array<{ title: string; start: string; end: string; provider: 'google' | 'apple' }>>>({});
   
   // Drag-to-scroll state
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -157,7 +162,8 @@ export function SevenDayKanban({
     });
   };
 
-  const weekColumns = getWeekColumns();
+  // Memoize week columns so downstream effects don't re-run every render
+  const weekColumns = React.useMemo(() => getWeekColumns(), [mobileMode, mobileWeekOffset, weekOffset]);
   const weekGroups = React.useMemo(() => {
     const groups: DayColumn[][] = [];
     for (let i = 0; i < weekColumns.length; i += 7) {
@@ -165,6 +171,77 @@ export function SevenDayKanban({
     }
     return groups;
   }, [weekColumns]);
+
+  // Compute visible date range once for the current week columns
+  const visibleRange = React.useMemo(() => {
+    if (!weekColumns.length) return null;
+    const start = new Date(weekColumns[0].date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(weekColumns[weekColumns.length - 1].date);
+    end.setHours(23, 59, 59, 999);
+    return {
+      startIso: start.toISOString(),
+      endIso: end.toISOString(),
+    };
+  }, [weekColumns]);
+
+  // Fetch external calendar events (Google/Apple) for the visible week to overlay in the kanban view
+  React.useEffect(() => {
+    const fetchCalendarEvents = async () => {
+      try {
+        if (!accessToken) return;
+        const providers: Array<'google' | 'apple'> = [];
+        if (calendarStatus.google) providers.push('google');
+        if (calendarStatus.apple) providers.push('apple');
+        if (providers.length === 0 || !visibleRange) {
+          setCalendarEventsByDate({});
+          return;
+        }
+
+        const BASE_URL = `${window.location.origin.replace('http://', 'https://')}/functions/v1/make-server-65e6e67f`;
+        const aggregated: Record<string, Array<{ title: string; start: string; end: string; provider: 'google' | 'apple' }>> = {};
+
+        for (const provider of providers) {
+          const resp = await fetch(
+            `${BASE_URL}/calendar/events/${provider}?startDate=${visibleRange.startIso}&endDate=${visibleRange.endIso}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          if (!Array.isArray(data.events)) continue;
+          for (const event of data.events) {
+            if (!event?.start || !event?.end) continue;
+            const eventStart = new Date(event.start);
+            if (isNaN(eventStart.getTime())) continue;
+            const dateKey = eventStart.toISOString().split('T')[0];
+            aggregated[dateKey] = aggregated[dateKey] || [];
+            aggregated[dateKey].push({
+              title: event.title || 'Calendar Event',
+              start: event.start,
+              end: event.end,
+              provider,
+            });
+          }
+        }
+
+        setCalendarEventsByDate(aggregated);
+      } catch (error) {
+        logger.warn('Failed to fetch external calendar events for kanban view:', error);
+      }
+    };
+
+    fetchCalendarEvents();
+  }, [accessToken, calendarStatus.apple, calendarStatus.google, visibleRange?.startIso, visibleRange?.endIso]);
+
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   // Stop scroll dragging when task drag starts
   React.useEffect(() => {
@@ -704,6 +781,33 @@ export function SevenDayKanban({
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
+                      {/* External calendar events (read-only) */}
+                      {calendarEventsByDate[column.dateString]?.length ? (
+                        <div className="mt-1 space-y-1">
+                          {calendarEventsByDate[column.dateString]
+                            .slice(0, 3)
+                            .map((ev, idx) => (
+                              <div
+                                key={`${column.dateString}-cal-${idx}`}
+                                className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted/40 dark:bg-muted/20 rounded-md px-2 py-1"
+                              >
+                                <span className={cn(
+                                  'h-2 w-2 rounded-full',
+                                  ev.provider === 'apple' ? 'bg-primary' : 'bg-blue-500'
+                                )} />
+                                <span className="truncate">{ev.title}</span>
+                                <span className="text-[10px] text-muted-foreground/80 ml-auto">
+                                  {formatTime(ev.start)}
+                                </span>
+                              </div>
+                            ))}
+                          {calendarEventsByDate[column.dateString].length > 3 && (
+                            <div className="text-[10px] text-muted-foreground/80">
+                              +{calendarEventsByDate[column.dateString].length - 3} more
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
 
                     <DroppableColumn id={column.dateString} className="flex-1">
