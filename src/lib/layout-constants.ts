@@ -30,6 +30,12 @@ export const HEADER_GAP_SMALL = '0.375rem'; // gap-1.5 = 0.375rem (6px)
 export const HEADER_GAP_MEDIUM = '0.5rem'; // gap-2 = 0.5rem (8px)
 export const HEADER_GAP_LARGE = '0.75rem'; // gap-3 = 0.75rem (12px)
 export const HEADER_GAP_XLARGE = '1rem'; // gap-4 = 1rem (16px)
+
+// Side panel header spacing (more compact for narrower panels)
+export const HEADER_SIDE_PANEL_PADDING_X = '1rem'; // px-4 = 1rem (16px) - reduced from 1.5rem for better fit
+export const HEADER_SIDE_PANEL_GAP_MAIN = '0.75rem'; // gap-3 = 0.75rem (12px) - reduced from 1rem
+export const HEADER_SIDE_PANEL_GAP_LEFT = '0.625rem'; // ~gap-2.5 = 0.625rem (10px) - reduced from 0.75rem/1rem
+export const HEADER_SIDE_PANEL_GAP_RIGHT = '0.375rem'; // gap-1.5 = 0.375rem (6px) - reduced from 0.5rem
 export const HEADER_Z_INDEX = 40; // z-40 = 40
 export const HEADER_BACKGROUND_OPACITY = 0.95; // bg-white/95 = 95% opacity
 export const HEADER_BACKGROUND_LIGHT_COLOR = '#FFFFFF';

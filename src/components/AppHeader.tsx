@@ -29,6 +29,10 @@ import {
   HEADER_GAP_MEDIUM,
   HEADER_GAP_LARGE,
   HEADER_GAP_XLARGE,
+  HEADER_SIDE_PANEL_PADDING_X,
+  HEADER_SIDE_PANEL_GAP_MAIN,
+  HEADER_SIDE_PANEL_GAP_LEFT,
+  HEADER_SIDE_PANEL_GAP_RIGHT,
   HEADER_Z_INDEX,
   HEADER_BACKGROUND_OPACITY,
   HEADER_ANIMATION_DAMPING,
@@ -234,17 +238,19 @@ export function AppHeader({
               ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
               : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
             borderColor: HEADER_BORDER_COLOR,
-            paddingLeft: HEADER_PADDING_X_DESKTOP,
-            paddingRight: HEADER_PADDING_X_DESKTOP,
+            paddingLeft: HEADER_SIDE_PANEL_PADDING_X,
+            paddingRight: HEADER_SIDE_PANEL_PADDING_X,
             paddingTop: HEADER_PADDING_Y_DESKTOP,
             paddingBottom: HEADER_PADDING_Y_DESKTOP,
             minHeight: `${HEADER_HEIGHT}px`, 
-            height: `${HEADER_HEIGHT}px` 
+            height: `${HEADER_HEIGHT}px`,
+            boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         >
           <motion.div 
             className="flex items-center justify-between" 
-            style={{ gap: HEADER_GAP_XLARGE }}
+            style={{ gap: HEADER_SIDE_PANEL_GAP_MAIN }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION + 0.1, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT }}
@@ -252,7 +258,7 @@ export function AppHeader({
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
             <motion.div
               className="flex items-center min-w-0 flex-1"
-              style={{ gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE }}
+              style={{ gap: HEADER_SIDE_PANEL_GAP_LEFT }}
               initial={{ opacity: 0, x: HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_LEFT }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_LEFT }}
@@ -318,7 +324,7 @@ export function AppHeader({
             {actions && (
               <motion.div 
                 className="flex items-center flex-shrink-0" 
-                style={{ gap: HEADER_GAP_MEDIUM }}
+                style={{ gap: HEADER_SIDE_PANEL_GAP_RIGHT }}
                 initial={{ opacity: 0, x: HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_RIGHT }}
