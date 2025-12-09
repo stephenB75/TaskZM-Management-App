@@ -2205,12 +2205,10 @@ const appleCalendarSetupHandler = async (c: any) => {
       return c.json({ error: 'Missing credentials. Please provide your iCloud email and app-specific password.' }, 400);
     }
 
-    // Use shortcut method: Direct iCloud CalDAV URL format
-    // Most common working format: https://caldav.icloud.com/{encodedUsername}/
-    const encodedUsername = encodeURIComponent(username);
-    const caldavUrl = `https://caldav.icloud.com/${encodedUsername}/`;
+    // Use base iCloud CalDAV URL; discovery will resolve the real calendar URL
+    const caldavUrl = `https://caldav.icloud.com/`;
     
-    console.log('Using shortcut CalDAV URL:', caldavUrl.replace(encodedUsername, '***'));
+    console.log('Using base CalDAV URL:', caldavUrl);
 
     // Simple connection test - just verify credentials work
     try {

@@ -45,6 +45,12 @@ export async function testCalDAVConnection(
     if (!testUrl.endsWith('/')) {
       testUrl += '/';
     }
+    // If a username path was appended, also keep the bare origin as first attempt
+    let baseOrigin: string | null = null;
+    try {
+      const u = new URL(testUrl);
+      baseOrigin = `${u.protocol}//${u.host}/`;
+    } catch {}
 
     // For iCloud, try multiple URL formats if base URL fails
     // Start with the most common working format first
@@ -61,6 +67,17 @@ export async function testCalDAVConnection(
       // Order matters - try most common formats first
       // iCloud uses different URL structures based on account type and region
       testUrls.push(
+        // Base origin (often works when user path 404s)
+        ...(baseOrigin ? [baseOrigin] : []),
+        // Well-known discovery
+        ...(baseOrigin ? [`${baseOrigin}.well-known/caldav/`] : []),
+        // Principal-based
+        ...(baseOrigin ? [`${baseOrigin}principals/`] : []),
+        ...(baseOrigin ? [`${baseOrigin}principals/${encodedUsername}/`] : []),
+        ...(baseOrigin ? [`${baseOrigin}principals/${encodedUsernamePart}/`] : []),
+        // User paths
+        ...(baseOrigin ? [`${baseOrigin}users/${encodedUsername}/`] : []),
+        ...(baseOrigin ? [`${baseOrigin}users/${encodedUsernamePart}/`] : []),
         // Most common working format (try this first)
         `https://caldav.icloud.com/${encodedUsername}/`,
         
@@ -338,9 +355,9 @@ export async function discoverCalendarURL(
           break; // Auth failed, no point trying other URLs
         }
         
-        // If it's not a 404 or 405, stop trying (likely server error)
-        if (homeSetResponse.status !== 404 && homeSetResponse.status !== 405) {
-          console.log(`⚠️ Stopping discovery - non-404/405 error: ${homeSetResponse.status}`);
+        // Allow 400 to continue; stop on other errors
+        if (homeSetResponse.status !== 404 && homeSetResponse.status !== 405 && homeSetResponse.status !== 400) {
+          console.log(`⚠️ Stopping discovery - non-404/405/400 error: ${homeSetResponse.status}`);
           break;
         }
 
