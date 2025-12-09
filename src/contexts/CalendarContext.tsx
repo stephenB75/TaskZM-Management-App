@@ -358,17 +358,42 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         // Try to parse JSON error response, but handle non-JSON responses gracefully
         let errorMessage = `Failed to sync tasks (${response.status})`;
         try {
+          // Clone the response so we can read it without consuming the original
+          const responseClone = response.clone();
           const contentType = response.headers.get('content-type');
+          
           if (contentType && contentType.includes('application/json')) {
-            const error = await response.json();
-            errorMessage = error.error || errorMessage;
+            try {
+              const error = await responseClone.json();
+              // Ensure error.error is a string, not an object
+              if (error && error.error) {
+                errorMessage = typeof error.error === 'string' 
+                  ? error.error 
+                  : JSON.stringify(error.error);
+              } else if (typeof error === 'string') {
+                errorMessage = error;
+              } else if (error && typeof error === 'object') {
+                errorMessage = error.message || error.toString() || errorMessage;
+              }
+            } catch (jsonError) {
+              // If JSON parsing fails, try text
+              const text = await response.text();
+              // Check if text is "[object Object]" and handle it
+              if (text && text !== '[object Object]' && text.trim().length > 0) {
+                errorMessage = text;
+              }
+            }
           } else {
             // If response is not JSON, read as text
             const text = await response.text();
-            errorMessage = text || errorMessage;
+            // Check if text is "[object Object]" and handle it
+            if (text && text !== '[object Object]' && text.trim().length > 0) {
+              errorMessage = text;
+            }
           }
         } catch (parseError) {
           // If parsing fails, use status text
+          console.error('Error parsing error response:', parseError);
           errorMessage = response.statusText || `Server error (${response.status})`;
         }
         throw new Error(errorMessage);
