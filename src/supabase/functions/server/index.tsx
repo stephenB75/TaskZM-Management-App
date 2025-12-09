@@ -2390,15 +2390,29 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
       .map(item => {
         // Handle both JSON strings and already-parsed objects
         if (typeof item.value === 'string') {
+          // Skip if the string is "[object Object]" - this indicates a serialization error
+          if (item.value === '[object Object]' || item.value.trim() === '[object Object]') {
+            console.error(`Skipping invalid task value at ${item.key}: "[object Object]"`);
+            return null;
+          }
           try {
-            return JSON.parse(item.value);
+            const parsed = JSON.parse(item.value);
+            // Ensure parsed value is an object
+            if (typeof parsed === 'object' && parsed !== null) {
+              return parsed;
+            } else {
+              console.error(`Task ${item.key} parsed to non-object:`, typeof parsed);
+              return null;
+            }
           } catch (parseError) {
-            console.log(`Error parsing task ${item.key}:`, parseError);
+            console.error(`Error parsing task ${item.key}:`, parseError);
+            console.error(`Task value (first 200 chars):`, item.value.substring(0, 200));
             return null;
           }
         } else if (typeof item.value === 'object' && item.value !== null) {
           return item.value;
         }
+        console.error(`Task ${item.key} has invalid type:`, typeof item.value);
         return null;
       })
       .filter(task => task && task.scheduledDate && !task.archived);
