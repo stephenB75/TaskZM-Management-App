@@ -333,6 +333,90 @@ async function createOutlookCalendarEvent(
 }
 
 /**
+ * Helper function to get or discover Apple Calendar URL
+ * Uses shortcut URL fallback if discovery fails
+ */
+async function getOrDiscoverAppleCalendarURL(tokens: CalendarTokens): Promise<string> {
+  if (!tokens.caldavUrl || !tokens.caldavUsername || !tokens.caldavPassword) {
+    throw new Error('CalDAV credentials not configured');
+  }
+
+  // Check cache first
+  let calendarURL = await kv.get(`user_calendar_url_${tokens.caldavUsername}`);
+  if (calendarURL) {
+    return calendarURL;
+  }
+
+  console.log('Discovering calendar URL for Apple Calendar...', {
+    caldavUrl: tokens.caldavUrl?.replace(tokens.caldavUsername || '', '***'),
+    username: tokens.caldavUsername,
+  });
+  
+  // Try discovery first
+  calendarURL = await caldav.discoverCalendarURL({
+    url: tokens.caldavUrl,
+    username: tokens.caldavUsername,
+    password: tokens.caldavPassword,
+  });
+  
+  if (!calendarURL) {
+    // Fallback: Try using the shortcut URL format directly as calendar URL
+    // For iCloud, the calendar URL is often the CalDAV URL + 'calendars/' or the CalDAV URL itself
+    console.log('Calendar discovery failed, trying shortcut URL fallback...');
+    if (tokens.caldavUrl && tokens.caldavUrl.includes('caldav.icloud.com')) {
+      // Try common iCloud calendar URL formats
+      const fallbackUrls = [
+        `${tokens.caldavUrl}calendars/`,
+        `${tokens.caldavUrl.replace(/\/$/, '')}/calendars/`,
+        tokens.caldavUrl, // Use CalDAV URL directly as fallback
+      ];
+      
+      // Test which fallback URL works
+      for (const fallbackUrl of fallbackUrls) {
+        try {
+          const cleanPassword = tokens.caldavPassword.replace(/\s+/g, '');
+          const testResponse = await fetch(fallbackUrl, {
+            method: 'PROPFIND',
+            headers: {
+              'Authorization': `Basic ${btoa(`${tokens.caldavUsername}:${cleanPassword}`)}`,
+              'Depth': '0',
+              'Content-Type': 'application/xml; charset=utf-8',
+            },
+            body: `<?xml version="1.0" encoding="utf-8"?>
+<propfind xmlns="DAV:">
+  <prop>
+    <resourcetype/>
+  </prop>
+</propfind>`,
+          });
+          
+          if (testResponse.ok || testResponse.status === 207) {
+            console.log('Fallback calendar URL works:', fallbackUrl.replace(tokens.caldavUsername || '', '***'));
+            calendarURL = fallbackUrl;
+            break;
+          }
+        } catch (testError) {
+          // Continue to next fallback
+          console.log('Fallback URL test failed:', fallbackUrl.replace(tokens.caldavUsername || '', '***'));
+        }
+      }
+    }
+    
+    if (!calendarURL) {
+      throw new Error('Failed to discover calendar URL. Please check your Apple Calendar credentials and try reconnecting.');
+    }
+  }
+  
+  // Cache calendar URL for future use
+  if (calendarURL) {
+    await kv.set(`user_calendar_url_${tokens.caldavUsername}`, calendarURL);
+    console.log('Calendar URL cached successfully');
+  }
+  
+  return calendarURL;
+}
+
+/**
  * Create Apple Calendar event via CalDAV
  */
 async function createAppleCalendarEvent(
@@ -343,22 +427,8 @@ async function createAppleCalendarEvent(
     throw new Error('CalDAV credentials not configured');
   }
 
-  // Get or discover calendar URL
-  let calendarURL = await kv.get(`user_calendar_url_${tokens.caldavUsername}`);
-  if (!calendarURL) {
-    calendarURL = await caldav.discoverCalendarURL({
-      url: tokens.caldavUrl,
-      username: tokens.caldavUsername,
-      password: tokens.caldavPassword,
-    });
-    
-    if (!calendarURL) {
-      throw new Error('Failed to discover calendar URL');
-    }
-    
-    // Cache calendar URL
-    await kv.set(`user_calendar_url_${tokens.caldavUsername}`, calendarURL);
-  }
+  // Get or discover calendar URL using helper function
+  let calendarURL = await getOrDiscoverAppleCalendarURL(tokens);
 
   // Ensure calendar URL ends with /
   if (!calendarURL.endsWith('/')) {
@@ -451,21 +521,8 @@ async function updateAppleCalendarEvent(
     throw new Error('CalDAV credentials not configured');
   }
 
-  // Get calendar URL
-  let calendarURL = await kv.get(`user_calendar_url_${tokens.caldavUsername}`);
-  if (!calendarURL) {
-    calendarURL = await caldav.discoverCalendarURL({
-      url: tokens.caldavUrl,
-      username: tokens.caldavUsername,
-      password: tokens.caldavPassword,
-    });
-    
-    if (!calendarURL) {
-      throw new Error('Failed to discover calendar URL');
-    }
-    
-    await kv.set(`user_calendar_url_${tokens.caldavUsername}`, calendarURL);
-  }
+  // Get or discover calendar URL using helper function
+  let calendarURL = await getOrDiscoverAppleCalendarURL(tokens);
 
   if (!calendarURL.endsWith('/')) {
     calendarURL += '/';
@@ -704,21 +761,8 @@ async function deleteAppleCalendarEvent(
     throw new Error('CalDAV credentials not configured');
   }
 
-  // Get calendar URL
-  let calendarURL = await kv.get(`user_calendar_url_${tokens.caldavUsername}`);
-  if (!calendarURL) {
-    calendarURL = await caldav.discoverCalendarURL({
-      url: tokens.caldavUrl,
-      username: tokens.caldavUsername,
-      password: tokens.caldavPassword,
-    });
-    
-    if (!calendarURL) {
-      throw new Error('Failed to discover calendar URL');
-    }
-    
-    await kv.set(`user_calendar_url_${tokens.caldavUsername}`, calendarURL);
-  }
+  // Get or discover calendar URL using helper function
+  let calendarURL = await getOrDiscoverAppleCalendarURL(tokens);
 
   if (!calendarURL.endsWith('/')) {
     calendarURL += '/';
@@ -775,20 +819,13 @@ async function getAppleCalendarEvents(
     return [];
   }
 
-  // Get calendar URL
-  let calendarURL = await kv.get(`user_calendar_url_${tokens.caldavUsername}`);
-  if (!calendarURL) {
-    calendarURL = await caldav.discoverCalendarURL({
-      url: tokens.caldavUrl,
-      username: tokens.caldavUsername,
-      password: tokens.caldavPassword,
-    });
-    
-    if (!calendarURL) {
-      return [];
-    }
-    
-    await kv.set(`user_calendar_url_${tokens.caldavUsername}`, calendarURL);
+  // Get or discover calendar URL using helper function
+  let calendarURL: string;
+  try {
+    calendarURL = await getOrDiscoverAppleCalendarURL(tokens);
+  } catch (error) {
+    console.log('Failed to get calendar URL for fetching events:', error);
+    return [];
   }
 
   const events = await caldav.getCalDAVEvents(
