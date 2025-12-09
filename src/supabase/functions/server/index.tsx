@@ -2415,7 +2415,23 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
         console.error(`Task ${item.key} has invalid type:`, typeof item.value);
         return null;
       })
-      .filter(task => task && task.scheduledDate && !task.archived);
+      .filter(task => {
+        // Filter out invalid tasks
+        if (!task || task.archived) return false;
+        // Must have either scheduledDate or dueDate
+        const hasDate = task.scheduledDate || task.dueDate;
+        if (!hasDate) {
+          console.log(`Skipping task ${task.id}: no scheduledDate or dueDate`);
+          return false;
+        }
+        // Validate date format
+        const dateObj = new Date(hasDate);
+        if (isNaN(dateObj.getTime())) {
+          console.error(`Skipping task ${task.id}: invalid date format: ${hasDate}`);
+          return false;
+        }
+        return true;
+      });
 
     let syncedCount = 0;
     let failedCount = 0;

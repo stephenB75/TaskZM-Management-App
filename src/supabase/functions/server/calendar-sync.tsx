@@ -435,15 +435,29 @@ async function createAppleCalendarEvent(
     calendarURL += '/';
   }
 
-  const eventUID = `taskzm-${task.id}-${Date.now()}`;
+  // Validate that we have a valid date
   const startDate = task.scheduledDate || task.dueDate;
-  const endDate = calculateEndDate(startDate, task.estimatedTime);
+  if (!startDate) {
+    throw new Error('Task must have a scheduledDate or dueDate to create a calendar event');
+  }
+  
+  // Validate date format
+  const dateObj = new Date(startDate);
+  if (isNaN(dateObj.getTime())) {
+    throw new Error(`Invalid date format: ${startDate}`);
+  }
+  
+  // Ensure date is in ISO format
+  const isoStartDate = dateObj.toISOString();
+  
+  const eventUID = `taskzm-${task.id}-${Date.now()}`;
+  const endDate = calculateEndDate(isoStartDate, task.estimatedTime);
   
   const event = {
     uid: eventUID,
-    dtstart: startDate,
+    dtstart: isoStartDate,
     dtend: endDate,
-    summary: task.title,
+    summary: task.title || 'Untitled Task',
     description: task.description || '',
     location: task.location || '',
   };
@@ -479,9 +493,9 @@ async function createAppleCalendarEvent(
 
   return {
     id: `apple_${eventUID}`,
-    title: task.title,
+    title: task.title || 'Untitled Task',
     description: task.description,
-    start: startDate,
+    start: isoStartDate,
     end: endDate,
     provider: 'apple',
     providerEventId: eventUID,
@@ -489,7 +503,13 @@ async function createAppleCalendarEvent(
 }
 
 function calculateEndDate(startDate: string, estimatedMinutes?: number): string {
+  if (!startDate) {
+    throw new Error('startDate is required for calculateEndDate');
+  }
   const start = new Date(startDate);
+  if (isNaN(start.getTime())) {
+    throw new Error(`Invalid startDate format: ${startDate}`);
+  }
   const minutes = estimatedMinutes || 30;
   const end = new Date(start.getTime() + minutes * 60000);
   return end.toISOString();
