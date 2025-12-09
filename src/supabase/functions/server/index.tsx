@@ -2356,7 +2356,17 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const { workspaceId, provider } = await c.req.json();
+    // Parse request body with error handling
+    let workspaceId: string;
+    let provider: string;
+    try {
+      const body = await c.req.json();
+      workspaceId = body.workspaceId;
+      provider = body.provider;
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return c.json({ error: 'Invalid request body. Please provide workspaceId and provider.' }, 400);
+    }
 
     if (!workspaceId || !provider) {
       return c.json({ error: 'Missing workspaceId or provider' }, 400);
@@ -2399,21 +2409,40 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
     
     for (const task of tasks) {
       try {
+        console.log(`Syncing task ${task.id} to ${provider}...`, {
+          taskId: task.id,
+          taskTitle: task.title,
+          scheduledDate: task.scheduledDate,
+          provider,
+        });
+        
         const existingEventId = await calendarSync.getTaskEventMapping(userId, task.id, provider);
         
         let event;
         if (existingEventId) {
+          console.log(`Updating existing event for task ${task.id}`);
           event = await calendarSync.updateCalendarEvent(userId, provider, existingEventId, task);
         } else {
+          console.log(`Creating new event for task ${task.id}`);
           event = await calendarSync.createCalendarEvent(userId, provider, task);
           if (event) {
+            console.log(`Event created successfully for task ${task.id}:`, event.providerEventId);
             await calendarSync.storeTaskEventMapping(userId, task.id, provider, event.providerEventId);
+          } else {
+            console.log(`Event creation returned null for task ${task.id}`);
           }
         }
         
         syncedCount++;
+        console.log(`Successfully synced task ${task.id}`);
       } catch (error) {
-        console.log(`Error syncing task ${task.id}:`, error);
+        console.error(`Error syncing task ${task.id}:`, error);
+        console.error('Error details:', {
+          errorType: typeof error,
+          errorConstructor: error?.constructor?.name,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        });
         failedCount++;
         // Only store failed task IDs, not full error details to reduce response size
         if (failedTaskIds.length < 10) { // Limit to first 10 failures
@@ -2431,7 +2460,15 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
       ...(failedTaskIds.length > 0 && { failedTaskIds })
     });
   } catch (error) {
-    console.log('Error syncing all tasks:', error);
+    // Log full error details for debugging
+    console.error('Error syncing all tasks - full error:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error?.constructor?.name);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
     // Properly extract error message from error object
     let errorMessage = 'An unexpected error occurred while syncing tasks';
     try {
@@ -2453,13 +2490,34 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
           if (toStringResult && toStringResult !== '[object Object]' && typeof toStringResult === 'string') {
             errorMessage = toStringResult;
           }
+        } else {
+          // Last resort: try JSON.stringify but catch circular references
+          try {
+            const jsonStr = JSON.stringify(errorObj, Object.getOwnPropertyNames(errorObj));
+            if (jsonStr && jsonStr !== '{}' && jsonStr.length < 500) {
+              errorMessage = `Error: ${jsonStr}`;
+            }
+          } catch (stringifyError) {
+            // If stringify fails (circular reference), use default
+            console.error('Failed to stringify error object:', stringifyError);
+          }
         }
       }
     } catch (extractError) {
       // If error extraction fails, use default message
-      console.log('Error extracting error message:', extractError);
+      console.error('Error extracting error message:', extractError);
       errorMessage = 'An unexpected error occurred while syncing tasks';
     }
+    
+    // Ensure errorMessage is always a string and not too long
+    if (typeof errorMessage !== 'string') {
+      errorMessage = 'An unexpected error occurred while syncing tasks';
+    }
+    if (errorMessage.length > 500) {
+      errorMessage = errorMessage.substring(0, 500) + '...';
+    }
+    
+    console.error('Returning error response:', errorMessage);
     return c.json({ error: errorMessage }, 500);
   }
 });

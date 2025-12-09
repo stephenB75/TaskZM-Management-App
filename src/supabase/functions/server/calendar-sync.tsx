@@ -448,15 +448,34 @@ async function createAppleCalendarEvent(
     location: task.location || '',
   };
 
-  await caldav.createCalDAVEvent(
-    {
-      url: tokens.caldavUrl,
-      username: tokens.caldavUsername,
-      password: tokens.caldavPassword,
-    },
-    calendarURL,
-    event
-  );
+  try {
+    console.log('Creating CalDAV event:', {
+      calendarURL: calendarURL.replace(tokens.caldavUsername || '', '***'),
+      eventUID,
+      startDate,
+      endDate,
+    });
+    
+    await caldav.createCalDAVEvent(
+      {
+        url: tokens.caldavUrl,
+        username: tokens.caldavUsername,
+        password: tokens.caldavPassword,
+      },
+      calendarURL,
+      event
+    );
+    
+    console.log('CalDAV event created successfully:', eventUID);
+  } catch (caldavError) {
+    console.error('CalDAV event creation failed:', caldavError);
+    console.error('CalDAV error details:', {
+      errorType: typeof caldavError,
+      errorMessage: caldavError instanceof Error ? caldavError.message : String(caldavError),
+      errorStack: caldavError instanceof Error ? caldavError.stack : undefined,
+    });
+    throw new Error(`Failed to create Apple Calendar event: ${caldavError instanceof Error ? caldavError.message : String(caldavError)}`);
+  }
 
   return {
     id: `apple_${eventUID}`,
