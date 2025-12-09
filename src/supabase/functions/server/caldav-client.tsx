@@ -403,13 +403,16 @@ export async function discoverCalendarURL(
       headers: {
         'Authorization': `Basic ${btoa(`${credentials.username}:${cleanPassword}`)}`,
         'Depth': '1',
-        'Content-Type': 'application/xml',
+        'Content-Type': 'application/xml; charset=utf-8',
+        'User-Agent': 'TaskZM-CalDAV-Client/1.0',
       },
       body: `<?xml version="1.0" encoding="utf-8"?>
-<propfind xmlns="DAV:">
+<propfind xmlns="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav" xmlns:cs="http://calendarserver.org/ns/">
   <prop>
-    <displayname xmlns="DAV:"/>
-    <resourcetype xmlns="DAV:"/>
+    <displayname/>
+    <resourcetype/>
+    <cal:calendar-description/>
+    <cal:calendar-timezone/>
   </prop>
 </propfind>`,
     });
@@ -420,20 +423,98 @@ export async function discoverCalendarURL(
 
     const calendarsText = await calendarsResponse.text();
     
-    // Find first calendar (usually the default calendar)
-    const calendarMatch = calendarsText.match(/<href[^>]*>([^<]+)<\/href>/);
-    if (calendarMatch) {
-      let calendarURL = calendarMatch[1];
+    // Parse XML to find calendars (not just any href)
+    // iCloud returns multiple responses in a multistatus, we need to find ones with calendar resource type
+    // Split by response blocks - handle both D:response and response (no prefix)
+    const responseBlocks = calendarsText.split(/<(?:D:)?response[^>]*>/i);
+    
+    for (const block of responseBlocks) {
+      // Skip empty blocks
+      if (!block.trim()) continue;
+      
+      // Check if this response has a calendar resource type
+      // Handle various namespace formats: D:resourcetype, resourcetype, cal:calendar, calendar
+      const hasCalendar = /<(?:D:)?resourcetype[^>]*>[\s\S]*?<(?:cal:)?calendar[^>]*\/>[\s\S]*?<\/(?:D:)?resourcetype>/i.test(block) ||
+                         /<(?:D:)?resourcetype[^>]*>[\s\S]*?<(?:cal:)?calendar[^>]*>[\s\S]*?<\/(?:cal:)?calendar>[\s\S]*?<\/(?:D:)?resourcetype>/i.test(block);
+      
+      if (hasCalendar) {
+        // Extract href from this response block - handle both D:href and href
+        const hrefMatch = block.match(/<(?:D:)?href[^>]*>([^<]+)<\/(?:D:)?href>/i);
+        
+        if (hrefMatch) {
+          // Decode URL-encoded hrefs
+          let calendarURL = decodeURIComponent(hrefMatch[1]);
+          
+          // Make absolute URL if relative
+          if (calendarURL.startsWith('/')) {
+            const urlObj = new URL(calendarHomeURL);
+            calendarURL = `${urlObj.protocol}//${urlObj.host}${calendarURL}`;
+          } else if (!calendarURL.startsWith('http')) {
+            // Handle relative URLs
+            if (calendarURL.startsWith('../')) {
+              // Go up from calendar home
+              const urlObj = new URL(calendarHomeURL);
+              // Use pathname to get only the path segments (without protocol/host)
+              const pathSegments = urlObj.pathname.split('/').filter(p => p);
+              const upCount = (calendarURL.match(/\.\.\//g) || []).length;
+              const newPathSegments = pathSegments.slice(0, -upCount);
+              const remainingPath = calendarURL.replace(/\.\.\//g, '');
+              const newPath = `/${newPathSegments.join('/')}${remainingPath ? '/' + remainingPath : ''}`;
+              calendarURL = `${urlObj.protocol}//${urlObj.host}${newPath}`;
+            } else {
+              // Relative to calendar home
+              const baseUrl = calendarHomeURL.endsWith('/') ? calendarHomeURL : `${calendarHomeURL}/`;
+              calendarURL = `${baseUrl}${calendarURL}`;
+            }
+          }
+          
+          // Ensure URL ends with / for calendar collections
+          if (!calendarURL.endsWith('/')) {
+            calendarURL += '/';
+          }
+          
+          console.log(`✅ Found calendar URL: ${calendarURL.replace(credentials.username, '***')}`);
+          return calendarURL;
+        }
+      }
+    }
+    
+    // Fallback: if no calendar found with resource type, try to find any href that's not the home URL
+    // This handles cases where the XML structure is different
+    const allHrefs = calendarsText.matchAll(/<(?:D:)?href[^>]*>([^<]+)<\/(?:D:)?href>/gi);
+    for (const match of allHrefs) {
+      // Decode URL-encoded hrefs
+      let calendarURL = decodeURIComponent(match[1]);
+      
+      // Skip if it's the home URL itself
+      const homePath = calendarHomeURL.replace(/^https?:\/\/[^\/]+/, '');
+      if (calendarURL === calendarHomeURL || calendarURL === homePath || calendarURL.endsWith(homePath)) {
+        continue;
+      }
       
       // Make absolute URL if relative
       if (calendarURL.startsWith('/')) {
         const urlObj = new URL(calendarHomeURL);
         calendarURL = `${urlObj.protocol}//${urlObj.host}${calendarURL}`;
       } else if (!calendarURL.startsWith('http')) {
-        calendarURL = `${calendarHomeURL}${calendarURL}`;
+        const baseUrl = calendarHomeURL.endsWith('/') ? calendarHomeURL : `${calendarHomeURL}/`;
+        calendarURL = `${baseUrl}${calendarURL}`;
       }
       
+      // Ensure URL ends with / for calendar collections
+      if (!calendarURL.endsWith('/')) {
+        calendarURL += '/';
+      }
+      
+      console.log(`✅ Found calendar URL (fallback): ${calendarURL.replace(credentials.username, '***')}`);
       return calendarURL;
+    }
+
+    // Last resort: return calendar home URL with /calendars/ appended if it's iCloud
+    if (calendarHomeURL.includes('icloud.com')) {
+      const fallbackURL = calendarHomeURL.endsWith('/') ? `${calendarHomeURL}calendars/` : `${calendarHomeURL}/calendars/`;
+      console.log(`⚠️ Using fallback calendar URL: ${fallbackURL.replace(credentials.username, '***')}`);
+      return fallbackURL;
     }
 
     return calendarHomeURL;
