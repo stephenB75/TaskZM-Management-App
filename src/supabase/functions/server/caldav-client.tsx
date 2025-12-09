@@ -35,7 +35,7 @@ export async function testCalDAVConnection(
   url: string,
   username: string,
   password: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; workingUrl?: string }> {
   try {
     // Clean the password
     const cleanPassword = cleanAppPassword(password);
@@ -47,9 +47,10 @@ export async function testCalDAVConnection(
     }
 
     // For iCloud, try multiple URL formats if base URL fails
-    const testUrls: string[] = [testUrl];
+    // Start with the most common working format first
+    const testUrls: string[] = [];
     
-    // If it's iCloud, try alternative formats
+    // If it's iCloud, try alternative formats in order of likelihood
     if (testUrl.includes('caldav.icloud.com') || testUrl.includes('icloud.com')) {
       // Extract username part (before @) for iCloud-specific URLs
       const usernamePart = username.split('@')[0];
@@ -57,26 +58,37 @@ export async function testCalDAVConnection(
       const encodedUsernamePart = encodeURIComponent(usernamePart);
       
       // Try comprehensive list of iCloud CalDAV URL formats
+      // Order matters - try most common formats first
       // iCloud uses different URL structures based on account type and region
       testUrls.push(
-        // Standard formats
+        // Most common working format (try this first)
         `https://caldav.icloud.com/${encodedUsername}/`,
+        
+        // Alternative username formats
         `https://caldav.icloud.com/${usernamePart}/`,
         `https://caldav.icloud.com/${encodedUsernamePart}/`,
         
-        // Principal-based formats
-        `https://caldav.icloud.com/principal/`,
-        `https://caldav.icloud.com/${usernamePart}/principal/`,
+        // Base URL (original)
+        testUrl,
         
-        // Server-specific formats (for some account types)
-        `https://p${usernamePart.charAt(0).toLowerCase()}${usernamePart.slice(1)}-caldav.icloud.com/`,
+        // Principal-based formats (often work for iCloud)
+        `https://caldav.icloud.com/`,
+        
+        // Calendar-specific paths
         `https://caldav.icloud.com/${usernamePart}/calendars/`,
         `https://caldav.icloud.com/${encodedUsername}/calendars/`,
         
-        // Alternative base URLs
+        // Server-specific formats (for some account types)
+        `https://p${usernamePart.charAt(0).toLowerCase()}${usernamePart.slice(1)}-caldav.icloud.com/`,
+        
+        // Alternative base URLs with port
         `https://caldav.icloud.com:443/`,
         `https://caldav.icloud.com:443/${usernamePart}/`,
+        `https://caldav.icloud.com:443/${encodedUsername}/`,
       );
+    } else {
+      // For non-iCloud, just use the provided URL
+      testUrls.push(testUrl);
     }
 
     let lastError: string | null = null;
@@ -89,7 +101,31 @@ export async function testCalDAVConnection(
         
         // Perform PROPFIND request to discover calendar
         // Try with enhanced XML namespace declarations
-        const response = await fetch(testUrlToTry, {
+        // For iCloud, we need to try different approaches
+        let response: Response;
+        
+        // First, try a simple OPTIONS request to check if the endpoint exists
+        if (testUrlToTry.includes('caldav.icloud.com')) {
+          try {
+            const optionsResponse = await fetch(testUrlToTry, {
+              method: 'OPTIONS',
+              headers: {
+                'Authorization': `Basic ${btoa(`${username}:${cleanPassword}`)}`,
+                'User-Agent': 'TaskZM-CalDAV-Client/1.0',
+              },
+            });
+            
+            // If OPTIONS returns 200/207, the endpoint exists
+            if (optionsResponse.ok || optionsResponse.status === 207) {
+              console.log(`✅ OPTIONS request successful for ${testUrlToTry}`);
+            }
+          } catch (e) {
+            // OPTIONS failed, continue with PROPFIND
+          }
+        }
+        
+        // Now try PROPFIND
+        response = await fetch(testUrlToTry, {
           method: 'PROPFIND',
           headers: {
             'Authorization': `Basic ${btoa(`${username}:${cleanPassword}`)}`,
@@ -110,13 +146,14 @@ export async function testCalDAVConnection(
 
         // PROPFIND can return 207 (Multi-Status) which is also success
         if (response.ok || response.status === 207) {
-          // Success! Update the URL if we used an alternative format
-          if (testUrlToTry !== testUrl) {
-            console.log(`✅ CalDAV connection successful with alternative URL: ${testUrlToTry}`);
+          // Success! Return the working URL
+          const workingUrl = testUrlToTry;
+          if (workingUrl !== testUrl) {
+            console.log(`✅ CalDAV connection successful with alternative URL: ${workingUrl}`);
           } else {
-            console.log(`✅ CalDAV connection successful with base URL: ${testUrlToTry}`);
+            console.log(`✅ CalDAV connection successful with base URL: ${workingUrl}`);
           }
-          return { success: true };
+          return { success: true, workingUrl };
         }
 
         // Track error details
@@ -134,7 +171,13 @@ export async function testCalDAVConnection(
         // Log the attempt
         console.log(`❌ CalDAV URL ${testUrlToTry} returned ${lastStatus} ${statusText}`);
 
-        // If it's not a 404 or 405, stop trying (likely auth issue or server error)
+        // If it's authentication error (401/403), stop trying - credentials are wrong
+        if (lastStatus === 401 || lastStatus === 403) {
+          console.log(`⚠️ Authentication failed (${lastStatus}) - stopping attempts`);
+          break; // Auth failed, no point trying other URLs
+        }
+        
+        // If it's not a 404 or 405, stop trying (likely server error)
         if (lastStatus !== 404 && lastStatus !== 405) {
           console.log(`⚠️ Stopping URL attempts - non-404/405 error: ${lastStatus}`);
           break;
@@ -212,9 +255,10 @@ export async function discoverCalendarURL(
     }
 
     // For iCloud, try multiple URL formats if base URL fails
-    const testUrls: string[] = [testUrl];
+    // Start with the most common working format first
+    const testUrls: string[] = [];
     
-    // If it's iCloud, try alternative formats
+    // If it's iCloud, try alternative formats in order of likelihood
     if (testUrl.includes('caldav.icloud.com') || testUrl.includes('icloud.com')) {
       // Extract username part (before @) for iCloud-specific URLs
       const usernamePart = credentials.username.split('@')[0];
@@ -222,25 +266,37 @@ export async function discoverCalendarURL(
       const encodedUsernamePart = encodeURIComponent(usernamePart);
       
       // Try comprehensive list of iCloud CalDAV URL formats
+      // Order matters - try most common formats first
+      // iCloud uses different URL structures based on account type and region
       testUrls.push(
-        // Standard formats
+        // Most common working format (try this first)
         `https://caldav.icloud.com/${encodedUsername}/`,
+        
+        // Alternative username formats
         `https://caldav.icloud.com/${usernamePart}/`,
         `https://caldav.icloud.com/${encodedUsernamePart}/`,
         
-        // Principal-based formats
-        `https://caldav.icloud.com/principal/`,
-        `https://caldav.icloud.com/${usernamePart}/principal/`,
+        // Base URL (original)
+        testUrl,
         
-        // Server-specific formats (for some account types)
-        `https://p${usernamePart.charAt(0).toLowerCase()}${usernamePart.slice(1)}-caldav.icloud.com/`,
+        // Principal-based formats (often work for iCloud)
+        `https://caldav.icloud.com/`,
+        
+        // Calendar-specific paths
         `https://caldav.icloud.com/${usernamePart}/calendars/`,
         `https://caldav.icloud.com/${encodedUsername}/calendars/`,
         
-        // Alternative base URLs
+        // Server-specific formats (for some account types)
+        `https://p${usernamePart.charAt(0).toLowerCase()}${usernamePart.slice(1)}-caldav.icloud.com/`,
+        
+        // Alternative base URLs with port
         `https://caldav.icloud.com:443/`,
         `https://caldav.icloud.com:443/${usernamePart}/`,
+        `https://caldav.icloud.com:443/${encodedUsername}/`,
       );
+    } else {
+      // For non-iCloud, just use the provided URL
+      testUrls.push(testUrl);
     }
 
     let workingUrl: string | null = null;
@@ -276,7 +332,13 @@ export async function discoverCalendarURL(
           break; // Found working URL
         }
 
-        // If it's not a 404 or 405, stop trying (likely auth issue)
+        // If it's authentication error (401/403), stop trying - credentials are wrong
+        if (homeSetResponse.status === 401 || homeSetResponse.status === 403) {
+          console.log(`⚠️ Authentication failed (${homeSetResponse.status}) - stopping discovery`);
+          break; // Auth failed, no point trying other URLs
+        }
+        
+        // If it's not a 404 or 405, stop trying (likely server error)
         if (homeSetResponse.status !== 404 && homeSetResponse.status !== 405) {
           console.log(`⚠️ Stopping discovery - non-404/405 error: ${homeSetResponse.status}`);
           break;

@@ -2168,14 +2168,39 @@ app.post("/make-server-65e6e67f/calendar/apple/setup", async (c) => {
       return c.json({ error: 'Missing CalDAV credentials' }, 400);
     }
 
-    // Test connection
+    // Test connection and discover working URL
+    let workingCaldavUrl = caldavUrl;
     try {
-      const { testCalDAVConnection } = await import('./caldav-client.tsx');
+      const { testCalDAVConnection, discoverCalendarURL } = await import('./caldav-client.tsx');
       const testResult = await testCalDAVConnection(caldavUrl, username, appPassword);
       
       if (!testResult.success) {
         const errorMessage = testResult.error || 'Invalid CalDAV credentials. Please check your iCloud email and app-specific password.';
         return c.json({ error: errorMessage }, 400);
+      }
+      
+      // Use the working URL if one was discovered
+      if (testResult.workingUrl) {
+        workingCaldavUrl = testResult.workingUrl;
+        console.log('Using discovered working CalDAV URL:', workingCaldavUrl);
+      }
+      
+      // Also try to discover the calendar URL for future use
+      try {
+        const discoveredCalendarUrl = await discoverCalendarURL({
+          url: workingCaldavUrl,
+          username,
+          password: appPassword,
+        });
+        
+        if (discoveredCalendarUrl) {
+          // Cache the discovered calendar URL
+          await kv.set(`user_calendar_url_${username}`, discoveredCalendarUrl);
+          console.log('Discovered and cached calendar URL:', discoveredCalendarUrl);
+        }
+      } catch (discoverError) {
+        // Non-critical - we can still connect without discovering the calendar URL
+        console.log('Calendar URL discovery failed (non-critical):', discoverError);
       }
     } catch (testError) {
       console.log('Error testing CalDAV connection:', testError);
@@ -2184,18 +2209,19 @@ app.post("/make-server-65e6e67f/calendar/apple/setup", async (c) => {
       }, 500);
     }
 
-    // Store credentials securely
+    // Store credentials securely with the working URL
     try {
       const tokens: calendarSync.CalendarTokens = {
         accessToken: appPassword, // Store app password as access token
         provider: 'apple',
         email: username,
-        caldavUrl,
+        caldavUrl: workingCaldavUrl, // Use the working URL
         caldavUsername: username,
         caldavPassword: appPassword,
       };
 
       await calendarSync.storeCalendarTokens(userId, 'apple', tokens);
+      console.log('Apple Calendar tokens stored successfully with working URL:', workingCaldavUrl);
     } catch (storeError) {
       console.log('Error storing Apple Calendar tokens:', storeError);
       return c.json({ 

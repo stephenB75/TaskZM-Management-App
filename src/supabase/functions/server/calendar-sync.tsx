@@ -112,6 +112,10 @@ async function refreshGoogleToken(tokens: CalendarTokens): Promise<CalendarToken
     throw new Error('Google OAuth credentials not configured');
   }
 
+  if (!tokens.refreshToken) {
+    throw new Error('No refresh token available. Please reconnect your Google Calendar.');
+  }
+
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -124,14 +128,18 @@ async function refreshGoogleToken(tokens: CalendarTokens): Promise<CalendarToken
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to refresh Google token: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to refresh Google token: ${response.status} ${errorText}`);
   }
 
   const data = await response.json();
   
+  // Preserve existing refresh token if new one not provided (Google typically doesn't return new refresh_token on refresh)
+  // But use new one if provided
   return {
     ...tokens,
     accessToken: data.access_token,
+    refreshToken: data.refresh_token || tokens.refreshToken, // Use new refresh token if provided, otherwise keep existing
     expiresAt: Date.now() + (data.expires_in * 1000),
   };
 }
