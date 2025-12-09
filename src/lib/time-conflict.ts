@@ -191,6 +191,27 @@ export function findNextAvailableSlot(
       return { task, start, end };
     })
     .sort((a, b) => a.start - b.start);
+  
+  // Add calendar events to the conflict list
+  const calendarConflicts: Array<{ start: number; end: number; title: string }> = [];
+  if (options?.calendarEvents) {
+    for (const event of options.calendarEvents) {
+      const eventStart = new Date(event.start);
+      const eventEnd = new Date(event.end);
+      
+      // Check if event is on the target date
+      const eventDate = new Date(eventStart);
+      eventDate.setHours(0, 0, 0, 0);
+      
+      if (eventDate.getTime() === targetDate.getTime()) {
+        calendarConflicts.push({
+          start: eventStart.getTime(),
+          end: eventEnd.getTime(),
+          title: event.title,
+        });
+      }
+    }
+  }
 
   // Determine start time: ensure after current time if scheduling for today
   let candidateTime = new Date(requestedTime);
