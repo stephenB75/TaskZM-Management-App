@@ -7,6 +7,34 @@ import * as calendarSync from "./calendar-sync.tsx";
 import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
 
+// Helper function to safely extract error messages
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object') {
+    const errorObj = error as any;
+    if (errorObj.message && typeof errorObj.message === 'string') {
+      return errorObj.message;
+    }
+    if (errorObj.error && typeof errorObj.error === 'string') {
+      return errorObj.error;
+    }
+    try {
+      const jsonStr = JSON.stringify(errorObj, Object.getOwnPropertyNames(errorObj));
+      if (jsonStr && jsonStr !== '{}') {
+        return jsonStr;
+      }
+    } catch {
+      // Ignore stringify errors
+    }
+  }
+  return 'An unexpected error occurred';
+}
+
 const app = new Hono();
 
 // Enable logger
@@ -206,7 +234,7 @@ app.post("/make-server-65e6e67f/signup", async (c) => {
     return c.json({ user: data.user, workspaceId });
   } catch (error) {
     console.log('Error in signup:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -239,7 +267,7 @@ app.get("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
     return c.json({ tasks });
   } catch (error) {
     console.log('Error fetching tasks:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -284,7 +312,7 @@ app.post("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
     return c.json({ task });
   } catch (error) {
     console.log('Error saving task:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -328,7 +356,7 @@ app.delete("/make-server-65e6e67f/tasks/:workspaceId/:taskId", async (c) => {
     return c.json({ success: true });
   } catch (error) {
     console.log('Error deleting task:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -360,7 +388,7 @@ app.get("/make-server-65e6e67f/workspace/:workspaceId", async (c) => {
     return c.json({ workspaceId, name, owner, members });
   } catch (error) {
     console.log('Error fetching workspace:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -506,7 +534,7 @@ app.post("/make-server-65e6e67f/user/workspaces", async (c) => {
     });
   } catch (error) {
     console.log('Error creating workspace:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -543,7 +571,7 @@ app.get("/make-server-65e6e67f/activities/:workspaceId", async (c) => {
     return c.json({ activities });
   } catch (error) {
     console.log('Error fetching activities:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -577,7 +605,7 @@ app.post("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
     return c.json({ session });
   } catch (error) {
     console.log('Error saving time tracking:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -611,7 +639,7 @@ app.get("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
     return c.json({ sessions });
   } catch (error) {
     console.log('Error fetching time tracking:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -644,7 +672,7 @@ app.get("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
     return c.json({ projects });
   } catch (error) {
     console.log('Error fetching projects:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -678,7 +706,7 @@ app.post("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
     return c.json({ project });
   } catch (error) {
     console.log('Error saving project:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -712,7 +740,7 @@ app.delete("/make-server-65e6e67f/projects/:workspaceId/:projectId", async (c) =
     return c.json({ success: true });
   } catch (error) {
     console.log('Error deleting project:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -790,7 +818,7 @@ app.get("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
     return c.json({ folders });
   } catch (error) {
     console.log("Error fetching folders:", error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -838,7 +866,7 @@ app.post("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
     return c.json({ folder: folderData });
   } catch (error) {
     console.log("Error saving folder:", error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -883,7 +911,7 @@ app.put("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => {
     return c.json({ folder: updatedFolder });
   } catch (error) {
     console.log("Error updating folder:", error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -916,7 +944,7 @@ app.delete("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => 
     return c.json({ success: true });
   } catch (error) {
     console.log("Error deleting folder:", error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -958,7 +986,7 @@ app.get("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
     return c.json({ settings });
   } catch (error) {
     console.log('Error fetching settings:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1003,7 +1031,7 @@ app.post("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
     return c.json({ success: true });
   } catch (error) {
     console.log('Error saving settings:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1082,7 +1110,7 @@ app.get("/make-server-65e6e67f/subscription", async (c) => {
     return c.json({ subscription });
   } catch (error) {
     console.log('Error fetching subscription:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1178,7 +1206,7 @@ app.post("/make-server-65e6e67f/subscription", async (c) => {
     return c.json({ subscription });
   } catch (error) {
     console.log('Error saving subscription:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1325,7 +1353,7 @@ app.delete("/make-server-65e6e67f/cleanup-demo-user", async (c) => {
     });
   } catch (error) {
     console.error('Error cleaning up demo user:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1345,7 +1373,7 @@ app.get("/make-server-65e6e67f/admin/demo-stats", async (c) => {
     });
   } catch (error) {
     console.error('Error getting demo stats:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1371,7 +1399,7 @@ app.post("/make-server-65e6e67f/admin/cleanup-all-demos", async (c) => {
     });
   } catch (error) {
     console.error('Error in manual cleanup:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1401,7 +1429,7 @@ app.post("/make-server-65e6e67f/demo/update-login-time", async (c) => {
     return c.json({ success: true, loginTime: now, lastActivity: now });
   } catch (error) {
     console.log('Error updating demo login time:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1426,7 +1454,7 @@ app.post("/make-server-65e6e67f/demo/update-activity", async (c) => {
     return c.json({ success: true, lastActivity: now });
   } catch (error) {
     console.log('Error updating demo activity:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1545,7 +1573,7 @@ app.post("/make-server-65e6e67f/demo/cleanup-inactive", async (c) => {
     });
   } catch (error) {
     console.error('Error in inactive demo cleanup:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1720,7 +1748,7 @@ app.get("/make-server-65e6e67f/calendar/google/auth", async (c) => {
     return c.json({ authUrl: authUrl.toString() });
   } catch (error) {
     console.log('Error initiating Google OAuth:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1910,7 +1938,7 @@ app.get("/make-server-65e6e67f/calendar/google/callback", async (c) => {
     return c.html(html);
   } catch (error) {
     console.log('Error in Google OAuth callback:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -1945,7 +1973,7 @@ app.get("/make-server-65e6e67f/calendar/outlook/auth", async (c) => {
     return c.json({ authUrl: authUrl.toString() });
   } catch (error) {
     console.log('Error initiating Outlook OAuth:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2116,7 +2144,7 @@ app.get("/make-server-65e6e67f/calendar/outlook/callback", async (c) => {
     return c.html(html);
   } catch (error) {
     console.log('Error in Outlook OAuth callback:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2143,7 +2171,7 @@ app.get("/make-server-65e6e67f/calendar/status", async (c) => {
     return c.json(status);
   } catch (error) {
     console.log('Error checking calendar status:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2290,7 +2318,7 @@ app.delete("/make-server-65e6e67f/calendar/:provider", async (c) => {
     return c.json({ success: true });
   } catch (error) {
     console.log('Error disconnecting calendar:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2344,7 +2372,7 @@ app.post("/make-server-65e6e67f/calendar/sync-task", async (c) => {
     return c.json({ event });
   } catch (error) {
     console.log('Error syncing task to calendar:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2525,54 +2553,7 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
       console.error('Error stack:', error.stack);
     }
     
-    // Properly extract error message from error object
-    let errorMessage = 'An unexpected error occurred while syncing tasks';
-    try {
-      if (error instanceof Error) {
-        errorMessage = error.message || errorMessage;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error && typeof error === 'object') {
-        // Try to extract message from error object
-        const errorObj = error as any;
-        // Check for common error message properties
-        if (errorObj.message && typeof errorObj.message === 'string') {
-          errorMessage = errorObj.message;
-        } else if (errorObj.error && typeof errorObj.error === 'string') {
-          errorMessage = errorObj.error;
-        } else if (errorObj.toString && typeof errorObj.toString === 'function') {
-          const toStringResult = errorObj.toString();
-          // Only use toString() if it doesn't return "[object Object]"
-          if (toStringResult && toStringResult !== '[object Object]' && typeof toStringResult === 'string') {
-            errorMessage = toStringResult;
-          }
-        } else {
-          // Last resort: try JSON.stringify but catch circular references
-          try {
-            const jsonStr = JSON.stringify(errorObj, Object.getOwnPropertyNames(errorObj));
-            if (jsonStr && jsonStr !== '{}' && jsonStr.length < 500) {
-              errorMessage = `Error: ${jsonStr}`;
-            }
-          } catch (stringifyError) {
-            // If stringify fails (circular reference), use default
-            console.error('Failed to stringify error object:', stringifyError);
-          }
-        }
-      }
-    } catch (extractError) {
-      // If error extraction fails, use default message
-      console.error('Error extracting error message:', extractError);
-      errorMessage = 'An unexpected error occurred while syncing tasks';
-    }
-    
-    // Ensure errorMessage is always a string and not too long
-    if (typeof errorMessage !== 'string') {
-      errorMessage = 'An unexpected error occurred while syncing tasks';
-    }
-    if (errorMessage.length > 500) {
-      errorMessage = errorMessage.substring(0, 500) + '...';
-    }
-    
+    const errorMessage = getErrorMessage(error);
     console.error('Returning error response:', errorMessage);
     return c.json({ error: errorMessage }, 500);
   }
@@ -2595,7 +2576,7 @@ app.get("/make-server-65e6e67f/calendar/events/:provider", async (c) => {
     return c.json({ events });
   } catch (error) {
     console.log('Error fetching calendar events:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2714,7 +2695,7 @@ app.post("/make-server-65e6e67f/create-checkout-session", async (c) => {
     });
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2805,7 +2786,7 @@ app.post("/make-server-65e6e67f/revenuecat-webhook", async (c) => {
     return c.json({ success: true, event: eventType });
   } catch (error) {
     console.error('❌ RevenueCat webhook error:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2892,7 +2873,7 @@ app.get("/make-server-65e6e67f/subscription-status", async (c) => {
     return c.json(subscriptionData);
   } catch (error) {
     console.error('Error fetching subscription status:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -2970,7 +2951,7 @@ app.post("/make-server-65e6e67f/create-billing-portal", async (c) => {
     });
   } catch (error) {
     console.error('Error creating billing portal session:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3070,7 +3051,7 @@ app.post("/make-server-65e6e67f/admin/set-user-access", async (c) => {
     });
   } catch (error) {
     console.error('Error in admin set-user-access:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3129,7 +3110,7 @@ app.get("/make-server-65e6e67f/admin/get-user/:email", async (c) => {
     });
   } catch (error) {
     console.error('Error in admin get-user:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3256,7 +3237,7 @@ app.post("/make-server-65e6e67f/team/:workspaceId/invite", async (c) => {
     });
   } catch (error) {
     console.log('Error sending invitation:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3353,7 +3334,7 @@ app.get("/make-server-65e6e67f/team/:workspaceId/members", async (c) => {
     return c.json({ members: teamMembers });
   } catch (error) {
     console.log('Error fetching team members:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3415,7 +3396,7 @@ app.delete("/make-server-65e6e67f/team/:workspaceId/members/:memberId", async (c
     return c.json({ success: true });
   } catch (error) {
     console.log('Error removing team member:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3459,7 +3440,7 @@ app.put("/make-server-65e6e67f/team/:workspaceId/members/:memberId/role", async 
     return c.json({ success: true, role });
   } catch (error) {
     console.log('Error updating team member role:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3500,7 +3481,7 @@ app.post("/make-server-65e6e67f/team/invitations/validate", async (c) => {
     });
   } catch (error) {
     console.log('Error validating invitation:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3625,7 +3606,7 @@ app.post("/make-server-65e6e67f/team/invitations/accept", async (c) => {
     });
   } catch (error) {
     console.log('Error accepting invitation:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3716,7 +3697,7 @@ app.post("/make-server-65e6e67f/team/:workspaceId/invitations/resend", async (c)
     });
   } catch (error) {
     console.log('Error resending invitation:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
@@ -3773,7 +3754,7 @@ app.post("/make-server-65e6e67f/team/:workspaceId/invitations/decline", async (c
     return c.json({ success: true, message: 'Invitation declined' });
   } catch (error) {
     console.log('Error declining invitation:', error);
-    return c.json({ error: String(error) }, 500);
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
