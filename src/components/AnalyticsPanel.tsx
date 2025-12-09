@@ -156,8 +156,9 @@ function MetricCard({
   color: string;
   trend?: { value: number; label: string };
 }) {
+  const gradient = `linear-gradient(180deg, ${getColorWithOpacity(color, 0.14)} 0%, ${getColorWithOpacity(color, 0.06)} 100%)`;
   return (
-    <Card className="shadow-sm border border-border bg-card">
+    <Card className="shadow-sm border border-border" style={{ backgroundImage: gradient, backgroundColor: getColorWithOpacity(color, 0.03) }}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg" style={{ backgroundColor: getColorWithOpacity(color, 0.1) }}>
@@ -644,8 +645,12 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     }
   }, [analytics?.statusDistribution?.length || 0]); // Use length with safe navigation
 
+  const panelGradient = isDark
+    ? 'linear-gradient(180deg, rgba(17,24,39,0.94) 0%, rgba(17,24,39,0.90) 40%, rgba(31,41,55,0.88) 100%)'
+    : 'linear-gradient(180deg, rgba(248,245,255,0.96) 0%, rgba(244,240,255,0.94) 40%, rgba(255,255,255,0.92) 100%)';
+
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background" style={{ backgroundImage: panelGradient }}>
       <AppHeader
         title="Analytics"
         panelOpen={true}

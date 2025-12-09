@@ -113,6 +113,26 @@ export function SevenDayKanban({
   const columnsContainerRef = React.useRef<HTMLDivElement>(null);
   const [zoomScale, setZoomScale] = useState(1);
 
+  // Helpers for subtle gradients to avoid blending into backgrounds
+  const toAlphaHex = (hex: string, percent: number) => {
+    const clean = hex.replace('#', '');
+    const val = Math.round(Math.min(100, Math.max(0, percent)) * 2.55)
+      .toString(16)
+      .padStart(2, '0');
+    return `#${clean}${val}`;
+  };
+
+  const getColumnBgGradient = (dayName: string) => {
+    const dayColors = getDayColors(dayName);
+    // Light mode: use day color with soft gradient
+    const base = dayColors.background;
+    const start = toAlphaHex(base, 28);
+    const end = toAlphaHex(base, 6);
+    return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
+  };
+
+  const darkColumnGradient = 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)';
+
   // Generate week columns starting from tomorrow
   const getWeekColumns = (): DayColumn[] => {
     const today = new Date();
@@ -818,9 +838,9 @@ export function SevenDayKanban({
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
-                            ...(!isDark && {
-                              backgroundColor: `${getDayColors(column.dayName).background}${Math.round(getDayColors(column.dayName).backgroundOpacity * 2.55).toString(16).padStart(2, '0')}`,
-                            }),
+                            backgroundImage: isDark
+                              ? darkColumnGradient
+                              : getColumnBgGradient(column.dayName),
                                   minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
                           }}
                         >

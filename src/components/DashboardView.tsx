@@ -1288,7 +1288,15 @@ export function DashboardView({
           console.error('Error handling dialog open change:', error);
         }
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          className="sm:max-w-md border border-primary/10"
+          style={{
+            backgroundImage: isDark
+              ? 'linear-gradient(180deg, rgba(17,24,39,0.96) 0%, rgba(17,24,39,0.9) 100%)'
+              : 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,240,255,0.95) 100%)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <RefreshCw className="w-5 h-5 text-primary" />
