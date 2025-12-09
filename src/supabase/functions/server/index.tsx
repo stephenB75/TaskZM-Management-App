@@ -2140,108 +2140,120 @@ app.get("/make-server-65e6e67f/calendar/status", async (c) => {
   }
 });
 
-// Apple Calendar CalDAV connection setup
+// Apple Calendar CalDAV connection setup - Shortcut Method
 // Register both with and without prefix for compatibility
 const appleCalendarSetupHandler = async (c: any) => {
-  console.log('Apple Calendar setup endpoint called', {
+  console.log('Apple Calendar setup endpoint called (shortcut method)', {
     method: c.req.method,
     path: new URL(c.req.url).pathname,
-    url: c.req.url,
-    hasBody: !!c.req.body,
   });
+  
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
-      console.log('Apple Calendar setup - unauthorized:', { authError, userId });
       return c.json({ error: 'Unauthorized' }, 401);
     }
-    console.log('Apple Calendar setup - authorized for user:', userId);
 
-    let caldavUrl: string;
+    // Get credentials from request
     let username: string;
     let appPassword: string;
 
     try {
       const body = await c.req.json();
-      caldavUrl = body.caldavUrl;
-      username = body.username;
+      username = body.username || body.email;
       appPassword = body.appPassword;
     } catch (parseError) {
-      console.log('Error parsing request JSON for Apple Calendar setup:', parseError);
-      return c.json({ error: 'Invalid request body. Please provide caldavUrl, username, and appPassword.' }, 400);
+      return c.json({ error: 'Invalid request body. Please provide username (email) and appPassword.' }, 400);
     }
 
-    if (!caldavUrl || !username || !appPassword) {
-      return c.json({ error: 'Missing CalDAV credentials' }, 400);
+    if (!username || !appPassword) {
+      return c.json({ error: 'Missing credentials. Please provide your iCloud email and app-specific password.' }, 400);
     }
 
-    // Test connection and discover working URL
-    let workingCaldavUrl = caldavUrl;
+    // Use shortcut method: Direct iCloud CalDAV URL format
+    // Most common working format: https://caldav.icloud.com/{encodedUsername}/
+    const encodedUsername = encodeURIComponent(username);
+    const caldavUrl = `https://caldav.icloud.com/${encodedUsername}/`;
+    
+    console.log('Using shortcut CalDAV URL:', caldavUrl.replace(encodedUsername, '***'));
+
+    // Simple connection test - just verify credentials work
     try {
-      const { testCalDAVConnection, discoverCalendarURL } = await import('./caldav-client.tsx');
-      const testResult = await testCalDAVConnection(caldavUrl, username, appPassword);
-      
-      if (!testResult.success) {
-        const errorMessage = testResult.error || 'Invalid CalDAV credentials. Please check your iCloud email and app-specific password.';
-        return c.json({ error: errorMessage }, 400);
-      }
-      
-      // Use the working URL if one was discovered
-      if (testResult.workingUrl) {
-        workingCaldavUrl = testResult.workingUrl;
-        console.log('Using discovered working CalDAV URL:', workingCaldavUrl);
-      }
-      
-      // Also try to discover the calendar URL for future use
-      try {
-        const discoveredCalendarUrl = await discoverCalendarURL({
-          url: workingCaldavUrl,
-          username,
-          password: appPassword,
+      const cleanPassword = appPassword.replace(/\s+/g, ''); // Remove any spaces
+      const response = await fetch(caldavUrl, {
+        method: 'PROPFIND',
+        headers: {
+          'Authorization': `Basic ${btoa(`${username}:${cleanPassword}`)}`,
+          'Depth': '0',
+          'Content-Type': 'application/xml; charset=utf-8',
+        },
+        body: `<?xml version="1.0" encoding="utf-8"?>
+<propfind xmlns="DAV:">
+  <prop>
+    <current-user-principal/>
+  </prop>
+</propfind>`,
+      });
+
+      // Accept 207 (Multi-Status) or 200/201 as success
+      if (!response.ok && response.status !== 207) {
+        // If this URL doesn't work, try the base URL
+        const baseResponse = await fetch('https://caldav.icloud.com/', {
+          method: 'PROPFIND',
+          headers: {
+            'Authorization': `Basic ${btoa(`${username}:${cleanPassword}`)}`,
+            'Depth': '0',
+            'Content-Type': 'application/xml; charset=utf-8',
+          },
+          body: `<?xml version="1.0" encoding="utf-8"?>
+<propfind xmlns="DAV:">
+  <prop>
+    <current-user-principal/>
+  </prop>
+</propfind>`,
         });
-        
-        if (discoveredCalendarUrl) {
-          // Cache the discovered calendar URL
-          await kv.set(`user_calendar_url_${username}`, discoveredCalendarUrl);
-          console.log('Discovered and cached calendar URL:', discoveredCalendarUrl);
+
+        if (!baseResponse.ok && baseResponse.status !== 207) {
+          if (baseResponse.status === 401 || baseResponse.status === 403) {
+            return c.json({ 
+              error: 'Authentication failed. Please check your iCloud email and app-specific password. Make sure you copied the entire password without spaces.' 
+            }, 400);
+          }
+          // Non-auth errors - still store credentials, let actual operations handle discovery
+          console.log('CalDAV test returned non-200 status, but storing credentials anyway:', baseResponse.status);
         }
-      } catch (discoverError) {
-        // Non-critical - we can still connect without discovering the calendar URL
-        console.log('Calendar URL discovery failed (non-critical):', discoverError);
       }
     } catch (testError) {
-      console.log('Error testing CalDAV connection:', testError);
-      return c.json({ 
-        error: 'Failed to test CalDAV connection. Please check your credentials and try again.' 
-      }, 500);
+      // Connection test failed, but we'll still store credentials
+      // The actual calendar operations will handle URL discovery
+      console.log('CalDAV connection test failed (non-blocking):', testError);
     }
 
-    // Store credentials securely with the working URL
+    // Store credentials - use the shortcut URL format
     try {
       const tokens: calendarSync.CalendarTokens = {
-        accessToken: appPassword, // Store app password as access token
+        accessToken: appPassword,
         provider: 'apple',
         email: username,
-        caldavUrl: workingCaldavUrl, // Use the working URL
+        caldavUrl: caldavUrl, // Use shortcut URL format
         caldavUsername: username,
         caldavPassword: appPassword,
       };
 
       await calendarSync.storeCalendarTokens(userId, 'apple', tokens);
-      console.log('Apple Calendar tokens stored successfully with working URL:', workingCaldavUrl);
+      console.log('Apple Calendar credentials stored successfully (shortcut method)');
+      
+      return c.json({ success: true });
     } catch (storeError) {
       console.log('Error storing Apple Calendar tokens:', storeError);
       return c.json({ 
         error: 'Failed to store calendar credentials. Please try again.' 
       }, 500);
     }
-
-    return c.json({ success: true });
   } catch (error) {
-    console.log('Unhandled error setting up Apple Calendar:', error);
-    // Return a safe, user-friendly error message
+    console.log('Error setting up Apple Calendar:', error);
     return c.json({ 
-      error: 'An unexpected error occurred while setting up Apple Calendar. Please try again.' 
+      error: 'An unexpected error occurred. Please try again.' 
     }, 500);
   }
 };

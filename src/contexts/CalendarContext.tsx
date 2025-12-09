@@ -393,7 +393,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          caldavUrl: 'https://caldav.icloud.com',
           username: credentials.email,
           appPassword: credentials.appPassword,
         }),
