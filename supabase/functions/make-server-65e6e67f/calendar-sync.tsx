@@ -630,12 +630,23 @@ async function updateAppleCalendarEvent(
     calendarURL += '/';
   }
 
+  // Validate and normalize dates the same way as createAppleCalendarEvent
   const startDate = task.scheduledDate || task.dueDate;
-  const endDate = calculateEndDate(startDate, task.estimatedTime);
+  if (!startDate) {
+    throw new Error('Task must have a scheduledDate or dueDate to update a calendar event');
+  }
+
+  const startDateObj = new Date(startDate);
+  if (isNaN(startDateObj.getTime())) {
+    throw new Error(`Invalid date format: ${startDate}`);
+  }
+
+  const isoStartDate = startDateObj.toISOString();
+  const endDate = calculateEndDate(isoStartDate, task.estimatedTime);
   
   const event = {
     uid: eventUID,
-    dtstart: startDate,
+    dtstart: isoStartDate,
     dtend: endDate,
     summary: task.title,
     description: task.description || '',
@@ -657,7 +668,7 @@ async function updateAppleCalendarEvent(
     id: `apple_${eventUID}`,
     title: task.title,
     description: task.description,
-    start: startDate,
+    start: isoStartDate,
     end: endDate,
     provider: 'apple',
     providerEventId: eventUID,
