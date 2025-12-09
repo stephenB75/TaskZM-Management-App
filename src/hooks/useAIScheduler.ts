@@ -1983,6 +1983,15 @@ export function useAIScheduler() {
                 const testTime = new Date(occurrenceDay);
                 testTime.setHours(candidateTime.getHours(), candidateTime.getMinutes(), candidateTime.getSeconds(), candidateTime.getMilliseconds());
                 
+                // Get calendar events for this specific occurrence day
+                const occurrenceDayCalendarEvents = calendarEvents.filter(event => {
+                  const eventDate = new Date(event.start);
+                  eventDate.setHours(0, 0, 0, 0);
+                  const occurrenceDayOnly = new Date(occurrenceDay);
+                  occurrenceDayOnly.setHours(0, 0, 0, 0);
+                  return eventDate.getTime() === occurrenceDayOnly.getTime();
+                });
+                
                 // Use findNextAvailableSlot to check if this time conflicts
                 // If the result is different from the test time, it means there's a conflict
                 const conflictCheckResult = findNextAvailableSlot(
@@ -1996,6 +2005,7 @@ export function useAIScheduler() {
                       start: categoryHours.start,
                       end: categoryHours.end,
                     } : undefined,
+                    calendarEvents: occurrenceDayCalendarEvents, // Include calendar events for this occurrence day
                   }
                 );
                 
@@ -2033,6 +2043,15 @@ export function useAIScheduler() {
               if (!conflictsOnAnyDay) {
                 // CRITICAL: Double-check with findNextAvailableSlot to ensure consistency
                 // This catches any edge cases that the manual check might have missed
+                // Get calendar events for the schedule date
+                const scheduleDayCalendarEvents = calendarEvents.filter(event => {
+                  const eventDate = new Date(event.start);
+                  eventDate.setHours(0, 0, 0, 0);
+                  const scheduleDateOnly = new Date(scheduleDate);
+                  scheduleDateOnly.setHours(0, 0, 0, 0);
+                  return eventDate.getTime() === scheduleDateOnly.getTime();
+                });
+                
                 const doubleCheckSlot = findNextAvailableSlot(
                   task.id,
                   candidateTime,
@@ -2044,6 +2063,7 @@ export function useAIScheduler() {
                       start: categoryHours.start,
                       end: categoryHours.end,
                     } : undefined,
+                    calendarEvents: scheduleDayCalendarEvents, // Include calendar events
                   }
                 );
                 
@@ -2204,6 +2224,7 @@ export function useAIScheduler() {
             
             // Try again without category hours constraint to find ANY available slot
             // This ensures we NEVER schedule at the same time as existing tasks
+            // Get calendar events for this specific day (already filtered above)
             const fallbackSlot = findNextAvailableSlot(
               task.id,
               proposedTime,
@@ -2212,6 +2233,7 @@ export function useAIScheduler() {
               {
                 ensureAfterCurrentTime: isToday,
                 categoryHours: undefined, // Remove category hours constraint to find ANY slot
+                calendarEvents: dayCalendarEvents, // Include calendar events to avoid conflicts
               }
             );
             
@@ -2249,6 +2271,7 @@ export function useAIScheduler() {
                 {
                   ensureAfterCurrentTime: isToday,
                   categoryHours: undefined,
+                  calendarEvents: dayCalendarEvents, // Include calendar events to avoid conflicts
                 }
               );
               
@@ -2675,6 +2698,15 @@ export function useAIScheduler() {
           // CRITICAL: Final conflict check using findNextAvailableSlot to ensure no conflicts
           // This is a safeguard to catch any conflicts that might have been missed
           // IMPORTANT: Use allTasksForDay (includes tasks from current plan) not just existingTasksForDay
+          // Get calendar events for this specific day
+          const finalCheckCalendarEvents = calendarEvents.filter(event => {
+            const eventDate = new Date(event.start);
+            eventDate.setHours(0, 0, 0, 0);
+            const scheduleDateOnly = new Date(scheduleDate);
+            scheduleDateOnly.setHours(0, 0, 0, 0);
+            return eventDate.getTime() === scheduleDateOnly.getTime();
+          });
+          
           const finalConflictCheck = findNextAvailableSlot(
             task.id,
             scheduleDate,
@@ -2686,6 +2718,7 @@ export function useAIScheduler() {
                 start: effectiveCategoryHours.start,
                 end: effectiveCategoryHours.end,
               } : undefined,
+              calendarEvents: finalCheckCalendarEvents, // Include calendar events
             }
           );
           
@@ -2852,6 +2885,15 @@ export function useAIScheduler() {
           });
         }
         
+        // Get calendar events for this specific day for final safeguard
+        const finalSafeguardCalendarEvents = calendarEvents.filter(event => {
+          const eventDate = new Date(event.start);
+          eventDate.setHours(0, 0, 0, 0);
+          const scheduleDateOnly = new Date(scheduleDate);
+          scheduleDateOnly.setHours(0, 0, 0, 0);
+          return eventDate.getTime() === scheduleDateOnly.getTime();
+        });
+        
         const finalSafeguardSlot = findNextAvailableSlot(
           task.id,
           scheduleDate,
@@ -2860,6 +2902,7 @@ export function useAIScheduler() {
           {
             ensureAfterCurrentTime: false,
             categoryHours: undefined, // Remove constraints for final check
+            calendarEvents: finalSafeguardCalendarEvents, // Include calendar events
           }
         );
         
