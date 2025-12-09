@@ -374,7 +374,18 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      // Parse response JSON with error handling
+      let data;
+      try {
+        const responseText = await response.text();
+        if (!responseText) {
+          throw new Error('Empty response from server');
+        }
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse sync response:', parseError);
+        throw new Error('Invalid response from server. Please try again.');
+      }
       
       setLastSync(new Date());
       

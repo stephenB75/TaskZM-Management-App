@@ -2433,11 +2433,33 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
   } catch (error) {
     console.log('Error syncing all tasks:', error);
     // Properly extract error message from error object
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : typeof error === 'string' 
-        ? error 
-        : JSON.stringify(error);
+    let errorMessage = 'An unexpected error occurred while syncing tasks';
+    try {
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        // Try to extract message from error object
+        const errorObj = error as any;
+        // Check for common error message properties
+        if (errorObj.message && typeof errorObj.message === 'string') {
+          errorMessage = errorObj.message;
+        } else if (errorObj.error && typeof errorObj.error === 'string') {
+          errorMessage = errorObj.error;
+        } else if (errorObj.toString && typeof errorObj.toString === 'function') {
+          const toStringResult = errorObj.toString();
+          // Only use toString() if it doesn't return "[object Object]"
+          if (toStringResult && toStringResult !== '[object Object]' && typeof toStringResult === 'string') {
+            errorMessage = toStringResult;
+          }
+        }
+      }
+    } catch (extractError) {
+      // If error extraction fails, use default message
+      console.log('Error extracting error message:', extractError);
+      errorMessage = 'An unexpected error occurred while syncing tasks';
+    }
     return c.json({ error: errorMessage }, 500);
   }
 });
