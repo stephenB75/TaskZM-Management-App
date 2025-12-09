@@ -1681,6 +1681,7 @@ app.get("/make-server-65e6e67f/calendar/google/auth", async (c) => {
       hasClientId: !!clientId,
       hasRedirectUri: !!redirectUri,
       redirectUri,
+      clientIdPrefix: clientId ? `${clientId.substring(0, 20)}...` : 'missing',
     });
 
     if (!clientId || !redirectUri) {
