@@ -1983,15 +1983,54 @@ export function useAIScheduler() {
               }
               
               if (!conflictsOnAnyDay) {
-                foundValidTime = true;
-                availableSlot = candidateTime;
-                if (import.meta.env.DEV) {
-                  logger.debug('Recurring task found valid time for all occurrence days', {
-                    taskId: task.id,
-                    taskTitle: task.title,
-                    selectedTime: candidateTime.toLocaleTimeString(),
-                    occurrenceDaysCount: allOccurrenceDays.length,
-                  });
+                // CRITICAL: Double-check with findNextAvailableSlot to ensure consistency
+                // This catches any edge cases that the manual check might have missed
+                const doubleCheckSlot = findNextAvailableSlot(
+                  task.id,
+                  candidateTime,
+                  taskDurationMinutes,
+                  validTasksForDay, // Use the main task list for consistency
+                  {
+                    ensureAfterCurrentTime: isToday,
+                    categoryHours: categoryHours ? {
+                      start: categoryHours.start,
+                      end: categoryHours.end,
+                    } : undefined,
+                  }
+                );
+                
+                // Only accept if the double-check confirms the time is valid (within 1 minute)
+                const timeDifference = Math.abs(doubleCheckSlot.getTime() - candidateTime.getTime());
+                if (timeDifference <= MILLISECONDS_PER_MINUTE) {
+                  foundValidTime = true;
+                  availableSlot = candidateTime;
+                  if (import.meta.env.DEV) {
+                    logger.debug('Recurring task found valid time for all occurrence days', {
+                      taskId: task.id,
+                      taskTitle: task.title,
+                      selectedTime: candidateTime.toLocaleTimeString(),
+                      occurrenceDaysCount: allOccurrenceDays.length,
+                      doubleCheckConfirmed: true,
+                    });
+                  }
+                } else {
+                  // Double-check found a conflict, use the conflict-free slot
+                  if (import.meta.env.DEV) {
+                    logger.debug('Recurring task calendar check passed but double-check found conflict', {
+                      taskId: task.id,
+                      taskTitle: task.title,
+                      candidateTime: candidateTime.toLocaleTimeString(),
+                      doubleCheckSlot: doubleCheckSlot.toLocaleTimeString(),
+                      timeDifferenceMinutes: Math.round(timeDifference / MILLISECONDS_PER_MINUTE),
+                    });
+                  }
+                  // Continue to next attempt
+                  candidateTime.setMinutes(candidateTime.getMinutes() + TIME_ROUNDING_INTERVAL_MINUTES);
+                  if (candidateTime.getMinutes() >= MINUTES_PER_HOUR) {
+                    candidateTime.setHours(candidateTime.getHours() + 1);
+                    candidateTime.setMinutes(0);
+                  }
+                  attempts++;
                 }
               } else {
                 // Move to next time slot (15 minutes later)
@@ -2890,6 +2929,7 @@ export function useAIScheduler() {
           
           // CRITICAL: Re-check for conflicts after adjustment (in case we moved into another conflict)
           // This is a recursive check to ensure we don't create new conflicts
+          // CRITICAL FIX: Must check both regular and recurring tasks correctly
           const adjustedTimeMs = scheduleDate.getTime();
           const adjustedEndMs = adjustedTimeMs + (taskDurationMinutes * MILLISECONDS_PER_MINUTE);
           let stillHasConflict = false;
@@ -2902,11 +2942,36 @@ export function useAIScheduler() {
             const planScheduledDate = planItem.scheduledDate instanceof Date 
               ? planItem.scheduledDate 
               : new Date(planItem.scheduledDate);
-            const planDateKey = getDateKey(planScheduledDate);
             
-            if (planDateKey !== dateKey) continue;
+            // CRITICAL FIX: Check if this task applies to the target date (same logic as first pass)
+            const isPlanItemRecurring = planItem.task.recurrence && planItem.task.recurrence.type !== 'none';
+            let appliesToDate = false;
             
-            const planTimeMs = planScheduledDate.getTime();
+            if (isPlanItemRecurring) {
+              // For recurring tasks, check if they apply to this date using isDateInRecurrence
+              appliesToDate = isDateInRecurrence(planItem.task, scheduleDate);
+            } else {
+              // For regular tasks, check if scheduledDate matches the target date
+              const planDateKey = getDateKey(planScheduledDate);
+              appliesToDate = planDateKey === dateKey;
+            }
+            
+            // Only check tasks that apply to this date
+            if (!appliesToDate) continue;
+            
+            // CRITICAL FIX: For recurring tasks, use the time from the first occurrence but on the target date
+            // This ensures we check conflicts correctly for recurring tasks on their occurrence days
+            let planTimeMs: number;
+            if (isPlanItemRecurring) {
+              // For recurring tasks, create a date for the target day with the time from the first occurrence
+              const occurrenceDate = new Date(scheduleDate);
+              occurrenceDate.setHours(planScheduledDate.getHours(), planScheduledDate.getMinutes(), planScheduledDate.getSeconds(), planScheduledDate.getMilliseconds());
+              planTimeMs = occurrenceDate.getTime();
+            } else {
+              // For regular tasks, use the exact scheduledDate
+              planTimeMs = planScheduledDate.getTime();
+            }
+            
             const planTaskDuration = getTaskMinutes(planItem.task) * MILLISECONDS_PER_MINUTE;
             const planEndMs = planTimeMs + planTaskDuration;
             
@@ -2916,6 +2981,23 @@ export function useAIScheduler() {
             if (sameStartTime || overlaps) {
               stillHasConflict = true;
               newMaxConflictEnd = Math.max(newMaxConflictEnd, planEndMs);
+              
+              if (import.meta.env.DEV) {
+                logger.error('🚨 DIRECT CONFLICT STILL EXISTS AFTER ADJUSTMENT!', {
+                  currentTask: { id: task.id, title: task.title, time: scheduleDate.toISOString() },
+                  conflictingTask: { 
+                    id: planItem.task.id, 
+                    title: planItem.task.title, 
+                    isRecurring: isPlanItemRecurring,
+                    time: planScheduledDate.toISOString(),
+                    adjustedTime: new Date(planTimeMs).toISOString()
+                  },
+                  sameStartTime,
+                  overlaps,
+                  planEndMs: new Date(planEndMs).toISOString(),
+                  newMaxConflictEnd: new Date(newMaxConflictEnd).toISOString(),
+                });
+              }
             }
           }
           
