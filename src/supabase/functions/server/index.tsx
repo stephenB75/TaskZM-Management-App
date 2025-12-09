@@ -26,6 +26,11 @@ app.use(
   }),
 );
 
+// Explicit OPTIONS handler for all routes to ensure preflight requests work
+app.options("*", (c) => {
+  return c.text("", 204);
+});
+
 // Create Supabase client helper
 const getSupabaseClient = () => {
   return createClient(
