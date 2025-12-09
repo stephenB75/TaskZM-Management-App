@@ -2356,7 +2356,17 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const { workspaceId, provider } = await c.req.json();
+    // Parse request body with error handling
+    let workspaceId: string;
+    let provider: string;
+    try {
+      const body = await c.req.json();
+      workspaceId = body.workspaceId;
+      provider = body.provider;
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return c.json({ error: 'Invalid request body. Please provide workspaceId and provider.' }, 400);
+    }
 
     if (!workspaceId || !provider) {
       return c.json({ error: 'Missing workspaceId or provider' }, 400);
@@ -2377,8 +2387,77 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
     // Get all tasks with scheduled dates
     const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
     const tasks = tasksData
-      .map(item => JSON.parse(item.value))
-      .filter(task => task.scheduledDate && !task.archived);
+      .map(item => {
+        // Handle both JSON strings and already-parsed objects
+        if (typeof item.value === 'string') {
+          // Skip if the string is "[object Object]" - this indicates a serialization error
+          if (item.value === '[object Object]' || item.value.trim() === '[object Object]') {
+            console.error(`Skipping invalid task value at ${item.key}: "[object Object]"`);
+            return null;
+          }
+          try {
+            const parsed = JSON.parse(item.value);
+            // Ensure parsed value is an object
+            if (typeof parsed === 'object' && parsed !== null) {
+              return parsed;
+            } else {
+              console.error(`Task ${item.key} parsed to non-object:`, typeof parsed);
+              return null;
+            }
+          } catch (parseError) {
+            console.error(`Error parsing task ${item.key}:`, parseError);
+            console.error(`Task value (first 200 chars):`, item.value.substring(0, 200));
+            return null;
+          }
+        } else if (typeof item.value === 'object' && item.value !== null) {
+          return item.value;
+        }
+        console.error(`Task ${item.key} has invalid type:`, typeof item.value);
+        return null;
+      })
+      .filter(task => {
+        // Filter out invalid tasks
+        if (!task || task.archived) return false;
+        // Must have either scheduledDate or dueDate
+        const hasDate = task.scheduledDate || task.dueDate;
+        if (!hasDate) {
+          console.log(`Skipping task ${task.id}: no scheduledDate or dueDate`);
+          return false;
+        }
+        // Validate date format
+        const dateObj = new Date(hasDate);
+        if (isNaN(dateObj.getTime())) {
+          console.error(`Skipping task ${task.id}: invalid date format: ${hasDate}`);
+          return false;
+        }
+        return true;
+      });
+
+    // Verify calendar tokens exist before attempting sync
+    console.log(`Checking calendar tokens for user ${userId}, provider ${provider}...`);
+    const tokens = await calendarSync.getCalendarTokens(userId, provider);
+    if (!tokens) {
+      const errorMsg = `No calendar tokens found for ${provider}. Please connect your ${provider} calendar first.`;
+      console.error(errorMsg);
+      return c.json({ error: errorMsg }, 400);
+    }
+    
+    // Validate tokens based on provider
+    if (provider === 'apple') {
+      if (!tokens.caldavUrl || !tokens.caldavUsername || !tokens.caldavPassword) {
+        const errorMsg = `Apple Calendar credentials incomplete. Please reconnect your Apple Calendar.`;
+        console.error(errorMsg);
+        return c.json({ error: errorMsg }, 400);
+      }
+    } else {
+      if (!tokens.accessToken) {
+        const errorMsg = `Invalid tokens for ${provider}. Please reconnect your calendar.`;
+        console.error(errorMsg);
+        return c.json({ error: errorMsg }, 400);
+      }
+    }
+    
+    console.log(`Calendar tokens validated. Found ${tasks.length} tasks to sync.`);
 
     let syncedCount = 0;
     let failedCount = 0;
@@ -2386,21 +2465,40 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
     
     for (const task of tasks) {
       try {
+        console.log(`Syncing task ${task.id} to ${provider}...`, {
+          taskId: task.id,
+          taskTitle: task.title,
+          scheduledDate: task.scheduledDate,
+          provider,
+        });
+        
         const existingEventId = await calendarSync.getTaskEventMapping(userId, task.id, provider);
         
         let event;
         if (existingEventId) {
+          console.log(`Updating existing event for task ${task.id}`);
           event = await calendarSync.updateCalendarEvent(userId, provider, existingEventId, task);
         } else {
+          console.log(`Creating new event for task ${task.id}`);
           event = await calendarSync.createCalendarEvent(userId, provider, task);
           if (event) {
+            console.log(`Event created successfully for task ${task.id}:`, event.providerEventId);
             await calendarSync.storeTaskEventMapping(userId, task.id, provider, event.providerEventId);
+          } else {
+            console.log(`Event creation returned null for task ${task.id}`);
           }
         }
         
         syncedCount++;
+        console.log(`Successfully synced task ${task.id}`);
       } catch (error) {
-        console.log(`Error syncing task ${task.id}:`, error);
+        console.error(`Error syncing task ${task.id}:`, error);
+        console.error('Error details:', {
+          errorType: typeof error,
+          errorConstructor: error?.constructor?.name,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        });
         failedCount++;
         // Only store failed task IDs, not full error details to reduce response size
         if (failedTaskIds.length < 10) { // Limit to first 10 failures
@@ -2418,8 +2516,65 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
       ...(failedTaskIds.length > 0 && { failedTaskIds })
     });
   } catch (error) {
-    console.log('Error syncing all tasks:', error);
-    return c.json({ error: String(error) }, 500);
+    // Log full error details for debugging
+    console.error('Error syncing all tasks - full error:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error?.constructor?.name);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
+    // Properly extract error message from error object
+    let errorMessage = 'An unexpected error occurred while syncing tasks';
+    try {
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        // Try to extract message from error object
+        const errorObj = error as any;
+        // Check for common error message properties
+        if (errorObj.message && typeof errorObj.message === 'string') {
+          errorMessage = errorObj.message;
+        } else if (errorObj.error && typeof errorObj.error === 'string') {
+          errorMessage = errorObj.error;
+        } else if (errorObj.toString && typeof errorObj.toString === 'function') {
+          const toStringResult = errorObj.toString();
+          // Only use toString() if it doesn't return "[object Object]"
+          if (toStringResult && toStringResult !== '[object Object]' && typeof toStringResult === 'string') {
+            errorMessage = toStringResult;
+          }
+        } else {
+          // Last resort: try JSON.stringify but catch circular references
+          try {
+            const jsonStr = JSON.stringify(errorObj, Object.getOwnPropertyNames(errorObj));
+            if (jsonStr && jsonStr !== '{}' && jsonStr.length < 500) {
+              errorMessage = `Error: ${jsonStr}`;
+            }
+          } catch (stringifyError) {
+            // If stringify fails (circular reference), use default
+            console.error('Failed to stringify error object:', stringifyError);
+          }
+        }
+      }
+    } catch (extractError) {
+      // If error extraction fails, use default message
+      console.error('Error extracting error message:', extractError);
+      errorMessage = 'An unexpected error occurred while syncing tasks';
+    }
+    
+    // Ensure errorMessage is always a string and not too long
+    if (typeof errorMessage !== 'string') {
+      errorMessage = 'An unexpected error occurred while syncing tasks';
+    }
+    if (errorMessage.length > 500) {
+      errorMessage = errorMessage.substring(0, 500) + '...';
+    }
+    
+    console.error('Returning error response:', errorMessage);
+    return c.json({ error: errorMessage }, 500);
   }
 });
 

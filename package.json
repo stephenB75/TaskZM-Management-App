@@ -68,6 +68,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "screenshots": "playwright test --config=playwright.config.ts"
+    "screenshots": "playwright test --config=playwright.config.ts",
+    "deploy-functions": "./scripts/deploy-functions.sh"
   }
 }
