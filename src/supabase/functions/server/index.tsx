@@ -2259,6 +2259,7 @@ const appleCalendarSetupHandler = async (c: any) => {
 };
 
 // Register the route both with and without the prefix for compatibility
+// IMPORTANT: Register routes BEFORE the catch-all route
 app.post("/make-server-65e6e67f/calendar/apple/setup", appleCalendarSetupHandler);
 app.post("/calendar/apple/setup", appleCalendarSetupHandler);
 
