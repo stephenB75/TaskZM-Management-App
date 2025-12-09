@@ -56,9 +56,44 @@ export async function getCalendarTokens(
   userId: string,
   provider: CalendarProvider
 ): Promise<CalendarTokens | null> {
-  const data = await kv.get(`user_${userId}_calendar_${provider}_tokens`);
-  if (!data) return null;
-  return JSON.parse(data);
+  try {
+    const data = await kv.get(`user_${userId}_calendar_${provider}_tokens`);
+    if (!data) {
+      console.log(`No calendar tokens found for user ${userId}, provider ${provider}`);
+      return null;
+    }
+    
+    // Handle case where data might already be an object
+    if (typeof data === 'object' && data !== null) {
+      return data as CalendarTokens;
+    }
+    
+    // Handle case where data is a string
+    if (typeof data === 'string') {
+      // Skip if it's "[object Object]"
+      if (data === '[object Object]' || data.trim() === '[object Object]') {
+        console.error(`Invalid token data format for user ${userId}, provider ${provider}: "[object Object]"`);
+        return null;
+      }
+      try {
+        const parsed = JSON.parse(data);
+        // Validate that parsed data has required fields
+        if (parsed && typeof parsed === 'object') {
+          return parsed as CalendarTokens;
+        }
+      } catch (parseError) {
+        console.error(`Error parsing calendar tokens for user ${userId}, provider ${provider}:`, parseError);
+        console.error(`Token data (first 200 chars):`, data.substring(0, 200));
+        return null;
+      }
+    }
+    
+    console.error(`Unexpected token data type for user ${userId}, provider ${provider}:`, typeof data);
+    return null;
+  } catch (error) {
+    console.error(`Error retrieving calendar tokens for user ${userId}, provider ${provider}:`, error);
+    return null;
+  }
 }
 
 /**
@@ -188,10 +223,33 @@ export async function createCalendarEvent(
   provider: CalendarProvider,
   task: any
 ): Promise<CalendarEvent | null> {
+  console.log(`Creating calendar event for user ${userId}, provider ${provider}, task ${task.id}`);
+  
   // Get and refresh tokens if needed
   let tokens = await getCalendarTokens(userId, provider);
   if (!tokens) {
-    throw new Error(`No tokens found for ${provider}`);
+    const errorMsg = `No calendar tokens found for ${provider}. Please connect your ${provider} calendar first.`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+  
+  // Validate tokens have required fields
+  if (provider === 'apple') {
+    if (!tokens.caldavUrl || !tokens.caldavUsername || !tokens.caldavPassword) {
+      const errorMsg = `Apple Calendar credentials incomplete. Please reconnect your Apple Calendar.`;
+      console.error(errorMsg, {
+        hasCaldavUrl: !!tokens.caldavUrl,
+        hasCaldavUsername: !!tokens.caldavUsername,
+        hasCaldavPassword: !!tokens.caldavPassword,
+      });
+      throw new Error(errorMsg);
+    }
+  } else {
+    if (!tokens.accessToken) {
+      const errorMsg = `Invalid tokens for ${provider}. Please reconnect your calendar.`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
   }
   
   // Apple Calendar doesn't use refresh tokens (app-specific passwords don't expire)
@@ -200,15 +258,20 @@ export async function createCalendarEvent(
   }
 
   // Create event based on provider
-  switch (provider) {
-    case 'google':
-      return await createGoogleCalendarEvent(tokens, task);
-    case 'outlook':
-      return await createOutlookCalendarEvent(tokens, task);
-    case 'apple':
-      return await createAppleCalendarEvent(tokens, task);
-    default:
-      throw new Error(`Unknown provider: ${provider}`);
+  try {
+    switch (provider) {
+      case 'google':
+        return await createGoogleCalendarEvent(tokens, task);
+      case 'outlook':
+        return await createOutlookCalendarEvent(tokens, task);
+      case 'apple':
+        return await createAppleCalendarEvent(tokens, task);
+      default:
+        throw new Error(`Unknown provider: ${provider}`);
+    }
+  } catch (error) {
+    console.error(`Error in createCalendarEvent for ${provider}:`, error);
+    throw error;
   }
 }
 

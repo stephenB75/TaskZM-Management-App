@@ -2433,6 +2433,32 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
         return true;
       });
 
+    // Verify calendar tokens exist before attempting sync
+    console.log(`Checking calendar tokens for user ${userId}, provider ${provider}...`);
+    const tokens = await calendarSync.getCalendarTokens(userId, provider);
+    if (!tokens) {
+      const errorMsg = `No calendar tokens found for ${provider}. Please connect your ${provider} calendar first.`;
+      console.error(errorMsg);
+      return c.json({ error: errorMsg }, 400);
+    }
+    
+    // Validate tokens based on provider
+    if (provider === 'apple') {
+      if (!tokens.caldavUrl || !tokens.caldavUsername || !tokens.caldavPassword) {
+        const errorMsg = `Apple Calendar credentials incomplete. Please reconnect your Apple Calendar.`;
+        console.error(errorMsg);
+        return c.json({ error: errorMsg }, 400);
+      }
+    } else {
+      if (!tokens.accessToken) {
+        const errorMsg = `Invalid tokens for ${provider}. Please reconnect your calendar.`;
+        console.error(errorMsg);
+        return c.json({ error: errorMsg }, 400);
+      }
+    }
+    
+    console.log(`Calendar tokens validated. Found ${tasks.length} tasks to sync.`);
+
     let syncedCount = 0;
     let failedCount = 0;
     const failedTaskIds: string[] = [];
