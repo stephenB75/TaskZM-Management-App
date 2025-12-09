@@ -13,14 +13,16 @@ const app = new Hono();
 app.use('*', logger(console.log));
 
 // Enable CORS for all routes and methods
+// Allow all origins to prevent CORS issues
 app.use(
   "/*",
   cors({
-    origin: "*",
-    allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    exposeHeaders: ["Content-Length"],
-    maxAge: 600,
+    origin: "*", // Allow all origins
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    exposeHeaders: ["Content-Length", "Content-Type"],
+    maxAge: 86400, // 24 hours
+    credentials: false,
   }),
 );
 
