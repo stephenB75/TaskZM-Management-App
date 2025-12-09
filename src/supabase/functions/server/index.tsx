@@ -2141,7 +2141,8 @@ app.get("/make-server-65e6e67f/calendar/status", async (c) => {
 });
 
 // Apple Calendar CalDAV connection setup
-app.post("/make-server-65e6e67f/calendar/apple/setup", async (c) => {
+// Register both with and without prefix for compatibility
+const appleCalendarSetupHandler = async (c: any) => {
   console.log('Apple Calendar setup endpoint called', {
     method: c.req.method,
     path: new URL(c.req.url).pathname,
@@ -2243,7 +2244,11 @@ app.post("/make-server-65e6e67f/calendar/apple/setup", async (c) => {
       error: 'An unexpected error occurred while setting up Apple Calendar. Please try again.' 
     }, 500);
   }
-});
+};
+
+// Register the route both with and without the prefix for compatibility
+app.post("/make-server-65e6e67f/calendar/apple/setup", appleCalendarSetupHandler);
+app.post("/calendar/apple/setup", appleCalendarSetupHandler);
 
 // Disconnect calendar
 app.delete("/make-server-65e6e67f/calendar/:provider", async (c) => {
