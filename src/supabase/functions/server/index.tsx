@@ -2142,7 +2142,12 @@ app.get("/make-server-65e6e67f/calendar/status", async (c) => {
 
 // Apple Calendar CalDAV connection setup
 app.post("/make-server-65e6e67f/calendar/apple/setup", async (c) => {
-  console.log('Apple Calendar setup endpoint called');
+  console.log('Apple Calendar setup endpoint called', {
+    method: c.req.method,
+    path: new URL(c.req.url).pathname,
+    url: c.req.url,
+    hasBody: !!c.req.body,
+  });
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3590,6 +3595,32 @@ app.post("/make-server-65e6e67f/team/:workspaceId/invitations/decline", async (c
     console.log('Error declining invitation:', error);
     return c.json({ error: String(error) }, 500);
   }
+});
+
+// Catch-all route for debugging 404 errors
+app.all('*', async (c) => {
+  const path = new URL(c.req.url).pathname;
+  console.log('Unmatched route requested:', {
+    method: c.req.method,
+    path,
+    url: c.req.url,
+  });
+  return c.json({ 
+    error: 'Route not found',
+    method: c.req.method,
+    path,
+    availableRoutes: [
+      'GET /make-server-65e6e67f/calendar/status',
+      'POST /make-server-65e6e67f/calendar/apple/setup',
+      'GET /make-server-65e6e67f/calendar/google/auth',
+      'GET /make-server-65e6e67f/calendar/google/callback',
+      'GET /make-server-65e6e67f/calendar/outlook/auth',
+      'GET /make-server-65e6e67f/calendar/outlook/callback',
+      'DELETE /make-server-65e6e67f/calendar/:provider',
+      'POST /make-server-65e6e67f/calendar/sync-task',
+      'POST /make-server-65e6e67f/calendar/sync-all',
+    ]
+  }, 404);
 });
 
 Deno.serve(app.fetch);
