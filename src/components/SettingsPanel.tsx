@@ -845,7 +845,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                 <p className="text-xs text-muted-foreground mb-3">
                   • Google Calendar OAuth sync<br />
-                  • Apple Calendar CalDAV sync<br />
+                  • Apple Calendar via Shortcuts<br />
                   • Automatic sync when tasks are created or updated<br />
                   • Manual sync all tasks
                 </p>
@@ -911,7 +911,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     />
                   </div>
                   
-                  {/* Apple Calendar - CalDAV */}
+                  {/* Apple Calendar - Shortcuts */}
                   <div className="flex items-center justify-between gap-3 py-1">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <Label htmlFor="apple-cal" className="text-sm cursor-pointer">Apple Calendar</Label>

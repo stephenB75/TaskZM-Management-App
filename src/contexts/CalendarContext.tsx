@@ -3,8 +3,9 @@ import { toast } from '../lib/toast-wrapper';
 import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { CalDAVCredentialsDialog } from '../components/CalDAVCredentialsDialog';
+import { AppleShortcutSetupDialog } from '../components/AppleShortcutSetupDialog';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { generateTaskShortcutURL, openShortcutForTask } from '../lib/apple-shortcuts';
 
 type CalendarProvider = 'google' | 'outlook' | 'apple';
 
@@ -53,7 +54,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [showCalDAVDialog, setShowCalDAVDialog] = useState(false);
+  const [showAppleShortcutDialog, setShowAppleShortcutDialog] = useState(false);
 
   // Load calendar status from localStorage on mount
   useEffect(() => {
@@ -174,9 +175,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Apple Calendar requires different flow (CalDAV)
+    // Apple Calendar uses Shortcuts method (no CalDAV)
     if (provider === 'apple') {
-      setShowCalDAVDialog(true);
+      setShowAppleShortcutDialog(true);
       return;
     }
 
@@ -340,7 +341,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   // Sync a single task to calendar
   const syncTask = useCallback(async (taskId: string, provider: CalendarProvider) => {
-    if (!user || !accessToken || !workspaceId) return;
+    if (!user) return;
 
     const task = tasks.find(t => t.id === taskId);
     if (!task) {
@@ -352,6 +353,26 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       toast.error('Task must have a scheduled date to sync');
       return;
     }
+
+    // Apple Calendar uses Shortcuts method (client-side)
+    if (provider === 'apple') {
+      const shortcutUrl = generateTaskShortcutURL(task);
+      if (!shortcutUrl) {
+        toast.error('Could not generate calendar event');
+        return;
+      }
+      
+      // Open the shortcut URL - this will trigger the Shortcuts app
+      window.open(shortcutUrl, '_self');
+      setLastSync(new Date());
+      toast.success('Opening Apple Shortcuts...', {
+        description: 'The shortcut will add this task to your calendar',
+      });
+      return;
+    }
+
+    // Google/Outlook use server-side OAuth
+    if (!accessToken || !workspaceId) return;
 
     try {
       setIsSyncing(true);
@@ -384,7 +405,45 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   // Sync all tasks to calendar
   const syncAllTasks = useCallback(async (provider: CalendarProvider) => {
-    if (!user || !accessToken || !workspaceId) return;
+    if (!user) return;
+
+    // Apple Calendar uses Shortcuts method - sync tasks one at a time
+    if (provider === 'apple') {
+      const scheduledTasks = tasks.filter(t => 
+        t.scheduledDate && 
+        t.status !== 'done' &&
+        new Date(t.scheduledDate) >= new Date()
+      );
+
+      if (scheduledTasks.length === 0) {
+        toast.info('No upcoming tasks to sync');
+        return;
+      }
+
+      // For Apple Shortcuts, we open tasks one at a time
+      // The user will need to confirm each one in the Shortcuts app
+      toast.info(`Syncing ${scheduledTasks.length} tasks to Apple Calendar`, {
+        description: 'Each task will open in Shortcuts. Tap "Run" to add it to your calendar.',
+      });
+
+      // Open the first task's shortcut
+      const firstTask = scheduledTasks[0];
+      const shortcutUrl = generateTaskShortcutURL(firstTask);
+      if (shortcutUrl) {
+        // Store remaining tasks in sessionStorage for sequential syncing
+        if (scheduledTasks.length > 1) {
+          sessionStorage.setItem('pendingAppleSyncTasks', JSON.stringify(
+            scheduledTasks.slice(1).map(t => t.id)
+          ));
+        }
+        window.open(shortcutUrl, '_self');
+        setLastSync(new Date());
+      }
+      return;
+    }
+
+    // Google/Outlook use server-side sync
+    if (!accessToken || !workspaceId) return;
 
     try {
       setIsSyncing(true);
@@ -502,94 +561,25 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
   }, [user, accessToken, workspaceId]);
 
-  const handleCalDAVConfirm = useCallback(async (credentials: { email: string; appPassword: string }) => {
-    if (!user || !accessToken) {
+  // Handle Apple Shortcut setup completion
+  const handleAppleShortcutComplete = useCallback(() => {
+    if (!user) {
       toast.error('Please sign in to connect calendar');
       return;
     }
 
-    try {
-      const url = `${BASE_URL}/calendar/apple/setup`;
-      console.log('Calling Apple Calendar setup endpoint:', url);
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: credentials.email,
-          appPassword: credentials.appPassword,
-        }),
-      });
-      
-      console.log('Apple Calendar setup response:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: response.url,
-        ok: response.ok,
-      });
-
-      if (!response.ok) {
-        // Try to parse JSON error response
-        let errorMessage = `Failed to connect Apple Calendar (${response.status})`;
-        try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const error = await response.json();
-            errorMessage = error.error || errorMessage;
-          } else {
-            // If response is not JSON, read as text
-            const text = await response.text();
-            errorMessage = text || errorMessage;
-          }
-        } catch (parseError) {
-          // If parsing fails, use status text
-          errorMessage = response.statusText || `Server error (${response.status})`;
-        }
-        console.error('Apple Calendar setup error:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorMessage,
-        });
-        throw new Error(errorMessage);
-      }
-
-      // Parse success response
-      let data;
-      try {
-        const responseText = await response.text();
-        console.log('Apple Calendar setup response body:', responseText);
-        data = responseText ? JSON.parse(responseText) : { success: true };
-        console.log('Apple Calendar setup parsed data:', data);
-      } catch (parseError) {
-        // If JSON parsing fails, still consider it a success if status is OK
-        if (response.ok) {
-          console.log('Response OK but JSON parse failed, treating as success');
-          data = { success: true };
-        } else {
-          throw new Error('Invalid response from server');
-        }
-      }
-
-      // Immediately update the calendar status to show connection
-      setCalendarStatus(prev => ({ ...prev, apple: true }));
-      
-      // Also refresh from server to ensure consistency
-      await checkCalendarStatus();
-      
-      toast.success('Apple Calendar connected successfully! 🎉', {
-        description: 'Your Apple Calendar is now synced with TaskZM',
-      });
-      setShowCalDAVDialog(false);
-    } catch (error) {
-      console.error('Apple Calendar connection error:', error);
-      toast.error('Failed to connect Apple Calendar', {
-        description: error instanceof Error ? error.message : String(error),
-      });
+    // Store Apple Calendar connection status locally
+    // (No server-side credentials needed for Shortcuts method)
+    setCalendarStatus(prev => ({ ...prev, apple: true }));
+    
+    // Persist to localStorage
+    if (user.id) {
+      const newStatus = { ...calendarStatus, apple: true };
+      localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(newStatus));
     }
-  }, [user, accessToken, checkCalendarStatus]);
+    
+    setShowAppleShortcutDialog(false);
+  }, [user, calendarStatus]);
 
   return (
     <CalendarContext.Provider
@@ -606,10 +596,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      <CalDAVCredentialsDialog
-        open={showCalDAVDialog}
-        onOpenChange={setShowCalDAVDialog}
-        onConfirm={handleCalDAVConfirm}
+      <AppleShortcutSetupDialog
+        open={showAppleShortcutDialog}
+        onOpenChange={setShowAppleShortcutDialog}
+        onComplete={handleAppleShortcutComplete}
       />
     </CalendarContext.Provider>
   );
