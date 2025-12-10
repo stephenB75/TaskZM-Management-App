@@ -140,12 +140,12 @@ async function getWorkspaceMembers(workspaceId: string): Promise<string[]> {
 }
 
 // Health check endpoint
-app.get("/make-server-65e6e67f/health", (c) => {
+app.get("/taskzm-database-function/health", (c) => {
   return c.json({ status: "ok" });
 });
 
 // User signup endpoint
-app.post("/make-server-65e6e67f/signup", async (c) => {
+app.post("/taskzm-database-function/signup", async (c) => {
   try {
     const body = await c.req.json();
     const { email, password, name, isDemo } = body;
@@ -241,7 +241,7 @@ app.post("/make-server-65e6e67f/signup", async (c) => {
 });
 
 // Get all tasks for a workspace
-app.get("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
+app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -274,7 +274,7 @@ app.get("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
 });
 
 // Create or update task
-app.post("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
+app.post("/taskzm-database-function/tasks/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -319,7 +319,7 @@ app.post("/make-server-65e6e67f/tasks/:workspaceId", async (c) => {
 });
 
 // Delete task
-app.delete("/make-server-65e6e67f/tasks/:workspaceId/:taskId", async (c) => {
+app.delete("/taskzm-database-function/tasks/:workspaceId/:taskId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -363,7 +363,7 @@ app.delete("/make-server-65e6e67f/tasks/:workspaceId/:taskId", async (c) => {
 });
 
 // Get workspace info
-app.get("/make-server-65e6e67f/workspace/:workspaceId", async (c) => {
+app.get("/taskzm-database-function/workspace/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -395,7 +395,7 @@ app.get("/make-server-65e6e67f/workspace/:workspaceId", async (c) => {
 });
 
 // Get user's workspaces
-app.get("/make-server-65e6e67f/user/workspaces", async (c) => {
+app.get("/taskzm-database-function/user/workspaces", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -486,7 +486,7 @@ app.get("/make-server-65e6e67f/user/workspaces", async (c) => {
 });
 
 // Create workspace for user
-app.post("/make-server-65e6e67f/user/workspaces", async (c) => {
+app.post("/taskzm-database-function/user/workspaces", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -541,7 +541,7 @@ app.post("/make-server-65e6e67f/user/workspaces", async (c) => {
 });
 
 // Get recent activities
-app.get("/make-server-65e6e67f/activities/:workspaceId", async (c) => {
+app.get("/taskzm-database-function/activities/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -578,7 +578,7 @@ app.get("/make-server-65e6e67f/activities/:workspaceId", async (c) => {
 });
 
 // Save time tracking session
-app.post("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
+app.post("/taskzm-database-function/time-tracking/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -612,7 +612,7 @@ app.post("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
 });
 
 // Get time tracking sessions
-app.get("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
+app.get("/taskzm-database-function/time-tracking/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -646,7 +646,7 @@ app.get("/make-server-65e6e67f/time-tracking/:workspaceId", async (c) => {
 });
 
 // Get all projects for a workspace
-app.get("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
+app.get("/taskzm-database-function/projects/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -679,7 +679,7 @@ app.get("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
 });
 
 // Create or update project
-app.post("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
+app.post("/taskzm-database-function/projects/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -713,7 +713,7 @@ app.post("/make-server-65e6e67f/projects/:workspaceId", async (c) => {
 });
 
 // Delete project
-app.delete("/make-server-65e6e67f/projects/:workspaceId/:projectId", async (c) => {
+app.delete("/taskzm-database-function/projects/:workspaceId/:projectId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -792,7 +792,7 @@ async function ensureWorkspaceForFolders(workspaceId: string, userId: string) {
 }
 
 // Get all folders for a workspace
-app.get("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
+app.get("/taskzm-database-function/folders/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -825,7 +825,7 @@ app.get("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
 });
 
 // Create or update folder
-app.post("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
+app.post("/taskzm-database-function/folders/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -873,7 +873,7 @@ app.post("/make-server-65e6e67f/folders/:workspaceId", async (c) => {
 });
 
 // Update folder
-app.put("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => {
+app.put("/taskzm-database-function/folders/:workspaceId/:folderId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -918,7 +918,7 @@ app.put("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => {
 });
 
 // Delete folder
-app.delete("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => {
+app.delete("/taskzm-database-function/folders/:workspaceId/:folderId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -951,7 +951,7 @@ app.delete("/make-server-65e6e67f/folders/:workspaceId/:folderId", async (c) => 
 });
 
 // Get workspace settings (tags, hours, rollover, view config)
-app.get("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
+app.get("/taskzm-database-function/settings/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -993,7 +993,7 @@ app.get("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
 });
 
 // Update workspace settings
-app.post("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
+app.post("/taskzm-database-function/settings/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -1038,7 +1038,7 @@ app.post("/make-server-65e6e67f/settings/:workspaceId", async (c) => {
 });
 
 // Get user subscription
-app.get("/make-server-65e6e67f/subscription", async (c) => {
+app.get("/taskzm-database-function/subscription", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -1117,7 +1117,7 @@ app.get("/make-server-65e6e67f/subscription", async (c) => {
 });
 
 // Update user subscription
-app.post("/make-server-65e6e67f/subscription", async (c) => {
+app.post("/taskzm-database-function/subscription", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -1217,7 +1217,7 @@ app.post("/make-server-65e6e67f/subscription", async (c) => {
 // ========================================
 
 // Delete demo user and all associated data
-app.delete("/make-server-65e6e67f/cleanup-demo-user", async (c) => {
+app.delete("/taskzm-database-function/cleanup-demo-user", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -1360,7 +1360,7 @@ app.delete("/make-server-65e6e67f/cleanup-demo-user", async (c) => {
 });
 
 // Get demo user statistics (admin endpoint)
-app.get("/make-server-65e6e67f/admin/demo-stats", async (c) => {
+app.get("/taskzm-database-function/admin/demo-stats", async (c) => {
   try {
     const { userId, error: authError } = await verifyAdmin(c.req.raw);
     if (authError || !userId) {
@@ -1380,7 +1380,7 @@ app.get("/make-server-65e6e67f/admin/demo-stats", async (c) => {
 });
 
 // Manual cleanup of all demo users (admin endpoint - use with caution!)
-app.post("/make-server-65e6e67f/admin/cleanup-all-demos", async (c) => {
+app.post("/taskzm-database-function/admin/cleanup-all-demos", async (c) => {
   try {
     const { userId, error: authError } = await verifyAdmin(c.req.raw);
     if (authError || !userId) {
@@ -1410,7 +1410,7 @@ app.post("/make-server-65e6e67f/admin/cleanup-all-demos", async (c) => {
 // ========================================
 
 // Update demo user login timestamp
-app.post("/make-server-65e6e67f/demo/update-login-time", async (c) => {
+app.post("/taskzm-database-function/demo/update-login-time", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -1436,7 +1436,7 @@ app.post("/make-server-65e6e67f/demo/update-login-time", async (c) => {
 });
 
 // Update demo user activity timestamp
-app.post("/make-server-65e6e67f/demo/update-activity", async (c) => {
+app.post("/taskzm-database-function/demo/update-activity", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -1462,7 +1462,7 @@ app.post("/make-server-65e6e67f/demo/update-activity", async (c) => {
 
 // Cleanup inactive demo users (called by background job or admin)
 // This endpoint checks for demo users with no activity > 1 hour and cleans them up
-app.post("/make-server-65e6e67f/demo/cleanup-inactive", async (c) => {
+app.post("/taskzm-database-function/demo/cleanup-inactive", async (c) => {
   try {
     // Verify admin access or scheduled job token
     // For scheduled jobs, you can pass a secret token in the request body
@@ -1682,7 +1682,7 @@ async function cleanupDemoUser(userId: string): Promise<{
 // ========================================
 
 // Initiate Google Calendar OAuth flow
-app.get("/make-server-65e6e67f/calendar/google/auth", async (c) => {
+app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -1755,7 +1755,7 @@ app.get("/make-server-65e6e67f/calendar/google/auth", async (c) => {
 });
 
 // Google Calendar OAuth callback
-app.get("/make-server-65e6e67f/calendar/google/callback", async (c) => {
+app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
   try {
     const code = c.req.query('code');
     const userId = c.req.query('state');
@@ -1945,7 +1945,7 @@ app.get("/make-server-65e6e67f/calendar/google/callback", async (c) => {
 });
 
 // Initiate Outlook Calendar OAuth flow
-app.get("/make-server-65e6e67f/calendar/outlook/auth", async (c) => {
+app.get("/taskzm-database-function/calendar/outlook/auth", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -1980,7 +1980,7 @@ app.get("/make-server-65e6e67f/calendar/outlook/auth", async (c) => {
 });
 
 // Outlook Calendar OAuth callback
-app.get("/make-server-65e6e67f/calendar/outlook/callback", async (c) => {
+app.get("/taskzm-database-function/calendar/outlook/callback", async (c) => {
   try {
     const code = c.req.query('code');
     const userId = c.req.query('state');
@@ -2151,7 +2151,7 @@ app.get("/make-server-65e6e67f/calendar/outlook/callback", async (c) => {
 });
 
 // Check calendar connection status
-app.get("/make-server-65e6e67f/calendar/status", async (c) => {
+app.get("/taskzm-database-function/calendar/status", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -2321,12 +2321,12 @@ const appleCalendarSetupHandler = async (c: any) => {
 
 // Register the route both with and without the prefix for compatibility
 // IMPORTANT: Register routes BEFORE the catch-all route
-app.post("/make-server-65e6e67f/calendar/apple/setup", appleCalendarSetupHandler);
+app.post("/taskzm-database-function/calendar/apple/setup", appleCalendarSetupHandler);
 app.post("/calendar/apple/setup", appleCalendarSetupHandler);
 
 // Test/Verify Apple Calendar connection - SHORTCUT METHOD
 // Validates credentials by testing authentication only (no complex discovery)
-app.get("/make-server-65e6e67f/calendar/apple/test", async (c) => {
+app.get("/taskzm-database-function/calendar/apple/test", async (c) => {
   console.log('Apple Calendar test endpoint called (shortcut method)');
   
   try {
@@ -2421,7 +2421,7 @@ app.get("/make-server-65e6e67f/calendar/apple/test", async (c) => {
 });
 
 // Disconnect calendar
-app.delete("/make-server-65e6e67f/calendar/:provider", async (c) => {
+app.delete("/taskzm-database-function/calendar/:provider", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -2445,7 +2445,7 @@ app.delete("/make-server-65e6e67f/calendar/:provider", async (c) => {
 });
 
 // Sync task to calendar
-app.post("/make-server-65e6e67f/calendar/sync-task", async (c) => {
+app.post("/taskzm-database-function/calendar/sync-task", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -2499,7 +2499,7 @@ app.post("/make-server-65e6e67f/calendar/sync-task", async (c) => {
 });
 
 // Sync all tasks to calendar
-app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
+app.post("/taskzm-database-function/calendar/sync-all", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -2687,7 +2687,7 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
 });
 
 // Get calendar events
-app.get("/make-server-65e6e67f/calendar/events/:provider", async (c) => {
+app.get("/taskzm-database-function/calendar/events/:provider", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -2713,7 +2713,7 @@ app.get("/make-server-65e6e67f/calendar/events/:provider", async (c) => {
 // These endpoints are called by Apple Shortcuts for two-way calendar sync
 
 // Get tasks to sync TO Apple Calendar (Shortcut calls this to fetch tasks)
-app.get("/make-server-65e6e67f/calendar/apple/tasks", async (c) => {
+app.get("/taskzm-database-function/calendar/apple/tasks", async (c) => {
   try {
     // Support both Bearer token auth and sync token auth
     let userId: string | null = null;
@@ -2806,7 +2806,7 @@ app.get("/make-server-65e6e67f/calendar/apple/tasks", async (c) => {
 });
 
 // Receive events FROM Apple Calendar (Shortcut sends events here)
-app.post("/make-server-65e6e67f/calendar/apple/events", async (c) => {
+app.post("/taskzm-database-function/calendar/apple/events", async (c) => {
   try {
     // Support both Bearer token auth and sync token auth
     let userId: string | null = null;
@@ -2936,7 +2936,7 @@ app.post("/make-server-65e6e67f/calendar/apple/events", async (c) => {
 });
 
 // Generate a sync token for Apple Shortcuts
-app.get("/make-server-65e6e67f/calendar/apple/sync-token", async (c) => {
+app.get("/taskzm-database-function/calendar/apple/sync-token", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -2953,7 +2953,7 @@ app.get("/make-server-65e6e67f/calendar/apple/sync-token", async (c) => {
 
     // Get the API base URL
     const baseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const apiUrl = `${baseUrl}/functions/v1/make-server-65e6e67f`;
+    const apiUrl = `${baseUrl}/functions/v1/taskzm-database-function`;
 
     return c.json({
       token,
@@ -2976,7 +2976,7 @@ app.get("/make-server-65e6e67f/calendar/apple/sync-token", async (c) => {
 // Import events from Apple iCloud Calendar into TaskZM as read-only items
 
 // Test CalDAV connection with credentials
-app.post("/make-server-65e6e67f/calendar/apple/caldav/test", async (c) => {
+app.post("/taskzm-database-function/calendar/apple/caldav/test", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3002,7 +3002,7 @@ app.post("/make-server-65e6e67f/calendar/apple/caldav/test", async (c) => {
 });
 
 // Discover calendars
-app.post("/make-server-65e6e67f/calendar/apple/caldav/discover", async (c) => {
+app.post("/taskzm-database-function/calendar/apple/caldav/discover", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3031,7 +3031,7 @@ app.post("/make-server-65e6e67f/calendar/apple/caldav/discover", async (c) => {
 });
 
 // Save CalDAV credentials and selected calendars
-app.post("/make-server-65e6e67f/calendar/apple/caldav/save", async (c) => {
+app.post("/taskzm-database-function/calendar/apple/caldav/save", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3066,7 +3066,7 @@ app.post("/make-server-65e6e67f/calendar/apple/caldav/save", async (c) => {
 });
 
 // Get CalDAV connection status
-app.get("/make-server-65e6e67f/calendar/apple/caldav/status", async (c) => {
+app.get("/taskzm-database-function/calendar/apple/caldav/status", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3105,7 +3105,7 @@ app.get("/make-server-65e6e67f/calendar/apple/caldav/status", async (c) => {
 });
 
 // Trigger CalDAV sync
-app.post("/make-server-65e6e67f/calendar/apple/caldav/sync", async (c) => {
+app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3162,7 +3162,7 @@ app.post("/make-server-65e6e67f/calendar/apple/caldav/sync", async (c) => {
 });
 
 // Disconnect CalDAV
-app.delete("/make-server-65e6e67f/calendar/apple/caldav", async (c) => {
+app.delete("/taskzm-database-function/calendar/apple/caldav", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3195,7 +3195,7 @@ app.delete("/make-server-65e6e67f/calendar/apple/caldav", async (c) => {
 });
 
 // Get synced calendar events
-app.get("/make-server-65e6e67f/calendar/apple/caldav/events", async (c) => {
+app.get("/taskzm-database-function/calendar/apple/caldav/events", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3237,7 +3237,7 @@ app.get("/make-server-65e6e67f/calendar/apple/caldav/events", async (c) => {
 // ============================================================================
 // Create Stripe checkout session for subscription purchases
 
-app.post("/make-server-65e6e67f/create-checkout-session", async (c) => {
+app.post("/taskzm-database-function/create-checkout-session", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3356,7 +3356,7 @@ app.post("/make-server-65e6e67f/create-checkout-session", async (c) => {
 // ============================================================================
 // Handle RevenueCat webhook events for subscription updates
 
-app.post("/make-server-65e6e67f/revenuecat-webhook", async (c) => {
+app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
   try {
     const webhookSecret = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
     
@@ -3448,7 +3448,7 @@ app.post("/make-server-65e6e67f/revenuecat-webhook", async (c) => {
 // Stripe webhook endpoint can be added here for handling Stripe subscription events
 
 // Get user subscription status (for frontend queries)
-app.get("/make-server-65e6e67f/subscription-status", async (c) => {
+app.get("/taskzm-database-function/subscription-status", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3534,7 +3534,7 @@ app.get("/make-server-65e6e67f/subscription-status", async (c) => {
 // ============================================================================
 // Create Stripe billing portal session for subscription management
 
-app.post("/make-server-65e6e67f/create-billing-portal", async (c) => {
+app.post("/taskzm-database-function/create-billing-portal", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3611,7 +3611,7 @@ app.post("/make-server-65e6e67f/create-billing-portal", async (c) => {
 // ADMIN ENDPOINTS
 // ============================================================================
 // Admin endpoint to set a user as admin and/or pro
-app.post("/make-server-65e6e67f/admin/set-user-access", async (c) => {
+app.post("/taskzm-database-function/admin/set-user-access", async (c) => {
   try {
     const { userId: adminUserId, error: authError } = await verifyAdmin(c.req.raw);
     if (authError || !adminUserId) {
@@ -3708,7 +3708,7 @@ app.post("/make-server-65e6e67f/admin/set-user-access", async (c) => {
 });
 
 // Admin endpoint to get user info by email
-app.get("/make-server-65e6e67f/admin/get-user/:email", async (c) => {
+app.get("/taskzm-database-function/admin/get-user/:email", async (c) => {
   try {
     const { userId: adminUserId, error: authError } = await verifyAdmin(c.req.raw);
     if (authError || !adminUserId) {
@@ -3771,7 +3771,7 @@ app.get("/make-server-65e6e67f/admin/get-user/:email", async (c) => {
 // ============================================================================
 
 // Invite team member
-app.post("/make-server-65e6e67f/team/:workspaceId/invite", async (c) => {
+app.post("/taskzm-database-function/team/:workspaceId/invite", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3894,7 +3894,7 @@ app.post("/make-server-65e6e67f/team/:workspaceId/invite", async (c) => {
 });
 
 // Get team members
-app.get("/make-server-65e6e67f/team/:workspaceId/members", async (c) => {
+app.get("/taskzm-database-function/team/:workspaceId/members", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -3991,7 +3991,7 @@ app.get("/make-server-65e6e67f/team/:workspaceId/members", async (c) => {
 });
 
 // Remove team member
-app.delete("/make-server-65e6e67f/team/:workspaceId/members/:memberId", async (c) => {
+app.delete("/taskzm-database-function/team/:workspaceId/members/:memberId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -4053,7 +4053,7 @@ app.delete("/make-server-65e6e67f/team/:workspaceId/members/:memberId", async (c
 });
 
 // Update team member role
-app.put("/make-server-65e6e67f/team/:workspaceId/members/:memberId/role", async (c) => {
+app.put("/taskzm-database-function/team/:workspaceId/members/:memberId/role", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -4097,7 +4097,7 @@ app.put("/make-server-65e6e67f/team/:workspaceId/members/:memberId/role", async 
 });
 
 // Validate invitation token
-app.post("/make-server-65e6e67f/team/invitations/validate", async (c) => {
+app.post("/taskzm-database-function/team/invitations/validate", async (c) => {
   try {
     const { token } = await c.req.json();
 
@@ -4138,7 +4138,7 @@ app.post("/make-server-65e6e67f/team/invitations/validate", async (c) => {
 });
 
 // Accept invitation
-app.post("/make-server-65e6e67f/team/invitations/accept", async (c) => {
+app.post("/taskzm-database-function/team/invitations/accept", async (c) => {
   try {
     const { token, password } = await c.req.json();
 
@@ -4263,7 +4263,7 @@ app.post("/make-server-65e6e67f/team/invitations/accept", async (c) => {
 });
 
 // Resend invitation
-app.post("/make-server-65e6e67f/team/:workspaceId/invitations/resend", async (c) => {
+app.post("/taskzm-database-function/team/:workspaceId/invitations/resend", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -4354,7 +4354,7 @@ app.post("/make-server-65e6e67f/team/:workspaceId/invitations/resend", async (c)
 });
 
 // Decline invitation
-app.post("/make-server-65e6e67f/team/:workspaceId/invitations/decline", async (c) => {
+app.post("/taskzm-database-function/team/:workspaceId/invitations/decline", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -4423,15 +4423,15 @@ app.all('*', async (c) => {
     method: c.req.method,
     path,
     availableRoutes: [
-      'GET /make-server-65e6e67f/calendar/status',
-      'POST /make-server-65e6e67f/calendar/apple/setup',
-      'GET /make-server-65e6e67f/calendar/google/auth',
-      'GET /make-server-65e6e67f/calendar/google/callback',
-      'GET /make-server-65e6e67f/calendar/outlook/auth',
-      'GET /make-server-65e6e67f/calendar/outlook/callback',
-      'DELETE /make-server-65e6e67f/calendar/:provider',
-      'POST /make-server-65e6e67f/calendar/sync-task',
-      'POST /make-server-65e6e67f/calendar/sync-all',
+      'GET /taskzm-database-function/calendar/status',
+      'POST /taskzm-database-function/calendar/apple/setup',
+      'GET /taskzm-database-function/calendar/google/auth',
+      'GET /taskzm-database-function/calendar/google/callback',
+      'GET /taskzm-database-function/calendar/outlook/auth',
+      'GET /taskzm-database-function/calendar/outlook/callback',
+      'DELETE /taskzm-database-function/calendar/:provider',
+      'POST /taskzm-database-function/calendar/sync-task',
+      'POST /taskzm-database-function/calendar/sync-all',
     ]
   }, 404);
 });

@@ -82,7 +82,7 @@ export function useAIScheduler() {
     if (!accessToken) return [];
     
     const events: Array<{ start: Date; end: Date; title: string }> = [];
-    const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
+    const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
     
     // Fetch events from all connected calendar providers
     const providers: Array<'google' | 'apple'> = [];

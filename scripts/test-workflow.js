@@ -148,14 +148,14 @@ log('='.repeat(50), 'cyan');
 
 const backendFile = fs.readFileSync('src/supabase/functions/server/index.tsx', 'utf8');
 const requiredRoutes = [
-  '/make-server-65e6e67f/health',
-  '/make-server-65e6e67f/signup',
-  '/make-server-65e6e67f/tasks/',
-  '/make-server-65e6e67f/subscription',
-  '/make-server-65e6e67f/calendar/google/auth',
-  '/make-server-65e6e67f/calendar/apple/setup',
-  '/make-server-65e6e67f/revenuecat-webhook',
-  '/make-server-65e6e67f/create-billing-portal',
+  '/taskzm-database-function/health',
+  '/taskzm-database-function/signup',
+  '/taskzm-database-function/tasks/',
+  '/taskzm-database-function/subscription',
+  '/taskzm-database-function/calendar/google/auth',
+  '/taskzm-database-function/calendar/apple/setup',
+  '/taskzm-database-function/revenuecat-webhook',
+  '/taskzm-database-function/create-billing-portal',
 ];
 
 requiredRoutes.forEach(route => {

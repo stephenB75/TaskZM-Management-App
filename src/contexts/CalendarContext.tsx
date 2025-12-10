@@ -41,7 +41,7 @@ interface CalendarContextType {
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();

@@ -2,7 +2,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import type { Task, TimeTrackingSession, Activity, Folder } from '../types';
 import { logger } from './logger';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
 
 let accessToken: string | null = null;
 

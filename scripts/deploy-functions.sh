@@ -9,7 +9,7 @@ set -e  # Exit on error
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 SOURCE_DIR="$PROJECT_ROOT/src/supabase/functions/server"
-DEPLOY_DIR="$PROJECT_ROOT/supabase/functions/make-server-65e6e67f"
+DEPLOY_DIR="$PROJECT_ROOT/supabase/functions/taskzm-database-function"
 PROJECT_REF="gflesnyfpxqhaunfskrw"
 
 echo "🔄 Syncing function files..."
@@ -32,7 +32,7 @@ echo "✅ Files synced successfully!"
 # Deploy to Supabase
 echo "🚀 Deploying to Supabase..."
 cd "$PROJECT_ROOT"
-supabase functions deploy make-server-65e6e67f --project-ref "$PROJECT_REF"
+supabase functions deploy taskzm-database-function --project-ref "$PROJECT_REF"
 
 echo "✅ Deployment complete!"
 echo ""

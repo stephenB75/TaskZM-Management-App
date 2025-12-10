@@ -9,7 +9,7 @@
 const projectId = "gflesnyfpxqhaunfskrw";
 const publicAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmbGVzbnlmcHhxaGF1bmZza3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMDQwMTcsImV4cCI6MjA3Njg4MDAxN30.t6bH6nO7shmf_Am9mxllbQDhNeVaN249p1MYcF8DvtM";
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
 
 // Test results
 const results = {

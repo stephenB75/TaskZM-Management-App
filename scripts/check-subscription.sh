@@ -6,7 +6,7 @@
 # Example: ./scripts/check-subscription.sh "stephen.brown@example.com"
 
 EMAIL="${1:-stephen.brown@example.com}"
-API_BASE="https://gflesnyfpxqhaunfskrw.supabase.co/functions/v1/make-server-65e6e67f"
+API_BASE="https://gflesnyfpxqhaunfskrw.supabase.co/functions/v1/taskzm-database-function"
 
 echo ""
 echo "🔍 Verifying subscription for: $EMAIL"

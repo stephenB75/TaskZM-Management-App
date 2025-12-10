@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Update demo user login timestamp
   const updateDemoLoginTime = useCallback(async (userId: string, token: string) => {
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/demo/update-login-time`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/taskzm-database-function/demo/update-login-time`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(email: string, password: string, name: string, isDemo: boolean = false) {
     try {
       // Call our backend signup endpoint which handles user creation
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/signup`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/taskzm-database-function/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         try {
           const cleanupResponse = await fetch(
-            `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/cleanup-demo-user`,
+            `https://${projectId}.supabase.co/functions/v1/taskzm-database-function/cleanup-demo-user`,
             {
               method: 'DELETE',
               headers: {

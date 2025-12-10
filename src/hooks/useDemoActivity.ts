@@ -15,7 +15,7 @@ export function useDemoActivity() {
     if (!user?.isDemo || !accessToken || !user?.id) return;
 
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/demo/update-activity`, {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/taskzm-database-function/demo/update-activity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

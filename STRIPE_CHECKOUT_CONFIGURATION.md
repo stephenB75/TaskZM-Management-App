@@ -41,7 +41,7 @@ Stripe Checkout requires country selection before payment fields become active (
 #### Option B: Use Custom Checkout Session (Advanced)
 
 If you need more control, you can use the custom checkout session endpoint at:
-- `POST /make-server-65e6e67f/create-checkout-session`
+- `POST /taskzm-database-function/create-checkout-session`
 
 This endpoint already includes:
 - `billing_address_collection: 'auto'` - Attempts to pre-fill billing address

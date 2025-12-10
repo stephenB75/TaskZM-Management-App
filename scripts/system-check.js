@@ -22,7 +22,7 @@ function analyzeServerFile() {
     routes.push({
       method: match[1].toUpperCase(),
       path: match[2],
-      hasPrefix: match[2].includes('/make-server-65e6e67f/'),
+      hasPrefix: match[2].includes('/taskzm-database-function/'),
     });
   }
   
@@ -110,7 +110,7 @@ function generateReport() {
   const routesWithPrefix = analysis.routes.filter(r => r.hasPrefix);
   const routesWithoutPrefix = analysis.routes.filter(r => !r.hasPrefix);
   
-  console.log(`Routes WITH prefix '/make-server-65e6e67f/': ${routesWithPrefix.length}`);
+  console.log(`Routes WITH prefix '/taskzm-database-function/': ${routesWithPrefix.length}`);
   console.log(`Routes WITHOUT prefix: ${routesWithoutPrefix.length}`);
   
   if (routesWithPrefix.length > 0 && routesWithoutPrefix.length > 0) {

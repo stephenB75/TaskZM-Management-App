@@ -219,7 +219,7 @@ export function SevenDayKanban({
           return;
         }
 
-        const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
+        const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
         const aggregated: Record<string, Array<{ title: string; start: string; end: string; provider: 'google' | 'apple' }>> = {};
 
         for (const provider of providers) {

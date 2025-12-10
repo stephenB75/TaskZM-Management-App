@@ -46,7 +46,7 @@ export function BackendHealthCheck() {
     try {
       // Check backend health endpoint
       const healthResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/health`,
+        `https://${projectId}.supabase.co/functions/v1/taskzm-database-function/health`,
         {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
@@ -71,7 +71,7 @@ export function BackendHealthCheck() {
       // Check database by attempting to read user workspaces (will fail if not logged in, but proves connection)
       try {
         const workspaceResponse = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f/user/workspaces`,
+          `https://${projectId}.supabase.co/functions/v1/taskzm-database-function/user/workspaces`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -251,7 +251,7 @@ export function BackendHealthCheck() {
           </p>
           <p className="text-xs text-muted-foreground">
             <strong>Endpoint:</strong>{" "}
-            /functions/v1/make-server-65e6e67f
+            /functions/v1/taskzm-database-function
           </p>
           <p className="text-xs text-muted-foreground">
             <strong>Status:</strong>{" "}
