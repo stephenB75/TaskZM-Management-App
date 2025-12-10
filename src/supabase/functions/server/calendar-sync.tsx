@@ -510,10 +510,20 @@ async function createAppleCalendarEvent(
   const eventUID = `taskzm-${task.id}-${Date.now()}`;
   const endDate = calculateEndDate(isoStartDate, task.estimatedTime);
   
-  // SHORTCUT METHOD: Use direct URL construction
-  // For iCloud, we can PUT events directly to a constructed URL path
+  // Use the discovered calendar URL (with proper DSID) instead of hardcoded patterns
   const cleanPassword = tokens.caldavPassword.replace(/\s+/g, '');
-  const usernamePart = tokens.caldavUsername.split('@')[0];
+  
+  // Get the proper calendar URL using the shortcut method
+  let calendarURL: string;
+  try {
+    calendarURL = await getAppleCalendarURL(tokens);
+    if (!calendarURL.endsWith('/')) {
+      calendarURL += '/';
+    }
+  } catch (urlError) {
+    console.error('Failed to get Apple Calendar URL:', urlError);
+    throw new Error('Could not discover Apple Calendar URL. Please reconnect Apple Calendar.');
+  }
   
   // Build iCal content (RFC 5545 compliant)
   const lines: string[] = [
@@ -549,65 +559,44 @@ async function createAppleCalendarEvent(
   
   const ical = lines.join('\r\n') + '\r\n';
   
-  // Try multiple URL patterns in order of likelihood
-  const urlPatterns = [
-    `https://caldav.icloud.com/${usernamePart}/calendars/home/${eventUID}.ics`,
-    `https://caldav.icloud.com/${encodeURIComponent(tokens.caldavUsername)}/calendars/home/${eventUID}.ics`,
-    `https://caldav.icloud.com/${usernamePart}/calendars/${eventUID}.ics`,
-    `https://caldav.icloud.com/calendars/home/${eventUID}.ics`,
-  ];
+  // Use the discovered calendar URL (with proper DSID)
+  const eventURL = `${calendarURL}${eventUID}.ics`;
   
-  let lastError: string = '';
+  console.log('Creating event at discovered URL:', eventURL.replace(/\/\d+\//, '/****/'));
   
-  for (const eventURL of urlPatterns) {
-    try {
-      console.log('Trying to create event at:', eventURL.replace(tokens.caldavUsername, '***').replace(usernamePart, '***'));
-      
-      const response = await fetch(eventURL, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Basic ${btoa(`${tokens.caldavUsername}:${cleanPassword}`)}`,
-          'Content-Type': 'text/calendar; charset=utf-8',
-          'If-None-Match': '*',
-          'User-Agent': 'TaskZM-CalDAV-Client/1.0',
-        },
-        body: ical,
-      });
-      
-      // Accept 201 (Created), 204 (No Content), or 200 (OK) as success
-      if (response.ok || response.status === 201 || response.status === 204) {
-        console.log('Apple Calendar event created successfully:', eventUID);
-        
-        return {
-          id: `apple_${eventUID}`,
-          title: task.title || 'Untitled Task',
-          description: task.description,
-          start: isoStartDate,
-          end: endDate,
-          provider: 'apple',
-          providerEventId: eventUID,
-        };
-      }
-      
-      // If 401/403, stop trying - auth issue
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(`Authentication failed (${response.status}). Please check your app-specific password and reconnect Apple Calendar.`);
-      }
-      
-      const errorText = await response.text();
-      lastError = `${response.status} ${response.statusText}: ${errorText.substring(0, 100)}`;
-      console.log(`URL pattern failed (${response.status}):`, eventURL.replace(tokens.caldavUsername, '***').replace(usernamePart, '***'));
-      
-    } catch (fetchError) {
-      if (fetchError instanceof Error && (fetchError.message.includes('401') || fetchError.message.includes('403'))) {
-        throw fetchError; // Re-throw auth errors
-      }
-      lastError = fetchError instanceof Error ? fetchError.message : String(fetchError);
-      console.log('Fetch error for URL pattern:', lastError);
-    }
+  const response = await fetch(eventURL, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Basic ${btoa(`${tokens.caldavUsername}:${cleanPassword}`)}`,
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'If-None-Match': '*',
+      'User-Agent': 'TaskZM-CalDAV-Client/1.0',
+    },
+    body: ical,
+  });
+  
+  // Accept 201 (Created), 204 (No Content), or 200 (OK) as success
+  if (response.ok || response.status === 201 || response.status === 204) {
+    console.log('Apple Calendar event created successfully:', eventUID);
+    
+    return {
+      id: `apple_${eventUID}`,
+      title: task.title || 'Untitled Task',
+      description: task.description,
+      start: isoStartDate,
+      end: endDate,
+      provider: 'apple',
+      providerEventId: eventUID,
+    };
   }
   
-  throw new Error(`Failed to create Apple Calendar event. Last error: ${lastError}`);
+  // If 401/403 - authentication issue
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`Authentication failed (${response.status}). Please check your app-specific password and reconnect Apple Calendar.`);
+  }
+  
+  const errorText = await response.text();
+  throw new Error(`Failed to create Apple Calendar event: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`);
 }
 
 // Helper functions for iCal formatting
