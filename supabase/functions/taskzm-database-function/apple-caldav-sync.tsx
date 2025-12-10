@@ -46,7 +46,7 @@ export interface SyncResult {
 
 // Constants
 const ICLOUD_CALDAV_URL = 'https://caldav.icloud.com';
-const USER_AGENT = 'TaskZM-CalDAV-Client/1.0';
+const USER_AGENT = 'TaskZM/1.0 (CalDAV; +https://taskzm.app)';
 
 /**
  * Clean and format the app-specific password
@@ -64,57 +64,111 @@ function createAuthHeader(email: string, password: string): string {
 }
 
 /**
- * Make a CalDAV request
+ * Make a CalDAV request with proper redirect handling
  */
 async function caldavRequest(
   url: string,
   method: string,
   credentials: AppleCalDAVCredentials,
   body?: string,
-  depth: string = '0'
-): Promise<{ status: number; body: string }> {
-  const headers: Record<string, string> = {
-    'Authorization': createAuthHeader(credentials.email, credentials.appPassword),
-    'User-Agent': USER_AGENT,
-    'Depth': depth,
-  };
+  depth: string = '0',
+  maxRedirects: number = 5
+): Promise<{ status: number; body: string; finalUrl: string }> {
+  let currentUrl = url;
+  let redirectCount = 0;
 
-  if (body) {
-    headers['Content-Type'] = 'application/xml; charset=utf-8';
+  while (redirectCount < maxRedirects) {
+    const headers: Record<string, string> = {
+      'Authorization': createAuthHeader(credentials.email, credentials.appPassword),
+      'User-Agent': USER_AGENT,
+      'Depth': depth,
+      'Accept': 'application/xml, text/xml, */*',
+    };
+
+    if (body) {
+      headers['Content-Type'] = 'application/xml; charset=utf-8';
+    }
+
+    console.log(`CalDAV request: ${method} ${currentUrl}`);
+    
+    const response = await fetch(currentUrl, {
+      method,
+      headers,
+      body,
+      redirect: 'manual', // Handle redirects manually
+    });
+
+    console.log(`Response status: ${response.status}`);
+
+    // Handle redirects manually to track the final URL
+    if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+      const location = response.headers.get('Location');
+      if (location) {
+        // Handle relative redirects
+        if (location.startsWith('/')) {
+          const urlObj = new URL(currentUrl);
+          currentUrl = `${urlObj.protocol}//${urlObj.host}${location}`;
+        } else {
+          currentUrl = location;
+        }
+        console.log(`Redirecting to: ${currentUrl}`);
+        redirectCount++;
+        continue;
+      }
+    }
+
+    const responseBody = await response.text();
+    return { status: response.status, body: responseBody, finalUrl: currentUrl };
   }
 
-  const response = await fetch(url, {
-    method,
-    headers,
-    body,
-    redirect: 'follow',
-  });
-
-  const responseBody = await response.text();
-  return { status: response.status, body: responseBody };
+  throw new Error('Too many redirects');
 }
 
 /**
- * Extract href from XML response with various namespace patterns
+ * Extract all hrefs from XML response
  */
-function extractHref(xml: string, elementName: string): string | null {
-  // Try various patterns that Apple CalDAV might return
+function extractAllHrefs(xml: string): string[] {
+  const hrefs: string[] = [];
   const patterns = [
-    // Standard DAV namespace
-    new RegExp(`<${elementName}[^>]*>[\\s\\S]*?<href[^>]*>([^<]+)</href>`, 'i'),
-    // D: prefix
-    new RegExp(`<D:${elementName}[^>]*>[\\s\\S]*?<D:href[^>]*>([^<]+)</D:href>`, 'i'),
-    // d: prefix (lowercase)
-    new RegExp(`<d:${elementName}[^>]*>[\\s\\S]*?<d:href[^>]*>([^<]+)</d:href>`, 'i'),
-    // Mixed namespaces
-    new RegExp(`<[^:]*:?${elementName}[^>]*>[\\s\\S]*?<[^:]*:?href[^>]*>([^<]+)</[^:]*:?href>`, 'i'),
-    // CalDAV namespace prefix
-    new RegExp(`<cal:${elementName}[^>]*>[\\s\\S]*?<[^:]*:?href[^>]*>([^<]+)</[^:]*:?href>`, 'i'),
-    new RegExp(`<CS:${elementName}[^>]*>[\\s\\S]*?<[^:]*:?href[^>]*>([^<]+)</[^:]*:?href>`, 'i'),
+    /<href[^>]*>([^<]+)<\/href>/gi,
+    /<D:href[^>]*>([^<]+)<\/D:href>/gi,
+    /<d:href[^>]*>([^<]+)<\/d:href>/gi,
   ];
 
   for (const pattern of patterns) {
-    const match = xml.match(pattern);
+    let match;
+    while ((match = pattern.exec(xml)) !== null) {
+      if (match[1]) {
+        hrefs.push(match[1].trim());
+      }
+    }
+  }
+  
+  return [...new Set(hrefs)]; // Remove duplicates
+}
+
+/**
+ * Extract href from XML response for a specific element
+ */
+function extractHref(xml: string, elementName: string): string | null {
+  // Normalize the XML - remove newlines within tags
+  const normalizedXml = xml.replace(/>\s+</g, '><');
+  
+  // Try various patterns that Apple CalDAV might return
+  const patterns = [
+    // Standard patterns
+    new RegExp(`<${elementName}[^>]*>\\s*<href[^>]*>([^<]+)</href>`, 'i'),
+    new RegExp(`<D:${elementName}[^>]*>\\s*<D:href[^>]*>([^<]+)</D:href>`, 'i'),
+    new RegExp(`<d:${elementName}[^>]*>\\s*<d:href[^>]*>([^<]+)</d:href>`, 'i'),
+    // CalDAV specific
+    new RegExp(`<cal:${elementName}[^>]*>\\s*<D:href[^>]*>([^<]+)</D:href>`, 'i'),
+    new RegExp(`<C:${elementName}[^>]*>\\s*<D:href[^>]*>([^<]+)</D:href>`, 'i'),
+    // More flexible patterns
+    new RegExp(`${elementName}[^>]*>[^<]*<[^:]*:?href[^>]*>([^<]+)<`, 'i'),
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalizedXml.match(pattern) || xml.match(pattern);
     if (match && match[1]) {
       return match[1].trim();
     }
@@ -123,104 +177,237 @@ function extractHref(xml: string, elementName: string): string | null {
 }
 
 /**
- * Discover the user's calendar home URL
+ * Discover the user's calendar home URL using multiple strategies
  */
 export async function discoverCalendarHome(
   credentials: AppleCalDAVCredentials
 ): Promise<string | null> {
-  console.log('Starting CalDAV discovery for:', credentials.email);
+  console.log('=== Starting CalDAV discovery ===');
+  console.log('Email:', credentials.email);
   
-  // Step 1: Hit the well-known endpoint to get principal URL
-  const wellKnownBody = `<?xml version="1.0" encoding="utf-8"?>
-<propfind xmlns="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
-  <prop>
-    <current-user-principal/>
-    <cal:calendar-home-set/>
-  </prop>
-</propfind>`;
+  // Strategy 1: Try the well-known endpoint with PROPFIND
+  try {
+    const result = await tryWellKnownDiscovery(credentials);
+    if (result) {
+      console.log('Strategy 1 (well-known) succeeded:', result);
+      return result;
+    }
+  } catch (error) {
+    console.log('Strategy 1 failed:', error);
+  }
 
-  console.log('Requesting well-known CalDAV endpoint...');
-  const wellKnownResponse = await caldavRequest(
+  // Strategy 2: Try direct principal discovery on numbered servers
+  try {
+    const result = await tryNumberedServerDiscovery(credentials);
+    if (result) {
+      console.log('Strategy 2 (numbered servers) succeeded:', result);
+      return result;
+    }
+  } catch (error) {
+    console.log('Strategy 2 failed:', error);
+  }
+
+  // Strategy 3: Try with OPTIONS request first to get server info
+  try {
+    const result = await tryOptionsDiscovery(credentials);
+    if (result) {
+      console.log('Strategy 3 (OPTIONS) succeeded:', result);
+      return result;
+    }
+  } catch (error) {
+    console.log('Strategy 3 failed:', error);
+  }
+
+  throw new Error('Could not discover calendar. Apple iCloud may be temporarily unavailable. Please try again in a few minutes.');
+}
+
+/**
+ * Strategy 1: Standard well-known discovery
+ */
+async function tryWellKnownDiscovery(credentials: AppleCalDAVCredentials): Promise<string | null> {
+  const propfindBody = `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop>
+    <D:current-user-principal/>
+    <C:calendar-home-set/>
+  </D:prop>
+</D:propfind>`;
+
+  const response = await caldavRequest(
     `${ICLOUD_CALDAV_URL}/.well-known/caldav`,
     'PROPFIND',
     credentials,
-    wellKnownBody
+    propfindBody,
+    '0'
   );
 
-  console.log('Well-known response status:', wellKnownResponse.status);
-  console.log('Well-known response body preview:', wellKnownResponse.body.substring(0, 800));
+  console.log('Well-known response:', response.status);
+  console.log('Response preview:', response.body.substring(0, 1500));
 
-  if (wellKnownResponse.status === 401 || wellKnownResponse.status === 403) {
+  if (response.status === 401 || response.status === 403) {
     throw new Error('Authentication failed. Please check your email and app-specific password.');
   }
 
-  // Check if we got a redirect URL in the response (iCloud often redirects)
-  const redirectMatch = wellKnownResponse.body.match(/<href[^>]*>(https?:\/\/[^<]+)<\/href>/i);
-  
-  // Try to extract calendar-home-set directly from the first response
-  let calendarHome = extractHref(wellKnownResponse.body, 'calendar-home-set');
+  // Try to find calendar-home-set directly
+  let calendarHome = extractHref(response.body, 'calendar-home-set');
   if (calendarHome) {
-    console.log('Found calendar-home-set directly:', calendarHome);
-    return calendarHome;
+    return normalizeUrl(calendarHome, response.finalUrl);
   }
 
-  // Extract principal URL
-  let principalUrl = extractHref(wellKnownResponse.body, 'current-user-principal');
-  
-  // If no principal found, try to use the redirect URL
-  if (!principalUrl && redirectMatch) {
-    principalUrl = redirectMatch[1];
-    console.log('Using redirect URL as principal:', principalUrl);
-  }
-  
-  if (!principalUrl) {
-    // Last resort: try to find any href that looks like a principal URL
-    const anyHrefMatch = wellKnownResponse.body.match(/<href[^>]*>([^<]*\/principal[^<]*)<\/href>/i);
-    if (anyHrefMatch) {
-      principalUrl = anyHrefMatch[1];
+  // Try to find current-user-principal
+  const principalUrl = extractHref(response.body, 'current-user-principal');
+  if (principalUrl) {
+    console.log('Found principal URL:', principalUrl);
+    const fullPrincipalUrl = normalizeUrl(principalUrl, response.finalUrl);
+    
+    // Fetch calendar-home-set from principal
+    const principalResponse = await caldavRequest(
+      fullPrincipalUrl,
+      'PROPFIND',
+      credentials,
+      propfindBody,
+      '0'
+    );
+
+    console.log('Principal response:', principalResponse.status);
+    console.log('Principal body preview:', principalResponse.body.substring(0, 1500));
+
+    calendarHome = extractHref(principalResponse.body, 'calendar-home-set');
+    if (calendarHome) {
+      return normalizeUrl(calendarHome, principalResponse.finalUrl);
     }
   }
 
-  if (!principalUrl) {
-    console.error('Could not find principal URL. Full response:', wellKnownResponse.body);
-    throw new Error('Could not discover calendar principal URL. iCloud may be temporarily unavailable.');
+  // Look for any href that might be a calendar home
+  const hrefs = extractAllHrefs(response.body);
+  for (const href of hrefs) {
+    if (href.includes('/calendars/') || href.includes('/calendar/')) {
+      return normalizeUrl(href, response.finalUrl);
+    }
   }
 
-  console.log('Found principal URL:', principalUrl);
+  return null;
+}
 
-  // Step 2: Get calendar home from principal
-  const calendarHomeBody = `<?xml version="1.0" encoding="utf-8"?>
-<propfind xmlns="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
-  <prop>
-    <cal:calendar-home-set/>
-  </prop>
-</propfind>`;
+/**
+ * Strategy 2: Try numbered iCloud servers (p01-p99)
+ */
+async function tryNumberedServerDiscovery(credentials: AppleCalDAVCredentials): Promise<string | null> {
+  // Common iCloud server numbers
+  const serverNumbers = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15'];
+  
+  const propfindBody = `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop>
+    <D:current-user-principal/>
+    <C:calendar-home-set/>
+  </D:prop>
+</D:propfind>`;
 
-  const fullPrincipalUrl = principalUrl.startsWith('http') 
-    ? principalUrl 
-    : `${ICLOUD_CALDAV_URL}${principalUrl}`;
+  for (const num of serverNumbers) {
+    try {
+      const serverUrl = `https://p${num}-caldav.icloud.com`;
+      console.log(`Trying server: ${serverUrl}`);
+      
+      const response = await caldavRequest(
+        `${serverUrl}/.well-known/caldav`,
+        'PROPFIND',
+        credentials,
+        propfindBody,
+        '0'
+      );
 
-  console.log('Requesting principal URL:', fullPrincipalUrl);
-  const principalResponse = await caldavRequest(
-    fullPrincipalUrl,
-    'PROPFIND',
+      if (response.status === 207) {
+        const calendarHome = extractHref(response.body, 'calendar-home-set');
+        if (calendarHome) {
+          return normalizeUrl(calendarHome, response.finalUrl);
+        }
+
+        const principalUrl = extractHref(response.body, 'current-user-principal');
+        if (principalUrl) {
+          const fullPrincipalUrl = normalizeUrl(principalUrl, response.finalUrl);
+          const principalResponse = await caldavRequest(
+            fullPrincipalUrl,
+            'PROPFIND',
+            credentials,
+            propfindBody,
+            '0'
+          );
+
+          const home = extractHref(principalResponse.body, 'calendar-home-set');
+          if (home) {
+            return normalizeUrl(home, principalResponse.finalUrl);
+          }
+        }
+      }
+    } catch (error) {
+      // Continue to next server
+      console.log(`Server p${num} failed, trying next...`);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Strategy 3: Use OPTIONS to discover capabilities first
+ */
+async function tryOptionsDiscovery(credentials: AppleCalDAVCredentials): Promise<string | null> {
+  const response = await caldavRequest(
+    `${ICLOUD_CALDAV_URL}/`,
+    'OPTIONS',
     credentials,
-    calendarHomeBody
+    undefined,
+    '0'
   );
 
-  console.log('Principal response status:', principalResponse.status);
-  console.log('Principal response body preview:', principalResponse.body.substring(0, 800));
+  console.log('OPTIONS response status:', response.status);
+  console.log('OPTIONS final URL:', response.finalUrl);
 
-  // Parse calendar home URL
-  calendarHome = extractHref(principalResponse.body, 'calendar-home-set');
-  
-  if (!calendarHome) {
-    console.error('Could not find calendar home. Full response:', principalResponse.body);
-    throw new Error('Could not discover calendar home URL. Please try again.');
+  if (response.status === 200 || response.status === 204) {
+    // The final URL after OPTIONS might give us a clue
+    if (response.finalUrl !== `${ICLOUD_CALDAV_URL}/`) {
+      // Try PROPFIND on the final URL
+      const propfindBody = `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop>
+    <D:current-user-principal/>
+    <C:calendar-home-set/>
+  </D:prop>
+</D:propfind>`;
+
+      const propfindResponse = await caldavRequest(
+        response.finalUrl,
+        'PROPFIND',
+        credentials,
+        propfindBody,
+        '0'
+      );
+
+      const calendarHome = extractHref(propfindResponse.body, 'calendar-home-set');
+      if (calendarHome) {
+        return normalizeUrl(calendarHome, propfindResponse.finalUrl);
+      }
+    }
   }
 
-  console.log('Found calendar home:', calendarHome);
-  return calendarHome;
+  return null;
+}
+
+/**
+ * Normalize a URL (handle relative URLs)
+ */
+function normalizeUrl(url: string, baseUrl: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  const base = new URL(baseUrl);
+  if (url.startsWith('/')) {
+    return `${base.protocol}//${base.host}${url}`;
+  }
+  
+  return `${base.protocol}//${base.host}/${url}`;
 }
 
 /**
