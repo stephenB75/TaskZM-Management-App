@@ -1010,20 +1010,25 @@ export function DashboardView({
                           {column.date.getDate()}
                         </span>
                         {dayTasks.length > 0 && (
-                      <div className="flex gap-0.5 mt-1">
+                          <div className="flex items-center gap-0.5 mt-1">
                             {Array.from({
-                              length: Math.min(dayTasks.length, 3),
+                              length: Math.min(dayTasks.length, 5),
                             }).map((_, i) => (
                               <div
                                 key={i}
                                 className={cn(
-                                  "w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full",
+                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
                                   isSelected
                                     ? "bg-primary"
-                                    : "bg-primary/40",
+                                    : "bg-primary/50",
                                 )}
                               />
                             ))}
+                            {dayTasks.length > 5 && (
+                              <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5">
+                                +{dayTasks.length - 5}
+                              </span>
+                            )}
                           </div>
                         )}
                       </button>
