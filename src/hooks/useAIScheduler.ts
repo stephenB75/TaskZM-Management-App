@@ -3151,8 +3151,16 @@ export function useAIScheduler() {
         }
         
         // Schedule the task (we've verified it has no conflicts)
-        plan.push({ task, scheduledDate: scheduleDate, reason });
-        addToDailyHours(scheduleDate, taskHours, task);
+        // CRITICAL FIX: Create task object with updated scheduledDate for dailyTasks
+        // The original task.scheduledDate might be null or outdated, but dailyTasks needs
+        // the task with the correct scheduledDate so that subsequent tasks can see it
+        // during conflict detection in existingTasksForDay
+        const taskWithScheduledDate = {
+          ...task,
+          scheduledDate: scheduleDate.toISOString()
+        };
+        plan.push({ task: taskWithScheduledDate, scheduledDate: scheduleDate, reason });
+        addToDailyHours(scheduleDate, taskHours, taskWithScheduledDate);
         
         // CRITICAL DEBUG: Log when task is added to plan
         if (import.meta.env.DEV) {

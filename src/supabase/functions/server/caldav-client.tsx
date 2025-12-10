@@ -552,42 +552,72 @@ export async function createCalDAVEvent(
   // Clean the password
   const cleanPassword = cleanAppPassword(credentials.password);
   
-  // Generate iCal format
-  const ical = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//TaskZM//EN
-CALSCALE:GREGORIAN
-BEGIN:VEVENT
-UID:${event.uid}
-DTSTART:${formatICalDate(event.dtstart)}
-DTEND:${formatICalDate(event.dtend)}
-DTSTAMP:${formatICalDate(new Date().toISOString())}
-SUMMARY:${escapeICalText(event.summary)}
-${event.description ? `DESCRIPTION:${escapeICalText(event.description)}` : ''}
-${event.location ? `LOCATION:${escapeICalText(event.location)}` : ''}
-STATUS:CONFIRMED
-SEQUENCE:0
-END:VEVENT
-END:VCALENDAR`;
+  // Build iCal lines array (RFC 5545 compliant)
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//TaskZM//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${event.uid}`,
+    `DTSTART:${formatICalDate(event.dtstart)}`,
+    `DTEND:${formatICalDate(event.dtend)}`,
+    `DTSTAMP:${formatICalDate(new Date().toISOString())}`,
+    `CREATED:${formatICalDate(new Date().toISOString())}`,
+    `LAST-MODIFIED:${formatICalDate(new Date().toISOString())}`,
+    `SUMMARY:${escapeICalText(event.summary || 'Untitled')}`,
+  ];
+  
+  // Only add optional fields if they have content
+  if (event.description && event.description.trim()) {
+    lines.push(`DESCRIPTION:${escapeICalText(event.description)}`);
+  }
+  if (event.location && event.location.trim()) {
+    lines.push(`LOCATION:${escapeICalText(event.location)}`);
+  }
+  
+  lines.push(
+    'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'TRANSP:OPAQUE',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  );
+  
+  // Join with CRLF as required by RFC 5545, and ensure it ends with CRLF
+  const ical = lines.join('\r\n') + '\r\n';
 
   // Ensure calendar URL ends with /
   const baseURL = calendarURL.endsWith('/') ? calendarURL : `${calendarURL}/`;
   const eventURL = `${baseURL}${event.uid}.ics`;
+
+  console.log('Creating CalDAV event at:', eventURL.replace(credentials.username, '***'));
 
   const response = await fetch(eventURL, {
     method: 'PUT',
     headers: {
       'Authorization': `Basic ${btoa(`${credentials.username}:${cleanPassword}`)}`,
       'Content-Type': 'text/calendar; charset=utf-8',
+      'If-None-Match': '*', // Ensure we're creating, not updating
+      'User-Agent': 'TaskZM-CalDAV-Client/1.0',
     },
     body: ical,
   });
 
-  if (!response.ok) {
+  // Accept 201 (Created), 204 (No Content), or 200 (OK) as success
+  if (!response.ok && response.status !== 201 && response.status !== 204) {
     const errorText = await response.text();
-    throw new Error(`Failed to create CalDAV event: ${response.status} ${response.statusText} - ${errorText}`);
+    console.error('CalDAV PUT failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText.substring(0, 500),
+      eventURL: eventURL.replace(credentials.username, '***'),
+    });
+    throw new Error(`Failed to create CalDAV event: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`);
   }
 
+  console.log('CalDAV event created successfully:', event.uid);
   return event.uid;
 }
 
@@ -607,36 +637,65 @@ export async function updateCalDAVEvent(
   const baseURL = calendarURL.endsWith('/') ? calendarURL : `${calendarURL}/`;
   const eventURL = `${baseURL}${eventUID}.ics`;
 
-  const ical = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//TaskZM//EN
-CALSCALE:GREGORIAN
-BEGIN:VEVENT
-UID:${event.uid}
-DTSTART:${formatICalDate(event.dtstart)}
-DTEND:${formatICalDate(event.dtend)}
-DTSTAMP:${formatICalDate(new Date().toISOString())}
-SUMMARY:${escapeICalText(event.summary)}
-${event.description ? `DESCRIPTION:${escapeICalText(event.description)}` : ''}
-${event.location ? `LOCATION:${escapeICalText(event.location)}` : ''}
-STATUS:CONFIRMED
-SEQUENCE:0
-END:VEVENT
-END:VCALENDAR`;
+  // Build iCal lines array (RFC 5545 compliant)
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//TaskZM//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${event.uid}`,
+    `DTSTART:${formatICalDate(event.dtstart)}`,
+    `DTEND:${formatICalDate(event.dtend)}`,
+    `DTSTAMP:${formatICalDate(new Date().toISOString())}`,
+    `LAST-MODIFIED:${formatICalDate(new Date().toISOString())}`,
+    `SUMMARY:${escapeICalText(event.summary || 'Untitled')}`,
+  ];
+  
+  // Only add optional fields if they have content
+  if (event.description && event.description.trim()) {
+    lines.push(`DESCRIPTION:${escapeICalText(event.description)}`);
+  }
+  if (event.location && event.location.trim()) {
+    lines.push(`LOCATION:${escapeICalText(event.location)}`);
+  }
+  
+  lines.push(
+    'STATUS:CONFIRMED',
+    'SEQUENCE:1', // Increment sequence for updates
+    'TRANSP:OPAQUE',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  );
+  
+  // Join with CRLF as required by RFC 5545
+  const ical = lines.join('\r\n') + '\r\n';
+
+  console.log('Updating CalDAV event at:', eventURL.replace(credentials.username, '***'));
 
   const response = await fetch(eventURL, {
     method: 'PUT',
     headers: {
       'Authorization': `Basic ${btoa(`${credentials.username}:${cleanPassword}`)}`,
       'Content-Type': 'text/calendar; charset=utf-8',
+      'User-Agent': 'TaskZM-CalDAV-Client/1.0',
     },
     body: ical,
   });
 
-  if (!response.ok) {
+  // Accept 201, 204, or 200 as success
+  if (!response.ok && response.status !== 201 && response.status !== 204) {
     const errorText = await response.text();
-    throw new Error(`Failed to update CalDAV event: ${response.status} ${response.statusText} - ${errorText}`);
+    console.error('CalDAV PUT (update) failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText.substring(0, 500),
+    });
+    throw new Error(`Failed to update CalDAV event: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`);
   }
+
+  console.log('CalDAV event updated successfully:', eventUID);
 }
 
 /**
