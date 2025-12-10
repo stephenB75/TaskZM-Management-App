@@ -2206,6 +2206,28 @@ const appleCalendarSetupHandler = async (c: any) => {
       return c.json({ error: 'Missing credentials. Please provide your iCloud email and app-specific password.' }, 400);
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(username)) {
+      return c.json({ error: 'Invalid email format. Please enter a valid iCloud email address.' }, 400);
+    }
+
+    // Validate app-specific password format
+    // Apple app-specific passwords are 16 characters (xxxx-xxxx-xxxx-xxxx) or 19 with hyphens
+    const cleanedPassword = appPassword.replace(/[\s-]/g, ''); // Remove spaces and hyphens
+    if (cleanedPassword.length !== 16) {
+      return c.json({ 
+        error: 'Invalid app-specific password format. Apple app-specific passwords are 16 characters (format: xxxx-xxxx-xxxx-xxxx). Please generate a new one at appleid.apple.com' 
+      }, 400);
+    }
+    
+    // Check if password contains only alphanumeric characters (Apple passwords are lowercase letters only)
+    if (!/^[a-z]+$/i.test(cleanedPassword)) {
+      return c.json({ 
+        error: 'Invalid app-specific password. Apple app-specific passwords contain only letters. Please check that you copied the correct password.' 
+      }, 400);
+    }
+
     // Use base iCloud CalDAV URL; discovery will resolve the real calendar URL
     const caldavUrl = `https://caldav.icloud.com/`;
     
