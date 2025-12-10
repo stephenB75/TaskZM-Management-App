@@ -2586,7 +2586,6 @@ export function TaskDialog({
                             setRecurrenceType("daily");
                           }
                         }}
-                        className="sm:h-6 sm:w-11 h-7 w-12"
                       />
                     </div>
 
