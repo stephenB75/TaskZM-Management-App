@@ -3273,6 +3273,73 @@ export function useAIScheduler() {
         // The original task.scheduledDate might be null or outdated, but dailyTasks needs
         // the task with the correct scheduledDate so that subsequent tasks can see it
         // during conflict detection in existingTasksForDay
+        
+        // FINAL SAFEGUARD: Check if this time conflicts with any task already in the plan
+        // This ensures no two tasks are scheduled at the exact same time even if earlier detection failed
+        const taskHoursForConflict = getTaskHours(task);
+        const taskDurationForConflict = Math.round(taskHoursForConflict * MINUTES_PER_HOUR);
+        const scheduleTimeMs = scheduleDate.getTime();
+        const scheduleEndMs = scheduleTimeMs + (taskDurationForConflict * MILLISECONDS_PER_MINUTE);
+        
+        // Check all tasks in the plan for the same day
+        const scheduleDateKey = getDateKey(scheduleDate);
+        let hasConflictInPlan = false;
+        let maxConflictEndInPlan = scheduleTimeMs;
+        
+        for (const planItem of plan) {
+          if (!planItem.scheduledDate) continue;
+          const planDate = planItem.scheduledDate instanceof Date ? planItem.scheduledDate : new Date(planItem.scheduledDate);
+          
+          // Check if same day
+          const planDateKey = getDateKey(planDate);
+          if (planDateKey !== scheduleDateKey) {
+            // For recurring tasks in plan, check if they apply to this day
+            const isPlanRecurring = planItem.task.recurrence && planItem.task.recurrence.type !== 'none';
+            if (!isPlanRecurring) continue;
+            if (!isDateInRecurrence(planItem.task, scheduleDate)) continue;
+          }
+          
+          const planTaskStart = planDate.getTime();
+          const planTaskDuration = getTaskMinutes(planItem.task) * MILLISECONDS_PER_MINUTE;
+          const planTaskEnd = planTaskStart + planTaskDuration;
+          
+          // Check for overlap (including exact same start time)
+          const sameStartTime = Math.abs(planTaskStart - scheduleTimeMs) < MILLISECONDS_PER_MINUTE;
+          const overlaps = scheduleTimeMs < planTaskEnd && scheduleEndMs > planTaskStart;
+          
+          if (sameStartTime || overlaps) {
+            hasConflictInPlan = true;
+            maxConflictEndInPlan = Math.max(maxConflictEndInPlan, planTaskEnd);
+          }
+        }
+        
+        // If conflict found, move to after all conflicts
+        if (hasConflictInPlan) {
+          const conflictFreeTime = new Date(maxConflictEndInPlan + MILLISECONDS_PER_MINUTE);
+          // Round up to nearest 15-minute interval
+          const roundedMinutes = Math.ceil(conflictFreeTime.getMinutes() / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+          if (roundedMinutes >= MINUTES_PER_HOUR) {
+            conflictFreeTime.setHours(conflictFreeTime.getHours() + 1, 0, 0, 0);
+          } else {
+            conflictFreeTime.setMinutes(roundedMinutes, 0, 0);
+          }
+          conflictFreeTime.setSeconds(0, 0);
+          conflictFreeTime.setMilliseconds(0);
+          
+          // Use the conflict-free time
+          scheduleDate.setTime(conflictFreeTime.getTime());
+          reason = `${reason} - moved to avoid conflict (final safeguard)`;
+          
+          if (import.meta.env.DEV) {
+            logger.debug('FINAL SAFEGUARD: Task time adjusted to avoid conflict', {
+              taskId: task.id,
+              taskTitle: task.title,
+              originalTime: new Date(scheduleTimeMs).toLocaleTimeString(),
+              newTime: scheduleDate.toLocaleTimeString(),
+            });
+          }
+        }
+        
         const taskWithScheduledDate = {
           ...task,
           scheduledDate: scheduleDate.toISOString()
