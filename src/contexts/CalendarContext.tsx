@@ -3,9 +3,8 @@ import { toast } from '../lib/toast-wrapper';
 import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { AppleShortcutSetupDialog } from '../components/AppleShortcutSetupDialog';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
-import { generateTaskShortcutURL, openShortcutForTask } from '../lib/apple-shortcuts';
+import { AppleCalendarSetupDialog } from '../components/AppleCalendarSetupDialog';
 
 type CalendarProvider = 'google' | 'outlook' | 'apple';
 
@@ -54,7 +53,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [showAppleShortcutDialog, setShowAppleShortcutDialog] = useState(false);
+  const [showAppleSetupDialog, setShowAppleSetupDialog] = useState(false);
 
   // Load calendar status from localStorage on mount
   useEffect(() => {
@@ -175,9 +174,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Apple Calendar uses Shortcuts method (no CalDAV)
+    // Apple Calendar uses Shortcuts for two-way sync
     if (provider === 'apple') {
-      setShowAppleShortcutDialog(true);
+      setShowAppleSetupDialog(true);
       return;
     }
 
@@ -354,19 +353,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Apple Calendar uses Shortcuts method (client-side)
+    // Apple Calendar uses Shortcuts for sync
     if (provider === 'apple') {
-      const shortcutUrl = generateTaskShortcutURL(task);
-      if (!shortcutUrl) {
-        toast.error('Could not generate calendar event');
-        return;
-      }
-      
-      // Open the shortcut URL - this will trigger the Shortcuts app
-      window.open(shortcutUrl, '_self');
-      setLastSync(new Date());
-      toast.success('Opening Apple Shortcuts...', {
-        description: 'The shortcut will add this task to your calendar',
+      toast.info('Run your TaskZM Sync shortcut', {
+        description: 'Open the Shortcuts app and run "TaskZM Sync" to sync this task.',
       });
       return;
     }
@@ -407,38 +397,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const syncAllTasks = useCallback(async (provider: CalendarProvider) => {
     if (!user) return;
 
-    // Apple Calendar uses Shortcuts method - sync tasks one at a time
+    // Apple Calendar uses Shortcuts for two-way sync
     if (provider === 'apple') {
-      const scheduledTasks = tasks.filter(t => 
-        t.scheduledDate && 
-        t.status !== 'done' &&
-        new Date(t.scheduledDate) >= new Date()
-      );
-
-      if (scheduledTasks.length === 0) {
-        toast.info('No upcoming tasks to sync');
-        return;
-      }
-
-      // For Apple Shortcuts, we open tasks one at a time
-      // The user will need to confirm each one in the Shortcuts app
-      toast.info(`Syncing ${scheduledTasks.length} tasks to Apple Calendar`, {
-        description: 'Each task will open in Shortcuts. Tap "Run" to add it to your calendar.',
+      toast.info('Run your TaskZM Sync shortcut', {
+        description: 'Open the Shortcuts app and run "TaskZM Sync" to sync all tasks.',
       });
-
-      // Open the first task's shortcut
-      const firstTask = scheduledTasks[0];
-      const shortcutUrl = generateTaskShortcutURL(firstTask);
-      if (shortcutUrl) {
-        // Store remaining tasks in sessionStorage for sequential syncing
-        if (scheduledTasks.length > 1) {
-          sessionStorage.setItem('pendingAppleSyncTasks', JSON.stringify(
-            scheduledTasks.slice(1).map(t => t.id)
-          ));
-        }
-        window.open(shortcutUrl, '_self');
-        setLastSync(new Date());
-      }
       return;
     }
 
@@ -559,26 +522,18 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsSyncing(false);
     }
-  }, [user, accessToken, workspaceId]);
+  }, [user, accessToken, workspaceId, tasks]);
 
-  // Handle Apple Shortcut setup completion
-  const handleAppleShortcutComplete = useCallback(() => {
-    if (!user) {
-      toast.error('Please sign in to connect calendar');
-      return;
-    }
-
-    // Store Apple Calendar connection status locally
-    // (No server-side credentials needed for Shortcuts method)
-    setCalendarStatus(prev => ({ ...prev, apple: true }));
+  // Handle Apple Calendar setup completion
+  const handleAppleSetupComplete = useCallback(() => {
+    if (!user) return;
     
-    // Persist to localStorage
+    setCalendarStatus(prev => ({ ...prev, apple: true }));
     if (user.id) {
       const newStatus = { ...calendarStatus, apple: true };
       localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(newStatus));
     }
-    
-    setShowAppleShortcutDialog(false);
+    setShowAppleSetupDialog(false);
   }, [user, calendarStatus]);
 
   return (
@@ -596,10 +551,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      <AppleShortcutSetupDialog
-        open={showAppleShortcutDialog}
-        onOpenChange={setShowAppleShortcutDialog}
-        onComplete={handleAppleShortcutComplete}
+      <AppleCalendarSetupDialog
+        open={showAppleSetupDialog}
+        onOpenChange={setShowAppleSetupDialog}
+        onComplete={handleAppleSetupComplete}
       />
     </CalendarContext.Provider>
   );

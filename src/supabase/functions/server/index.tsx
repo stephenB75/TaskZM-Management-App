@@ -2703,6 +2703,269 @@ app.get("/make-server-65e6e67f/calendar/events/:provider", async (c) => {
 });
 
 // ============================================================================
+// APPLE CALENDAR SYNC VIA SHORTCUTS
+// ============================================================================
+// These endpoints are called by Apple Shortcuts for two-way calendar sync
+
+// Get tasks to sync TO Apple Calendar (Shortcut calls this to fetch tasks)
+app.get("/make-server-65e6e67f/calendar/apple/tasks", async (c) => {
+  try {
+    // Support both Bearer token auth and sync token auth
+    let userId: string | null = null;
+    
+    const authHeader = c.req.header('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const result = await verifyUser(c.req.raw);
+      if (!result.error) {
+        userId = result.userId;
+      }
+    }
+    
+    // Also check for sync token in query params (for Shortcuts)
+    if (!userId) {
+      const syncToken = c.req.query('token');
+      if (syncToken) {
+        try {
+          const payload = JSON.parse(atob(syncToken));
+          if (payload.type === 'calendar_sync' && payload.exp > Date.now()) {
+            userId = payload.userId;
+          }
+        } catch {
+          // Invalid token
+        }
+      }
+    }
+    
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const supabase = getSupabaseClient();
+    
+    // Get query parameters for filtering
+    const startDate = c.req.query('startDate') || new Date().toISOString();
+    const endDate = c.req.query('endDate') || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    
+    // Get user's workspace
+    const { data: membership } = await supabase
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('user_id', userId)
+      .single();
+    
+    if (!membership) {
+      return c.json({ tasks: [] });
+    }
+
+    // Fetch scheduled tasks within the date range
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select('id, title, description, scheduled_date, due_date, estimated_time, priority, status')
+      .eq('workspace_id', membership.workspace_id)
+      .neq('status', 'done')
+      .not('scheduled_date', 'is', null)
+      .gte('scheduled_date', startDate)
+      .lte('scheduled_date', endDate)
+      .order('scheduled_date', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching tasks for Apple Calendar:', error);
+      return c.json({ error: 'Failed to fetch tasks' }, 500);
+    }
+
+    // Transform to calendar-friendly format
+    const calendarTasks = (tasks || []).map(task => {
+      const startDate = new Date(task.scheduled_date);
+      const durationMinutes = task.estimated_time || 30;
+      const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+      
+      return {
+        id: task.id,
+        title: task.title,
+        notes: task.description || '',
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        priority: task.priority,
+      };
+    });
+
+    return c.json({ 
+      tasks: calendarTasks,
+      count: calendarTasks.length,
+      syncedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error in Apple Calendar tasks endpoint:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Receive events FROM Apple Calendar (Shortcut sends events here)
+app.post("/make-server-65e6e67f/calendar/apple/events", async (c) => {
+  try {
+    // Support both Bearer token auth and sync token auth
+    let userId: string | null = null;
+    
+    const authHeader = c.req.header('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const result = await verifyUser(c.req.raw);
+      if (!result.error) {
+        userId = result.userId;
+      }
+    }
+    
+    // Also check for sync token in body or query (for Shortcuts)
+    if (!userId) {
+      const body = await c.req.json().catch(() => ({}));
+      const syncToken = body.token || c.req.query('token');
+      if (syncToken) {
+        try {
+          const payload = JSON.parse(atob(syncToken));
+          if (payload.type === 'calendar_sync' && payload.exp > Date.now()) {
+            userId = payload.userId;
+          }
+        } catch {
+          // Invalid token
+        }
+      }
+    }
+    
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const body = await c.req.json();
+    const events = body.events || [];
+
+    if (!Array.isArray(events)) {
+      return c.json({ error: 'Events must be an array' }, 400);
+    }
+
+    const supabase = getSupabaseClient();
+    
+    // Get user's workspace
+    const { data: membership } = await supabase
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('user_id', userId)
+      .single();
+    
+    if (!membership) {
+      return c.json({ error: 'No workspace found' }, 400);
+    }
+
+    let created = 0;
+    let updated = 0;
+    let errors = 0;
+
+    for (const event of events) {
+      try {
+        // Check if this event already exists as a task (by calendar_event_id)
+        const { data: existingTask } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('workspace_id', membership.workspace_id)
+          .eq('calendar_event_id', event.id)
+          .single();
+
+        if (existingTask) {
+          // Update existing task
+          const { error: updateError } = await supabase
+            .from('tasks')
+            .update({
+              title: event.title,
+              description: event.notes || null,
+              scheduled_date: event.startDate,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingTask.id);
+
+          if (updateError) {
+            console.error('Error updating task from calendar event:', updateError);
+            errors++;
+          } else {
+            updated++;
+          }
+        } else {
+          // Create new task from calendar event
+          const { error: insertError } = await supabase
+            .from('tasks')
+            .insert({
+              workspace_id: membership.workspace_id,
+              title: event.title,
+              description: event.notes || null,
+              scheduled_date: event.startDate,
+              status: 'todo',
+              priority: 'medium',
+              calendar_event_id: event.id,
+              calendar_source: 'apple',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+
+          if (insertError) {
+            console.error('Error creating task from calendar event:', insertError);
+            errors++;
+          } else {
+            created++;
+          }
+        }
+      } catch (eventError) {
+        console.error('Error processing calendar event:', eventError);
+        errors++;
+      }
+    }
+
+    return c.json({
+      success: true,
+      created,
+      updated,
+      errors,
+      total: events.length,
+      syncedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error in Apple Calendar events endpoint:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Generate a sync token for Apple Shortcuts
+app.get("/make-server-65e6e67f/calendar/apple/sync-token", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Generate a long-lived token for the shortcut
+    const payload = {
+      userId,
+      type: 'calendar_sync',
+      exp: Date.now() + (90 * 24 * 60 * 60 * 1000), // 90 days
+    };
+    const token = btoa(JSON.stringify(payload));
+
+    // Get the API base URL
+    const baseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const apiUrl = `${baseUrl}/functions/v1/make-server-65e6e67f`;
+
+    return c.json({
+      token,
+      expiresAt: new Date(payload.exp).toISOString(),
+      endpoints: {
+        getTasks: `${apiUrl}/calendar/apple/tasks?token=${token}`,
+        postEvents: `${apiUrl}/calendar/apple/events?token=${token}`,
+      },
+      instructions: 'Use these URLs in your Apple Shortcut to sync calendar events with TaskZM.',
+    });
+  } catch (error) {
+    console.error('Error generating sync token:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// ============================================================================
 // STRIPE CHECKOUT SESSION
 // ============================================================================
 // Create Stripe checkout session for subscription purchases
