@@ -453,13 +453,19 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       let data;
       try {
         const responseText = await response.text();
+        console.log('Sync response text:', responseText?.substring(0, 500));
         if (!responseText) {
           throw new Error('Empty response from server');
+        }
+        // Check if response is the literal "[object Object]" which indicates a serialization error
+        if (responseText === '[object Object]' || responseText.trim() === '[object Object]') {
+          console.error('Server returned [object Object] - serialization error on server');
+          throw new Error('Server returned invalid data. Please try again or reconnect your calendar.');
         }
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Failed to parse sync response:', parseError);
-        throw new Error('Invalid response from server. Please try again.');
+        throw new Error('Invalid response from server. Please try again or reconnect your calendar.');
       }
       
       setLastSync(new Date());
