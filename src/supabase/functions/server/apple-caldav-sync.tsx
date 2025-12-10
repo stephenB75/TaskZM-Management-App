@@ -218,7 +218,99 @@ export async function discoverCalendarHome(
     console.log('Strategy 3 failed:', error);
   }
 
-  throw new Error('Could not discover calendar. Apple iCloud may be temporarily unavailable. Please try again in a few minutes.');
+  // Strategy 4: Try direct user-based URL pattern
+  try {
+    const result = await tryDirectUserDiscovery(credentials);
+    if (result) {
+      console.log('Strategy 4 (direct user URL) succeeded:', result);
+      return result;
+    }
+  } catch (error) {
+    console.log('Strategy 4 failed:', error);
+  }
+
+  throw new Error('Could not discover calendar. Please verify your iCloud email and app-specific password are correct.');
+}
+
+/**
+ * Strategy 4: Try direct user-based URL patterns
+ * Apple sometimes uses dsid-based URLs or direct user paths
+ */
+async function tryDirectUserDiscovery(credentials: AppleCalDAVCredentials): Promise<string | null> {
+  const serverNumbers = ['01', '02', '03', '04', '05'];
+  
+  // Try to authenticate and find calendars via direct path guessing
+  for (const num of serverNumbers) {
+    const baseUrl = `https://p${num}-caldav.icloud.com`;
+    
+    // Try a direct PROPFIND on the base URL which sometimes returns the user's info
+    try {
+      const propfindBody = `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop>
+    <D:current-user-principal/>
+    <D:resourcetype/>
+  </D:prop>
+</D:propfind>`;
+
+      const response = await caldavRequest(
+        baseUrl,
+        'PROPFIND',
+        credentials,
+        propfindBody,
+        '0'
+      );
+
+      if (response.status === 207) {
+        console.log(`Direct discovery on p${num}: Got 207, checking response...`);
+        console.log('Response preview:', response.body.substring(0, 1000));
+        
+        // Look for any calendar-related hrefs
+        const hrefs = extractAllHrefs(response.body);
+        for (const href of hrefs) {
+          if (href.includes('/calendars/') || href.includes('/calendar/')) {
+            const fullUrl = normalizeUrl(href, response.finalUrl);
+            console.log(`Found potential calendar home: ${fullUrl}`);
+            return fullUrl;
+          }
+        }
+        
+        // Check for principal and follow it
+        const principalUrl = extractHref(response.body, 'current-user-principal');
+        if (principalUrl) {
+          const fullPrincipalUrl = normalizeUrl(principalUrl, response.finalUrl);
+          console.log(`Found principal: ${fullPrincipalUrl}`);
+          
+          // Get calendar-home-set from principal
+          const principalPropfind = `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+  <D:prop>
+    <C:calendar-home-set/>
+  </D:prop>
+</D:propfind>`;
+          
+          const principalResponse = await caldavRequest(
+            fullPrincipalUrl,
+            'PROPFIND',
+            credentials,
+            principalPropfind,
+            '0'
+          );
+          
+          if (principalResponse.status === 207) {
+            const calendarHome = extractHref(principalResponse.body, 'calendar-home-set');
+            if (calendarHome) {
+              return normalizeUrl(calendarHome, principalResponse.finalUrl);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.log(`Direct discovery on p${num} failed:`, error);
+    }
+  }
+
+  return null;
 }
 
 /**
