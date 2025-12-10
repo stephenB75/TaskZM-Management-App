@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
-import { AppleCalendarSetupDialog } from '../components/AppleCalendarSetupDialog';
+import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
 
 type CalendarProvider = 'google' | 'outlook' | 'apple';
 
@@ -53,7 +53,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   });
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [showAppleSetupDialog, setShowAppleSetupDialog] = useState(false);
+  const [showAppleCalDAVDialog, setShowAppleCalDAVDialog] = useState(false);
 
   // Load calendar status from localStorage on mount
   useEffect(() => {
@@ -174,9 +174,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Apple Calendar uses Shortcuts for two-way sync
+    // Apple Calendar uses CalDAV for one-way import
     if (provider === 'apple') {
-      setShowAppleSetupDialog(true);
+      setShowAppleCalDAVDialog(true);
       return;
     }
 
@@ -353,10 +353,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Apple Calendar uses Shortcuts for sync
+    // Apple Calendar is one-way import only (iCloud → TaskZM)
     if (provider === 'apple') {
-      toast.info('Run your TaskZM Sync shortcut', {
-        description: 'Open the Shortcuts app and run "TaskZM Sync" to sync this task.',
+      toast.info('Apple Calendar is import-only', {
+        description: 'Events are imported from iCloud. To add events, use Apple Calendar app.',
       });
       return;
     }
@@ -397,11 +397,37 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const syncAllTasks = useCallback(async (provider: CalendarProvider) => {
     if (!user) return;
 
-    // Apple Calendar uses Shortcuts for two-way sync
+    // Apple Calendar - trigger CalDAV sync (import from iCloud)
     if (provider === 'apple') {
-      toast.info('Run your TaskZM Sync shortcut', {
-        description: 'Open the Shortcuts app and run "TaskZM Sync" to sync all tasks.',
-      });
+      try {
+        setIsSyncing(true);
+        const response = await fetch(`${BASE_URL}/calendar/apple/caldav/sync`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setLastSync(new Date());
+          toast.success('iCloud Calendar synced!', {
+            description: `Imported ${data.created} new, updated ${data.updated}, removed ${data.deleted} events`,
+          });
+        } else {
+          toast.error('Sync failed', {
+            description: data.error || 'Failed to sync with iCloud Calendar',
+          });
+        }
+      } catch (error) {
+        console.error('Apple CalDAV sync error:', error);
+        toast.error('Sync failed', {
+          description: 'Could not connect to iCloud Calendar',
+        });
+      } finally {
+        setIsSyncing(false);
+      }
       return;
     }
 
@@ -524,8 +550,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
   }, [user, accessToken, workspaceId, tasks]);
 
-  // Handle Apple Calendar setup completion
-  const handleAppleSetupComplete = useCallback(() => {
+  // Handle Apple CalDAV setup completion
+  const handleAppleCalDAVComplete = useCallback(() => {
     if (!user) return;
     
     setCalendarStatus(prev => ({ ...prev, apple: true }));
@@ -533,7 +559,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       const newStatus = { ...calendarStatus, apple: true };
       localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(newStatus));
     }
-    setShowAppleSetupDialog(false);
+    setShowAppleCalDAVDialog(false);
   }, [user, calendarStatus]);
 
   return (
@@ -551,10 +577,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      <AppleCalendarSetupDialog
-        open={showAppleSetupDialog}
-        onOpenChange={setShowAppleSetupDialog}
-        onComplete={handleAppleSetupComplete}
+      <AppleCalDAVSetupDialog
+        open={showAppleCalDAVDialog}
+        onOpenChange={setShowAppleCalDAVDialog}
+        onComplete={handleAppleCalDAVComplete}
       />
     </CalendarContext.Provider>
   );

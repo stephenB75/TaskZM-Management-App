@@ -25,6 +25,7 @@ cp "$SOURCE_DIR/caldav-client.tsx" "$DEPLOY_DIR/caldav-client.tsx"
 cp "$SOURCE_DIR/email-service.tsx" "$DEPLOY_DIR/email-service.tsx"
 cp "$SOURCE_DIR/cleanup-utils.tsx" "$DEPLOY_DIR/cleanup-utils.tsx"
 cp "$SOURCE_DIR/kv_store.tsx" "$DEPLOY_DIR/kv_store.tsx"
+cp "$SOURCE_DIR/apple-caldav-sync.tsx" "$DEPLOY_DIR/apple-caldav-sync.tsx"
 
 echo "✅ Files synced successfully!"
 

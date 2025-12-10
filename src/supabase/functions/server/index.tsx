@@ -7,6 +7,7 @@ import * as calendarSync from "./calendar-sync.tsx";
 import * as caldav from "./caldav-client.tsx";
 import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
+import * as appleCaldavSync from "./apple-caldav-sync.tsx";
 
 // Helper function to safely extract error messages
 function getErrorMessage(error: unknown): string {
@@ -2962,6 +2963,268 @@ app.get("/make-server-65e6e67f/calendar/apple/sync-token", async (c) => {
   } catch (error) {
     console.error('Error generating sync token:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// ============================================================================
+// APPLE CALDAV IMPORT (One-Way Sync: iCloud → TaskZM)
+// ============================================================================
+// Import events from Apple iCloud Calendar into TaskZM as read-only items
+
+// Test CalDAV connection with credentials
+app.post("/make-server-65e6e67f/calendar/apple/caldav/test", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { email, appPassword } = await c.req.json();
+    
+    if (!email || !appPassword) {
+      return c.json({ error: 'Email and app-specific password are required' }, 400);
+    }
+
+    const result = await appleCaldavSync.testConnection({ email, appPassword });
+    
+    return c.json(result);
+  } catch (error) {
+    console.error('CalDAV test connection error:', error);
+    return c.json({ 
+      success: false, 
+      message: getErrorMessage(error) 
+    }, 500);
+  }
+});
+
+// Discover calendars
+app.post("/make-server-65e6e67f/calendar/apple/caldav/discover", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { email, appPassword } = await c.req.json();
+    
+    if (!email || !appPassword) {
+      return c.json({ error: 'Email and app-specific password are required' }, 400);
+    }
+
+    const calendars = await appleCaldavSync.discoverCalendars({ email, appPassword });
+    
+    return c.json({ 
+      success: true,
+      calendars 
+    });
+  } catch (error) {
+    console.error('CalDAV discover calendars error:', error);
+    return c.json({ 
+      success: false,
+      error: getErrorMessage(error) 
+    }, 500);
+  }
+});
+
+// Save CalDAV credentials and selected calendars
+app.post("/make-server-65e6e67f/calendar/apple/caldav/save", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { email, appPassword, selectedCalendars } = await c.req.json();
+    
+    if (!email || !appPassword) {
+      return c.json({ error: 'Email and app-specific password are required' }, 400);
+    }
+
+    // Store credentials securely in KV store (encrypted in production)
+    await kv.set(`caldav_credentials_${userId}`, JSON.stringify({
+      email,
+      appPassword,
+      selectedCalendars: selectedCalendars || [],
+      connectedAt: new Date().toISOString(),
+    }));
+
+    return c.json({ 
+      success: true,
+      message: 'CalDAV credentials saved successfully'
+    });
+  } catch (error) {
+    console.error('CalDAV save credentials error:', error);
+    return c.json({ 
+      success: false,
+      error: getErrorMessage(error) 
+    }, 500);
+  }
+});
+
+// Get CalDAV connection status
+app.get("/make-server-65e6e67f/calendar/apple/caldav/status", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const credentialsJson = await kv.get(`caldav_credentials_${userId}`);
+    
+    if (!credentialsJson) {
+      return c.json({ 
+        connected: false,
+        selectedCalendars: []
+      });
+    }
+
+    const credentials = JSON.parse(credentialsJson);
+    
+    // Get last sync info
+    const lastSyncJson = await kv.get(`caldav_last_sync_${userId}`);
+    const lastSync = lastSyncJson ? JSON.parse(lastSyncJson) : null;
+
+    return c.json({ 
+      connected: true,
+      email: credentials.email,
+      selectedCalendars: credentials.selectedCalendars || [],
+      connectedAt: credentials.connectedAt,
+      lastSync: lastSync,
+    });
+  } catch (error) {
+    console.error('CalDAV status error:', error);
+    return c.json({ 
+      connected: false,
+      error: getErrorMessage(error) 
+    }, 500);
+  }
+});
+
+// Trigger CalDAV sync
+app.post("/make-server-65e6e67f/calendar/apple/caldav/sync", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Get stored credentials
+    const credentialsJson = await kv.get(`caldav_credentials_${userId}`);
+    if (!credentialsJson) {
+      return c.json({ error: 'CalDAV not configured. Please connect your Apple Calendar first.' }, 400);
+    }
+
+    const storedCredentials = JSON.parse(credentialsJson);
+    
+    if (!storedCredentials.selectedCalendars || storedCredentials.selectedCalendars.length === 0) {
+      return c.json({ error: 'No calendars selected. Please select at least one calendar to sync.' }, 400);
+    }
+
+    // Get user's workspace
+    const supabase = getSupabaseClient();
+    const { data: membership } = await supabase
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (!membership) {
+      return c.json({ error: 'No workspace found' }, 400);
+    }
+
+    // Perform sync
+    const result = await appleCaldavSync.syncCalendarsToDatabase(
+      supabase,
+      userId,
+      membership.workspace_id,
+      { email: storedCredentials.email, appPassword: storedCredentials.appPassword },
+      storedCredentials.selectedCalendars.map((cal: any) => cal.href)
+    );
+
+    // Store sync result
+    await kv.set(`caldav_last_sync_${userId}`, JSON.stringify({
+      syncedAt: new Date().toISOString(),
+      ...result,
+    }));
+
+    return c.json(result);
+  } catch (error) {
+    console.error('CalDAV sync error:', error);
+    return c.json({ 
+      success: false,
+      error: getErrorMessage(error) 
+    }, 500);
+  }
+});
+
+// Disconnect CalDAV
+app.delete("/make-server-65e6e67f/calendar/apple/caldav", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Delete stored credentials
+    await kv.del(`caldav_credentials_${userId}`);
+    await kv.del(`caldav_last_sync_${userId}`);
+
+    // Optionally delete synced events
+    const supabase = getSupabaseClient();
+    await supabase
+      .from('calendar_events')
+      .delete()
+      .eq('user_id', userId)
+      .eq('source', 'icloud');
+
+    return c.json({ 
+      success: true,
+      message: 'Apple Calendar disconnected'
+    });
+  } catch (error) {
+    console.error('CalDAV disconnect error:', error);
+    return c.json({ 
+      success: false,
+      error: getErrorMessage(error) 
+    }, 500);
+  }
+});
+
+// Get synced calendar events
+app.get("/make-server-65e6e67f/calendar/apple/caldav/events", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const startDate = c.req.query('startDate') || new Date().toISOString();
+    const endDate = c.req.query('endDate') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const supabase = getSupabaseClient();
+    const { data: events, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('source', 'icloud')
+      .gte('start_time', startDate)
+      .lte('start_time', endDate)
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return c.json({ 
+      events: events || [],
+      count: events?.length || 0
+    });
+  } catch (error) {
+    console.error('CalDAV get events error:', error);
+    return c.json({ 
+      events: [],
+      error: getErrorMessage(error) 
+    }, 500);
   }
 });
 
