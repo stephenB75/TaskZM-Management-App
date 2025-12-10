@@ -86,19 +86,29 @@ const getTwoWeekDateRange = () => {
 };
 
 // Mini Calendar Component for AI Re-scheduler (matching TaskDialog style)
+// Supports multi-day selection (up to 3 days) in "day" mode
 function RescheduleMiniCalendar({
   rescheduleType,
   rescheduleDate,
+  selectedDates = [],
   onTypeChange,
   onDateSelect,
+  onMultiDateSelect,
 }: {
   rescheduleType: "day" | "week" | "month";
   rescheduleDate: Date | undefined;
+  selectedDates?: Date[];
   onTypeChange: (type: "day" | "week" | "month") => void;
   onDateSelect: (date: Date | undefined) => void;
+  onMultiDateSelect?: (dates: Date[]) => void;
 }) {
+  const MAX_MULTI_SELECT_DAYS = 3;
+  
   const [viewDate, setViewDate] = useState(() => {
     try {
+      if (selectedDates.length > 0) {
+        return selectedDates[0];
+      }
       if (rescheduleDate && rescheduleDate instanceof Date && !isNaN(rescheduleDate.getTime())) {
         return rescheduleDate;
       }
@@ -115,13 +125,15 @@ function RescheduleMiniCalendar({
   // Sync view date when rescheduleDate changes
   useEffect(() => {
     try {
-      if (rescheduleDate && rescheduleDate instanceof Date && !isNaN(rescheduleDate.getTime())) {
+      if (selectedDates.length > 0) {
+        setViewDate(selectedDates[0]);
+      } else if (rescheduleDate && rescheduleDate instanceof Date && !isNaN(rescheduleDate.getTime())) {
         setViewDate(rescheduleDate);
       }
     } catch (error) {
       logger.error('Error syncing viewDate:', error);
     }
-  }, [rescheduleDate]);
+  }, [rescheduleDate, selectedDates]);
 
   // Generate days for the current month view
   const getDays = () => {
@@ -170,6 +182,15 @@ function RescheduleMiniCalendar({
 
   const isSelected = (date: Date) => {
     try {
+      // For multi-day selection in "day" mode
+      if (rescheduleType === "day" && selectedDates.length > 0) {
+        return selectedDates.some(d => 
+          d.getDate() === date.getDate() &&
+          d.getMonth() === date.getMonth() &&
+          d.getFullYear() === date.getFullYear()
+        );
+      }
+      // For week/month modes, use single date
       if (!rescheduleDate || !(rescheduleDate instanceof Date) || isNaN(rescheduleDate.getTime())) {
         return false;
       }
@@ -196,16 +217,56 @@ function RescheduleMiniCalendar({
   const handleDateClick = (date: Date) => {
     if (isDisabled(date)) return;
     try {
-      onDateSelect(date);
+      // Multi-day selection for "day" mode
+      if (rescheduleType === "day" && onMultiDateSelect) {
+        const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        const isAlreadySelected = selectedDates.some(d => 
+          `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` === dateKey
+        );
+        
+        if (isAlreadySelected) {
+          // Remove the date
+          const newDates = selectedDates.filter(d => 
+            `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}` !== dateKey
+          );
+          onMultiDateSelect(newDates);
+        } else if (selectedDates.length < MAX_MULTI_SELECT_DAYS) {
+          // Add the date (max 3)
+          onMultiDateSelect([...selectedDates, date]);
+        }
+        // Also update single date to first selected for compatibility
+        if (selectedDates.length === 0) {
+          onDateSelect(date);
+        }
+      } else {
+        // Single date selection for week/month modes
+        onDateSelect(date);
+      }
     } catch (error) {
       console.error('Error selecting date:', error);
     }
   };
 
   const getDisplayDate = () => {
-    if (!rescheduleDate) return null;
-    
     try {
+      if (rescheduleType === "day" && selectedDates.length > 0) {
+        // Show multiple selected dates
+        if (selectedDates.length === 1) {
+          return selectedDates[0].toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+          });
+        } else {
+          const sortedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
+          return `${sortedDates.length} days: ${sortedDates.map(d => 
+            d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          ).join(', ')}`;
+        }
+      }
+      
+      if (!rescheduleDate) return null;
+      
       if (rescheduleType === "week") {
         const monday = new Date(rescheduleDate);
         const day = monday.getDay();
@@ -256,7 +317,7 @@ function RescheduleMiniCalendar({
           )}
         >
           <Calendar className="w-3.5 h-3.5 mr-1.5" />
-          Day
+          Days
         </Button>
         <Button
           type="button"
@@ -384,7 +445,7 @@ function RescheduleMiniCalendar({
       </div>
 
       {/* Selected date info */}
-      {rescheduleDate && (
+      {(rescheduleDate || (rescheduleType === "day" && selectedDates.length > 0)) && (
         <div className="mt-3 pt-3 border-t border-primary/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5 text-primary" />
@@ -396,11 +457,21 @@ function RescheduleMiniCalendar({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => onDateSelect(undefined)}
+            onClick={() => {
+              onDateSelect(undefined);
+              if (onMultiDateSelect) onMultiDateSelect([]);
+            }}
             className="h-6 px-2 text-xs"
           >
             Clear
           </Button>
+        </div>
+      )}
+      
+      {/* Hint for multi-day selection */}
+      {rescheduleType === "day" && (
+        <div className="mt-2 text-[10px] text-muted-foreground text-center">
+          Select up to 3 days to shuffle tasks between them
         </div>
       )}
     </div>
@@ -431,6 +502,7 @@ export function DashboardView({
   const hasFeature = subscriptionContext?.hasFeature;
   const features = subscriptionContext?.features;
   const rescheduleDay = aiSchedulerContext?.rescheduleDay;
+  const rescheduleDaysFunc = aiSchedulerContext?.rescheduleDays;
   const rescheduleWeek = aiSchedulerContext?.rescheduleWeek;
   const rescheduleMonth = aiSchedulerContext?.rescheduleMonth;
   const getScheduledTasksForDay = aiSchedulerContext?.getScheduledTasksForDay;
@@ -476,6 +548,7 @@ export function DashboardView({
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleType, setRescheduleType] = useState<"day" | "week" | "month" | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState<Date | undefined>(undefined);
+  const [rescheduleDates, setRescheduleDates] = useState<Date[]>([]); // Multi-day selection (up to 3)
   const [isRescheduling, setIsRescheduling] = useState(false);
 
   // Generate week columns for mobile day selector with week offset
@@ -659,7 +732,7 @@ export function DashboardView({
     });
   };
 
-  const handleRandomReschedule = async (type: "day" | "week" | "month", selectedDate?: Date) => {
+  const handleRandomReschedule = async (type: "day" | "week" | "month", selectedDate?: Date, selectedDates: Date[] = []) => {
     // Check if user has access to AI Scheduler feature
     if (!safeHasFeature('aiScheduler')) {
       toast.error('Re-schedule is a Pro feature', {
@@ -667,7 +740,11 @@ export function DashboardView({
       });
       return;
     }
-    if (!selectedDate) {
+    
+    // For day mode with multi-selection, check selectedDates
+    const hasMultipleDays = type === "day" && selectedDates.length > 1;
+    
+    if (!selectedDate && selectedDates.length === 0) {
       toast.error("Please select a date", {
         description: "You must select a specific date, week, or month to reschedule.",
         duration: 3000,
@@ -675,8 +752,8 @@ export function DashboardView({
       return;
     }
 
-    // Validate date
-    if (!(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
+    // Validate date (for single date mode)
+    if (!hasMultipleDays && selectedDate && (!(selectedDate instanceof Date) || isNaN(selectedDate.getTime()))) {
       toast.error("Invalid date selected", {
         description: "Please select a valid date.",
         duration: 3000,
@@ -686,6 +763,7 @@ export function DashboardView({
 
     setIsRescheduling(true);
     setShowRescheduleDialog(false);
+    setRescheduleDates([]); // Clear multi-selection after starting
     
     try {
       let result: ScheduleResult | undefined;
@@ -694,24 +772,53 @@ export function DashboardView({
 
       try {
         if (type === "day") {
-          const targetDate = new Date(selectedDate);
-          targetDate.setHours(0, 0, 0, 0);
-          
-          taskCount = getScheduledTasksForDay ? getScheduledTasksForDay(targetDate).length : 0;
-          if (taskCount === 0) {
-            toast.info("No tasks found", {
-              description: `No scheduled tasks found for ${targetDate.toLocaleDateString()}`,
-              duration: 3000,
-            });
-            setIsRescheduling(false);
-            return;
+          // Handle multi-day selection (up to 3 days)
+          if (hasMultipleDays) {
+            // Count total tasks across all selected days
+            const seenTaskIds = new Set<string>();
+            for (const date of selectedDates) {
+              const dayTasks = getScheduledTasksForDay ? getScheduledTasksForDay(date) : [];
+              dayTasks.forEach((t: Task) => seenTaskIds.add(t.id));
+            }
+            taskCount = seenTaskIds.size;
+            
+            if (taskCount === 0) {
+              const dateStr = selectedDates.map(d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })).join(', ');
+              toast.info("No tasks found", {
+                description: `No scheduled tasks found for ${dateStr}`,
+                duration: 3000,
+              });
+              setIsRescheduling(false);
+              return;
+            }
+            
+            if (!rescheduleDaysFunc) {
+              throw new Error('rescheduleDays is not available');
+            }
+            result = await rescheduleDaysFunc(selectedDates);
+            const dateStr = selectedDates.map(d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })).join(', ');
+            description = `Rescheduled ${result?.scheduled?.length || 0} task${(result?.scheduled?.length || 0) === 1 ? '' : 's'} across ${selectedDates.length} days (${dateStr})`;
+          } else {
+            // Single day selection
+            const targetDate = new Date(selectedDate!);
+            targetDate.setHours(0, 0, 0, 0);
+            
+            taskCount = getScheduledTasksForDay ? getScheduledTasksForDay(targetDate).length : 0;
+            if (taskCount === 0) {
+              toast.info("No tasks found", {
+                description: `No scheduled tasks found for ${targetDate.toLocaleDateString()}`,
+                duration: 3000,
+              });
+              setIsRescheduling(false);
+              return;
+            }
+            
+            if (!rescheduleDay) {
+              throw new Error('rescheduleDay is not available');
+            }
+            result = await rescheduleDay(targetDate);
+            description = `Rescheduled ${result?.scheduled?.length || 0} task${(result?.scheduled?.length || 0) === 1 ? '' : 's'} for ${targetDate.toLocaleDateString()}`;
           }
-          
-          if (!rescheduleDay) {
-            throw new Error('rescheduleDay is not available');
-          }
-          result = await rescheduleDay(targetDate);
-          description = `Rescheduled ${result?.scheduled?.length || 0} task${(result?.scheduled?.length || 0) === 1 ? '' : 's'} for ${targetDate.toLocaleDateString()}`;
         } else if (type === "week") {
           // Calculate Monday of the selected week
           const monday = new Date(selectedDate);
@@ -1295,6 +1402,7 @@ export function DashboardView({
           if (!open) {
             setRescheduleType(null);
             setRescheduleDate(undefined);
+            setRescheduleDates([]);
           }
         } catch (error) {
           console.error('Error handling dialog open change:', error);
@@ -1324,10 +1432,12 @@ export function DashboardView({
               <RescheduleMiniCalendar
                 rescheduleType={rescheduleType}
                 rescheduleDate={rescheduleDate}
+                selectedDates={rescheduleDates}
                 onTypeChange={(type) => {
                   try {
                     setRescheduleType(type);
                     setRescheduleDate(undefined);
+                    setRescheduleDates([]); // Clear multi-selection when type changes
                   } catch (error) {
                     console.error('Error changing reschedule type:', error);
                     toast.error('Failed to change period type', {
@@ -1345,6 +1455,19 @@ export function DashboardView({
                       description: 'Please try again',
                       duration: 3000,
                     });
+                  }
+                }}
+                onMultiDateSelect={(dates) => {
+                  try {
+                    setRescheduleDates(dates);
+                    // Also set single date to first selected for compatibility
+                    if (dates.length > 0) {
+                      setRescheduleDate(dates[0]);
+                    } else {
+                      setRescheduleDate(undefined);
+                    }
+                  } catch (error) {
+                    console.error('Error selecting multiple dates:', error);
                   }
                 }}
               />
@@ -1369,7 +1492,7 @@ export function DashboardView({
                       }
                     }}
                   >
-                    Day
+                    Days
                   </Button>
                   <Button
                     variant="outline"
@@ -1419,6 +1542,7 @@ export function DashboardView({
                   setShowRescheduleDialog(false);
                   setRescheduleType(null);
                   setRescheduleDate(undefined);
+                  setRescheduleDates([]);
                 } catch (error) {
                   console.error('Error closing reschedule dialog:', error);
                 }
@@ -1429,8 +1553,12 @@ export function DashboardView({
             <Button
               onClick={() => {
                 try {
-                  if (rescheduleType && rescheduleDate) {
-                    handleRandomReschedule(rescheduleType, rescheduleDate);
+                  // For day mode, allow either single date or multi-date selection
+                  const hasValidDaySelection = rescheduleType === "day" && (rescheduleDates.length > 0 || rescheduleDate);
+                  const hasValidOtherSelection = rescheduleType && rescheduleType !== "day" && rescheduleDate;
+                  
+                  if (hasValidDaySelection || hasValidOtherSelection) {
+                    handleRandomReschedule(rescheduleType!, rescheduleDate, rescheduleDates);
                   } else {
                     toast.error("Please select a date", {
                       description: "You must select both a period type and a date.",
@@ -1445,11 +1573,11 @@ export function DashboardView({
                   });
                 }
               }}
-              disabled={!rescheduleType || !rescheduleDate || isRescheduling}
+              disabled={!rescheduleType || (!rescheduleDate && rescheduleDates.length === 0) || isRescheduling}
               className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
             >
               <RefreshCw className={cn("w-4 h-4 mr-2", isRescheduling && "animate-spin")} />
-              {isRescheduling ? "Rescheduling..." : "Reschedule"}
+              {isRescheduling ? "Rescheduling..." : rescheduleDates.length > 1 ? `Reschedule ${rescheduleDates.length} Days` : "Reschedule"}
             </Button>
           </DialogFooter>
         </DialogContent>

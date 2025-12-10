@@ -3627,6 +3627,92 @@ export function useAIScheduler() {
     }
   };
 
+  // Reschedule tasks for multiple days (up to 3 days)
+  const rescheduleDays = async (dates: Date[]): Promise<ScheduleResult> => {
+    if (dates.length === 0) {
+      return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
+    }
+
+    // If only one day, use the single day reschedule
+    if (dates.length === 1) {
+      return rescheduleDay(dates[0]);
+    }
+
+    setIsScheduling(true);
+    try {
+      // Sort dates chronologically
+      const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      
+      // Collect tasks from all selected days
+      const allDayTasks: Task[] = [];
+      const seenTaskIds = new Set<string>();
+      
+      for (const date of sortedDates) {
+        const dayTasks = getScheduledTasksForDay(date);
+        for (const task of dayTasks) {
+          if (!seenTaskIds.has(task.id)) {
+            seenTaskIds.add(task.id);
+            allDayTasks.push(task);
+          }
+        }
+      }
+
+      if (allDayTasks.length === 0) {
+        return { scheduled: [], exceedsLimit: [], daysExceedingLimit: [] };
+      }
+      
+      // Store task IDs and full task objects before unscheduling
+      const taskIds = allDayTasks.map(t => t.id);
+      const tasksToReschedule = allDayTasks.map(t => ({ ...t })); // Clone tasks
+      
+      // Unschedule the tasks first
+      await unscheduleTasks(allDayTasks);
+      
+      // Wait a bit for state to sync, then get fresh task data
+      await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.aiScheduler));
+      
+      // Get the tasks again (they're now unscheduled) using the cloned tasks as fallback
+      const freshTasks = tasks.filter(t => taskIds.includes(t.id) && !t.scheduledDate && t.status !== 'done');
+      const tasksForReschedule = freshTasks.length > 0 ? freshTasks : tasksToReschedule.map(t => ({ ...t, scheduledDate: null }));
+      
+      // Use the first selected date as start, last selected date as end
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const firstDate = new Date(sortedDates[0]);
+      firstDate.setHours(0, 0, 0, 0);
+      
+      const lastDate = new Date(sortedDates[sortedDates.length - 1]);
+      lastDate.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
+      
+      // If first date is in the past, start from today
+      const scheduleStartDate = firstDate.getTime() < today.getTime() ? today : firstDate;
+      
+      // Ensure end date is at least the last selected date
+      const scheduleEndDate = lastDate;
+      
+      // Generate new schedule for these specific tasks within the selected date range
+      // Shuffle tasks and enforce minimum hours for rescheduling
+      const result = await generateSchedulePlan(
+        tasksForReschedule,
+        { startDate: scheduleStartDate, endDate: scheduleEndDate },
+        { forceCategoryHours: true, shuffle: true, enforceMinimumHours: true }
+      );
+      if (result.scheduled.length > 0) {
+        // Don't set isScheduling again - we're already in scheduling mode
+        for (const { task, scheduledDate } of result.scheduled) {
+          await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
+        }
+      }
+      return result;
+    } catch (error) {
+      console.error('Error in rescheduleDays:', error);
+      throw error;
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
   // Reschedule tasks for a week
   const rescheduleWeek = async (startDate: Date): Promise<ScheduleResult> => {
     setIsScheduling(true);
@@ -3762,6 +3848,7 @@ export function useAIScheduler() {
     getScheduledTasksForWeek,
     getScheduledTasksForMonth,
     rescheduleDay,
+    rescheduleDays,
     rescheduleWeek,
     rescheduleMonth,
     isScheduling,
