@@ -995,13 +995,11 @@ export function useAIScheduler() {
       while (currentDate <= endDate) {
         const dateKey = getDateKey(currentDate);
         
-        // If we're rescheduling within a date range, clear hours for those days
-        // This ensures we start fresh for the rescheduled days
-        if (dateRange && currentDate >= dateRange.startDate && currentDate <= dateRange.endDate) {
-          // Skip tasks in the reschedule range
-          currentDate.setDate(currentDate.getDate() + 1);
-          continue;
-        }
+        // NOTE: We ALWAYS include existing scheduled tasks in dailyTasks/dailyHours
+        // even when a date range is provided. The task filtering (tasksBeingRescheduled)
+        // handles which tasks to skip - we should NOT skip all tasks in the date range!
+        // This ensures "Schedule All" sees existing tasks and avoids conflicts.
+        // The old logic skipped ALL tasks in date range, causing conflicts with existing tasks.
         
         // Check if this task applies to this date (works for both recurring and non-recurring)
         // Use isDateInRecurrence which handles both cases correctly
