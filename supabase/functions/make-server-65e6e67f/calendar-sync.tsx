@@ -630,7 +630,7 @@ async function updateAppleCalendarEvent(
   }
 
   // Get or discover calendar URL using helper function
-  let calendarURL = await getOrDiscoverAppleCalendarURL(tokens);
+  let calendarURL = await getAppleCalendarURL(tokens);
 
   if (!calendarURL.endsWith('/')) {
     calendarURL += '/';
@@ -881,7 +881,7 @@ async function deleteAppleCalendarEvent(
   }
 
   // Get or discover calendar URL using helper function
-  let calendarURL = await getOrDiscoverAppleCalendarURL(tokens);
+  let calendarURL = await getAppleCalendarURL(tokens);
 
   if (!calendarURL.endsWith('/')) {
     calendarURL += '/';
@@ -941,7 +941,7 @@ async function getAppleCalendarEvents(
   // Get or discover calendar URL using helper function
   let calendarURL: string;
   try {
-    calendarURL = await getOrDiscoverAppleCalendarURL(tokens);
+    calendarURL = await getAppleCalendarURL(tokens);
   } catch (error) {
     console.log('Failed to get calendar URL for fetching events:', error);
     return [];
