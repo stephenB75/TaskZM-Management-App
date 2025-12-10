@@ -925,10 +925,9 @@ export function useAIScheduler() {
     
     // Fetch calendar events for the date range
     const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      return tomorrow;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today;
     })();
     
     const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
@@ -3448,23 +3447,22 @@ export function useAIScheduler() {
       }
       
       // Determine date range: day or two weeks
-      // AI Scheduler should always start from tomorrow (next day), not today
+      // AI Scheduler starts from today (current date) to allow scheduling tasks for the current day
       let dateRange = options?.dateRange;
       if (!dateRange && options?.period) {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
         if (options.period === 'day') {
-          const end = new Date(tomorrow);
+          const end = new Date(today);
           end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
-          dateRange = { startDate: tomorrow, endDate: end };
+          dateRange = { startDate: today, endDate: end };
         } else {
-          // Default scheduling period starting from tomorrow
-          const end = new Date(tomorrow);
-          end.setDate(end.getDate() + TWO_WEEK_DAYS_OFFSET); // Default period total (tomorrow + offset)
+          // Default scheduling period starting from today
+          const end = new Date(today);
+          end.setDate(end.getDate() + TWO_WEEK_DAYS_OFFSET); // Default period total (today + offset)
           end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
-          dateRange = { startDate: tomorrow, endDate: end };
+          dateRange = { startDate: today, endDate: end };
         }
       }
       
@@ -3598,15 +3596,10 @@ export function useAIScheduler() {
       const selectedDay = new Date(date);
       selectedDay.setHours(0, 0, 0, 0);
       
-      const scheduleStartDate = selectedDay.getTime() <= today.getTime()
-        ? (() => {
-            // Selected day is today or in the past, start from tomorrow
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
-            return tomorrow;
-          })()
-        : selectedDay; // Selected day is in the future, use it
+      // Use selected day directly - allow scheduling from today (current date)
+      const scheduleStartDate = selectedDay.getTime() < today.getTime()
+        ? today // Selected day is in the past, start from today
+        : selectedDay; // Selected day is today or in the future, use it
       
       // End date: end of the selected day (or tomorrow if selected day is today/past)
       const scheduleEndDate = new Date(scheduleStartDate);
@@ -3663,19 +3656,13 @@ export function useAIScheduler() {
       const selectedDate = new Date(startDate);
       selectedDate.setHours(0, 0, 0, 0);
       
-      // Determine the actual start date: if the selected date is today or in the past, start from tomorrow
-      // Otherwise, start from the selected date
+      // Determine the actual start date: allow scheduling from today (current date)
+      // If the selected date is in the past, start from today; otherwise use selected date
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const scheduleStartDate = selectedDate.getTime() <= today.getTime() 
-        ? (() => {
-            // Selected date is today or in the past, start from tomorrow
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
-            return tomorrow;
-          })()
-        : selectedDate; // Selected date is in the future, use it
+      const scheduleStartDate = selectedDate.getTime() < today.getTime() 
+        ? today // Selected date is in the past, start from today
+        : selectedDate; // Selected date is today or in the future, use it
       
       // Calculate end date: one week from the start date
       const weekEnd = new Date(scheduleStartDate);
@@ -3733,19 +3720,13 @@ export function useAIScheduler() {
       const monthStart = new Date(year, month, 1);
       monthStart.setHours(0, 0, 0, 0);
       
-      // Determine the actual start date: if month start is today or in the past, start from tomorrow
-      // Otherwise, start from the month start date
+      // Determine the actual start date: allow scheduling from today (current date)
+      // If month start is in the past, start from today; otherwise use month start
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const scheduleStartDate = monthStart.getTime() <= today.getTime() 
-        ? (() => {
-            // Month start is today or in the past, start from tomorrow
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
-            return tomorrow;
-          })()
-        : monthStart; // Month start is in the future, use it
+      const scheduleStartDate = monthStart.getTime() < today.getTime() 
+        ? today // Month start is in the past, start from today
+        : monthStart; // Month start is today or in the future, use it
       
       // Calculate end date: last day of the selected month
       const monthEnd = new Date(year, month + 1, 0, END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
