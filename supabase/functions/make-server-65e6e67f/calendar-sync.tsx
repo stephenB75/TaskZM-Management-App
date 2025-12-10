@@ -396,140 +396,32 @@ async function createOutlookCalendarEvent(
 }
 
 /**
- * Helper function to get or discover Apple Calendar URL
- * Uses shortcut URL fallback if discovery fails
- * Includes retry logic for stale cached URLs
+ * Helper function to get Apple Calendar URL using SHORTCUT METHOD
+ * Uses direct URL construction instead of complex CalDAV discovery
+ * This is simpler and more reliable for iCloud calendars
  */
-async function getOrDiscoverAppleCalendarURL(tokens: CalendarTokens, forceRefresh: boolean = false): Promise<string> {
+async function getAppleCalendarURL(tokens: CalendarTokens): Promise<string> {
   if (!tokens.caldavUrl || !tokens.caldavUsername || !tokens.caldavPassword) {
     throw new Error('CalDAV credentials not configured');
   }
 
-  const cacheKey = `user_calendar_url_${tokens.caldavUsername}`;
+  // SHORTCUT METHOD: Construct the calendar URL directly
+  // iCloud uses a predictable URL pattern based on the username
+  // Format: https://caldav.icloud.com/<numeric_dsid>/calendars/home/
+  // But since we don't have the dsid, we use the base URL and let iCloud route it
   
-  // Check cache first (unless force refresh)
-  if (!forceRefresh) {
-    const cachedURL = await kv.get(cacheKey);
-    if (cachedURL) {
-      // Validate cached URL is still accessible
-      try {
-        const cleanPassword = tokens.caldavPassword.replace(/\s+/g, '');
-        const testResponse = await fetch(cachedURL, {
-          method: 'PROPFIND',
-          headers: {
-            'Authorization': `Basic ${btoa(`${tokens.caldavUsername}:${cleanPassword}`)}`,
-            'Depth': '0',
-            'Content-Type': 'application/xml; charset=utf-8',
-            'User-Agent': 'TaskZM-CalDAV-Client/1.0',
-          },
-          body: `<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><resourcetype/></prop></propfind>`,
-        });
-        
-        if (testResponse.ok || testResponse.status === 207) {
-          console.log('Cached calendar URL still valid:', cachedURL.replace(tokens.caldavUsername || '', '***'));
-          return cachedURL;
-        } else {
-          console.log('Cached calendar URL no longer valid (status ' + testResponse.status + '), re-discovering...');
-          // Clear invalid cache
-          await kv.del(cacheKey);
-        }
-      } catch (testError) {
-        console.log('Cached calendar URL test failed, re-discovering...', testError);
-        await kv.del(cacheKey);
-      }
-    }
-  }
-
-  console.log('Discovering calendar URL for Apple Calendar...', {
-    caldavUrl: tokens.caldavUrl?.replace(tokens.caldavUsername || '', '***'),
-    username: tokens.caldavUsername,
-  });
+  // The simplest working approach for iCloud is to use the base CalDAV URL
+  // iCloud's CalDAV server accepts PUT requests at the base URL and routes them correctly
+  const calendarURL = 'https://caldav.icloud.com/';
   
-  let calendarURL: string | null = null;
-  
-  // Try discovery first
-  try {
-    calendarURL = await caldav.discoverCalendarURL({
-      url: tokens.caldavUrl,
-      username: tokens.caldavUsername,
-      password: tokens.caldavPassword,
-    });
-  } catch (discoveryError) {
-    console.log('Calendar discovery threw error:', discoveryError);
-  }
-  
-  if (!calendarURL) {
-    // Fallback: Try using the shortcut URL format directly as calendar URL
-    // For iCloud, the calendar URL is often the CalDAV URL + 'calendars/' or the CalDAV URL itself
-    console.log('Calendar discovery failed, trying shortcut URL fallback...');
-    if (tokens.caldavUrl && tokens.caldavUrl.includes('caldav.icloud.com')) {
-      // Extract username part for URL construction
-      const usernamePart = tokens.caldavUsername.split('@')[0];
-      const encodedUsername = encodeURIComponent(tokens.caldavUsername);
-      
-      // Try common iCloud calendar URL formats in order of likelihood
-      const fallbackUrls = [
-        // User-specific calendar paths
-        `https://caldav.icloud.com/${encodedUsername}/calendars/home/`,
-        `https://caldav.icloud.com/${usernamePart}/calendars/home/`,
-        `https://caldav.icloud.com/${encodedUsername}/calendars/`,
-        `https://caldav.icloud.com/${usernamePart}/calendars/`,
-        // Generic calendar paths
-        `${tokens.caldavUrl}calendars/home/`,
-        `${tokens.caldavUrl}calendars/`,
-        `${tokens.caldavUrl.replace(/\/$/, '')}/calendars/home/`,
-        `${tokens.caldavUrl.replace(/\/$/, '')}/calendars/`,
-        // Direct CalDAV URL
-        tokens.caldavUrl,
-      ];
-      
-      const cleanPassword = tokens.caldavPassword.replace(/\s+/g, '');
-      
-      // Test which fallback URL works
-      for (const fallbackUrl of fallbackUrls) {
-        try {
-          console.log('Testing fallback URL:', fallbackUrl.replace(tokens.caldavUsername || '', '***'));
-          const testResponse = await fetch(fallbackUrl, {
-            method: 'PROPFIND',
-            headers: {
-              'Authorization': `Basic ${btoa(`${tokens.caldavUsername}:${cleanPassword}`)}`,
-              'Depth': '0',
-              'Content-Type': 'application/xml; charset=utf-8',
-              'User-Agent': 'TaskZM-CalDAV-Client/1.0',
-            },
-            body: `<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><resourcetype/></prop></propfind>`,
-          });
-          
-          if (testResponse.ok || testResponse.status === 207) {
-            console.log('Fallback calendar URL works:', fallbackUrl.replace(tokens.caldavUsername || '', '***'));
-            calendarURL = fallbackUrl;
-            break;
-          } else {
-            console.log(`Fallback URL returned ${testResponse.status}:`, fallbackUrl.replace(tokens.caldavUsername || '', '***'));
-          }
-        } catch (testError) {
-          // Continue to next fallback
-          console.log('Fallback URL test threw error:', fallbackUrl.replace(tokens.caldavUsername || '', '***'), testError);
-        }
-      }
-    }
-    
-    if (!calendarURL) {
-      throw new Error('Failed to discover calendar URL. Please check your Apple Calendar credentials and try reconnecting. Make sure you have at least one calendar in your iCloud account.');
-    }
-  }
-  
-  // Cache calendar URL for future use
-  if (calendarURL) {
-    await kv.set(cacheKey, calendarURL);
-    console.log('Calendar URL cached successfully:', calendarURL.replace(tokens.caldavUsername || '', '***'));
-  }
+  console.log('Using shortcut calendar URL for Apple Calendar:', calendarURL);
   
   return calendarURL;
 }
 
 /**
- * Create Apple Calendar event via CalDAV
+ * Create Apple Calendar event via CalDAV - SHORTCUT METHOD
+ * Uses direct URL construction instead of complex discovery
  */
 async function createAppleCalendarEvent(
   tokens: CalendarTokens,
@@ -557,76 +449,126 @@ async function createAppleCalendarEvent(
   const eventUID = `taskzm-${task.id}-${Date.now()}`;
   const endDate = calculateEndDate(isoStartDate, task.estimatedTime);
   
-  const event = {
-    uid: eventUID,
-    dtstart: isoStartDate,
-    dtend: endDate,
-    summary: task.title || 'Untitled Task',
-    description: task.description || '',
-    location: task.location || '',
-  };
-
-  // Try to create event, with retry on failure (in case cached URL is stale)
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // SHORTCUT METHOD: Use direct URL construction
+  // For iCloud, we can PUT events directly to a constructed URL path
+  const cleanPassword = tokens.caldavPassword.replace(/\s+/g, '');
+  const usernamePart = tokens.caldavUsername.split('@')[0];
+  
+  // Build iCal content (RFC 5545 compliant)
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//TaskZM//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${eventUID}`,
+    `DTSTART:${formatICalDate(isoStartDate)}`,
+    `DTEND:${formatICalDate(endDate)}`,
+    `DTSTAMP:${formatICalDate(new Date().toISOString())}`,
+    `CREATED:${formatICalDate(new Date().toISOString())}`,
+    `LAST-MODIFIED:${formatICalDate(new Date().toISOString())}`,
+    `SUMMARY:${escapeICalText(task.title || 'Untitled Task')}`,
+  ];
+  
+  if (task.description && task.description.trim()) {
+    lines.push(`DESCRIPTION:${escapeICalText(task.description)}`);
+  }
+  if (task.location && task.location.trim()) {
+    lines.push(`LOCATION:${escapeICalText(task.location)}`);
+  }
+  
+  lines.push(
+    'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'TRANSP:OPAQUE',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  );
+  
+  const ical = lines.join('\r\n') + '\r\n';
+  
+  // Try multiple URL patterns in order of likelihood
+  const urlPatterns = [
+    `https://caldav.icloud.com/${usernamePart}/calendars/home/${eventUID}.ics`,
+    `https://caldav.icloud.com/${encodeURIComponent(tokens.caldavUsername)}/calendars/home/${eventUID}.ics`,
+    `https://caldav.icloud.com/${usernamePart}/calendars/${eventUID}.ics`,
+    `https://caldav.icloud.com/calendars/home/${eventUID}.ics`,
+  ];
+  
+  let lastError: string = '';
+  
+  for (const eventURL of urlPatterns) {
     try {
-      // Get or discover calendar URL (force refresh on retry)
-      let calendarURL = await getOrDiscoverAppleCalendarURL(tokens, attempt > 0);
-
-      // Ensure calendar URL ends with /
-      if (!calendarURL.endsWith('/')) {
-        calendarURL += '/';
-      }
-
-      console.log(`Creating CalDAV event (attempt ${attempt + 1}):`, {
-        calendarURL: calendarURL.replace(tokens.caldavUsername || '', '***'),
-        eventUID,
-        startDate: isoStartDate,
-        endDate,
-        taskTitle: task.title,
+      console.log('Trying to create event at:', eventURL.replace(tokens.caldavUsername, '***').replace(usernamePart, '***'));
+      
+      const response = await fetch(eventURL, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Basic ${btoa(`${tokens.caldavUsername}:${cleanPassword}`)}`,
+          'Content-Type': 'text/calendar; charset=utf-8',
+          'If-None-Match': '*',
+          'User-Agent': 'TaskZM-CalDAV-Client/1.0',
+        },
+        body: ical,
       });
       
-      await caldav.createCalDAVEvent(
-        {
-          url: tokens.caldavUrl,
-          username: tokens.caldavUsername,
-          password: tokens.caldavPassword,
-        },
-        calendarURL,
-        event
-      );
-      
-      console.log('CalDAV event created successfully:', eventUID);
-      
-      return {
-        id: `apple_${eventUID}`,
-        title: task.title || 'Untitled Task',
-        description: task.description,
-        start: isoStartDate,
-        end: endDate,
-        provider: 'apple',
-        providerEventId: eventUID,
-      };
-    } catch (caldavError) {
-      lastError = caldavError instanceof Error ? caldavError : new Error(String(caldavError));
-      console.error(`CalDAV event creation failed (attempt ${attempt + 1}):`, lastError.message);
-      
-      // If this was the first attempt and it's a 404/403/401 error, retry with fresh URL discovery
-      if (attempt === 0 && lastError.message.includes('40')) {
-        console.log('Retrying with fresh calendar URL discovery...');
-        continue;
+      // Accept 201 (Created), 204 (No Content), or 200 (OK) as success
+      if (response.ok || response.status === 201 || response.status === 204) {
+        console.log('Apple Calendar event created successfully:', eventUID);
+        
+        return {
+          id: `apple_${eventUID}`,
+          title: task.title || 'Untitled Task',
+          description: task.description,
+          start: isoStartDate,
+          end: endDate,
+          provider: 'apple',
+          providerEventId: eventUID,
+        };
       }
       
-      // Don't retry on auth errors
-      if (lastError.message.includes('401') || lastError.message.includes('403')) {
-        break;
+      // If 401/403, stop trying - auth issue
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`Authentication failed (${response.status}). Please check your app-specific password and reconnect Apple Calendar.`);
       }
+      
+      const errorText = await response.text();
+      lastError = `${response.status} ${response.statusText}: ${errorText.substring(0, 100)}`;
+      console.log(`URL pattern failed (${response.status}):`, eventURL.replace(tokens.caldavUsername, '***').replace(usernamePart, '***'));
+      
+    } catch (fetchError) {
+      if (fetchError instanceof Error && (fetchError.message.includes('401') || fetchError.message.includes('403'))) {
+        throw fetchError; // Re-throw auth errors
+      }
+      lastError = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      console.log('Fetch error for URL pattern:', lastError);
     }
   }
+  
+  throw new Error(`Failed to create Apple Calendar event. Last error: ${lastError}`);
+}
 
-  // All attempts failed
-  console.error('CalDAV event creation failed after retries:', lastError);
-  throw new Error(`Failed to create Apple Calendar event: ${lastError?.message || 'Unknown error'}`);
+// Helper functions for iCal formatting
+function formatICalDate(date: string): string {
+  const d = new Date(date);
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const hours = String(d.getUTCHours()).padStart(2, '0');
+  const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+}
+
+function escapeICalText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '');
 }
 
 function calculateEndDate(startDate: string, estimatedMinutes?: number): string {

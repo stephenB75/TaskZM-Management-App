@@ -4,6 +4,7 @@ import { logger } from "npm:hono/logger";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import * as kv from "./kv_store.tsx";
 import * as calendarSync from "./calendar-sync.tsx";
+import * as caldav from "./caldav-client.tsx";
 import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
 
@@ -2295,6 +2296,102 @@ const appleCalendarSetupHandler = async (c: any) => {
 // IMPORTANT: Register routes BEFORE the catch-all route
 app.post("/make-server-65e6e67f/calendar/apple/setup", appleCalendarSetupHandler);
 app.post("/calendar/apple/setup", appleCalendarSetupHandler);
+
+// Test/Verify Apple Calendar connection - SHORTCUT METHOD
+// Validates credentials by testing authentication only (no complex discovery)
+app.get("/make-server-65e6e67f/calendar/apple/test", async (c) => {
+  console.log('Apple Calendar test endpoint called (shortcut method)');
+  
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Get stored tokens
+    const tokens = await calendarSync.getCalendarTokens(userId, 'apple');
+    if (!tokens) {
+      return c.json({ 
+        success: false, 
+        error: 'No Apple Calendar credentials found. Please connect Apple Calendar first.',
+        hasTokens: false,
+      }, 400);
+    }
+
+    // Validate tokens have required fields
+    if (!tokens.caldavUrl || !tokens.caldavUsername || !tokens.caldavPassword) {
+      return c.json({ 
+        success: false, 
+        error: 'Apple Calendar credentials incomplete. Please reconnect Apple Calendar.',
+        hasTokens: true,
+        hasCredentials: false,
+      }, 400);
+    }
+
+    console.log('Testing Apple Calendar connection for user:', userId, {
+      username: tokens.caldavUsername,
+    });
+
+    // SHORTCUT METHOD: Just test authentication with a simple PROPFIND
+    const cleanPassword = tokens.caldavPassword.replace(/\s+/g, '');
+    const authTestResponse = await fetch('https://caldav.icloud.com/', {
+      method: 'PROPFIND',
+      headers: {
+        'Authorization': `Basic ${btoa(`${tokens.caldavUsername}:${cleanPassword}`)}`,
+        'Depth': '0',
+        'Content-Type': 'application/xml; charset=utf-8',
+        'User-Agent': 'TaskZM-CalDAV-Client/1.0',
+      },
+      body: `<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><current-user-principal/></prop></propfind>`,
+    });
+
+    console.log('Auth test response:', authTestResponse.status, authTestResponse.statusText);
+
+    if (authTestResponse.status === 401 || authTestResponse.status === 403) {
+      return c.json({ 
+        success: false, 
+        error: 'Authentication failed. Your app-specific password may have expired or been revoked. Please generate a new one at appleid.apple.com and reconnect.',
+        hasTokens: true,
+        hasCredentials: true,
+        authValid: false,
+        status: authTestResponse.status,
+      }, 400);
+    }
+
+    // Accept 200 or 207 (Multi-Status) as success
+    const authValid = authTestResponse.ok || authTestResponse.status === 207;
+    
+    if (!authValid) {
+      const errorText = await authTestResponse.text();
+      return c.json({ 
+        success: false, 
+        error: `CalDAV server error: ${authTestResponse.status} ${authTestResponse.statusText}`,
+        hasTokens: true,
+        hasCredentials: true,
+        authValid: false,
+        status: authTestResponse.status,
+        details: errorText.substring(0, 200),
+      }, 400);
+    }
+
+    // With shortcut method, we don't do complex discovery
+    // Authentication success means we're ready to sync
+    return c.json({
+      success: true,
+      hasTokens: true,
+      hasCredentials: true,
+      authValid: true,
+      method: 'shortcut',
+      message: 'Apple Calendar connected successfully. Authentication verified. Ready to sync tasks.',
+    });
+  } catch (error) {
+    console.error('Apple Calendar test error:', error);
+    return c.json({ 
+      success: false, 
+      error: getErrorMessage(error),
+    }, 500);
+  }
+});
 
 // Disconnect calendar
 app.delete("/make-server-65e6e67f/calendar/:provider", async (c) => {

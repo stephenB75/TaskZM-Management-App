@@ -106,7 +106,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { syncWithServer, isSyncing, lastSync, hoursSettings, updateHoursSettings, rolloverSettings, updateRolloverSettings, availableTags, addAvailableTag, removeAvailableTag } = useTasks();
   const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks } = useAI();
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
-  const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
+  const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus, testAppleConnection } = useCalendar();
   const { awards, earnedAwards, getAwardProgress } = useAwards();
   const { permission, settings: notificationSettings, badgeCount, requestPermission, updateSettings: updateNotificationSettings } = useNotifications();
   const [dayType, setDayType] = useState<'weekday' | 'weekend'>('weekday');
@@ -931,6 +931,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       }}
                     />
                   </div>
+                  {calendarStatus.apple && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="w-full mt-2"
+                      onClick={async () => {
+                        toast.loading('Testing Apple Calendar connection...');
+                        const result = await testAppleConnection();
+                        toast.dismiss();
+                        console.log('Apple Calendar test result:', result);
+                      }}
+                    >
+                      Test Apple Connection
+                    </Button>
+                  )}
                 </div>
               </>
             )}

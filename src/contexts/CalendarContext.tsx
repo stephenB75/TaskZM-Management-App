@@ -14,6 +14,19 @@ interface CalendarStatus {
   apple: boolean;
 }
 
+interface AppleCalendarTestResult {
+  success: boolean;
+  hasTokens?: boolean;
+  hasCredentials?: boolean;
+  authValid?: boolean;
+  calendarURLDiscovered?: boolean;
+  calendarURL?: string;
+  canFetchEvents?: boolean;
+  eventsCount?: number;
+  message?: string;
+  error?: string;
+}
+
 interface CalendarContextType {
   calendarStatus: CalendarStatus;
   isSyncing: boolean;
@@ -23,6 +36,7 @@ interface CalendarContextType {
   syncTask: (taskId: string, provider: CalendarProvider) => Promise<void>;
   syncAllTasks: (provider: CalendarProvider) => Promise<void>;
   checkCalendarStatus: () => Promise<void>;
+  testAppleConnection: () => Promise<AppleCalendarTestResult>;
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
@@ -114,6 +128,42 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           // Ignore cache parse errors
         }
       }
+    }
+  }, [user, accessToken]);
+
+  // Test Apple Calendar connection
+  const testAppleConnection = useCallback(async (): Promise<AppleCalendarTestResult> => {
+    if (!user || !accessToken) {
+      return { success: false, error: 'Please sign in to test calendar connection' };
+    }
+
+    try {
+      const response = await fetch(`${BASE_URL}/calendar/apple/test`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Apple Calendar Connected', {
+          description: data.message,
+        });
+      } else {
+        toast.error('Apple Calendar Connection Issue', {
+          description: data.error || data.message || 'Connection test failed',
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to test Apple Calendar connection:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Test failed';
+      toast.error('Connection Test Failed', {
+        description: errorMessage,
+      });
+      return { success: false, error: errorMessage };
     }
   }, [user, accessToken]);
 
@@ -546,6 +596,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         syncTask,
         syncAllTasks,
         checkCalendarStatus,
+        testAppleConnection,
       }}
     >
       {children}
@@ -572,6 +623,7 @@ export function useCalendar() {
       syncTask: async () => {},
       syncAllTasks: async () => {},
       checkCalendarStatus: async () => {},
+      testAppleConnection: async () => ({ success: false, error: 'Not signed in' }),
     };
   }
   return context;
