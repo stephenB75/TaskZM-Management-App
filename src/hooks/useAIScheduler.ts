@@ -1866,7 +1866,12 @@ export function useAIScheduler() {
         // regardless of category, preventing overlaps between different task types
         // IMPORTANT: This gives us the slot number for the NEXT task (the current one being scheduled)
         // We use totalAllTasksCount to ensure proper chronological order across all task types
-        let timeSlot = totalAllTasksCount % DEFAULT_TIME_SLOTS; // Use total all tasks for chronological distribution
+        // 
+        // FIX FOR RECURRING TASKS: Also factor in taskIndex (global position in batch) to ensure
+        // recurring tasks on different days don't all get the same time slot.
+        // Without this, recurring tasks would all get timeSlot 0 since they're each on different days
+        // with no existing tasks on those days yet.
+        let timeSlot = (totalAllTasksCount + taskIndex) % DEFAULT_TIME_SLOTS; // Include taskIndex for recurring task distribution
         
         // CRITICAL DEBUG: Log time slot calculation (for both recurring and regular tasks)
         if (import.meta.env.DEV) {
@@ -1875,6 +1880,7 @@ export function useAIScheduler() {
             taskTitle: task.title,
             isRecurringTask,
             category,
+            taskIndex, // Global position in batch - ensures recurring tasks get different times
             existingAllTasksCount,
             planAllTasksCount,
             totalAllTasksCount,
