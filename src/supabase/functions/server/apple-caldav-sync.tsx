@@ -95,19 +95,51 @@ async function caldavRequest(
 }
 
 /**
+ * Extract href from XML response with various namespace patterns
+ */
+function extractHref(xml: string, elementName: string): string | null {
+  // Try various patterns that Apple CalDAV might return
+  const patterns = [
+    // Standard DAV namespace
+    new RegExp(`<${elementName}[^>]*>[\\s\\S]*?<href[^>]*>([^<]+)</href>`, 'i'),
+    // D: prefix
+    new RegExp(`<D:${elementName}[^>]*>[\\s\\S]*?<D:href[^>]*>([^<]+)</D:href>`, 'i'),
+    // d: prefix (lowercase)
+    new RegExp(`<d:${elementName}[^>]*>[\\s\\S]*?<d:href[^>]*>([^<]+)</d:href>`, 'i'),
+    // Mixed namespaces
+    new RegExp(`<[^:]*:?${elementName}[^>]*>[\\s\\S]*?<[^:]*:?href[^>]*>([^<]+)</[^:]*:?href>`, 'i'),
+    // CalDAV namespace prefix
+    new RegExp(`<cal:${elementName}[^>]*>[\\s\\S]*?<[^:]*:?href[^>]*>([^<]+)</[^:]*:?href>`, 'i'),
+    new RegExp(`<CS:${elementName}[^>]*>[\\s\\S]*?<[^:]*:?href[^>]*>([^<]+)</[^:]*:?href>`, 'i'),
+  ];
+
+  for (const pattern of patterns) {
+    const match = xml.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  return null;
+}
+
+/**
  * Discover the user's calendar home URL
  */
 export async function discoverCalendarHome(
   credentials: AppleCalDAVCredentials
 ): Promise<string | null> {
+  console.log('Starting CalDAV discovery for:', credentials.email);
+  
   // Step 1: Hit the well-known endpoint to get principal URL
   const wellKnownBody = `<?xml version="1.0" encoding="utf-8"?>
-<propfind xmlns="DAV:">
+<propfind xmlns="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
   <prop>
     <current-user-principal/>
+    <cal:calendar-home-set/>
   </prop>
 </propfind>`;
 
+  console.log('Requesting well-known CalDAV endpoint...');
   const wellKnownResponse = await caldavRequest(
     `${ICLOUD_CALDAV_URL}/.well-known/caldav`,
     'PROPFIND',
@@ -115,23 +147,46 @@ export async function discoverCalendarHome(
     wellKnownBody
   );
 
+  console.log('Well-known response status:', wellKnownResponse.status);
+  console.log('Well-known response body preview:', wellKnownResponse.body.substring(0, 800));
+
   if (wellKnownResponse.status === 401 || wellKnownResponse.status === 403) {
     throw new Error('Authentication failed. Please check your email and app-specific password.');
   }
 
-  // Parse principal URL from response
-  const principalMatch = wellKnownResponse.body.match(/<current-user-principal>[\s\S]*?<href>([^<]+)<\/href>/i);
-  if (!principalMatch) {
-    // Try alternative pattern
-    const altMatch = wellKnownResponse.body.match(/<D:current-user-principal>[\s\S]*?<D:href>([^<]+)<\/D:href>/i);
-    if (!altMatch) {
-      console.error('Could not find principal URL in response:', wellKnownResponse.body.substring(0, 500));
-      throw new Error('Could not discover calendar principal URL');
-    }
-    return altMatch[1];
+  // Check if we got a redirect URL in the response (iCloud often redirects)
+  const redirectMatch = wellKnownResponse.body.match(/<href[^>]*>(https?:\/\/[^<]+)<\/href>/i);
+  
+  // Try to extract calendar-home-set directly from the first response
+  let calendarHome = extractHref(wellKnownResponse.body, 'calendar-home-set');
+  if (calendarHome) {
+    console.log('Found calendar-home-set directly:', calendarHome);
+    return calendarHome;
   }
 
-  const principalUrl = principalMatch[1];
+  // Extract principal URL
+  let principalUrl = extractHref(wellKnownResponse.body, 'current-user-principal');
+  
+  // If no principal found, try to use the redirect URL
+  if (!principalUrl && redirectMatch) {
+    principalUrl = redirectMatch[1];
+    console.log('Using redirect URL as principal:', principalUrl);
+  }
+  
+  if (!principalUrl) {
+    // Last resort: try to find any href that looks like a principal URL
+    const anyHrefMatch = wellKnownResponse.body.match(/<href[^>]*>([^<]*\/principal[^<]*)<\/href>/i);
+    if (anyHrefMatch) {
+      principalUrl = anyHrefMatch[1];
+    }
+  }
+
+  if (!principalUrl) {
+    console.error('Could not find principal URL. Full response:', wellKnownResponse.body);
+    throw new Error('Could not discover calendar principal URL. iCloud may be temporarily unavailable.');
+  }
+
+  console.log('Found principal URL:', principalUrl);
 
   // Step 2: Get calendar home from principal
   const calendarHomeBody = `<?xml version="1.0" encoding="utf-8"?>
@@ -145,6 +200,7 @@ export async function discoverCalendarHome(
     ? principalUrl 
     : `${ICLOUD_CALDAV_URL}${principalUrl}`;
 
+  console.log('Requesting principal URL:', fullPrincipalUrl);
   const principalResponse = await caldavRequest(
     fullPrincipalUrl,
     'PROPFIND',
@@ -152,18 +208,19 @@ export async function discoverCalendarHome(
     calendarHomeBody
   );
 
+  console.log('Principal response status:', principalResponse.status);
+  console.log('Principal response body preview:', principalResponse.body.substring(0, 800));
+
   // Parse calendar home URL
-  const homeMatch = principalResponse.body.match(/<calendar-home-set>[\s\S]*?<href>([^<]+)<\/href>/i);
-  if (!homeMatch) {
-    const altHomeMatch = principalResponse.body.match(/<cal:calendar-home-set>[\s\S]*?<D:href>([^<]+)<\/D:href>/i);
-    if (!altHomeMatch) {
-      console.error('Could not find calendar home in response:', principalResponse.body.substring(0, 500));
-      throw new Error('Could not discover calendar home URL');
-    }
-    return altHomeMatch[1];
+  calendarHome = extractHref(principalResponse.body, 'calendar-home-set');
+  
+  if (!calendarHome) {
+    console.error('Could not find calendar home. Full response:', principalResponse.body);
+    throw new Error('Could not discover calendar home URL. Please try again.');
   }
 
-  return homeMatch[1];
+  console.log('Found calendar home:', calendarHome);
+  return calendarHome;
 }
 
 /**
