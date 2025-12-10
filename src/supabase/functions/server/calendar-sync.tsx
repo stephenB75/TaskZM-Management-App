@@ -405,18 +405,79 @@ async function getAppleCalendarURL(tokens: CalendarTokens): Promise<string> {
     throw new Error('CalDAV credentials not configured');
   }
 
-  // SHORTCUT METHOD: Construct the calendar URL directly
-  // iCloud uses a predictable URL pattern based on the username
-  // Format: https://caldav.icloud.com/<numeric_dsid>/calendars/home/
-  // But since we don't have the dsid, we use the base URL and let iCloud route it
+  // SHORTCUT METHOD: Use iCloud's .well-known redirect to get the principal URL
+  // This is simpler than full PROPFIND discovery but still finds the correct DSID-based URL
+  console.log('Using shortcut method for Apple Calendar URL...');
   
-  // The simplest working approach for iCloud is to use the base CalDAV URL
-  // iCloud's CalDAV server accepts PUT requests at the base URL and routes them correctly
-  const calendarURL = 'https://caldav.icloud.com/';
+  const cleanPassword = tokens.caldavPassword.replace(/\s+/g, '');
   
-  console.log('Using shortcut calendar URL for Apple Calendar:', calendarURL);
+  try {
+    // Step 1: Hit the well-known endpoint which redirects to the user's principal URL
+    const wellKnownResponse = await fetch('https://caldav.icloud.com/.well-known/caldav', {
+      method: 'PROPFIND',
+      headers: {
+        'Authorization': `Basic ${btoa(`${tokens.caldavUsername}:${cleanPassword}`)}`,
+        'Depth': '0',
+        'Content-Type': 'application/xml; charset=utf-8',
+        'User-Agent': 'TaskZM-CalDAV-Client/1.0',
+      },
+      body: `<?xml version="1.0" encoding="utf-8"?>
+<propfind xmlns="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
+  <prop>
+    <cal:calendar-home-set/>
+    <current-user-principal/>
+  </prop>
+</propfind>`,
+      redirect: 'follow',
+    });
+    
+    if (wellKnownResponse.ok || wellKnownResponse.status === 207) {
+      const responseText = await wellKnownResponse.text();
+      
+      // Parse the calendar-home-set URL from response
+      const homeSetMatch = responseText.match(/<cal:calendar-home-set[^>]*>[\s\S]*?<href[^>]*>([^<]+)<\/href>/i) ||
+                          responseText.match(/<calendar-home-set[^>]*>[\s\S]*?<href[^>]*>([^<]+)<\/href>/i);
+      
+      if (homeSetMatch && homeSetMatch[1]) {
+        let calendarHomeURL = homeSetMatch[1].trim();
+        
+        // Make it absolute if needed
+        if (calendarHomeURL.startsWith('/')) {
+          calendarHomeURL = `https://caldav.icloud.com${calendarHomeURL}`;
+        }
+        
+        // Append /home/ if it's just the calendars path
+        if (calendarHomeURL.endsWith('/calendars/')) {
+          calendarHomeURL += 'home/';
+        }
+        
+        console.log('Shortcut method found calendar URL:', calendarHomeURL.replace(/\/\d+\//, '/****/'));
+        return calendarHomeURL;
+      }
+      
+      // Try to extract from current-user-principal and build calendar URL
+      const principalMatch = responseText.match(/<current-user-principal[^>]*>[\s\S]*?<href[^>]*>([^<]+)<\/href>/i);
+      if (principalMatch && principalMatch[1]) {
+        const principalURL = principalMatch[1].trim();
+        // Extract DSID from principal URL (e.g., /12345678/principal/)
+        const dsidMatch = principalURL.match(/\/(\d+)\//);
+        if (dsidMatch && dsidMatch[1]) {
+          const calendarURL = `https://caldav.icloud.com/${dsidMatch[1]}/calendars/home/`;
+          console.log('Shortcut method built calendar URL from principal:', calendarURL.replace(/\/\d+\//, '/****/'));
+          return calendarURL;
+        }
+      }
+    }
+  } catch (error) {
+    console.log('Shortcut method .well-known request failed:', error);
+  }
   
-  return calendarURL;
+  // Final fallback: Use username-based URL (may not work for all accounts)
+  const usernamePart = tokens.caldavUsername.split('@')[0];
+  const fallbackURL = `https://caldav.icloud.com/${encodeURIComponent(usernamePart)}/calendars/home/`;
+  console.log('Shortcut method using fallback URL:', fallbackURL.replace(usernamePart, '***'));
+  
+  return fallbackURL;
 }
 
 /**
