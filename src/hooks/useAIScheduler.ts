@@ -3276,15 +3276,15 @@ export function useAIScheduler() {
         
         // FINAL SAFEGUARD: Check if this time conflicts with any task already in the plan
         // This ensures no two tasks are scheduled at the exact same time even if earlier detection failed
-        const taskHoursForConflict = getTaskHours(task);
-        const taskDurationForConflict = Math.round(taskHoursForConflict * MINUTES_PER_HOUR);
-        const scheduleTimeMs = scheduleDate.getTime();
-        const scheduleEndMs = scheduleTimeMs + (taskDurationForConflict * MILLISECONDS_PER_MINUTE);
+        const safeguardTaskHours = getTaskHours(task);
+        const safeguardTaskDuration = Math.round(safeguardTaskHours * MINUTES_PER_HOUR);
+        const safeguardScheduleTimeMs = scheduleDate.getTime();
+        const safeguardScheduleEndMs = safeguardScheduleTimeMs + (safeguardTaskDuration * MILLISECONDS_PER_MINUTE);
         
         // Check all tasks in the plan for the same day
-        const scheduleDateKey = getDateKey(scheduleDate);
+        const safeguardScheduleDateKey = getDateKey(scheduleDate);
         let hasConflictInPlan = false;
-        let maxConflictEndInPlan = scheduleTimeMs;
+        let maxConflictEndInPlan = safeguardScheduleTimeMs;
         
         for (const planItem of plan) {
           if (!planItem.scheduledDate) continue;
@@ -3292,7 +3292,7 @@ export function useAIScheduler() {
           
           // Check if same day
           const planDateKey = getDateKey(planDate);
-          if (planDateKey !== scheduleDateKey) {
+          if (planDateKey !== safeguardScheduleDateKey) {
             // For recurring tasks in plan, check if they apply to this day
             const isPlanRecurring = planItem.task.recurrence && planItem.task.recurrence.type !== 'none';
             if (!isPlanRecurring) continue;
@@ -3304,8 +3304,8 @@ export function useAIScheduler() {
           const planTaskEnd = planTaskStart + planTaskDuration;
           
           // Check for overlap (including exact same start time)
-          const sameStartTime = Math.abs(planTaskStart - scheduleTimeMs) < MILLISECONDS_PER_MINUTE;
-          const overlaps = scheduleTimeMs < planTaskEnd && scheduleEndMs > planTaskStart;
+          const sameStartTime = Math.abs(planTaskStart - safeguardScheduleTimeMs) < MILLISECONDS_PER_MINUTE;
+          const overlaps = safeguardScheduleTimeMs < planTaskEnd && safeguardScheduleEndMs > planTaskStart;
           
           if (sameStartTime || overlaps) {
             hasConflictInPlan = true;
@@ -3334,7 +3334,7 @@ export function useAIScheduler() {
             logger.debug('FINAL SAFEGUARD: Task time adjusted to avoid conflict', {
               taskId: task.id,
               taskTitle: task.title,
-              originalTime: new Date(scheduleTimeMs).toLocaleTimeString(),
+              originalTime: new Date(safeguardScheduleTimeMs).toLocaleTimeString(),
               newTime: scheduleDate.toLocaleTimeString(),
             });
           }
