@@ -2488,6 +2488,7 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
     let syncedCount = 0;
     let failedCount = 0;
     const failedTaskIds: string[] = [];
+    let firstError: string | null = null;
     
     for (const task of tasks) {
       try {
@@ -2525,6 +2526,9 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
           errorMessage: error instanceof Error ? error.message : String(error),
           errorStack: error instanceof Error ? error.stack : undefined,
         });
+        if (!firstError) {
+          firstError = getErrorMessage(error);
+        }
         failedCount++;
         // Only store failed task IDs, not full error details to reduce response size
         if (failedTaskIds.length < 10) { // Limit to first 10 failures
@@ -2539,7 +2543,8 @@ app.post("/make-server-65e6e67f/calendar/sync-all", async (c) => {
       failed: failedCount,
       total: tasks.length,
       // Only include failed task IDs if there are failures (limited to 10)
-      ...(failedTaskIds.length > 0 && { failedTaskIds })
+      ...(failedTaskIds.length > 0 && { failedTaskIds }),
+      ...(firstError && { failureReason: firstError })
     });
   } catch (error) {
     // Log full error details for debugging

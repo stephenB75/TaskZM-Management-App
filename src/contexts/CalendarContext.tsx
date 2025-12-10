@@ -414,9 +414,28 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       
       setLastSync(new Date());
       
-      toast.success('Calendar sync complete!', {
-        description: `Synced ${data.synced} task${data.synced === 1 ? '' : 's'}${data.failed > 0 ? `, ${data.failed} failed` : ''}`,
-      });
+      const syncedCount = Number(data.synced) || 0;
+      const failedCount = Number(data.failed) || 0;
+      const totalCount = Number(data.total) || syncedCount + failedCount;
+      const failedIds = Array.isArray(data.failedTaskIds) ? data.failedTaskIds : [];
+      const summary = `Synced ${syncedCount} task${syncedCount === 1 ? '' : 's'}${failedCount > 0 ? `, ${failedCount} failed` : ''}${totalCount ? ` (total ${totalCount})` : ''}`;
+      const failureReason = typeof data.failureReason === 'string' && data.failureReason.trim().length > 0 
+        ? data.failureReason.trim() 
+        : undefined;
+
+      if (failedCount > 0) {
+        const details: string[] = [summary];
+        if (failureReason) details.push(`Reason: ${failureReason}`);
+        if (failedIds.length) details.push(`Failed task IDs: ${failedIds.slice(0, 5).join(', ')}${failedIds.length > 5 ? '…' : ''}`);
+
+        if (syncedCount === 0) {
+          toast.error('Calendar sync failed', { description: details.join(' | ') });
+        } else {
+          toast.warning('Calendar sync partially completed', { description: details.join(' | ') });
+        }
+      } else {
+        toast.success('Calendar sync complete!', { description: summary });
+      }
     } catch (error) {
       console.error(`Failed to sync all tasks to ${provider}:`, error);
       toast.error('Failed to sync tasks', {
