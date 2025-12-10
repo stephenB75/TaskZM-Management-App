@@ -1450,14 +1450,16 @@ export function useAIScheduler() {
           currentDate.setDate(currentDate.getDate() + 1);
         }
         
-        // Sort by date first (earlier first), then by hours needed (most needed first)
-        // This ensures we fill days sequentially to meet the 5-hour requirement before moving to the next day
+        // Sort by hours needed (most needed first), then by date (earlier first)
+        // This ensures we BALANCE days by filling the emptiest days first
+        // Following AI_SCHEDULING_GUIDELINES.md: "round-robin or priority-based distribution"
         daysNeedingHours.sort((a, b) => {
-          const dateDiff = a.date.getTime() - b.date.getTime();
-          if (dateDiff !== 0) {
-            return dateDiff; // Earlier date first - fill days sequentially
+          // Most hours needed first - prioritize emptier days to balance the schedule
+          if (b.hoursNeeded !== a.hoursNeeded) {
+            return b.hoursNeeded - a.hoursNeeded; // Emptiest day first (most hours needed)
           }
-          return b.hoursNeeded - a.hoursNeeded; // If same date, most needed first
+          // If same hours needed, earlier date first
+          return a.date.getTime() - b.date.getTime();
         });
         
         // Try each day that needs hours, starting with the earliest day (sequential filling)
