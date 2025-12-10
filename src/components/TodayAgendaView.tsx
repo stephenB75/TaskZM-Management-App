@@ -207,28 +207,22 @@ export function TodayAgendaView({
   })();
 
   const handleTaskClick = (task: Task) => {
-    console.log('TodayAgendaView: handleTaskClick called with task:', task);
-    try {
-      if (!task || !task.id) {
-        console.error('Invalid task passed to handleTaskClick:', task);
-        toast.error('Invalid task data');
-        return;
-      }
-      
-      const safeTask = prepareTaskForDialog(task);
-      if (!safeTask) {
-        console.error('prepareTaskForDialog returned null for task:', task);
-        toast.error('Invalid task data');
-        return;
-      }
-      
-      console.log('TodayAgendaView: Setting selected task and opening dialog:', safeTask);
+    if (!task?.id) {
+      toast.error('Invalid task data');
+      return;
+    }
+    
+    const safeTask = prepareTaskForDialog(task);
+    if (!safeTask) {
+      toast.error('Invalid task data');
+      return;
+    }
+    
+    // Defer state updates to next frame to avoid blocking click handler
+    requestAnimationFrame(() => {
       setSelectedTask(safeTask);
       setDialogOpen(true);
-    } catch (error) {
-      console.error('Error opening task:', error, task);
-      toast.error('Failed to open task');
-    }
+    });
   };
 
   const handleAddTask = () => {

@@ -432,30 +432,22 @@ export function SevenDayKanban({
 
 
   const handleTaskClick = (task: Task) => {
-    logger.info('handleTaskClick called with task:', task);
-    try {
-      if (!task || !task.id) {
-        logger.error('Invalid task passed to handleTaskClick:', task);
-        toast.error('Invalid task data');
-        return;
-      }
-      
-      const safeTask = prepareTaskForDialog(task);
-      if (!safeTask) {
-        logger.error('prepareTaskForDialog returned null for task:', task);
-        toast.error('Invalid task data');
-        return;
-      }
-      
-      logger.info('Setting selected task and opening dialog:', safeTask);
-      // Set both states together - React will batch these updates
+    if (!task?.id) {
+      toast.error('Invalid task data');
+      return;
+    }
+    
+    const safeTask = prepareTaskForDialog(task);
+    if (!safeTask) {
+      toast.error('Invalid task data');
+      return;
+    }
+    
+    // Defer state updates to next frame to avoid blocking click handler
+    requestAnimationFrame(() => {
       setSelectedTask(safeTask);
       setDialogOpen(true);
-      logger.info('State updated: selectedTask set, dialogOpen set to true');
-    } catch (error) {
-      logger.error('Error opening task:', error, task);
-      toast.error('Failed to open task');
-    }
+    });
   };
 
   const handleAddTask = (dateString: string) => {
