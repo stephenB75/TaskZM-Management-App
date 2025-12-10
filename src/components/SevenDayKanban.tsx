@@ -404,11 +404,20 @@ export function SevenDayKanban({
         })
         .sort((a, b) => {
           try {
-            const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
-            const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
-            if (isNaN(timeA)) return 1;
-            if (isNaN(timeB)) return -1;
-            return timeA - timeB;
+            // Sort by TIME OF DAY only (hours and minutes), not full timestamp
+            // This is important for recurring tasks where scheduledDate is the base date
+            // but we want to sort by the time they occur during the day
+            const dateA = a.scheduledDate ? new Date(a.scheduledDate) : null;
+            const dateB = b.scheduledDate ? new Date(b.scheduledDate) : null;
+            
+            if (!dateA || isNaN(dateA.getTime())) return 1;
+            if (!dateB || isNaN(dateB.getTime())) return -1;
+            
+            // Extract time of day in minutes (hours * 60 + minutes)
+            const timeOfDayA = dateA.getHours() * 60 + dateA.getMinutes();
+            const timeOfDayB = dateB.getHours() * 60 + dateB.getMinutes();
+            
+            return timeOfDayA - timeOfDayB;
           } catch (error) {
             logger.error('Error sorting tasks:', error, a, b);
             return 0;
