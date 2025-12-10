@@ -1402,12 +1402,35 @@ export function useAIScheduler() {
         recurringFirstOccurrence = calculateFirstOccurrenceDate(task, fromDate);
         
         if (recurringFirstOccurrence) {
-          // Check if first occurrence fits within date range and doesn't exceed limits
+          // Check if first occurrence fits within date range
           const isWithinRange = !dateRange || (recurringFirstOccurrence >= startDate && recurringFirstOccurrence <= endDate);
-          const wouldExceed = wouldExceedLimit(recurringFirstOccurrence, taskHours);
           
-          // If first occurrence is valid and fits, use it directly
-          if (isWithinRange && !wouldExceed) {
+          // CRITICAL FIX: Check ALL occurrence days, not just the first one
+          // A recurring task adds hours to EVERY day it occurs on, so we must ensure
+          // NONE of those days would exceed the 5-hour limit
+          let wouldExceedOnAnyDay = false;
+          if (isWithinRange) {
+            const checkDate = new Date(recurringFirstOccurrence);
+            while (checkDate <= endDate) {
+              if (isDateInRecurrence(task, checkDate)) {
+                if (wouldExceedLimit(checkDate, taskHours)) {
+                  wouldExceedOnAnyDay = true;
+                  logger.debug('Recurring task would exceed limit on occurrence day', {
+                    taskId: task.id,
+                    taskTitle: task.title,
+                    occurrenceDay: checkDate.toISOString().split('T')[0],
+                    taskHours,
+                    currentHours: dailyHours.get(getDateKey(checkDate)) || 0,
+                  });
+                  break;
+                }
+              }
+              checkDate.setDate(checkDate.getDate() + 1);
+            }
+          }
+          
+          // If first occurrence is valid and NO occurrence day would exceed limits, use it
+          if (isWithinRange && !wouldExceedOnAnyDay) {
             // Calculate daysToAdd based on first occurrence
             const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
             daysToAdd = daysDiff;
@@ -1540,53 +1563,23 @@ export function useAIScheduler() {
       }
       
       // If no available day found within search window, add to exceedsLimit and skip
-      // EXCEPT for recurring tasks - they should always be scheduled to their first occurrence
+      // This applies to BOTH recurring and non-recurring tasks to respect the 5-hour daily limit
       if (!foundDay) {
-        // For recurring tasks, try to use the first occurrence even if it exceeds limits
-        // This ensures recurring tasks are always scheduled, even if they need to exceed the daily limit
+        // Log why the task couldn't be scheduled
         if (isRecurringTask && recurringFirstOccurrence) {
-          const isWithinRange = !dateRange || (recurringFirstOccurrence >= startDate && recurringFirstOccurrence <= endDate);
-          if (isWithinRange) {
-            // Use the first occurrence date even if it exceeds limits
-            const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
-            finalDaysToAdd = daysDiff;
-            foundDay = true;
-            reason = `Recurring task - scheduled to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]}) - may exceed daily limit`;
-            logger.debug('Recurring task scheduled despite exceeding limit', {
-              taskId: task.id,
-              firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
-              taskHours,
-            });
-          } else {
-            // First occurrence is outside range - add to exceedsLimit
-            logger.debug('Recurring task first occurrence outside date range', {
-              taskId: task.id,
-              firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
-              startDate: startDate.toISOString().split('T')[0],
-              endDate: endDate.toISOString().split('T')[0],
-            });
-            exceedsLimit.push(task);
-          }
-        } else {
-          exceedsLimit.push(task);
-        }
-      }
-      
-      // FINAL SAFEGUARD: For recurring tasks, if we still don't have foundDay but have a first occurrence,
-      // force it to be scheduled (recurring tasks MUST have a scheduledDate to function)
-      if (!foundDay && isRecurringTask && recurringFirstOccurrence) {
-        const isWithinRange = !dateRange || (recurringFirstOccurrence >= startDate && recurringFirstOccurrence <= endDate);
-        if (isWithinRange) {
-          const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
-          finalDaysToAdd = daysDiff;
-          foundDay = true;
-          reason = `Recurring task - scheduled to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]})`;
-          logger.debug('Recurring task scheduled via safeguard', {
+          logger.debug('Recurring task exceeds daily limit on one or more occurrence days', {
             taskId: task.id,
+            taskTitle: task.title,
             firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+            taskHours,
           });
         }
+        exceedsLimit.push(task);
       }
+      
+      // NOTE: Removed the "FINAL SAFEGUARD" that forced recurring tasks to schedule even when exceeding limits
+      // Recurring tasks should respect the 5-hour daily limit like all other tasks
+      // If a recurring task exceeds the limit on any occurrence day, it will be added to exceedsLimit
       
       if (foundDay) {
         // Update reason if we had to move to a later day (for non-recurring tasks)
