@@ -17,6 +17,7 @@ import { cn, prepareTaskForDialog } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
+import { projectId } from '../utils/supabase/info';
 import {
   KANBAN_DAY_COLORS,
   KANBAN_BACKGROUND_GRADIENTS,
@@ -218,7 +219,7 @@ export function SevenDayKanban({
           return;
         }
 
-        const BASE_URL = `${window.location.origin.replace('http://', 'https://')}/functions/v1/make-server-65e6e67f`;
+        const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-65e6e67f`;
         const aggregated: Record<string, Array<{ title: string; start: string; end: string; provider: 'google' | 'apple' }>> = {};
 
         for (const provider of providers) {

@@ -379,23 +379,141 @@ export function useAIScheduler() {
     if (!categoryHours.enabled) {
       // If forcing category hours but category is disabled, use default work hours as fallback
       if (forceCategoryHours) {
-        // Return a default time slot based on category
-        const defaultHour = DEFAULT_CATEGORY_HOURS[category] || DEFAULT_CATEGORY_HOURS.work;
-        const defaultTime = new Date(scheduleDate);
-        defaultTime.setHours(defaultHour, 0, 0, 0);
+        // Use default category hours as the time window (e.g., 9:00-17:00 for work)
+        const defaultStartHour = DEFAULT_CATEGORY_HOURS[category] || DEFAULT_CATEGORY_HOURS.work;
+        // Default to 8-hour window from start hour (e.g., 9:00-17:00)
+        const defaultEndHour = Math.min(defaultStartHour + 8, 23);
+        const defaultTotalHours = defaultEndHour - defaultStartHour;
+        
+        // Determine the earliest time we can schedule
+        let earliestAllowedTime = new Date(scheduleDate);
+        earliestAllowedTime.setHours(defaultStartHour, 0, 0, 0);
         
         // For today, ensure we don't schedule before current time
-        if (isToday && currentTimeRounded && defaultTime < currentTimeRounded) {
-          return {
-            hours: currentTimeRounded.getHours(),
-            minutes: currentTimeRounded.getMinutes(),
-            reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled from current time (category hours disabled)`
-          };
+        if (isToday && currentTimeRounded && currentTimeRounded > earliestAllowedTime) {
+          earliestAllowedTime = currentTimeRounded;
+        }
+        
+        // CRITICAL FIX: Check for existing tasks and distribute time slots properly
+        // This ensures recurring tasks don't all get scheduled at the same default time
+        const sameCategoryTasks = existingTasksForDay.filter(t => {
+          const cat = getTaskCategory(t);
+          if (cat !== category) return false;
+          if (!t.scheduledDate) return false;
+          const scheduledDate = typeof t.scheduledDate === 'string' 
+            ? new Date(t.scheduledDate)
+            : new Date(t.scheduledDate);
+          return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
+        });
+        
+        // If there are existing tasks, find gaps or place after last task
+        if (sameCategoryTasks.length > 0) {
+          const sortedCategoryTasks = [...sameCategoryTasks].sort((a, b) => {
+            const aDate = typeof a.scheduledDate === 'string' ? new Date(a.scheduledDate) : new Date(a.scheduledDate);
+            const bDate = typeof b.scheduledDate === 'string' ? new Date(b.scheduledDate) : new Date(b.scheduledDate);
+            return aDate.getTime() - bDate.getTime();
+          });
+          
+          // Find gaps between existing tasks
+          for (let i = 0; i < sortedCategoryTasks.length; i++) {
+            const currentTask = sortedCategoryTasks[i];
+            if (!currentTask.scheduledDate) continue;
+            
+            const currentTaskStart = typeof currentTask.scheduledDate === 'string'
+              ? new Date(currentTask.scheduledDate)
+              : new Date(currentTask.scheduledDate);
+            const currentTaskDuration = getTaskMinutes(currentTask);
+            const currentTaskEnd = new Date(currentTaskStart);
+            currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
+            
+            let gapStart: Date;
+            if (i === 0) {
+              gapStart = new Date(earliestAllowedTime);
+            } else {
+              const prevTask = sortedCategoryTasks[i - 1];
+              if (!prevTask.scheduledDate) continue;
+              const prevTaskStart = typeof prevTask.scheduledDate === 'string'
+                ? new Date(prevTask.scheduledDate)
+                : new Date(prevTask.scheduledDate);
+              const prevTaskDuration = getTaskMinutes(prevTask);
+              gapStart = new Date(prevTaskStart);
+              gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
+            }
+            
+            if (gapStart < earliestAllowedTime) {
+              gapStart = new Date(earliestAllowedTime);
+            }
+            
+            const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
+            const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
+            
+            if (gapDuration >= taskDuration) {
+              return {
+                hours: gapStart.getHours(),
+                minutes: gapStart.getMinutes(),
+                reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled in gap (category hours disabled, using default)`
+              };
+            }
+          }
+          
+          // No gap found - place after last task
+          const lastTask = sortedCategoryTasks[sortedCategoryTasks.length - 1];
+          if (lastTask.scheduledDate) {
+            const lastTaskStart = typeof lastTask.scheduledDate === 'string' 
+              ? new Date(lastTask.scheduledDate)
+              : new Date(lastTask.scheduledDate);
+            const lastTaskDuration = getTaskMinutes(lastTask);
+            const nextAvailableTime = new Date(lastTaskStart);
+            nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
+            
+            // Round to nearest interval
+            const roundedMinutes = Math.ceil(nextAvailableTime.getMinutes() / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+            if (roundedMinutes >= MINUTES_PER_HOUR) {
+              nextAvailableTime.setHours(nextAvailableTime.getHours() + 1, 0, 0, 0);
+            } else {
+              nextAvailableTime.setMinutes(roundedMinutes, 0, 0);
+            }
+            
+            // Ensure we don't exceed default end hour
+            if (nextAvailableTime.getHours() < defaultEndHour) {
+              return {
+                hours: nextAvailableTime.getHours(),
+                minutes: nextAvailableTime.getMinutes(),
+                reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled after other tasks (category hours disabled, using default)`
+              };
+            }
+          }
+        }
+        
+        // No existing tasks or couldn't find a slot - use time slot distribution
+        const numSlots = DEFAULT_TIME_SLOTS;
+        const slotPosition = timeSlot % numSlots;
+        const offsetHours = (defaultTotalHours / numSlots) * slotPosition;
+        
+        const finalHours = Math.floor(defaultStartHour + offsetHours);
+        const finalMinutes = Math.round((defaultStartHour + offsetHours - finalHours) * MINUTES_PER_HOUR);
+        
+        // Round minutes to nearest interval
+        const roundedFinalMinutes = Math.round(finalMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+        const adjustedFinalHours = finalHours + Math.floor(roundedFinalMinutes / MINUTES_PER_HOUR);
+        const adjustedFinalMinutes = roundedFinalMinutes % MINUTES_PER_HOUR;
+        
+        // For today, ensure we don't schedule before current time
+        if (isToday && currentTimeRounded) {
+          const proposedTime = new Date(scheduleDate);
+          proposedTime.setHours(adjustedFinalHours, adjustedFinalMinutes, 0, 0);
+          if (proposedTime < currentTimeRounded) {
+            return {
+              hours: currentTimeRounded.getHours(),
+              minutes: currentTimeRounded.getMinutes(),
+              reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled from current time (category hours disabled)`
+            };
+          }
         }
         
         return {
-          hours: defaultHour,
-          minutes: 0,
+          hours: adjustedFinalHours,
+          minutes: adjustedFinalMinutes,
           reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled (category hours disabled, using default)`
         };
       }
