@@ -415,6 +415,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           toast.success('iCloud Calendar synced!', {
             description: `Imported ${data.created} new, updated ${data.updated}, removed ${data.deleted} events`,
           });
+        } else if (response.status === 400 && data.error?.includes('not configured')) {
+          // CalDAV not set up yet - show setup dialog
+          toast.info('Apple Calendar not configured', {
+            description: 'Please complete the setup first.',
+          });
+          setShowAppleCalDAVDialog(true);
         } else {
           toast.error('Sync failed', {
             description: data.error || 'Failed to sync with iCloud Calendar',

@@ -2161,12 +2161,16 @@ app.get("/make-server-65e6e67f/calendar/status", async (c) => {
 
     const googleTokens = await calendarSync.getCalendarTokens(userId, 'google');
     const outlookTokens = await calendarSync.getCalendarTokens(userId, 'outlook');
+    
+    // Check for Apple CalDAV credentials (new flow)
+    const appleCalDAVCredentials = await kv.get(`caldav_credentials_${userId}`);
+    // Also check old Apple tokens for backwards compatibility
     const appleTokens = await calendarSync.getCalendarTokens(userId, 'apple');
 
     const status = {
       google: !!googleTokens,
       outlook: !!outlookTokens,
-      apple: !!appleTokens,
+      apple: !!appleCalDAVCredentials || !!appleTokens,
     };
 
     console.log('Calendar status for user:', userId, status);
