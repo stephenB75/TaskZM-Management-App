@@ -3124,23 +3124,19 @@ app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
       return c.json({ error: 'No calendars selected. Please select at least one calendar to sync.' }, 400);
     }
 
-    // Get user's workspace
-    const supabase = getSupabaseClient();
-    const { data: membership } = await supabase
-      .from('workspace_members')
-      .select('workspace_id')
-      .eq('user_id', userId)
-      .single();
+    // Get user's workspace from KV store
+    const workspaceId = await kv.get(`user_${userId}_workspace`);
 
-    if (!membership) {
-      return c.json({ error: 'No workspace found' }, 400);
+    if (!workspaceId) {
+      return c.json({ error: 'No workspace found. Please try logging out and back in.' }, 400);
     }
 
     // Perform sync
+    const supabase = getSupabaseClient();
     const result = await appleCaldavSync.syncCalendarsToDatabase(
       supabase,
       userId,
-      membership.workspace_id,
+      workspaceId,
       { email: storedCredentials.email, appPassword: storedCredentials.appPassword },
       storedCredentials.selectedCalendars.map((cal: any) => cal.href)
     );
