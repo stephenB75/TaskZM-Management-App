@@ -22,6 +22,7 @@ import {
   TWO_WEEKS_DAYS,
   DAYS_IN_WEEK,
 } from "../lib/business-constants";
+import { isDateInRecurrence } from "../lib/recurrence";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import {
@@ -534,14 +535,17 @@ export function DashboardView({
   };
 
   const getTasksForDay = (dateString: string) => {
+    // Parse the date string to a Date object for recurring task check
+    const checkDate = new Date(dateString + 'T00:00:00');
+    
     return tasks.filter((task) => {
-      if (!task.scheduledDate) return false;
+      // Skip tasks without scheduled dates or done tasks
+      if (!task.scheduledDate || task.status === 'done') return false;
+      
       try {
-        const taskDate = new Date(task.scheduledDate);
-        if (isNaN(taskDate.getTime())) return false;
-        return (
-          taskDate.toISOString().split("T")[0] === dateString
-        );
+        // Use isDateInRecurrence to handle both recurring and non-recurring tasks
+        // This ensures recurring tasks are counted on all days they occur
+        return isDateInRecurrence(task, checkDate);
       } catch {
         return false;
       }
