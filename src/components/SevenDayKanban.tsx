@@ -680,17 +680,24 @@ export function SevenDayKanban({
                                       style={{ 
                                         transform: 'scale(0.85)',
                                         transformOrigin: 'top center',
-                                        marginLeft: '12px', // Compensate for task's priority line (4px) + gap (8px)
                                       }}
                                     >
-                                      <CalendarEventCard
-                                        title={item.event.title}
-                                        start={item.event.start}
-                                        end={item.event.end}
-                                        location={item.event.location}
-                                        provider={item.event.provider}
-                                        calendarColor={item.event.calendarColor}
-                                      />
+                                      {/* Flex wrapper matching task card structure: 4px line + 8px gap */}
+                                      <div className="flex gap-2 w-full">
+                                        {/* Spacer matching task's priority line width */}
+                                        <div className="w-1 flex-shrink-0" style={{ minHeight: '40px' }} />
+                                        {/* Event card taking remaining width */}
+                                        <div className="flex-1 min-w-0">
+                                          <CalendarEventCard
+                                            title={item.event.title}
+                                            start={item.event.start}
+                                            end={item.event.end}
+                                            location={item.event.location}
+                                            provider={item.event.provider}
+                                            calendarColor={item.event.calendarColor}
+                                          />
+                                        </div>
+                                      </div>
                                     </motion.div>
                                   );
                                 } else {
@@ -966,17 +973,24 @@ export function SevenDayKanban({
                                             style={{
                                               transform: 'scale(0.85)',
                                               transformOrigin: 'top center',
-                                              marginLeft: '12px', // Compensate for task's priority line (4px) + gap (8px)
                                             }}
                                           >
-                                            <CalendarEventCard
-                                              title={item.event.title}
-                                              start={item.event.start}
-                                              end={item.event.end}
-                                              location={item.event.location}
-                                              provider={item.event.provider}
-                                              calendarColor={item.event.calendarColor}
-                                            />
+                                            {/* Flex wrapper matching task card structure: 4px line + 8px gap */}
+                                            <div className="flex gap-2 w-full">
+                                              {/* Spacer matching task's priority line width */}
+                                              <div className="w-1 flex-shrink-0" style={{ minHeight: '40px' }} />
+                                              {/* Event card taking remaining width */}
+                                              <div className="flex-1 min-w-0">
+                                                <CalendarEventCard
+                                                  title={item.event.title}
+                                                  start={item.event.start}
+                                                  end={item.event.end}
+                                                  location={item.event.location}
+                                                  provider={item.event.provider}
+                                                  calendarColor={item.event.calendarColor}
+                                                />
+                                              </div>
+                                            </div>
                                           </motion.div>
                                         );
                                       } else {
