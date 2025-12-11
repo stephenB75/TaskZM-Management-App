@@ -671,6 +671,7 @@ export function SevenDayKanban({
                                   return (
                                     <motion.div
                                       key={`mobile-event-${item.event.id}`}
+                                      className="px-2"
                                       initial={{ opacity: 0, y: 10 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, scale: 0.95 }}
@@ -958,7 +959,7 @@ export function SevenDayKanban({
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                            className="px-1"
+                                            className="px-2 sm:px-2.5"
                                             style={{
                                               transform: 'scale(0.85)',
                                               transformOrigin: 'top center',
