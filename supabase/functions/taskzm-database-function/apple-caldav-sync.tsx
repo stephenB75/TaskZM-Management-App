@@ -659,6 +659,23 @@ export async function fetchCalendarEvents(
 }
 
 /**
+ * Format a date to ISO-like string, preserving local time format if original was local
+ */
+function formatDatePreservingTimezone(date: Date, isUtc: boolean): string {
+  if (isUtc) {
+    return date.toISOString();
+  }
+  // Format as local time without Z suffix
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+/**
  * Parse RRULE and expand recurring events
  */
 function expandRecurringEvent(
@@ -668,6 +685,9 @@ function expandRecurringEvent(
   rangeEnd: Date
 ): CalendarEvent[] {
   const events: CalendarEvent[] = [];
+  
+  // Check if the base event's time is in UTC (ends with Z)
+  const isUtc = baseEvent.dtstart.endsWith('Z');
   
   // Parse RRULE parts
   const parts: Record<string, string> = {};
@@ -720,35 +740,60 @@ function expandRecurringEvent(
       events.push({
         ...baseEvent,
         uid: eventUid,
-        dtstart: currentDate.toISOString(),
-        dtend: endDate.toISOString(),
+        dtstart: formatDatePreservingTimezone(currentDate, isUtc),
+        dtend: formatDatePreservingTimezone(endDate, isUtc),
       });
     }
     
     // Move to next occurrence based on frequency
-    switch (freq) {
-      case 'DAILY':
-        currentDate.setUTCDate(currentDate.getUTCDate() + interval);
-        break;
-      case 'WEEKLY':
-        currentDate.setUTCDate(currentDate.getUTCDate() + (7 * interval));
-        break;
-      case 'MONTHLY':
-        if (byMonthDay) {
-          // Specific day of month
-          const targetDay = parseInt(byMonthDay, 10);
-          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
-          currentDate.setUTCDate(Math.min(targetDay, new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0).getUTCDate()));
-        } else {
-          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
-        }
-        break;
-      case 'YEARLY':
-        currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
-        break;
-      default:
-        // Unknown frequency, stop
-        iterations = maxIterations;
+    // Use local time methods if not UTC, UTC methods if UTC
+    if (isUtc) {
+      switch (freq) {
+        case 'DAILY':
+          currentDate.setUTCDate(currentDate.getUTCDate() + interval);
+          break;
+        case 'WEEKLY':
+          currentDate.setUTCDate(currentDate.getUTCDate() + (7 * interval));
+          break;
+        case 'MONTHLY':
+          if (byMonthDay) {
+            const targetDay = parseInt(byMonthDay, 10);
+            currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+            currentDate.setUTCDate(Math.min(targetDay, new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0).getUTCDate()));
+          } else {
+            currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+          }
+          break;
+        case 'YEARLY':
+          currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
+          break;
+        default:
+          iterations = maxIterations;
+      }
+    } else {
+      // Use local time methods
+      switch (freq) {
+        case 'DAILY':
+          currentDate.setDate(currentDate.getDate() + interval);
+          break;
+        case 'WEEKLY':
+          currentDate.setDate(currentDate.getDate() + (7 * interval));
+          break;
+        case 'MONTHLY':
+          if (byMonthDay) {
+            const targetDay = parseInt(byMonthDay, 10);
+            currentDate.setMonth(currentDate.getMonth() + interval);
+            currentDate.setDate(Math.min(targetDay, new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()));
+          } else {
+            currentDate.setMonth(currentDate.getMonth() + interval);
+          }
+          break;
+        case 'YEARLY':
+          currentDate.setFullYear(currentDate.getFullYear() + interval);
+          break;
+        default:
+          iterations = maxIterations;
+      }
     }
     
     iterations++;
