@@ -237,12 +237,13 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     <div
       className={cn(
         'relative rounded-lg border overflow-hidden transition-all duration-200',
-        'hover:shadow-md cursor-default select-none',
+        'hover:shadow-md cursor-default select-none ml-3',
         colors.bg,
         colors.border
       )}
       style={{
         minHeight: `${calculatedHeight}px`,
+        maxWidth: 'calc(100% - 12px)', // Match task card width (accounts for priority line + gap)
       }}
     >
       {/* Left accent bar */}

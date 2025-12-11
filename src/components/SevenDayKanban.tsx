@@ -681,20 +681,14 @@ export function SevenDayKanban({
                                         transformOrigin: 'top center',
                                       }}
                                     >
-                                      {/* Wrapper matching task's internal flex structure */}
-                                      <div className="flex gap-2 w-full">
-                                        <div className="w-1 flex-shrink-0" />
-                                        <div className="flex-1">
-                                          <CalendarEventCard
-                                            title={item.event.title}
-                                            start={item.event.start}
-                                            end={item.event.end}
-                                            location={item.event.location}
-                                            provider={item.event.provider}
-                                            calendarColor={item.event.calendarColor}
-                                          />
-                                        </div>
-                                      </div>
+                                      <CalendarEventCard
+                                        title={item.event.title}
+                                        start={item.event.start}
+                                        end={item.event.end}
+                                        location={item.event.location}
+                                        provider={item.event.provider}
+                                        calendarColor={item.event.calendarColor}
+                                      />
                                     </motion.div>
                                   );
                                 } else {
@@ -972,20 +966,14 @@ export function SevenDayKanban({
                                               transformOrigin: 'top center',
                                             }}
                                           >
-                                            {/* Wrapper matching task's internal flex structure */}
-                                            <div className="flex gap-2 w-full">
-                                              <div className="w-1 flex-shrink-0" />
-                                              <div className="flex-1">
-                                                <CalendarEventCard
-                                                  title={item.event.title}
-                                                  start={item.event.start}
-                                                  end={item.event.end}
-                                                  location={item.event.location}
-                                                  provider={item.event.provider}
-                                                  calendarColor={item.event.calendarColor}
-                                                />
-                                              </div>
-                                            </div>
+                                            <CalendarEventCard
+                                              title={item.event.title}
+                                              start={item.event.start}
+                                              end={item.event.end}
+                                              location={item.event.location}
+                                              provider={item.event.provider}
+                                              calendarColor={item.event.calendarColor}
+                                            />
                                           </motion.div>
                                         );
                                       } else {

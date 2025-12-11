@@ -1059,27 +1059,25 @@ export async function syncCalendarsToDatabase(
       const existing = existingMap.get(event.uid);
       
       if (existing) {
-        // Check if update needed
-        if (event.lastModified && existing.external_updated_at !== event.lastModified) {
-          const { error: updateError } = await supabase
-            .from('calendar_events')
-            .update({
-              title: event.summary,
-              description: event.description,
-              start_time: event.dtstart,
-              end_time: event.dtend,
-              location: event.location,
-              calendar_color: event.calendarColor,
-              external_updated_at: event.lastModified,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existing.id);
+        // Always update to ensure latest parsing is applied
+        const { error: updateError } = await supabase
+          .from('calendar_events')
+          .update({
+            title: event.summary,
+            description: event.description,
+            start_time: event.dtstart,
+            end_time: event.dtend,
+            location: event.location,
+            calendar_color: event.calendarColor,
+            external_updated_at: event.lastModified,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
 
-          if (updateError) {
-            result.errors.push(`Failed to update event ${event.uid}: ${updateError.message}`);
-          } else {
-            result.updated++;
-          }
+        if (updateError) {
+          result.errors.push(`Failed to update event ${event.uid}: ${updateError.message}`);
+        } else {
+          result.updated++;
         }
       } else {
         // Create new event
