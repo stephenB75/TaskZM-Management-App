@@ -34,6 +34,7 @@ export interface CalendarEvent {
   location?: string;
   lastModified?: string;
   calendarHref: string;
+  calendarColor?: string;
 }
 
 export interface SyncResult {
@@ -892,12 +893,26 @@ export async function syncCalendarsToDatabase(
   };
 
   try {
+    // First, discover all calendars to get their colors
+    const allCalendars = await discoverCalendars(credentials);
+    const calendarColorMap = new Map<string, string>();
+    for (const cal of allCalendars) {
+      if (cal.color) {
+        calendarColorMap.set(cal.href, cal.color);
+      }
+    }
+    
     // Fetch events from each selected calendar
     const allEvents: CalendarEvent[] = [];
     
     for (const href of selectedCalendarHrefs) {
       try {
         const events = await fetchCalendarEvents(credentials, href);
+        // Add calendar color to each event
+        const calendarColor = calendarColorMap.get(href);
+        for (const event of events) {
+          event.calendarColor = calendarColor;
+        }
         allEvents.push(...events);
       } catch (error) {
         const message = `Failed to fetch from ${href}: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -939,6 +954,7 @@ export async function syncCalendarsToDatabase(
               start_time: event.dtstart,
               end_time: event.dtend,
               location: event.location,
+              calendar_color: event.calendarColor,
               external_updated_at: event.lastModified,
               updated_at: new Date().toISOString(),
             })
@@ -965,6 +981,7 @@ export async function syncCalendarsToDatabase(
             location: event.location,
             source: 'icloud',
             calendar_href: event.calendarHref,
+            calendar_color: event.calendarColor,
             external_updated_at: event.lastModified,
             is_readonly: true,
             created_at: new Date().toISOString(),

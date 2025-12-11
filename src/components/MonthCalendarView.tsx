@@ -3,6 +3,7 @@ import React, {
   useState,
   useEffect,
   useRef,
+  useCallback,
 } from "react";
 import { motion } from "motion/react";
 import { useDroppable } from "@dnd-kit/core";
@@ -14,6 +15,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useTasks } from "../contexts/TaskContext";
 import { useDragDrop } from "../contexts/DragDropContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useCalendar } from "../contexts/CalendarContext";
+import { projectId } from "../utils/supabase/info";
 import {
   ChevronLeft,
   ChevronRight,
@@ -23,6 +27,7 @@ import {
   Repeat,
   Circle,
   ZoomOut,
+  MapPin,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -159,10 +164,137 @@ function DraggableMonthTask({
   );
 }
 
+// Calendar Event Component for Month View (compact version)
+interface CalendarEventData {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  location?: string;
+  calendarColor?: string;
+  provider: 'google' | 'apple';
+}
+
+// Simple hash function for consistent color assignment based on title
+function hashEventTitle(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+// Map Apple Calendar hex colors to app theme color indices
+function getColorIndexFromHex(hexColor: string): number {
+  if (!hexColor) return 0;
+  const hex = hexColor.replace('#', '').toUpperCase();
+  
+  // Map common Apple Calendar colors to our palette indices
+  const colorMappings: { [key: string]: number } = {
+    // Reds/Pinks -> Rose (4)
+    'FF3B30': 4, 'FF2D55': 4, 'FF6B6B': 4, 'E91E63': 4,
+    // Oranges -> Orange (7)
+    'FF9500': 7, 'FF6600': 7, 'FF7043': 7, 'F57C00': 7,
+    // Yellows/Ambers -> Amber (3)
+    'FFCC00': 3, 'FFC107': 3, 'FFD700': 3, 'FFEB3B': 3,
+    // Greens -> Emerald (1)
+    '4CD964': 1, '34C759': 1, '28CD41': 1, '00C853': 1, '4CAF50': 1,
+    // Teals/Cyans -> Teal (5)
+    '5AC8FA': 5, '00BCD4': 5, '009688': 5, '1ABC9C': 5,
+    // Blues -> Sky (0)
+    '007AFF': 0, '5856D6': 0, '0A84FF': 0, '2196F3': 0, '64D2FF': 0,
+    // Purples -> Violet (2)
+    'AF52DE': 2, '9C27B0': 2, 'BF5AF2': 2, '5E35B1': 2, '673AB7': 2,
+    // Magentas/Fuchsias -> Fuchsia (6)
+    'FF2D92': 6, 'E040FB': 6, 'EA80FC': 6, 'FF00FF': 6,
+  };
+  
+  if (colorMappings[hex]) return colorMappings[hex];
+  
+  // Parse RGB and classify by hue
+  try {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    if (r > g && r > b) {
+      if (g > b * 1.5) return 7; // Orange
+      return 4; // Rose
+    }
+    if (g > r && g > b) {
+      if (b > r) return 5; // Teal
+      return 1; // Emerald
+    }
+    if (b > r && b > g) {
+      if (r > g * 1.3) return 2; // Violet
+      return 0; // Sky
+    }
+    if (r > 200 && g > 150 && b < 100) return 3; // Amber
+  } catch { /* fallback */ }
+  
+  return 0;
+}
+
+// Pastel color palette for calendar events
+const monthEventColorPalette = [
+  { border: 'border-l-sky-500', bg: 'from-sky-50 to-sky-100 dark:from-sky-950/60 dark:to-sky-900/40', icon: 'text-sky-600 dark:text-sky-400', text: 'text-sky-900 dark:text-sky-100', muted: 'text-sky-600 dark:text-sky-300' },
+  { border: 'border-l-emerald-500', bg: 'from-emerald-50 to-emerald-100 dark:from-emerald-950/60 dark:to-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400', text: 'text-emerald-900 dark:text-emerald-100', muted: 'text-emerald-600 dark:text-emerald-300' },
+  { border: 'border-l-violet-500', bg: 'from-violet-50 to-violet-100 dark:from-violet-950/60 dark:to-violet-900/40', icon: 'text-violet-600 dark:text-violet-400', text: 'text-violet-900 dark:text-violet-100', muted: 'text-violet-600 dark:text-violet-300' },
+  { border: 'border-l-amber-500', bg: 'from-amber-50 to-amber-100 dark:from-amber-950/60 dark:to-amber-900/40', icon: 'text-amber-600 dark:text-amber-400', text: 'text-amber-900 dark:text-amber-100', muted: 'text-amber-600 dark:text-amber-300' },
+  { border: 'border-l-rose-500', bg: 'from-rose-50 to-rose-100 dark:from-rose-950/60 dark:to-rose-900/40', icon: 'text-rose-600 dark:text-rose-400', text: 'text-rose-900 dark:text-rose-100', muted: 'text-rose-600 dark:text-rose-300' },
+  { border: 'border-l-teal-500', bg: 'from-teal-50 to-teal-100 dark:from-teal-950/60 dark:to-teal-900/40', icon: 'text-teal-600 dark:text-teal-400', text: 'text-teal-900 dark:text-teal-100', muted: 'text-teal-600 dark:text-teal-300' },
+  { border: 'border-l-fuchsia-500', bg: 'from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-950/60 dark:to-fuchsia-900/40', icon: 'text-fuchsia-600 dark:text-fuchsia-400', text: 'text-fuchsia-900 dark:text-fuchsia-100', muted: 'text-fuchsia-600 dark:text-fuchsia-300' },
+  { border: 'border-l-orange-500', bg: 'from-orange-50 to-orange-100 dark:from-orange-950/60 dark:to-orange-900/40', icon: 'text-orange-600 dark:text-orange-400', text: 'text-orange-900 dark:text-orange-100', muted: 'text-orange-600 dark:text-orange-300' },
+];
+
+function MonthCalendarEvent({ event }: { event: CalendarEventData }) {
+  const startTime = new Date(event.start).toLocaleTimeString([], { 
+    hour: 'numeric', 
+    minute: '2-digit', 
+    hour12: true 
+  });
+  
+  // Get color based on calendar color (if provided) or fallback to title hash
+  const colorIndex = event.calendarColor 
+    ? getColorIndexFromHex(event.calendarColor)
+    : hashEventTitle(event.title) % monthEventColorPalette.length;
+  const colors = monthEventColorPalette[colorIndex];
+  
+  return (
+    <div
+      className={cn(
+        "text-xs p-1 rounded border-l-2 transition-all relative select-none",
+        colors.border,
+        "bg-gradient-to-br",
+        colors.bg
+      )}
+      title={`${event.title}${event.location ? ` - ${event.location}` : ''}`}
+    >
+      <div className="flex items-start gap-1">
+        <CalendarIcon className={cn("w-2.5 h-2.5 flex-shrink-0 mt-0.5", colors.icon)} />
+        <div className="flex-1 min-w-0">
+          <p className={cn("truncate font-medium leading-tight text-[11px]", colors.text)}>
+            {event.title}
+          </p>
+          <div className="flex items-center gap-0.5 mt-0.5">
+            <Clock className={cn("w-2 h-2 flex-shrink-0", colors.icon)} />
+            <span className={cn("text-[9px] leading-none", colors.muted)}>
+              {startTime}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Droppable Day Component
 function DroppableDay({
   dayData,
   dateString,
+  calendarEvents,
   onTaskClick,
   onToggleComplete,
   isExpanded,
@@ -170,6 +302,7 @@ function DroppableDay({
 }: {
   dayData: DayTasks;
   dateString: string;
+  calendarEvents: CalendarEventData[];
   onTaskClick: (task: Task) => void;
   onToggleComplete?: (task: Task) => void;
   isExpanded?: boolean;
@@ -179,9 +312,33 @@ function DroppableDay({
     id: dateString,
   });
 
-  const showAllTasks = isExpanded || dayData.tasks.length <= 2;
-  const visibleTasks = showAllTasks ? dayData.tasks : dayData.tasks.slice(0, 2);
-  const remainingCount = dayData.tasks.length - 2;
+  // Combine and sort tasks and events by time
+  type CombinedItem = 
+    | { type: 'task'; data: Task; sortTime: number }
+    | { type: 'event'; data: CalendarEventData; sortTime: number };
+  
+  const combinedItems: CombinedItem[] = [];
+  
+  // Add tasks
+  for (const task of dayData.tasks) {
+    const taskTime = task.scheduledDate || task.dueDate;
+    const sortTime = taskTime ? new Date(taskTime).getTime() : 0;
+    combinedItems.push({ type: 'task', data: task, sortTime });
+  }
+  
+  // Add calendar events
+  for (const event of calendarEvents) {
+    const sortTime = new Date(event.start).getTime();
+    combinedItems.push({ type: 'event', data: event, sortTime });
+  }
+  
+  // Sort by time
+  combinedItems.sort((a, b) => a.sortTime - b.sortTime);
+  
+  const totalItems = combinedItems.length;
+  const showAllItems = isExpanded || totalItems <= 2;
+  const visibleItems = showAllItems ? combinedItems : combinedItems.slice(0, 2);
+  const remainingCount = totalItems - 2;
 
   return (
     <div ref={setNodeRef} className="w-full h-full">
@@ -205,32 +362,55 @@ function DroppableDay({
           >
             {dayData.date.getDate()}
           </span>
-          {dayData.tasks.length > 0 && (
-            <Badge
-              variant="secondary"
-              className="h-3.5 md:h-4 text-[9px] md:text-[10px] px-0.5 md:px-1 bg-primary/10 text-primary flex-shrink-0"
-            >
-              {dayData.tasks.length}
-            </Badge>
+          {totalItems > 0 && (
+            <div className="flex items-center gap-0.5">
+              {dayData.tasks.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="h-3.5 md:h-4 text-[9px] md:text-[10px] px-0.5 md:px-1 bg-primary/10 text-primary flex-shrink-0"
+                >
+                  {dayData.tasks.length}
+                </Badge>
+              )}
+              {calendarEvents.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="h-3.5 md:h-4 text-[9px] md:text-[10px] px-0.5 md:px-1 bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 flex-shrink-0"
+                >
+                  {calendarEvents.length}
+                </Badge>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Tasks */}
+        {/* Combined Tasks and Events */}
         <SortableContext
           items={Array.isArray(dayData.tasks) ? dayData.tasks.map((t) => t?.id).filter(Boolean) : []}
           strategy={verticalListSortingStrategy}
         >
           <div className="flex-1 min-h-0 overflow-y-auto space-y-1">
-            {(Array.isArray(visibleTasks) ? visibleTasks : []).map((task) => (
-              <DraggableMonthTask
-                key={task.id}
-                task={task}
-                onTaskClick={onTaskClick}
-                onToggleComplete={onToggleComplete}
-              />
-            ))}
+            {visibleItems.map((item, idx) => {
+              if (item.type === 'event') {
+                return (
+                  <MonthCalendarEvent 
+                    key={`event-${item.data.id}`} 
+                    event={item.data} 
+                  />
+                );
+              } else {
+                return (
+                  <DraggableMonthTask
+                    key={item.data.id}
+                    task={item.data}
+                    onTaskClick={onTaskClick}
+                    onToggleComplete={onToggleComplete}
+                  />
+                );
+              }
+            })}
 
-            {!showAllTasks && remainingCount > 0 && onExpandToggle && (
+            {!showAllItems && remainingCount > 0 && onExpandToggle && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -248,11 +428,15 @@ function DroppableDay({
   );
 }
 
+const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
+
 export function MonthCalendarView({
   mobileMode = false,
 }: MonthCalendarViewProps) {
   const { tasks, updateTask } = useTasks();
   const { activeId } = useDragDrop();
+  const { accessToken } = useAuth();
+  const { calendarStatus } = useCalendar();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(
@@ -261,9 +445,70 @@ export function MonthCalendarView({
   const [expandedDays, setExpandedDays] = useState<Set<string>>(
     new Set(),
   );
+  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, CalendarEventData[]>>({});
   const todayRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const calendarGridRef = useRef<HTMLDivElement>(null);
+
+  // Fetch calendar events for the visible month
+  useEffect(() => {
+    const fetchCalendarEvents = async () => {
+      try {
+        if (!accessToken) return;
+        const providers: Array<'google' | 'apple'> = [];
+        if (calendarStatus.google) providers.push('google');
+        if (calendarStatus.apple) providers.push('apple');
+        if (providers.length === 0) {
+          setCalendarEventsByDate({});
+          return;
+        }
+
+        // Get first and last day of the month (plus buffer for prev/next month days shown)
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const startDate = new Date(year, month - 1, 1).toISOString();
+        const endDate = new Date(year, month + 2, 0).toISOString();
+
+        const aggregated: Record<string, CalendarEventData[]> = {};
+
+        for (const provider of providers) {
+          const resp = await fetch(
+            `${BASE_URL}/calendar/events/${provider}?startDate=${startDate}&endDate=${endDate}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          if (!Array.isArray(data.events)) continue;
+          for (const event of data.events) {
+            if (!event?.start || !event?.end) continue;
+            const eventStart = new Date(event.start);
+            if (isNaN(eventStart.getTime())) continue;
+            const dateKey = eventStart.toISOString().split('T')[0];
+            aggregated[dateKey] = aggregated[dateKey] || [];
+            aggregated[dateKey].push({
+              id: event.id || `${provider}-${event.providerEventId || dateKey}-${aggregated[dateKey].length}`,
+              title: event.title || 'Calendar Event',
+              start: event.start,
+              end: event.end,
+              location: event.location,
+              provider,
+              calendarColor: event.calendarColor,
+            });
+          }
+        }
+
+        setCalendarEventsByDate(aggregated);
+      } catch (error) {
+        console.warn('Failed to fetch calendar events for month view:', error);
+      }
+    };
+
+    fetchCalendarEvents();
+  }, [accessToken, calendarStatus.apple, calendarStatus.google, currentDate]);
 
   const goToPreviousMonth = () => {
     setCurrentDate((prev) => {
@@ -611,6 +856,7 @@ export function MonthCalendarView({
                     <DroppableDay
                       dayData={dayData}
                       dateString={dateString}
+                      calendarEvents={calendarEventsByDate[dateString] || []}
                       onTaskClick={handleTaskClick}
                       onToggleComplete={handleToggleComplete}
                       isExpanded={expandedDays.has(dateString)}

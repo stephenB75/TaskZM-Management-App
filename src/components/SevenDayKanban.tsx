@@ -102,7 +102,7 @@ export function SevenDayKanban({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' }>>>({});
+  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }>>>({});
   
   // Drag-to-scroll state
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -248,6 +248,7 @@ export function SevenDayKanban({
               end: event.end,
               location: event.location,
               provider,
+              calendarColor: event.calendarColor,
             });
           }
         }
@@ -681,6 +682,7 @@ export function SevenDayKanban({
                                         end={item.event.end}
                                         location={item.event.location}
                                         provider={item.event.provider}
+                                        calendarColor={item.event.calendarColor}
                                       />
                                     </motion.div>
                                   );
@@ -964,6 +966,7 @@ export function SevenDayKanban({
                                               end={item.event.end}
                                               location={item.event.location}
                                               provider={item.event.provider}
+                                              calendarColor={item.event.calendarColor}
                                             />
                                           </motion.div>
                                         );

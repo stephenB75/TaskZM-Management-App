@@ -1033,6 +1033,7 @@ async function getAppleEventsFromDatabase(
       location: event.location,
       provider: 'apple' as const,
       providerEventId: event.external_id,
+      calendarColor: event.calendar_color,
     }));
   } catch (error) {
     console.log('Failed to fetch Apple events from database:', error);
