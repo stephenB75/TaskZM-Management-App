@@ -614,10 +614,11 @@ export function SevenDayKanban({
                       
                       const combinedItems: MobileCombinedItem[] = [];
                       
-                      // Add tasks with their sort time
+                      // Add tasks with their sort time (use actual time from scheduledDate)
                       for (const layout of dayLayouts) {
                         const taskTime = layout.task.scheduledDate || layout.task.dueDate;
-                        const sortTime = taskTime ? new Date(taskTime).getTime() : 0;
+                        // For tasks without time, use end of day so they appear after timed items
+                        const sortTime = taskTime ? new Date(taskTime).getTime() : Number.MAX_SAFE_INTEGER;
                         combinedItems.push({
                           type: 'task',
                           task: layout.task,
@@ -626,7 +627,7 @@ export function SevenDayKanban({
                         });
                       }
                       
-                      // Add calendar events
+                      // Add calendar events (always have a specific time)
                       for (const event of calEvents) {
                         const sortTime = new Date(event.start).getTime();
                         combinedItems.push({
@@ -636,7 +637,7 @@ export function SevenDayKanban({
                         });
                       }
                       
-                      // Sort by time (earliest first)
+                      // Sort by time (earliest first, tasks without time go to end)
                       combinedItems.sort((a, b) => a.sortTime - b.sortTime);
                       
                       const hasContent = combinedItems.length > 0;
@@ -886,10 +887,11 @@ export function SevenDayKanban({
                           
                           const combinedItems: CombinedItem[] = [];
                           
-                          // Add tasks with their sort time
+                          // Add tasks with their sort time (use actual time from scheduledDate)
                           for (const layout of dayLayouts) {
                             const taskTime = layout.task.scheduledDate || layout.task.dueDate;
-                            const sortTime = taskTime ? new Date(taskTime).getTime() : 0;
+                            // For tasks without time, use end of day so they appear after timed items
+                            const sortTime = taskTime ? new Date(taskTime).getTime() : Number.MAX_SAFE_INTEGER;
                             combinedItems.push({
                               type: 'task',
                               task: layout.task,
@@ -898,7 +900,7 @@ export function SevenDayKanban({
                             });
                           }
                           
-                          // Add calendar events
+                          // Add calendar events (always have a specific time)
                           for (const event of calEvents) {
                             const sortTime = new Date(event.start).getTime();
                             combinedItems.push({
@@ -908,7 +910,7 @@ export function SevenDayKanban({
                             });
                           }
                           
-                          // Sort by time (earliest first)
+                          // Sort by time (earliest first, tasks without time go to end)
                           combinedItems.sort((a, b) => a.sortTime - b.sortTime);
                           
                           const hasContent = combinedItems.length > 0;
