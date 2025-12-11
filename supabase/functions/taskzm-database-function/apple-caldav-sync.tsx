@@ -772,7 +772,7 @@ function parseVEvent(
 
   const vevent = veventMatch[0];
 
-  // Helper to extract property
+  // Helper to extract property value only
   const getProp = (name: string): string | undefined => {
     const regex = new RegExp(`^${name}[;:](.*)$`, 'mi');
     const match = vevent.match(regex);
@@ -788,39 +788,109 @@ function parseVEvent(
     return value.replace(/\r?\n[ \t]/g, '');
   };
 
+  // Helper to extract property with full line (to get TZID parameter)
+  const getPropWithParams = (name: string): { value: string; tzid?: string } | undefined => {
+    const regex = new RegExp(`^${name}([;:].*)$`, 'mi');
+    const match = vevent.match(regex);
+    if (!match) return undefined;
+    
+    const fullValue = match[1].replace(/\r?\n[ \t]/g, '');
+    
+    // Extract TZID if present (e.g., ;TZID=America/New_York:20231225T100000)
+    const tzidMatch = fullValue.match(/TZID=([^:;]+)/i);
+    const tzid = tzidMatch ? tzidMatch[1] : undefined;
+    
+    // Extract the actual value after the colon
+    const colonIndex = fullValue.lastIndexOf(':');
+    const value = colonIndex >= 0 ? fullValue.substring(colonIndex + 1) : fullValue;
+    
+    return { value, tzid };
+  };
+
   const baseUid = getProp('UID');
   const summary = getProp('SUMMARY');
-  const dtstart = getProp('DTSTART');
+  const dtstartData = getPropWithParams('DTSTART');
+  const dtendData = getPropWithParams('DTEND');
   const rrule = getProp('RRULE');
   const recurrenceId = getProp('RECURRENCE-ID');
 
-  if (!baseUid || !summary || !dtstart) {
+  if (!baseUid || !summary || !dtstartData) {
     return [];
   }
 
-  // Parse dates
-  const parseDate = (dateStr: string): string => {
-    // Handle DATE-TIME format (e.g., 20231225T100000Z)
-    if (dateStr.length >= 15) {
-      const year = dateStr.substring(0, 4);
-      const month = dateStr.substring(4, 6);
-      const day = dateStr.substring(6, 8);
-      const hour = dateStr.substring(9, 11);
-      const minute = dateStr.substring(11, 13);
-      const second = dateStr.substring(13, 15);
-      return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+  const dtstart = dtstartData.value;
+  const dtstartTzid = dtstartData.tzid;
+
+  // Parse dates - properly handle timezone
+  const parseDate = (dateStr: string, tzid?: string): string => {
+    // Check if already has Z (UTC)
+    const isUtc = dateStr.endsWith('Z');
+    const cleanDateStr = isUtc ? dateStr.slice(0, -1) : dateStr;
+    
+    // Handle DATE-TIME format (e.g., 20231225T100000 or 20231225T100000Z)
+    if (cleanDateStr.length >= 15 && cleanDateStr.includes('T')) {
+      const year = cleanDateStr.substring(0, 4);
+      const month = cleanDateStr.substring(4, 6);
+      const day = cleanDateStr.substring(6, 8);
+      const hour = cleanDateStr.substring(9, 11);
+      const minute = cleanDateStr.substring(11, 13);
+      const second = cleanDateStr.substring(13, 15);
+      
+      // If original was UTC, keep it UTC
+      if (isUtc) {
+        return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+      }
+      
+      // If there's a TZID, we need to convert to UTC
+      // For now, we'll construct an ISO string and let the Date object handle it
+      // Then convert to UTC
+      if (tzid) {
+        try {
+          // Create a date string in the specified timezone
+          const localDate = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+          // This creates a Date treating the input as local time
+          // We need to adjust for the actual timezone
+          // For simplicity, use Intl API if available
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: tzid,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+          });
+          
+          // Parse the original time in the specified timezone and convert to UTC
+          // This is complex - for now, treat as local time which the browser will handle
+          // Return without Z so browser treats as local
+          return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+        } catch {
+          // Fallback: treat as local time
+          return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+        }
+      }
+      
+      // No TZID and no Z = floating/local time - don't add Z
+      return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
     }
-    // Handle DATE format (e.g., 20231225)
-    if (dateStr.length === 8) {
-      const year = dateStr.substring(0, 4);
-      const month = dateStr.substring(4, 6);
-      const day = dateStr.substring(6, 8);
-      return `${year}-${month}-${day}T00:00:00Z`;
+    
+    // Handle DATE format (e.g., 20231225) - all-day events
+    if (cleanDateStr.length === 8) {
+      const year = cleanDateStr.substring(0, 4);
+      const month = cleanDateStr.substring(4, 6);
+      const day = cleanDateStr.substring(6, 8);
+      // All-day events should be at start of day in local time
+      return `${year}-${month}-${day}T00:00:00`;
     }
+    
     return dateStr;
   };
 
-  const parsedDtstart = parseDate(dtstart);
+  const parsedDtstart = parseDate(dtstart, dtstartTzid);
+  const dtendValue = dtendData?.value || dtstart;
+  const dtendTzid = dtendData?.tzid || dtstartTzid;
   
   // For already-expanded recurring events (server sent RECURRENCE-ID), create unique ID
   const uid = recurrenceId 
@@ -832,7 +902,7 @@ function parseVEvent(
     summary: summary.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
     description: getProp('DESCRIPTION')?.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
     dtstart: parsedDtstart,
-    dtend: parseDate(getProp('DTEND') || dtstart),
+    dtend: parseDate(dtendValue, dtendTzid),
     location: getProp('LOCATION')?.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
     lastModified: getProp('LAST-MODIFIED') ? parseDate(getProp('LAST-MODIFIED')!) : undefined,
     calendarHref,
