@@ -243,8 +243,6 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
       )}
       style={{
         minHeight: `${calculatedHeight}px`,
-        backgroundSize: '6px 6px',
-        backgroundImage: `linear-gradient(135deg, transparent 25%, ${colors.stripe} 25%, ${colors.stripe} 50%, transparent 50%, transparent 75%, ${colors.stripe} 75%)`,
       }}
     >
       {/* Left accent bar */}

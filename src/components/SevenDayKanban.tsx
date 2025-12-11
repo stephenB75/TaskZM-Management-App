@@ -675,6 +675,10 @@ export function SevenDayKanban({
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, scale: 0.95 }}
                                       transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                      style={{ 
+                                        transform: 'scale(0.85)',
+                                        transformOrigin: 'top center',
+                                      }}
                                     >
                                       <CalendarEventCard
                                         title={item.event.title}
@@ -956,7 +960,7 @@ export function SevenDayKanban({
                                             transition={{ duration: 0.2, delay: idx * 0.02 }}
                                             className="px-1"
                                             style={{
-                                              transform: 'scale(0.88)',
+                                              transform: 'scale(0.85)',
                                               transformOrigin: 'top center',
                                             }}
                                           >
