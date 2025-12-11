@@ -12,6 +12,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
+import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
 import { cn, prepareTaskForDialog } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
@@ -101,7 +102,7 @@ export function SevenDayKanban({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, Array<{ title: string; start: string; end: string; provider: 'google' | 'apple' }>>>({});
+  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' }>>>({});
   
   // Drag-to-scroll state
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -241,9 +242,11 @@ export function SevenDayKanban({
             const dateKey = eventStart.toISOString().split('T')[0];
             aggregated[dateKey] = aggregated[dateKey] || [];
             aggregated[dateKey].push({
+              id: event.id || `${provider}-${event.providerEventId || dateKey}-${aggregated[dateKey].length}`,
               title: event.title || 'Calendar Event',
               start: event.start,
               end: event.end,
+              location: event.location,
               provider,
             });
           }
@@ -257,12 +260,6 @@ export function SevenDayKanban({
 
     fetchCalendarEvents();
   }, [accessToken, calendarStatus.apple, calendarStatus.google, visibleRange?.startIso, visibleRange?.endIso]);
-
-  const formatTime = (iso: string) => {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
 
   // Stop scroll dragging when task drag starts
   React.useEffect(() => {
@@ -605,47 +602,111 @@ export function SevenDayKanban({
                       </Button>
                     </div>
 
-                    <AnimatePresence mode="popLayout">
-                      {dayTasks.length === 0 ? (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
-                        >
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
-                            <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
-                          </div>
-                          <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">No tasks scheduled</p>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAddTask(currentColumn.dateString)}
-                            className="rounded-full h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
-                          >
-                            <Plus className="w-3.5 h-3.5 mr-1.5 sm:w-4 sm:h-4 sm:mr-2" />
-                            Add your first task
-                          </Button>
-                        </motion.div>
-                      ) : (
-                        dayLayouts.map(({ task, marginTop }) => (
-                          <div
-                            key={task.id}
-                            style={{ 
-                              transform: 'scale(0.85)',
-                              transformOrigin: 'top center',
-                              marginTop: `${marginTop}px`,
-                            }}
-                          >
-                            <DraggableTaskCard
-                            task={task}
-                            onClick={() => handleTaskClick(task)}
-                            droppableId={currentColumn.dateString}
-                          />
-                          </div>
-                        ))
-                      )}
-                    </AnimatePresence>
+                    {(() => {
+                      // Get calendar events for this day (mobile)
+                      const calEvents = calendarEventsByDate[currentColumn.dateString] || [];
+                      
+                      // Create combined items (tasks + calendar events) sorted by time
+                      type MobileCombinedItem = 
+                        | { type: 'task'; task: Task; marginTop: number; sortTime: number }
+                        | { type: 'event'; event: typeof calEvents[0]; sortTime: number };
+                      
+                      const combinedItems: MobileCombinedItem[] = [];
+                      
+                      // Add tasks with their sort time
+                      for (const layout of dayLayouts) {
+                        const taskTime = layout.task.scheduledDate || layout.task.dueDate;
+                        const sortTime = taskTime ? new Date(taskTime).getTime() : 0;
+                        combinedItems.push({
+                          type: 'task',
+                          task: layout.task,
+                          marginTop: layout.marginTop,
+                          sortTime,
+                        });
+                      }
+                      
+                      // Add calendar events
+                      for (const event of calEvents) {
+                        const sortTime = new Date(event.start).getTime();
+                        combinedItems.push({
+                          type: 'event',
+                          event,
+                          sortTime,
+                        });
+                      }
+                      
+                      // Sort by time (earliest first)
+                      combinedItems.sort((a, b) => a.sortTime - b.sortTime);
+                      
+                      const hasContent = combinedItems.length > 0;
+                      
+                      return (
+                        <AnimatePresence mode="popLayout">
+                          {!hasContent ? (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
+                            >
+                              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
+                                <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
+                              </div>
+                              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">No tasks scheduled</p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAddTask(currentColumn.dateString)}
+                                className="rounded-full h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
+                              >
+                                <Plus className="w-3.5 h-3.5 mr-1.5 sm:w-4 sm:h-4 sm:mr-2" />
+                                Add your first task
+                              </Button>
+                            </motion.div>
+                          ) : (
+                            <div className="space-y-2 p-2">
+                              {combinedItems.map((item, idx) => {
+                                if (item.type === 'event') {
+                                  return (
+                                    <motion.div
+                                      key={`mobile-event-${item.event.id}`}
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, scale: 0.95 }}
+                                      transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                    >
+                                      <CalendarEventCard
+                                        title={item.event.title}
+                                        start={item.event.start}
+                                        end={item.event.end}
+                                        location={item.event.location}
+                                        provider={item.event.provider}
+                                      />
+                                    </motion.div>
+                                  );
+                                } else {
+                                  return (
+                                    <div
+                                      key={item.task.id}
+                                      style={{ 
+                                        transform: 'scale(0.85)',
+                                        transformOrigin: 'top center',
+                                      }}
+                                    >
+                                      <DraggableTaskCard
+                                        task={item.task}
+                                        onClick={() => handleTaskClick(item.task)}
+                                        droppableId={currentColumn.dateString}
+                                      />
+                                    </div>
+                                  );
+                                }
+                              })}
+                            </div>
+                          )}
+                        </AnimatePresence>
+                      );
+                    })()}
                   </div>
                 </ScrollArea>
               </SortableContext>
@@ -803,94 +864,134 @@ export function SevenDayKanban({
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
-                      {/* External calendar events (read-only) */}
-                      {calendarEventsByDate[column.dateString]?.length ? (
-                        <div className="mt-1 space-y-1">
-                          {calendarEventsByDate[column.dateString]
-                            .slice(0, 3)
-                            .map((ev, idx) => (
-                              <div
-                                key={`${column.dateString}-cal-${idx}`}
-                                className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted/40 dark:bg-muted/20 rounded-md px-2 py-1"
-                              >
-                                <span className={cn(
-                                  'h-2 w-2 rounded-full',
-                                  ev.provider === 'apple' ? 'bg-primary' : 'bg-blue-500'
-                                )} />
-                                <span className="truncate">{ev.title}</span>
-                                <span className="text-[10px] text-muted-foreground/80 ml-auto">
-                                  {formatTime(ev.start)}
-                                </span>
-                              </div>
-                            ))}
-                          {calendarEventsByDate[column.dateString].length > 3 && (
-                            <div className="text-[10px] text-muted-foreground/80">
-                              +{calendarEventsByDate[column.dateString].length - 3} more
-                            </div>
-                          )}
-                        </div>
-                      ) : null}
                     </div>
 
                     <DroppableColumn id={column.dateString} className="flex-1">
                       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                        <div 
-                          className={cn(
-                            'p-2 sm:p-3 flex flex-col h-full',
-                            isDark ? 'bg-muted/10' : ''
-                          )}
-                          style={{
-                            backgroundImage: isDark
-                              ? darkColumnGradient
-                              : getColumnBgGradient(column.dayName),
-                                  minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
-                          }}
-                        >
-                          <AnimatePresence mode="popLayout">
-                            {dayTasks.length === 0 ? (
-                              <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                      className="flex flex-col items-center justify-center py-12 text-center pointer-events-none"
-                                      style={{ minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px` }}
-                              >
-                                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
-                                  <Plus className="w-6 h-6 text-primary/40" />
-                                </div>
-                                      <p className="text-sm text-muted-foreground mb-3 pointer-events-none">No tasks</p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleAddTask(column.dateString)}
-                                        className="rounded-full pointer-events-auto"
-                                >
-                                  Add task
-                                </Button>
-                              </motion.div>
-                            ) : (
-                              <>
-                                {dayLayouts.map(({ task, marginTop }) => (
-                                  <div 
-                                    key={task.id} 
-                                    className="px-2 sm:px-2.5"
-                                    style={{ 
-                                      transform: 'scale(0.85)',
-                                      transformOrigin: 'top center',
-                                      marginTop: `${marginTop}px`,
-                                    }}
+                        {(() => {
+                          // Get calendar events for this day
+                          const calEvents = calendarEventsByDate[column.dateString] || [];
+                          
+                          // Create combined items (tasks + calendar events) sorted by time
+                          type CombinedItem = 
+                            | { type: 'task'; task: Task; marginTop: number; sortTime: number }
+                            | { type: 'event'; event: typeof calEvents[0]; sortTime: number };
+                          
+                          const combinedItems: CombinedItem[] = [];
+                          
+                          // Add tasks with their sort time
+                          for (const layout of dayLayouts) {
+                            const taskTime = layout.task.scheduledDate || layout.task.dueDate;
+                            const sortTime = taskTime ? new Date(taskTime).getTime() : 0;
+                            combinedItems.push({
+                              type: 'task',
+                              task: layout.task,
+                              marginTop: layout.marginTop,
+                              sortTime,
+                            });
+                          }
+                          
+                          // Add calendar events
+                          for (const event of calEvents) {
+                            const sortTime = new Date(event.start).getTime();
+                            combinedItems.push({
+                              type: 'event',
+                              event,
+                              sortTime,
+                            });
+                          }
+                          
+                          // Sort by time (earliest first)
+                          combinedItems.sort((a, b) => a.sortTime - b.sortTime);
+                          
+                          const hasContent = combinedItems.length > 0;
+                          
+                          return (
+                            <div 
+                              className={cn(
+                                'p-2 sm:p-3 flex flex-col h-full',
+                                isDark ? 'bg-muted/10' : ''
+                              )}
+                              style={{
+                                backgroundImage: isDark
+                                  ? darkColumnGradient
+                                  : getColumnBgGradient(column.dayName),
+                                minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
+                              }}
+                            >
+                              <AnimatePresence mode="popLayout">
+                                {!hasContent ? (
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="flex flex-col items-center justify-center py-12 text-center pointer-events-none"
+                                    style={{ minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px` }}
                                   >
-                                  <DraggableTaskCard
-                                    task={task}
-                                    onClick={() => handleTaskClick(task)}
-                                    droppableId={column.dateString}
-                                  />
+                                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
+                                      <Plus className="w-6 h-6 text-primary/40" />
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mb-3 pointer-events-none">No tasks</p>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleAddTask(column.dateString)}
+                                      className="rounded-full pointer-events-auto"
+                                    >
+                                      Add task
+                                    </Button>
+                                  </motion.div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {combinedItems.map((item, idx) => {
+                                      if (item.type === 'event') {
+                                        return (
+                                          <motion.div
+                                            key={`event-${item.event.id}`}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                            className="px-1"
+                                            style={{
+                                              transform: 'scale(0.88)',
+                                              transformOrigin: 'top center',
+                                            }}
+                                          >
+                                            <CalendarEventCard
+                                              title={item.event.title}
+                                              start={item.event.start}
+                                              end={item.event.end}
+                                              location={item.event.location}
+                                              provider={item.event.provider}
+                                            />
+                                          </motion.div>
+                                        );
+                                      } else {
+                                        return (
+                                          <div 
+                                            key={item.task.id} 
+                                            className="px-2 sm:px-2.5"
+                                            style={{ 
+                                              transform: 'scale(0.85)',
+                                              transformOrigin: 'top center',
+                                            }}
+                                          >
+                                            <DraggableTaskCard
+                                              task={item.task}
+                                              onClick={() => handleTaskClick(item.task)}
+                                              droppableId={column.dateString}
+                                            />
+                                          </div>
+                                        );
+                                      }
+                                    })}
                                   </div>
-                                ))}
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })()}
                       </SortableContext>
                     </DroppableColumn>
                         </motion.div>

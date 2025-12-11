@@ -594,14 +594,18 @@ export async function fetchCalendarEvents(
     ? calendarHref
     : `${ICLOUD_CALDAV_URL}${calendarHref}`;
 
-  // Default to 30 days in past and 90 days in future
-  const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  // Default to 365 days in past and 90 days in future
+  // We need a wide past range to capture recurring events that started long ago
+  // but have occurrences in our target date range
+  const start = startDate || new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
   const end = endDate || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
   // Format dates for CalDAV
   const formatDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
   // REPORT query to fetch events
+  // Note: We do NOT use <cal:expand> because iCloud doesn't support it well
+  // Instead we parse RRULE and expand recurring events client-side
   const reportBody = `<?xml version="1.0" encoding="utf-8"?>
 <cal:calendar-query xmlns="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
   <prop>
@@ -644,22 +648,126 @@ export async function fetchCalendarEvents(
       .replace(/&amp;/g, '&')
       .replace(/&quot;/g, '"');
 
-    const event = parseVEvent(icalData, calendarHref);
-    if (event) {
-      events.push(event);
-    }
+    // parseVEvent now returns an array (handles recurring event expansion)
+    const parsedEvents = parseVEvent(icalData, calendarHref, start, end);
+    events.push(...parsedEvents);
   }
 
+  console.log(`Fetched ${events.length} events (including expanded recurring events)`);
   return events;
 }
 
 /**
- * Parse a VEVENT from iCalendar data
+ * Parse RRULE and expand recurring events
  */
-function parseVEvent(icalData: string, calendarHref: string): CalendarEvent | null {
+function expandRecurringEvent(
+  baseEvent: CalendarEvent,
+  rrule: string,
+  rangeStart: Date,
+  rangeEnd: Date
+): CalendarEvent[] {
+  const events: CalendarEvent[] = [];
+  
+  // Parse RRULE parts
+  const parts: Record<string, string> = {};
+  rrule.split(';').forEach(part => {
+    const [key, value] = part.split('=');
+    if (key && value) parts[key] = value;
+  });
+  
+  const freq = parts['FREQ'];
+  const interval = parseInt(parts['INTERVAL'] || '1', 10);
+  const count = parts['COUNT'] ? parseInt(parts['COUNT'], 10) : undefined;
+  const until = parts['UNTIL'];
+  const byDay = parts['BYDAY'];
+  const byMonthDay = parts['BYMONTHDAY'];
+  
+  // Parse base event start time
+  const baseStart = new Date(baseEvent.dtstart);
+  const baseEnd = new Date(baseEvent.dtend);
+  const duration = baseEnd.getTime() - baseStart.getTime();
+  
+  // Calculate until date
+  let untilDate = rangeEnd;
+  if (until) {
+    // Parse UNTIL date (format: 20251231T235959Z or 20251231)
+    if (until.length >= 8) {
+      const year = parseInt(until.substring(0, 4), 10);
+      const month = parseInt(until.substring(4, 6), 10) - 1;
+      const day = parseInt(until.substring(6, 8), 10);
+      let hour = 23, minute = 59, second = 59;
+      if (until.length >= 15) {
+        hour = parseInt(until.substring(9, 11), 10);
+        minute = parseInt(until.substring(11, 13), 10);
+        second = parseInt(until.substring(13, 15), 10);
+      }
+      untilDate = new Date(Date.UTC(year, month, day, hour, minute, second));
+    }
+  }
+  
+  // Limit iterations to prevent infinite loops
+  const maxIterations = count || 365;
+  let iterations = 0;
+  let currentDate = new Date(baseStart);
+  
+  while (currentDate <= untilDate && currentDate <= rangeEnd && iterations < maxIterations) {
+    // Check if this occurrence is within range
+    if (currentDate >= rangeStart && currentDate <= rangeEnd) {
+      const endDate = new Date(currentDate.getTime() + duration);
+      const eventUid = `${baseEvent.uid}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`;
+      
+      events.push({
+        ...baseEvent,
+        uid: eventUid,
+        dtstart: currentDate.toISOString(),
+        dtend: endDate.toISOString(),
+      });
+    }
+    
+    // Move to next occurrence based on frequency
+    switch (freq) {
+      case 'DAILY':
+        currentDate.setUTCDate(currentDate.getUTCDate() + interval);
+        break;
+      case 'WEEKLY':
+        currentDate.setUTCDate(currentDate.getUTCDate() + (7 * interval));
+        break;
+      case 'MONTHLY':
+        if (byMonthDay) {
+          // Specific day of month
+          const targetDay = parseInt(byMonthDay, 10);
+          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+          currentDate.setUTCDate(Math.min(targetDay, new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0).getUTCDate()));
+        } else {
+          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+        }
+        break;
+      case 'YEARLY':
+        currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
+        break;
+      default:
+        // Unknown frequency, stop
+        iterations = maxIterations;
+    }
+    
+    iterations++;
+  }
+  
+  return events;
+}
+
+/**
+ * Parse a VEVENT from iCalendar data - returns array for recurring events
+ */
+function parseVEvent(
+  icalData: string, 
+  calendarHref: string,
+  rangeStart?: Date,
+  rangeEnd?: Date
+): CalendarEvent[] {
   // Extract VEVENT block
   const veventMatch = icalData.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/i);
-  if (!veventMatch) return null;
+  if (!veventMatch) return [];
 
   const vevent = veventMatch[0];
 
@@ -679,12 +787,14 @@ function parseVEvent(icalData: string, calendarHref: string): CalendarEvent | nu
     return value.replace(/\r?\n[ \t]/g, '');
   };
 
-  const uid = getProp('UID');
+  const baseUid = getProp('UID');
   const summary = getProp('SUMMARY');
   const dtstart = getProp('DTSTART');
+  const rrule = getProp('RRULE');
+  const recurrenceId = getProp('RECURRENCE-ID');
 
-  if (!uid || !summary || !dtstart) {
-    return null;
+  if (!baseUid || !summary || !dtstart) {
+    return [];
   }
 
   // Parse dates
@@ -709,16 +819,36 @@ function parseVEvent(icalData: string, calendarHref: string): CalendarEvent | nu
     return dateStr;
   };
 
-  return {
+  const parsedDtstart = parseDate(dtstart);
+  
+  // For already-expanded recurring events (server sent RECURRENCE-ID), create unique ID
+  const uid = recurrenceId 
+    ? `${baseUid}_${parsedDtstart.replace(/[-:TZ]/g, '')}`
+    : baseUid;
+
+  const baseEvent: CalendarEvent = {
     uid,
     summary: summary.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
     description: getProp('DESCRIPTION')?.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
-    dtstart: parseDate(dtstart),
+    dtstart: parsedDtstart,
     dtend: parseDate(getProp('DTEND') || dtstart),
     location: getProp('LOCATION')?.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
     lastModified: getProp('LAST-MODIFIED') ? parseDate(getProp('LAST-MODIFIED')!) : undefined,
     calendarHref,
   };
+
+  // If this is a recurring event and we have a date range, expand it
+  if (rrule && rangeStart && rangeEnd && !recurrenceId) {
+    const expandedEvents = expandRecurringEvent(baseEvent, rrule, rangeStart, rangeEnd);
+    // Also include the base event if it falls within range
+    const baseDate = new Date(parsedDtstart);
+    if (baseDate >= rangeStart && baseDate <= rangeEnd) {
+      return [baseEvent, ...expandedEvents.filter(e => e.uid !== baseEvent.uid)];
+    }
+    return expandedEvents;
+  }
+
+  return [baseEvent];
 }
 
 /**
