@@ -672,7 +672,6 @@ export function SevenDayKanban({
                                   return (
                                     <motion.div
                                       key={`mobile-event-${item.event.id}`}
-                                      className="pl-[20px] pr-2"
                                       initial={{ opacity: 0, y: 10 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, scale: 0.95 }}
@@ -682,14 +681,20 @@ export function SevenDayKanban({
                                         transformOrigin: 'top center',
                                       }}
                                     >
-                                      <CalendarEventCard
-                                        title={item.event.title}
-                                        start={item.event.start}
-                                        end={item.event.end}
-                                        location={item.event.location}
-                                        provider={item.event.provider}
-                                        calendarColor={item.event.calendarColor}
-                                      />
+                                      {/* Wrapper matching task's internal flex structure */}
+                                      <div className="flex gap-2 w-full">
+                                        <div className="w-1 flex-shrink-0" />
+                                        <div className="flex-1">
+                                          <CalendarEventCard
+                                            title={item.event.title}
+                                            start={item.event.start}
+                                            end={item.event.end}
+                                            location={item.event.location}
+                                            provider={item.event.provider}
+                                            calendarColor={item.event.calendarColor}
+                                          />
+                                        </div>
+                                      </div>
                                     </motion.div>
                                   );
                                 } else {
@@ -961,20 +966,26 @@ export function SevenDayKanban({
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                            className="pl-[20px] pr-2 sm:pl-[22px] sm:pr-2.5"
+                                            className="px-2 sm:px-2.5"
                                             style={{
                                               transform: 'scale(0.85)',
                                               transformOrigin: 'top center',
                                             }}
                                           >
-                                            <CalendarEventCard
-                                              title={item.event.title}
-                                              start={item.event.start}
-                                              end={item.event.end}
-                                              location={item.event.location}
-                                              provider={item.event.provider}
-                                              calendarColor={item.event.calendarColor}
-                                            />
+                                            {/* Wrapper matching task's internal flex structure */}
+                                            <div className="flex gap-2 w-full">
+                                              <div className="w-1 flex-shrink-0" />
+                                              <div className="flex-1">
+                                                <CalendarEventCard
+                                                  title={item.event.title}
+                                                  start={item.event.start}
+                                                  end={item.event.end}
+                                                  location={item.event.location}
+                                                  provider={item.event.provider}
+                                                  calendarColor={item.event.calendarColor}
+                                                />
+                                              </div>
+                                            </div>
                                           </motion.div>
                                         );
                                       } else {
