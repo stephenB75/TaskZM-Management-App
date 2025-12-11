@@ -6,6 +6,7 @@
 
 import * as kv from "./kv_store.tsx";
 import * as caldav from "./caldav-client.tsx";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Calendar provider types
 export type CalendarProvider = 'google' | 'outlook' | 'apple';
@@ -960,6 +961,22 @@ export async function getCalendarEvents(
   startDate: string,
   endDate: string
 ): Promise<CalendarEvent[]> {
+  // For Apple, first check if using the new CalDAV setup (credentials in KV store)
+  if (provider === 'apple') {
+    const newCalDavEvents = await getAppleEventsFromDatabase(userId, startDate, endDate);
+    if (newCalDavEvents.length > 0) {
+      return newCalDavEvents;
+    }
+    // If no events in database, check if new CalDAV is configured
+    const credentialsJson = await kv.get(`caldav_credentials_${userId}`);
+    if (credentialsJson) {
+      // New CalDAV is configured but no events synced yet - return empty
+      // (the sync will populate the calendar_events table)
+      return [];
+    }
+    // Fall back to old CalDAV token approach
+  }
+
   let tokens = await getCalendarTokens(userId, provider);
   if (!tokens) {
     return [];
@@ -976,6 +993,50 @@ export async function getCalendarEvents(
       return await getAppleCalendarEvents(tokens, startDate, endDate);
     default:
       return [];
+  }
+}
+
+/**
+ * Get Apple Calendar events from the database (new CalDAV sync)
+ */
+async function getAppleEventsFromDatabase(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<CalendarEvent[]> {
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    );
+
+    const { data: events, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('source', 'icloud')
+      .gte('start_time', startDate)
+      .lte('start_time', endDate)
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      console.log('Error fetching Apple events from database:', error);
+      return [];
+    }
+
+    return (events || []).map((event: any) => ({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      start: event.start_time,
+      end: event.end_time,
+      location: event.location,
+      provider: 'apple' as const,
+      providerEventId: event.external_id,
+    }));
+  } catch (error) {
+    console.log('Failed to fetch Apple events from database:', error);
+    return [];
   }
 }
 

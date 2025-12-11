@@ -56,7 +56,6 @@ import {
   END_OF_DAY_MILLISECOND,
 } from '../lib/business-constants';
 import type { Task, RecurrenceConfig } from '../types';
-import { TIMING_CONSTANTS } from '../lib/timing-constants';
 
 export interface SchedulePlan {
   task: Task;

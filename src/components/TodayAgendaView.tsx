@@ -24,7 +24,6 @@ import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
-import { TASK_CARD_LAYOUT_METRICS } from "../lib/task-card-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
