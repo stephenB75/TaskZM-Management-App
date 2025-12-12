@@ -55,7 +55,7 @@ import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { PrivacyPolicyDialog } from "./PrivacyPolicyDialog";
 import { TermsOfServiceDialog } from "./TermsOfServiceDialog";
-import taskzmLogo from "../assets/taskzm-logo.png";
+import taskzmLogo from "../assets/taskzm-logo.png";  // Dark logo for light backgrounds
 import { supabase } from '../lib/supabase-client';
 import { 
   DEMO_ACCOUNT_CONFIG, 

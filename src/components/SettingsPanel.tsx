@@ -30,7 +30,7 @@ import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
-import taskzmLogo from '../assets/taskzm-logo.png';
+import taskzmLogoLight from '../assets/taskzm-logo-light.png';  // Light (purple) logo for dark backgrounds
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
 import { SETTINGS_PANEL_TEXT_SIZES } from '../lib/text-size-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
@@ -2424,9 +2424,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="flex flex-col items-center gap-1.5">
                 {actualTheme === 'dark' && (
                   <img 
-                    src={taskzmLogo} 
+                    src={taskzmLogoLight} 
                     alt="TaskZM Logo"
-                    className="w-[120px] dark-logo-filter"
+                    className="w-[120px]"
                   />
                 )}
                 <div className="text-xs text-muted-foreground text-center">Version {APP_VERSION}</div>

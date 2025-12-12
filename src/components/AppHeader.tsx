@@ -63,7 +63,8 @@ import {
   getColorWithOpacity,
 } from "../lib/color-theme";
 import { cn } from "../lib/utils";
-import logoImage from "../assets/taskzm-logo.png";
+import logoImageDark from "../assets/taskzm-logo.png";
+import logoImageLight from "../assets/taskzm-logo-light.png";
 
 interface AppHeaderProps {
   title: string | React.ReactNode;
@@ -280,7 +281,7 @@ export function AppHeader({
               )}
               {!hideDesktopLogo && (
                 <motion.img
-                  src={logoImage}
+                  src={isDark ? logoImageLight : logoImageDark}
                   alt="TaskZM Logo"
                   className={cn(
                     "w-auto flex-shrink-0",
@@ -395,7 +396,7 @@ export function AppHeader({
               )}
               {!hideDesktopLogo && (
                 <img
-                  src={logoImage}
+                  src={isDark ? logoImageLight : logoImageDark}
                   alt="TaskZM Logo"
                   className={cn(
                     "w-auto flex-shrink-0",

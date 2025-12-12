@@ -33,7 +33,8 @@ import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
-import taskzmLogo from "../assets/taskzm-logo.png";
+import taskzmLogoDark from "../assets/taskzm-logo.png";
+import taskzmLogoLight from "../assets/taskzm-logo-light.png";
 
 interface AppSidebarProps {
   currentView: string;
@@ -171,9 +172,9 @@ export function AppSidebar({
       {isDark && (
         <div className="mb-6 flex flex-col items-center gap-1.5">
           <img
-            src={taskzmLogo}
+            src={taskzmLogoLight}
             alt="TaskZM Logo"
-            className="w-[140px] dark-logo-filter"
+            className="w-[140px]"
           />
           <p className="text-sm text-muted-foreground text-center">
             AI-Powered Tasks
