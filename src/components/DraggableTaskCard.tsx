@@ -428,7 +428,7 @@ export const DraggableTaskCard = React.forwardRef<
         {...attributes}
         {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
         className={cn(
-          "flex gap-2 transition-all duration-200",
+          "flex gap-2 transition-all duration-200 mx-auto",
           isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal,
           !isMobile && (isDragging || isSortableDragging)
             ? "opacity-70 cursor-grabbing scale-95"

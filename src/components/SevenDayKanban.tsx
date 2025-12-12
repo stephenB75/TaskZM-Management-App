@@ -431,16 +431,16 @@ export function SevenDayKanban({
 
   const handleTaskClick = (task: Task) => {
     if (!task?.id) {
-      toast.error('Invalid task data');
-      return;
-    }
-    
-    const safeTask = prepareTaskForDialog(task);
-    if (!safeTask) {
-      toast.error('Invalid task data');
-      return;
-    }
-    
+        toast.error('Invalid task data');
+        return;
+      }
+      
+      const safeTask = prepareTaskForDialog(task);
+      if (!safeTask) {
+        toast.error('Invalid task data');
+        return;
+      }
+      
     // Defer state updates to next frame to avoid blocking click handler
     requestAnimationFrame(() => {
       setSelectedTask(safeTask);
@@ -643,30 +643,30 @@ export function SevenDayKanban({
                       const hasContent = combinedItems.length > 0;
                       
                       return (
-                        <AnimatePresence mode="popLayout">
+                    <AnimatePresence mode="popLayout">
                           {!hasContent ? (
-                            <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
-                            >
-                              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
-                                <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
-                              </div>
-                              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">No tasks scheduled</p>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAddTask(currentColumn.dateString)}
-                                className="rounded-full h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
-                              >
-                                <Plus className="w-3.5 h-3.5 mr-1.5 sm:w-4 sm:h-4 sm:mr-2" />
-                                Add your first task
-                              </Button>
-                            </motion.div>
-                          ) : (
-                            <div className="space-y-2 p-2">
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
+                        >
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
+                            <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
+                          </div>
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">No tasks scheduled</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAddTask(currentColumn.dateString)}
+                            className="rounded-full h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5 mr-1.5 sm:w-4 sm:h-4 sm:mr-2" />
+                            Add your first task
+                          </Button>
+                        </motion.div>
+                      ) : (
+                            <div className="flex flex-col items-center gap-3 p-2">
                               {combinedItems.map((item, idx) => {
                                 if (item.type === 'event') {
                                   return (
@@ -676,6 +676,7 @@ export function SevenDayKanban({
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, scale: 0.95 }}
                                       transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                      className="w-full"
                                       style={{ 
                                         transform: 'scale(0.85)',
                                         transformOrigin: 'top center',
@@ -693,25 +694,26 @@ export function SevenDayKanban({
                                   );
                                 } else {
                                   return (
-                                    <div
+                          <div
                                       key={item.task.id}
-                                      style={{ 
-                                        transform: 'scale(0.85)',
-                                        transformOrigin: 'top center',
-                                      }}
-                                    >
-                                      <DraggableTaskCard
+                            className="w-full"
+                            style={{ 
+                              transform: 'scale(0.85)',
+                              transformOrigin: 'top center',
+                            }}
+                          >
+                            <DraggableTaskCard
                                         task={item.task}
                                         onClick={() => handleTaskClick(item.task)}
-                                        droppableId={currentColumn.dateString}
-                                      />
-                                    </div>
+                            droppableId={currentColumn.dateString}
+                          />
+                          </div>
                                   );
                                 }
                               })}
                             </div>
-                          )}
-                        </AnimatePresence>
+                      )}
+                    </AnimatePresence>
                       );
                     })()}
                   </div>
@@ -915,42 +917,42 @@ export function SevenDayKanban({
                           const hasContent = combinedItems.length > 0;
                           
                           return (
-                            <div 
-                              className={cn(
-                                'p-2 sm:p-3 flex flex-col h-full',
-                                isDark ? 'bg-muted/10' : ''
-                              )}
-                              style={{
-                                backgroundImage: isDark
-                                  ? darkColumnGradient
-                                  : getColumnBgGradient(column.dayName),
-                                minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
-                              }}
-                            >
-                              <AnimatePresence mode="popLayout">
+                        <div 
+                          className={cn(
+                            'p-2 sm:p-3 flex flex-col h-full',
+                            isDark ? 'bg-muted/10' : ''
+                          )}
+                          style={{
+                            backgroundImage: isDark
+                              ? darkColumnGradient
+                              : getColumnBgGradient(column.dayName),
+                                  minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
+                          }}
+                        >
+                          <AnimatePresence mode="popLayout">
                                 {!hasContent ? (
-                                  <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="flex flex-col items-center justify-center py-12 text-center pointer-events-none"
-                                    style={{ minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px` }}
-                                  >
-                                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
-                                      <Plus className="w-6 h-6 text-primary/40" />
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mb-3 pointer-events-none">No tasks</p>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleAddTask(column.dateString)}
-                                      className="rounded-full pointer-events-auto"
-                                    >
-                                      Add task
-                                    </Button>
-                                  </motion.div>
-                                ) : (
-                                  <div className="space-y-2">
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                      className="flex flex-col items-center justify-center py-12 text-center pointer-events-none"
+                                      style={{ minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px` }}
+                              >
+                                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
+                                  <Plus className="w-6 h-6 text-primary/40" />
+                                </div>
+                                      <p className="text-sm text-muted-foreground mb-3 pointer-events-none">No tasks</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleAddTask(column.dateString)}
+                                        className="rounded-full pointer-events-auto"
+                                >
+                                  Add task
+                                </Button>
+                              </motion.div>
+                            ) : (
+                                  <div className="flex flex-col items-center gap-3">
                                     {combinedItems.map((item, idx) => {
                                       if (item.type === 'event') {
                                         return (
@@ -960,7 +962,7 @@ export function SevenDayKanban({
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                            className="px-2 sm:px-2.5"
+                                            className="w-full"
                                             style={{
                                               transform: 'scale(0.85)',
                                               transformOrigin: 'top center',
@@ -978,27 +980,27 @@ export function SevenDayKanban({
                                         );
                                       } else {
                                         return (
-                                          <div 
+                                  <div 
                                             key={item.task.id} 
-                                            className="px-2 sm:px-2.5"
-                                            style={{ 
-                                              transform: 'scale(0.85)',
-                                              transformOrigin: 'top center',
-                                            }}
-                                          >
-                                            <DraggableTaskCard
+                                    className="w-full"
+                                    style={{ 
+                                      transform: 'scale(0.85)',
+                                      transformOrigin: 'top center',
+                                    }}
+                                  >
+                                  <DraggableTaskCard
                                               task={item.task}
                                               onClick={() => handleTaskClick(item.task)}
-                                              droppableId={column.dateString}
-                                            />
-                                          </div>
+                                    droppableId={column.dateString}
+                                  />
+                                  </div>
                                         );
                                       }
                                     })}
                                   </div>
-                                )}
-                              </AnimatePresence>
-                            </div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                           );
                         })()}
                       </SortableContext>

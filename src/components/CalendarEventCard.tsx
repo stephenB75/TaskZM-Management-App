@@ -48,33 +48,49 @@ function hashString(str: string): number {
 }
 
 // Map Apple Calendar hex colors to app theme Tailwind color indices
-// Apple Calendar uses colors like #FF3B30 (red), #FF9500 (orange), #FFCC00 (yellow), etc.
+// Apple Calendar uses colors like #RRGGBBAA format (with alpha channel)
 function getColorIndexFromHex(hexColor: string): number {
   if (!hexColor) return 0;
-  // Normalize hex color
-  const hex = hexColor.replace('#', '').toUpperCase();
+  
+  // Normalize hex color - remove # and handle RRGGBBAA format (take first 6 chars for RGB)
+  let hex = hexColor.replace('#', '').toUpperCase();
+  // If it's 8 characters (RRGGBBAA), take only the first 6 (RGB)
+  if (hex.length === 8) {
+    hex = hex.substring(0, 6);
+  }
   
   // Map common Apple Calendar colors to our palette indices
   // 0: Sky, 1: Emerald, 2: Violet, 3: Amber, 4: Rose, 5: Teal, 6: Fuchsia, 7: Orange
   const colorMappings: { [key: string]: number } = {
     // Reds/Pinks -> Rose (4)
-    'FF3B30': 4, 'FF2D55': 4, 'FF6B6B': 4, 'E91E63': 4,
+    'FF3B30': 4, 'FF2D55': 4, 'FF6B6B': 4, 'E91E63': 4, 'D51D53': 4,
+    'CC1100': 4, 'FF0000': 4, 'E6194B': 4, 'FF4444': 4, 'CC3333': 4,
     // Oranges -> Orange (7)
-    'FF9500': 7, 'FF6600': 7, 'FF7043': 7, 'F57C00': 7,
+    'FF9500': 7, 'FF6600': 7, 'FF7043': 7, 'F57C00': 7, 'FF5722': 7,
+    'FF8C00': 7, 'FFA500': 7, 'FF6347': 7, 'E65100': 7, 'EF6C00': 7,
     // Yellows/Ambers -> Amber (3)
-    'FFCC00': 3, 'FFC107': 3, 'FFD700': 3, 'FFEB3B': 3,
+    'FFCC00': 3, 'FFC107': 3, 'FFD700': 3, 'FFEB3B': 3, 'F1C40F': 3,
+    'FFFF00': 3, 'FFD600': 3, 'FFCA28': 3, 'FBC02D': 3, 'F9A825': 3,
     // Greens -> Emerald (1)
     '4CD964': 1, '34C759': 1, '28CD41': 1, '00C853': 1, '4CAF50': 1,
+    '2ECC71': 1, '27AE60': 1, '00FF00': 1, '00E676': 1, '66BB6A': 1,
+    '1DB954': 1, '00C7BE': 1, '43A047': 1, '388E3C': 1, '2E7D32': 1,
     // Teals/Cyans -> Teal (5)
-    '5AC8FA': 5, '00BCD4': 5, '009688': 5, '1ABC9C': 5,
+    '5AC8FA': 5, '00BCD4': 5, '009688': 5, '1ABC9C': 5, '00CED1': 5,
+    '00FFFF': 5, '17A2B8': 5, '20C997': 5, '26A69A': 5, '00ACC1': 5,
     // Blues -> Sky (0)
     '007AFF': 0, '5856D6': 0, '0A84FF': 0, '2196F3': 0, '64D2FF': 0,
+    '1E90FF': 0, '0000FF': 0, '3498DB': 0, '2980B9': 0, '1976D2': 0,
+    '42A5F5': 0, '1E88E5': 0, '039BE5': 0, '0288D1': 0, '0277BD': 0,
     // Purples -> Violet (2)
     'AF52DE': 2, '9C27B0': 2, 'BF5AF2': 2, '5E35B1': 2, '673AB7': 2,
+    '9B59B6': 2, '8E44AD': 2, '800080': 2, 'AB47BC': 2, '7B1FA2': 2,
+    '6A1B9A': 2, '4A148C': 2, '7C4DFF': 2, '651FFF': 2, '6200EA': 2,
     // Magentas/Fuchsias -> Fuchsia (6)
-    'FF2D92': 6, 'E040FB': 6, 'EA80FC': 6, 'FF00FF': 6,
+    'FF2D92': 6, 'E040FB': 6, 'EA80FC': 6, 'FF00FF': 6, 'FF1493': 6,
+    'FF69B4': 6, 'DB2777': 6, 'EC4899': 6, 'F472B6': 6, 'D946EF': 6,
     // Browns/Grays -> Amber (3) as fallback
-    '8E8E93': 3, 'A2845E': 3,
+    '8E8E93': 3, 'A2845E': 3, '795548': 3, '8D6E63': 3, '6D4C41': 3,
   };
   
   // Check exact match first
@@ -88,34 +104,49 @@ function getColorIndexFromHex(hexColor: string): number {
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     
-    // Simple hue-based classification
+    // Calculate hue for better color matching
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
+    const delta = max - min;
     
-    if (max - min < 30) {
-      // Gray/neutral -> Sky (0) as default
-      return 0;
+    // Check for grayscale first
+    if (delta < 30) {
+      return 0; // Gray/neutral -> Sky as default
     }
     
-    if (r > g && r > b) {
-      // Red dominant
-      if (g > b * 1.5) return 7; // Orange
-      return 4; // Rose
+    // Calculate approximate hue (0-360)
+    let hue = 0;
+    if (delta > 0) {
+      if (max === r) {
+        hue = 60 * (((g - b) / delta) % 6);
+      } else if (max === g) {
+        hue = 60 * ((b - r) / delta + 2);
+      } else {
+        hue = 60 * ((r - g) / delta + 4);
+      }
+      if (hue < 0) hue += 360;
     }
-    if (g > r && g > b) {
-      // Green dominant
-      if (b > r) return 5; // Teal
-      return 1; // Emerald
-    }
-    if (b > r && b > g) {
-      // Blue dominant
-      if (r > g * 1.3) return 2; // Violet
-      if (g > r) return 5; // Teal/Cyan
-      return 0; // Sky
-    }
-    if (r > 200 && g > 150 && b < 100) {
-      return 3; // Amber/Yellow
-    }
+    
+    // Map hue to color index
+    // 0-15: Red (Rose 4)
+    // 15-45: Orange (Orange 7)
+    // 45-70: Yellow/Amber (Amber 3)
+    // 70-160: Green (Emerald 1)
+    // 160-200: Cyan/Teal (Teal 5)
+    // 200-260: Blue (Sky 0)
+    // 260-300: Purple/Violet (Violet 2)
+    // 300-345: Magenta/Fuchsia (Fuchsia 6)
+    // 345-360: Red (Rose 4)
+    
+    if (hue < 15 || hue >= 345) return 4; // Rose
+    if (hue < 45) return 7; // Orange
+    if (hue < 70) return 3; // Amber
+    if (hue < 160) return 1; // Emerald
+    if (hue < 200) return 5; // Teal
+    if (hue < 260) return 0; // Sky
+    if (hue < 300) return 2; // Violet
+    return 6; // Fuchsia
+    
   } catch {
     // Fallback
   }
@@ -234,27 +265,25 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   };
 
   return (
+    // Card container with vertical line - similar to task cards
     <div
-      className={cn(
-        'relative rounded-lg border overflow-hidden transition-all duration-200',
-        'hover:shadow-md cursor-default select-none ml-3',
-        colors.bg,
-        colors.border
-      )}
+      className="flex gap-2 mx-auto transition-all duration-200 cursor-default select-none"
       style={{
         minHeight: `${calculatedHeight}px`,
-        maxWidth: 'calc(100% - 12px)', // Match task card width (accounts for priority line + gap)
+        width: '289px', // Match task card width exactly
       }}
     >
-      {/* Left accent bar */}
-      <div className={cn('absolute left-0 top-0 bottom-0 w-1', colors.accent)} />
+      {/* Vertical colored line on left */}
+      <div 
+        className={cn('flex-shrink-0 rounded-full', colors.accent)}
+        style={{ width: '4px', minHeight: '40px' }}
+      />
       
-      <div className="pl-3 pr-2 py-2 flex flex-col gap-1">
-        {/* Header with calendar icon and time */}
+      {/* Content area */}
+      <div className="flex-1 py-1 flex flex-col gap-1">
+        {/* Header with calendar icon */}
         <div className="flex items-center gap-1.5">
-          <div className={cn('p-1 rounded', colors.iconBg)}>
-            <Calendar className={cn('h-3 w-3', colors.mutedText)} />
-          </div>
+          <Calendar className={cn('h-3 w-3', colors.mutedText)} />
           <span className={cn('text-[10px] font-medium uppercase tracking-wide', colors.mutedText)}>
             {provider === 'apple' ? 'iCloud' : 'Google'} Calendar
           </span>
@@ -262,7 +291,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         
         {/* Title */}
         <h4 className={cn(
-          'text-xs font-semibold leading-tight line-clamp-2',
+          'text-sm font-semibold leading-tight line-clamp-2',
           colors.text
         )}>
           {title}
