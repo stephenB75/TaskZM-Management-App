@@ -49,6 +49,8 @@ import { AppHeader } from "./AppHeader";
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useCalendar } from "../contexts/CalendarContext";
 import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
@@ -495,6 +497,11 @@ export function DashboardView({
   const aiSchedulerContext = useAIScheduler();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
+  const { accessToken } = useAuth();
+  const { calendarStatus } = useCalendar();
+  
+  // Calendar events state for showing dots on mobile week view
+  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, number>>({});
 
   // Extract values with safe defaults
   const tasks = tasksContext?.tasks || [];
@@ -583,6 +590,64 @@ export function DashboardView({
   };
 
   const weekColumns = getWeekColumns(mobileWeekOffset);
+
+  // Compute visible date range for calendar events
+  const visibleRange = React.useMemo(() => {
+    if (!weekColumns.length) return null;
+    const start = new Date(weekColumns[0].date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(weekColumns[weekColumns.length - 1].date);
+    end.setHours(23, 59, 59, 999);
+    return {
+      startIso: start.toISOString(),
+      endIso: end.toISOString(),
+    };
+  }, [weekColumns]);
+
+  // Fetch calendar events for the visible week to show dots on mobile day selector
+  useEffect(() => {
+    const fetchCalendarEvents = async () => {
+      try {
+        if (!accessToken) return;
+        const providers: Array<'google' | 'apple'> = [];
+        if (calendarStatus.google) providers.push('google');
+        if (calendarStatus.apple) providers.push('apple');
+        if (providers.length === 0 || !visibleRange) {
+          setCalendarEventsByDate({});
+          return;
+        }
+
+        const projectId = 'gflesnyfpxqhaunfskrw';
+        const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
+        const eventCounts: Record<string, number> = {};
+
+        for (const provider of providers) {
+          const resp = await fetch(
+            `${BASE_URL}/calendar/events/${provider}?startDate=${visibleRange.startIso}&endDate=${visibleRange.endIso}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          if (!Array.isArray(data.events)) continue;
+          for (const event of data.events) {
+            if (!event?.start) continue;
+            const eventStart = new Date(event.start);
+            if (isNaN(eventStart.getTime())) continue;
+            const dateKey = eventStart.toISOString().split('T')[0];
+            eventCounts[dateKey] = (eventCounts[dateKey] || 0) + 1;
+          }
+        }
+        setCalendarEventsByDate(eventCounts);
+      } catch (error) {
+        console.error('Failed to fetch calendar events for dots:', error);
+      }
+    };
+    fetchCalendarEvents();
+  }, [accessToken, calendarStatus.apple, calendarStatus.google, visibleRange?.startIso, visibleRange?.endIso]);
 
   // Update day index to tomorrow when returning to current week
   useEffect(() => {
@@ -1088,6 +1153,8 @@ export function DashboardView({
                   {weekColumns.map((column, index) => {
                     const isSelected = index === mobileDayIndex;
                     const dayTasks = getTasksForDay(column.dateString);
+                    const dayEventCount = calendarEventsByDate[column.dateString] || 0;
+                    const totalItems = dayTasks.length + dayEventCount;
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const isToday = 
@@ -1120,24 +1187,40 @@ export function DashboardView({
                         >
                           {column.date.getDate()}
                         </span>
-                        {dayTasks.length > 0 && (
+                        {/* Show dots for tasks and events - always visible, not just when selected */}
+                        {totalItems > 0 && (
                           <div className="flex items-center gap-0.5 mt-1">
+                            {/* Task dots (primary color) */}
                             {Array.from({
-                              length: Math.min(dayTasks.length, 5),
+                              length: Math.min(dayTasks.length, 3),
                             }).map((_, i) => (
                               <div
-                                key={i}
+                                key={`task-${i}`}
                                 className={cn(
                                   "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
                                   isSelected
                                     ? "bg-primary"
-                                    : "bg-primary/50",
+                                    : "bg-primary/60",
                                 )}
                               />
                             ))}
-                            {dayTasks.length > 5 && (
+                            {/* Event dots (blue color to differentiate from tasks) */}
+                            {Array.from({
+                              length: Math.min(dayEventCount, 3),
+                            }).map((_, i) => (
+                              <div
+                                key={`event-${i}`}
+                                className={cn(
+                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
+                                  isSelected
+                                    ? "bg-blue-500"
+                                    : "bg-blue-400/60",
+                                )}
+                              />
+                            ))}
+                            {totalItems > 6 && (
                               <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5">
-                                +{dayTasks.length - 5}
+                                +{totalItems - 6}
                               </span>
                             )}
                           </div>
