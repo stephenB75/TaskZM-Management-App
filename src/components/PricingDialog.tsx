@@ -577,6 +577,15 @@ export function PricingDialog({
             </div>
           )}
 
+          {/* Payment form country selection hint - shown prominently before plan cards */}
+          <div className="mb-3 md:mb-4">
+            <div className="p-2.5 md:p-3 bg-amber-50/90 dark:bg-amber-900/30 rounded-lg border-2 border-amber-300 dark:border-amber-700/60 shadow-sm">
+              <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-amber-800 dark:text-amber-200 leading-snug font-medium`}>
+                💡 <span className="font-semibold">Important:</span> Please select your country first in the payment form to properly fill out payment details.
+              </p>
+            </div>
+          </div>
+
           <div className={cn("grid gap-2.5 md:gap-3 max-w-full", "grid-cols-1 md:grid-cols-3")}>
             {/* Free Tier */}
             <motion.div
@@ -898,15 +907,6 @@ export function PricingDialog({
                 </div>
               </motion.div>
             )}
-          </div>
-
-          {/* Payment form country selection hint */}
-          <div className="mt-2 md:mt-3">
-            <div className="p-2 bg-amber-50/80 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
-              <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-center text-amber-700 dark:text-amber-300 leading-snug`}>
-                💡 <span className="font-medium">Tip:</span> Please select your country first in the payment form to properly fill out payment details.
-              </p>
-            </div>
           </div>
 
           <div className="mt-2 md:mt-3">

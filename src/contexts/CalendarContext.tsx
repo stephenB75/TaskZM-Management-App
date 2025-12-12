@@ -330,10 +330,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         [provider]: false,
       }));
 
-      // Update localStorage
+      // Update localStorage and clear cache
       if (user.id) {
         const newStatus = { ...calendarStatus, [provider]: false };
         localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(newStatus));
+        // Clear the status cache to prevent stale data on refresh
+        localStorage.removeItem(`calendar_status_cache_${user.id}`);
+        localStorage.removeItem(`calendar_status_cache_time_${user.id}`);
       }
 
       toast.success(`${provider === 'apple' ? 'Apple' : provider} Calendar disconnected`);
@@ -406,11 +409,17 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (provider === 'apple') {
       try {
         setIsSyncing(true);
+        
+        // Auto-detect user's timezone from browser
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
+        
         const response = await fetch(`${BASE_URL}/calendar/apple/caldav/sync`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ userTimezone }),
         });
 
         const data = await response.json();

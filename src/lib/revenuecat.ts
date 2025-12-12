@@ -13,6 +13,135 @@ let purchasesInstance: any = null;
 let isConfigured = false;
 let isInitializing = false;
 
+/**
+ * Show payment form message modal before redirecting to Stripe Checkout
+ */
+function showPaymentFormMessage(checkoutUrl: string): void {
+  if (typeof window === 'undefined') {
+    // If not in browser, redirect immediately
+    window.location.href = checkoutUrl;
+    return;
+  }
+
+  // Create modal overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  `;
+
+  // Create modal content
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: fadeIn 0.2s ease-out;
+  `;
+
+  // Add fade-in animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  `;
+  document.head.appendChild(style);
+
+  modal.innerHTML = `
+    <div style="text-align: center;">
+      <div style="font-size: 32px; margin-bottom: 16px;">💡</div>
+      <h3 style="font-size: 20px; font-weight: 600; color: #1f2937; margin-bottom: 12px;">
+        Important Payment Information
+      </h3>
+      <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 24px;">
+        <strong>Please select your country first</strong> in the payment form to properly fill out payment details. 
+        Once you select your country, all payment fields will become active.
+      </p>
+      <button id="continue-to-payment" style="
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: background 0.2s;
+      " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+        Continue to Payment Form
+      </button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // Handle continue button click
+  const continueButton = modal.querySelector('#continue-to-payment');
+  const handleContinue = () => {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.2s ease-out';
+    setTimeout(() => {
+      document.body.removeChild(overlay);
+      document.head.removeChild(style);
+      // Comprehensive cleanup before redirect
+      try {
+        const dialogs = document.querySelectorAll('[role="dialog"], [data-state="open"]');
+        dialogs.forEach((dialog) => {
+          const closeButton = dialog.querySelector('[aria-label*="close" i], [aria-label*="Close"]');
+          if (closeButton && closeButton instanceof HTMLElement) {
+            closeButton.click();
+          }
+        });
+        
+        const allOverlays = document.querySelectorAll('[style*="z-index"]');
+        allOverlays.forEach((overlay) => {
+          const element = overlay as HTMLElement;
+          const zIndex = window.getComputedStyle(element).zIndex;
+          if (parseInt(zIndex) > 100) {
+            element.style.pointerEvents = 'none';
+            element.style.display = 'none';
+          }
+        });
+        
+        document.body.style.pointerEvents = 'auto';
+        document.documentElement.style.pointerEvents = 'auto';
+      } catch (cleanupError) {
+        console.debug('Cleanup before redirect (non-critical):', cleanupError);
+      }
+      
+      // Redirect to Stripe Checkout
+      window.location.href = checkoutUrl;
+    }, 200);
+  };
+
+  if (continueButton) {
+    continueButton.addEventListener('click', handleContinue);
+  }
+
+  // Also allow clicking outside to continue (optional)
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      handleContinue();
+    }
+  });
+}
+
 async function loadRevenueCatSDK() {
   if (typeof window === 'undefined') {
     return null;
@@ -1079,68 +1208,9 @@ export async function purchaseProSubscription(
     
     if (checkoutUrl) {
       console.log('🔗 Package has checkout URL, redirecting to Stripe Checkout:', checkoutUrl);
-      // Comprehensive cleanup to ensure Stripe Checkout form fields are fully clickable
-      // This fixes issues where clickable areas are outside the field boxes
-      try {
-        // Close any open dialogs/modals that might interfere
-        const dialogs = document.querySelectorAll('[role="dialog"], [data-state="open"]');
-        dialogs.forEach((dialog) => {
-          const closeButton = dialog.querySelector('[aria-label*="close" i], [aria-label*="Close"], button[aria-label*="close" i]');
-          if (closeButton && closeButton instanceof HTMLElement) {
-            closeButton.click();
-          }
-        });
-        
-        // Remove any high z-index overlays, backdrops, or modals
-        const allOverlays = document.querySelectorAll(
-          '[style*="z-index"], [class*="overlay"], [class*="backdrop"], [class*="modal"], [class*="dialog"]'
-        );
-        allOverlays.forEach((overlay) => {
-          const element = overlay as HTMLElement;
-          const zIndex = window.getComputedStyle(element).zIndex;
-          const computedZIndex = parseInt(zIndex) || 0;
-          
-          // Remove high z-index elements that could block clicks
-          if (computedZIndex > 100 || element.classList.contains('overlay') || 
-              element.classList.contains('backdrop') || element.classList.contains('modal')) {
-            element.style.pointerEvents = 'none';
-            element.style.display = 'none';
-            element.style.visibility = 'hidden';
-            element.style.opacity = '0';
-          }
-        });
-        
-        // Clear pointer-events on body and html to ensure nothing blocks clicks
-        document.body.style.pointerEvents = 'auto';
-        document.documentElement.style.pointerEvents = 'auto';
-        
-        // Remove any fixed or absolute positioned elements that might overlay
-        const fixedElements = document.querySelectorAll('[style*="position: fixed"], [style*="position:absolute"]');
-        fixedElements.forEach((element) => {
-          const el = element as HTMLElement;
-          const position = window.getComputedStyle(el).position;
-          if ((position === 'fixed' || position === 'absolute') && 
-              (parseInt(window.getComputedStyle(el).zIndex) || 0) > 100) {
-            el.style.pointerEvents = 'none';
-          }
-        });
-        
-        // Ensure all inputs and form elements are accessible
-        const formElements = document.querySelectorAll('input, textarea, select, button, label');
-        formElements.forEach((element) => {
-          const el = element as HTMLElement;
-          el.style.pointerEvents = 'auto';
-        });
-        
-        // Small delay to ensure DOM cleanup completes before redirect
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (cleanupError) {
-        console.debug('Cleanup before redirect (non-critical):', cleanupError);
-      }
       
-      // Use window.location.href for full page navigation
-      // This ensures a clean redirect and that Stripe Checkout form fields are immediately clickable
-      window.location.href = checkoutUrl;
+      // Show payment form message before redirecting
+      showPaymentFormMessage(checkoutUrl);
       return { 
         success: true, 
         error: 'Redirecting to payment...' 
@@ -1271,8 +1341,8 @@ export async function purchaseProSubscription(
         } catch (cleanupError) {
           console.debug('Cleanup before redirect (non-critical):', cleanupError);
         }
-        // Use window.location.href for better form field activation
-        window.location.href = errorCheckoutUrl;
+        // Show payment form message before redirecting
+        showPaymentFormMessage(errorCheckoutUrl);
         return { 
           success: true, 
           error: 'Redirecting to payment...' 
@@ -1410,9 +1480,8 @@ export async function purchaseProSubscription(
       } catch (cleanupError) {
         console.debug('Cleanup before redirect (non-critical):', cleanupError);
       }
-      // Use window.location.href for full page navigation
-      // This ensures a clean redirect and that Stripe Checkout form fields are immediately clickable
-      window.location.href = resultCheckoutUrl;
+      // Show payment form message before redirecting
+      showPaymentFormMessage(resultCheckoutUrl);
       return { 
         success: true, 
         error: 'Redirecting to payment...' 

@@ -3112,6 +3112,22 @@ app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
+    // Get user's timezone from request body (auto-detected from browser)
+    let userTimezone = 'America/New_York'; // Default fallback
+    try {
+      const body = await c.req.json();
+      console.log('Sync request body:', JSON.stringify(body));
+      if (body?.userTimezone) {
+        userTimezone = body.userTimezone;
+        console.log(`Using user timezone: ${userTimezone}`);
+      } else {
+        console.log('No userTimezone in body, using default:', userTimezone);
+      }
+    } catch (error) {
+      // No body or invalid JSON - use default timezone
+      console.log('Error parsing request body, using default timezone:', error);
+    }
+
     // Get stored credentials
     const credentialsJson = await kv.get(`caldav_credentials_${userId}`);
     if (!credentialsJson) {
@@ -3131,14 +3147,15 @@ app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
       return c.json({ error: 'No workspace found. Please try logging out and back in.' }, 400);
     }
 
-    // Perform sync
+    // Perform sync with user's timezone
     const supabase = getSupabaseClient();
     const result = await appleCaldavSync.syncCalendarsToDatabase(
       supabase,
       userId,
       workspaceId,
       { email: storedCredentials.email, appPassword: storedCredentials.appPassword },
-      storedCredentials.selectedCalendars.map((cal: any) => cal.href)
+      storedCredentials.selectedCalendars.map((cal: any) => cal.href),
+      userTimezone
     );
 
     // Store sync result

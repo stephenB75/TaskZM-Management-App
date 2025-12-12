@@ -12,6 +12,9 @@
  * 5. Store as read-only items with source="iCloud"
  */
 
+// Module-level variable to store user's timezone (set during sync)
+let currentUserTimezone = 'America/New_York';
+
 // Types
 export interface AppleCalDAVCredentials {
   email: string;
@@ -659,20 +662,12 @@ export async function fetchCalendarEvents(
 }
 
 /**
- * Format a date to ISO-like string, preserving local time format if original was local
+ * Format a date to ISO string (always UTC with Z suffix)
+ * This ensures consistent timezone handling across all events
  */
-function formatDatePreservingTimezone(date: Date, isUtc: boolean): string {
-  if (isUtc) {
-    return date.toISOString();
-  }
-  // Format as local time without Z suffix
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+function formatDatePreservingTimezone(date: Date, _isUtc: boolean): string {
+  // Always output in UTC format for consistent timezone handling
+  return date.toISOString();
 }
 
 /**
@@ -842,8 +837,14 @@ function parseVEvent(
     const fullValue = match[1].replace(/\r?\n[ \t]/g, '');
     
     // Extract TZID if present (e.g., ;TZID=America/New_York:20231225T100000)
-    const tzidMatch = fullValue.match(/TZID=([^:;]+)/i);
-    const tzid = tzidMatch ? tzidMatch[1] : undefined;
+    // Handle both quoted and unquoted TZIDs
+    const tzidMatch = fullValue.match(/TZID="?([^":;]+)"?/i);
+    let tzid = tzidMatch ? tzidMatch[1].trim() : undefined;
+    
+    // Clean up any remaining quotes or spaces
+    if (tzid) {
+      tzid = tzid.replace(/["']/g, '').trim();
+    }
     
     // Extract the actual value after the colon
     const colonIndex = fullValue.lastIndexOf(':');
@@ -866,7 +867,8 @@ function parseVEvent(
   const dtstart = dtstartData.value;
   const dtstartTzid = dtstartData.tzid;
 
-  // Parse dates - properly handle timezone
+  // Parse dates - properly handle timezone and convert to UTC for storage
+  // Browser will convert from UTC to user's local timezone when displaying
   const parseDate = (dateStr: string, tzid?: string): string => {
     // Check if already has Z (UTC)
     const isUtc = dateStr.endsWith('Z');
@@ -886,39 +888,86 @@ function parseVEvent(
         return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
       }
       
-      // If there's a TZID, we need to convert to UTC
-      // For now, we'll construct an ISO string and let the Date object handle it
-      // Then convert to UTC
+      // Helper function to convert local time in a timezone to UTC
+      const convertToUTC = (targetTzid: string, yr: number, mo: number, dy: number, hr: number, mn: number, sc: number): string => {
+        // Use formatToParts for reliable parsing
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: targetTzid,
+          year: 'numeric',
+          month: 'numeric',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+          second: 'numeric',
+          hour12: false,
+        });
+        
+        // Try different UTC offsets to find the one that gives us our target local time
+        for (let offsetHours = -12; offsetHours <= 14; offsetHours++) {
+          const testUTC = new Date(Date.UTC(yr, mo, dy, hr - offsetHours, mn, sc));
+          
+          const parts = formatter.formatToParts(testUTC);
+          const getPart = (type: string): number => {
+            const part = parts.find(p => p.type === type);
+            return part ? parseInt(part.value, 10) : 0;
+          };
+          
+          const tzYear = getPart('year');
+          const tzMonth = getPart('month');
+          const tzDay = getPart('day');
+          let tzHour = getPart('hour');
+          const tzMin = getPart('minute');
+          
+          // Handle hour 24 (midnight next day)
+          if (tzHour === 24) tzHour = 0;
+          
+          // Check if this UTC time produces our desired local time
+          if (tzYear === yr && tzMonth === mo + 1 && tzDay === dy && 
+              tzHour === hr && tzMin === mn) {
+            return testUTC.toISOString();
+          }
+        }
+        
+        // Fallback: assume timezone is similar to EST/EDT (-5/-4)
+        const fallbackUTC = new Date(Date.UTC(yr, mo, dy, hr + 5, mn, sc));
+        return fallbackUTC.toISOString();
+      };
+
+      // If there's a TZID, convert from that timezone to UTC
       if (tzid) {
         try {
-          // Create a date string in the specified timezone
-          const localDate = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
-          // This creates a Date treating the input as local time
-          // We need to adjust for the actual timezone
-          // For simplicity, use Intl API if available
-          const formatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: tzid,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-          });
+          const yearNum = parseInt(year, 10);
+          const monthNum = parseInt(month, 10) - 1; // JS months are 0-indexed
+          const dayNum = parseInt(day, 10);
+          const hourNum = parseInt(hour, 10);
+          const minuteNum = parseInt(minute, 10);
+          const secondNum = parseInt(second, 10);
           
-          // Parse the original time in the specified timezone and convert to UTC
-          // This is complex - for now, treat as local time which the browser will handle
-          // Return without Z so browser treats as local
-          return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
-        } catch {
-          // Fallback: treat as local time
-          return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+          return convertToUTC(tzid, yearNum, monthNum, dayNum, hourNum, minuteNum, secondNum);
+        } catch (e) {
+          console.warn(`Failed to convert timezone ${tzid}:`, e);
+          return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
         }
       }
       
-      // No TZID and no Z = floating/local time - don't add Z
-      return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+      // No TZID and no Z = floating/local time
+      // Use the user's detected timezone for conversion to UTC
+      try {
+        const defaultTzid = currentUserTimezone;
+        console.log(`Parsing floating time ${dateStr} with user timezone: ${defaultTzid}`);
+        
+        const yearNum = parseInt(year, 10);
+        const monthNum = parseInt(month, 10) - 1;
+        const dayNum = parseInt(day, 10);
+        const hourNum = parseInt(hour, 10);
+        const minuteNum = parseInt(minute, 10);
+        const secondNum = parseInt(second, 10);
+        
+        return convertToUTC(defaultTzid, yearNum, monthNum, dayNum, hourNum, minuteNum, secondNum);
+      } catch (e) {
+        console.warn(`Failed to convert floating time with timezone ${currentUserTimezone}:`, e);
+        return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+      }
     }
     
     // Handle DATE format (e.g., 20231225) - all-day events
@@ -991,14 +1040,20 @@ export async function testConnection(
 
 /**
  * Sync events from selected calendars to database
+ * @param userTimezone - User's timezone from browser (e.g., 'America/New_York', 'America/Los_Angeles')
  */
 export async function syncCalendarsToDatabase(
   supabase: any,
   userId: string,
   workspaceId: string,
   credentials: AppleCalDAVCredentials,
-  selectedCalendarHrefs: string[]
+  selectedCalendarHrefs: string[],
+  userTimezone: string = 'America/New_York'
 ): Promise<SyncResult> {
+  // Store the user timezone for use in date parsing
+  currentUserTimezone = userTimezone;
+  console.log(`Syncing with user timezone: ${userTimezone}`);
+  
   const result: SyncResult = {
     success: true,
     created: 0,

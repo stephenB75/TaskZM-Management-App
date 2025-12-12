@@ -923,11 +923,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       onCheckedChange={(checked) => {
                         if (checked) connectCalendar('apple');
                         else disconnectCalendar('apple');
-                        if (!checked) {
-                          toast.success('Apple Calendar Disconnected', {
-                            description: 'Apple Calendar has been disconnected',
-                          });
-                        }
                       }}
                     />
                   </div>

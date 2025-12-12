@@ -168,13 +168,16 @@ export function AppleCalDAVSetupDialog({
         throw new Error(saveData.error || 'Failed to save settings');
       }
 
-      // Trigger initial sync
+      // Trigger initial sync with user's timezone
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
+      
       const syncResponse = await fetch(`${BASE_URL}/calendar/apple/caldav/sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ userTimezone }),
       });
 
       const syncData = await syncResponse.json();
