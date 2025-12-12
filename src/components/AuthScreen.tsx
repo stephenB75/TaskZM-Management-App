@@ -55,7 +55,7 @@ import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { PrivacyPolicyDialog } from "./PrivacyPolicyDialog";
 import { TermsOfServiceDialog } from "./TermsOfServiceDialog";
-import taskzmLogo from "../assets/taskzm-logo-light.png";  // Purple color logo
+import taskzmLogo from "../assets/taskzm-logo.png";  // Black logo
 import { supabase } from '../lib/supabase-client';
 import { 
   DEMO_ACCOUNT_CONFIG, 
@@ -141,7 +141,32 @@ export function AuthScreen() {
 
   // Features Carousel State
   const [currentFeatureIndex, setCurrentFeatureIndex] = useState(0);
-  const featuresPerPage = AUTH_CONFIG.featuresPerPage;
+  const [isMobileView, setIsMobileView] = useState(() => 
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+  const previousMobileRef = React.useRef(isMobileView);
+  
+  // Responsive features per page: 4 on mobile (2x2), 6 on desktop (2x3)
+  const featuresPerPage = isMobileView ? 4 : AUTH_CONFIG.featuresPerPage;
+  
+  // Detect mobile view and reset carousel index on resize
+  React.useEffect(() => {
+    const checkMobile = () => {
+      const nowMobile = window.innerWidth < 640;
+      // Only reset if mobile state actually changed
+      if (previousMobileRef.current !== nowMobile) {
+        previousMobileRef.current = nowMobile;
+        setIsMobileView(nowMobile);
+        setCurrentFeatureIndex(0); // Reset to first page
+      }
+    };
+    
+    // Initial check
+    checkMobile();
+    
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []); // No dependencies - uses ref to track previous state
 
   // Password strength
   const passwordStrength = getPasswordStrength(signUpPassword);
@@ -360,19 +385,21 @@ export function AuthScreen() {
     }
   }, []);
 
-  // Auto-scroll carousel
+  // Auto-scroll carousel - recalculates when featuresPerPage changes
   React.useEffect(() => {
     const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
     if (MARKETING_FEATURES.length <= featuresPerPage) return;
     
     const interval = setInterval(() => {
-      setCurrentFeatureIndex((prev) =>
-        prev === totalPages - 1 ? 0 : prev + 1
-      );
+      setCurrentFeatureIndex((prev) => {
+        // Ensure we don't go out of bounds
+        const safeIndex = Math.min(prev, totalPages - 1);
+        return safeIndex >= totalPages - 1 ? 0 : safeIndex + 1;
+      });
     }, 4000); // Change slide every 4 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [featuresPerPage]); // Restart interval when featuresPerPage changes
 
   // Animation variants
   const containerVariants = {
@@ -415,9 +442,9 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-start lg:items-center justify-center py-4 sm:py-6 lg:py-0 pb-6 sm:pb-8 lg:pb-0">
-      {/* Background Image with Overlay */}
-      <div className="fixed inset-0 z-0">
+    <div className="min-h-screen w-full overflow-x-hidden relative flex items-start lg:items-center justify-center py-4 sm:py-6 lg:py-0 pb-6 sm:pb-8 lg:pb-0">
+      {/* Background Image with Overlay - Full viewport coverage */}
+      <div className="fixed inset-0 z-0 w-screen h-screen">
         <ImageWithFallback
           src={AUTH_BACKGROUND_IMAGE.url}
           alt={AUTH_BACKGROUND_IMAGE.alt}
@@ -493,147 +520,162 @@ export function AuthScreen() {
               </div>
             </motion.div>
 
-            {/* Features Section - Modern Carousel Design */}
+            {/* Features Section - Completely different design for mobile vs desktop */}
             <motion.div
-              className="space-y-4 lg:flex-1 lg:flex lg:flex-col lg:max-h-[340px] lg:min-h-0"
+              className="lg:flex-1 lg:flex lg:flex-col lg:max-h-[340px] lg:min-h-0"
               variants={itemVariants}
             >
-              {/* Section Header with Modern Styling */}
-              <div className="relative flex items-center justify-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#7B68EE]/20 to-transparent" />
-                </div>
-                <div className="relative px-4 py-1 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-full border border-[#7B68EE]/20">
-                  <h3 className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent">
-                    {AUTH_UI_TEXT.featuresHeader}
-                  </h3>
+              {/* MOBILE: Horizontal scrolling chips - with solid background for readability */}
+              <div className="sm:hidden">
+                <div className="overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2">
+                  <div className="flex gap-2 w-max">
+                    {MARKETING_FEATURES.slice(0, 8).map(({ icon: Icon, title }) => (
+                      <div
+                        key={title}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-[#7B68EE]/30 shadow-sm"
+                      >
+                        <Icon className="w-3.5 h-3.5 text-[#7B68EE]" />
+                        <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">{title}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center px-3 py-2 rounded-full bg-[#7B68EE] shadow-sm">
+                      <span className="text-[10px] font-semibold text-white whitespace-nowrap">+{MARKETING_FEATURES.length - 8} more</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Modern Carousel Container */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/40 backdrop-blur-md border border-white/30 dark:border-gray-700/30 p-4 lg:flex-1 lg:min-h-0">
-                {/* Decorative corner accents */}
-                <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-[#7B68EE]/10 to-transparent rounded-br-full" />
-                <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-[#D4C5F9]/10 to-transparent rounded-tl-full" />
-                
-                {/* Navigation Controls - Modern pill style */}
-                {MARKETING_FEATURES.length > featuresPerPage && (
-                  <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full p-1 shadow-sm">
-                    <button
-                      onClick={() => {
-                        setCurrentFeatureIndex((prev) => {
-                          const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
-                          return prev === 0 ? totalPages - 1 : prev - 1;
-                        });
-                      }}
-                      className="p-1.5 hover:bg-[#7B68EE]/10 rounded-full transition-colors"
-                      aria-label="Previous features"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
-                    </button>
-                    <span className="text-[10px] font-medium text-[#7B68EE] dark:text-[#9B7EE8] tabular-nums min-w-[24px] text-center">
-                      {currentFeatureIndex + 1}/{Math.ceil(MARKETING_FEATURES.length / featuresPerPage)}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setCurrentFeatureIndex((prev) => {
-                          const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
-                          return prev === totalPages - 1 ? 0 : prev + 1;
-                        });
-                      }}
-                      className="p-1.5 hover:bg-[#7B68EE]/10 rounded-full transition-colors"
-                      aria-label="Next features"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
-                    </button>
+              {/* DESKTOP: Full carousel with icons */}
+              <div className="hidden sm:block space-y-4">
+                {/* Section Header */}
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#7B68EE]/20 to-transparent" />
                   </div>
-                )}
-                
-                <div className="overflow-hidden min-h-[100px] sm:min-h-[110px] lg:h-full lg:flex lg:items-center pt-2">
-                  <motion.div
-                    className="flex"
-                    animate={{
-                      x: `-${currentFeatureIndex * 100}%`,
-                    }}
-                    transition={{ 
-                      duration: 0.8, 
-                      ease: [0.25, 0.1, 0.25, 1],
-                      type: "tween"
-                    }}
-                  >
-                    {/* Feature Pages */}
-                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => {
-                      const startIdx = pageIndex * featuresPerPage;
-                      const endIdx = startIdx + featuresPerPage;
-                      const pageFeatures = MARKETING_FEATURES.slice(startIdx, endIdx);
-                      
-                      return (
-                        <div
-                          key={pageIndex}
-                          className="grid grid-cols-3 gap-3 sm:gap-4 min-w-full flex-shrink-0 px-2"
-                        >
-                          {pageFeatures.map(({ icon: Icon, title }, idx) => (
-                            <motion.div
-                              key={title}
-                              className="flex flex-col items-center gap-2.5 text-center group cursor-default"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ 
-                                duration: 0.5, 
-                                delay: idx * 0.08,
-                                ease: "easeOut"
-                              }}
-                            >
-                              {/* Icon Container with modern styling */}
-                              <div className="relative">
-                                {/* Outer ring */}
-                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7B68EE]/20 to-[#D4C5F9]/20 scale-125 opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                                
-                                {/* Main icon box */}
-                                <motion.div 
-                                  className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-lg shadow-[#7B68EE]/20 group-hover:shadow-xl group-hover:shadow-[#7B68EE]/30 transition-all duration-500"
-                                  whileHover={{ scale: 1.1, rotate: 3 }}
-                                  transition={{ duration: 0.3 }}
-                                >
-                                  <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                                </motion.div>
-                                
-                                {/* Floating dots decoration */}
-                                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#D4C5F9] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                              </div>
-                              
-                              {/* Feature title */}
-                              <span className="text-[10px] sm:text-xs font-medium text-foreground/80 group-hover:text-foreground leading-tight transition-colors duration-300 max-w-[80px]">
-                                {title}
-                              </span>
-                            </motion.div>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </motion.div>
+                  <div className="relative px-4 py-1 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-full border border-[#7B68EE]/20">
+                    <h3 className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent">
+                      {AUTH_UI_TEXT.featuresHeader}
+                    </h3>
+                  </div>
                 </div>
 
-                {/* Modern Page Indicators - Progress bar style */}
-                {MARKETING_FEATURES.length > featuresPerPage && (
-                  <div className="flex justify-center gap-2 mt-4">
-                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, idx) => (
+                {/* Carousel Container */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/40 backdrop-blur-md border border-white/30 dark:border-gray-700/30 p-4 lg:flex-1 lg:min-h-0">
+                  {/* Decorative corner accents */}
+                  <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-[#7B68EE]/10 to-transparent rounded-br-full" />
+                  <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-[#D4C5F9]/10 to-transparent rounded-tl-full" />
+                  
+                  {/* Navigation Controls */}
+                  {MARKETING_FEATURES.length > featuresPerPage && (
+                    <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full p-1 shadow-sm">
                       <button
-                        key={idx}
-                        onClick={() => setCurrentFeatureIndex(idx)}
-                        className="relative h-1 overflow-hidden rounded-full transition-all duration-500"
-                        style={{ width: idx === currentFeatureIndex ? '32px' : '8px' }}
-                        aria-label={`Go to page ${idx + 1}`}
+                        onClick={() => {
+                          setCurrentFeatureIndex((prev) => {
+                            const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+                            return prev === 0 ? totalPages - 1 : prev - 1;
+                          });
+                        }}
+                        className="p-1.5 hover:bg-[#7B68EE]/10 rounded-full transition-colors"
+                        aria-label="Previous features"
                       >
-                        <div className={`absolute inset-0 rounded-full transition-all duration-500 ${
-                          idx === currentFeatureIndex 
-                            ? 'bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9]' 
-                            : 'bg-gray-300/60 dark:bg-gray-600/60 hover:bg-[#7B68EE]/40'
-                        }`} />
+                        <ChevronLeft className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
                       </button>
-                    ))}
+                      <span className="text-[10px] font-medium text-[#7B68EE] dark:text-[#9B7EE8] tabular-nums min-w-[24px] text-center">
+                        {currentFeatureIndex + 1}/{Math.ceil(MARKETING_FEATURES.length / featuresPerPage)}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setCurrentFeatureIndex((prev) => {
+                            const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+                            return prev === totalPages - 1 ? 0 : prev + 1;
+                          });
+                        }}
+                        className="p-1.5 hover:bg-[#7B68EE]/10 rounded-full transition-colors"
+                        aria-label="Next features"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div className="overflow-hidden min-h-[110px] lg:h-full lg:flex lg:items-center pt-2">
+                    <motion.div
+                      className="flex"
+                      animate={{
+                        x: `-${currentFeatureIndex * 100}%`,
+                      }}
+                      transition={{ 
+                        duration: 0.8, 
+                        ease: [0.25, 0.1, 0.25, 1],
+                        type: "tween"
+                      }}
+                    >
+                      {/* Feature Pages - Desktop only */}
+                      {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => {
+                        const startIdx = pageIndex * featuresPerPage;
+                        const endIdx = startIdx + featuresPerPage;
+                        const pageFeatures = MARKETING_FEATURES.slice(startIdx, endIdx);
+                        
+                        return (
+                          <div
+                            key={pageIndex}
+                            className="grid grid-cols-3 gap-4 min-w-full flex-shrink-0 px-2"
+                          >
+                            {pageFeatures.map(({ icon: Icon, title }, idx) => (
+                              <motion.div
+                                key={title}
+                                className="flex flex-col items-center gap-2.5 text-center group cursor-default"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ 
+                                  duration: 0.5, 
+                                  delay: idx * 0.08,
+                                  ease: "easeOut"
+                                }}
+                              >
+                                <div className="relative">
+                                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7B68EE]/20 to-[#D4C5F9]/20 scale-125 opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                                  <motion.div 
+                                    className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-lg shadow-[#7B68EE]/20 group-hover:shadow-xl group-hover:shadow-[#7B68EE]/30 transition-all duration-500"
+                                    whileHover={{ scale: 1.1, rotate: 3 }}
+                                    transition={{ duration: 0.3 }}
+                                  >
+                                    <Icon className="w-6 h-6 text-white" />
+                                  </motion.div>
+                                  <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#D4C5F9] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                </div>
+                                <span className="text-xs font-medium text-foreground/80 group-hover:text-foreground leading-tight transition-colors duration-300 max-w-[80px]">
+                                  {title}
+                                </span>
+                              </motion.div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </motion.div>
                   </div>
-                )}
+
+                  {/* Page Indicators */}
+                  {MARKETING_FEATURES.length > featuresPerPage && (
+                    <div className="flex justify-center gap-2 mt-4">
+                      {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentFeatureIndex(idx)}
+                          className="relative h-1 overflow-hidden rounded-full transition-all duration-500"
+                          style={{ width: idx === currentFeatureIndex ? '32px' : '8px' }}
+                          aria-label={`Go to page ${idx + 1}`}
+                        >
+                          <div className={`absolute inset-0 rounded-full transition-all duration-500 ${
+                            idx === currentFeatureIndex 
+                              ? 'bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9]' 
+                              : 'bg-gray-300/60 dark:bg-gray-600/60 hover:bg-[#7B68EE]/40'
+                          }`} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>
