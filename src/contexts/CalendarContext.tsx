@@ -308,7 +308,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (!user || !accessToken) return;
 
     try {
-      const response = await fetch(`${BASE_URL}/calendar/${provider}`, {
+      // Apple Calendar uses CalDAV endpoint, other providers use OAuth endpoint
+      const endpoint = provider === 'apple' 
+        ? `${BASE_URL}/calendar/apple/caldav`
+        : `${BASE_URL}/calendar/${provider}`;
+      
+      const response = await fetch(endpoint, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -331,10 +336,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(newStatus));
       }
 
-      toast.success(`${provider} Calendar disconnected`);
+      toast.success(`${provider === 'apple' ? 'Apple' : provider} Calendar disconnected`);
     } catch (error) {
       console.error(`Failed to disconnect ${provider}:`, error);
-      toast.error(`Failed to disconnect ${provider} Calendar`);
+      toast.error(`Failed to disconnect ${provider === 'apple' ? 'Apple' : provider} Calendar`);
     }
   }, [user, accessToken, calendarStatus]);
 

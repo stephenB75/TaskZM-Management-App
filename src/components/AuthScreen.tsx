@@ -485,8 +485,11 @@ export function AuthScreen() {
                   className="w-[80px] sm:w-[100px] md:w-[140px] lg:w-[160px]"
                   whileHover={{ scale: 1.02 }}
                 />
-                <p className="text-[9px] sm:text-[10px] text-gray-700 dark:text-foreground text-center px-2 sm:px-0 max-w-md">
+                <p className="text-[11px] sm:text-[13px] font-semibold text-[#7B68EE] dark:text-[#9B7EE8] text-center px-2 sm:px-0 max-w-md">
                   {AUTH_UI_TEXT.tagline}
+                </p>
+                <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-muted-foreground text-center px-2 sm:px-0 max-w-md">
+                  {AUTH_UI_TEXT.subtitle}
                 </p>
               </div>
             </motion.div>

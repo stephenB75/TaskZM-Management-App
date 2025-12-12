@@ -8,7 +8,7 @@ import { TOAST_DURATION_DEFAULT_MS } from "../../lib/layout-constants";
 const Toaster = ({ ...props }: ToasterProps) => {
   const { actualTheme } = useTheme();
   const theme = actualTheme === 'dark' ? 'dark' : 'light';
-  const [position, setPosition] = useState<ToasterProps["position"]>("bottom-center");
+  const [position, setPosition] = useState<ToasterProps["position"]>("bottom-right");
 
   useEffect(() => {
     // Ensure window is available (client-side only)
@@ -20,7 +20,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         if (window.innerWidth < 768) {
           setPosition("top-center");
         } else {
-          setPosition("bottom-center");
+          setPosition("bottom-right");
         }
       } catch (error) {
         // Fallback to default position if check fails

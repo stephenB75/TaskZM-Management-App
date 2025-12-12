@@ -17,7 +17,8 @@ export const AUTH_UI_TEXT = {
   // Branding
   appName: 'TaskZM',
   welcomeMessage: 'Welcome to TaskZM!',
-  tagline: 'Your calm, organized task companion',
+  tagline: 'GTD in its simplest form.',
+  subtitle: 'Your calm, organized task companion',
   neurodivergentBadge: 'Neurodivergent-friendly',
   featuresHeader: '14 Smart Features',
   

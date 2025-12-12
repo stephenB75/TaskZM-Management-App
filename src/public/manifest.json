@@ -1,7 +1,7 @@
 {
-  "name": "TaskZM - A neurodivergent-friendly task management application with AI-assisted planning.",
+  "name": "TaskZM - GTD in its simplest form.",
   "short_name": "TaskZM",
-  "description": "TaskZM - A neurodivergent-friendly task management application with AI-assisted planning.",
+  "description": "TaskZM - GTD in its simplest form. A neurodivergent-friendly task management application with AI-assisted planning.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

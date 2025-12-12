@@ -352,8 +352,8 @@ export const TOAST_DURATION_LONG_MS = 5000; // Long toast duration (5 seconds)
 export const TOAST_DURATION_EXTRA_LONG_MS = 10000; // Extra long toast duration (10 seconds)
 
 // App Metadata
-export const APP_TITLE = 'TaskZM - A neurodivergent-friendly task management application with AI-assisted planning.';
-export const APP_DESCRIPTION = 'TaskZM - A neurodivergent-friendly task management application with AI-assisted planning.';
+export const APP_TITLE = 'TaskZM - GTD in its simplest form.';
+export const APP_DESCRIPTION = 'TaskZM - GTD in its simplest form. A neurodivergent-friendly task management application with AI-assisted planning.';
 export const APP_SHORT_NAME = 'TaskZM';
 export const APP_FULL_NAME = 'TaskZM - Neurodivergent-Friendly Task Manager';
 

@@ -900,7 +900,16 @@ export function PricingDialog({
             )}
           </div>
 
-          <div className="mt-3 md:mt-4">
+          {/* Payment form country selection hint */}
+          <div className="mt-2 md:mt-3">
+            <div className="p-2 bg-amber-50/80 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
+              <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-center text-amber-700 dark:text-amber-300 leading-snug`}>
+                💡 <span className="font-medium">Tip:</span> Please select your country first in the payment form to properly fill out payment details.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-2 md:mt-3">
             <div className="p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
               <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-gray-700 dark:text-foreground leading-snug`}>
                 {SUBSCRIPTION_UI_TEXT.footer.message}{' '}

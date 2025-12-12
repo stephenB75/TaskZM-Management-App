@@ -66,7 +66,12 @@ export const DraggableTaskCard = React.forwardRef<
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
     const isMobile = useIsMobile();
-    const timerState = getTimerState(task.id);
+    
+    // For recurring tasks, use a date-specific timer ID so Pomodoro only affects
+    // the individual occurrence, not the entire series
+    const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
+    const pomodoroTimerId = isRecurringTask ? `${task.id}_${droppableId}` : task.id;
+    const timerState = getTimerState(pomodoroTimerId);
     const {
       attributes,
       listeners,
@@ -786,7 +791,7 @@ export const DraggableTaskCard = React.forwardRef<
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <div onClick={(e) => e.stopPropagation()}>
                     <PomodoroTimer
-                      taskId={task.id}
+                      taskId={pomodoroTimerId}
                       taskTitle={task.title}
                       onTimeUpdate={handlePomodoroTimeUpdate}
                       compact={true}
@@ -908,7 +913,7 @@ export const DraggableTaskCard = React.forwardRef<
                   onClick={(e) => e.stopPropagation()}
                 >
                   <PomodoroTimer
-                    taskId={task.id}
+                    taskId={pomodoroTimerId}
                     taskTitle={task.title}
                     onTimeUpdate={handlePomodoroTimeUpdate}
                     compact={true}
