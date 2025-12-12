@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from './TaskContext';
-import { DraggableTaskCard } from '../components/DraggableTaskCard';
+// DraggableTaskCard import removed - using lightweight drag overlay instead
 import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from '../lib/daily-hours-utils';
@@ -1062,37 +1062,91 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               );
             }
             
-            // Larger preview for kanban view (week view)
+            // Compact preview for kanban view (week view) - positioned at cursor
             if (isFromKanban) {
+              const priorityColors = {
+                urgent: "border-l-red-500 bg-red-100 dark:bg-red-900",
+                high: "border-l-orange-500 bg-orange-100 dark:bg-orange-900",
+                medium: "border-l-blue-500 bg-blue-100 dark:bg-blue-900",
+                low: "border-l-gray-500 bg-gray-100 dark:bg-gray-800",
+              };
+              
               return (
                 <div 
-                  className="opacity-95 pointer-events-none shadow-2xl"
+                  className={cn(
+                    "pointer-events-none rounded-lg border-l-4 p-3 border-2 border-primary/50",
+                    priorityColors[activeTask.priority],
+                  )}
                   style={{
-                    maxWidth: '386px',
-                    width: '386px',
-                    transform: 'rotate(2deg) scale(1.05)',
-                    transition: 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                    filter: 'drop-shadow(0 20px 25px rgba(0, 0, 0, 0.3))',
+                    width: '280px',
+                    boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), 0 12px 24px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(124, 58, 237, 0.3)',
+                    backdropFilter: 'blur(4px)',
                   }}
                 >
-                  <DraggableTaskCard task={activeTask} onClick={() => {}} droppableId="" isDragging />
+                  <div className="flex flex-col gap-2">
+                    <p className={cn(
+                      "text-sm font-bold leading-tight line-clamp-2",
+                      activeTask.status === "done" ? "line-through text-gray-500 dark:text-gray-400" : "text-gray-900 dark:text-white",
+                    )}>
+                      {activeTask.title}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs font-semibold">
+                      {activeTask.scheduledDate && (
+                        <span className="text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
+                          {new Date(activeTask.scheduledDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                      )}
+                      {activeTask.estimatedTime && (
+                        <span className="text-gray-700 dark:text-gray-200">
+                          {activeTask.estimatedTime >= 60 ? `${Math.floor(activeTask.estimatedTime / 60)}h` : `${activeTask.estimatedTime}m`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             }
             
-            // Full card preview for other views (including timeline)
+            // Compact preview for other views (including timeline)
+            const defaultPriorityColors = {
+              urgent: "border-l-red-500 bg-red-100 dark:bg-red-900",
+              high: "border-l-orange-500 bg-orange-100 dark:bg-orange-900",
+              medium: "border-l-blue-500 bg-blue-100 dark:bg-blue-900",
+              low: "border-l-gray-500 bg-gray-100 dark:bg-gray-800",
+            };
+            
             return (
               <div 
-                className="opacity-95 pointer-events-none shadow-2xl"
+                className={cn(
+                  "pointer-events-none rounded-lg border-l-4 p-3 border-2 border-primary/50",
+                  defaultPriorityColors[activeTask.priority],
+                )}
                 style={{
-                  maxWidth: '386px',
-                  width: '386px',
-                  transform: 'rotate(3deg) scale(1.05)',
-                  transition: 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                  filter: 'drop-shadow(0 20px 25px rgba(0, 0, 0, 0.3))',
+                  width: '280px',
+                  boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), 0 12px 24px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(124, 58, 237, 0.3)',
+                  backdropFilter: 'blur(4px)',
                 }}
               >
-                <DraggableTaskCard task={activeTask} onClick={() => {}} droppableId="" isDragging />
+                <div className="flex flex-col gap-2">
+                  <p className={cn(
+                    "text-sm font-bold leading-tight line-clamp-2",
+                    activeTask.status === "done" ? "line-through text-gray-500 dark:text-gray-400" : "text-gray-900 dark:text-white",
+                  )}>
+                    {activeTask.title}
+                  </p>
+                  <div className="flex items-center gap-3 text-xs font-semibold">
+                    {activeTask.scheduledDate && (
+                      <span className="text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
+                        {new Date(activeTask.scheduledDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      </span>
+                    )}
+                    {activeTask.estimatedTime && (
+                      <span className="text-gray-700 dark:text-gray-200">
+                        {activeTask.estimatedTime >= 60 ? `${Math.floor(activeTask.estimatedTime / 60)}h` : `${activeTask.estimatedTime}m`}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })()}

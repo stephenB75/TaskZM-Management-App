@@ -436,7 +436,7 @@ export const DraggableTaskCard = React.forwardRef<
           "flex gap-2 transition-all duration-200 mx-auto",
           isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal,
           !isMobile && (isDragging || isSortableDragging)
-            ? "opacity-70 cursor-grabbing scale-95"
+            ? "opacity-30 cursor-grabbing scale-95 ring-2 ring-primary/50 ring-offset-2"
             : "",
           !isMobile && !(isDragging || isSortableDragging)
             ? "cursor-grab hover:scale-[1.02]"
@@ -444,6 +444,9 @@ export const DraggableTaskCard = React.forwardRef<
         )}
         data-dnd-kit-dragging={isDragging || isSortableDragging}
         data-task-card="true"
+        data-task-id={task.id}
+        data-sortable-id={task.id}
+        id={`task-${task.id}`}
         data-tour="task-card"
       >
         {/* Vertical colored priority line */}

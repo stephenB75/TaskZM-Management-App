@@ -150,38 +150,43 @@ export function AIRecommendationPanel({
     }
 
     // Calculate date range based on selected period and date
-    // AI Scheduler Suggestions should always start from tomorrow (next day), not today
+    // AI Scheduler now uses user-selected date (suggestionDate) or TODAY as base date
     let range: { startDate: Date; endDate: Date };
-    const baseDate = suggestionDate || new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Use user-selected suggestionDate if provided, otherwise default to today
+    const baseDate = suggestionDate ? new Date(suggestionDate) : new Date(today);
+    baseDate.setHours(0, 0, 0, 0);
+    
+    // Ensure we don't schedule in the past - use today as minimum
+    const startDate = baseDate >= today ? baseDate : today;
     
     if (suggestionPeriod === 'day') {
-      // For day suggestions, start from tomorrow
-      const start = new Date(tomorrow);
-      const end = new Date(tomorrow);
+      // For day suggestions, use the selected date (or today)
+      const start = new Date(startDate);
+      const end = new Date(startDate);
       end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'week') {
-      // For week suggestions, start from tomorrow and span 7 days
-      const start = new Date(tomorrow);
-      const end = new Date(tomorrow);
-      end.setDate(end.getDate() + (DAYS_IN_WEEK - 1)); // 7 days total (tomorrow + 6 more)
+      // For week suggestions, start from selected date and span 7 days
+      const start = new Date(startDate);
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + (DAYS_IN_WEEK - 1)); // 7 days total
       end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else if (suggestionPeriod === 'month') {
-      // For month suggestions, start from tomorrow and span 30 days
-      const start = new Date(tomorrow);
-      const end = new Date(tomorrow);
-      end.setDate(end.getDate() + (DAYS_IN_MONTH_APPROX - 1)); // 30 days total (tomorrow + 29 more)
+      // For month suggestions, start from selected date and span 30 days
+      const start = new Date(startDate);
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + (DAYS_IN_MONTH_APPROX - 1)); // 30 days total
       end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     } else {
-      // Two weeks (default) - start from tomorrow
-      const start = new Date(tomorrow);
-      const end = new Date(tomorrow);
-      end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1)); // 14 days total (tomorrow + 13 more)
+      // Two weeks (default) - start from selected date or today
+      const start = new Date(startDate);
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1)); // 14 days total
       end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
       range = { startDate: start, endDate: end };
     }
