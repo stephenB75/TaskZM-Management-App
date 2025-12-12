@@ -2422,13 +2422,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <div className="space-y-4 sm:space-y-3 md:space-y-3">
               <div className="flex flex-col items-center gap-1.5">
-                {actualTheme === 'dark' && (
-                  <img 
-                    src={taskzmLogoLight} 
-                    alt="TaskZM Logo"
-                    className="w-[120px]"
-                  />
-                )}
+                <img 
+                  src={taskzmLogoLight} 
+                  alt="TaskZM Logo"
+                  className="w-[140px] object-contain"
+                />
                 <div className="text-xs text-muted-foreground text-center">Version {APP_VERSION}</div>
                 <div className="text-xs text-muted-foreground/70 text-center">{VERSION_NAME}</div>
               </div>

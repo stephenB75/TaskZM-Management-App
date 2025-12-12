@@ -63,8 +63,7 @@ import {
   getColorWithOpacity,
 } from "../lib/color-theme";
 import { cn } from "../lib/utils";
-import logoImageDark from "../assets/taskzm-logo.png";
-import logoImageLight from "../assets/taskzm-logo-light.png";
+import logoImageColor from "../assets/taskzm-logo-light.png"; // Purple color logo for all themes
 
 interface AppHeaderProps {
   title: string | React.ReactNode;
@@ -281,7 +280,7 @@ export function AppHeader({
               )}
               {!hideDesktopLogo && (
                 <motion.img
-                  src={isDark ? logoImageLight : logoImageDark}
+                  src={logoImageColor}
                   alt="TaskZM Logo"
                   className={cn(
                     "w-auto flex-shrink-0",
@@ -368,10 +367,9 @@ export function AppHeader({
         >
           {/* Static container for logo and title - no animations */}
           <div 
-            className="flex items-center justify-between"
+            className="flex items-center justify-between h-full"
             style={{ 
               gap: HEADER_GAP_XLARGE,
-              height: '100%',
             }}
           >
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animations */}
@@ -396,15 +394,17 @@ export function AppHeader({
               )}
               {!hideDesktopLogo && (
                 <img
-                  src={isDark ? logoImageLight : logoImageDark}
+                  src={logoImageColor}
                   alt="TaskZM Logo"
                   className={cn(
-                    "w-auto flex-shrink-0",
+                    "w-auto flex-shrink-0 object-contain self-center",
                     isDark && "dark-logo-filter"
                   )}
                   style={{ 
                     height: HEADER_LOGO_HEIGHT,
+                    maxHeight: '100%',
                     backgroundColor: 'transparent',
+                    display: 'block',
                   }}
                 />
               )}

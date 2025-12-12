@@ -55,7 +55,7 @@ import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { PrivacyPolicyDialog } from "./PrivacyPolicyDialog";
 import { TermsOfServiceDialog } from "./TermsOfServiceDialog";
-import taskzmLogo from "../assets/taskzm-logo.png";  // Dark logo for light backgrounds
+import taskzmLogo from "../assets/taskzm-logo-light.png";  // Purple color logo
 import { supabase } from '../lib/supabase-client';
 import { 
   DEMO_ACCOUNT_CONFIG, 
@@ -467,89 +467,101 @@ export function AuthScreen() {
             variants={itemVariants}
           >
             {/* Branding Section */}
-            <motion.div className="space-y-1.5 sm:space-y-2 flex flex-col items-center mb-2 sm:mb-2.5 lg:mb-3 lg:flex-shrink-0" variants={logoVariants}>
-              <motion.div
-                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-border"
-                whileHover={{ scale: 1.05 }}
-              >
-                <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#7B68EE]" />
-                <span className="text-[8px] sm:text-[9px] text-gray-700 dark:text-foreground">
-                  {AUTH_UI_TEXT.neurodivergentBadge}
-                </span>
-              </motion.div>
-
-              <div className="flex flex-col items-center gap-0.5">
+            <motion.div className="flex flex-col items-center mb-2 sm:mb-2.5 lg:mb-3 lg:flex-shrink-0" variants={logoVariants}>
+              <div className="flex flex-col items-center">
+                <motion.div
+                  className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-border"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#7B68EE]" />
+                  <span className="text-[8px] sm:text-[9px] text-gray-700 dark:text-foreground">
+                    {AUTH_UI_TEXT.neurodivergentBadge}
+                  </span>
+                </motion.div>
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
-                  className="w-[80px] sm:w-[100px] md:w-[140px] lg:w-[160px]"
+                  className="w-[140px] sm:w-[180px] md:w-[240px] lg:w-[280px] object-contain"
                   whileHover={{ scale: 1.02 }}
                 />
-                <p className="text-[11px] sm:text-[13px] font-semibold text-[#7B68EE] dark:text-[#9B7EE8] text-center px-2 sm:px-0 max-w-md">
+                <p className="text-[12px] sm:text-[14px] font-semibold text-[#7B68EE] dark:text-[#9B7EE8] text-center px-2 sm:px-0 max-w-md mt-1">
                   {AUTH_UI_TEXT.tagline}
                 </p>
-                <p className="text-[9px] sm:text-[10px] text-gray-600 dark:text-muted-foreground text-center px-2 sm:px-0 max-w-md">
+                <p className="text-[10px] sm:text-[11px] text-gray-600 dark:text-muted-foreground text-center px-2 sm:px-0 max-w-md">
                   {AUTH_UI_TEXT.subtitle}
                 </p>
               </div>
             </motion.div>
 
-            {/* Features Carousel - Half height on desktop */}
+            {/* Features Section - Modern Carousel Design */}
             <motion.div
-              className="space-y-2 lg:flex-1 lg:flex lg:flex-col lg:max-h-[280px] lg:min-h-0"
+              className="space-y-4 lg:flex-1 lg:flex lg:flex-col lg:max-h-[340px] lg:min-h-0"
               variants={itemVariants}
             >
-              {/* Carousel Container with Gradient Fade - Half height on desktop */}
-              <div className="relative overflow-hidden rounded-lg lg:flex-1 lg:min-h-0">
-                {/* Static Title - Centered above features */}
-                <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-center pt-1 pb-1.5">
+              {/* Section Header with Modern Styling */}
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#7B68EE]/20 to-transparent" />
+                </div>
+                <div className="relative px-4 py-1 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-full border border-[#7B68EE]/20">
                   <h3 className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent">
                     {AUTH_UI_TEXT.featuresHeader}
                   </h3>
-                  {/* Navigation Controls - Positioned on the right */}
-                  {MARKETING_FEATURES.length > featuresPerPage && (
-                    <div className="absolute right-2 flex items-center gap-0.5">
-                      <button
-                        onClick={() => {
-                          setCurrentFeatureIndex((prev) => {
-                            const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
-                            return prev === 0 ? totalPages - 1 : prev - 1;
-                          });
-                        }}
-                        className="p-1 hover:bg-card/20 dark:hover:bg-muted/20 rounded-full transition-all hover:scale-110"
-                        aria-label="Previous features"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setCurrentFeatureIndex((prev) => {
-                            const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
-                            return prev === totalPages - 1 ? 0 : prev + 1;
-                          });
-                        }}
-                        className="p-1 hover:bg-card/20 dark:hover:bg-muted/20 rounded-full transition-all hover:scale-110"
-                        aria-label="Next features"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
-                      </button>
-                    </div>
-                  )}
                 </div>
+              </div>
 
-                {/* Gradient Fade Edges */}
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+              {/* Modern Carousel Container */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/40 backdrop-blur-md border border-white/30 dark:border-gray-700/30 p-4 lg:flex-1 lg:min-h-0">
+                {/* Decorative corner accents */}
+                <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-[#7B68EE]/10 to-transparent rounded-br-full" />
+                <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-[#D4C5F9]/10 to-transparent rounded-tl-full" />
                 
-                <div className="overflow-hidden min-h-[75px] sm:min-h-[85px] lg:h-full lg:flex lg:items-center pt-6 sm:pt-7">
+                {/* Navigation Controls - Modern pill style */}
+                {MARKETING_FEATURES.length > featuresPerPage && (
+                  <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full p-1 shadow-sm">
+                    <button
+                      onClick={() => {
+                        setCurrentFeatureIndex((prev) => {
+                          const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+                          return prev === 0 ? totalPages - 1 : prev - 1;
+                        });
+                      }}
+                      className="p-1.5 hover:bg-[#7B68EE]/10 rounded-full transition-colors"
+                      aria-label="Previous features"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
+                    </button>
+                    <span className="text-[10px] font-medium text-[#7B68EE] dark:text-[#9B7EE8] tabular-nums min-w-[24px] text-center">
+                      {currentFeatureIndex + 1}/{Math.ceil(MARKETING_FEATURES.length / featuresPerPage)}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setCurrentFeatureIndex((prev) => {
+                          const totalPages = Math.ceil(MARKETING_FEATURES.length / featuresPerPage);
+                          return prev === totalPages - 1 ? 0 : prev + 1;
+                        });
+                      }}
+                      className="p-1.5 hover:bg-[#7B68EE]/10 rounded-full transition-colors"
+                      aria-label="Next features"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8]" />
+                    </button>
+                  </div>
+                )}
+                
+                <div className="overflow-hidden min-h-[100px] sm:min-h-[110px] lg:h-full lg:flex lg:items-center pt-2">
                   <motion.div
                     className="flex"
                     animate={{
                       x: `-${currentFeatureIndex * 100}%`,
                     }}
-                    transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                    transition={{ 
+                      duration: 0.8, 
+                      ease: [0.25, 0.1, 0.25, 1],
+                      type: "tween"
+                    }}
                   >
-                    {/* 3 columns (6 features per page) for both mobile and desktop */}
+                    {/* Feature Pages */}
                     {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, pageIndex) => {
                       const startIdx = pageIndex * featuresPerPage;
                       const endIdx = startIdx + featuresPerPage;
@@ -558,25 +570,42 @@ export function AuthScreen() {
                       return (
                         <div
                           key={pageIndex}
-                          className="grid grid-cols-3 gap-x-2.5 sm:gap-x-3 gap-y-2.5 sm:gap-y-3 min-w-full flex-shrink-0 px-1"
+                          className="grid grid-cols-3 gap-3 sm:gap-4 min-w-full flex-shrink-0 px-2"
                         >
-                          {pageFeatures.map(({ icon: Icon, title }) => (
+                          {pageFeatures.map(({ icon: Icon, title }, idx) => (
                             <motion.div
                               key={title}
-                              className="flex flex-col items-center gap-1.5 text-center group"
-                              whileHover={{ scale: 1.08, y: -2 }}
-                              transition={{ duration: 0.2 }}
+                              className="flex flex-col items-center gap-2.5 text-center group cursor-default"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ 
+                                duration: 0.5, 
+                                delay: idx * 0.08,
+                                ease: "easeOut"
+                              }}
                             >
-                            <div className="relative">
-                              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow border-2 border-white/60 dark:border-border/50">
-                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white drop-shadow-lg" />
+                              {/* Icon Container with modern styling */}
+                              <div className="relative">
+                                {/* Outer ring */}
+                                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7B68EE]/20 to-[#D4C5F9]/20 scale-125 opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                                
+                                {/* Main icon box */}
+                                <motion.div 
+                                  className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-lg shadow-[#7B68EE]/20 group-hover:shadow-xl group-hover:shadow-[#7B68EE]/30 transition-all duration-500"
+                                  whileHover={{ scale: 1.1, rotate: 3 }}
+                                  transition={{ duration: 0.3 }}
+                                >
+                                  <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                                </motion.div>
+                                
+                                {/* Floating dots decoration */}
+                                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#D4C5F9] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                               </div>
-                              {/* Glow effect on hover */}
-                              <div className="absolute inset-0 bg-gradient-to-br from-[#7B68EE]/30 to-[#D4C5F9]/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
-                            </div>
-                            <span className="text-[9px] sm:text-[10px] md:text-xs text-foreground font-semibold leading-tight px-0.5">
-                              {title}
-                            </span>
+                              
+                              {/* Feature title */}
+                              <span className="text-[10px] sm:text-xs font-medium text-foreground/80 group-hover:text-foreground leading-tight transition-colors duration-300 max-w-[80px]">
+                                {title}
+                              </span>
                             </motion.div>
                           ))}
                         </div>
@@ -584,6 +613,27 @@ export function AuthScreen() {
                     })}
                   </motion.div>
                 </div>
+
+                {/* Modern Page Indicators - Progress bar style */}
+                {MARKETING_FEATURES.length > featuresPerPage && (
+                  <div className="flex justify-center gap-2 mt-4">
+                    {Array.from({ length: Math.ceil(MARKETING_FEATURES.length / featuresPerPage) }).map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentFeatureIndex(idx)}
+                        className="relative h-1 overflow-hidden rounded-full transition-all duration-500"
+                        style={{ width: idx === currentFeatureIndex ? '32px' : '8px' }}
+                        aria-label={`Go to page ${idx + 1}`}
+                      >
+                        <div className={`absolute inset-0 rounded-full transition-all duration-500 ${
+                          idx === currentFeatureIndex 
+                            ? 'bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9]' 
+                            : 'bg-gray-300/60 dark:bg-gray-600/60 hover:bg-[#7B68EE]/40'
+                        }`} />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>

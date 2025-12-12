@@ -33,8 +33,7 @@ import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
-import taskzmLogoDark from "../assets/taskzm-logo.png";
-import taskzmLogoLight from "../assets/taskzm-logo-light.png";
+import taskzmLogoColor from "../assets/taskzm-logo-light.png";  // Purple color logo
 
 interface AppSidebarProps {
   currentView: string;
@@ -169,18 +168,16 @@ export function AppSidebar({
   const mobileSidebarContent = (
     <div className="p-4 flex flex-col h-full">
       {/* Header */}
-      {isDark && (
-        <div className="mb-6 flex flex-col items-center gap-1.5">
-          <img
-            src={taskzmLogoLight}
-            alt="TaskZM Logo"
-            className="w-[140px]"
-          />
-          <p className="text-sm text-muted-foreground text-center">
-            AI-Powered Tasks
-          </p>
-        </div>
-      )}
+      <div className="mb-6 flex flex-col items-center gap-1.5">
+        <img
+          src={taskzmLogoColor}
+          alt="TaskZM Logo"
+          className="w-[160px] object-contain"
+        />
+        <p className="text-sm text-muted-foreground text-center">
+          AI-Powered Tasks
+        </p>
+      </div>
 
       {/* Navigation */}
       <div className="space-y-2 flex-1">
