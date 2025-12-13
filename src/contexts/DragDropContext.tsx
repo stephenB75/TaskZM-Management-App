@@ -70,9 +70,18 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
 
   const pixelsPerMinute = TASK_CARD_LAYOUT_METRICS.pixelsPerMinute;
 
+  // Helper function to extract original task ID from sortable ID (handles recurring task format: taskId__dateString)
+  const extractTaskId = (sortableId: string): string => {
+    if (sortableId.includes('__')) {
+      const parts = sortableId.split('__');
+      return parts[0]; // Return the original task ID
+    }
+    return sortableId;
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
-    const taskId = event.active.id as string;
-    setActiveId(taskId);
+    const sortableId = event.active.id as string;
+    setActiveId(sortableId); // Store sortable ID for drag overlay
     document.body.classList.add('dragging');
     // Add smooth cursor transition
     document.body.style.cursor = 'grabbing';
@@ -82,7 +91,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     // Store drop position for time calculation
     // This will be used in handleDragEnd to calculate time slot
     // Add visual feedback for invalid drops if needed
-    const taskId = event.active.id as string;
+    const sortableId = event.active.id as string;
+    const taskId = extractTaskId(sortableId);
     const task = tasks.find(t => t.id === taskId);
     
     if (task && event.over) {
@@ -109,6 +119,15 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
   };
 
 
+  // Helper function to extract original task ID from sortable ID (handles recurring task format: taskId__dateString)
+  const extractTaskId = (sortableId: string): string => {
+    if (sortableId.includes('__')) {
+      const parts = sortableId.split('__');
+      return parts[0]; // Return the original task ID
+    }
+    return sortableId;
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
@@ -120,7 +139,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       return;
     }
 
-    const taskId = active.id as string;
+    // Extract original task ID from sortable ID (handles recurring task format)
+    const sortableId = active.id as string;
+    const taskId = extractTaskId(sortableId);
     const task = tasks.find(t => t.id === taskId);
     if (!task) {
       return;
@@ -135,7 +156,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       });
       // Add visual shake animation to indicate invalid drop
       const activeElement = document.querySelector(`[data-task-id="${taskId}"]`) || 
-                           document.querySelector(`[id="${taskId}"]`);
+                           document.querySelector(`[data-sortable-id="${sortableId}"]`) ||
+                           document.querySelector(`[id="${sortableId}"]`);
       if (activeElement) {
         activeElement.classList.add('animate-shake');
         setTimeout(() => {
@@ -963,7 +985,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     // If reorganization is needed, it should be done manually or on a case-by-case basis
   };
 
-  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+  const activeTask = activeId ? tasks.find(t => t.id === extractTaskId(activeId)) : null;
 
   const handleConflictConfirm = () => {
     if (pendingTaskUpdate) {

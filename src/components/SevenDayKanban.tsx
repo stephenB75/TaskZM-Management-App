@@ -552,7 +552,12 @@ export function SevenDayKanban({
     }
     const dayTasks = getTasksForDay(currentColumn.dateString);
     const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
-    const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
+    // For recurring tasks, use unique ID per date occurrence to maintain chronological order
+    const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => {
+      if (!t?.id) return null;
+      const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+      return isRecurring ? `${t.id}__${currentColumn.dateString}` : t.id;
+    }).filter(Boolean) : [];
 
     return (
       <div 
@@ -804,7 +809,12 @@ export function SevenDayKanban({
                     <div className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2">
                       {group.map((column, columnIndex) => {
                 const dayTasks = getTasksForDay(column.dateString);
-                const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => t?.id).filter(Boolean) : [];
+                // For recurring tasks, use unique ID per date occurrence to maintain chronological order
+                const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => {
+                  if (!t?.id) return null;
+                  const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+                  return isRecurring ? `${t.id}__${column.dateString}` : t.id;
+                }).filter(Boolean) : [];
                       const globalIndex = groupIndex * 7 + columnIndex;
                       const isSecondWeek = groupIndex === 1;
                       const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view

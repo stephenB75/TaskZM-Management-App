@@ -72,6 +72,10 @@ export const DraggableTaskCard = React.forwardRef<
     const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
     const pomodoroTimerId = isRecurringTask ? `${task.id}_${droppableId}` : task.id;
     const timerState = getTimerState(pomodoroTimerId);
+    
+    // For recurring tasks, use unique sortable ID per date occurrence to maintain chronological order
+    const sortableId = isRecurringTask ? `${task.id}__${droppableId}` : task.id;
+    
     const {
       attributes,
       listeners,
@@ -80,7 +84,7 @@ export const DraggableTaskCard = React.forwardRef<
       transition,
       isDragging: isSortableDragging,
     } = useSortable({
-      id: task.id,
+      id: sortableId,
       disabled: isMobile, // Disable drag on mobile
     });
 
@@ -445,8 +449,8 @@ export const DraggableTaskCard = React.forwardRef<
         data-dnd-kit-dragging={isDragging || isSortableDragging}
         data-task-card="true"
         data-task-id={task.id}
-        data-sortable-id={task.id}
-        id={`task-${task.id}`}
+        data-sortable-id={sortableId}
+        id={`task-${sortableId}`}
         data-tour="task-card"
       >
         {/* Vertical colored priority line */}
