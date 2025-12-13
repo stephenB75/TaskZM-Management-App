@@ -545,10 +545,10 @@ export function AuthScreen() {
                     </div>
                   </div>
                   {/* Scroll indicator - fade gradient on the right with arrow */}
-                  <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-white via-white/80 to-transparent dark:from-gray-900 dark:via-gray-900/80 pointer-events-none flex items-center justify-end pr-2">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <ChevronRight className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8] opacity-70" />
-                      <div className="w-0.5 h-4 bg-gradient-to-b from-[#7B68EE]/40 to-transparent dark:from-[#9B7EE8]/40 rounded-full" />
+                  <div className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-white via-white/95 to-transparent dark:from-gray-900 dark:via-gray-900/95 pointer-events-none flex items-center justify-end pr-2">
+                    <div className="flex flex-col items-center gap-1 bg-white dark:bg-gray-800 rounded-full px-2.5 py-2 shadow-lg border-2 border-[#7B68EE] dark:border-[#9B7EE8]">
+                      <ChevronRight className="w-5 h-5 text-[#7B68EE] dark:text-[#9B7EE8] font-bold" strokeWidth={2.5} />
+                      <div className="w-1 h-4 bg-[#7B68EE] dark:bg-[#9B7EE8] rounded-full" />
                     </div>
                   </div>
                 </div>
@@ -838,10 +838,10 @@ export function AuthScreen() {
                       </div>
 
                       {/* Remember Me */}
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-3 py-1.5 sm:py-2">
                         <Label
                           htmlFor="remember-me"
-                          className="text-[10px] sm:text-xs text-gray-600 dark:text-muted-foreground cursor-pointer"
+                          className="text-[10px] sm:text-xs text-gray-600 dark:text-muted-foreground cursor-pointer px-1"
                         >
                           {AUTH_UI_TEXT.signIn.rememberMe}
                         </Label>
@@ -852,32 +852,34 @@ export function AuthScreen() {
                         />
                       </div>
 
-                      <motion.div
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full"
-                      >
-                        <Button
-                          type="submit"
-                          className="w-full h-8 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs"
-                          disabled={isLoading}
+                      <div className="pt-1">
+                        <motion.div
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full"
                         >
-                          {isLoading ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                                ease: "linear",
-                              }}
-                            >
-                              ⏳
-                            </motion.div>
-                          ) : (
-                            AUTH_UI_TEXT.signIn.button
-                          )}
-                        </Button>
-                      </motion.div>
+                          <Button
+                            type="submit"
+                            className="w-full h-8 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs border-0"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{
+                                  duration: 1,
+                                  repeat: Infinity,
+                                  ease: "linear",
+                                }}
+                              >
+                                ⏳
+                              </motion.div>
+                            ) : (
+                              AUTH_UI_TEXT.signIn.button
+                            )}
+                          </Button>
+                        </motion.div>
+                      </div>
 
                       {/* Divider */}
                       <div className="relative py-1">
@@ -1150,32 +1152,34 @@ export function AuthScreen() {
                         </Label>
                       </div>
 
-                      <motion.div
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full"
-                      >
-                        <Button
-                          type="submit"
-                          className="w-full h-8 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs"
-                          disabled={isLoading}
+                      <div className="pt-1">
+                        <motion.div
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full"
                         >
-                          {isLoading ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                                ease: "linear",
-                              }}
-                            >
-                              ⏳
-                            </motion.div>
-                          ) : (
-                            AUTH_UI_TEXT.signUp.button
-                          )}
-                        </Button>
-                      </motion.div>
+                          <Button
+                            type="submit"
+                            className="w-full h-8 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs border-0"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{
+                                  duration: 1,
+                                  repeat: Infinity,
+                                  ease: "linear",
+                                }}
+                              >
+                                ⏳
+                              </motion.div>
+                            ) : (
+                              AUTH_UI_TEXT.signUp.button
+                            )}
+                          </Button>
+                        </motion.div>
+                      </div>
 
                       {/* Info message */}
                       <div className="text-center text-[10px] sm:text-xs md:text-sm text-gray-600 dark:text-muted-foreground bg-[#E8F5F1] dark:bg-card rounded-lg p-2 sm:p-3">
