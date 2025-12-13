@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   CheckCircle2,
   Sparkles,
@@ -145,6 +145,23 @@ export function AuthScreen() {
     typeof window !== 'undefined' ? window.innerWidth < 640 : false
   );
   const previousMobileRef = React.useRef(isMobileView);
+  const mobileFeaturesScrollRef = useRef<HTMLDivElement>(null);
+  
+  // Mobile carousel navigation functions
+  const scrollMobileFeatures = (direction: 'left' | 'right') => {
+    if (mobileFeaturesScrollRef.current) {
+      const scrollAmount = 200; // Scroll by 200px
+      const currentScroll = mobileFeaturesScrollRef.current.scrollLeft;
+      const newScroll = direction === 'right' 
+        ? currentScroll + scrollAmount 
+        : currentScroll - scrollAmount;
+      
+      mobileFeaturesScrollRef.current.scrollTo({
+        left: newScroll,
+        behavior: 'smooth'
+      });
+    }
+  };
   
   // Responsive features per page: 4 on mobile (2x2), 6 on desktop (2x3)
   const featuresPerPage = isMobileView ? 4 : AUTH_CONFIG.featuresPerPage;
@@ -528,8 +545,12 @@ export function AuthScreen() {
               {/* MOBILE: Horizontal scrolling chips - with solid background for readability */}
               <div className="sm:hidden">
                 <div className="relative">
-                  <div className="overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2" id="mobile-features-scroll">
-                    <div className="flex gap-2 w-max">
+                  <div 
+                    ref={mobileFeaturesScrollRef}
+                    className="overflow-x-auto scrollbar-hide -mx-2 px-2" 
+                    id="mobile-features-scroll"
+                  >
+                    <div className="flex gap-2 w-max pb-2">
                       {MARKETING_FEATURES.slice(0, 8).map(({ icon: Icon, title }) => (
                         <div
                           key={title}
@@ -544,13 +565,23 @@ export function AuthScreen() {
                       </div>
                     </div>
                   </div>
-                  {/* Scroll indicator - fade gradient on the right with arrow */}
-                  <div className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-white via-white/95 to-transparent dark:from-gray-900 dark:via-gray-900/95 pointer-events-none flex items-center justify-end pr-2">
-                    <div className="flex flex-col items-center gap-1 bg-white dark:bg-gray-800 rounded-full px-2.5 py-2 shadow-lg border-2 border-[#7B68EE] dark:border-[#9B7EE8]">
-                      <ChevronRight className="w-5 h-5 text-[#7B68EE] dark:text-[#9B7EE8] font-bold" strokeWidth={2.5} />
-                      <div className="w-1 h-4 bg-[#7B68EE] dark:bg-[#9B7EE8] rounded-full" />
-                    </div>
-                  </div>
+                </div>
+                {/* Navigation buttons - placed underneath the carousel */}
+                <div className="flex items-center justify-center gap-3 pt-3">
+                  <button
+                    onClick={() => scrollMobileFeatures('left')}
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-gray-800 border-2 border-[#7B68EE] dark:border-[#9B7EE8] shadow-sm hover:bg-[#7B68EE]/10 dark:hover:bg-[#9B7EE8]/10 transition-colors"
+                    aria-label="Scroll left"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-[#7B68EE] dark:text-[#9B7EE8]" />
+                  </button>
+                  <button
+                    onClick={() => scrollMobileFeatures('right')}
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-gray-800 border-2 border-[#7B68EE] dark:border-[#9B7EE8] shadow-sm hover:bg-[#7B68EE]/10 dark:hover:bg-[#9B7EE8]/10 transition-colors"
+                    aria-label="Scroll right"
+                  >
+                    <ChevronRight className="w-4 h-4 text-[#7B68EE] dark:text-[#9B7EE8]" />
+                  </button>
                 </div>
               </div>
 
