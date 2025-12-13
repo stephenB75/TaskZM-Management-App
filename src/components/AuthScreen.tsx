@@ -1158,7 +1158,7 @@ export function AuthScreen() {
                           id="accept-terms"
                           checked={acceptedTerms}
                           onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                          className="mt-0.5"
+                          className="mt-0.5 h-3.5 w-3.5 sm:h-4 sm:w-4"
                         />
                         <Label
                           htmlFor="accept-terms"
@@ -1225,7 +1225,7 @@ export function AuthScreen() {
               </Tabs>
               
               {/* App Store Badges */}
-              <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-3 border-t border-gray-200/50 dark:border-border/50">
+              <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-1 sm:pt-3 border-t border-gray-200/50 dark:border-border/50">
                 <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-muted-foreground mb-3">
                   {AUTH_UI_TEXT.mobileApps.comingSoon}
                 </p>
