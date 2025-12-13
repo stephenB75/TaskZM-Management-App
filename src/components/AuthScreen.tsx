@@ -508,7 +508,7 @@ export function AuthScreen() {
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
-                  className="w-[180px] sm:w-[180px] md:w-[240px] lg:w-[280px] object-contain"
+                  className="w-[198px] sm:w-[180px] md:w-[240px] lg:w-[280px] object-contain"
                   whileHover={{ scale: 1.02 }}
                 />
                 <p className="hidden sm:block text-[12px] sm:text-[14px] font-semibold text-[#7B68EE] dark:text-[#9B7EE8] text-center px-2 sm:px-0 max-w-md mt-1">
@@ -527,19 +527,28 @@ export function AuthScreen() {
             >
               {/* MOBILE: Horizontal scrolling chips - with solid background for readability */}
               <div className="sm:hidden">
-                <div className="overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2">
-                  <div className="flex gap-2 w-max">
-                    {MARKETING_FEATURES.slice(0, 8).map(({ icon: Icon, title }) => (
-                      <div
-                        key={title}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-[#7B68EE]/30 shadow-sm"
-                      >
-                        <Icon className="w-3.5 h-3.5 text-[#7B68EE]" />
-                        <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">{title}</span>
+                <div className="relative">
+                  <div className="overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2" id="mobile-features-scroll">
+                    <div className="flex gap-2 w-max">
+                      {MARKETING_FEATURES.slice(0, 8).map(({ icon: Icon, title }) => (
+                        <div
+                          key={title}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-[#7B68EE]/30 shadow-sm"
+                        >
+                          <Icon className="w-3.5 h-3.5 text-[#7B68EE]" />
+                          <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">{title}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center px-3 py-2 rounded-full bg-[#7B68EE] shadow-sm">
+                        <span className="text-[10px] font-semibold text-white whitespace-nowrap">+{MARKETING_FEATURES.length - 8} more</span>
                       </div>
-                    ))}
-                    <div className="flex items-center px-3 py-2 rounded-full bg-[#7B68EE] shadow-sm">
-                      <span className="text-[10px] font-semibold text-white whitespace-nowrap">+{MARKETING_FEATURES.length - 8} more</span>
+                    </div>
+                  </div>
+                  {/* Scroll indicator - fade gradient on the right with arrow */}
+                  <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-white via-white/80 to-transparent dark:from-gray-900 dark:via-gray-900/80 pointer-events-none flex items-center justify-end pr-2">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <ChevronRight className="w-3.5 h-3.5 text-[#7B68EE] dark:text-[#9B7EE8] opacity-70" />
+                      <div className="w-0.5 h-4 bg-gradient-to-b from-[#7B68EE]/40 to-transparent dark:from-[#9B7EE8]/40 rounded-full" />
                     </div>
                   </div>
                 </div>
@@ -846,6 +855,7 @@ export function AuthScreen() {
                       <motion.div
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
+                        className="w-full"
                       >
                         <Button
                           type="submit"
@@ -1143,7 +1153,7 @@ export function AuthScreen() {
                       <motion.div
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
-                        className="pt-0.5"
+                        className="w-full"
                       >
                         <Button
                           type="submit"
