@@ -746,17 +746,41 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     // Otherwise, handle as a date column drop (existing Kanban behavior)
     let targetDateString = over.id as string;
 
-    // Check if we dropped on another task (over.id is a task ID)
-    const overTask = tasks.find(t => t.id === targetDateString);
-    if (overTask && overTask.scheduledDate) {
-      try {
-        const date = new Date(overTask.scheduledDate);
-        if (!isNaN(date.getTime())) {
-          targetDateString = date.toISOString().split('T')[0];
+    // Check if the drop target is a sortable ID (recurring task format: taskId__dateString)
+    if (targetDateString.includes('__')) {
+      const parts = targetDateString.split('__');
+      if (parts.length === 2 && /^\d{4}-\d{2}-\d{2}$/.test(parts[1])) {
+        // Use the date from the sortable ID
+        targetDateString = parts[1];
+      } else {
+        // Try to find the task and extract date from its scheduledDate
+        const overTaskId = parts[0];
+        const overTask = tasks.find(t => t.id === overTaskId);
+        if (overTask && overTask.scheduledDate) {
+          try {
+            const date = new Date(overTask.scheduledDate);
+            if (!isNaN(date.getTime())) {
+              targetDateString = date.toISOString().split('T')[0];
+            }
+          } catch (error) {
+            // Silently handle date extraction errors
+            return;
+          }
         }
-      } catch (error) {
-        // Silently handle date extraction errors
-        return;
+      }
+    } else {
+      // Check if we dropped on another task (over.id is a task ID)
+      const overTask = tasks.find(t => t.id === targetDateString);
+      if (overTask && overTask.scheduledDate) {
+        try {
+          const date = new Date(overTask.scheduledDate);
+          if (!isNaN(date.getTime())) {
+            targetDateString = date.toISOString().split('T')[0];
+          }
+        } catch (error) {
+          // Silently handle date extraction errors
+          return;
+        }
       }
     }
 
@@ -797,19 +821,23 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       }
     })();
     
-    // If dragging from today agenda to another day, try to calculate time from drop position
-    if (isFromTodayAgenda && event.over && 'rect' in event.over) {
+    // Try to calculate time from drop position for all drops (not just from today agenda)
+    // This ensures recurring tasks and regular tasks get the correct time when dropped
+    if (event.over && 'rect' in event.over) {
       try {
         const overRect = (event.over as any).rect;
+        // Try multiple ways to find the droppable element
         const droppableElement = document.querySelector(`[data-droppable-id="${targetDateString}"]`) || 
-                                 document.querySelector(`[id="${targetDateString}"]`);
+                                 document.querySelector(`[id="${targetDateString}"]`) ||
+                                 (event.over.data?.current?.node?.current as HTMLElement) ||
+                                 null;
         
         if (droppableElement && overRect) {
           const droppableRect = droppableElement.getBoundingClientRect();
           const dropY = overRect.top + (overRect.height / 2);
           const relativeY = dropY - droppableRect.top;
           
-          // Get scroll position
+          // Get scroll position if there's a scroll container
           const scrollViewport = droppableElement.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
           const scrollTop = scrollViewport?.scrollTop || 0;
           const adjustedY = relativeY + scrollTop;
@@ -835,7 +863,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           
           // Round to nearest 15-minute slot
           minutes = Math.round(minutes / 15) * 15;
-                if (minutes >= MINUTES_PER_HOUR) {
+          if (minutes >= MINUTES_PER_HOUR) {
             hours += 1;
             minutes = 0;
           }
@@ -932,18 +960,42 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       }
     }
     
-    // Use findNextAvailableSlot to find the best available slot
-    // This validates against existing tasks and finds the next available time
-    const newDate = findNextAvailableSlot(
-      taskId,
-      startTime,
-      taskDuration,
-      tasks,
-      {
-        ensureAfterCurrentTime: false,
-        categoryHours: categoryHours,
+    // If we have a requestedTime from drop position, check if that time is available first
+    // This ensures tasks (especially recurring tasks) go to the time slot the user selected
+    let newDate: Date;
+    
+    if (requestedTime) {
+      // Check if the requested time conflicts with existing tasks
+      const conflictCheck = checkTimeConflict(taskId, requestedTime, taskDuration, tasks);
+      if (!conflictCheck) {
+        // No conflict - use the requested time directly
+        newDate = requestedTime;
+      } else {
+        // Conflict - find next available slot starting from requested time
+        newDate = findNextAvailableSlot(
+          taskId,
+          requestedTime,
+          taskDuration,
+          tasks,
+          {
+            ensureAfterCurrentTime: false,
+            categoryHours: categoryHours,
+          }
+        );
       }
-    );
+    } else {
+      // No requestedTime from drop position - use findNextAvailableSlot with calculated startTime
+      newDate = findNextAvailableSlot(
+        taskId,
+        startTime,
+        taskDuration,
+        tasks,
+        {
+          ensureAfterCurrentTime: false,
+          categoryHours: categoryHours,
+        }
+      );
+    }
     
     if (isNaN(newDate.getTime())) {
       console.error('Invalid date created from:', { year, month, day, targetDateString });
