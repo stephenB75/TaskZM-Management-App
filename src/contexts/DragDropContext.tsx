@@ -118,16 +118,6 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     }
   };
 
-
-  // Helper function to extract original task ID from sortable ID (handles recurring task format: taskId__dateString)
-  const extractTaskId = (sortableId: string): string => {
-    if (sortableId.includes('__')) {
-      const parts = sortableId.split('__');
-      return parts[0]; // Return the original task ID
-    }
-    return sortableId;
-  };
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
