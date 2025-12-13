@@ -27,7 +27,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Checkbox } from "./ui/checkbox";
-import { Switch } from "./ui/switch";
+import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Badge } from "./ui/badge";
 import {
   Card,
@@ -508,10 +508,10 @@ export function AuthScreen() {
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
-                  className="w-[140px] sm:w-[180px] md:w-[240px] lg:w-[280px] object-contain"
+                  className="w-[180px] sm:w-[180px] md:w-[240px] lg:w-[280px] object-contain"
                   whileHover={{ scale: 1.02 }}
                 />
-                <p className="text-[12px] sm:text-[14px] font-semibold text-[#7B68EE] dark:text-[#9B7EE8] text-center px-2 sm:px-0 max-w-md mt-1">
+                <p className="hidden sm:block text-[12px] sm:text-[14px] font-semibold text-[#7B68EE] dark:text-[#9B7EE8] text-center px-2 sm:px-0 max-w-md mt-1">
                   {AUTH_UI_TEXT.tagline}
                 </p>
                 <p className="text-[10px] sm:text-[11px] text-gray-600 dark:text-muted-foreground text-center px-2 sm:px-0 max-w-md">
@@ -849,7 +849,7 @@ export function AuthScreen() {
                       >
                         <Button
                           type="submit"
-                          className="w-full h-9 sm:h-10 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs"
+                          className="w-full h-8 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs"
                           disabled={isLoading}
                         >
                           {isLoading ? (
@@ -890,7 +890,7 @@ export function AuthScreen() {
                           type="button"
                           onClick={handleDemoSignIn}
                           variant="outline"
-                          className="w-full h-9 sm:h-10 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-[11px] sm:text-xs"
+                          className="w-full h-8 sm:h-9 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-[11px] sm:text-xs"
                           disabled={isLoading}
                         >
                           <Sparkles className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -1147,7 +1147,7 @@ export function AuthScreen() {
                       >
                         <Button
                           type="submit"
-                          className="w-full h-9 sm:h-10 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs"
+                          className="w-full h-8 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[11px] sm:text-xs"
                           disabled={isLoading}
                         >
                           {isLoading ? (
