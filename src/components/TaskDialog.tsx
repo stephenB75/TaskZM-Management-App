@@ -2806,33 +2806,6 @@ export function TaskDialog({
                         </SelectContent>
                       </Select>
 
-                      {assignedTo.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {assignedTo.map((memberId) => {
-                            const member = getTeamMember(memberId);
-                            if (!member) return null;
-
-                            return (
-                              <Badge
-                                key={memberId}
-                                variant="secondary"
-                                className="cursor-pointer hover:bg-destructive/10 transition-colors border-primary/20"
-                                onClick={() =>
-                                  setAssignedTo(assignedTo.filter((id) => id !== memberId))
-                                }
-                              >
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
-                                    {getInitials(member.name)}
-                                  </div>
-                                  <span>{member.name}</span>
-                                  <X className="w-3 h-3 ml-1" />
-                                </div>
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -2956,25 +2929,64 @@ export function TaskDialog({
                     />
                   </div>
 
-                  {/* Pomodoro Timer */}
-                  {task && hasFeature("pomodoroTimer") && (
+                  {/* Pomodoro Timer and Assignee Badges - Inline Layout */}
+                  {(task && hasFeature("pomodoroTimer")) || assignedTo.length > 0 ? (
                     <>
                       <Separator className="bg-primary/20" />
                       <div className="space-y-2">
-                        <Label className="text-sm font-semibold flex items-center gap-2">
-                          🍅 Pomodoro Timer
-                        </Label>
-                        <PomodoroTimer
-                          taskId={task.id}
-                          taskTitle={task.title}
-                          onTimeUpdate={handlePomodoroTimeUpdate}
-                          compact={false}
-                          initialTime={task.actualTime || 0}
-                          estimatedTime={task.estimatedTime || undefined}
-                        />
+                        <div className="flex items-center justify-between gap-4">
+                          {task && hasFeature("pomodoroTimer") && (
+                            <div className="flex-1 space-y-2">
+                              <Label className="text-sm font-semibold flex items-center gap-2">
+                                🍅 Pomodoro Timer
+                              </Label>
+                              <PomodoroTimer
+                                taskId={task.id}
+                                taskTitle={task.title}
+                                onTimeUpdate={handlePomodoroTimeUpdate}
+                                compact={false}
+                                initialTime={task.actualTime || 0}
+                                estimatedTime={task.estimatedTime || undefined}
+                              />
+                            </div>
+                          )}
+                          {assignedTo.length > 0 && (
+                            <div className="flex flex-col gap-2 flex-shrink-0">
+                              <Label className="text-sm font-semibold flex items-center gap-2">
+                                <Users className="w-4 h-4 text-primary" />
+                                Assigned
+                              </Label>
+                              <div className="flex flex-wrap gap-2 items-center">
+                                {assignedTo.map((memberId) => {
+                                  const member = getTeamMember(memberId);
+                                  if (!member) return null;
+
+                                  return (
+                                    <Badge
+                                      key={memberId}
+                                      variant="secondary"
+                                      className="cursor-pointer hover:bg-destructive/10 transition-colors border-primary/20"
+                                      onClick={() =>
+                                        setAssignedTo(assignedTo.filter((id) => id !== memberId))
+                                      }
+                                    >
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
+                                          {getInitials(member.name)}
+                                        </div>
+                                        <span>{member.name}</span>
+                                        <X className="w-3 h-3 ml-1" />
+                                      </div>
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </>
-                  )}
+                  ) : null}
                 </div>
               </TabsContent>
             </div>

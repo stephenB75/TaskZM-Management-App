@@ -160,6 +160,11 @@ export function estimateTaskHours(task: Task): number {
 
 /**
  * Calculate total hours for a specific date from all tasks
+ * 
+ * NOTE: This function calculates hours for TASKS only (regular and recurring tasks).
+ * Calendar events are NOT included in daily hours calculation - they are checked for
+ * conflicts in findNextAvailableSlot() but don't count toward the MAX_HOURS_PER_DAY limit.
+ * 
  * @param date - The date to calculate hours for
  * @param allTasks - All tasks to check
  * @param excludeTaskId - Optional task ID to exclude from calculation
@@ -174,6 +179,7 @@ export function calculateDailyHours(
   targetDate.setHours(0, 0, 0, 0);
   
   // Get all tasks scheduled for the target date
+  // This includes both regular tasks (by direct date match) and recurring tasks (by recurrence pattern)
   const dateTasks = allTasks.filter((task) => {
     if (excludeTaskId && task.id === excludeTaskId) return false;
     if (task.status === 'done') return false; // Exclude completed tasks
@@ -181,6 +187,9 @@ export function calculateDailyHours(
   });
   
   // Calculate total hours using AI estimator
+  // This respects the 5-hour (MAX_HOURS_PER_DAY) requirement for all task types:
+  // - Regular tasks: Counted once on their scheduled date
+  // - Recurring tasks: Counted on each day they occur (via isDateInRecurrence)
   let totalHours = 0;
   for (const task of dateTasks) {
     totalHours += estimateTaskHours(task);
