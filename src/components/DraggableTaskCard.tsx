@@ -152,6 +152,8 @@ export const DraggableTaskCard = React.forwardRef<
     const isShortTask = typeof estimatedTimeValue === "number" && estimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
     const isMediumTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && estimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
     const isLongTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
+    // Tasks under 20 mins need extra compact handling for auto-adjust
+    const isVeryShortTask = typeof estimatedTimeValue === "number" && estimatedTimeValue < 20;
     const canUsePomodoro = hasFeature("pomodoroTimer");
     const pomodoroIsRunning = canUsePomodoro && timerState.isRunning;
     const showTrackingBadgeTopRow =
@@ -252,9 +254,12 @@ export const DraggableTaskCard = React.forwardRef<
       
       // Calculate standard height ONCE - this is the absolute minimum for this duration
       let standardHeightForThisDuration: number;
+      // Use effectiveEstimatedTime for consistency (handles null/undefined cases)
+      const isVeryShortTaskInCalc = effectiveEstimatedTime < 20; // Tasks under 20 mins need extra compact handling
       if (isShortTask || (!hasEstimatedTime && effectiveEstimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short)) {
         // Short tasks (< 45 mins): Use appropriate height based on duration
-        // Very short tasks (< 30 mins): More compact 56px height
+        // Very short tasks (< 20 mins): Extra compact 56px height with optimized spacing
+        // Short tasks (20-29 mins): More compact 56px height
         // Regular short tasks (30-44 mins): Standard 80px height
         if (effectiveEstimatedTime < 30) {
           standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 56px for very short
@@ -295,12 +300,14 @@ export const DraggableTaskCard = React.forwardRef<
         
       // AUTO-ADJUST: Description (if description exists)
       // Calculate actual description height based on content, with minimal padding
+      // For tasks under 20 mins, use even more compact spacing
         if (hasDescription) {
         const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
           const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
         // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
-        // For tasks under 45 minutes, cap at 1 line
-        // For tasks 45-60 minutes, cap at 2 lines
+        // For tasks under 20 mins: cap at 1 line with minimal padding
+        // For tasks under 45 minutes: cap at 1 line
+        // For tasks 45-60 minutes: cap at 2 lines
         let actualLines: number;
         if (isShortTask) {
           actualLines = Math.min(Math.max(estimatedLines, 1), 1); // Cap at 1 line for tasks < 45 mins
@@ -310,10 +317,13 @@ export const DraggableTaskCard = React.forwardRef<
           actualLines = Math.max(estimatedLines, 1); // Full calculation for tasks >= 60 mins
         }
         const descriptionContentHeight = actualLines * lineHeight;
-        // Add minimal bottom padding only when needed (0px if assigned users follow, 6px otherwise)
-          const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
-          ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap
-          : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
+        // For tasks under 20 mins: use minimal padding (0px if assigned users follow, 4px otherwise)
+        // For other short tasks: use standard minimal padding (0px if assigned users follow, 6px otherwise)
+        const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
+          ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap // 0px
+          : (isVeryShortTaskInCalc 
+              ? 4 // Reduced padding for tasks under 20 mins
+              : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard); // 6px standard
         const descriptionHeight = descriptionContentHeight + descriptionBottomPadding;
         baseHeight += descriptionHeight;
         }
@@ -322,11 +332,18 @@ export const DraggableTaskCard = React.forwardRef<
       // For short tasks (< 45 mins), assigned users are in the inline bottom row, so they add to height
       if (hasAssignedUsers && isShortTask) {
         const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base; // 20px for avatar + name
-        // Use reduced spacing (16px) when description is present and no subtasks (description has mb-0)
-        // Use standard spacing (20px) otherwise
-          const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
-          ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced // 16px
-          : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard; // 20px
+        // For tasks under 20 mins: use extra reduced spacing (12px) when description is present, (14px) otherwise
+        // For other short tasks: use reduced spacing (16px) when description is present, standard (20px) otherwise
+        let assignedUsersSpacing: number;
+        if (isVeryShortTaskInCalc) {
+          assignedUsersSpacing = (hasDescription && !hasSubtasks) 
+            ? 12 // Extra reduced spacing for tasks under 20 mins with description
+            : 14; // Reduced spacing for tasks under 20 mins without description
+        } else {
+          assignedUsersSpacing = (hasDescription && !hasSubtasks) 
+            ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced // 16px
+            : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard; // 20px
+        }
         baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
         }
       // For medium/long tasks (>= 45 mins), assigned users are absolutely positioned at bottom
@@ -364,17 +381,23 @@ export const DraggableTaskCard = React.forwardRef<
         
       // AUTO-ADJUST: Subtasks (if present)
       // Calculate subtask height with minimal spacing between items
+      // For tasks under 20 mins, use even more compact spacing
         if (hasSubtasks) {
-          const subtaskCount = Math.min(task.subtasks.length, 3);
+        const subtaskCount = Math.min(task.subtasks.length, 3);
         const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight; // 14px per item
+        // For tasks under 20 mins: use minimal spacing (1px mobile, 2px desktop)
+        // For other tasks: use standard spacing (2px mobile, 4px desktop)
         const subtaskSpacing = isMobile 
-          ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.mobile // 2px on mobile
-          : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.desktop; // 4px on desktop
+          ? (isVeryShortTaskInCalc ? 1 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.mobile) // 1px or 2px on mobile
+          : (isVeryShortTaskInCalc ? 2 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.desktop); // 2px or 4px on desktop
         // Calculate total subtask height: items + spacing between items
           const subtaskHeight = subtaskCount * subtaskItemHeight + 
-            (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
-        // Add top spacing (6px) only when description is present
-        const subtaskTopSpacing = hasDescription ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing : 0;
+          (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
+        // For tasks under 20 mins: use reduced top spacing (4px) when description is present
+        // For other tasks: use standard top spacing (6px) when description is present
+        const subtaskTopSpacing = hasDescription 
+          ? (isVeryShortTaskInCalc ? 4 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing)
+          : 0;
         baseHeight += subtaskHeight + subtaskTopSpacing;
         }
         
@@ -734,13 +757,19 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
           {shouldRenderInlineBottomRow ? (
             // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
-            // Reduced spacing when all components are active
+            // For tasks under 20 mins: use extra compact spacing
+            // For other short tasks: use reduced spacing when all components are active
             <div className={cn(
               "flex items-center justify-between border-t border-gray-200/50 dark:border-border/50",
-              // Check if subtasks are present to reduce spacing
-              task.subtasks && task.subtasks.length > 0
-                ? isMobile ? "gap-1.5 mt-1 pt-1" : "gap-2 mt-1.5 pt-1.5"
-                : isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5"
+              // For tasks under 20 mins: extra compact spacing
+              // For other tasks: check if subtasks are present to reduce spacing
+              isVeryShortTask
+                ? (task.subtasks && task.subtasks.length > 0
+                    ? isMobile ? "gap-1 mt-0.5 pt-0.5" : "gap-1.5 mt-1 pt-1"
+                    : isMobile ? "gap-1 mt-1 pt-1" : "gap-1.5 mt-1.5 pt-1.5")
+                : (task.subtasks && task.subtasks.length > 0
+                    ? isMobile ? "gap-1.5 mt-1 pt-1" : "gap-2 mt-1.5 pt-1.5"
+                    : isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5")
             )}>
               {/* Left: Assigned Users */}
               {task.assignedTo && task.assignedTo.length > 0 && (
