@@ -1094,10 +1094,7 @@ export function DashboardView({
   };
 
   return (
-    <div 
-      className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 md:pt-0" 
-      style={{ paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER } as React.CSSProperties}
-    >
+    <div className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header - Using AppHeader for consistency */}
       <AppHeader
         title="Dashboard"
@@ -1213,7 +1210,6 @@ export function DashboardView({
       {mobileView === "week" && (
         <div 
           className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
-          style={{ marginTop: HEADER_MOBILE_SAFE_AREA_SPACER }}
         >
           <div className="px-2 pb-3 sm:px-4 sm:pb-4">
             {/* Week Navigation Header */}

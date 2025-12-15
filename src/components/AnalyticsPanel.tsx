@@ -652,11 +652,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
   return (
     <div 
-      className="h-full flex flex-col bg-background md:pt-0" 
-      style={{ 
-        backgroundImage: panelGradient,
-        paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER
-      } as React.CSSProperties}
+      className="h-full flex flex-col bg-background" 
+      style={{ backgroundImage: panelGradient }}
     >
       <AppHeader
         title="Analytics"

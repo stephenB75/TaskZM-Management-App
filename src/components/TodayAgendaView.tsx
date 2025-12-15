@@ -408,7 +408,7 @@ export function TodayAgendaView({
         data-droppable-id="today-agenda"
         data-today-agenda="true"
         className={cn(
-          `h-full flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 md:pt-0`,
+          `h-full flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
           !isMobile && "min-h-[400px]", // Ensure drop zone is always accessible
@@ -416,8 +416,7 @@ export function TodayAgendaView({
         style={{
           position: 'relative',
           zIndex: isOver ? Z_INDEX.DROP_ZONE : Z_INDEX.TIMELINE_LINE, // Ensure drop zone is above other elements when dragging over
-          paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER
-        } as React.CSSProperties}
+        }}
         data-tour="today-panel"
       >
       {/* Header */}

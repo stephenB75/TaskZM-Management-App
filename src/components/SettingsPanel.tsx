@@ -341,11 +341,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         }
       />
       <div
-        className="flex-1 overflow-y-auto overscroll-y-contain md:pt-0"
-        style={{ 
-          WebkitOverflowScrolling: 'touch',
-          paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER
-        } as React.CSSProperties}
+        className="flex-1 overflow-y-auto overscroll-y-contain"
+        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
         <div 
           className="mx-auto" 

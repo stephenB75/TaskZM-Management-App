@@ -1031,11 +1031,10 @@ export function TeamPanel() {
 
   return (
     <div
-      className="h-full flex flex-col md:pt-0"
+      className="h-full flex flex-col"
       style={{
         background: `linear-gradient(to bottom, ${getColorWithOpacity(gradientColor1, 0.35)}, ${getColorWithOpacity(gradientColor2, 0.35)}, ${getColorWithOpacity(gradientColor3, 0.35)})`,
-        paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER
-      } as React.CSSProperties}
+      }}
     >
       {/* Header */}
       <AppHeader
