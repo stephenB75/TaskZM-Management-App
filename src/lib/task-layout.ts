@@ -21,11 +21,11 @@ function estimateTaskHeight(task: Task): number {
   
   // Get standard height based on duration
   let baseHeight: number;
-  if (duration < 30) {
-    // Very short tasks (< 30 mins): More compact 56px height
-    baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 56px
+  if (duration < 35) {
+    // Very short tasks (< 35 mins): 72px height (increased from 56px for better visibility)
+    baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 72px
   } else if (duration < 45) {
-    // Regular short tasks (30-44 mins): Standard 80px height
+    // Regular short tasks (35-44 mins): Standard 80px height
     baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px
   } else if (duration < 60) {
     baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px

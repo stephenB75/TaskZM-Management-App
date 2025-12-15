@@ -258,12 +258,12 @@ export const DraggableTaskCard = React.forwardRef<
       const isVeryShortTaskInCalc = effectiveEstimatedTime < 35; // Tasks under 35 mins need extra compact handling
       if (isShortTask || (!hasEstimatedTime && effectiveEstimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short)) {
         // Short tasks (< 45 mins): Use appropriate height based on duration
-        // Very short tasks (< 30 mins): More compact 56px height with optimized spacing
-        // Regular short tasks (30-44 mins): Standard 80px height with optimized spacing
-        if (effectiveEstimatedTime < 30) {
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 56px for very short
+        // Very short tasks (< 35 mins): 72px height with optimized spacing (increased from 56px for better visibility)
+        // Regular short tasks (35-44 mins): Standard 80px height with optimized spacing
+        if (effectiveEstimatedTime < 35) {
+          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 72px for very short (under 35 mins)
         } else {
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard
+          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard (35-44 mins)
         }
       } else if (isMediumTask || (!hasEstimatedTime && effectiveEstimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && effectiveEstimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.long)) {
         // Medium tasks (45-60 mins): Use standard minimum height
