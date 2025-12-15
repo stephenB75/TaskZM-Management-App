@@ -472,7 +472,7 @@ export function TodayAgendaView({
             className="px-5 pb-24 sm:pb-safe md:pt-4 md:pb-4 w-full relative"
             style={{
               paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
-                ? `${Math.max(TIMELINE_PADDING.mobile, 12)}px` 
+                ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` 
                 : undefined,
               paddingBottom: KANBAN_MOBILE.bottomPaddingCalc,
             }}

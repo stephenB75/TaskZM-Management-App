@@ -58,6 +58,7 @@ import {
   SETTINGS_PANEL_ICON_SIZE_MEDIUM,
   SETTINGS_PANEL_ICON_SIZE_LARGE,
   SETTINGS_PANEL_ICON_SIZE_XLARGE,
+  VIEWPORT_BREAKPOINTS,
   SETTINGS_PANEL_ICON_SIZE_EXTRA_SMALL,
   SETTINGS_PANEL_AVATAR_SIZE,
   SETTINGS_PANEL_INPUT_HEIGHT,
@@ -361,7 +362,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             style={{ 
               maxWidth: SETTINGS_PANEL_MAX_WIDTH,
               paddingBottom: SETTINGS_PANEL_BOTTOM_PADDING_MOBILE, 
-              paddingTop: SETTINGS_PANEL_PADDING_TOP 
+              paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile
+                ? '0.75rem' // 12px on mobile for better spacing after AppHeader
+                : SETTINGS_PANEL_PADDING_TOP 
             }}
           >
           <Accordion type="single" collapsible className="w-full">
