@@ -51,6 +51,10 @@ This document establishes the core principles and rules that the AI Scheduler mu
   - Existing scheduled tasks in the database
   - Tasks already scheduled in the current batch (from the plan)
   - Recurring tasks that apply to the target date (using `isDateInRecurrence()`)
+  - **Calendar Events**: External calendar events (Google Calendar, Apple Calendar) must be checked for conflicts
+    - Calendar events are checked via `findNextAvailableSlot()` with `calendarEvents` option
+    - Calendar events are NOT included in the 5-hour daily limit calculation
+    - Calendar events are external commitments and should be avoided when scheduling tasks
 
 ### 3. Chronological Order
 
@@ -152,7 +156,8 @@ Tasks must be scheduled in chronological order (earliest to latest) within each 
         - Task duration
         - All valid tasks for the day
         - Category hours constraints
-      - This ensures no conflicts and respects category hours
+        - Calendar events for the target date (if available)
+      - This ensures no conflicts with tasks AND calendar events, and respects category hours
    
    g. **Final Conflict Check**:
       - Before adding to plan, check for conflicts one more time
@@ -178,7 +183,10 @@ Tasks must be scheduled in chronological order (earliest to latest) within each 
 - When filtering `existingTasksForDay`, use `isDateInRecurrence()` for recurring tasks instead of direct date comparison
 
 #### Tasks Exceeding Daily Limit
-- Maximum 5 hours per day (`MAX_HOURS_PER_DAY`)
+- Maximum 5 hours per day (`MAX_HOURS_PER_DAY`) - **TASKS ONLY**
+- **Important**: The 5-hour limit applies to TASKS only (regular and recurring tasks)
+- **Calendar events are NOT included** in the 5-hour daily limit calculation
+- Calendar events are external commitments and don't count toward the task scheduling limit
 - If a task would exceed the limit, move to next day
 - Track days that exceed limit in `daysExceedingLimit` array
 - Tasks that exceed limit are added to `exceedsLimit` array
@@ -239,22 +247,29 @@ Before adding a task to the plan, verify:
 - [ ] Task type is correctly identified (recurring vs regular)
 - [ ] Target date is in the future (never today)
 - [ ] All tasks for the date are visible (existing + plan + recurring)
+- [ ] Calendar events for the date are checked for conflicts (if available)
 - [ ] Category hours are respected
-- [ ] No time conflicts exist
+- [ ] No time conflicts exist (with tasks AND calendar events)
 - [ ] Task fits within category end time (start + duration <= end)
 - [ ] Task is in chronological order with other tasks
-- [ ] Daily hour limit is not exceeded
+- [ ] Daily hour limit is not exceeded (5 hours for TASKS only, calendar events excluded)
 - [ ] For recurring tasks, added to all occurrence days in `dailyTasks`
 
 ## Summary
 
 The AI Scheduler must:
 1. **Differentiate** between recurring and regular tasks
-2. **Find available time** by checking all tasks (existing + plan + recurring)
+2. **Find available time** by checking all tasks (existing + plan + recurring) AND calendar events
 3. **Maintain chronological order** within each day
 4. **Respect category hours** for each task category
-5. **Prevent conflicts** by checking all tasks on the target date
+5. **Prevent conflicts** by checking all tasks AND calendar events on the target date
 6. **Handle recurring tasks** by making them visible on all occurrence days
+7. **Respect 5-hour daily limit** for TASKS only (calendar events are excluded from this limit)
+
+### Important Notes:
+- **Calendar Events**: External calendar events (Google Calendar, Apple Calendar) are checked for conflicts but do NOT count toward the 5-hour daily limit
+- **5-Hour Limit**: Applies to scheduled TASKS only (regular and recurring tasks), not calendar events
+- **Conflict Detection**: Must check both tasks and calendar events to avoid scheduling conflicts
 
 These guidelines ensure consistent, conflict-free, and user-friendly task scheduling.
 

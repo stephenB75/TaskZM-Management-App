@@ -756,21 +756,44 @@ export function DashboardView({
     // Parse the date string to a Date object for recurring task check
     // dateString is in format "YYYY-MM-DD", parse it to local midnight
     const [year, month, day] = dateString.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      console.warn(`Invalid dateString format: ${dateString}`);
+      return [];
+    }
     const checkDate = new Date(year, month - 1, day); // month is 0-indexed
+    checkDate.setHours(0, 0, 0, 0); // Ensure it's at midnight
     
-    return tasks.filter((task) => {
-      // Skip tasks without scheduled dates (but include done tasks for dots display)
+    if (isNaN(checkDate.getTime())) {
+      console.warn(`Invalid date created from dateString: ${dateString}`);
+      return [];
+    }
+    
+    const matchingTasks = tasks.filter((task) => {
+      // Skip tasks without scheduled dates
       if (!task.scheduledDate) return false;
       
       try {
         // Use isDateInRecurrence to handle both recurring and non-recurring tasks
         // This ensures recurring tasks are counted on all days they occur
         // Include all tasks (including done) for dot display
-        return isDateInRecurrence(task, checkDate);
-      } catch {
+        const matches = isDateInRecurrence(task, checkDate);
+        return matches;
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error(`Error checking task ${task.id} for date ${dateString}:`, error, task);
+        }
         return false;
       }
     });
+    
+    // Debug logging (remove in production)
+    if (import.meta.env.DEV && matchingTasks.length > 0) {
+      console.log(`Date ${dateString}: Found ${matchingTasks.length} task(s):`, 
+        matchingTasks.map(t => ({ id: t.id, title: t.title, scheduledDate: t.scheduledDate, status: t.status }))
+      );
+    }
+    
+    return matchingTasks;
   };
 
   const handleScheduleUnscheduledTasks = () => {
@@ -1187,9 +1210,9 @@ export function DashboardView({
       {mobileView === "week" && (
         <div 
           className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
-          style={{ paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER }}
+          style={{ marginTop: HEADER_MOBILE_SAFE_AREA_SPACER }}
         >
-          <div className="px-2 py-3 sm:px-4 sm:py-4">
+          <div className="px-2 pb-3 sm:px-4 sm:pb-4">
             {/* Week Navigation Header */}
             <div className="flex items-center justify-between mb-3">
               <Button
@@ -1277,7 +1300,7 @@ export function DashboardView({
                         </span>
                         {/* Show dots for tasks and events - always visible, not just when selected */}
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
-                          <div className="flex items-center justify-center gap-0.5 mt-1 min-h-[8px]">
+                          <div className="flex items-center justify-center gap-0.5 mt-1.5 min-h-[10px] flex-shrink-0">
                             {/* Task dots (primary color) - show for all tasks including done */}
                             {dayTasks.length > 0 && dayTasks.slice(0, 3).map((task, i) => {
                               const isDone = task?.status === 'done';
@@ -1285,11 +1308,12 @@ export function DashboardView({
                                 <div
                                   key={`task-${task.id}-${i}`}
                                   className={cn(
-                                    "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
+                                    "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0",
                                     isSelected
-                                      ? isDone ? "bg-primary/50" : "bg-primary"
-                                      : isDone ? "bg-primary/40" : "bg-primary/60",
+                                      ? isDone ? "bg-primary/60" : "bg-primary"
+                                      : isDone ? "bg-primary/50" : "bg-primary/70",
                                   )}
+                                  aria-label={`Task: ${task.title}`}
                                 />
                               );
                             })}
@@ -1300,15 +1324,16 @@ export function DashboardView({
                               <div
                                 key={`event-${i}`}
                                 className={cn(
-                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
+                                  "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0",
                                   isSelected
                                     ? "bg-blue-500"
-                                    : "bg-blue-400/60",
+                                    : "bg-blue-500/70",
                                 )}
+                                aria-label={`Event ${i + 1}`}
                               />
                             ))}
                             {totalItems > 6 && (
-                              <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5 flex-shrink-0">
+                              <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5 flex-shrink-0 font-medium">
                                 +{totalItems - 6}
                               </span>
                             )}
