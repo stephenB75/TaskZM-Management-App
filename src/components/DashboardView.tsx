@@ -787,10 +787,17 @@ export function DashboardView({
     });
     
     // Debug logging (remove in production)
-    if (import.meta.env.DEV && matchingTasks.length > 0) {
-      console.log(`Date ${dateString}: Found ${matchingTasks.length} task(s):`, 
-        matchingTasks.map(t => ({ id: t.id, title: t.title, scheduledDate: t.scheduledDate, status: t.status }))
-      );
+    if (import.meta.env.DEV) {
+      if (matchingTasks.length > 0) {
+        console.log(`Date ${dateString}: Found ${matchingTasks.length} task(s):`, 
+          matchingTasks.map(t => ({ id: t.id, title: t.title, scheduledDate: t.scheduledDate, status: t.status }))
+        );
+      }
+      // Also log total tasks for debugging
+      const tasksWithScheduledDate = tasks.filter(t => t.scheduledDate);
+      if (tasksWithScheduledDate.length > 0 && matchingTasks.length === 0) {
+        console.log(`Date ${dateString}: No tasks matched. Total tasks with scheduledDate: ${tasksWithScheduledDate.length}`);
+      }
     }
     
     return matchingTasks;

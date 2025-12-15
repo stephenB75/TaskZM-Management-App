@@ -9,10 +9,14 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
   if (!task.recurrence || task.recurrence.type === 'none') {
     if (!task.scheduledDate) return false;
     const taskDate = new Date(task.scheduledDate);
+    // Normalize both dates to local time (date only, no time component)
+    // This ensures timezone differences don't cause mismatches
+    const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+    const checkDateOnly = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
     return (
-      taskDate.getFullYear() === checkDate.getFullYear() &&
-      taskDate.getMonth() === checkDate.getMonth() &&
-      taskDate.getDate() === checkDate.getDate()
+      taskDateOnly.getFullYear() === checkDateOnly.getFullYear() &&
+      taskDateOnly.getMonth() === checkDateOnly.getMonth() &&
+      taskDateOnly.getDate() === checkDateOnly.getDate()
     );
   }
 
