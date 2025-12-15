@@ -957,21 +957,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   Last synced: {new Date(lastCalendarSync).toLocaleString()}
                 </p>
               )}
-              
-              {(calendarStatus.google || calendarStatus.apple) && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  onClick={async () => {
-                    await checkCalendarStatus();
-                    toast.success('Calendar status refreshed');
-                  }}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh Status
-                </Button>
-              )}
             </div>
           </AccordionContent>
         </AccordionItem>
