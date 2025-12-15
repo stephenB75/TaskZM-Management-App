@@ -203,7 +203,7 @@ export const KANBAN_MOBILE = {
       },
     },
   },
-  bottomPaddingCalc: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))', // 104px (6.5rem) - reduced from 112px for less padding
+  bottomPaddingCalc: 'calc(6rem + env(safe-area-inset-bottom, 0px))', // 96px (6rem) - reduced to prevent hiding content
   indicator: {
     width: 4, // w-1 = 4px
     height: {
