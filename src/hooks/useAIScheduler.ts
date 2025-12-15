@@ -2408,6 +2408,51 @@ export function useAIScheduler() {
               }
             }
           }
+          
+          // CRITICAL SAFEGUARD: Ensure scheduled time is never midnight (12 AM)
+          // If somehow the time is midnight, use current time (if today) or category start time
+          if (scheduleDate.getHours() === 0 && scheduleDate.getMinutes() === 0) {
+            const today = new Date();
+            const scheduleDateKey = getDateKey(scheduleDate);
+            const todayDateKey = getDateKey(today);
+            const isToday = scheduleDateKey === todayDateKey;
+            
+            if (isToday) {
+              // Use current time rounded up to next 15-minute interval
+              const currentTime = new Date(today);
+              const minutes = currentTime.getMinutes();
+              const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+              if (roundedMinutes >= MINUTES_PER_HOUR) {
+                currentTime.setHours(currentTime.getHours() + 1, 0, 0, 0);
+              } else {
+                currentTime.setMinutes(roundedMinutes, 0, 0);
+              }
+              currentTime.setSeconds(0, 0);
+              currentTime.setMilliseconds(0);
+              scheduleDate.setTime(currentTime.getTime());
+              logger.warn('CRITICAL: Scheduled time was midnight, adjusted to current time', {
+                taskId: task.id,
+                taskTitle: task.title,
+                adjustedTime: scheduleDate.toISOString(),
+              });
+            } else {
+              // For future dates, use category start time or default work start time
+              const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
+              if (categoryHours) {
+                const startMinutes = parseTimeToMinutes(categoryHours.start);
+                scheduleDate.setHours(Math.floor(startMinutes / MINUTES_PER_HOUR), startMinutes % MINUTES_PER_HOUR, 0, 0);
+              } else {
+                // Use default work start time
+                const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
+                scheduleDate.setHours(workStartHour, 0, 0, 0);
+              }
+              logger.warn('CRITICAL: Scheduled time was midnight, adjusted to category/default start time', {
+                taskId: task.id,
+                taskTitle: task.title,
+                adjustedTime: scheduleDate.toISOString(),
+              });
+            }
+          }
         } else {
           // Find available time slot by checking existing scheduled tasks for this day
           // Use allTasksForDay (already calculated above) which includes tasks from current plan
@@ -2873,6 +2918,51 @@ export function useAIScheduler() {
             });
           }
           
+          // CRITICAL SAFEGUARD: Ensure scheduled time is never midnight (12 AM)
+          // If somehow the time is midnight, use current time (if today) or category start time
+          if (scheduleDate.getHours() === 0 && scheduleDate.getMinutes() === 0) {
+            const today = new Date();
+            const scheduleDateKey = getDateKey(scheduleDate);
+            const todayDateKey = getDateKey(today);
+            const isToday = scheduleDateKey === todayDateKey;
+            
+            if (isToday) {
+              // Use current time rounded up to next 15-minute interval
+              const currentTime = new Date(today);
+              const minutes = currentTime.getMinutes();
+              const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+              if (roundedMinutes >= MINUTES_PER_HOUR) {
+                currentTime.setHours(currentTime.getHours() + 1, 0, 0, 0);
+              } else {
+                currentTime.setMinutes(roundedMinutes, 0, 0);
+              }
+              currentTime.setSeconds(0, 0);
+              currentTime.setMilliseconds(0);
+              scheduleDate.setTime(currentTime.getTime());
+              logger.warn('CRITICAL: Scheduled time was midnight, adjusted to current time', {
+                taskId: task.id,
+                taskTitle: task.title,
+                adjustedTime: scheduleDate.toISOString(),
+              });
+            } else {
+              // For future dates, use category start time or default work start time
+              const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
+              if (categoryHours) {
+                const startMinutes = parseTimeToMinutes(categoryHours.start);
+                scheduleDate.setHours(Math.floor(startMinutes / MINUTES_PER_HOUR), startMinutes % MINUTES_PER_HOUR, 0, 0);
+              } else {
+                // Use default work start time
+                const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
+                scheduleDate.setHours(workStartHour, 0, 0, 0);
+              }
+              logger.warn('CRITICAL: Scheduled time was midnight, adjusted to category/default start time', {
+                taskId: task.id,
+                taskTitle: task.title,
+                adjustedTime: scheduleDate.toISOString(),
+              });
+            }
+          }
+          
           // Update reason with time information
           if (!reason.includes('scheduled') && !reason.includes('hours')) {
             const timeStr = scheduleDate.toLocaleTimeString('en-US', { 
@@ -3333,6 +3423,51 @@ export function useAIScheduler() {
               taskTitle: task.title,
               originalTime: new Date(safeguardScheduleTimeMs).toLocaleTimeString(),
               newTime: scheduleDate.toLocaleTimeString(),
+            });
+          }
+        }
+        
+        // FINAL CRITICAL SAFEGUARD: Ensure scheduled time is never midnight (12 AM) before adding to plan
+        // This is the last check before the task is saved, ensuring we never schedule at midnight
+        if (scheduleDate.getHours() === 0 && scheduleDate.getMinutes() === 0) {
+          const today = new Date();
+          const scheduleDateKey = getDateKey(scheduleDate);
+          const todayDateKey = getDateKey(today);
+          const isToday = scheduleDateKey === todayDateKey;
+          
+          if (isToday) {
+            // Use current time rounded up to next 15-minute interval
+            const currentTime = new Date(today);
+            const minutes = currentTime.getMinutes();
+            const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+            if (roundedMinutes >= MINUTES_PER_HOUR) {
+              currentTime.setHours(currentTime.getHours() + 1, 0, 0, 0);
+            } else {
+              currentTime.setMinutes(roundedMinutes, 0, 0);
+            }
+            currentTime.setSeconds(0, 0);
+            currentTime.setMilliseconds(0);
+            scheduleDate.setTime(currentTime.getTime());
+            logger.error('CRITICAL: Final check - scheduled time was midnight, adjusted to current time', {
+              taskId: task.id,
+              taskTitle: task.title,
+              adjustedTime: scheduleDate.toISOString(),
+            });
+          } else {
+            // For future dates, use category start time or default work start time
+            const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
+            if (categoryHours) {
+              const startMinutes = parseTimeToMinutes(categoryHours.start);
+              scheduleDate.setHours(Math.floor(startMinutes / MINUTES_PER_HOUR), startMinutes % MINUTES_PER_HOUR, 0, 0);
+            } else {
+              // Use default work start time
+              const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
+              scheduleDate.setHours(workStartHour, 0, 0, 0);
+            }
+            logger.error('CRITICAL: Final check - scheduled time was midnight, adjusted to category/default start time', {
+              taskId: task.id,
+              taskTitle: task.title,
+              adjustedTime: scheduleDate.toISOString(),
             });
           }
         }
