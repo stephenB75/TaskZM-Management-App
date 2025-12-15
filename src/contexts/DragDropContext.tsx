@@ -807,23 +807,83 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     const taskDuration = getTaskMinutes(task); // Use AI estimator
     
     // Check if task is being dragged from today agenda timeline
-    // If so, try to calculate time from drop position
-    let requestedTime: Date | null = null;
-    const isFromTodayAgenda = task.scheduledDate && (() => {
-      try {
-        const taskDate = new Date(task.scheduledDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        taskDate.setHours(0, 0, 0, 0);
-        return taskDate.getTime() === today.getTime();
-      } catch {
-        return false;
-      }
-    })();
+    // This checks both: 1) if task is scheduled for today, AND 2) if it's being dragged from today agenda view
+    let isFromTodayAgenda = false;
+    try {
+      // Check if the active element is within the today agenda container
+      const activeElement = document.querySelector(`[data-task-id="${taskId}"]`) || 
+                           document.querySelector(`[data-sortable-id="${active.id}"]`) ||
+                           document.querySelector(`[id="${active.id}"]`);
+      const isInTodayAgendaView = Boolean(
+        activeElement?.closest('[data-today-agenda]') !== null ||
+        activeElement?.closest('[id="today-agenda"]') !== null
+      );
+      
+      // Also check if task is scheduled for today
+      const taskIsScheduledForToday = task.scheduledDate ? (() => {
+        try {
+          const taskDate = new Date(task.scheduledDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          taskDate.setHours(0, 0, 0, 0);
+          return taskDate.getTime() === today.getTime();
+        } catch {
+          return false;
+        }
+      })() : false;
+      
+      isFromTodayAgenda = isInTodayAgendaView && taskIsScheduledForToday;
+    } catch {
+      // If check fails, fall back to checking if task is scheduled for today
+      isFromTodayAgenda = task.scheduledDate ? (() => {
+        try {
+          const taskDate = new Date(task.scheduledDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          taskDate.setHours(0, 0, 0, 0);
+          return taskDate.getTime() === today.getTime();
+        } catch {
+          return false;
+        }
+      })() : false;
+    }
     
-    // Try to calculate time from drop position for all drops (not just from today agenda)
+    let requestedTime: Date | null = null;
+    
+    // If dragging from today agenda to kanban, use current time (rounded up) for the target date
+    if (isFromTodayAgenda) {
+      const now = new Date();
+      const isTargetToday = targetDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      
+      if (isTargetToday) {
+        // For today, use current time rounded up to next 15-minute slot
+        const currentTime = new Date(now);
+        const currentMinutes = currentTime.getMinutes();
+        const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+        if (roundedMinutes >= MINUTES_PER_HOUR) {
+          currentTime.setHours(currentTime.getHours() + 1, 0, 0, 0);
+        } else {
+          currentTime.setMinutes(roundedMinutes, 0, 0);
+        }
+        currentTime.setSeconds(0, 0);
+        currentTime.setMilliseconds(0);
+        requestedTime = currentTime;
+      } else {
+        // For future dates, use category start time or default work start time
+        if (categoryHours) {
+          requestedTime = new Date(targetDate);
+          requestedTime.setHours(Math.floor(categoryHours.start / MINUTES_PER_HOUR), categoryHours.start % MINUTES_PER_HOUR, 0, 0);
+        } else {
+          requestedTime = new Date(targetDate);
+          requestedTime.setHours(TASK_CALCULATION_CONSTANTS.dragDrop.defaultHour, 0, 0, 0);
+        }
+      }
+    }
+    
+    // If dragging from today agenda, skip drop position calculation (already set requestedTime above)
+    // Otherwise, try to calculate time from drop position for all drops
     // This ensures recurring tasks and regular tasks get the correct time when dropped
-    if (event.over && 'rect' in event.over) {
+    if (!isFromTodayAgenda && event.over && 'rect' in event.over) {
       try {
         const overRect = (event.over as any).rect;
         // Try multiple ways to find the droppable element

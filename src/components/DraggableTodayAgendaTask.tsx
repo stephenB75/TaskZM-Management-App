@@ -383,7 +383,10 @@ export function DraggableTodayAgendaTask({
         {...attributes}
         {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
         initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: isDragging ? 0.7 : 1, x: 0 }}
+        animate={{ 
+          opacity: isDragging ? 0.7 : (task.status === "done" ? 0.6 : 1), 
+          x: 0 
+        }}
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.2, delay: index * 0.05 }}
         className={cn(
