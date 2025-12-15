@@ -62,8 +62,8 @@ export const HEADER_MOBILE_SPACER_HEIGHT_PX = 28; // h-7 = 28px - for calculatio
 // Spacer that accounts for header height and safe-area inset
 // Header uses box-sizing: border-box, so HEADER_HEIGHT includes the border
 // The header has a border-bottom (1px), which is included in HEADER_HEIGHT
-// Add a buffer to ensure content doesn't get hidden (accounting for border, rounding, and line-height)
-export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // Header height (includes border) + safe area
+// Add a small buffer (4px) to ensure content doesn't get hidden (accounting for border, rounding, and line-height)
+export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_HEIGHT}px + 4px + env(safe-area-inset-top, 0px))`; // Header height (includes border) + buffer + safe area
 
 // Viewport Breakpoints (matching Tailwind defaults)
 export const VIEWPORT_BREAKPOINTS = {
@@ -94,7 +94,7 @@ export const MOBILE_SPACING = {
     },
     y: {
       top: {
-        mobile: 8, // pt-2 = 8px
+        mobile: 4, // pt-1 = 4px - small buffer after AppHeader spacer
         tablet: 16, // sm:pt-4 = 16px
       },
       bottom: {
