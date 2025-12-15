@@ -759,12 +759,13 @@ export function DashboardView({
     const checkDate = new Date(year, month - 1, day); // month is 0-indexed
     
     return tasks.filter((task) => {
-      // Skip tasks without scheduled dates or done tasks
-      if (!task.scheduledDate || task.status === 'done') return false;
+      // Skip tasks without scheduled dates (but include done tasks for dots display)
+      if (!task.scheduledDate) return false;
       
       try {
         // Use isDateInRecurrence to handle both recurring and non-recurring tasks
         // This ensures recurring tasks are counted on all days they occur
+        // Include all tasks (including done) for dot display
         return isDateInRecurrence(task, checkDate);
       } catch {
         return false;
@@ -1186,7 +1187,7 @@ export function DashboardView({
       {mobileView === "week" && (
         <div 
           className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
-          style={{ marginTop: HEADER_MOBILE_SAFE_AREA_SPACER }}
+          style={{ paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER }}
         >
           <div className="px-2 py-3 sm:px-4 sm:py-4">
             {/* Week Navigation Header */}
@@ -1277,20 +1278,21 @@ export function DashboardView({
                         {/* Show dots for tasks and events - always visible, not just when selected */}
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
                           <div className="flex items-center justify-center gap-0.5 mt-1 min-h-[8px]">
-                            {/* Task dots (primary color) */}
-                            {dayTasks.length > 0 && Array.from({
-                              length: Math.min(dayTasks.length, 3),
-                            }).map((_, i) => (
-                              <div
-                                key={`task-${i}`}
-                                className={cn(
-                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
-                                  isSelected
-                                    ? "bg-primary"
-                                    : "bg-primary/60",
-                                )}
-                              />
-                            ))}
+                            {/* Task dots (primary color) - show for all tasks including done */}
+                            {dayTasks.length > 0 && dayTasks.slice(0, 3).map((task, i) => {
+                              const isDone = task?.status === 'done';
+                              return (
+                                <div
+                                  key={`task-${task.id}-${i}`}
+                                  className={cn(
+                                    "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
+                                    isSelected
+                                      ? isDone ? "bg-primary/50" : "bg-primary"
+                                      : isDone ? "bg-primary/40" : "bg-primary/60",
+                                  )}
+                                />
+                              );
+                            })}
                             {/* Event dots (blue color to differentiate from tasks) */}
                             {dayEventCount > 0 && Array.from({
                               length: Math.min(dayEventCount, 3),
