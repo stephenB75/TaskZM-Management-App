@@ -579,10 +579,18 @@ export function DashboardView({
 
       const dow = date.getDay();
 
+      // Normalize date to local midnight to ensure consistent date string format
+      // This prevents timezone issues when comparing dates
+      const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const year = normalizedDate.getFullYear();
+      const month = String(normalizedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(normalizedDate.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+
       return {
         date,
         dayName: dayNames[dow],
-        dateString: date.toISOString().split("T")[0],
+        dateString,
         weekNumber: Math.floor(i / 7) + 1,
         dayIndex: i,
       };
@@ -637,7 +645,13 @@ export function DashboardView({
             if (!event?.start) continue;
             const eventStart = new Date(event.start);
             if (isNaN(eventStart.getTime())) continue;
-            const dateKey = eventStart.toISOString().split('T')[0];
+            // Normalize to local date to match dateString format used in weekColumns
+            // This ensures consistent date matching regardless of timezone
+            const normalizedEventDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+            const year = normalizedEventDate.getFullYear();
+            const month = String(normalizedEventDate.getMonth() + 1).padStart(2, '0');
+            const day = String(normalizedEventDate.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`;
             eventCounts[dateKey] = (eventCounts[dateKey] || 0) + 1;
           }
         }
@@ -674,7 +688,9 @@ export function DashboardView({
 
   const getTasksForDay = (dateString: string) => {
     // Parse the date string to a Date object for recurring task check
-    const checkDate = new Date(dateString + 'T00:00:00');
+    // dateString is in format "YYYY-MM-DD", parse it to local midnight
+    const [year, month, day] = dateString.split('-').map(Number);
+    const checkDate = new Date(year, month - 1, day); // month is 0-indexed
     
     return tasks.filter((task) => {
       // Skip tasks without scheduled dates or done tasks
