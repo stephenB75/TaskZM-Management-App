@@ -797,15 +797,17 @@ export const DraggableTaskCard = React.forwardRef<
               // - With subtasks: minimal spacing (subtasks already have their own spacing)
               // - Without subtasks but with description: compact spacing
               // - Without subtasks or description: standard compact spacing
+              // Bottom padding: pb-1.5 (6px) mobile, pb-2 (8px) desktop for tasks under 35 mins
+              // Bottom padding: pb-2 (8px) mobile, pb-2.5 (10px) desktop for other short tasks
               isVeryShortTask
                 ? (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1 mt-0.5 pt-0.5 pb-2" : "gap-1.5 mt-1 pt-1 pb-2.5" // Minimal when subtasks present - increased bottom padding
+                    ? isMobile ? "gap-1 mt-0.5 pt-0.5 pb-1.5" : "gap-1.5 mt-1 pt-1 pb-2" // pb-1.5 (6px) mobile, pb-2 (8px) desktop
                     : (task.description
-                        ? isMobile ? "gap-1 mt-1 pt-1 pb-2" : "gap-1.5 mt-1.5 pt-1.5 pb-2.5" // Compact with description - increased bottom padding
-                        : isMobile ? "gap-1 mt-1.5 pt-1.5 pb-2" : "gap-1.5 mt-2 pt-2 pb-2.5")) // Standard compact - increased bottom padding
+                        ? isMobile ? "gap-1 mt-1 pt-1 pb-1.5" : "gap-1.5 mt-1.5 pt-1.5 pb-2" // pb-1.5 (6px) mobile, pb-2 (8px) desktop
+                        : isMobile ? "gap-1 mt-1.5 pt-1.5 pb-1.5" : "gap-1.5 mt-2 pt-2 pb-2")) // pb-1.5 (6px) mobile, pb-2 (8px) desktop
                 : (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1.5 mt-1 pt-1 pb-2.5" : "gap-2 mt-1.5 pt-1.5 pb-3"
-                    : isMobile ? "gap-1.5 mt-2 pt-2 pb-2.5" : "gap-2 mt-2.5 pt-2.5 pb-3")
+                    ? isMobile ? "gap-1.5 mt-1 pt-1 pb-2" : "gap-2 mt-1.5 pt-1.5 pb-2.5" // pb-2 (8px) mobile, pb-2.5 (10px) desktop
+                    : isMobile ? "gap-1.5 mt-2 pt-2 pb-2" : "gap-2 mt-2.5 pt-2.5 pb-2.5") // pb-2 (8px) mobile, pb-2.5 (10px) desktop
             )}>
               {/* Left: Assigned Users - Always render container to maintain layout, even if empty */}
               <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
