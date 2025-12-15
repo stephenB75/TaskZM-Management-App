@@ -1182,16 +1182,13 @@ export function DashboardView({
           </div>
         }
       />
-      {/* Spacer for fixed header on mobile - accounts for header height + border */}
-      <div className="md:hidden" style={{ height: HEADER_MOBILE_SAFE_AREA_SPACER }} />
-
       {/* Mobile 7-Day Calendar - Only show on mobile when viewing week */}
       {mobileView === "week" && (
         <div 
-          className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm sticky z-30"
-          style={{ top: HEADER_MOBILE_SAFE_AREA_SPACER }}
+          className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
+          style={{ marginTop: HEADER_MOBILE_SAFE_AREA_SPACER }}
         >
-          <div className="px-2 pt-2 pb-3 sm:px-4 sm:pt-3 sm:pb-4">
+          <div className="px-2 py-3 sm:px-4 sm:py-4">
             {/* Week Navigation Header */}
             <div className="flex items-center justify-between mb-3">
               <Button
