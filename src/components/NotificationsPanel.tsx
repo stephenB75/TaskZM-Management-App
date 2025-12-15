@@ -29,6 +29,7 @@ import {
 } from "./ui/select";
 import { cn } from "../lib/utils";
 import { UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
+import { HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import type { Task } from "../types";
 import {
@@ -415,7 +416,10 @@ export function NotificationsPanel() {
   };
 
   return (
-    <div className={`h-full flex flex-col ${UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}>
+    <div 
+      className={`h-full flex flex-col ${UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 md:pt-0`}
+      style={{ paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER } as React.CSSProperties}
+    >
       <AppHeader
         title={NOTIFICATION_PANEL_TEXT.title}
         panelOpen={true}

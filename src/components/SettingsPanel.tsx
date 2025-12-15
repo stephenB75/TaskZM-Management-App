@@ -48,6 +48,7 @@ import {
   SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_DESKTOP,
   SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
   SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_MEDIUM,
+  HEADER_MOBILE_SAFE_AREA_SPACER,
   SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_DESKTOP,
   SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y,
   SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
@@ -340,8 +341,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         }
       />
       <div
-        className="flex-1 overflow-y-auto overscroll-y-contain"
-        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        className="flex-1 overflow-y-auto overscroll-y-contain md:pt-0"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER
+        } as React.CSSProperties}
       >
         <div 
           className="mx-auto" 

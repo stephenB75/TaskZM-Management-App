@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { AppHeader } from "./AppHeader";
+import { HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -1030,10 +1031,11 @@ export function TeamPanel() {
 
   return (
     <div
-      className="h-full flex flex-col"
+      className="h-full flex flex-col md:pt-0"
       style={{
         background: `linear-gradient(to bottom, ${getColorWithOpacity(gradientColor1, 0.35)}, ${getColorWithOpacity(gradientColor2, 0.35)}, ${getColorWithOpacity(gradientColor3, 0.35)})`,
-      }}
+        paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER
+      } as React.CSSProperties}
     >
       {/* Header */}
       <AppHeader

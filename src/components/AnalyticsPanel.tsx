@@ -14,6 +14,7 @@ import {
   PieChart as PieChartIcon,
 } from "lucide-react";
 import { AppHeader } from "./AppHeader";
+import { HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -650,7 +651,13 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     : 'linear-gradient(180deg, rgba(248,245,255,0.96) 0%, rgba(244,240,255,0.94) 40%, rgba(255,255,255,0.92) 100%)';
 
   return (
-    <div className="h-full flex flex-col bg-background" style={{ backgroundImage: panelGradient }}>
+    <div 
+      className="h-full flex flex-col bg-background md:pt-0" 
+      style={{ 
+        backgroundImage: panelGradient,
+        paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER
+      } as React.CSSProperties}
+    >
       <AppHeader
         title="Analytics"
         panelOpen={true}
