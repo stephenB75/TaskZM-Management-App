@@ -775,6 +775,7 @@ export const DraggableTaskCard = React.forwardRef<
             // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
             // For tasks under 35 mins: use extra compact spacing optimized for component combinations
             // For other short tasks: use reduced spacing when all components are active
+            // CRITICAL: Use justify-between to ensure assignee stays left and tracker stays right
             <div className={cn(
               "flex items-center justify-between border-t border-gray-200/50 dark:border-border/50",
               // For tasks under 35 mins: extra compact spacing based on component presence
@@ -791,9 +792,10 @@ export const DraggableTaskCard = React.forwardRef<
                     ? isMobile ? "gap-1.5 mt-1 pt-1" : "gap-2 mt-1.5 pt-1.5"
                     : isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5")
             )}>
-              {/* Left: Assigned Users */}
-              {task.assignedTo && task.assignedTo.length > 0 && (
-                <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
+              {/* Left: Assigned Users - Always render container to maintain layout, even if empty */}
+              <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
+                {task.assignedTo && task.assignedTo.length > 0 ? (
+                  <>
                     {task.assignedTo.slice(0, 2).map((userId) => {
                       const member = getTeamMember(userId);
                       if (!member) return null;
@@ -839,12 +841,16 @@ export const DraggableTaskCard = React.forwardRef<
                     {task.assignedTo.length > 2 && (
                       <span className={cn(TASK_CARD_TEXT_COLORS.assignedUserCount, isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserCount.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserCount.desktop)}>+{task.assignedTo.length - 2}</span>
                     )}
-                </div>
-              )}
+                  </>
+                ) : (
+                  // Empty spacer to maintain layout when no assignee
+                  <div className="flex-1 min-w-0" />
+                )}
+              </div>
 
-              {/* Center/Right: Pomodoro Timer only (tracking badge moved to top on mobile) */}
+              {/* Right: Pomodoro Timer - Always positioned on the right, flex-shrink-0 ensures it stays in corner */}
               {showInlinePomodoroTimer && (
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
                   <div onClick={(e) => e.stopPropagation()}>
                     <PomodoroTimer
                       taskId={pomodoroTimerId}
