@@ -1217,7 +1217,7 @@ export function DashboardView({
       {mobileView === "week" && (
         <div 
           className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
-          style={{ paddingTop: '0.5rem' }}
+          style={{ paddingTop: '0.75rem' }}
         >
           <div className="px-2 pb-3 sm:px-4 sm:pb-4">
             {/* Week Navigation Header */}
