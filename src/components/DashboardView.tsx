@@ -1187,8 +1187,11 @@ export function DashboardView({
 
       {/* Mobile 7-Day Calendar - Only show on mobile when viewing week */}
       {mobileView === "week" && (
-        <div className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm">
-          <div className="px-2 py-3 sm:px-4 sm:py-4">
+        <div 
+          className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm sticky z-30"
+          style={{ top: HEADER_MOBILE_SAFE_AREA_SPACER }}
+        >
+          <div className="px-2 pt-2 pb-3 sm:px-4 sm:pt-3 sm:pb-4">
             {/* Week Navigation Header */}
             <div className="flex items-center justify-between mb-3">
               <Button
@@ -1275,16 +1278,16 @@ export function DashboardView({
                           {column.date.getDate()}
                         </span>
                         {/* Show dots for tasks and events - always visible, not just when selected */}
-                        {totalItems > 0 && (
-                          <div className="flex items-center gap-0.5 mt-1">
+                        {(dayTasks.length > 0 || dayEventCount > 0) && (
+                          <div className="flex items-center justify-center gap-0.5 mt-1 min-h-[8px]">
                             {/* Task dots (primary color) */}
-                            {Array.from({
+                            {dayTasks.length > 0 && Array.from({
                               length: Math.min(dayTasks.length, 3),
                             }).map((_, i) => (
                               <div
                                 key={`task-${i}`}
                                 className={cn(
-                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
+                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
                                   isSelected
                                     ? "bg-primary"
                                     : "bg-primary/60",
@@ -1292,13 +1295,13 @@ export function DashboardView({
                               />
                             ))}
                             {/* Event dots (blue color to differentiate from tasks) */}
-                            {Array.from({
+                            {dayEventCount > 0 && Array.from({
                               length: Math.min(dayEventCount, 3),
                             }).map((_, i) => (
                               <div
                                 key={`event-${i}`}
                                 className={cn(
-                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
+                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
                                   isSelected
                                     ? "bg-blue-500"
                                     : "bg-blue-400/60",
@@ -1306,7 +1309,7 @@ export function DashboardView({
                               />
                             ))}
                             {totalItems > 6 && (
-                              <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5">
+                              <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5 flex-shrink-0">
                                 +{totalItems - 6}
                               </span>
                             )}
