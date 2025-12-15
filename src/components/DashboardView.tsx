@@ -1094,10 +1094,7 @@ export function DashboardView({
   };
 
   return (
-    <div 
-      className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 md:pt-0" 
-      style={{ paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER } as React.CSSProperties}
-    >
+    <div className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header - Using AppHeader for consistency */}
       <AppHeader
         title="Dashboard"
