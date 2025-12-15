@@ -351,7 +351,13 @@ export const DraggableTaskCard = React.forwardRef<
             ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced // 16px
             : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard; // 20px
         }
-        baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
+        // Add bottom padding for the bottom row container to prevent tracker from being cut off
+        // pb-1.5 = 6px mobile, pb-2 = 8px desktop for tasks under 35 mins
+        // pb-2 = 8px mobile, pb-2.5 = 10px desktop for other short tasks
+        const bottomRowPadding = isVeryShortTaskInCalc
+          ? (isMobile ? 6 : 8) // pb-1.5 mobile, pb-2 desktop
+          : (isMobile ? 8 : 10); // pb-2 mobile, pb-2.5 desktop
+        baseHeight += assignedUsersBaseHeight + assignedUsersSpacing + bottomRowPadding;
         }
       // For medium/long tasks (>= 45 mins), assigned users are absolutely positioned at bottom
       // We need to reserve space at the bottom to prevent overlap with content
@@ -784,13 +790,13 @@ export const DraggableTaskCard = React.forwardRef<
               // - Without subtasks or description: standard compact spacing
               isVeryShortTask
                 ? (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1 mt-0.5 pt-0.5 pb-1.5" : "gap-1.5 mt-1 pt-1 pb-2" // Minimal when subtasks present
+                    ? isMobile ? "gap-1 mt-0.5 pt-0.5 pb-2" : "gap-1.5 mt-1 pt-1 pb-2.5" // Minimal when subtasks present - increased bottom padding
                     : (task.description
-                        ? isMobile ? "gap-1 mt-1 pt-1 pb-1.5" : "gap-1.5 mt-1.5 pt-1.5 pb-2" // Compact with description
-                        : isMobile ? "gap-1 mt-1.5 pt-1.5 pb-1.5" : "gap-1.5 mt-2 pt-2 pb-2")) // Standard compact
+                        ? isMobile ? "gap-1 mt-1 pt-1 pb-2" : "gap-1.5 mt-1.5 pt-1.5 pb-2.5" // Compact with description - increased bottom padding
+                        : isMobile ? "gap-1 mt-1.5 pt-1.5 pb-2" : "gap-1.5 mt-2 pt-2 pb-2.5")) // Standard compact - increased bottom padding
                 : (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1.5 mt-1 pt-1 pb-2" : "gap-2 mt-1.5 pt-1.5 pb-2.5"
-                    : isMobile ? "gap-1.5 mt-2 pt-2 pb-2" : "gap-2 mt-2.5 pt-2.5 pb-2.5")
+                    ? isMobile ? "gap-1.5 mt-1 pt-1 pb-2.5" : "gap-2 mt-1.5 pt-1.5 pb-3"
+                    : isMobile ? "gap-1.5 mt-2 pt-2 pb-2.5" : "gap-2 mt-2.5 pt-2.5 pb-3")
             )}>
               {/* Left: Assigned Users - Always render container to maintain layout, even if empty */}
               <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
