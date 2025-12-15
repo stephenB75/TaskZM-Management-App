@@ -56,7 +56,7 @@ import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 
 interface DashboardViewProps {
@@ -1183,6 +1183,7 @@ export function DashboardView({
         }
       />
       {/* Spacer for fixed header on mobile - accounts for header height + border */}
+      <div className="md:hidden" style={{ height: HEADER_MOBILE_SAFE_AREA_SPACER }} />
 
       {/* Mobile 7-Day Calendar - Only show on mobile when viewing week */}
       {mobileView === "week" && (
