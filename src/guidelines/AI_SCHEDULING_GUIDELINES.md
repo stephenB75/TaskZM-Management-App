@@ -16,7 +16,7 @@ This document establishes the core principles and rules that the AI Scheduler mu
   - When scheduling, calculate the FIRST occurrence date using `calculateFirstOccurrenceDate()`
   - Recurring tasks must be visible on ALL days they occur for conflict detection
 - **Scheduling Rules**:
-  - Schedule to the first valid occurrence date (never today, always future)
+  - Schedule to the first valid occurrence date (can be today or future)
   - The time assigned applies to ALL occurrences of that recurring task
   - When checking conflicts, check if the recurring task applies to the target date using `isDateInRecurrence()`
   - Do NOT create separate task instances for each occurrence - one task represents all occurrences
@@ -28,7 +28,7 @@ This document establishes the core principles and rules that the AI Scheduler mu
   - They have a single `scheduledDate` that represents when they occur
   - Use direct date comparison to check if a regular task applies to a date
 - **Scheduling Rules**:
-  - Schedule to a single specific date and time
+  - Schedule to a single specific date and time (can be today or future)
   - Check conflicts by comparing `scheduledDate` directly with the target date
 
 ### 2. Finding Available Time Slots
@@ -54,7 +54,8 @@ This document establishes the core principles and rules that the AI Scheduler mu
   - **Calendar Events**: External calendar events (Google Calendar, Apple Calendar) must be checked for conflicts
     - Calendar events are checked via `findNextAvailableSlot()` with `calendarEvents` option
     - Calendar events are NOT included in the 5-hour daily limit calculation
-    - Calendar events are external commitments and should be avoided when scheduling tasks
+    - Calendar events are external commitments - tasks must NOT be scheduled at the same time as calendar events
+    - Validate that scheduled tasks don't have the same time as existing calendar events
 
 ### 3. Chronological Order
 
@@ -62,10 +63,12 @@ This document establishes the core principles and rules that the AI Scheduler mu
 Tasks must be scheduled in chronological order (earliest to latest) within each day.
 
 #### Implementation
-- When multiple tasks are scheduled for the same day, they must be ordered by start time
+- When multiple tasks are scheduled for the same day, they must be ordered by start time (chronological order)
 - Use `findNextAvailableSlot()` which automatically places tasks after existing tasks
-- When distributing tasks evenly, ensure the time slot calculation maintains chronological order
+- Time distribution should maintain chronological order while spreading tasks throughout the day/week/month
+- Use available time slots to distribute tasks sequentially (one after another) but spread out based on available slots
 - After scheduling, tasks should be sortable by `scheduledDate` to show chronological order
+- Prefer sequential time slots that are spread out throughout the day, week, and month based on available time slots
 
 #### Verification
 - All tasks for a day should be sortable by `scheduledDate.getTime()`
@@ -91,15 +94,16 @@ Tasks must be scheduled in chronological order (earliest to latest) within each 
    - If `forceCategoryHours` is true, always use category hours even if `respectHours` is disabled
    - If category hours are disabled, use default category hours as fallback
 
-3. **Time Distribution**:
-   - Distribute tasks evenly across the category's time window
-   - Use `DEFAULT_TIME_SLOTS` to create multiple time slots for even distribution
-   - Calculate time slot based on: `(totalCategoryTasksCount % DEFAULT_TIME_SLOTS)`
-
-4. **Gap Finding**:
-   - First, try to find gaps between existing tasks in the same category
-   - If no gaps, place after the last task in the category
-   - If category is full, move to next day or return null
+3. **Time Distribution Priority** (in order):
+   a. **Category Hours**: First, determine the task's category and use its category hours
+   b. **Time Distribution**: Use `DEFAULT_TIME_SLOTS` to create multiple time slots for distribution
+      - Calculate time slot based on: `(totalCategoryTasksCount % DEFAULT_TIME_SLOTS)`
+      - Distribute tasks sequentially (chronological order) but spread out throughout the category's time window
+      - Maintain chronological order while using available time slots
+   c. **Gap Finding**: After determining time distribution, try to find gaps between existing tasks in the same category
+      - If gaps are found, use them while maintaining chronological order
+      - If no gaps, place after the last task in the category
+      - If category is full, move to next day or return null
 
 5. **Category Boundaries**:
    - Never schedule a task before the category start time
@@ -122,8 +126,8 @@ Tasks must be scheduled in chronological order (earliest to latest) within each 
       - If regular, use calculated date from distribution
    
    b. **Find Target Date**:
-      - For recurring: Use `calculateFirstOccurrenceDate()` - must be in future
-      - For regular: Use round-robin or priority-based distribution
+      - For recurring: Use `calculateFirstOccurrenceDate()` - can be today or future
+      - For regular: Use round-robin or priority-based distribution - can be today or future
       - Ensure date is within the scheduling period
    
    c. **Get All Tasks for Target Date**:
@@ -245,13 +249,16 @@ Tasks must be scheduled in chronological order (earliest to latest) within each 
 
 Before adding a task to the plan, verify:
 - [ ] Task type is correctly identified (recurring vs regular)
-- [ ] Target date is in the future (never today)
+- [ ] Target date is today or in the future (can be scheduled today)
 - [ ] All tasks for the date are visible (existing + plan + recurring)
 - [ ] Calendar events for the date are checked for conflicts (if available)
-- [ ] Category hours are respected
+- [ ] No tasks are scheduled at the same time as calendar events
+- [ ] Category hours are respected (priority 1)
+- [ ] Time distribution is applied using available time slots (priority 2)
+- [ ] Gap finding is used when appropriate (priority 3)
 - [ ] No time conflicts exist (with tasks AND calendar events)
 - [ ] Task fits within category end time (start + duration <= end)
-- [ ] Task is in chronological order with other tasks
+- [ ] Task is in chronological order with other tasks (sequential but spread out)
 - [ ] Daily hour limit is not exceeded (5 hours for TASKS only, calendar events excluded)
 - [ ] For recurring tasks, added to all occurrence days in `dailyTasks`
 
@@ -260,16 +267,24 @@ Before adding a task to the plan, verify:
 The AI Scheduler must:
 1. **Differentiate** between recurring and regular tasks
 2. **Find available time** by checking all tasks (existing + plan + recurring) AND calendar events
-3. **Maintain chronological order** within each day
-4. **Respect category hours** for each task category
-5. **Prevent conflicts** by checking all tasks AND calendar events on the target date
-6. **Handle recurring tasks** by making them visible on all occurrence days
-7. **Respect 5-hour daily limit** for TASKS only (calendar events are excluded from this limit)
+3. **Maintain chronological order** within each day (sequential but spread out throughout day/week/month)
+4. **Respect category hours** for each task category (priority 1)
+5. **Apply time distribution** using available time slots (priority 2)
+6. **Use gap finding** when appropriate (priority 3)
+7. **Prevent conflicts** by checking all tasks AND calendar events on the target date
+8. **Validate calendar events** - ensure tasks are NOT scheduled at the same time as calendar events
+9. **Handle recurring tasks** by making them visible on all occurrence days
+10. **Respect 5-hour daily limit** for TASKS only (calendar events are excluded from this limit)
+11. **Allow scheduling today** - both recurring and regular tasks can be scheduled for the current date
 
 ### Important Notes:
-- **Calendar Events**: External calendar events (Google Calendar, Apple Calendar) are checked for conflicts but do NOT count toward the 5-hour daily limit
+- **Scheduling Today**: Both recurring and regular tasks CAN be scheduled for today (current date)
+- **Calendar Events**: External calendar events (Google Calendar, Apple Calendar) must be checked to ensure tasks are NOT scheduled at the same time
+- **Calendar Events Limit**: Calendar events do NOT count toward the 5-hour daily limit
 - **5-Hour Limit**: Applies to scheduled TASKS only (regular and recurring tasks), not calendar events
 - **Conflict Detection**: Must check both tasks and calendar events to avoid scheduling conflicts
+- **Time Distribution Priority**: Category hours → Time distribution → Gap finding
+- **Chronological Order**: Tasks must be in chronological order (sequential) but spread out throughout the day/week/month based on available time slots
 
 These guidelines ensure consistent, conflict-free, and user-friendly task scheduling.
 
