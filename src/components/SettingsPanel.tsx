@@ -1509,34 +1509,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               {/* Time Format */}
               <div className="space-y-2 sm:space-y-2">
                 <Label className="text-sm">Time Format</Label>
-                {isMobile ? (
-                  <div className="flex items-center justify-between gap-3 py-1">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Label htmlFor="time-format-toggle" className="text-sm cursor-pointer">
-                        {timeFormat === '24h' ? '24-hour (14:00)' : '12-hour (2:00 PM)'}
-                      </Label>
-                    </div>
-                    <Switch 
-                      id="time-format-toggle" 
-                      className="flex-shrink-0"
-                      checked={timeFormat === '24h'}
-                      onCheckedChange={(checked) => {
-                        setTimeFormat(checked ? '24h' : '12h');
-                      }}
-                    />
+                <div className="flex items-center justify-between gap-3 py-1">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Label htmlFor="time-format-toggle" className="text-sm cursor-pointer">
+                      {timeFormat === '24h' ? '24-hour (14:00)' : '12-hour (2:00 PM)'}
+                    </Label>
                   </div>
-                ) : (
-                  <RadioGroup value={timeFormat} onValueChange={(value) => setTimeFormat(value as '12h' | '24h')} className="space-y-2 sm:space-y-1.5">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="12h" id="12h" />
-                      <Label htmlFor="12h" className="text-sm cursor-pointer">12-hour (2:00 PM)</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="24h" id="24h" />
-                      <Label htmlFor="24h" className="text-sm cursor-pointer">24-hour (14:00)</Label>
-                    </div>
-                  </RadioGroup>
-                )}
+                  <Switch 
+                    id="time-format-toggle" 
+                    className="flex-shrink-0"
+                    checked={timeFormat === '24h'}
+                    onCheckedChange={(checked) => {
+                      setTimeFormat(checked ? '24h' : '12h');
+                    }}
+                  />
+                </div>
               </div>
 
               <Separator className="my-3 sm:my-2" />
@@ -1544,34 +1531,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               {/* Week Starts On */}
               <div className="space-y-2 sm:space-y-2">
                 <Label className="text-sm">Week Starts On</Label>
-                {isMobile ? (
-                  <div className="flex items-center justify-between gap-3 py-1">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Label htmlFor="week-start-toggle" className="text-sm cursor-pointer">
-                        {weekStart === 'monday' ? 'Monday' : 'Sunday'}
-                      </Label>
-                    </div>
-                    <Switch 
-                      id="week-start-toggle" 
-                      className="flex-shrink-0"
-                      checked={weekStart === 'monday'}
-                      onCheckedChange={(checked) => {
-                        setWeekStart(checked ? 'monday' : 'sunday');
-                      }}
-                    />
+                <div className="flex items-center justify-between gap-3 py-1">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Label htmlFor="week-start-toggle" className="text-sm cursor-pointer">
+                      {weekStart === 'monday' ? 'Monday' : 'Sunday'}
+                    </Label>
                   </div>
-                ) : (
-                  <RadioGroup value={weekStart} onValueChange={(value) => setWeekStart(value as 'sunday' | 'monday')} className="space-y-2 sm:space-y-1.5">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="sunday" id="sunday" />
-                      <Label htmlFor="sunday" className="text-sm cursor-pointer">Sunday</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="monday" id="monday" />
-                      <Label htmlFor="monday" className="text-sm cursor-pointer">Monday</Label>
-                    </div>
-                  </RadioGroup>
-                )}
+                  <Switch 
+                    id="week-start-toggle" 
+                    className="flex-shrink-0"
+                    checked={weekStart === 'monday'}
+                    onCheckedChange={(checked) => {
+                      setWeekStart(checked ? 'monday' : 'sunday');
+                    }}
+                  />
+                </div>
               </div>
 
               <Separator className="my-3 sm:my-2" />
@@ -1579,64 +1553,38 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               {/* Theme */}
               <div className="space-y-2 sm:space-y-2">
                 <Label htmlFor="theme-select" className="text-sm">Theme</Label>
-                {isMobile ? (
-                  <div className="space-y-3">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 py-1">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Monitor className="w-4 h-4" />
+                      <Label htmlFor="system-theme-toggle" className="text-sm cursor-pointer">Use System Theme</Label>
+                    </div>
+                    <Switch 
+                      id="system-theme-toggle" 
+                      className="flex-shrink-0"
+                      checked={theme === 'system'}
+                      onCheckedChange={(checked) => {
+                        setTheme(checked ? 'system' : (actualTheme === 'dark' ? 'dark' : 'light'));
+                      }}
+                    />
+                  </div>
+                  {theme !== 'system' && (
                     <div className="flex items-center justify-between gap-3 py-1">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Monitor className="w-4 h-4" />
-                        <Label htmlFor="system-theme-toggle" className="text-sm cursor-pointer">Use System Theme</Label>
+                        <Moon className="w-4 h-4" />
+                        <Label htmlFor="dark-mode-toggle" className="text-sm cursor-pointer">Dark Mode</Label>
                       </div>
                       <Switch 
-                        id="system-theme-toggle" 
+                        id="dark-mode-toggle" 
                         className="flex-shrink-0"
-                        checked={theme === 'system'}
+                        checked={theme === 'dark'}
                         onCheckedChange={(checked) => {
-                          setTheme(checked ? 'system' : (actualTheme === 'dark' ? 'dark' : 'light'));
+                          setTheme(checked ? 'dark' : 'light');
                         }}
                       />
                     </div>
-                    {theme !== 'system' && (
-                      <div className="flex items-center justify-between gap-3 py-1">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <Moon className="w-4 h-4" />
-                          <Label htmlFor="dark-mode-toggle" className="text-sm cursor-pointer">Dark Mode</Label>
-                        </div>
-                        <Switch 
-                          id="dark-mode-toggle" 
-                          className="flex-shrink-0"
-                          checked={theme === 'dark'}
-                          onCheckedChange={(checked) => {
-                            setTheme(checked ? 'dark' : 'light');
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <RadioGroup value={theme} onValueChange={(value) => setTheme(value as any)} className="space-y-2 sm:space-y-1.5">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="light" id="light" />
-                      <Label htmlFor="light" className="flex items-center gap-2 cursor-pointer text-sm">
-                        <Sun className="w-4 h-4" />
-                        Light
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="dark" id="dark" />
-                      <Label htmlFor="dark" className="flex items-center gap-2 cursor-pointer text-sm">
-                        <Moon className="w-4 h-4" />
-                        Dark
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="system" id="system" />
-                      <Label htmlFor="system" className="flex items-center gap-2 cursor-pointer text-sm">
-                        <Monitor className="w-4 h-4" />
-                        System
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </AccordionContent>
