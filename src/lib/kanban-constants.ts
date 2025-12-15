@@ -198,12 +198,12 @@ export const KANBAN_MOBILE = {
         tablet: 16, // sm:pt-4 = 16px
       },
       bottom: {
-        mobile: 96, // pb-24 = 96px
+        mobile: 112, // Match nav bar height (112px)
         tablet: 24, // sm:pb-6 = 24px
       },
     },
   },
-  bottomPaddingCalc: 'calc(6rem + env(safe-area-inset-bottom, 0px))',
+  bottomPaddingCalc: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))', // 104px (6.5rem) - reduced from 112px for less padding
   indicator: {
     width: 4, // w-1 = 4px
     height: {

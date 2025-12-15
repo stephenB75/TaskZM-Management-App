@@ -584,7 +584,7 @@ export function SevenDayKanban({
       >
 
         {/* Mobile Single Column */}
-        <div className="flex-1 overflow-hidden px-4 pt-2 pb-24 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: KANBAN_MOBILE.bottomPaddingCalc }}>
+        <div className="flex-1 overflow-hidden px-4 pt-2 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? KANBAN_MOBILE.bottomPaddingCalc : undefined }}>
           <DroppableColumn id={currentColumn.dateString} className="h-full">
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <ScrollArea className="h-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}>

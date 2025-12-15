@@ -677,7 +677,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
       <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-4 pt-4 md:pt-4 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="p-4 space-y-4 pt-4 md:pt-4 pb-safe md:pb-4" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))' }}> {/* 104px - reduced for less padding */}
             
             {/* Compact KPI Metrics Row */}
             <div className="grid grid-cols-2 gap-3">

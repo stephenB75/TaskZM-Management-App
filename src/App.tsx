@@ -48,7 +48,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, NAV_BAR_SPACER_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
@@ -602,7 +602,7 @@ function AppContent() {
             {/* Bottom nav spacer - ensures content doesn't hide behind bottom nav */}
             <div 
               className="flex-shrink-0" 
-              style={{ height: HEADER_MOBILE_SPACER_HEIGHT }}
+              style={{ height: `${NAV_BAR_SPACER_HEIGHT}px` }}
             />
           </div>
 

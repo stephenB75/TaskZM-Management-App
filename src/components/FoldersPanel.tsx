@@ -631,7 +631,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
           style={{ 
             padding: PANEL_PADDING,
             paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
-            paddingBottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))',
+            paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))', // 104px - reduced for less padding
             gap: PANEL_CONTENT_SPACING
           }}
         >
