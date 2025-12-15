@@ -257,13 +257,22 @@ export const DraggableTaskCard = React.forwardRef<
       // Use effectiveEstimatedTime for consistency (handles null/undefined cases)
       const isVeryShortTaskInCalc = effectiveEstimatedTime < 35; // Tasks under 35 mins need extra compact handling
       if (isShortTask || (!hasEstimatedTime && effectiveEstimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short)) {
-        // Short tasks (< 45 mins): Use appropriate height based on duration
-        // Very short tasks (< 35 mins): 72px height with optimized spacing (increased from 56px for better visibility)
-        // Regular short tasks (35-44 mins): Standard 80px height with optimized spacing
-        if (effectiveEstimatedTime < 35) {
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 72px for very short (under 35 mins)
+        // Short tasks (< 45 mins): Use height with 20px increments per 15-minute interval
+        // Base: 72px at 15 mins
+        // Increments: +20px for each 15-minute interval (15, 30, 45 mins)
+        // 15-19 mins: 72px, 20-29 mins: 72px, 30-34 mins: 92px, 35-39 mins: 112px, 40-44 mins: 132px
+        if (effectiveEstimatedTime < 30) {
+          // 15-29 mins: Base height (72px)
+          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 72px
+        } else if (effectiveEstimatedTime < 35) {
+          // 30-34 mins: Base + 1 increment (72px + 20px = 92px)
+          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins; // 92px
+        } else if (effectiveEstimatedTime < 40) {
+          // 35-39 mins: Base + 2 increments (72px + 40px = 112px)
+          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + (TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins * 2); // 112px
         } else {
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard (35-44 mins)
+          // 40-44 mins: Base + 3 increments (72px + 60px = 132px)
+          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + (TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins * 3); // 132px
         }
       } else if (isMediumTask || (!hasEstimatedTime && effectiveEstimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && effectiveEstimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.long)) {
         // Medium tasks (45-60 mins): Use standard minimum height

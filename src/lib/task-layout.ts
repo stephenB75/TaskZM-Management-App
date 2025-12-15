@@ -20,13 +20,20 @@ function estimateTaskHeight(task: Task): number {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   
   // Get standard height based on duration
+  // Short tasks use 20px increments per 15-minute interval from 15 to 45 mins
   let baseHeight: number;
-  if (duration < 35) {
-    // Very short tasks (< 35 mins): 72px height (increased from 56px for better visibility)
+  if (duration < 30) {
+    // 15-29 mins: Base height (72px)
     baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 72px
+  } else if (duration < 35) {
+    // 30-34 mins: Base + 1 increment (72px + 20px = 92px)
+    baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins; // 92px
+  } else if (duration < 40) {
+    // 35-39 mins: Base + 2 increments (72px + 40px = 112px)
+    baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + (TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins * 2); // 112px
   } else if (duration < 45) {
-    // Regular short tasks (35-44 mins): Standard 80px height
-    baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px
+    // 40-44 mins: Base + 3 increments (72px + 60px = 132px)
+    baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + (TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins * 3); // 132px
   } else if (duration < 60) {
     baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px
   } else {
