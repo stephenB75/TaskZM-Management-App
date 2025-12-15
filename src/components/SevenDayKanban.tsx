@@ -172,10 +172,18 @@ export function SevenDayKanban({
       const dayOfWeek = date.getDay();
       const dayName = DAYS_OF_WEEK[dayOfWeek === 0 ? 6 : dayOfWeek - 1]; // Monday-based array
 
+      // Normalize date to local midnight to ensure consistent date string format
+      // This prevents timezone issues when comparing dates
+      const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const year = normalizedDate.getFullYear();
+      const month = String(normalizedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(normalizedDate.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+
       return {
         date,
         dayName,
-        dateString: date.toISOString().split('T')[0],
+        dateString,
         isToday,
         isWeekend: dayOfWeek === 0 || dayOfWeek === 6, // Sunday or Saturday
         weekNumber: Math.floor(i / 7) + 1,
@@ -239,7 +247,13 @@ export function SevenDayKanban({
             if (!event?.start || !event?.end) continue;
             const eventStart = new Date(event.start);
             if (isNaN(eventStart.getTime())) continue;
-            const dateKey = eventStart.toISOString().split('T')[0];
+            // Normalize to local date to match dateString format used in weekColumns
+            // This ensures consistent date matching regardless of timezone
+            const normalizedEventDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+            const year = normalizedEventDate.getFullYear();
+            const month = String(normalizedEventDate.getMonth() + 1).padStart(2, '0');
+            const day = String(normalizedEventDate.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`;
             aggregated[dateKey] = aggregated[dateKey] || [];
             aggregated[dateKey].push({
               id: event.id || `${provider}-${event.providerEventId || dateKey}-${aggregated[dateKey].length}`,
