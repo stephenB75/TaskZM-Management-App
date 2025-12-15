@@ -264,8 +264,7 @@ export function ArchiveView() {
 
   return (
     <div 
-      className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 md:pt-0"
-      style={{ paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER } as React.CSSProperties}
+      className="h-full flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900"
     >
       <AppHeader
         title="Archive"
