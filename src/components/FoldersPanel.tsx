@@ -549,10 +549,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
   return (
     <div
-      className="h-full flex flex-col"
+      className="h-full flex flex-col md:pt-0"
       style={{
         background: `linear-gradient(to bottom, ${getColorWithOpacity(gradientColor1, 0.35)}, ${getColorWithOpacity(gradientColor2, 0.35)}, ${getColorWithOpacity(gradientColor3, 0.35)})`,
-      }}
+        paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER
+      } as React.CSSProperties}
     >
       {/* Header */}
       <AppHeader

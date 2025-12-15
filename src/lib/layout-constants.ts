@@ -61,8 +61,9 @@ export const HEADER_MOBILE_SPACER_HEIGHT = '1.75rem'; // h-7 = 1.75rem (28px) - 
 export const HEADER_MOBILE_SPACER_HEIGHT_PX = 28; // h-7 = 28px - for calculations
 // Spacer that accounts for header height and safe-area inset
 // Header uses box-sizing: border-box, so HEADER_HEIGHT includes the border
-// Add a buffer (4px) to account for any rounding, line-height issues, or border rendering
-export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_HEIGHT}px + 4px + env(safe-area-inset-top, 0px))`; // Header height (including border) + buffer + safe area
+// The header has a border-bottom (1px), which is included in HEADER_HEIGHT
+// Add a buffer to ensure content doesn't get hidden (accounting for border, rounding, and line-height)
+export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // Header height (includes border) + safe area
 
 // Viewport Breakpoints (matching Tailwind defaults)
 export const VIEWPORT_BREAKPOINTS = {

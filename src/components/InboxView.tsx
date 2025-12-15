@@ -365,8 +365,9 @@ export function InboxView() {
 
   return (
     <div
-      className={`h-full flex flex-col ${UI_INBOX_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}
+      className={`h-full flex flex-col ${UI_INBOX_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 md:pt-0`}
       data-tour="inbox-panel"
+      style={{ paddingTop: HEADER_MOBILE_SAFE_AREA_SPACER } as React.CSSProperties}
     >
       <AppHeader
         title="Inbox"
