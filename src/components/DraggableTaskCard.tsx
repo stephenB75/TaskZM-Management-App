@@ -331,13 +331,21 @@ export const DraggableTaskCard = React.forwardRef<
       // For short tasks (< 45 mins), assigned users are in the inline bottom row, so they add to height
       if (hasAssignedUsers && isShortTask) {
         const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base; // 20px for avatar + name
-        // For tasks under 35 mins: use extra reduced spacing (12px) when description is present, (14px) otherwise
-        // For other short tasks: use reduced spacing (16px) when description is present, standard (20px) otherwise
+        // For tasks under 35 mins: use optimized spacing based on component combination
+        // - With description and no subtasks: 12px (description has mb-0)
+        // - With description and subtasks: 10px (subtasks add their own spacing)
+        // - Without description but with subtasks: 10px (subtasks add their own spacing)
+        // - Without description and no subtasks: 14px
+        // For other short tasks: use standard reduced spacing
         let assignedUsersSpacing: number;
         if (isVeryShortTaskInCalc) {
-          assignedUsersSpacing = (hasDescription && !hasSubtasks) 
-            ? 12 // Extra reduced spacing for tasks under 35 mins with description
-            : 14; // Reduced spacing for tasks under 35 mins without description
+          if (hasDescription && !hasSubtasks) {
+            assignedUsersSpacing = 12; // Extra reduced spacing when description has mb-0
+          } else if (hasSubtasks) {
+            assignedUsersSpacing = 10; // Reduced spacing when subtasks are present (they add their own spacing)
+          } else {
+            assignedUsersSpacing = 14; // Reduced spacing without description or subtasks
+          }
         } else {
           assignedUsersSpacing = (hasDescription && !hasSubtasks) 
             ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced // 16px
@@ -392,11 +400,13 @@ export const DraggableTaskCard = React.forwardRef<
         // Calculate total subtask height: items + spacing between items
           const subtaskHeight = subtaskCount * subtaskItemHeight + 
           (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
-        // For tasks under 35 mins: use reduced top spacing (4px) when description is present
-        // For other tasks: use standard top spacing (6px) when description is present
+        // For tasks under 35 mins: use optimized top spacing based on component combination
+        // - With description: 4px (reduced from 6px)
+        // - Without description: 2px (minimal spacing before subtasks)
+        // For other tasks: use standard top spacing (6px when description present, 0 otherwise)
         const subtaskTopSpacing = hasDescription 
           ? (isVeryShortTaskInCalc ? 4 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing)
-          : 0;
+          : (isVeryShortTaskInCalc ? 2 : 0); // Minimal spacing for tasks under 35 mins without description
         baseHeight += subtaskHeight + subtaskTopSpacing;
         }
         
@@ -698,9 +708,16 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Subtasks Display */}
           {task.subtasks && task.subtasks.length > 0 && (
             <div className={cn(
-              // Add padding when subtasks are shown to prevent overlapping on shorter tasks
-              isMobile ? "pt-1.5 pb-1" : "pt-2 pb-1.5",
-              isMobile ? "space-y-0.5" : "space-y-1"
+              // For tasks under 35 mins: use extra compact padding
+              // For other tasks: use standard padding to prevent overlapping
+              isVeryShortTask
+                ? (isMobile ? "pt-1 pb-0.5" : "pt-1.5 pb-1")
+                : (isMobile ? "pt-1.5 pb-1" : "pt-2 pb-1.5"),
+              // For tasks under 35 mins: use minimal spacing between subtasks
+              // For other tasks: use standard spacing
+              isVeryShortTask
+                ? (isMobile ? "space-y-0.5" : "space-y-0.5")
+                : (isMobile ? "space-y-0.5" : "space-y-1")
             )}>
               {task.subtasks.slice(0, 3).map((subtask) => {
                 const handleSubtaskToggle = async (e: React.MouseEvent) => {
@@ -756,16 +773,20 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
           {shouldRenderInlineBottomRow ? (
             // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
-            // For tasks under 35 mins: use extra compact spacing
+            // For tasks under 35 mins: use extra compact spacing optimized for component combinations
             // For other short tasks: use reduced spacing when all components are active
             <div className={cn(
               "flex items-center justify-between border-t border-gray-200/50 dark:border-border/50",
-              // For tasks under 35 mins: extra compact spacing
-              // For other tasks: check if subtasks are present to reduce spacing
+              // For tasks under 35 mins: extra compact spacing based on component presence
+              // - With subtasks: minimal spacing (subtasks already have their own spacing)
+              // - Without subtasks but with description: compact spacing
+              // - Without subtasks or description: standard compact spacing
               isVeryShortTask
                 ? (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1 mt-0.5 pt-0.5" : "gap-1.5 mt-1 pt-1"
-                    : isMobile ? "gap-1 mt-1 pt-1" : "gap-1.5 mt-1.5 pt-1.5")
+                    ? isMobile ? "gap-1 mt-0.5 pt-0.5" : "gap-1.5 mt-1 pt-1" // Minimal when subtasks present
+                    : (task.description
+                        ? isMobile ? "gap-1 mt-1 pt-1" : "gap-1.5 mt-1.5 pt-1.5" // Compact with description
+                        : isMobile ? "gap-1 mt-1.5 pt-1.5" : "gap-1.5 mt-2 pt-2")) // Standard compact
                 : (task.subtasks && task.subtasks.length > 0
                     ? isMobile ? "gap-1.5 mt-1 pt-1" : "gap-2 mt-1.5 pt-1.5"
                     : isMobile ? "gap-1.5 mt-2 pt-2" : "gap-2 mt-2.5 pt-2.5")
