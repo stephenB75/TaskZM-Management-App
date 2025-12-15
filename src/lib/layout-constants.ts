@@ -14,6 +14,12 @@ export const PANEL_WIDTH_SMALL_MONITOR = 400; // Slightly narrower for small mon
 // Header height (matches header minHeight/height in AppHeader.tsx and padding in App.tsx)
 export const HEADER_HEIGHT = 73;
 
+// Mobile header spacer height - accounts for header height + padding + safe area
+// Header is 73px, we add 7px padding for visual spacing = 80px total
+// Then add safe area inset for notched devices
+export const HEADER_MOBILE_SPACER_HEIGHT = 80; // 73px header + 7px padding
+export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 80px + safe area
+
 // Header-specific constants
 export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px)
 export const HEADER_PADDING_Y_MOBILE = '1rem'; // py-4 = 1rem (16px)
@@ -57,13 +63,6 @@ export const HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_TITLE = -5; // X offset for ti
 export const HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT = 10; // X offset for right side elements
 export const HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL = 0.9; // Initial scale for logo
 export const HEADER_SIDE_PANEL_ANIMATION_EASE = 'easeOut'; // Easing function for side panel animations
-export const HEADER_MOBILE_SPACER_HEIGHT = '1.75rem'; // h-7 = 1.75rem (28px) - spacer for mobile header
-export const HEADER_MOBILE_SPACER_HEIGHT_PX = 28; // h-7 = 28px - for calculations
-// Spacer that accounts for header height and safe-area inset
-// Header uses box-sizing: border-box, so HEADER_HEIGHT includes the border
-// The header has a border-bottom (1px), which is included in HEADER_HEIGHT
-// Add a buffer (12px) to ensure content doesn't get hidden (accounting for border, rounding, line-height, and visual spacing)
-export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_HEIGHT}px + 12px + env(safe-area-inset-top, 0px))`; // Header height (includes border) + buffer + safe area
 
 // Viewport Breakpoints (matching Tailwind defaults)
 export const VIEWPORT_BREAKPOINTS = {
