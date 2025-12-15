@@ -784,13 +784,13 @@ export const DraggableTaskCard = React.forwardRef<
               // - Without subtasks or description: standard compact spacing
               isVeryShortTask
                 ? (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1 mt-0.5 pt-0.5 pb-1" : "gap-1.5 mt-1 pt-1 pb-1.5" // Minimal when subtasks present
+                    ? isMobile ? "gap-1 mt-0.5 pt-0.5 pb-1.5" : "gap-1.5 mt-1 pt-1 pb-2" // Minimal when subtasks present
                     : (task.description
-                        ? isMobile ? "gap-1 mt-1 pt-1 pb-1" : "gap-1.5 mt-1.5 pt-1.5 pb-1.5" // Compact with description
-                        : isMobile ? "gap-1 mt-1.5 pt-1.5 pb-1" : "gap-1.5 mt-2 pt-2 pb-1.5")) // Standard compact
+                        ? isMobile ? "gap-1 mt-1 pt-1 pb-1.5" : "gap-1.5 mt-1.5 pt-1.5 pb-2" // Compact with description
+                        : isMobile ? "gap-1 mt-1.5 pt-1.5 pb-1.5" : "gap-1.5 mt-2 pt-2 pb-2")) // Standard compact
                 : (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1.5 mt-1 pt-1 pb-1.5" : "gap-2 mt-1.5 pt-1.5 pb-2"
-                    : isMobile ? "gap-1.5 mt-2 pt-2 pb-1.5" : "gap-2 mt-2.5 pt-2.5 pb-2")
+                    ? isMobile ? "gap-1.5 mt-1 pt-1 pb-2" : "gap-2 mt-1.5 pt-1.5 pb-2.5"
+                    : isMobile ? "gap-1.5 mt-2 pt-2 pb-2" : "gap-2 mt-2.5 pt-2.5 pb-2.5")
             )}>
               {/* Left: Assigned Users - Always render container to maintain layout, even if empty */}
               <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
