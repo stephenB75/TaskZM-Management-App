@@ -553,6 +553,16 @@ export function DashboardView({
   const [mobileDayIndex, setMobileDayIndex] = useState(getTomorrowDayIndex());
   const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  
+  // Swipe detection state for mobile calendar carousel
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+  
+  // Minimum swipe distance (in pixels) to trigger navigation
+  const minSwipeDistance = 50;
+  
+  // Maximum vertical movement allowed (to distinguish horizontal swipes from vertical scrolls)
+  const maxVerticalMovement = 30;
   const [rescheduleType, setRescheduleType] = useState<"day" | "week" | "month" | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState<Date | undefined>(undefined);
   const [rescheduleDates, setRescheduleDates] = useState<Date[]>([]); // Multi-day selection (up to 3)
@@ -684,6 +694,62 @@ export function DashboardView({
         setMobileDayIndex(0); // Reset to first day when going to previous week
       }
     }
+  };
+
+  // Touch handlers for swipe navigation
+  const onTouchStart = (e: React.TouchEvent) => {
+    // Only handle swipes on the calendar grid, not on buttons
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      return; // Don't interfere with button clicks
+    }
+    
+    setTouchEnd(null); // Reset touchEnd
+    setTouchStart({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY,
+    });
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+    
+    setTouchEnd({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY,
+    });
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart || !touchEnd) {
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
+    
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = Math.abs(touchStart.y - touchEnd.y);
+    
+    // Only trigger swipe if horizontal movement is greater than vertical (horizontal swipe)
+    // and exceeds minimum distance
+    if (distanceY < maxVerticalMovement && Math.abs(distanceX) > minSwipeDistance) {
+      const isLeftSwipe = distanceX > minSwipeDistance;
+      const isRightSwipe = distanceX < -minSwipeDistance;
+
+      if (isLeftSwipe) {
+        // Swipe left = next week
+        e.preventDefault(); // Prevent default to avoid conflicts
+        handleWeekChange("next");
+      } else if (isRightSwipe && mobileWeekOffset > 0) {
+        // Swipe right = previous week (only if not at current week)
+        e.preventDefault(); // Prevent default to avoid conflicts
+        handleWeekChange("prev");
+      }
+    }
+    
+    // Reset touch state
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   const getTasksForDay = (dateString: string) => {
@@ -1152,8 +1218,13 @@ export function DashboardView({
               </Button>
             </div>
 
-            {/* 7-Day Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1">
+            {/* 7-Day Calendar Grid - Swipeable Carousel */}
+            <div 
+              className="grid grid-cols-7 gap-1 select-none"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
               {/* Day Headers */}
               {weekColumns.map((column) => (
                 <div
