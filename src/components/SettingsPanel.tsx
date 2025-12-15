@@ -28,6 +28,7 @@ import { PrivacyPolicyDialog } from './PrivacyPolicyDialog';
 import { TermsOfServiceDialog } from './TermsOfServiceDialog';
 import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
+import { useIsMobile } from './ui/use-mobile';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import taskzmLogoLight from '../assets/taskzm-logo-light.png';  // Light (purple) logo for dark backgrounds
@@ -117,6 +118,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
+  const isMobile = useIsMobile();
+  
+  // Date, Time & Theme settings state
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('12h');
+  const [weekStart, setWeekStart] = useState<'sunday' | 'monday'>('sunday');
   
   // Pricing state (dynamically fetched from RevenueCat)
   const [currentPricing, setCurrentPricing] = useState<{
@@ -1500,63 +1506,137 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           </AccordionTrigger>
           <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
             <div className="space-y-4 sm:space-y-3 md:space-y-3">
+              {/* Time Format */}
               <div className="space-y-2 sm:space-y-2">
                 <Label className="text-sm">Time Format</Label>
-                <RadioGroup defaultValue="12h" className="space-y-2 sm:space-y-1.5">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="12h" id="12h" />
-                    <Label htmlFor="12h" className="text-sm cursor-pointer">12-hour (2:00 PM)</Label>
+                {isMobile ? (
+                  <div className="flex items-center justify-between gap-3 py-1">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Label htmlFor="time-format-toggle" className="text-sm cursor-pointer">
+                        {timeFormat === '24h' ? '24-hour (14:00)' : '12-hour (2:00 PM)'}
+                      </Label>
+                    </div>
+                    <Switch 
+                      id="time-format-toggle" 
+                      className="flex-shrink-0"
+                      checked={timeFormat === '24h'}
+                      onCheckedChange={(checked) => {
+                        setTimeFormat(checked ? '24h' : '12h');
+                      }}
+                    />
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="24h" id="24h" />
-                    <Label htmlFor="24h" className="text-sm cursor-pointer">24-hour (14:00)</Label>
-                  </div>
-                </RadioGroup>
+                ) : (
+                  <RadioGroup value={timeFormat} onValueChange={(value) => setTimeFormat(value as '12h' | '24h')} className="space-y-2 sm:space-y-1.5">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="12h" id="12h" />
+                      <Label htmlFor="12h" className="text-sm cursor-pointer">12-hour (2:00 PM)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="24h" id="24h" />
+                      <Label htmlFor="24h" className="text-sm cursor-pointer">24-hour (14:00)</Label>
+                    </div>
+                  </RadioGroup>
+                )}
               </div>
 
               <Separator className="my-3 sm:my-2" />
 
+              {/* Week Starts On */}
               <div className="space-y-2 sm:space-y-2">
                 <Label className="text-sm">Week Starts On</Label>
-                <RadioGroup defaultValue="sunday" className="space-y-2 sm:space-y-1.5">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="sunday" id="sunday" />
-                    <Label htmlFor="sunday" className="text-sm cursor-pointer">Sunday</Label>
+                {isMobile ? (
+                  <div className="flex items-center justify-between gap-3 py-1">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Label htmlFor="week-start-toggle" className="text-sm cursor-pointer">
+                        {weekStart === 'monday' ? 'Monday' : 'Sunday'}
+                      </Label>
+                    </div>
+                    <Switch 
+                      id="week-start-toggle" 
+                      className="flex-shrink-0"
+                      checked={weekStart === 'monday'}
+                      onCheckedChange={(checked) => {
+                        setWeekStart(checked ? 'monday' : 'sunday');
+                      }}
+                    />
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="monday" id="monday" />
-                    <Label htmlFor="monday" className="text-sm cursor-pointer">Monday</Label>
-                  </div>
-                </RadioGroup>
+                ) : (
+                  <RadioGroup value={weekStart} onValueChange={(value) => setWeekStart(value as 'sunday' | 'monday')} className="space-y-2 sm:space-y-1.5">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="sunday" id="sunday" />
+                      <Label htmlFor="sunday" className="text-sm cursor-pointer">Sunday</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="monday" id="monday" />
+                      <Label htmlFor="monday" className="text-sm cursor-pointer">Monday</Label>
+                    </div>
+                  </RadioGroup>
+                )}
               </div>
 
               <Separator className="my-3 sm:my-2" />
 
+              {/* Theme */}
               <div className="space-y-2 sm:space-y-2">
                 <Label htmlFor="theme-select" className="text-sm">Theme</Label>
-                <RadioGroup value={theme} onValueChange={(value) => setTheme(value as any)} className="space-y-2 sm:space-y-1.5">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="light" id="light" />
-                    <Label htmlFor="light" className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Sun className="w-4 h-4" />
-                      Light
-                    </Label>
+                {isMobile ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3 py-1">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Monitor className="w-4 h-4" />
+                        <Label htmlFor="system-theme-toggle" className="text-sm cursor-pointer">Use System Theme</Label>
+                      </div>
+                      <Switch 
+                        id="system-theme-toggle" 
+                        className="flex-shrink-0"
+                        checked={theme === 'system'}
+                        onCheckedChange={(checked) => {
+                          setTheme(checked ? 'system' : (actualTheme === 'dark' ? 'dark' : 'light'));
+                        }}
+                      />
+                    </div>
+                    {theme !== 'system' && (
+                      <div className="flex items-center justify-between gap-3 py-1">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Moon className="w-4 h-4" />
+                          <Label htmlFor="dark-mode-toggle" className="text-sm cursor-pointer">Dark Mode</Label>
+                        </div>
+                        <Switch 
+                          id="dark-mode-toggle" 
+                          className="flex-shrink-0"
+                          checked={theme === 'dark'}
+                          onCheckedChange={(checked) => {
+                            setTheme(checked ? 'dark' : 'light');
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="dark" id="dark" />
-                    <Label htmlFor="dark" className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Moon className="w-4 h-4" />
-                      Dark
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="system" id="system" />
-                    <Label htmlFor="system" className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Monitor className="w-4 h-4" />
-                      System
-                    </Label>
-                  </div>
-                </RadioGroup>
+                ) : (
+                  <RadioGroup value={theme} onValueChange={(value) => setTheme(value as any)} className="space-y-2 sm:space-y-1.5">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="light" id="light" />
+                      <Label htmlFor="light" className="flex items-center gap-2 cursor-pointer text-sm">
+                        <Sun className="w-4 h-4" />
+                        Light
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="dark" id="dark" />
+                      <Label htmlFor="dark" className="flex items-center gap-2 cursor-pointer text-sm">
+                        <Moon className="w-4 h-4" />
+                        Dark
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="system" id="system" />
+                      <Label htmlFor="system" className="flex items-center gap-2 cursor-pointer text-sm">
+                        <Monitor className="w-4 h-4" />
+                        System
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                )}
               </div>
             </div>
           </AccordionContent>
