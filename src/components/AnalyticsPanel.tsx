@@ -228,6 +228,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         completedTasks: 0,
         inProgressTasks: 0,
         todoTasks: 0,
+        onHoldTasks: 0,
         completionRate: 0,
         timePatterns: { hourly: [], blocks: [], peakHour: 12 },
         taskTypes: [],
@@ -341,6 +342,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     const completedTasks = filteredTasks.filter((t) => t?.status === "done").length;
     const inProgressTasks = filteredTasks.filter((t) => t?.status === "in-progress").length;
     const todoTasks = filteredTasks.filter((t) => t?.status === "todo").length;
+    const onHoldTasks = filteredTasks.filter((t) => t?.status === "on-hold").length;
     const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * PERCENTAGE_MULTIPLIER : 0;
 
     // Status distribution for pie chart - ensure all values are valid numbers
@@ -348,6 +350,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       { name: 'Completed', value: Number(completedTasks) || 0, color: COLOR_SUCCESS },
       { name: 'In Progress', value: Number(inProgressTasks) || 0, color: COLOR_WARNING },
       { name: 'Todo', value: Number(todoTasks) || 0, color: COLOR_INFO },
+      { name: 'On Hold', value: Number(onHoldTasks) || 0, color: '#EAB308' }, // Yellow for on-hold status
     ]
       .filter((item): item is { name: string; value: number; color: string } => {
         return (
@@ -526,6 +529,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       completedTasks,
       inProgressTasks,
       todoTasks,
+      onHoldTasks,
       completionRate,
       timePatterns,
       taskTypes,
