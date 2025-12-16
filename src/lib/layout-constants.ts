@@ -131,7 +131,7 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 
 // Bottom Navigation Bar constants
 export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
-export const NAV_BAR_SPACER_HEIGHT = 96; // Spacer height - reduced to prevent excessive spacing (nav bar is 112px but spacer is optimized)
+export const NAV_BAR_SPACER_HEIGHT = 70; // Spacer height - further reduced to prevent excessive spacing while ensuring content clearance
 export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`; // 96px + safe area - use this constant instead of hardcoding
 export const NAV_BAR_PADDING_TOP = '0.5rem'; // Balanced top padding
 export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
