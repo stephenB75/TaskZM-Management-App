@@ -203,7 +203,7 @@ export const KANBAN_MOBILE = {
       },
     },
   },
-  bottomPaddingCalc: 'calc(6rem + env(safe-area-inset-bottom, 0px))', // 96px (6rem) - reduced to prevent hiding content
+  bottomPaddingCalc: 'calc(7rem + env(safe-area-inset-bottom, 0px))', // 112px (7rem) - matches nav bar height exactly
   indicator: {
     width: 4, // w-1 = 4px
     height: {

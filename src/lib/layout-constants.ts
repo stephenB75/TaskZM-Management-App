@@ -14,11 +14,11 @@ export const PANEL_WIDTH_SMALL_MONITOR = 400; // Slightly narrower for small mon
 // Header height (matches header minHeight/height in AppHeader.tsx and padding in App.tsx)
 export const HEADER_HEIGHT = 73;
 
-// Mobile header spacer height - accounts for header height + minimal padding + safe area
-// Header is 73px, we add 2px minimal padding for visual spacing = 75px total
+// Mobile header spacer height - accounts for header height + safe area
+// Header is 73px, spacer matches exactly to prevent content from being hidden
 // Then add safe area inset for notched devices
-export const HEADER_MOBILE_SPACER_HEIGHT = 75; // 73px header + 2px minimal padding (prevents content from being hidden)
-export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 75px + safe area
+export const HEADER_MOBILE_SPACER_HEIGHT = 73; // Matches header height exactly (73px)
+export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 73px + safe area
 
 // Header-specific constants
 export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px)
@@ -199,7 +199,7 @@ export const TEAM_PANEL_CARD_PADDING_LEFT = '1.25rem'; // pl-5 = 1.25rem
 export const TEAM_PANEL_SEARCH_ICON_SIZE = '1rem'; // w-4 h-4 = 1rem
 export const TEAM_PANEL_EMPTY_STATE_ICON_SIZE = '3rem'; // w-12 h-12 = 3rem
 export const TEAM_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
-export const TEAM_PANEL_BOTTOM_PADDING_MOBILE = 'calc(6.5rem + env(safe-area-inset-bottom, 0px))'; // 104px (6.5rem) - reduced for less padding
+export const TEAM_PANEL_BOTTOM_PADDING_MOBILE = 'calc(7rem + env(safe-area-inset-bottom, 0px))'; // 112px (7rem) - matches nav bar height exactly
 export const TEAM_PANEL_DROPDOWN_Z_INDEX = 9999; // z-[9999]
 export const TEAM_PANEL_NOTIFICATION_Z_INDEX = 20; // z-20
 export const TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX = 50; // z-50
@@ -286,7 +286,7 @@ export const WORKSPACE_NETWORK_ERROR_BACKOFF_MAX_MS = 600000; // Maximum backoff
 
 // Settings Panel constants
 export const SETTINGS_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
-export const SETTINGS_PANEL_BOTTOM_PADDING_MOBILE = 'calc(6.5rem + env(safe-area-inset-bottom, 0px))'; // 104px (6.5rem) - reduced for less padding
+export const SETTINGS_PANEL_BOTTOM_PADDING_MOBILE = 'calc(7rem + env(safe-area-inset-bottom, 0px))'; // 112px (7rem) - matches nav bar height exactly
 export const SETTINGS_PANEL_PADDING_TOP = '1rem'; // pt-4 = 1rem
 export const SETTINGS_PANEL_CONTAINER_PADDING_SMALL = '1rem'; // p-4 = 1rem
 export const SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM = '1.5rem'; // sm:p-6 = 1.5rem
