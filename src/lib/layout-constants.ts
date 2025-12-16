@@ -14,11 +14,11 @@ export const PANEL_WIDTH_SMALL_MONITOR = 400; // Slightly narrower for small mon
 // Header height (matches header minHeight/height in AppHeader.tsx and padding in App.tsx)
 export const HEADER_HEIGHT = 73;
 
-// Mobile header spacer height - accounts for header height + padding + safe area
-// Header is 73px, we add 12px padding for visual spacing = 85px total
+// Mobile header spacer height - accounts for header height + minimal padding + safe area
+// Header is 73px, we add 2px minimal padding for visual spacing = 75px total
 // Then add safe area inset for notched devices
-export const HEADER_MOBILE_SPACER_HEIGHT = 85; // 73px header + 12px padding (increased to prevent content from being hidden)
-export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 85px + safe area
+export const HEADER_MOBILE_SPACER_HEIGHT = 75; // 73px header + 2px minimal padding (prevents content from being hidden)
+export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 75px + safe area
 
 // Header-specific constants
 export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px)
@@ -131,7 +131,7 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 
 // Bottom Navigation Bar constants
 export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
-export const NAV_BAR_SPACER_HEIGHT = 90; // Spacer height - optimized to provide clearance without excessive spacing that hides content
+export const NAV_BAR_SPACER_HEIGHT = 112; // Spacer height - matches nav bar height exactly to provide proper clearance
 export const NAV_BAR_PADDING_TOP = '0.5rem'; // Balanced top padding
 export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
 export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Button top padding
