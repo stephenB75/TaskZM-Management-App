@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { AppHeader } from "./AppHeader";
-import { HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
+import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -631,7 +631,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
           style={{ 
             padding: PANEL_PADDING,
             paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
-            paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))', // 112px - matches nav bar height exactly
+            paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
             gap: PANEL_CONTENT_SPACING
           }}
         >

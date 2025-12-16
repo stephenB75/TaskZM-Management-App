@@ -132,6 +132,7 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 // Bottom Navigation Bar constants
 export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
 export const NAV_BAR_SPACER_HEIGHT = 112; // Spacer height - matches nav bar height exactly to provide proper clearance
+export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`; // 112px + safe area - use this constant instead of hardcoding
 export const NAV_BAR_PADDING_TOP = '0.5rem'; // Balanced top padding
 export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
 export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Button top padding
@@ -199,7 +200,7 @@ export const TEAM_PANEL_CARD_PADDING_LEFT = '1.25rem'; // pl-5 = 1.25rem
 export const TEAM_PANEL_SEARCH_ICON_SIZE = '1rem'; // w-4 h-4 = 1rem
 export const TEAM_PANEL_EMPTY_STATE_ICON_SIZE = '3rem'; // w-12 h-12 = 3rem
 export const TEAM_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
-export const TEAM_PANEL_BOTTOM_PADDING_MOBILE = 'calc(7rem + env(safe-area-inset-bottom, 0px))'; // 112px (7rem) - matches nav bar height exactly
+export const TEAM_PANEL_BOTTOM_PADDING_MOBILE = NAV_BAR_BOTTOM_PADDING_MOBILE; // Uses nav bar spacer height constant
 export const TEAM_PANEL_DROPDOWN_Z_INDEX = 9999; // z-[9999]
 export const TEAM_PANEL_NOTIFICATION_Z_INDEX = 20; // z-20
 export const TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX = 50; // z-50
@@ -286,7 +287,7 @@ export const WORKSPACE_NETWORK_ERROR_BACKOFF_MAX_MS = 600000; // Maximum backoff
 
 // Settings Panel constants
 export const SETTINGS_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
-export const SETTINGS_PANEL_BOTTOM_PADDING_MOBILE = 'calc(7rem + env(safe-area-inset-bottom, 0px))'; // 112px (7rem) - matches nav bar height exactly
+export const SETTINGS_PANEL_BOTTOM_PADDING_MOBILE = NAV_BAR_BOTTOM_PADDING_MOBILE; // Uses nav bar spacer height constant
 export const SETTINGS_PANEL_PADDING_TOP = '1rem'; // pt-4 = 1rem
 export const SETTINGS_PANEL_CONTAINER_PADDING_SMALL = '1rem'; // p-4 = 1rem
 export const SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM = '1.5rem'; // sm:p-6 = 1.5rem

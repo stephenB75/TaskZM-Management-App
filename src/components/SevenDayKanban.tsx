@@ -32,7 +32,7 @@ import {
   KANBAN_TEXT_SIZES,
   KANBAN_SPACING,
 } from '../lib/kanban-constants';
-import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_SPACER_HEIGHT } from '../lib/layout-constants';
+import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE } from '../lib/layout-constants';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
 
@@ -584,7 +584,7 @@ export function SevenDayKanban({
       >
 
         {/* Mobile Single Column */}
-        <div className="flex-1 overflow-hidden px-4 pt-2 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))` : undefined }}>
+        <div className="flex-1 overflow-hidden px-4 pt-2 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? NAV_BAR_BOTTOM_PADDING_MOBILE : undefined }}>
           <DroppableColumn id={currentColumn.dateString} className="h-full">
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <ScrollArea className="h-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}>

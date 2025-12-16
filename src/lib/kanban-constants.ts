@@ -4,6 +4,7 @@
  */
 
 import { DEFAULT_WEEKDAY_WORK_START } from './business-constants';
+import { NAV_BAR_BOTTOM_PADDING_MOBILE } from './layout-constants';
 
 // Helper to parse time string to hour
 const parseTimeToHour = (timeStr: string): number => {
@@ -203,7 +204,7 @@ export const KANBAN_MOBILE = {
       },
     },
   },
-  bottomPaddingCalc: 'calc(7rem + env(safe-area-inset-bottom, 0px))', // 112px (7rem) - matches nav bar height exactly
+  bottomPaddingCalc: NAV_BAR_BOTTOM_PADDING_MOBILE, // Uses nav bar spacer height constant
   indicator: {
     width: 4, // w-1 = 4px
     height: {
