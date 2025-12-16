@@ -1901,10 +1901,10 @@ export function useAIScheduler() {
         const taskHours = getTaskHours(task);
         const taskDurationMinutes = Math.round(taskHours * MINUTES_PER_HOUR); // Convert hours to minutes
         
-        // CRITICAL FIX FOR RECURRING TASKS: Always force category hours for recurring tasks
-        // This ensures recurring tasks always get a proper time slot assigned, not defaulting to midnight
-        // Recurring tasks must follow guidelines and be placed in available timeline slots
-        const shouldForceCategoryHours = options?.forceCategoryHours ?? false || isRecurringTask;
+          // CRITICAL FIX FOR RECURRING TASKS: Always force category hours for recurring tasks
+          // This ensures recurring tasks always get a proper time slot assigned, not defaulting to midnight
+          // Recurring tasks must follow guidelines and be placed in available timeline slots
+          const shouldForceCategoryHours = (options?.forceCategoryHours ?? false) || isRecurringTask;
         
         // Pass allTasksForDay (including tasks in current plan) to getCategoryTimeSlot
         // This ensures it can find gaps and distribute tasks correctly
