@@ -719,6 +719,83 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       </Badge>
                     )}
                   </div>
+
+                  {/* Yearly-only features section */}
+                  {(subscription.tier === 'pro' && subscription.billingPeriod === 'yearly') || 
+                   (!features.recurringTasks || !features.taskTemplates || !features.taskDependencies || !features.multipleWorkspaces) ? (
+                    <>
+                      <Separator className="my-2" />
+                      <div className="text-xs font-semibold text-muted-foreground mb-2">Pro Yearly Features:</div>
+                      
+                      {/* Recurring Tasks - PRO YEARLY only */}
+                      <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                        {features.recurringTasks ? (
+                          <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                        ) : (
+                          <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                        )}
+                        <span className={features.recurringTasks ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                          {SUBSCRIPTION_UI_TEXT.settings.features.recurringTasks}
+                        </span>
+                        {!features.recurringTasks && (
+                          <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                            {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Task Templates - PRO YEARLY only */}
+                      <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                        {features.taskTemplates ? (
+                          <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                        ) : (
+                          <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                        )}
+                        <span className={features.taskTemplates ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                          {SUBSCRIPTION_UI_TEXT.settings.features.taskTemplates}
+                        </span>
+                        {!features.taskTemplates && (
+                          <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                            {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Task Dependencies - PRO YEARLY only */}
+                      <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                        {features.taskDependencies ? (
+                          <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                        ) : (
+                          <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                        )}
+                        <span className={features.taskDependencies ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                          {SUBSCRIPTION_UI_TEXT.settings.features.taskDependencies}
+                        </span>
+                        {!features.taskDependencies && (
+                          <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                            {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Multiple Workspaces - PRO YEARLY only */}
+                      <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                        {features.multipleWorkspaces ? (
+                          <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                        ) : (
+                          <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                        )}
+                        <span className={features.multipleWorkspaces ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                          {SUBSCRIPTION_UI_TEXT.settings.features.multipleWorkspaces}
+                        </span>
+                        {!features.multipleWorkspaces && (
+                          <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                            {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
+                          </Badge>
+                        )}
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
 
