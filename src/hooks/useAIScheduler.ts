@@ -1901,13 +1901,18 @@ export function useAIScheduler() {
         const taskHours = getTaskHours(task);
         const taskDurationMinutes = Math.round(taskHours * MINUTES_PER_HOUR); // Convert hours to minutes
         
+        // CRITICAL FIX FOR RECURRING TASKS: Always force category hours for recurring tasks
+        // This ensures recurring tasks always get a proper time slot assigned, not defaulting to midnight
+        // Recurring tasks must follow guidelines and be placed in available timeline slots
+        const shouldForceCategoryHours = options?.forceCategoryHours ?? false || isRecurringTask;
+        
         // Pass allTasksForDay (including tasks in current plan) to getCategoryTimeSlot
         // This ensures it can find gaps and distribute tasks correctly
         const categoryTime = getCategoryTimeSlot(
           task,
           scheduleDate,
           timeSlot,
-          options?.forceCategoryHours ?? false,
+          shouldForceCategoryHours, // Force category hours for recurring tasks
           allTasksForDay, // Include tasks from current plan
           taskDurationMinutes // Pass consistent duration for gap checking
         );
@@ -1930,6 +1935,25 @@ export function useAIScheduler() {
           // But first, use findNextAvailableSlot to find actual open time slot
           const proposedTime = new Date(scheduleDate);
           proposedTime.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
+          
+          // CRITICAL SAFEGUARD FOR RECURRING TASKS: Ensure proposed time is never midnight
+          // This should not happen if getCategoryTimeSlot worked correctly, but add extra protection
+          if (isRecurringTask && proposedTime.getHours() === 0 && proposedTime.getMinutes() === 0) {
+            logger.error('CRITICAL: Recurring task proposed time is midnight, adjusting to category start', {
+              taskId: task.id,
+              taskTitle: task.title,
+              categoryTime: `${categoryTime.hours}:${categoryTime.minutes}`,
+            });
+            // Use category start time as fallback
+            const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
+            if (categoryHours) {
+              const startMinutes = parseTimeToMinutes(categoryHours.start);
+              proposedTime.setHours(Math.floor(startMinutes / MINUTES_PER_HOUR), startMinutes % MINUTES_PER_HOUR, 0, 0);
+            } else {
+              const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
+              proposedTime.setHours(workStartHour, 0, 0, 0);
+            }
+          }
           
           // Check if scheduling for today
           const today = new Date();
@@ -2457,6 +2481,16 @@ export function useAIScheduler() {
           // Find available time slot by checking existing scheduled tasks for this day
           // Use allTasksForDay (already calculated above) which includes tasks from current plan
           // Use consistent duration calculation: convert hours to minutes
+          // CRITICAL: This path should rarely be taken for recurring tasks since we force category hours above
+          // But if it is taken, ensure recurring tasks still get a proper time assigned
+          if (isRecurringTask && import.meta.env.DEV) {
+            logger.warn('Recurring task taking else path (categoryTime was null), ensuring proper time assignment', {
+              taskId: task.id,
+              taskTitle: task.title,
+              respectHours: hoursSettings.respectHours,
+              forceCategoryHours: options?.forceCategoryHours,
+            });
+          }
           const taskHours = getTaskHours(task);
           const taskDurationMinutes = Math.round(taskHours * MINUTES_PER_HOUR); // Convert hours back to minutes
           
