@@ -155,7 +155,7 @@ export const TASK_CARD_HEIGHT_CONFIG = {
       base: 80, // Minimum height for short tasks (35-44 mins)
       veryShort: 72, // Base height for very short tasks (15 mins) - increased from 56px for better visibility
       // Height increments: +20px for each 15-minute interval from 15 to 45 mins
-      // 15 mins: 72px, 20-29 mins: 72px, 30-34 mins: 92px, 35-39 mins: 112px, 40-44 mins: 132px
+      // 15-29 mins: 72px, 30-35 mins: 92px (very short - includes 35 mins for auto-adjust), 36-39 mins: 112px, 40-44 mins: 132px
       incrementPer15Mins: 20, // 20px increment per 15-minute interval
       withTracking: 90, // With tracking badge
       withAssigned: 90, // With assigned users
