@@ -573,12 +573,7 @@ function AppContent() {
         <main className="flex-1 overflow-hidden relative flex">
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
           <div className="lg:hidden h-full flex-1 flex flex-col">
-            <div 
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
-              style={{
-                paddingTop: `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`
-              }}
-            >
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
               {currentView === 'dashboard' && (
                 <DashboardView 
                   mobileView={mobileView}
