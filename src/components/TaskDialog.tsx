@@ -2589,6 +2589,8 @@ export function TaskDialog({
                       })}
                     </div>
                   )}
+                    </>
+                  )}
                 </div>
               </TabsContent>
 
