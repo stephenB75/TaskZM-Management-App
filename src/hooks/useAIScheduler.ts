@@ -510,6 +510,22 @@ export function useAIScheduler() {
           }
         }
         
+        // CRITICAL SAFEGUARD: Ensure we never return midnight (0:00) for any task
+        // This is especially important for recurring tasks which must have valid times
+        if (adjustedFinalHours === 0 && adjustedFinalMinutes === 0) {
+          // If somehow we calculated midnight, use default start hour instead
+          logger.warn('CRITICAL: getCategoryTimeSlot calculated midnight (category disabled), using default start hour', {
+            taskId: task.id,
+            category,
+            defaultStartHour,
+          });
+          return {
+            hours: defaultStartHour,
+            minutes: 0,
+            reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled at default start (midnight safeguard)`
+          };
+        }
+        
         return {
           hours: adjustedFinalHours,
           minutes: adjustedFinalMinutes,
@@ -877,6 +893,23 @@ export function useAIScheduler() {
         hours: startTime.hours,
         minutes: startTime.minutes,
         reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled at start of ${isWeekendDate ? 'weekend' : 'weekday'} ${category} hours`
+      };
+    }
+
+    // CRITICAL SAFEGUARD: Ensure we never return midnight (0:00) for any task
+    // This is especially important for recurring tasks which must have valid times
+    if (adjustedFinalHours === 0 && adjustedFinalMinutes === 0) {
+      // If somehow we calculated midnight, use category start time instead
+      logger.warn('CRITICAL: getCategoryTimeSlot calculated midnight, using category start time', {
+        taskId: task.id,
+        category,
+        isWeekendDate,
+        startTime: `${startTime.hours}:${startTime.minutes}`,
+      });
+      return {
+        hours: startTime.hours,
+        minutes: startTime.minutes,
+        reason: `${category.charAt(0).toUpperCase() + category.slice(1)} task scheduled at start of ${isWeekendDate ? 'weekend' : 'weekday'} ${category} hours (midnight safeguard)`
       };
     }
 
@@ -1917,6 +1950,37 @@ export function useAIScheduler() {
           taskDurationMinutes // Pass consistent duration for gap checking
         );
         
+        // CRITICAL SAFEGUARD FOR RECURRING TASKS: If getCategoryTimeSlot returns null for a recurring task,
+        // this is a critical error since we forced category hours. Log it and ensure we still get a time.
+        let effectiveCategoryTime = categoryTime;
+        if (isRecurringTask && !categoryTime) {
+          logger.error('CRITICAL: getCategoryTimeSlot returned null for recurring task despite forcing category hours', {
+            taskId: task.id,
+            taskTitle: task.title,
+            shouldForceCategoryHours,
+            respectHours: hoursSettings.respectHours,
+            category: getTaskCategory(task),
+          });
+          // Force category hours by getting them directly and using category start time
+          const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
+          if (categoryHours) {
+            const startMinutes = parseTimeToMinutes(categoryHours.start);
+            effectiveCategoryTime = {
+              hours: Math.floor(startMinutes / MINUTES_PER_HOUR),
+              minutes: startMinutes % MINUTES_PER_HOUR,
+              reason: 'Recurring task scheduled at category start (getCategoryTimeSlot returned null)'
+            };
+          } else {
+            // Last resort: use default work start time
+            const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
+            effectiveCategoryTime = {
+              hours: workStartHour,
+              minutes: 0,
+              reason: 'Recurring task scheduled at default work start (getCategoryTimeSlot returned null, no category hours)'
+            };
+          }
+        }
+        
         // CRITICAL: Define validTasksForDay BEFORE the if/else blocks so it's available everywhere
         // This ensures conflict detection works in all code paths, including the final safeguard
         const validTasksForDay = allTasksForDay.filter(t => {
@@ -1930,11 +1994,11 @@ export function useAIScheduler() {
           return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
         });
         
-        if (categoryTime) {
+        if (effectiveCategoryTime) {
           // Use category hours if available and respectHours is enabled
           // But first, use findNextAvailableSlot to find actual open time slot
           const proposedTime = new Date(scheduleDate);
-          proposedTime.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
+          proposedTime.setHours(effectiveCategoryTime.hours, effectiveCategoryTime.minutes, 0, 0);
           
           // CRITICAL SAFEGUARD FOR RECURRING TASKS: Ensure proposed time is never midnight
           // This should not happen if getCategoryTimeSlot worked correctly, but add extra protection
@@ -1942,7 +2006,7 @@ export function useAIScheduler() {
             logger.error('CRITICAL: Recurring task proposed time is midnight, adjusting to category start', {
               taskId: task.id,
               taskTitle: task.title,
-              categoryTime: `${categoryTime.hours}:${categoryTime.minutes}`,
+              categoryTime: `${effectiveCategoryTime.hours}:${effectiveCategoryTime.minutes}`,
             });
             // Use category start time as fallback
             const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
@@ -2338,7 +2402,7 @@ export function useAIScheduler() {
             const timeDifference = Math.abs(availableSlotMs - proposedTimeMs);
             
             if (timeDifference > MILLISECONDS_PER_MINUTE) { // More than 1 minute difference
-              reason = `${categoryTime.reason} - moved to available slot (conflict avoided)`;
+              reason = `${effectiveCategoryTime.reason} - moved to available slot (conflict avoided)`;
               // Log for recurring tasks to help debug
               if (isRecurringTask && import.meta.env.DEV) {
                 logger.debug('Recurring task time adjusted due to conflict', {
@@ -2350,19 +2414,19 @@ export function useAIScheduler() {
                 });
               }
             } else {
-              reason = `${categoryTime.reason} - placed in available slot`;
+              reason = `${effectiveCategoryTime.reason} - placed in available slot`;
             }
           } else {
             // No slot found within category hours - try again WITHOUT category hour constraints
             // CRITICAL: We MUST find a conflict-free slot, never use the proposed time if it conflicts
-            logger.warn('No available slot found within category hours, trying without constraints', {
-              taskId: task.id,
-              taskTitle: task.title,
-              isRecurringTask,
-              proposedTime: proposedTime.toISOString(),
-              categoryTime: `${categoryTime.hours}:${categoryTime.minutes}`,
-              validTasksForDayCount: validTasksForDay.length,
-            });
+              logger.warn('No available slot found within category hours, trying without constraints', {
+                taskId: task.id,
+                taskTitle: task.title,
+                isRecurringTask,
+                proposedTime: proposedTime.toISOString(),
+                categoryTime: `${effectiveCategoryTime.hours}:${effectiveCategoryTime.minutes}`,
+                validTasksForDayCount: validTasksForDay.length,
+              });
             
             // Try again without category hours constraint to find ANY available slot
             // This ensures we NEVER schedule at the same time as existing tasks
@@ -2381,7 +2445,7 @@ export function useAIScheduler() {
             
             if (fallbackSlot.getHours() < HOURS_PER_DAY) {
               scheduleDate.setTime(fallbackSlot.getTime());
-              reason = `${categoryTime.reason} - moved to available slot (conflict avoided)`;
+              reason = `${effectiveCategoryTime.reason} - moved to available slot (conflict avoided)`;
               // Log for recurring tasks to help debug
               if (isRecurringTask && import.meta.env.DEV) {
                 logger.debug('Recurring task moved outside category hours to avoid conflict', {
@@ -2419,7 +2483,7 @@ export function useAIScheduler() {
               
               if (lastResortSlot.getHours() < HOURS_PER_DAY) {
                 scheduleDate.setTime(lastResortSlot.getTime());
-                reason = `${categoryTime.reason} - moved to available slot (last resort)`;
+                reason = `${effectiveCategoryTime.reason} - moved to available slot (last resort)`;
               } else {
                 // Absolute last resort - use proposed time but log the error
                 logger.error('ABSOLUTE LAST RESORT: Using proposed time despite potential conflicts', {
@@ -2427,8 +2491,8 @@ export function useAIScheduler() {
                   taskTitle: task.title,
                   proposedTime: proposedTime.toISOString(),
                 });
-                scheduleDate.setHours(categoryTime.hours, categoryTime.minutes, 0, 0);
-                reason = categoryTime.reason;
+                scheduleDate.setHours(effectiveCategoryTime.hours, effectiveCategoryTime.minutes, 0, 0);
+                reason = effectiveCategoryTime.reason;
               }
             }
           }
