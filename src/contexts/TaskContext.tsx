@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
+import { useSubscription } from './SubscriptionContext';
 import { useDemoActivity } from '../hooks/useDemoActivity';
 import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
@@ -94,6 +95,7 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
+  const { hasFeature } = useSubscription();
   const { updateActivity } = useDemoActivity(); // Track demo user activity
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([
@@ -2841,6 +2843,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const rolloverCheckedRef = React.useRef<string>('');
 
   useEffect(() => {
+    // Gate: Task rollover requires Pro subscription
+    if (!hasFeature('taskRollover')) return;
     if (!rolloverSettings.autoRollover || !user) return;
 
     const today = new Date();

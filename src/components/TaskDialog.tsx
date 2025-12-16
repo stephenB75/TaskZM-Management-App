@@ -1005,6 +1005,14 @@ export function TaskDialog({
       }
     }
 
+    // Gate: Task dependencies require Pro Yearly
+    if (dependencies.length > 0 && !hasFeature('taskDependencies')) {
+      toast.error("Task Dependencies is a Pro Yearly feature", {
+        description: "Upgrade to Pro Yearly to link related tasks.",
+      });
+      return;
+    }
+
     // Validate dependencies
     const currentTaskForValidation =
       task || ({ id: "new", dependencies: [] } as Task);
@@ -1028,21 +1036,28 @@ export function TaskDialog({
 
     // Validate recurrence configuration
     if (recurrenceType !== "none") {
+      // Gate: Recurring tasks require Pro Yearly
+      if (!hasFeature('recurringTasks')) {
+        toast.error("Recurring Tasks is a Pro Yearly feature", {
+          description: "Upgrade to Pro Yearly to create recurring tasks.",
+        });
+        return;
+      }
       if (recurrenceType === "weekly" && (!recurrenceDaysOfWeek || recurrenceDaysOfWeek.length === 0)) {
         toast.error("Weekly Recurrence Required", {
           description: "Please select at least one day of the week for weekly recurrence.",
         });
         return;
       }
-      if (recurrenceType === "monthly" && (!recurrenceDayOfMonth || 
-          recurrenceDayOfMonth < TIMING_CONSTANTS.calendar.minDayOfMonth || 
+      if (recurrenceType === "monthly" && (!recurrenceDayOfMonth ||
+          recurrenceDayOfMonth < TIMING_CONSTANTS.calendar.minDayOfMonth ||
           recurrenceDayOfMonth > TIMING_CONSTANTS.calendar.maxDayOfMonth)) {
         toast.error("Monthly Recurrence Required", {
           description: `Please select a valid day of the month (${TIMING_CONSTANTS.calendar.minDayOfMonth}-${TIMING_CONSTANTS.calendar.maxDayOfMonth}) for monthly recurrence.`,
         });
         return;
       }
-      if (recurrenceInterval < TIMING_CONSTANTS.calendar.minRecurrenceInterval || 
+      if (recurrenceInterval < TIMING_CONSTANTS.calendar.minRecurrenceInterval ||
           recurrenceInterval > TIMING_CONSTANTS.calendar.maxRecurrenceInterval) {
         toast.error("Invalid Recurrence Interval", {
           description: `Recurrence interval must be between ${TIMING_CONSTANTS.calendar.minRecurrenceInterval} and ${TIMING_CONSTANTS.calendar.maxRecurrenceInterval}.`,
@@ -2483,8 +2498,21 @@ export function TaskDialog({
                       <Link2 className="w-4 h-4 text-primary" />
                       Add Dependency
                     </Label>
+                    {!hasFeature('taskDependencies') && (
+                      <Badge variant="secondary" className="ml-auto bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
+                        PRO YEARLY
+                      </Badge>
+                    )}
                   </div>
-                  {availableTasksForDependencies.length > 0 ? (
+                  {!hasFeature('taskDependencies') ? (
+                    <div className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                      <p className="text-sm text-muted-foreground">
+                        Task Dependencies is a Pro Yearly feature. Upgrade to link related tasks and manage task relationships.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {availableTasksForDependencies.length > 0 ? (
                     <Select
                       value={selectedDependencyValue || undefined}
                       onValueChange={(value) => {
@@ -2573,10 +2601,21 @@ export function TaskDialog({
                       <div className="flex items-center gap-2">
                         <Repeat className="w-4 h-4 text-primary" />
                         <Label className="text-sm font-semibold">Repeat Task</Label>
+                        {!hasFeature('recurringTasks') && (
+                          <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
+                            PRO YEARLY
+                          </Badge>
+                        )}
                       </div>
                       <Switch
                         checked={recurrenceType !== "none"}
                         onCheckedChange={(checked) => {
+                          if (!hasFeature('recurringTasks')) {
+                            toast.error('Recurring Tasks is a Pro Yearly feature', {
+                              description: 'Upgrade to Pro Yearly to create recurring tasks.',
+                            });
+                            return;
+                          }
                           if (!checked) {
                             setRecurrenceType("none");
                             setRecurrenceDaysOfWeek([]);
@@ -2586,6 +2625,7 @@ export function TaskDialog({
                             setRecurrenceType("daily");
                           }
                         }}
+                        disabled={!hasFeature('recurringTasks')}
                       />
                     </div>
 

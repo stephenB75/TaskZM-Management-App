@@ -27,7 +27,6 @@ const getFeatures = (tier: SubscriptionTier, billingPeriod?: 'monthly' | 'yearly
     
     return {
       unlimitedTasks: true,
-      calendar: true, // Deprecated - using calendarSync
       customTags: true,
       aiScheduler: true,
       aiSchedulerLimit: undefined, // Unlimited for pro
@@ -50,7 +49,6 @@ const getFeatures = (tier: SubscriptionTier, billingPeriod?: 'monthly' | 'yearly
   // Free tier
   return {
     unlimitedTasks: true,
-    calendar: false, // FIXED: Was incorrectly true
     customTags: true,
     aiScheduler: true, // Limited - 3/week
     aiSchedulerLimit: 3, // 3 suggestions per week

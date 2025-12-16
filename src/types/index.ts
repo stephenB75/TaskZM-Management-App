@@ -297,7 +297,6 @@ export interface AwardProgress {
 
 export interface SubscriptionFeatures {
   unlimitedTasks: boolean;
-  calendar: boolean; // Deprecated - use calendarSync instead
   customTags: boolean;
   aiScheduler: boolean;
   taskHours: boolean;
