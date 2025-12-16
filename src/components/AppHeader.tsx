@@ -141,7 +141,7 @@ export function AppHeader({
 
   return (
     <>
-      {/* Mobile Header - Fixed at top */}
+      {/* Mobile Header - Fixed at top (always shown on mobile) */}
       <div 
         key={`mobile-header-${actualTheme}`}
         className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm"
@@ -214,7 +214,7 @@ export function AppHeader({
           </div>
         </div>
       </div>
-      {/* Spacer so page content sits below the fixed mobile header */}
+      {/* Spacer so page content sits below the fixed mobile header - always shown on mobile */}
       <div
         className="md:hidden"
         aria-hidden="true"
