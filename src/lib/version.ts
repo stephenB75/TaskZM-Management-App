@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.3';
-export const VERSION_NAME = 'Analytics Motion Sync';
-export const VERSION_DATE = 'November 24, 2025';
-export const BUILD_NUMBER = '20251124-1';
+export const APP_VERSION = '1.0.5';
+export const VERSION_NAME = 'Task Card Auto-Adjust';
+export const VERSION_DATE = 'December 15, 2025';
+export const BUILD_NUMBER = '20251215-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,18 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.5',
+    date: 'December 15, 2025',
+    name: 'Task Card Auto-Adjust',
+    changes: [
+      'Fixed auto-adjust boundary condition for 35-minute tasks (now includes exactly 35 minutes)',
+      'Fixed height calculation for inline pomodoro timer when it\'s the only activated component',
+      'Updated height calculation logic to properly account for all activated components in bottom row',
+      'Verified auto-adjust functionality for task cards with duration ≤35 minutes and activated components',
+      'Improved compact spacing optimization for very short tasks with multiple activated components',
+    ],
+  },
   {
     version: '1.0.3',
     date: 'November 24, 2025',
