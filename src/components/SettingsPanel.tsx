@@ -1165,7 +1165,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
                 <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                   <Label htmlFor="notifications-reminders" className="text-xs md:text-sm cursor-pointer">Due Date Reminders</Label>
-                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify before tasks are due</p>
+                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify 1 hour before tasks are due</p>
                 </div>
                 <Switch 
                   id="notifications-reminders" 
@@ -1174,52 +1174,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   disabled={!notificationSettings.enabled || permission !== 'granted'}
                   className="flex-shrink-0 mt-0.5"
                 />
-              </div>
-
-              {/* Reminder Time */}
-              {notificationSettings.dueDateReminders && (
-                <div className="space-y-1.5 md:space-y-2 pt-2">
-                  <Label htmlFor="reminder-time" className="text-xs md:text-sm">Reminder Time (minutes before due date)</Label>
-                  <Input
-                    id="reminder-time"
-                    type="number"
-                    min="5"
-                    max="1440"
-                    step="5"
-                    value={notificationSettings.reminderTime}
-                    onChange={(e) => updateNotificationSettings({ 
-                      reminderTime: Math.max(5, Math.min(1440, parseInt(e.target.value) || 60)) 
-                    })}
-                    disabled={!notificationSettings.enabled || permission !== 'granted'}
-                    className="w-full h-9 text-sm"
-                  />
-                  <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
-                    Current: {notificationSettings.reminderTime < 60 
-                      ? `${notificationSettings.reminderTime} minutes` 
-                      : `${Math.round(notificationSettings.reminderTime / 60)} hours`} before due date
-                  </p>
-                </div>
-              )}
-
-              {/* Check Interval */}
-              <div className="space-y-1.5 md:space-y-2 pt-2">
-                <Label htmlFor="check-interval" className="text-xs md:text-sm">Check Interval (minutes)</Label>
-                <Input
-                  id="check-interval"
-                  type="number"
-                  min="5"
-                  max="60"
-                  step="5"
-                  value={notificationSettings.checkInterval}
-                  onChange={(e) => updateNotificationSettings({ 
-                    checkInterval: Math.max(5, Math.min(60, parseInt(e.target.value) || 15)) 
-                  })}
-                  disabled={!notificationSettings.enabled || permission !== 'granted'}
-                  className="w-full h-9 text-sm"
-                />
-                <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
-                  How often to check for due tasks (min: 5, max: 60 minutes)
-                </p>
               </div>
 
               <Separator className="my-3 md:my-4" />
