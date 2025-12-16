@@ -1,6 +1,6 @@
 {
   "name": "TaskZM Management App",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "dependencies": {
     "@capacitor/core": "*",

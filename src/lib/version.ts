@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.5';
-export const VERSION_NAME = 'Task Card Auto-Adjust';
+export const APP_VERSION = '1.0.6';
+export const VERSION_NAME = 'Mobile Header Spacer Fix';
 export const VERSION_DATE = 'December 15, 2025';
-export const BUILD_NUMBER = '20251215-1';
+export const BUILD_NUMBER = '20251215-2';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,19 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.6',
+    date: 'December 15, 2025',
+    name: 'Mobile Header Spacer Fix',
+    changes: [
+      'Fixed mobile header spacer positioning - moved from AppHeader component to App.tsx scrollable container',
+      'Removed duplicate spacer from AppHeader to prevent double spacing',
+      'Ensured content starts below fixed header on mobile by placing spacer as first element in scrollable container',
+      'Fixed content being hidden under AppHeader when page scrolls',
+      'Verified spacer uses HEADER_MOBILE_SAFE_AREA_SPACER constant (no hardcoded values)',
+      'Fixed nav bar spacer height reduced to 65px to prevent excessive spacing',
+    ],
+  },
   {
     version: '1.0.5',
     date: 'December 15, 2025',
