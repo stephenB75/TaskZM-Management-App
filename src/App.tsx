@@ -574,6 +574,12 @@ function AppContent() {
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
           <div className="lg:hidden h-full flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+              {/* Header spacer - positioned directly underneath the fixed header, inside scrollable container */}
+              <div 
+                className="md:hidden flex-shrink-0"
+                style={{ height: HEADER_MOBILE_SAFE_AREA_SPACER }}
+                aria-hidden="true"
+              />
               {currentView === 'dashboard' && (
                 <DashboardView 
                   mobileView={mobileView}
