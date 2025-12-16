@@ -15,9 +15,11 @@ export const PANEL_WIDTH_SMALL_MONITOR = 400; // Slightly narrower for small mon
 export const HEADER_HEIGHT = 73;
 
 // Mobile header spacer height - accounts for header height + safe area
-// Header is 73px, spacer matches exactly to prevent content from being hidden
+// Header: height 73px (border-box includes: 16px padding-top + content + 16px padding-bottom + 1px border-bottom)
+// With border-box, the 73px is the total height including padding and border
+// Spacer must match this exactly so content starts underneath the header
 // Then add safe area inset for notched devices
-export const HEADER_MOBILE_SPACER_HEIGHT = 73; // Matches header height exactly (73px)
+export const HEADER_MOBILE_SPACER_HEIGHT = 73; // Matches header height exactly (73px total with border-box)
 export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 73px + safe area
 
 // Header-specific constants
@@ -131,8 +133,8 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 
 // Bottom Navigation Bar constants
 export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
-export const NAV_BAR_SPACER_HEIGHT = 70; // Spacer height - further reduced to prevent excessive spacing while ensuring content clearance
-export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`; // 96px + safe area - use this constant instead of hardcoding
+export const NAV_BAR_SPACER_HEIGHT = 65; // Spacer height - optimized to match actual visible nav bar content area (reduces excessive spacing)
+export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`; // 65px + safe area - use this constant instead of hardcoding
 export const NAV_BAR_PADDING_TOP = '0.5rem'; // Balanced top padding
 export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
 export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Button top padding
