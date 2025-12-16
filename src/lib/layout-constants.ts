@@ -19,7 +19,8 @@ export const HEADER_HEIGHT = 73;
 // With border-box, the 73px is the total height including padding and border
 // Spacer must match this exactly so content starts underneath the header
 // Then add safe area inset for notched devices
-export const HEADER_MOBILE_SPACER_HEIGHT = 73; // Matches header height exactly (73px total with border-box)
+// IMPORTANT: This spacer is INSIDE the scrollable container and pushes content down
+export const HEADER_MOBILE_SPACER_HEIGHT = 73; // Matches header height exactly (73px total with border-box) - must be exact to prevent content from being hidden
 export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 73px + safe area
 
 // Header-specific constants
