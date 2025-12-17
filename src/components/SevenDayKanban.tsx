@@ -583,11 +583,11 @@ export function SevenDayKanban({
         }}
       >
 
-        {/* Mobile Single Column */}
-        <div className="flex-1 overflow-hidden px-4 pt-2 sm:px-6 sm:pt-4 sm:pb-6" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? NAV_BAR_BOTTOM_PADDING_MOBILE : undefined }}>
+        {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
+        <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 sm:pb-6">
           <DroppableColumn id={currentColumn.dateString} className="h-full">
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                <ScrollArea className="h-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}>
+                <div className="h-full min-h-0">
                   <div className="pb-6 sm:pb-8">
                     <div className="flex items-center gap-2 mb-3 min-w-0">
                       <div className={cn(
@@ -735,8 +735,8 @@ export function SevenDayKanban({
                     </AnimatePresence>
                       );
                     })()}
-                  </div>
-                </ScrollArea>
+                </div>
+              </div>
               </SortableContext>
             </DroppableColumn>
         </div>
