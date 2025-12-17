@@ -541,9 +541,10 @@ export function TodayAgendaView({
         data-droppable-id="today-agenda"
         data-today-agenda="true"
         className={cn(
-          `h-full flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
+          `flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
+          isMobile ? "min-h-full" : "h-full",
           !isMobile && "min-h-[400px]", // Ensure drop zone is always accessible
         )}
         style={{
@@ -597,7 +598,7 @@ export function TodayAgendaView({
       {/* On mobile (when hideHeader is false), rely on parent scroll container in App.tsx */}
       {/* On desktop (when hideHeader is true), use ScrollArea for standalone scrolling */}
       {hideHeader ? (
-        <div className="flex-1 overflow-hidden w-full relative">
+        <div className={cn("flex-1 w-full relative", isMobile ? "min-h-0" : "overflow-hidden")}>
           <ScrollArea 
             className="h-full w-full" 
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}
@@ -841,7 +842,7 @@ export function TodayAgendaView({
               ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` 
               : '3rem', // 48px on desktop for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-              ? NAV_BAR_BOTTOM_PADDING_MOBILE
+              ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`
               : undefined,
           }}
         >

@@ -575,7 +575,7 @@ export function SevenDayKanban({
 
     return (
       <div 
-        className="h-full flex flex-col"
+        className="min-h-full flex flex-col"
         style={{
           backgroundImage: isDark
             ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
@@ -585,9 +585,9 @@ export function SevenDayKanban({
 
         {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
         <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` }}>
-          <DroppableColumn id={currentColumn.dateString} className="h-full">
+          <DroppableColumn id={currentColumn.dateString} className="min-h-full">
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                <div className="min-h-0">
+                <div>
                   <div>
                     <div className="flex items-center gap-2 mb-3 min-w-0">
                       <div className={cn(

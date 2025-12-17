@@ -1430,7 +1430,7 @@ export function DashboardView({
           </div>
 
           {/* Mobile: Tabbed Content */}
-          <div className="md:hidden h-full">
+          <div className="md:hidden min-h-full">
             {mobileView === "today" ? (
               <TodayAgendaView hideHeader={true} />
             ) : viewMode === "week" ? (
