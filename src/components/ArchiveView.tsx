@@ -380,6 +380,179 @@ export function ArchiveView() {
           {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
             <div className="h-full overflow-y-auto overscroll-contain">
               <div className="p-4 md:px-8 pb-safe md:pb-8">
+                <div className="space-y-3">
+                  <AnimatePresence mode="popLayout">
+                    {sortedTasks.length === 0 ? (
+                      <motion.div
+                        key="empty"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-center justify-center py-16 text-center"
+                      >
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center mb-6 shadow-lg">
+                          <Archive className="w-12 h-12 text-primary" />
+                        </div>
+                        <h3 className="text-xl mb-2">
+                          No completed tasks
+                        </h3>
+                        <p className="text-muted-foreground max-w-sm">
+                          {searchQuery || filterPriority !== "all"
+                            ? "No tasks match your filters. Try adjusting your search."
+                            : "Complete some tasks and they will appear here."}
+                        </p>
+                      </motion.div>
+                    ) : (
+                      sortedTasks.map((task, index) => (
+                        <motion.div
+                          key={task.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ delay: index * 0.03 }}
+                        >
+                          <Card
+                            className={cn(
+                              // Responsive padding: smaller on mobile, comfortable on desktop
+                              "px-2.5 py-2 md:px-3 md:py-3 cursor-pointer transition-all",
+                              // Responsive borders: thinner on mobile, standard on desktop
+                              "border-l-2 md:border-l-4 border-gray-300/80 md:border-gray-300/90",
+                              // Better shadow blending on mobile
+                              "shadow-lg hover:shadow-xl",
+                              "sm:shadow-lg sm:hover:shadow-xl",
+                              getPriorityColor(task.priority),
+                            )}
+                            style={{
+                              // Custom shadow for better mobile blending
+                              boxShadow: isMobile 
+                                ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
+                                : undefined
+                            }}
+                            onClick={() => handleTaskClick(task)}
+                          >
+                            <div className="flex items-start gap-2 md:gap-2.5">
+                              <Checkbox
+                                checked={selectedTaskIds.has(task.id)}
+                                onCheckedChange={() => {
+                                  setSelectedTaskIds(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(task.id)) {
+                                      newSet.delete(task.id);
+                                    } else {
+                                      newSet.add(task.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-0.5"
+                              />
+                              {/* Checkmark Icon */}
+                              <div className="w-7 h-7 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                                <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              </div>
+
+                              {/* Task Content */}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm line-through opacity-70 mb-0.5 line-clamp-2">
+                                  {task.title}
+                                </h3>
+
+                                {task.description && (
+                                  <div 
+                                    className={cn(
+                                      "text-[10px] text-muted-foreground line-clamp-4 break-words opacity-60 leading-tight px-1.5",
+                                      // Rich text formatting styles - only apply if HTML is present
+                                      // Note: Rich text editor font size changes will override this base size via inline styles
+                                      hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
+                                      hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
+                                      hasHTMLTags(task.description) && "[&_u]:underline",
+                                      hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
+                                      hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
+                                      hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
+                                      hasHTMLTags(task.description) && "[&_li]:ml-1",
+                                      hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words"
+                                    )}
+                                    {...(hasHTMLTags(task.description) 
+                                      ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                                      : { children: task.description }
+                                    )}
+                                  />
+                                )}
+
+                                {/* Assignee Display */}
+                                {task.assignedTo &&
+                                  task.assignedTo.length > 0 && (
+                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                      {task.assignedTo
+                                        .slice(0, 3)
+                                        .map((userId) => {
+                                          const member =
+                                            getTeamMember(userId);
+                                          if (!member)
+                                            return null;
+
+                                          const initials = getInitials(member.name);
+
+                                          return (
+                                            <div
+                                              key={userId}
+                                              className="flex items-center gap-1"
+                                            >
+                                              <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60 flex items-center justify-center text-[7px] font-semibold">
+                                                {initials}
+                                              </div>
+                                              <span className="text-[10px] text-gray-600 opacity-60 font-semibold">
+                                                {member.name}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      {task.assignedTo.length >
+                                        3 && (
+                                        <span className="text-[10px] text-gray-500 opacity-60">
+                                          +
+                                          {task.assignedTo
+                                            .length - 3}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={(e) =>
+                                    handleRestore(task, e)
+                                  }
+                                  title="Restore task"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  onClick={(e) =>
+                                    handleDelete(task, e)
+                                  }
+                                  title="Delete permanently"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        </motion.div>
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="p-4 md:px-8" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
               <div className="space-y-3">
@@ -554,9 +727,7 @@ export function ArchiveView() {
                 </AnimatePresence>
               </div>
             </div>
-          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-            </div>
-          ) : null}
+          )}
         </div>
       </div>
 
