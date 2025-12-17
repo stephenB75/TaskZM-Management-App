@@ -549,7 +549,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
   return (
     <div
-      className="h-full flex flex-col"
+      className={cn("flex flex-col", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full')}
       style={{
         background: `linear-gradient(to bottom, ${getColorWithOpacity(gradientColor1, 0.35)}, ${getColorWithOpacity(gradientColor2, 0.35)}, ${getColorWithOpacity(gradientColor3, 0.35)})`,
       } as React.CSSProperties}

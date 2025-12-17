@@ -416,8 +416,8 @@ export function NotificationsPanel() {
   };
 
   return (
-    <div 
-      className={`h-full flex flex-col ${UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}
+    <div
+      className={cn(`flex flex-col ${UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`, typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full')}
     >
       <AppHeader
         title={NOTIFICATION_PANEL_TEXT.title}

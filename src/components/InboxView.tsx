@@ -365,7 +365,7 @@ export function InboxView() {
 
   return (
     <div
-      className={`h-full flex flex-col ${UI_INBOX_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}
+      className={cn(`flex flex-col ${UI_INBOX_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`, isMobile ? 'min-h-full' : 'h-full')}
       data-tour="inbox-panel"
     >
       <AppHeader

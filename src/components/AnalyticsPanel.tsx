@@ -656,7 +656,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
   return (
     <div 
-      className="h-full flex flex-col bg-background" 
+      className={cn("flex flex-col bg-background", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full')} 
       style={{ 
         backgroundImage: panelGradient,
       } as React.CSSProperties}
