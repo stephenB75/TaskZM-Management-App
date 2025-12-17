@@ -50,6 +50,7 @@ export function AppSidebar({
   open,
   onOpenChange,
   unscheduledCount = 0,
+  upcomingAndDueNowCount = 0,
 }: AppSidebarProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
