@@ -1213,7 +1213,7 @@ export function TeamPanel() {
               style={{ 
                 padding: PANEL_PADDING,
                 paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
-                paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
+                paddingBottom: `calc(${TEAM_PANEL_BOTTOM_PADDING_MOBILE} + 2rem)`,
                 gap: PANEL_CONTENT_SPACING
               }}
             >

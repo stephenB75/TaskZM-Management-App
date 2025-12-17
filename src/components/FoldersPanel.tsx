@@ -625,7 +625,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
       {/* Folders List */}
       {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
-      <div className="flex-1 overflow-hidden min-h-0">
+      <div className="flex-1 min-h-0">
         {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
           <ScrollArea className="h-full">
             <div 
@@ -699,7 +699,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               style={{ 
                 padding: PANEL_PADDING,
                 paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
-                paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
+                paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`,
                 gap: PANEL_CONTENT_SPACING
               }}
             >

@@ -464,7 +464,7 @@ export function NotificationsPanel() {
 
         {/* Notifications List */}
         {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
-        <div className="flex-1 overflow-y-auto md:overflow-hidden">
+        <div className="flex-1 min-h-0">
           {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
             <ScrollArea className="h-full">
               <div className="p-4 space-y-3 pb-safe md:pb-4">
@@ -548,7 +548,7 @@ export function NotificationsPanel() {
               </div>
             </ScrollArea>
           ) : (
-            <div className="p-4 space-y-3" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
+            <div className="p-4 space-y-3" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` }}>
               {filteredNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

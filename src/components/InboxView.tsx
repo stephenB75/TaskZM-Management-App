@@ -590,7 +590,7 @@ export function InboxView() {
 
         {/* Task List */}
         {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
-        <div className="flex-1 overflow-hidden md:overflow-hidden">
+        <div className="flex-1 min-h-0">
           {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
             <ScrollArea className="h-full">
               <div className="p-4 md:p-8 pb-safe">
@@ -843,8 +843,8 @@ export function InboxView() {
                 </div>
               </div>
             </ScrollArea>
-          ) : (
-            <div className="p-4 md:p-8" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
+            ) : (
+              <div className="p-4 md:p-8" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` }}>
               <div className="space-y-2">
                 <AnimatePresence mode="popLayout">
                   {sortedTasks.length === 0 ? (
