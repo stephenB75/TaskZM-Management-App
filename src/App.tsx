@@ -717,17 +717,10 @@ function AppContent() {
           </AnimatePresence>
 
           {/* Desktop: Dashboard - pushed to the right when panel is open */}
-          <motion.div 
+          {/* No animation - header shifts instantly when panel opens/closes */}
+          <div 
             className={`hidden md:block h-full flex-1 overflow-hidden`}
             style={{ paddingTop: `${HEADER_HEIGHT}px` }}
-            layout
-            initial={false}
-            transition={{ 
-              type: 'spring', 
-              damping: HEADER_ANIMATION_DAMPING, 
-              stiffness: HEADER_ANIMATION_STIFFNESS,
-              mass: 1.5, // Heavier for smoother, slower animation with less overshoot
-            }}
           >
             <DashboardView 
               mobileView={mobileView}
@@ -738,7 +731,7 @@ function AppContent() {
               panelOpen={currentView !== 'dashboard'}
               panelKey={currentView}
             />
-          </motion.div>
+          </div>
         </main>
         <BottomNav 
           currentView={currentView}

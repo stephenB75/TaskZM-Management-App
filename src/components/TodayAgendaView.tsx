@@ -483,11 +483,11 @@ export function TodayAgendaView({
           >
             <div 
               ref={timelineContainerRef}
-              className="px-5 sm:pb-safe md:pt-10 md:pb-4 w-full relative"
+              className="px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative"
               style={{
                 paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
                   ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` 
-                  : undefined,
+                  : '3rem', // 48px on desktop for better spacing from header
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? KANBAN_MOBILE.bottomPaddingCalc
                   : undefined,

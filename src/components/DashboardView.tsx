@@ -1344,10 +1344,16 @@ export function DashboardView({
                                   key={`task-${task.id}-${taskIndex}`}
                                   className={cn(
                                     "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0",
+                                    // Ensure dots are always visible with sufficient opacity
                                     isSelected
-                                      ? isDone ? "bg-primary/60" : "bg-primary"
-                                      : isDone ? "bg-primary/50" : "bg-primary/70",
+                                      ? isDone ? "bg-primary/70" : "bg-primary"
+                                      : isDone ? "bg-primary/60" : "bg-primary/80",
                                   )}
+                                  style={{
+                                    // Force visibility
+                                    display: 'block',
+                                    opacity: isDone ? 0.6 : 1,
+                                  }}
                                   aria-label={`Task: ${task.title || 'Untitled task'}`}
                                   title={task.title || 'Untitled task'}
                                 />
