@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@capacitor/core": "*",
+    "@capacitor/local-notifications": "^6.0.0",
     "@capacitor/splash-screen": "*",
     "@capacitor/status-bar": "*",
     "@dnd-kit/core": "*",

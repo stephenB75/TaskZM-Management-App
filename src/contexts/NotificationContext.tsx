@@ -17,6 +17,12 @@ import {
   NOTIFICATION_INTERVALS,
 } from '../lib/notification-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import {
+  requestNotificationPermission as requestNativePermission,
+  getNotificationPermission as getNativePermission,
+  showNotification as showNativeNotification,
+  isNativeNotificationsAvailable,
+} from '../lib/native-notifications';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -60,33 +66,40 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   );
   const [badgeCount, setBadgeCount] = useState(0);
 
-  // Check notification permission on mount
+  // Check notification permission on mount (works for both browser and native)
   useEffect(() => {
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
-    }
+    const checkPermission = async () => {
+      const currentPermission = await getNativePermission();
+      setPermission(currentPermission);
+    };
+    checkPermission();
   }, []);
 
-  // Request notification permission
+  // Request notification permission (works for both browser and native)
   const requestPermission = useCallback(async (): Promise<boolean> => {
-    if (!('Notification' in window)) {
+    // Check if native notifications are available
+    const isNative = await isNativeNotificationsAvailable();
+    
+    if (!isNative && !('Notification' in window)) {
       toast.error(NOTIFICATION_TOAST_MESSAGES.notSupported);
       return false;
     }
 
-    if (Notification.permission === 'granted') {
+    // Check current permission
+    const currentPermission = await getNativePermission();
+    if (currentPermission === 'granted') {
       setPermission('granted');
       return true;
     }
 
-    if (Notification.permission === 'denied') {
+    if (currentPermission === 'denied') {
       toast.error(NOTIFICATION_TOAST_MESSAGES.blocked);
       setPermission('denied');
       return false;
     }
 
     try {
-      const result = await Notification.requestPermission();
+      const result = await requestNativePermission();
       setPermission(result);
       
       if (result === 'granted') {
@@ -263,7 +276,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [isBadgeAPIAvailable, updateBadge]);
 
   // Check for due/overdue tasks and show notifications
-  const checkAndNotify = useCallback(() => {
+  const checkAndNotify = useCallback(async () => {
     if (!settings.enabled) {
       logger.debug('Notifications disabled, skipping check');
       return;
@@ -280,9 +293,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Verify Notification API is available
-    if (!('Notification' in window)) {
-      logger.error('Notification API not available in this browser');
+    // Verify notification API is available (browser or native)
+    const isNative = await isNativeNotificationsAvailable();
+    if (!isNative && !('Notification' in window)) {
+      logger.error('Notification API not available');
       return;
     }
 
@@ -331,37 +345,30 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       logger.debug('Overdue tasks found:', overdueTasks.length);
       overdueCount = overdueTasks.length;
 
-      overdueTasks.forEach(task => {
-        try {
-          // Use dueDate if available, otherwise use scheduledDate
-          const dateToUse = task.dueDate || task.scheduledDate;
-          const dateText = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
-          const notification = new Notification(NOTIFICATION_TITLES.taskOverdue, {
-            body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
-            icon: NOTIFICATION_ICONS.default,
-            badge: NOTIFICATION_ICONS.badge,
-            tag: `${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`,
-            requireInteraction: false,
-          });
-          
-          // Handle notification click - focus the app window
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-          };
-          
-          // Auto-close notification after 5 seconds
-          setTimeout(() => {
-            notification.close();
-          }, TIMING_CONSTANTS.timeouts.notification);
-          
-          logger.debug('Notification sent for overdue task:', task.id, task.title);
-          notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
-        } catch (error) {
-          logger.error('Failed to show notification:', error);
-          toast.error('Failed to show notification. Please check your browser settings.');
-        }
-      });
+      // Use Promise.allSettled to handle all notifications in parallel
+      await Promise.allSettled(
+        overdueTasks.map(async (task) => {
+          try {
+            // Use dueDate if available, otherwise use scheduledDate
+            const dateToUse = task.dueDate || task.scheduledDate;
+            const dateText = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
+            
+            await showNativeNotification({
+              title: NOTIFICATION_TITLES.taskOverdue,
+              body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
+              tag: `${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`,
+              requireInteraction: false,
+              data: { taskId: task.id, type: 'overdue' },
+            });
+            
+            logger.debug('Notification sent for overdue task:', task.id, task.title);
+            notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
+          } catch (error) {
+            logger.error('Failed to show notification:', error);
+            toast.error('Failed to show notification. Please check your notification settings.');
+          }
+        })
+      );
     }
 
     // Check for tasks due soon (check both dueDate and scheduledDate)
@@ -391,52 +398,41 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       logger.debug('Due soon tasks found:', dueSoonTasks.length);
       dueSoonCount = dueSoonTasks.length;
 
-      dueSoonTasks.forEach(task => {
-        try {
-          // Use dueDate if available, otherwise use scheduledDate
-          const dateToUse = task.dueDate || task.scheduledDate;
-          if (!dateToUse) return;
-          
-          const targetDate = new Date(dateToUse);
-          const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
-          
-          // Distinguish between "due now" (within 5 minutes) and "upcoming" (more than 5 minutes away)
-          const isDueNow = timeUntil <= 5;
-          const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
-            ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
-            : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
-          
-          const notification = new Notification(
-            isDueNow ? NOTIFICATION_TITLES.taskDueNow : NOTIFICATION_TITLES.taskUpcoming,
-            {
+      // Use Promise.allSettled to handle all notifications in parallel
+      await Promise.allSettled(
+        dueSoonTasks.map(async (task) => {
+          try {
+            // Use dueDate if available, otherwise use scheduledDate
+            const dateToUse = task.dueDate || task.scheduledDate;
+            if (!dateToUse) return;
+            
+            const targetDate = new Date(dateToUse);
+            const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
+            
+            // Distinguish between "due now" (within 5 minutes) and "upcoming" (more than 5 minutes away)
+            const isDueNow = timeUntil <= 5;
+            const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
+              ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
+              : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
+            
+            await showNativeNotification({
+              title: isDueNow ? NOTIFICATION_TITLES.taskDueNow : NOTIFICATION_TITLES.taskUpcoming,
               body: isDueNow 
                 ? NOTIFICATION_MESSAGES.taskDueNow(task.title)
                 : NOTIFICATION_MESSAGES.taskUpcoming(task.title, timeText),
-              icon: NOTIFICATION_ICONS.default,
-              badge: NOTIFICATION_ICONS.badge,
               tag: `${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`,
               requireInteraction: isDueNow, // Require interaction for tasks due now
-            }
-          );
-          
-          // Handle notification click - focus the app window
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-          };
-          
-          // Auto-close notification after 5 seconds (or 15 seconds for due now tasks)
-          setTimeout(() => {
-            notification.close();
-          }, isDueNow ? TIMING_CONSTANTS.timeouts.notificationDueNow : TIMING_CONSTANTS.timeouts.notification);
-          
-          logger.debug('Notification sent for due soon task:', task.id, task.title, isDueNow ? 'due now' : timeText);
-          notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
-        } catch (error) {
-          logger.error('Failed to show notification:', error);
-          toast.error('Failed to show notification. Please check your browser settings.');
-        }
-      });
+              data: { taskId: task.id, type: isDueNow ? 'dueNow' : 'upcoming' },
+            });
+            
+            logger.debug('Notification sent for due soon task:', task.id, task.title, isDueNow ? 'due now' : timeText);
+            notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
+          } catch (error) {
+            logger.error('Failed to show notification:', error);
+            toast.error('Failed to show notification. Please check your notification settings.');
+          }
+        })
+      );
     }
 
     // Clean up old notifications (older than 24 hours or for completed tasks)
