@@ -3063,7 +3063,17 @@ export function TaskDialog({
           </Tabs>
 
           {/* Footer Actions - Single Set for All Tabs */}
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6 pb-2 sm:pb-3 border-t-2 border-primary/30 bg-white dark:bg-card">
+          <div 
+            className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6 border-t-2 border-primary/30 bg-white dark:bg-card rounded-b-lg" 
+            style={{ 
+              marginLeft: '-1.5rem',
+              marginRight: '-1.5rem',
+              marginBottom: '-1.5rem',
+              paddingLeft: '1.5rem',
+              paddingRight: '1.5rem',
+              paddingBottom: 'calc(1.5rem + 1rem)',
+            }}
+          >
             {/* Left side - Action buttons (only for edit mode) */}
             {task && (
               <div className="flex gap-2 sm:gap-3 order-2 sm:order-1">
