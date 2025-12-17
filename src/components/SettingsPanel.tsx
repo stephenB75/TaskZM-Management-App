@@ -582,62 +582,62 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <Label className="text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.settings.features.sectionTitle}</Label>
                 <div className="grid gap-2">
                   {/* Unlimited Tasks - Available for all */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.unlimitedTasks}</span>
+                    <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.unlimitedTasks}</span>
                   </div>
 
                   {/* Custom Tags - Available for all */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <span style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.customTags}</span>
+                    <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.customTags}</span>
                   </div>
 
                   {/* AI Scheduler - PRO only */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.aiScheduler ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className={features.aiScheduler ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                    <span className={`${features.aiScheduler ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.aiScheduler}
                       {features.aiSchedulerLimit !== undefined && (
                         <span className="text-muted-foreground/70"> ({features.aiSchedulerLimit}/week)</span>
                       )}
                     </span>
                     {!features.aiScheduler && (
-                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
 
                   {/* Task Hours - PRO only */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.taskHours ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className={features.taskHours ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                    <span className={`${features.taskHours ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.taskHours}
                     </span>
                     {!features.taskHours && (
-                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
 
                   {/* Analytics - PRO only */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.analytics ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className={features.analytics ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                    <span className={`${features.analytics ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.analytics}
                       {features.analyticsDaysLimit !== undefined && (
                         <span className="text-muted-foreground/70"> ({features.analyticsDaysLimit}-day history)</span>
@@ -647,54 +647,54 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.analytics && (
-                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
 
                   {/* Pomodoro Timer - PRO only */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.pomodoroTimer ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className={features.pomodoroTimer ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                    <span className={`${features.pomodoroTimer ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.pomodoroTimer}
                     </span>
                     {!features.pomodoroTimer && (
-                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
 
                   {/* Team Features - PRO only */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.teamFeatures ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className={features.teamFeatures ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                    <span className={`${features.teamFeatures ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.teamCollaboration}
                     </span>
                     {!features.teamFeatures && (
-                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
 
                   {/* Calendar Sync - PRO only */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.calendarSync ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className={features.calendarSync ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                    <span className={`${features.calendarSync ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.calendarSync}
                       {features.calendarSync && features.calendarSyncLimit !== undefined && (
                         <span className="text-muted-foreground/70"> ({features.calendarSyncLimit} connection{features.calendarSyncLimit === 1 ? '' : 's'})</span>
@@ -704,20 +704,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.calendarSync && (
-                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
 
                   {/* Recurring Tasks - PRO (Monthly with limit, Yearly unlimited) */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.recurringTasks ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className={features.recurringTasks ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                    <span className={`${features.recurringTasks ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.recurringTasks}
                       {features.recurringTasks && features.recurringTasksLimit !== undefined && (
                         <span className="text-muted-foreground/70"> (up to {features.recurringTasksLimit} active)</span>
@@ -727,24 +727,24 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.recurringTasks && (
-                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
                   </div>
 
                   {/* Task Rollover - PRO only */}
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     {features.taskRollover ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
                       <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
-                    <span className={features.taskRollover ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                    <span className={`${features.taskRollover ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.autoTaskRollover}
                     </span>
                     {!features.taskRollover && (
-                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -758,51 +758,51 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <div className="text-xs font-semibold text-muted-foreground mb-2">Pro Yearly Features:</div>
 
                       {/* Task Templates - PRO YEARLY only */}
-                      <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                         {features.taskTemplates ? (
                           <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
                           <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                         )}
-                        <span className={features.taskTemplates ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                        <span className={`${features.taskTemplates ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                           {SUBSCRIPTION_UI_TEXT.settings.features.taskTemplates}
                         </span>
                         {!features.taskTemplates && (
-                          <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                             {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
                           </Badge>
                         )}
                       </div>
 
                       {/* Task Dependencies - PRO YEARLY only */}
-                      <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                         {features.taskDependencies ? (
                           <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
                           <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                         )}
-                        <span className={features.taskDependencies ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                        <span className={`${features.taskDependencies ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                           {SUBSCRIPTION_UI_TEXT.settings.features.taskDependencies}
                         </span>
                         {!features.taskDependencies && (
-                          <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                             {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
                           </Badge>
                         )}
                       </div>
 
                       {/* Multiple Workspaces - PRO YEARLY only */}
-                      <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                         {features.multipleWorkspaces ? (
                           <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
                           <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                         )}
-                        <span className={features.multipleWorkspaces ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                        <span className={`${features.multipleWorkspaces ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                           {SUBSCRIPTION_UI_TEXT.settings.features.multipleWorkspaces}
                         </span>
                         {!features.multipleWorkspaces && (
-                          <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                             {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
                           </Badge>
                         )}
