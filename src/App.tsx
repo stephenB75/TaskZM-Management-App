@@ -628,7 +628,7 @@ function AppContent() {
         />
         <main className="flex-1 overflow-hidden relative flex">
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
-          <div className="lg:hidden h-full flex-1 flex flex-col">
+          <div className="lg:hidden flex-1 flex flex-col min-h-0">
             <div 
               className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
               style={{
