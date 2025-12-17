@@ -1408,7 +1408,7 @@ export function DashboardView({
 
         {/* Mobile: Tabbed View | Desktop: Kanban/Calendar */}
         <motion.div
-          className="flex-1 overflow-hidden"
+          className={cn("flex-1", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "overflow-hidden")}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
