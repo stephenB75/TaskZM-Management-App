@@ -113,7 +113,7 @@ function AppContent() {
     const now = new Date();
     const reminderTime = new Date(now.getTime() + notificationSettings.reminderTime * 60 * 1000);
     
-    const dueSoonTasks = tasks.filter(task => {
+    const dueAndUpcomingTasks = tasks.filter(task => {
       if (task.status === 'done') return false;
       
       let targetDate: Date | null = null;
@@ -127,11 +127,12 @@ function AppContent() {
       
       if (!targetDate) return false;
       
-      // Task is due soon if it's between now and reminder time
-      return targetDate >= now && targetDate <= reminderTime;
+      // Task is due or upcoming if it's overdue, due now, or within reminder time
+      // Include tasks that are <= reminderTime (covers overdue, due now, and upcoming)
+      return targetDate <= reminderTime;
     });
     
-    return dueSoonTasks.length;
+    return dueAndUpcomingTasks.length;
   };
   
   const upcomingAndDueNowCount = getUpcomingAndDueNowCount();
