@@ -140,6 +140,7 @@ export function TodayAgendaView({
     const fetchTodayCalendarEvents = async () => {
       try {
         if (!accessToken) {
+          logger.debug('TodayAgenda: No access token, skipping calendar events fetch');
           setTodayCalendarEvents([]);
           return;
         }
@@ -147,9 +148,12 @@ export function TodayAgendaView({
         if (calendarStatus.google) providers.push('google');
         if (calendarStatus.apple) providers.push('apple');
         if (providers.length === 0) {
+          logger.debug('TodayAgenda: No calendar providers enabled, skipping calendar events fetch');
           setTodayCalendarEvents([]);
           return;
         }
+        
+        logger.debug(`TodayAgenda: Fetching calendar events for providers: ${providers.join(', ')}`);
 
         const todayStart = new Date(today);
         todayStart.setHours(0, 0, 0, 0);
@@ -187,6 +191,7 @@ export function TodayAgendaView({
           }
         }
 
+        logger.debug(`TodayAgenda: Fetched ${allEvents.length} calendar events for today`);
         setTodayCalendarEvents(allEvents);
       } catch (error) {
         logger.warn('Failed to fetch calendar events for today agenda:', error);
