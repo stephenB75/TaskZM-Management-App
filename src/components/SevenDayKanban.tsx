@@ -633,11 +633,26 @@ export function SevenDayKanban({
                       
                       const combinedItems: MobileCombinedItem[] = [];
                       
-                      // Add tasks with their sort time (use actual time from scheduledDate)
+                      // Normalize date to column's date for accurate time-of-day sorting
+                      const columnDate = new Date(currentColumn.date);
+                      columnDate.setHours(0, 0, 0, 0);
+                      
+                      // Add tasks with their sort time (normalize to column date for time-of-day sorting)
                       for (const layout of dayLayouts) {
                         const taskTime = layout.task.scheduledDate || layout.task.dueDate;
-                        // For tasks without time, use end of day so they appear after timed items
-                        const sortTime = taskTime ? new Date(taskTime).getTime() : Number.MAX_SAFE_INTEGER;
+                        let sortTime: number;
+                        
+                        if (taskTime) {
+                          const taskDate = new Date(taskTime);
+                          // Normalize to column's date but preserve the time of day
+                          const normalizedDate = new Date(columnDate);
+                          normalizedDate.setHours(taskDate.getHours(), taskDate.getMinutes(), taskDate.getSeconds(), taskDate.getMilliseconds());
+                          sortTime = normalizedDate.getTime();
+                        } else {
+                          // For tasks without time, use end of day so they appear after timed items
+                          sortTime = Number.MAX_SAFE_INTEGER;
+                        }
+                        
                         combinedItems.push({
                           type: 'task',
                           task: layout.task,
@@ -646,9 +661,14 @@ export function SevenDayKanban({
                         });
                       }
                       
-                      // Add calendar events (always have a specific time)
+                      // Add calendar events (normalize to column date for time-of-day sorting)
                       for (const event of calEvents) {
-                        const sortTime = new Date(event.start).getTime();
+                        const eventStart = new Date(event.start);
+                        // Normalize to column's date but preserve the time of day
+                        const normalizedDate = new Date(columnDate);
+                        normalizedDate.setHours(eventStart.getHours(), eventStart.getMinutes(), eventStart.getSeconds(), eventStart.getMilliseconds());
+                        const sortTime = normalizedDate.getTime();
+                        
                         combinedItems.push({
                           type: 'event',
                           event,
@@ -657,7 +677,16 @@ export function SevenDayKanban({
                       }
                       
                       // Sort by time (earliest first, tasks without time go to end)
-                      combinedItems.sort((a, b) => a.sortTime - b.sortTime);
+                      // Secondary sort by type (events before tasks at same time) for consistent ordering
+                      combinedItems.sort((a, b) => {
+                        if (a.sortTime !== b.sortTime) {
+                          return a.sortTime - b.sortTime;
+                        }
+                        // If same time, events come before tasks
+                        if (a.type === 'event' && b.type === 'task') return -1;
+                        if (a.type === 'task' && b.type === 'event') return 1;
+                        return 0;
+                      });
                       
                       const hasContent = combinedItems.length > 0;
                       
