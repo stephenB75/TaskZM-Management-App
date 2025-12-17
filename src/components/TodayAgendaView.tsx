@@ -556,10 +556,11 @@ export function TodayAgendaView({
       {/* Header */}
       {!hideHeader && (
         <>
+          {/* Header wrapper - no minHeight on mobile since AppHeader is fixed and spacer in App.tsx handles spacing */}
           <div 
             className="relative"
             style={{ 
-              minHeight: isMobile ? `${HEADER_HEIGHT * 0.6}px` : `${HEADER_HEIGHT}px`,
+              minHeight: isMobile ? 0 : `${HEADER_HEIGHT}px`, // No minHeight on mobile since header is fixed
             }}
           >
           <AppHeader
@@ -590,7 +591,6 @@ export function TodayAgendaView({
               </span>
             </div>
           </div>
-          {/* Spacer for fixed header on mobile */}
         </>
       )}
 
@@ -1071,7 +1071,7 @@ export function TodayAgendaView({
           className="px-5 w-full relative"
           style={{
             paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
-              ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` 
+              ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing
               : '3rem', // 48px on desktop for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
               ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`
