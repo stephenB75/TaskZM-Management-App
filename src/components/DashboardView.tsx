@@ -56,7 +56,7 @@ import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 
 interface DashboardViewProps {
@@ -1290,9 +1290,14 @@ export function DashboardView({
                     const dayEventCount = calendarEventsByDate[column.dateString] || 0;
                     const totalItems = dayTasks.length + dayEventCount;
                     
-                    // Debug: Log tasks for this day in development
-                    if (import.meta.env.DEV && dayTasks.length > 0) {
-                      console.log(`[Mobile Calendar] ${column.dateString}: ${dayTasks.length} tasks, ${dayEventCount} events`);
+                    // Debug: Log tasks and events for this day in development
+                    if (import.meta.env.DEV) {
+                      if (dayTasks.length > 0 || dayEventCount > 0) {
+                        console.log(`[Mobile Calendar] ${column.dateString}: ${dayTasks.length} task(s), ${dayEventCount} event(s)`, {
+                          tasks: dayTasks.map(t => ({ id: t.id, title: t.title, scheduledDate: t.scheduledDate, status: t.status })),
+                          eventCount: dayEventCount
+                        });
+                      }
                     }
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -1330,34 +1335,39 @@ export function DashboardView({
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
                           <div className="flex items-center justify-center gap-0.5 mt-1.5 min-h-[10px] flex-shrink-0">
                             {/* Task dots (primary color) - show for all tasks including done */}
-                            {dayTasks.length > 0 && dayTasks.slice(0, 3).map((task, i) => {
-                              const isDone = task?.status === 'done';
+                            {/* CRITICAL: Always render task dots if tasks exist, independent of events */}
+                            {dayTasks.length > 0 && dayTasks.slice(0, 3).map((task, taskIndex) => {
+                              if (!task) return null; // Safety check
+                              const isDone = task.status === 'done';
                               return (
                                 <div
-                                  key={`task-${task.id}-${i}`}
+                                  key={`task-${task.id}-${taskIndex}`}
                                   className={cn(
                                     "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0",
                                     isSelected
                                       ? isDone ? "bg-primary/60" : "bg-primary"
                                       : isDone ? "bg-primary/50" : "bg-primary/70",
                                   )}
-                                  aria-label={`Task: ${task.title}`}
+                                  aria-label={`Task: ${task.title || 'Untitled task'}`}
+                                  title={task.title || 'Untitled task'}
                                 />
                               );
                             })}
                             {/* Event dots (blue color to differentiate from tasks) */}
+                            {/* CRITICAL: Always render event dots if events exist, independent of tasks */}
                             {dayEventCount > 0 && Array.from({
                               length: Math.min(dayEventCount, 3),
-                            }).map((_, i) => (
+                            }).map((_, eventIndex) => (
                               <div
-                                key={`event-${i}`}
+                                key={`event-${column.dateString}-${eventIndex}`}
                                 className={cn(
                                   "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0",
                                   isSelected
                                     ? "bg-blue-500"
                                     : "bg-blue-500/70",
                                 )}
-                                aria-label={`Event ${i + 1}`}
+                                aria-label={`Calendar event ${eventIndex + 1}`}
+                                title={`${dayEventCount} calendar event${dayEventCount !== 1 ? 's' : ''}`}
                               />
                             ))}
                             {totalItems > 6 && (
