@@ -83,6 +83,7 @@ import {
   SETTINGS_PANEL_PADDING_SMALL,
   SETTINGS_PANEL_PADDING_MEDIUM,
   SETTINGS_PANEL_PADDING_LARGE,
+  NAV_BAR_BOTTOM_PADDING_MOBILE,
   SETTINGS_PANEL_PADDING_Y_SMALL,
   SETTINGS_PANEL_START_TOUR_BUTTON_GAP,
   SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT,
@@ -361,7 +362,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             className="mx-auto" 
             style={{ 
               maxWidth: SETTINGS_PANEL_MAX_WIDTH,
-              paddingBottom: SETTINGS_PANEL_BOTTOM_PADDING_MOBILE, 
+              paddingBottom: 0, // Spacer div handles bottom padding on mobile
               paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile
                 ? '0.75rem' // 12px on mobile for better spacing after AppHeader
                 : SETTINGS_PANEL_PADDING_TOP 
@@ -2579,6 +2580,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+      
+      {/* Mobile nav bar spacer - prevents last component from being covered by nav bar */}
+      <div 
+        className="lg:hidden flex-shrink-0 w-full" 
+        style={{ height: NAV_BAR_BOTTOM_PADDING_MOBILE }}
+        aria-hidden="true"
+      />
         </div>
       </div>
 
