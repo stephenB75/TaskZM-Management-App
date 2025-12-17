@@ -614,7 +614,7 @@ export function TodayAgendaView({
                   : undefined,
               }}
             >
-            {todayTasks.length === 0 ? (
+            {combinedItems.length === 0 ? (
               <div className={cn(
                 `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
                 isOver && "scale-105"
@@ -845,7 +845,7 @@ export function TodayAgendaView({
               : undefined,
           }}
         >
-          {todayTasks.length === 0 ? (
+          {combinedItems.length === 0 ? (
             <div className={cn(
               `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
               isOver && "scale-105"
@@ -888,33 +888,73 @@ export function TodayAgendaView({
                 className="flex flex-col w-full relative z-10"
                 style={{ overflow: 'visible' }}
               >
-                {timelineTaskLayouts.map(({ task, marginTop }, index) => (
-                  <div
-                    key={task.id}
-                    style={{
-                      marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
-                    }}
-                  >
-                    <DraggableTodayAgendaTask
-                      task={task}
-                      index={index}
-                      totalTasks={todayTasks.length}
-                      onClick={handleTaskClick}
-                      getTaskHeight={getTaskHeight}
-                      getTaskTime={getTaskTime}
-                      getPriorityColor={getPriorityColor}
-                      isNextUp={task.id === nextUpTaskId}
-                      onComplete={() => {
-                        if (confettiTimeoutRef.current) {
-                          clearTimeout(confettiTimeoutRef.current);
-                        }
-                        if (!showConfetti) {
-                          setShowConfetti(true);
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
+                {combinedItems.map((item, index) => {
+                  if (item.type === 'task' && item.task) {
+                    // Find the layout for this task
+                    const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
+                    const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                    
+                    return (
+                      <div
+                        key={`task-${item.task.id}`}
+                        data-task-id={item.task.id}
+                        style={{
+                          marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
+                        }}
+                      >
+                        <DraggableTodayAgendaTask
+                          task={item.task}
+                          index={todayTasks.findIndex(t => t.id === item.task!.id)}
+                          totalTasks={todayTasks.length}
+                          onClick={handleTaskClick}
+                          getTaskHeight={getTaskHeight}
+                          getTaskTime={getTaskTime}
+                          getPriorityColor={getPriorityColor}
+                          isNextUp={item.task.id === nextUpTaskId}
+                          onComplete={() => {
+                            if (confettiTimeoutRef.current) {
+                              clearTimeout(confettiTimeoutRef.current);
+                            }
+                            if (!showConfetti) {
+                              setShowConfetti(true);
+                            }
+                          }}
+                        />
+                      </div>
+                    );
+                  } else if (item.type === 'event' && item.event) {
+                    // Calculate margin for events based on previous item
+                    const prevItem = index > 0 ? combinedItems[index - 1] : null;
+                    let marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                    
+                    if (index === 0) {
+                      marginTop = 0;
+                    } else if (prevItem) {
+                      // Use fixed spacing between items
+                      marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                    }
+                    
+                    return (
+                      <div
+                        key={`event-${item.event.id}`}
+                        data-event-id={item.event.id}
+                        style={{
+                          marginTop: `${marginTop}px`,
+                        }}
+                      >
+                        <CalendarEventCard
+                          title={item.event.title}
+                          start={item.event.start}
+                          end={item.event.end}
+                          location={item.event.location}
+                          provider={item.event.provider}
+                          calendarColor={item.event.calendarColor}
+                        />
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
               </div>
 
               {/* Next Up Task Details */}
