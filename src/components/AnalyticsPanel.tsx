@@ -1442,10 +1442,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </div>
                 </CardContent>
               </Card>
-              )}
-            </div>
+            )}
           </div>
-        </div>
       )}
       </div>
     </div>

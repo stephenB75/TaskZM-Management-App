@@ -841,19 +841,6 @@ export function MonthCalendarView({
                     paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
                   }}
                 >
-              ) : (
-                <ScrollArea ref={scrollAreaRef} className="h-full w-full">
-                  <div 
-                    ref={calendarGridRef}
-                    className={cn(
-                      "grid grid-cols-7 gap-0 md:gap-1.5 pb-4 w-full"
-                    )}
-                    style={{
-                      // Adjust padding when scaled to maintain proper spacing
-                      paddingBottom: expandedDays.size > 0 ? '2rem' : '1rem',
-                    }}
-                  >
-              )}
               {calendarDays.map((dayData, index) => {
                 const dateString = dayData.date
                   .toISOString()
@@ -890,11 +877,56 @@ export function MonthCalendarView({
                 );
               })}
                 </div>
-              {mobileMode ? (
-                </div>
               ) : (
-                </ScrollArea>
-              )}
+                <ScrollArea ref={scrollAreaRef} className="h-full w-full">
+                  <div 
+                    ref={calendarGridRef}
+                    className={cn(
+                      "grid grid-cols-7 gap-0 md:gap-1.5 pb-4 w-full"
+                    )}
+                    style={{
+                      // Adjust padding when scaled to maintain proper spacing
+                      paddingBottom: expandedDays.size > 0 ? '2rem' : '1rem',
+                    }}
+                  >
+              {calendarDays.map((dayData, index) => {
+                const dateString = dayData.date
+                  .toISOString()
+                  .split("T")[0];
+                return (
+                  <motion.div
+                    key={`${dayData.date.toISOString()}-${index}`}
+                    ref={dayData.isToday ? todayRef : null}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.01 }}
+                    className="min-h-[90px] md:min-h-[100px] w-full aspect-square md:aspect-auto"
+                  >
+                    <DroppableDay
+                      dayData={dayData}
+                      dateString={dateString}
+                      calendarEvents={calendarEventsByDate[dateString] || []}
+                      onTaskClick={handleTaskClick}
+                      onToggleComplete={handleToggleComplete}
+                      isExpanded={expandedDays.has(dateString)}
+                      onExpandToggle={() => {
+                        setExpandedDays((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(dateString)) {
+                            next.delete(dateString);
+                          } else {
+                            next.add(dateString);
+                          }
+                          return next;
+                        });
+                      }}
+                    />
+                  </motion.div>
+                );
+              })}
+                </div>
+              </ScrollArea>
+            )}
             </div>
           </div>
         </div>
