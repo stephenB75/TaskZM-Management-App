@@ -18,6 +18,8 @@ import {
   Timer,
   Users,
   Calendar,
+  Link2,
+  Copy,
 } from "lucide-react";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 import { UI_UPGRADE_PROMPT_COLORS } from "../lib/ui-colors";
@@ -33,7 +35,10 @@ interface UpgradePromptProps {
     | "taskRollover"
     | "pomodoroTimer"
     | "teamFeatures"
-    | "calendarSync";
+    | "calendarSync"
+    | "recurringTasks"
+    | "taskDependencies"
+    | "taskTemplates";
 }
 
 const featureConfig = {
@@ -171,7 +176,7 @@ export function UpgradePrompt({
               </div>
 
               <div className={`${UI_UPGRADE_PROMPT_COLORS.accentBgOpacity10} ${UI_UPGRADE_PROMPT_COLORS.accentBorderOpacity20} rounded-lg p-3`}>
-                <p className="text-sm">
+                <p className="text-sm font-medium">
                   <span className={UI_UPGRADE_PROMPT_COLORS.accentTextClass}>
                     {SUBSCRIPTION_UI_TEXT.upgradePrompt.specialOffer}
                   </span>{" "}
@@ -179,10 +184,13 @@ export function UpgradePrompt({
                     i === arr.length - 1 ? part : (
                       <React.Fragment key={i}>
                         {part}
-                        <strong>{DEFAULT_MONTHLY_PRICE}</strong>
+                        <strong className="text-foreground">{DEFAULT_MONTHLY_PRICE}</strong>
                       </React.Fragment>
                     )
                   )}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Start your free trial or cancel anytime
                 </p>
               </div>
             </div>

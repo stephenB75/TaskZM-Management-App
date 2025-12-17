@@ -92,6 +92,7 @@ interface TaskDialogProps {
   task?: Task | null;
   initialDate?: string;
   initialFolderId?: string | null; // Optional folder ID to assign new tasks to
+  onShowUpgradePrompt?: (feature: 'recurringTasks' | 'taskDependencies' | 'taskTemplates') => void;
 }
 
 // Fixed Mini Calendar Component - Always visible
@@ -541,6 +542,7 @@ export function TaskDialog({
   task,
   initialDate,
   initialFolderId,
+  onShowUpgradePrompt,
 }: TaskDialogProps) {
   const {
     addTask,
@@ -1007,9 +1009,13 @@ export function TaskDialog({
 
     // Gate: Task dependencies require Pro Yearly
     if (dependencies.length > 0 && !hasFeature('taskDependencies')) {
-      toast.error("Task Dependencies is a Pro Yearly feature", {
-        description: "Upgrade to Pro Yearly to link related tasks.",
-      });
+      // Dispatch event to trigger upgrade prompt
+      window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+        detail: { feature: 'taskDependencies' } 
+      }));
+      if (onShowUpgradePrompt) {
+        onShowUpgradePrompt('taskDependencies');
+      }
       return;
     }
 
@@ -1038,9 +1044,13 @@ export function TaskDialog({
     if (recurrenceType !== "none") {
       // Gate: Recurring tasks require Pro Yearly
       if (!hasFeature('recurringTasks')) {
-        toast.error("Recurring Tasks is a Pro Yearly feature", {
-          description: "Upgrade to Pro Yearly to create recurring tasks.",
-        });
+        // Dispatch event to trigger upgrade prompt
+        window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+          detail: { feature: 'recurringTasks' } 
+        }));
+        if (onShowUpgradePrompt) {
+          onShowUpgradePrompt('recurringTasks');
+        }
         return;
       }
       if (recurrenceType === "weekly" && (!recurrenceDaysOfWeek || recurrenceDaysOfWeek.length === 0)) {

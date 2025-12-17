@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from './AuthContext';
+import { useSubscription } from './SubscriptionContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
@@ -45,6 +46,7 @@ const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
+  const { hasFeature } = useSubscription();
   const { tasks, workspaceId } = useTasks();
   const [calendarStatus, setCalendarStatus] = useState<CalendarStatus>({
     google: false,
@@ -171,6 +173,15 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const connectCalendar = useCallback(async (provider: CalendarProvider) => {
     if (!user || !accessToken) {
       toast.error('Please sign in to connect calendar');
+      return;
+    }
+    
+    // Gate: Calendar sync requires Pro subscription
+    if (!hasFeature('calendarSync')) {
+      // Dispatch event to trigger upgrade prompt
+      window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+        detail: { feature: 'calendarSync' } 
+      }));
       return;
     }
 

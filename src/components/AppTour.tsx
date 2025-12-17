@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useTheme } from "../contexts/ThemeContext";
+import { useSubscription } from "../contexts/SubscriptionContext";
 import { cn } from "../lib/utils";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 import { Z_INDEX } from "../lib/layout-constants";
@@ -31,6 +32,7 @@ interface AppTourProps {
   run: boolean;
   onFinish: () => void;
   onNavigate?: (view: string) => void;
+  onShowPricing?: () => void;
 }
 
 interface TourStep {
@@ -380,6 +382,46 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
     ],
   },
   {
+    title: "Unlock Pro Features 💎",
+    description:
+      `Upgrade to TaskZM Pro for just ${monthlyPrice}/month and unlock unlimited AI scheduling, full calendar sync, analytics dashboard, task rollover, advanced Pomodoro, and more!`,
+    icon: Sparkles,
+    iconColor: "from-[#E6D5F0] to-[#9B87E8]",
+    illustration: "features",
+    features: [
+      {
+        icon: "✨",
+        title: "Unlimited AI Scheduler",
+        description: "Smart task planning",
+      },
+      {
+        icon: "📅",
+        title: "Full Calendar Sync",
+        description: "Google, Outlook, Apple",
+      },
+      {
+        icon: "📊",
+        title: "Analytics Dashboard",
+        description: "Track productivity",
+      },
+      {
+        icon: "🔄",
+        title: "Auto Task Rollover",
+        description: "Never miss tasks",
+      },
+      {
+        icon: "⏰",
+        title: "Advanced Pomodoro",
+        description: "History & stats",
+      },
+      {
+        icon: "👥",
+        title: "Team Collaboration",
+        description: "Unlimited members (Yearly)",
+      },
+    ],
+  },
+  {
     title: "You're All Set! 🚀",
     description:
       "Explore Analytics for insights, Archive for completed tasks, Team collaboration, Calendar sync, and cross-platform mobile apps. Plus Task Rollover to never miss incomplete tasks!",
@@ -563,10 +605,12 @@ export function AppTour({
   run,
   onFinish,
   onNavigate,
+  onShowPricing,
 }: AppTourProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const { user } = useAuth();
+  const { subscription } = useSubscription();
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<
     "forward" | "backward"
@@ -610,6 +654,8 @@ export function AppTour({
   const step = dynamicTourSteps[currentStep];
   const isFirst = currentStep === 0;
   const isLast = currentStep === dynamicTourSteps.length - 1;
+  // Check if current step is the pricing step (second to last)
+  const isPricingStep = currentStep === dynamicTourSteps.length - 2;
 
   // Sync ref with state
   useEffect(() => {
@@ -662,6 +708,16 @@ export function AppTour({
       if (nextStep >= dynamicTourSteps.length) {
         // Mark tour as completed
         localStorage.setItem('taskzm_tour_completed', 'true');
+        
+        // Show pricing dialog for new free users after tour
+        const isNewSignup = window?.localStorage?.getItem('taskzm_is_new_signup') === 'true';
+        if (isNewSignup && subscription.tier === 'free' && onShowPricing) {
+          // Small delay to let tour close smoothly
+          setTimeout(() => {
+            onShowPricing();
+          }, 300);
+        }
+        
         onFinish();
         return prevStep;
       } else {
@@ -687,6 +743,15 @@ export function AppTour({
   const handleSkip = () => {
     // Mark tour as completed even if skipped
     localStorage.setItem('taskzm_tour_completed', 'true');
+    
+    // Show pricing dialog for new free users even if tour is skipped
+    const isNewSignup = window?.localStorage?.getItem('taskzm_is_new_signup') === 'true';
+    if (isNewSignup && subscription.tier === 'free' && onShowPricing) {
+      setTimeout(() => {
+        onShowPricing();
+      }, 300);
+    }
+    
     onFinish();
   };
 
@@ -962,13 +1027,36 @@ export function AppTour({
                   </Button>
                 )}
 
+                {/* Show upgrade button on pricing step for free users */}
+                {isPricingStep && subscription.tier === 'free' && onShowPricing ? (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      onShowPricing();
+                      handleNext();
+                    }}
+                    className="rounded-lg sm:rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground border-0 shadow-lg shadow-primary/30 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-1 sm:flex-initial"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                    <span className="text-xs sm:text-sm">Upgrade to Pro</span>
+                  </Button>
+                ) : null}
+
                 <Button
                   size="sm"
                   onClick={handleNext}
-                  className="rounded-lg sm:rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground border-0 shadow-lg shadow-primary/30 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-1 sm:flex-initial"
+                  className={cn(
+                    "rounded-lg sm:rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground border-0 shadow-lg shadow-primary/30 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9",
+                    isPricingStep && subscription.tier === 'free' ? "flex-1 sm:flex-initial" : "flex-1 sm:flex-initial"
+                  )}
                 >
                   {isLast ? (
                     <span className="text-xs sm:text-sm">Get Started! 🎉</span>
+                  ) : isPricingStep ? (
+                    <>
+                      <span className="hidden sm:inline">Skip</span>
+                      <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 sm:ml-1" />
+                    </>
                   ) : (
                     <>
                       <span className="hidden sm:inline">Next</span>

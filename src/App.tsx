@@ -69,7 +69,7 @@ function AppContent() {
   useDemoActivity(); // Track demo user activity on app interactions
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { settings: aiSettings } = useAI();
-  const { hasFeature, features } = useSubscription();
+  const { hasFeature, features, subscription } = useSubscription();
   const isMobile = useIsMobile();
   
   // Initialize view: 'today' on mobile, 'dashboard' on desktop
@@ -87,7 +87,7 @@ function AppContent() {
   const [scheduledTasks, setScheduledTasks] = useState<SchedulePlan[]>([]);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showPricingDialog, setShowPricingDialog] = useState(false);
-  const [upgradeFeature, setUpgradeFeature] = useState<'aiScheduler' | 'taskHours' | 'analytics' | 'taskRollover' | 'pomodoroTimer' | 'teamFeatures' | 'calendarSync'>('aiScheduler');
+  const [upgradeFeature, setUpgradeFeature] = useState<'aiScheduler' | 'taskHours' | 'analytics' | 'taskRollover' | 'pomodoroTimer' | 'teamFeatures' | 'calendarSync' | 'recurringTasks' | 'taskDependencies' | 'taskTemplates'>('aiScheduler');
   const [runTour, setRunTour] = useState(false);
   const [showDemoDisclaimer, setShowDemoDisclaimer] = useState(false);
   const hasInitializedView = useRef(false);
@@ -138,6 +138,55 @@ function AppContent() {
   
   // Check for award achievements when tasks are completed
   useAwardChecker();
+  
+  // Strategic upgrade prompts for new free users
+  useEffect(() => {
+    if (!user || isLoading || subscription.tier !== 'free') return;
+    
+    try {
+      const isNewSignup = window?.localStorage?.getItem('taskzm_is_new_signup') === 'true';
+      const tourCompleted = window?.localStorage?.getItem('taskzm_tour_completed') === 'true';
+      const pricingShownAfterTour = window?.localStorage?.getItem('taskzm_pricing_shown_after_tour') === 'true';
+      const upgradePromptShown = window?.localStorage?.getItem('taskzm_upgrade_prompt_shown') === 'true';
+      
+      // Only show strategic prompts for new users who completed tour
+      if (!isNewSignup || !tourCompleted) return;
+      
+      // Count completed tasks
+      const completedTasks = tasks.filter(t => t.status === 'done');
+      const completedCount = completedTasks.length;
+      
+      // Show upgrade prompt after completing 3-5 tasks (if not already shown)
+      if (completedCount >= 3 && completedCount <= 5 && !upgradePromptShown) {
+        // Small delay to let task completion settle
+        const timer = setTimeout(() => {
+          setUpgradeFeature('aiScheduler');
+          setShowUpgradePrompt(true);
+          window?.localStorage?.setItem('taskzm_upgrade_prompt_shown', 'true');
+        }, 2000);
+        
+        return () => clearTimeout(timer);
+      }
+    } catch (error) {
+      console.warn('Error checking for strategic upgrade prompts:', error);
+    }
+  }, [tasks, user, isLoading, subscription.tier]);
+
+  // Listen for upgrade prompt events from TaskDialog and other components
+  useEffect(() => {
+    const handleUpgradePrompt = (event: CustomEvent) => {
+      const feature = event.detail?.feature;
+      if (feature && ['recurringTasks', 'taskDependencies', 'taskTemplates', 'calendarSync'].includes(feature)) {
+        setUpgradeFeature(feature);
+        setShowUpgradePrompt(true);
+      }
+    };
+
+    window.addEventListener('showUpgradePrompt', handleUpgradePrompt as EventListener);
+    return () => {
+      window.removeEventListener('showUpgradePrompt', handleUpgradePrompt as EventListener);
+    };
+  }, []);
 
   // Check for invitation token in URL
   const [inviteToken, setInviteToken] = useState<string | null>(null);
@@ -424,24 +473,18 @@ function AppContent() {
       return;
     }
 
-    // Check AI scheduler usage limit for free tier
-    if (features.aiSchedulerLimit !== undefined) {
-      const { hasReachedLimit, getRemainingCount, incrementAIUsage } = await import('./lib/ai-scheduler-usage');
-      if (hasReachedLimit(features.aiSchedulerLimit)) {
-        toast.error('AI Scheduler limit reached', {
-          description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} AI suggestions this week. Upgrade to Pro for unlimited AI scheduling.`,
-          action: {
-            label: 'Upgrade',
-            onClick: () => {
-              setShowPricingDialog(true);
-            },
-          },
-        });
-        return;
+      // Check AI scheduler usage limit for free tier
+      if (features.aiSchedulerLimit !== undefined) {
+        const { hasReachedLimit, getRemainingCount, incrementAIUsage } = await import('./lib/ai-scheduler-usage');
+        if (hasReachedLimit(features.aiSchedulerLimit)) {
+          // Show upgrade prompt instead of just a toast for better conversion
+          setUpgradeFeature('aiScheduler');
+          setShowUpgradePrompt(true);
+          return;
+        }
+        // Increment usage before scheduling
+        incrementAIUsage();
       }
-      // Increment usage before scheduling
-      incrementAIUsage();
-    }
 
     // Check if AI scheduling is enabled
     if (!aiSettings.autoSchedulingEnabled || !aiSettings.scheduleUnscheduledTasks) {
@@ -541,6 +584,17 @@ function AppContent() {
     tourTriggeredRef.current = false;
     try {
       window?.localStorage?.setItem('taskzm_tour_completed', 'true');
+      const isNewSignup = window?.localStorage?.getItem('taskzm_is_new_signup') === 'true';
+      
+      // Show pricing dialog for new free users after tour completion
+      // (onShowPricing in AppTour will handle this, but we also check here as backup)
+      if (isNewSignup && subscription.tier === 'free') {
+        // Small delay to let tour close smoothly
+        setTimeout(() => {
+          setShowPricingDialog(true);
+        }, 500);
+      }
+      
       // Clear new signup flag if it exists
       window?.localStorage?.removeItem('taskzm_is_new_signup');
     } catch (error) {
@@ -719,6 +773,7 @@ function AppContent() {
         run={runTour}
         onFinish={handleTourFinish}
         onNavigate={handleTourNavigate}
+        onShowPricing={() => setShowPricingDialog(true)}
       />
 
       {/* Demo Account Disclaimer */}
