@@ -684,11 +684,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
           <ScrollArea className="h-full">
             <div className="p-4 space-y-4 pt-4 md:pt-4 pb-safe md:pb-4">
-        ) : (
-          <div className="p-4 space-y-4 pt-4 md:pt-4" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
-            
-            {/* Compact KPI Metrics Row */}
-            <div className="grid grid-cols-2 gap-3">
+              {/* Compact KPI Metrics Row */}
+              <div className="grid grid-cols-2 gap-3">
               <MetricCard
                 title="Total Tasks"
                 value={analytics.totalTasks}
@@ -1065,11 +1062,391 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 </CardContent>
               </Card>
             )}
-
           </div>
-        {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-          </ScrollArea>
-        ) : null}
+        </ScrollArea>
+      ) : (
+          <div className="p-4 space-y-4 pt-4 md:pt-4" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
+            {/* Compact KPI Metrics Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <MetricCard
+                title="Total Tasks"
+                value={analytics.totalTasks}
+                icon={Target}
+                color={COLOR_PRIMARY}
+              />
+              <MetricCard
+                title="Completed"
+                value={analytics.completedTasks}
+                subtitle={`${Math.round(analytics.completionRate)}% rate`}
+                icon={CheckCircle2}
+                color={COLOR_SUCCESS}
+              />
+              <MetricCard
+                title="Time Tracked"
+                value={`${Math.floor(analytics.totalTimeTracked / MINUTES_PER_HOUR)}h`}
+                subtitle={`${Math.round(analytics.totalTimeTracked % MINUTES_PER_HOUR)}m total`}
+                icon={Timer}
+                color={COLOR_INFO}
+              />
+              <MetricCard
+                title="This Week"
+                value={`${Math.floor(analytics.weeklyTimeTracked / MINUTES_PER_HOUR)}h`}
+                subtitle={`${Math.round(analytics.weeklyTimeTracked % MINUTES_PER_HOUR)}m`}
+                icon={Calendar}
+                color={COLOR_WARNING}
+              />
+            </div>
+
+            {/* Status Distribution - Pie Chart */}
+            {analytics?.statusDistribution && 
+             Array.isArray(analytics.statusDistribution) && 
+             analytics.statusDistribution.length > 0 &&
+             analytics.statusDistribution.every(item => item && typeof item === 'object' && 'value' in item && 'name' in item) && (
+              <motion.div
+                ref={cardRef}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={shouldAnimateCard ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.95 }}
+                transition={{
+                  duration: 0.5,
+                  ease: "easeOut",
+                  delay: 0.1,
+                }}
+              >
+                <Card className="shadow-sm border border-border bg-card">
+                  <CardHeader className="pb-2 pt-3 px-3">
+                    <CardTitle className="text-sm font-semibold text-foreground">
+                      Task Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3">
+                    <div className="h-56" style={{ minHeight: '224px' }}>
+                      {(() => {
+                        try {
+                          const validData = analytics?.statusDistribution?.filter(
+                            (item: any) => item && typeof item === 'object' && item.value > 0 && item.name && item.color
+                          ) || [];
+                          
+                          if (!validData || validData.length === 0) {
+                            return (
+                              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                No data available
+                              </div>
+                            );
+                          }
+
+                          const finalData = validData.filter((item: any) => {
+                            return (
+                              item &&
+                              typeof item === 'object' &&
+                              typeof item.name === 'string' &&
+                              typeof item.value === 'number' &&
+                              !isNaN(item.value) &&
+                              item.value > 0 &&
+                              typeof item.color === 'string'
+                            );
+                          });
+
+                          if (finalData.length === 0) {
+                            return (
+                              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                No data available
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart key={`piechart-${chartKey}`} margin={{ top: 10, right: 10, bottom: 40, left: 10 }}>
+                                <Pie
+                                  key={`pie-${chartKey}`}
+                                  data={finalData}
+                                  cx="50%"
+                                  cy="45%"
+                                  labelLine={false}
+                                  label={false}
+                                  outerRadius={65}
+                                  innerRadius={0}
+                                  fill={UI_CHART_COLORS?.primary || COLOR_PRIMARY}
+                                  dataKey="value"
+                                  isAnimationActive={false}
+                                >
+                                  {finalData.map((entry: any, index: number) => {
+                                    if (!entry || !entry.name || !entry.color) return null;
+                                    return (
+                                      <Cell 
+                                        key={`cell-${chartKey}-${index}-${String(entry.name)}`} 
+                                        fill={String(entry.color)} 
+                                      />
+                                    );
+                                  }).filter(Boolean)}
+                                </Pie>
+                                <Tooltip content={<CustomTooltip />} />
+                                {finalData.length > 0 && (
+                                  <Legend 
+                                    verticalAlign="bottom" 
+                                    height={36}
+                                    iconType="circle"
+                                    wrapperStyle={{ paddingTop: '10px' }}
+                                    formatter={(value: any) => {
+                                      try {
+                                        if (!value || typeof value !== 'string') return '';
+                                        if (!analytics?.statusDistribution || !analytics?.totalTasks) {
+                                          return `${value}: 0%`;
+                                        }
+                                        const item = analytics.statusDistribution.find((d: any) => d?.name === value);
+                                        if (!item || typeof item.value !== 'number') return `${value}: 0%`;
+                                        const percent = analytics.totalTasks > 0 
+                                          ? ((item.value / analytics.totalTasks) * PERCENTAGE_MULTIPLIER).toFixed(0) 
+                                          : '0';
+                                        return `${value}: ${percent}%`;
+                                      } catch (error) {
+                                        console.warn('Error formatting legend:', error);
+                                        return value ? `${String(value)}: 0%` : '';
+                                      }
+                                    }}
+                                  />
+                                )}
+                              </PieChart>
+                            </ResponsiveContainer>
+                          );
+                        } catch (error) {
+                          console.error('Error rendering pie chart:', error);
+                          return (
+                            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                              Error loading chart
+                            </div>
+                          );
+                        }
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Time Tracked Trend - Line Chart */}
+            <Card className="shadow-sm border border-border bg-card">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  Time Tracked (7 Days)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                <div className="h-40">
+                  {analytics?.timeTrackingTrend && Array.isArray(analytics.timeTrackingTrend) && analytics.timeTrackingTrend.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={analytics.timeTrackingTrend.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 10, fill: textColor }}
+                      />
+                      <YAxis
+                        tickFormatter={(value) => `${value}h`}
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 10, fill: textColor }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line
+                        type="monotone"
+                        dataKey="hours"
+                        stroke={COLOR_PRIMARY}
+                        strokeWidth={2}
+                        dot={{ fill: COLOR_PRIMARY, r: 3 }}
+                        activeDot={{ r: 5 }}
+                        name="Hours"
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      No data available
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tasks Created vs Completed - Composed Chart */}
+            <Card className="shadow-sm border border-border bg-card">
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  Tasks Created vs Completed
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                <div className="h-40">
+                  {analytics?.taskPerDayProgress && Array.isArray(analytics.taskPerDayProgress) && analytics.taskPerDayProgress.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={analytics.taskPerDayProgress.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 10, fill: textColor }}
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 10, fill: textColor }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar 
+                        dataKey="created" 
+                        fill={COLOR_INFO} 
+                        radius={[4, 4, 0, 0]} 
+                        name="Created"
+                        isAnimationActive={false}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="completed" 
+                        stroke={COLOR_SUCCESS} 
+                        strokeWidth={2} 
+                        dot={false} 
+                        name="Completed"
+                        isAnimationActive={true}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      No data available
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Time of Day Completion - Bar Chart */}
+            {analytics?.timePatterns?.blocks && Array.isArray(analytics.timePatterns.blocks) && analytics.timePatterns.blocks.length > 0 && (
+              <Card className="shadow-sm border border-border bg-card">
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm font-semibold text-foreground">
+                    Completion by Time of Day
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <div className="h-40">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={analytics.timePatterns.blocks.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 10, fill: textColor }}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 10, fill: textColor }}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Bar 
+                          dataKey="value" 
+                          radius={[6, 6, 0, 0]}
+                          isAnimationActive={true}
+                        >
+                          {analytics.timePatterns.blocks.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="text-center mt-2">
+                    <div className="text-xs text-muted-foreground">
+                      Peak: <span className="font-semibold text-foreground">{peakHourLabel}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Top Task Tags - Horizontal Bar Chart */}
+            {analytics?.taskTypes && Array.isArray(analytics.taskTypes) && analytics.taskTypes.length > 0 && (
+              <Card className="shadow-sm border border-border bg-card">
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm font-semibold text-foreground">
+                    Top Task Tags
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <div className="h-40">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={analytics.taskTypes.filter(item => item && typeof item === 'object')}
+                        layout="vertical"
+                        margin={{ top: 5, right: 10, left: 60, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke={borderColor} horizontal />
+                        <XAxis
+                          type="number"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 10, fill: textColor }}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="name"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 10, fill: textPrimaryColor }}
+                          width={55}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Bar 
+                          dataKey="value" 
+                          fill={COLOR_PRIMARY} 
+                          radius={[0, 6, 6, 0]}
+                          isAnimationActive={true}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Project Progress - Compact Table */}
+            {analytics.projectProgress.length > 0 && (
+              <Card className="shadow-sm border border-border bg-card">
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm font-semibold text-foreground">
+                    Project Progress
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <div className="space-y-2">
+                    {analytics.projectProgress.map((project, index) => (
+                      <div key={index} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium truncate text-foreground">
+                            {project.name}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {project.completed}/{project.total} tasks
+                          </div>
+                        </div>
+                        <div className="text-xs font-semibold ml-2" style={{ color: COLOR_SUCCESS }}>
+                          {project.completionRate.toFixed(0)}%
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

@@ -637,6 +637,61 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 gap: PANEL_CONTENT_SPACING
               }}
             >
+              {filteredFolders.length === 0 ? (
+                <div 
+                  className="text-center" 
+                  style={{ 
+                    paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
+                    paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
+                  }}
+                >
+                  <Folder 
+                    className="mx-auto text-primary/50" 
+                    style={{ 
+                      width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                      height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                      marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
+                    }} 
+                  />
+                  <p 
+                    className="text-muted-foreground dark:text-muted-foreground"
+                    style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
+                  >
+                    {searchQuery
+                      ? "No folders match your search"
+                      : "No folders yet"}
+                  </p>
+                  {!searchQuery && (
+                    <Button
+                      onClick={() => setShowAddFolder(true)}
+                      size="sm"
+                      style={{ marginTop: PANEL_PADDING }}
+                    >
+                      <FolderPlus style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
+                      Create Your First Folder
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                filteredFolders.map((folder) => {
+                  const taskCount = getFolderTaskCount(folder.id);
+                  const projectCount = getFolderProjectCount(folder.id);
+
+                  return (
+                    <DroppableFolderCard 
+                      key={folder.id} 
+                      folder={folder} 
+                      taskCount={taskCount} 
+                      projectCount={projectCount}
+                      onFolderClick={handleFolderClick}
+                      onEditFolder={handleEditFolder}
+                      onDeleteFolder={handleDeleteFolderClick}
+                    />
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
         ) : (
           <div className="h-full">
             <div 
@@ -648,64 +703,60 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 gap: PANEL_CONTENT_SPACING
               }}
             >
-        )}
-          {filteredFolders.length === 0 ? (
-            <div 
-              className="text-center" 
-              style={{ 
-                paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
-                paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
-              }}
-            >
-              <Folder 
-                className="mx-auto text-primary/50" 
-                style={{ 
-                  width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
-                  height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
-                  marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
-                }} 
-              />
-              <p 
-                className="text-muted-foreground dark:text-muted-foreground"
-                style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
-              >
-                {searchQuery
-                  ? "No folders match your search"
-                  : "No folders yet"}
-              </p>
-              {!searchQuery && (
-                <Button
-                  onClick={() => setShowAddFolder(true)}
-                  size="sm"
-                  style={{ marginTop: PANEL_PADDING }}
+              {filteredFolders.length === 0 ? (
+                <div 
+                  className="text-center" 
+                  style={{ 
+                    paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
+                    paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
+                  }}
                 >
-                  <FolderPlus style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
-                  Create Your First Folder
-                </Button>
+                  <Folder 
+                    className="mx-auto text-primary/50" 
+                    style={{ 
+                      width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                      height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                      marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
+                    }} 
+                  />
+                  <p 
+                    className="text-muted-foreground dark:text-muted-foreground"
+                    style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
+                  >
+                    {searchQuery
+                      ? "No folders match your search"
+                      : "No folders yet"}
+                  </p>
+                  {!searchQuery && (
+                    <Button
+                      onClick={() => setShowAddFolder(true)}
+                      size="sm"
+                      style={{ marginTop: PANEL_PADDING }}
+                    >
+                      <FolderPlus style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
+                      Create Your First Folder
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                filteredFolders.map((folder) => {
+                  const taskCount = getFolderTaskCount(folder.id);
+                  const projectCount = getFolderProjectCount(folder.id);
+
+                  return (
+                    <DroppableFolderCard 
+                      key={folder.id} 
+                      folder={folder} 
+                      taskCount={taskCount} 
+                      projectCount={projectCount}
+                      onFolderClick={handleFolderClick}
+                      onEditFolder={handleEditFolder}
+                      onDeleteFolder={handleDeleteFolderClick}
+                    />
+                  );
+                })
               )}
             </div>
-          ) : (
-            filteredFolders.map((folder) => {
-              const taskCount = getFolderTaskCount(folder.id);
-              const projectCount = getFolderProjectCount(folder.id);
-
-              return (
-                <DroppableFolderCard 
-                  key={folder.id} 
-                  folder={folder} 
-                  taskCount={taskCount} 
-                  projectCount={projectCount}
-                  onFolderClick={handleFolderClick}
-                  onEditFolder={handleEditFolder}
-                  onDeleteFolder={handleDeleteFolderClick}
-                />
-              );
-            })
-          )}
-            </div>
-        {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-          </ScrollArea>
-        ) : (
           </div>
         )}
       </div>

@@ -1120,27 +1120,24 @@ export function TeamPanel() {
       {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
       {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
         <ScrollArea className="flex-1">
-      ) : (
-        <div className="flex-1">
-      )}
-        <div 
-          className="pb-safe md:pb-4" 
-          style={{ 
-            padding: PANEL_PADDING,
-            paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
-            paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
-            gap: PANEL_CONTENT_SPACING
-          }}
-        >
-          {filteredMembers.length === 0 ? (
-            <div 
-              className="text-center" 
-              style={{ 
-                paddingTop: PANEL_EMPTY_STATE_PADDING_Y, 
-                paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
-              }}
-            >
-              <Users 
+          <div 
+            className="pb-safe md:pb-4" 
+            style={{ 
+              padding: PANEL_PADDING,
+              paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
+              paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
+              gap: PANEL_CONTENT_SPACING
+            }}
+          >
+            {filteredMembers.length === 0 ? (
+                <div 
+                  className="text-center" 
+                  style={{
+                    paddingTop: PANEL_EMPTY_STATE_PADDING_Y, 
+                    paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
+                  }}
+                >
+                  <Users 
                 className="mx-auto text-muted-foreground opacity-50" 
                 style={{ 
                   width: TEAM_PANEL_EMPTY_STATE_ICON_SIZE, 
@@ -1207,12 +1204,97 @@ export function TeamPanel() {
               })}
             </div>
           )}
-        </div>
-      {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+          </div>
         </ScrollArea>
       ) : (
-        </div>
-      )}
+          <div className="flex-1">
+            <div 
+              className="pb-safe md:pb-4" 
+              style={{ 
+                padding: PANEL_PADDING,
+                paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
+                paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
+                gap: PANEL_CONTENT_SPACING
+              }}
+            >
+              {filteredMembers.length === 0 ? (
+                <div 
+                  className="text-center" 
+                  style={{
+                    paddingTop: PANEL_EMPTY_STATE_PADDING_Y, 
+                    paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
+                  }}
+                >
+                  <Users 
+                    className="mx-auto text-muted-foreground opacity-50" 
+                    style={{ 
+                      width: TEAM_PANEL_EMPTY_STATE_ICON_SIZE, 
+                      height: TEAM_PANEL_EMPTY_STATE_ICON_SIZE,
+                      marginBottom: TEAM_PANEL_MARGIN_BOTTOM_LARGE
+                    }} 
+                  />
+                  <p 
+                    className="text-muted-foreground" 
+                    style={{ 
+                      fontSize: PANEL_EMPTY_STATE_TEXT_SIZE, 
+                      marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
+                    }}
+                  >
+                    {searchQuery ? "No members match your search" : "No team members yet"}
+                  </p>
+                  {!searchQuery && (
+                    <>
+                      <p 
+                        className="text-muted-foreground" 
+                        style={{ 
+                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                          marginBottom: TEAM_PANEL_MARGIN_BOTTOM_XLARGE
+                        }}
+                      >
+                        Invite family members or teammates to collaborate
+                      </p>
+                      <Button
+                        onClick={() => setShowAddMember(true)}
+                        variant="outline"
+                        size="sm"
+                        style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
+                      >
+                        <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                        Add your first member
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_CONTENT_SPACING }}>
+                  {filteredMembers.map((member) => {
+                    const stats = getTaskStats(member.id);
+                    const isCurrentUser = member.id === currentUser?.id;
+
+                    return (
+                      <TeamMemberCard
+                        key={member.id}
+                        member={member}
+                        stats={stats}
+                        isCurrentUser={isCurrentUser}
+                        onCardClick={handleCardClick}
+                        onResendInvitation={handleResendInvitation}
+                        onDeclineInvitation={handleDeclineInvitation}
+                        onUpdateRole={handleUpdateRole}
+                        onRemoveMember={handleRemoveMember}
+                        getRoleIcon={getRoleIcon}
+                        getRoleBadgeVariant={getRoleBadgeVariant}
+                        getInviteStatusBadge={getInviteStatusBadge}
+                        formatExpirationDate={formatExpirationDate}
+                        acceptInvitation={acceptInvitation}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       {/* Add Member Dialog */}
       <Dialog
