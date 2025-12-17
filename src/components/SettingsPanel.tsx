@@ -362,10 +362,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             className="mx-auto" 
             style={{ 
               maxWidth: SETTINGS_PANEL_MAX_WIDTH,
-              paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile
+              paddingBottom: isMobile
                 ? NAV_BAR_BOTTOM_PADDING_MOBILE
                 : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
-              paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile
+              paddingTop: isMobile
                 ? '0.75rem' // 12px on mobile for better spacing after AppHeader
                 : SETTINGS_PANEL_PADDING_TOP 
             }}
