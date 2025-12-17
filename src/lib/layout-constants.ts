@@ -50,8 +50,8 @@ export const HEADER_BACKGROUND_OPACITY = 0.95; // bg-white/95 = 95% opacity
 export const HEADER_BACKGROUND_LIGHT_COLOR = '#FFFFFF';
 export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.95)';
 export const HEADER_BORDER_COLOR = 'rgba(148, 163, 184, 0.2)';
-export const HEADER_ANIMATION_DAMPING = 30; // Spring animation damping
-export const HEADER_ANIMATION_STIFFNESS = 300; // Spring animation stiffness
+export const HEADER_ANIMATION_DAMPING = 50; // Spring animation damping (higher = slower, less bouncy)
+export const HEADER_ANIMATION_STIFFNESS = 150; // Spring animation stiffness (lower = slower, less rigid)
 export const HEADER_BUTTON_NEGATIVE_MARGIN_LEFT = '-0.5rem'; // -ml-2 = -0.5rem
 export const HEADER_SIDE_PANEL_ANIMATION_DURATION = 0.3; // Side panel header fade animation duration
 export const HEADER_SIDE_PANEL_ANIMATION_DELAY_INITIAL = 0.1; // Initial delay for side panel header
@@ -121,9 +121,16 @@ export const getPanelWidth = (): number => {
 };
 
 // Calculate main header left position when panel is open
+// When panel is open, header slides less to maintain spacing from right edge
+// Only slides part of the panel width to prevent components from touching right edge
 export const getMainHeaderLeft = (panelOpen: boolean): number => {
   const panelWidth = getPanelWidth();
-  return panelOpen ? SIDEBAR_WIDTH + panelWidth : SIDEBAR_WIDTH;
+  if (panelOpen) {
+    // Slide only 60% of panel width to maintain spacing and prevent components from touching right edge
+    const slideDistance = Math.round(panelWidth * 0.6);
+    return SIDEBAR_WIDTH + slideDistance;
+  }
+  return SIDEBAR_WIDTH;
 };
 
 // Calculate main header width

@@ -722,7 +722,12 @@ function AppContent() {
             style={{ paddingTop: `${HEADER_HEIGHT}px` }}
             layout
             initial={false}
-            transition={{ type: 'spring', damping: HEADER_ANIMATION_DAMPING, stiffness: HEADER_ANIMATION_STIFFNESS }}
+            transition={{ 
+              type: 'spring', 
+              damping: HEADER_ANIMATION_DAMPING, 
+              stiffness: HEADER_ANIMATION_STIFFNESS,
+              mass: 1.5, // Heavier for smoother, slower animation with less overshoot
+            }}
           >
             <DashboardView 
               mobileView={mobileView}
