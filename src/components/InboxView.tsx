@@ -671,8 +671,8 @@ export function InboxView() {
                                   });
                                 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className={cn("mt-0.5", isMobile ? "!w-2 !h-2 !min-w-2 !min-h-2 [&_[data-slot='checkbox-indicator']_svg]:!w-1.5 [&_[data-slot='checkbox-indicator']_svg]:!h-1.5" : "")}
-                                style={isMobile ? { width: '8px', height: '8px', minWidth: '8px', minHeight: '8px' } : undefined}
+                                className="mt-0.5 !w-2 !h-2 !min-w-2 !min-h-2 [&_[data-slot='checkbox-indicator']_svg]:!w-1.5 [&_[data-slot='checkbox-indicator']_svg]:!h-1.5"
+                                style={{ width: '8px', height: '8px', minWidth: '8px', minHeight: '8px' }}
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2 mb-2">
