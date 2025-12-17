@@ -628,18 +628,27 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       <div className="flex-1 overflow-hidden min-h-0">
         {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
           <ScrollArea className="h-full">
+            <div 
+              className="pb-safe md:pb-4" 
+              style={{ 
+                padding: PANEL_PADDING,
+                paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
+                paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
+                gap: PANEL_CONTENT_SPACING
+              }}
+            >
         ) : (
           <div className="h-full">
+            <div 
+              className="pb-safe md:pb-4" 
+              style={{ 
+                padding: PANEL_PADDING,
+                paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
+                paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
+                gap: PANEL_CONTENT_SPACING
+              }}
+            >
         )}
-        <div 
-          className="pb-safe md:pb-4" 
-          style={{ 
-            padding: PANEL_PADDING,
-            paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
-            paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
-            gap: PANEL_CONTENT_SPACING
-          }}
-        >
           {filteredFolders.length === 0 ? (
             <div 
               className="text-center" 
@@ -693,7 +702,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               );
             })
           )}
-        </div>
+            </div>
         {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
           </ScrollArea>
         ) : (
