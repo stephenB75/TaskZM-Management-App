@@ -2641,7 +2641,7 @@ export function TaskDialog({
                         <Label className="text-sm font-semibold">Repeat Task</Label>
                         {!hasFeature('recurringTasks') && (
                           <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
-                            PRO YEARLY
+                            PRO
                           </Badge>
                         )}
                       </div>
@@ -2649,9 +2649,13 @@ export function TaskDialog({
                         checked={recurrenceType !== "none"}
                         onCheckedChange={(checked) => {
                           if (!hasFeature('recurringTasks')) {
-                            toast.error('Recurring Tasks is a Pro Yearly feature', {
-                              description: 'Upgrade to Pro Yearly to create recurring tasks.',
-                            });
+                            // Dispatch event to trigger upgrade prompt (recurring tasks available in Pro Monthly)
+                            window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+                              detail: { feature: 'recurringTasks' } 
+                            }));
+                            if (onShowUpgradePrompt) {
+                              onShowUpgradePrompt('recurringTasks');
+                            }
                             return;
                           }
                           if (!checked) {
