@@ -483,7 +483,7 @@ export function TodayAgendaView({
           >
             <div 
               ref={timelineContainerRef}
-              className="px-5 sm:pb-safe md:pt-4 md:pb-4 w-full relative"
+              className="px-5 sm:pb-safe md:pt-10 md:pb-4 w-full relative"
               style={{
                 paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
                   ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` 
