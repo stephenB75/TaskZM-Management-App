@@ -594,6 +594,254 @@ export function InboxView() {
           {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
             <ScrollArea className="h-full">
               <div className="p-4 md:p-8 pb-safe">
+                <div className="space-y-2">
+                  <AnimatePresence mode="popLayout">
+                    {sortedTasks.length === 0 ? (
+                      <motion.div
+                        key="empty"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="flex flex-col items-center justify-center py-16 px-4 text-center"
+                      >
+                        <div className={`w-24 h-24 rounded-full ${UI_INBOX_GRADIENTS.emptyState.className} flex items-center justify-center mb-6 shadow-lg`}>
+                          <Inbox className="w-12 h-12 text-primary" />
+                        </div>
+                        <h3 className="text-xl mb-2">
+                          Your inbox is clear!
+                        </h3>
+                        <p className="text-muted-foreground max-w-sm mb-6">
+                          {unscheduledTasks.length > 0
+                            ? "No tasks match your current filters."
+                            : "All tasks are scheduled. Add new tasks or adjust your filters."}
+                        </p>
+                        <Button
+                          onClick={() => {
+                            setSelectedTask(undefined);
+                            setIsTaskDialogOpen(true);
+                          }}
+                          className="rounded-full"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add First Task
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      sortedTasks.map((task, index) => (
+                        <motion.div
+                          key={task.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, x: -100 }}
+                          transition={{ delay: index * 0.03 }}
+                          layout
+                        >
+                          <Card
+                            className={cn(
+                              // Responsive padding: smaller on mobile, comfortable on desktop
+                              "px-3 py-2.5 md:px-4 md:py-4",
+                              // Responsive borders: thinner on mobile, standard on desktop
+                              "border-l-2 md:border-l-4 border-gray-300/80 md:border-gray-300/90",
+                              "cursor-pointer transition-all",
+                              // Better shadow blending on mobile
+                              "shadow-lg hover:shadow-xl",
+                              "sm:shadow-lg sm:hover:shadow-xl",
+                              getPriorityColor(task.priority),
+                            )}
+                            style={{
+                              // Custom shadow for better mobile blending
+                              boxShadow: isMobile 
+                                ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
+                                : undefined
+                            }}
+                            onClick={() => handleTaskClick(task)}
+                          >
+                            <div className="flex items-start gap-2 md:gap-3">
+                              <Checkbox
+                                checked={selectedTaskIds.has(task.id)}
+                                onCheckedChange={() => {
+                                  setSelectedTaskIds(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(task.id)) {
+                                      newSet.delete(task.id);
+                                    } else {
+                                      newSet.add(task.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-0.5"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <h4 className="font-medium text-sm leading-tight">
+                                    {task.title}
+                                  </h4>
+                                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        "text-xs",
+                                        task.priority ===
+                                          "urgent" &&
+                                          "border-red-400 text-red-700 bg-red-50",
+                                        task.priority ===
+                                          "high" &&
+                                          "border-orange-400 text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/20",
+                                        task.priority ===
+                                          "medium" &&
+                                          "border-blue-400 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20",
+                                        task.priority === "low" &&
+                                          "border-gray-400 text-gray-700 dark:text-foreground bg-gray-50 dark:bg-muted/20",
+                                      )}
+                                    >
+                                      {task.priority}
+                                    </Badge>
+                                    {task.status ===
+                                      "in-progress" && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs border-green-400 text-green-700 bg-green-50"
+                                      >
+                                        active
+                                      </Badge>
+                                    )}
+                                    {task.status ===
+                                      "on-hold" && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs border-yellow-400 text-yellow-700 bg-yellow-50"
+                                      >
+                                        on hold
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {task.description && (
+                                  <div 
+                                    className={cn(
+                                      "text-[10px] text-muted-foreground mb-2 line-clamp-4 break-words px-1.5",
+                                      // Rich text formatting styles - only apply if HTML is present
+                                      // Note: Rich text editor font size changes will override this base size via inline styles
+                                      hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
+                                      hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
+                                      hasHTMLTags(task.description) && "[&_u]:underline",
+                                      hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
+                                      hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
+                                      hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
+                                      hasHTMLTags(task.description) && "[&_li]:ml-1",
+                                      hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words"
+                                    )}
+                                    {...(hasHTMLTags(task.description) 
+                                      ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                                      : { children: task.description }
+                                    )}
+                                  />
+                                )}
+
+                                {/* Assignee Display */}
+                                {task.assignedTo &&
+                                  task.assignedTo.length > 0 && (
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                      {task.assignedTo
+                                        .slice(0, 3)
+                                        .map((userId) => {
+                                          const member =
+                                            getTeamMember(userId);
+                                          if (!member)
+                                            return null;
+
+                                          const initials =
+                                            getInitials(
+                                              member.name,
+                                            );
+
+                                          return (
+                                            <div
+                                              key={userId}
+                                              className="flex items-center gap-1.5"
+                                            >
+                                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center text-[8px] font-semibold">
+                                                {initials}
+                                              </div>
+                                              <span className="text-xs text-gray-600 font-semibold">
+                                                {member.name}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      {task.assignedTo.length >
+                                        3 && (
+                                        <span className="text-xs text-gray-500">
+                                          +
+                                          {task.assignedTo
+                                            .length - 3}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+
+                                <div className="flex items-center gap-2 text-xs flex-wrap">
+                                  {task.dueDate && (
+                                    <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                                      <Calendar className="w-3 h-3" />
+                                      <span>
+                                        Due{" "}
+                                        {new Date(
+                                          task.dueDate,
+                                        ).toLocaleDateString(
+                                          "en-US",
+                                          {
+                                            month: "short",
+                                            day: "numeric",
+                                          },
+                                        )}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {task.estimatedTime && (
+                                    <div className="flex items-center gap-1 text-muted-foreground">
+                                      {task.dueDate && (
+                                        <span>•</span>
+                                      )}
+                                      <Clock className="w-3 h-3" />
+                                      <span>
+                                        {task.estimatedTime} min
+                                      </span>
+                                    </div>
+                                  )}
+                                  {task.tags &&
+                                    task.tags.length > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        {(task.dueDate ||
+                                          task.estimatedTime) && (
+                                          <span className="text-muted-foreground">
+                                            •
+                                          </span>
+                                        )}
+                                        <Tag className="w-3 h-3 text-muted-foreground" />
+                                        <span className="text-muted-foreground">
+                                          {task.tags
+                                            .slice(0, 2)
+                                            .join(", ")}
+                                          {task.tags.length > 2 &&
+                                            ` +${task.tags.length - 2}`}
+                                        </span>
+                                      </div>
+                                    )}
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        </motion.div>
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </ScrollArea>
           ) : (
             <div className="p-4 md:p-8" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
               <div className="space-y-2">
@@ -843,9 +1091,7 @@ export function InboxView() {
                 </AnimatePresence>
               </div>
             </div>
-          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-            </ScrollArea>
-          ) : null}
+          )}
         </div>
       </div>
 
