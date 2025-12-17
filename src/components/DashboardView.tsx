@@ -1392,7 +1392,7 @@ export function DashboardView({
       )}
 
       {/* Main Layout */}
-      <div className="flex-1 overflow-hidden flex">
+      <div className={cn("flex-1 flex", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "overflow-hidden")}>
         {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false (hidden on tablets to save space) */}
         {!hideAgenda && (
           <motion.div

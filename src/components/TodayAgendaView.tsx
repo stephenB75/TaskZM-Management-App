@@ -544,7 +544,7 @@ export function TodayAgendaView({
           `flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
-          isMobile ? "min-h-full" : "h-full",
+          isMobile ? "w-full" : "h-full",
           !isMobile && "min-h-[400px]", // Ensure drop zone is always accessible
         )}
         style={{
