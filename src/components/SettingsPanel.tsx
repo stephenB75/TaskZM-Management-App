@@ -85,6 +85,7 @@ import {
   SETTINGS_PANEL_PADDING_LARGE,
   NAV_BAR_BOTTOM_PADDING_MOBILE,
   NAV_BAR_SPACER_HEIGHT,
+  NAV_BAR_HEIGHT,
   SETTINGS_PANEL_PADDING_Y_SMALL,
   SETTINGS_PANEL_START_TOUR_BUTTON_GAP,
   SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT,
@@ -347,6 +348,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         className="flex-1 overflow-y-auto overscroll-y-contain"
         style={{ 
           WebkitOverflowScrolling: 'touch',
+          paddingBottom: isMobile ? `${NAV_BAR_HEIGHT}px` : undefined, // Add padding to scroll container on mobile to ensure content can scroll past nav bar
         } as React.CSSProperties}
       >
         <div 
@@ -357,7 +359,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             paddingRight: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
             paddingTop: SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
             paddingBottom: isMobile
-              ? `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px) + 1rem)` // Nav bar spacer + safe area + extra 16px to ensure last item is fully visible
+              ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + 3rem)` // Full nav bar height + safe area + extra 48px to ensure last item is fully visible and scrollable
               : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
           }}
         >
