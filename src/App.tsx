@@ -569,6 +569,7 @@ function AppContent() {
           open={sidebarOpen}
           onOpenChange={setSidebarOpen}
           unscheduledCount={unscheduledCount}
+          upcomingAndDueNowCount={upcomingAndDueNowCount}
         />
         <main className="flex-1 overflow-hidden relative flex">
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}

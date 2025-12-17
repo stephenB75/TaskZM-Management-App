@@ -41,6 +41,7 @@ interface AppSidebarProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   unscheduledCount?: number;
+  upcomingAndDueNowCount?: number;
 }
 
 export function AppSidebar({
@@ -78,7 +79,12 @@ export function AppSidebar({
       icon: Bell,
       badge: badgeCount,
     },
-    { id: "today", label: "Today Agenda", icon: CalendarDays },
+    { 
+      id: "today", 
+      label: "Today Agenda", 
+      icon: CalendarDays,
+      badge: upcomingAndDueNowCount > 0 ? upcomingAndDueNowCount : undefined,
+    },
     {
       id: "inbox",
       label: "Inbox",
