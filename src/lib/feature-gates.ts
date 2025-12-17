@@ -31,6 +31,8 @@ export function useFeatureAccess(feature: keyof SubscriptionFeatures) {
     aiSchedulerLimit: features.aiSchedulerLimit,
     analyticsDaysLimit: features.analyticsDaysLimit,
     teamMembersLimit: features.teamMembersLimit,
+    recurringTasksLimit: features.recurringTasksLimit,
+    calendarSyncLimit: features.calendarSyncLimit,
   };
 }
 
@@ -43,6 +45,7 @@ export function requiresPro(feature: keyof SubscriptionFeatures): boolean {
     'analytics',
     'taskRollover',
     'calendarSync',
+    'recurringTasks', // Available in both monthly and yearly Pro
   ];
   return proFeatures.includes(feature);
 }
@@ -52,7 +55,6 @@ export function requiresPro(feature: keyof SubscriptionFeatures): boolean {
  */
 export function requiresProYearly(feature: keyof SubscriptionFeatures): boolean {
   const yearlyFeatures: (keyof SubscriptionFeatures)[] = [
-    'recurringTasks',
     'taskTemplates',
     'taskDependencies',
     'multipleWorkspaces',

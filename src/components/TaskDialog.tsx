@@ -556,7 +556,7 @@ export function TaskDialog({
     hoursSettings,
   } = useTasks();
   const { teamMembers, getTeamMember } = useTeam();
-  const { hasFeature } = useSubscription();
+  const { hasFeature, features } = useSubscription();
   const { calendarStatus, syncTask: syncTaskToCalendar } = useCalendar();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1042,9 +1042,9 @@ export function TaskDialog({
 
     // Validate recurrence configuration
     if (recurrenceType !== "none") {
-      // Gate: Recurring tasks require Pro Yearly
+      // Gate: Recurring tasks require Pro (monthly or yearly)
       if (!hasFeature('recurringTasks')) {
-        // Dispatch event to trigger upgrade prompt
+        // Dispatch event to trigger upgrade prompt (recurring tasks available in Pro Monthly)
         window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
           detail: { feature: 'recurringTasks' } 
         }));
@@ -1052,6 +1052,32 @@ export function TaskDialog({
           onShowUpgradePrompt('recurringTasks');
         }
         return;
+      }
+      
+      // Check recurring tasks limit for Pro Monthly (5 active recurring tasks)
+      if (features.recurringTasksLimit !== undefined) {
+        // Count active recurring tasks (excluding the current task if editing)
+        const activeRecurringTasks = tasks.filter(t => 
+          t.recurrence && 
+          t.recurrence.type !== 'none' && 
+          t.status !== 'done' &&
+          t.id !== task?.id // Exclude current task if editing
+        );
+        
+        if (activeRecurringTasks.length >= features.recurringTasksLimit) {
+          toast.error('Recurring Tasks Limit Reached', {
+            description: `You've reached the limit of ${features.recurringTasksLimit} active recurring tasks on Pro Monthly. Upgrade to Pro Yearly for unlimited recurring tasks.`,
+            action: {
+              label: 'Upgrade',
+              onClick: () => {
+                window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+                  detail: { feature: 'recurringTasks' } 
+                }));
+              },
+            },
+          });
+          return;
+        }
       }
       if (recurrenceType === "weekly" && (!recurrenceDaysOfWeek || recurrenceDaysOfWeek.length === 0)) {
         toast.error("Weekly Recurrence Required", {

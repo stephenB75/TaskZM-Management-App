@@ -17,6 +17,7 @@ import {
   FileText,
   Link,
   FolderTree,
+  Crown,
 } from "lucide-react";
 
 // Default pricing
@@ -305,7 +306,7 @@ export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
   },
   {
     icon: Calendar,
-    text: "Full Calendar Sync (Google, Outlook, Apple)",
+    text: "Calendar Sync (1 calendar connection)",
     included: true,
     highlight: true,
   },
@@ -329,7 +330,13 @@ export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
   },
   {
     icon: BarChart3,
-    text: "Analytics Dashboard",
+    text: "Analytics Dashboard (30-day history)",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: Repeat,
+    text: "Recurring Tasks (up to 5 active recurring tasks)",
     included: true,
     highlight: true,
   },
@@ -338,38 +345,50 @@ export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
 export const PRO_YEARLY_FEATURES: FeatureDefinition[] = [
   { icon: Check, text: "Everything in Pro Monthly", included: true, isHeader: true },
   {
+    icon: Repeat,
+    text: "Unlimited Recurring Tasks (remove 5-task limit)",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: Calendar,
+    text: "Unlimited Calendar Connections (remove 1-calendar limit)",
+    included: true,
+    highlight: true,
+  },
+  {
     icon: Users,
-    text: "Team Collaboration (unlimited members)",
+    text: "Team Collaboration (unlimited members, role-based access)",
     included: true,
     highlight: true,
   },
   {
     icon: BarChart3,
-    text: "Unlimited Analytics History",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: Repeat,
-    text: "Recurring Tasks (daily, weekly, monthly)",
+    text: "Unlimited Analytics History (lifetime data retention)",
     included: true,
     highlight: true,
   },
   {
     icon: FileText,
-    text: "Task Templates (save and reuse patterns)",
+    text: "Task Templates (save and reuse task patterns)",
     included: true,
     highlight: true,
   },
   {
     icon: Link,
-    text: "Task Dependencies (link related tasks)",
+    text: "Task Dependencies (link related tasks, project workflows)",
     included: true,
     highlight: true,
   },
   {
     icon: FolderTree,
     text: "Multiple Workspaces (organize by department/project)",
+    included: true,
+    highlight: true,
+  },
+  {
+    icon: Crown,
+    text: "Priority Support & Early Access to New Features",
     included: true,
     highlight: true,
   },
@@ -384,21 +403,23 @@ export const PRO_TIER_FEATURES: FeatureDefinition[] = [
 // Pro features list for downgrade confirmation
 export const PRO_MONTHLY_FEATURES_LIST = [
   "Unlimited AI Scheduler",
-  "Full Calendar Sync",
+  "Calendar Sync (1 calendar)",
   "Task Hours & Time Tracking",
   "Auto Task Rollover",
   "Advanced Pomodoro Timer",
-  "Analytics Dashboard",
+  "Analytics Dashboard (30-day history)",
+  "Recurring Tasks (up to 5 active)",
 ];
 
 export const PRO_YEARLY_FEATURES_LIST = [
-  ...PRO_MONTHLY_FEATURES_LIST,
+  "Unlimited Recurring Tasks",
+  "Unlimited Calendar Connections",
   "Team Collaboration (unlimited members)",
   "Unlimited Analytics History",
-  "Recurring Tasks",
   "Task Templates",
   "Task Dependencies",
   "Multiple Workspaces",
+  "Priority Support & Early Access",
 ];
 
 // Legacy: Keep for backward compatibility

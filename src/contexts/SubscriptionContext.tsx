@@ -38,8 +38,11 @@ const getFeatures = (tier: SubscriptionTier, billingPeriod?: 'monthly' | 'yearly
       teamFeatures: isYearly, // Only for yearly
       teamMembersLimit: isYearly ? undefined : 0, // Unlimited for yearly, 0 for monthly
       calendarSync: true,
-      // Yearly-only features
-      recurringTasks: isYearly,
+      calendarSyncLimit: isYearly ? undefined : 1, // Unlimited for yearly, 1 calendar for monthly
+      // Recurring tasks available in both monthly and yearly, but with limits
+      recurringTasks: true, // Available for all Pro users
+      recurringTasksLimit: isYearly ? undefined : 5, // Unlimited for yearly, 5 active recurring tasks for monthly
+      // Yearly-only advanced features
       taskTemplates: isYearly,
       taskDependencies: isYearly,
       multipleWorkspaces: isYearly,

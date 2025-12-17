@@ -46,7 +46,7 @@ const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
-  const { hasFeature } = useSubscription();
+  const { hasFeature, features } = useSubscription();
   const { tasks, workspaceId } = useTasks();
   const [calendarStatus, setCalendarStatus] = useState<CalendarStatus>({
     google: false,
@@ -183,6 +183,36 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         detail: { feature: 'calendarSync' } 
       }));
       return;
+    }
+    
+    // Check calendar sync limit for Pro Monthly (1 calendar connection)
+    if (features.calendarSyncLimit !== undefined) {
+      const connectedCalendars = [
+        calendarStatus.google,
+        calendarStatus.outlook,
+        calendarStatus.apple,
+      ].filter(Boolean).length;
+      
+      // If this calendar is already connected, allow reconnection
+      const isAlreadyConnected = 
+        (provider === 'google' && calendarStatus.google) ||
+        (provider === 'outlook' && calendarStatus.outlook) ||
+        (provider === 'apple' && calendarStatus.apple);
+      
+      if (!isAlreadyConnected && connectedCalendars >= features.calendarSyncLimit) {
+        toast.error('Calendar Connection Limit Reached', {
+          description: `You've reached the limit of ${features.calendarSyncLimit} calendar connection${features.calendarSyncLimit === 1 ? '' : 's'} on Pro Monthly. Upgrade to Pro Yearly for unlimited calendar connections.`,
+          action: {
+            label: 'Upgrade',
+            onClick: () => {
+              window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+                detail: { feature: 'calendarSync' } 
+              }));
+            },
+          },
+        });
+        return;
+      }
     }
 
     // Apple Calendar uses CalDAV for one-way import

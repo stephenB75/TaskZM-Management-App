@@ -309,8 +309,10 @@ export interface SubscriptionFeatures {
   aiSchedulerLimit?: number; // 3 for free, undefined (unlimited) for pro
   analyticsDaysLimit?: number; // null/undefined for free, 30 for monthly, undefined (unlimited) for yearly
   teamMembersLimit?: number; // 0 for free/monthly, undefined (unlimited) for yearly
+  recurringTasksLimit?: number; // 5 for monthly, undefined (unlimited) for yearly
+  calendarSyncLimit?: number; // 1 for monthly, undefined (unlimited) for yearly
   // Yearly-only features
-  recurringTasks?: boolean; // true for yearly, false otherwise
+  recurringTasks?: boolean; // true for pro (both monthly and yearly), false for free
   taskTemplates?: boolean; // true for yearly, false otherwise
   taskDependencies?: boolean; // true for yearly, false otherwise
   multipleWorkspaces?: boolean; // true for yearly, false otherwise

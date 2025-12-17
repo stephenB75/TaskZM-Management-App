@@ -126,6 +126,42 @@ const featureConfig = {
       "Automatic bidirectional sync",
     ],
   },
+  recurringTasks: {
+    icon: RotateCcw,
+    title: "Recurring Tasks",
+    description:
+      "Create tasks that repeat automatically on a schedule - daily, weekly, or monthly. Perfect for routines, meetings, and regular maintenance.",
+    benefits: [
+      "Daily, weekly, monthly recurrence",
+      "Automatic task creation",
+      "Set end dates or repeat forever",
+      "Perfect for routines and habits",
+    ],
+  },
+  taskDependencies: {
+    icon: Link2,
+    title: "Task Dependencies",
+    description:
+      "Link related tasks together so you can see what needs to be done first. Manage complex projects with clear task relationships.",
+    benefits: [
+      "Link related tasks",
+      "Visualize task relationships",
+      "Prevent starting tasks too early",
+      "Better project management",
+    ],
+  },
+  taskTemplates: {
+    icon: Copy,
+    title: "Task Templates",
+    description:
+      "Save task patterns and reuse them instantly. Create templates for common workflows, meetings, or project setups.",
+    benefits: [
+      "Save task patterns",
+      "Quick task creation",
+      "Consistent workflows",
+      "Time-saving templates",
+    ],
+  },
 };
 
 export function UpgradePrompt({

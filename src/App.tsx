@@ -186,7 +186,7 @@ function AppContent() {
     return () => {
       window.removeEventListener('showUpgradePrompt', handleUpgradePrompt as EventListener);
     };
-  }, []);
+  }, [setUpgradeFeature, setShowUpgradePrompt]);
 
   // Check for invitation token in URL
   const [inviteToken, setInviteToken] = useState<string | null>(null);
