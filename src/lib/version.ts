@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.6';
-export const VERSION_NAME = 'Mobile Header Spacer Fix';
+export const APP_VERSION = '1.0.7';
+export const VERSION_NAME = 'Feature Tier Rebalancing & Limit Enforcement';
 export const VERSION_DATE = 'December 15, 2025';
-export const BUILD_NUMBER = '20251215-2';
+export const BUILD_NUMBER = '20251215-3';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,26 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.7',
+    date: 'December 15, 2025',
+    name: 'Feature Tier Rebalancing & Limit Enforcement',
+    changes: [
+      'Rebalanced Pro Monthly vs Pro Yearly feature distribution for better value proposition',
+      'Moved Recurring Tasks from Pro Yearly to Pro Monthly (with 5 active recurring tasks limit)',
+      'Added recurring tasks limit enforcement: 5 active for Pro Monthly, unlimited for Pro Yearly',
+      'Added calendar sync limit enforcement: 1 connection for Pro Monthly, unlimited for Pro Yearly',
+      'Updated Pro Yearly to include 8 additional features: Unlimited Recurring Tasks, Unlimited Calendar Connections, Team Collaboration, Unlimited Analytics History, Task Templates, Task Dependencies, Multiple Workspaces, Priority Support',
+      'Updated App Tour with new feature limits and distribution',
+      'Updated Pricing Dialog to reflect new feature tiers with limit information',
+      'Fixed Settings Panel feature display for mobile and desktop with proper text wrapping',
+      'Updated TaskDialog to show "PRO" badge instead of "PRO YEARLY" for recurring tasks',
+      'Enhanced feature gating functions to support recurringTasksLimit and calendarSyncLimit',
+      'Updated SubscriptionContext to set proper limits for monthly vs yearly subscriptions',
+      'Improved feature display layout with min-w-0, flex-1, and break-words for responsive text wrapping',
+      'Fixed all feature items in subscription section to prevent text overflow and badge positioning issues',
+    ],
+  },
   {
     version: '1.0.6',
     date: 'December 15, 2025',
