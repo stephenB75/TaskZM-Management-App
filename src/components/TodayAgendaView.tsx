@@ -678,7 +678,7 @@ export function TodayAgendaView({
           style={{
             paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
               ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` 
-              : undefined,
+              : '3rem', // 48px on desktop for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
               ? NAV_BAR_BOTTOM_PADDING_MOBILE
               : undefined,
