@@ -121,21 +121,25 @@ export const getPanelWidth = (): number => {
 };
 
 // Calculate main header left position when panel is open
-// When panel is open, header slides less to maintain spacing from right edge
-// Only slides part of the panel width to prevent components from touching right edge
+// When panel is open, header must slide full panel width to avoid overlapping the panel
 export const getMainHeaderLeft = (panelOpen: boolean): number => {
   const panelWidth = getPanelWidth();
   if (panelOpen) {
-    // Slide only 60% of panel width to maintain spacing and prevent components from touching right edge
-    const slideDistance = Math.round(panelWidth * 0.6);
-    return SIDEBAR_WIDTH + slideDistance;
+    // Slide full panel width to avoid overlap with the side panel
+    return SIDEBAR_WIDTH + panelWidth;
   }
   return SIDEBAR_WIDTH;
 };
 
 // Calculate main header width
+// When panel is open, add right padding to prevent components from touching the right edge
 export const getMainHeaderWidth = (panelOpen: boolean): string => {
   const left = getMainHeaderLeft(panelOpen);
+  if (panelOpen) {
+    // Add right padding when panel is open to maintain spacing from right edge
+    const rightPadding = 24; // 1.5rem = 24px padding from right edge
+    return `calc(100% - ${left}px - ${rightPadding}px)`;
+  }
   return `calc(100% - ${left}px)`;
 };
 

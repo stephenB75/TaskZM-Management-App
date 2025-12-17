@@ -355,16 +355,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             paddingLeft: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
             paddingRight: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
             paddingTop: SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
-            paddingBottom: SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
+            paddingBottom: isMobile
+              ? NAV_BAR_BOTTOM_PADDING_MOBILE
+              : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
           }}
         >
           <div 
             className="mx-auto" 
             style={{ 
               maxWidth: SETTINGS_PANEL_MAX_WIDTH,
-              paddingBottom: isMobile
-                ? NAV_BAR_BOTTOM_PADDING_MOBILE
-                : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
+              paddingBottom: 0, // Bottom padding handled by parent container
               paddingTop: isMobile
                 ? '0.75rem' // 12px on mobile for better spacing after AppHeader
                 : SETTINGS_PANEL_PADDING_TOP 
