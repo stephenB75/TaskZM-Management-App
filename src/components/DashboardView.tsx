@@ -760,8 +760,8 @@ export function DashboardView({
       console.warn(`Invalid dateString format: ${dateString}`);
       return [];
     }
-    const checkDate = new Date(year, month - 1, day); // month is 0-indexed
-    checkDate.setHours(0, 0, 0, 0); // Ensure it's at midnight
+    // Create date in local timezone to match task scheduledDate normalization
+    const checkDate = new Date(year, month - 1, day, 0, 0, 0, 0); // month is 0-indexed, set to midnight
     
     if (isNaN(checkDate.getTime())) {
       console.warn(`Invalid date created from dateString: ${dateString}`);
@@ -777,6 +777,22 @@ export function DashboardView({
         // This ensures recurring tasks are counted on all days they occur
         // Include all tasks (including done) for dot display
         const matches = isDateInRecurrence(task, checkDate);
+        
+        // Debug: Log why tasks are/aren't matching
+        if (import.meta.env.DEV && task.scheduledDate) {
+          const taskDate = new Date(task.scheduledDate);
+          const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+          const checkDateOnly = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+          if (taskDateOnly.getTime() === checkDateOnly.getTime() && !matches) {
+            console.warn(`[getTasksForDay] Task ${task.id} scheduledDate matches ${dateString} but isDateInRecurrence returned false`, {
+              taskDate: task.scheduledDate,
+              checkDate: dateString,
+              taskRecurrence: task.recurrence,
+              taskStatus: task.status
+            });
+          }
+        }
+        
         return matches;
       } catch (error) {
         if (import.meta.env.DEV) {
@@ -1273,6 +1289,11 @@ export function DashboardView({
                     const dayTasks = getTasksForDay(column.dateString);
                     const dayEventCount = calendarEventsByDate[column.dateString] || 0;
                     const totalItems = dayTasks.length + dayEventCount;
+                    
+                    // Debug: Log tasks for this day in development
+                    if (import.meta.env.DEV && dayTasks.length > 0) {
+                      console.log(`[Mobile Calendar] ${column.dateString}: ${dayTasks.length} tasks, ${dayEventCount} events`);
+                    }
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const isToday = 
