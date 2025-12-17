@@ -362,7 +362,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             className="mx-auto" 
             style={{ 
               maxWidth: SETTINGS_PANEL_MAX_WIDTH,
-              paddingBottom: 0, // Spacer div handles bottom padding on mobile
+              paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile
+                ? NAV_BAR_BOTTOM_PADDING_MOBILE
+                : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
               paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile
                 ? '0.75rem' // 12px on mobile for better spacing after AppHeader
                 : SETTINGS_PANEL_PADDING_TOP 
@@ -2592,13 +2594,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      
-      {/* Mobile nav bar spacer - prevents last component from being covered by nav bar */}
-      <div 
-        className="lg:hidden flex-shrink-0 w-full" 
-        style={{ height: NAV_BAR_BOTTOM_PADDING_MOBILE }}
-        aria-hidden="true"
-      />
         </div>
       </div>
 
