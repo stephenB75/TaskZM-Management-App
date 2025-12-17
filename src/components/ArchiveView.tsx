@@ -375,9 +375,13 @@ export function ArchiveView() {
         </div>
 
         {/* Tasks List */}
-        <div className="flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto overscroll-contain">
-            <div className="p-4 md:px-8 pb-safe md:pb-8">
+        {/* On mobile, rely on parent scroll container in App.tsx - no overflow-y-auto */}
+        <div className="flex-1 overflow-hidden md:overflow-hidden">
+          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+            <div className="h-full overflow-y-auto overscroll-contain">
+              <div className="p-4 md:px-8 pb-safe md:pb-8">
+          ) : (
+            <div className="p-4 md:px-8" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
               <div className="space-y-3">
                 <AnimatePresence mode="popLayout">
                   {sortedTasks.length === 0 ? (
@@ -550,7 +554,9 @@ export function ArchiveView() {
                 </AnimatePresence>
               </div>
             </div>
-          </div>
+          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+            </div>
+          ) : null}
         </div>
       </div>
 

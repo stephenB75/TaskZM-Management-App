@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { AppHeader } from "./AppHeader";
-import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE } from "../lib/layout-constants";
+import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -624,8 +624,13 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       </div>
 
       {/* Folders List */}
+      {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
       <div className="flex-1 overflow-hidden min-h-0">
-        <ScrollArea className="h-full">
+        {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+          <ScrollArea className="h-full">
+        ) : (
+          <div className="h-full">
+        )}
         <div 
           className="pb-safe md:pb-4" 
           style={{ 
@@ -689,7 +694,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
             })
           )}
         </div>
-      </ScrollArea>
+        {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+          </ScrollArea>
+        ) : (
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Folder Dialog */}

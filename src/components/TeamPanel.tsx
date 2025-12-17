@@ -19,7 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { AppHeader } from "./AppHeader";
-import { HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
+import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -1117,7 +1117,12 @@ export function TeamPanel() {
       </div>
 
       {/* Team Members List */}
-      <ScrollArea className="flex-1">
+      {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
+      {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+        <ScrollArea className="flex-1">
+      ) : (
+        <div className="flex-1">
+      )}
         <div 
           className="pb-safe md:pb-4" 
           style={{ 
@@ -1203,7 +1208,11 @@ export function TeamPanel() {
             </div>
           )}
         </div>
-      </ScrollArea>
+      {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+        </ScrollArea>
+      ) : (
+        </div>
+      )}
 
       {/* Add Member Dialog */}
       <Dialog

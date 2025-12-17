@@ -14,7 +14,7 @@ import {
   PieChart as PieChartIcon,
 } from "lucide-react";
 import { AppHeader } from "./AppHeader";
-import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE } from "../lib/layout-constants";
+import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -679,9 +679,13 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         }
       />
 
+      {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
       <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full">
-          <div className="p-4 space-y-4 pt-4 md:pt-4 pb-safe md:pb-4" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
+        {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-4 pt-4 md:pt-4 pb-safe md:pb-4">
+        ) : (
+          <div className="p-4 space-y-4 pt-4 md:pt-4" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
             
             {/* Compact KPI Metrics Row */}
             <div className="grid grid-cols-2 gap-3">
@@ -1063,7 +1067,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             )}
 
           </div>
-        </ScrollArea>
+        {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+          </ScrollArea>
+        ) : null}
       </div>
     </div>
   );

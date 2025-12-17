@@ -777,7 +777,11 @@ export function SevenDayKanban({
           <div 
             ref={scrollContainerRef}
             className={cn(
-              "h-full overflow-x-auto overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent",
+              "h-full overflow-x-auto",
+              // On mobile, rely on parent scroll container - no overflow-y-auto
+              // On desktop, allow vertical scrolling within the kanban
+              mobileMode ? "" : "overflow-y-auto",
+              "scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent",
               activeId && "cursor-default" // Change cursor when dragging task
             )}
             onPointerDown={handlePointerDown}

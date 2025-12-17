@@ -38,6 +38,7 @@ import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
+import { NAV_BAR_BOTTOM_PADDING_MOBILE } from "../lib/layout-constants";
 import type { Task } from "../types";
 
 interface MonthCalendarViewProps {
@@ -829,17 +830,30 @@ export function MonthCalendarView({
 
             {/* Calendar days */}
             <div className="flex-1 min-h-0">
-              <ScrollArea ref={scrollAreaRef} className="h-full w-full">
+              {/* On mobile, rely on parent scroll container - no ScrollArea */}
+              {mobileMode ? (
                 <div 
                   ref={calendarGridRef}
                   className={cn(
-                    "grid grid-cols-7 gap-0 md:gap-1.5 pb-4 w-full"
+                    "grid grid-cols-7 gap-0 md:gap-1.5 w-full"
                   )}
                   style={{
-                    // Adjust padding when scaled to maintain proper spacing
-                    paddingBottom: !mobileMode && expandedDays.size > 0 ? '2rem' : '1rem',
+                    paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
                   }}
                 >
+              ) : (
+                <ScrollArea ref={scrollAreaRef} className="h-full w-full">
+                  <div 
+                    ref={calendarGridRef}
+                    className={cn(
+                      "grid grid-cols-7 gap-0 md:gap-1.5 pb-4 w-full"
+                    )}
+                    style={{
+                      // Adjust padding when scaled to maintain proper spacing
+                      paddingBottom: expandedDays.size > 0 ? '2rem' : '1rem',
+                    }}
+                  >
+              )}
               {calendarDays.map((dayData, index) => {
                 const dateString = dayData.date
                   .toISOString()
@@ -876,7 +890,11 @@ export function MonthCalendarView({
                 );
               })}
                 </div>
-              </ScrollArea>
+              {mobileMode ? (
+                </div>
+              ) : (
+                </ScrollArea>
+              )}
             </div>
           </div>
         </div>

@@ -29,7 +29,7 @@ import {
 } from "./ui/select";
 import { cn } from "../lib/utils";
 import { UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
-import { HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
+import { HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import type { Task } from "../types";
 import {
@@ -463,8 +463,11 @@ export function NotificationsPanel() {
         </div>
 
         {/* Notifications List */}
-        <ScrollArea className="flex-1">
-          <div className="p-4 space-y-3 pb-safe md:pb-4">
+        {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
+        <div className="flex-1 overflow-y-auto md:overflow-hidden">
+          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-3 pb-safe md:pb-4">
             {filteredNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -542,8 +545,90 @@ export function NotificationsPanel() {
                 ))}
               </AnimatePresence>
             )}
-          </div>
-        </ScrollArea>
+              </div>
+            </ScrollArea>
+          ) : (
+            <div className="p-4 space-y-3" style={{ paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE }}>
+              {filteredNotifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Bell className="w-8 h-8 text-primary/40" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {filterType === "all"
+                      ? NOTIFICATION_PANEL_TEXT.emptyState.noNotifications
+                      : NOTIFICATION_PANEL_TEXT.emptyState.noNotificationsOfType}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp}
+                  </p>
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {filteredNotifications.map((notification) => (
+                    <motion.div
+                      key={notification.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Card
+                        className={cn(
+                          "p-4 border-l-4 transition-all cursor-pointer hover:shadow-md",
+                          !notification.read && "bg-primary/5 border-l-4",
+                          notification.read && "opacity-60",
+                          getPriorityColor(notification.priority)
+                        )}
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 flex-shrink-0">
+                            {getNotificationIcon(notification.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-semibold mb-1">
+                                  {notification.title}
+                                </h3>
+                                <p className="text-xs text-muted-foreground">
+                                  {notification.message}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground mt-2">
+                                  {notification.timestamp.toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {!notification.read && (
+                                  <Badge
+                                    variant="default"
+                                    className="w-2 h-2 p-0 rounded-full bg-primary"
+                                  />
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    clearNotification(notification.id);
+                                  }}
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
