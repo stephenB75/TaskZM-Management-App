@@ -5,6 +5,9 @@ import { Calendar, Plus, StickyNote } from "lucide-react";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useIsMobile } from "./ui/use-mobile";
+import { useCalendar } from "../contexts/CalendarContext";
+import { useAuth } from "../contexts/AuthContext";
+import { CalendarEventCard } from "./CalendarEventCard";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
@@ -24,6 +27,8 @@ import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
+import { projectId } from "../utils/supabase/info";
+import { logger } from "../lib/logger";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -35,6 +40,8 @@ export function TodayAgendaView({
   const { tasks, updateTask } = useTasks();
   const { actualTheme } = useTheme();
   const isMobile = useIsMobile();
+  const { calendarStatus } = useCalendar();
+  const { accessToken } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(
     null,
@@ -44,6 +51,7 @@ export function TodayAgendaView({
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }>>([]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -127,43 +135,157 @@ export function TodayAgendaView({
     });
   }, [incompleteTasks]);
 
-  // Use fixed spacing between tasks (no time-based spacing)
+  // Fetch calendar events for today
+  useEffect(() => {
+    const fetchTodayCalendarEvents = async () => {
+      try {
+        if (!accessToken) {
+          setTodayCalendarEvents([]);
+          return;
+        }
+        const providers: Array<'google' | 'apple'> = [];
+        if (calendarStatus.google) providers.push('google');
+        if (calendarStatus.apple) providers.push('apple');
+        if (providers.length === 0) {
+          setTodayCalendarEvents([]);
+          return;
+        }
+
+        const todayStart = new Date(today);
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(today);
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
+        const allEvents: Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }> = [];
+
+        for (const provider of providers) {
+          const resp = await fetch(
+            `${BASE_URL}/calendar/events/${provider}?startDate=${todayStart.toISOString()}&endDate=${todayEnd.toISOString()}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          if (!Array.isArray(data.events)) continue;
+          for (const event of data.events) {
+            if (!event?.start || !event?.end) continue;
+            const eventStart = new Date(event.start);
+            if (isNaN(eventStart.getTime())) continue;
+            allEvents.push({
+              id: event.id || `${provider}-${event.providerEventId || event.start}-${allEvents.length}`,
+              title: event.title || 'Calendar Event',
+              start: event.start,
+              end: event.end,
+              location: event.location,
+              provider,
+              calendarColor: event.calendarColor,
+            });
+          }
+        }
+
+        setTodayCalendarEvents(allEvents);
+      } catch (error) {
+        logger.warn('Failed to fetch calendar events for today agenda:', error);
+        setTodayCalendarEvents([]);
+      }
+    };
+
+    fetchTodayCalendarEvents();
+  }, [accessToken, calendarStatus.apple, calendarStatus.google, today]);
+
+  // Combine tasks and events, sort chronologically
+  interface CombinedItem {
+    type: 'task' | 'event';
+    task?: Task;
+    event?: { id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string };
+    sortTime: number;
+  }
+
+  const combinedItems = useMemo(() => {
+    const items: CombinedItem[] = [];
+    
+    // Add tasks with their sort time
+    for (const task of todayTasks) {
+      const taskTime = task.scheduledDate ? new Date(task.scheduledDate).getTime() : Number.MAX_SAFE_INTEGER;
+      items.push({
+        type: 'task',
+        task,
+        sortTime: taskTime,
+      });
+    }
+    
+    // Add calendar events (always have a specific time)
+    for (const event of todayCalendarEvents) {
+      const sortTime = new Date(event.start).getTime();
+      items.push({
+        type: 'event',
+        event,
+        sortTime,
+      });
+    }
+    
+    // Sort by time (earliest first, items without time go to end)
+    items.sort((a, b) => {
+      // Completed tasks go to end
+      if (a.type === 'task' && a.task?.status === 'done' && b.type === 'task' && b.task?.status !== 'done') return 1;
+      if (a.type === 'task' && a.task?.status !== 'done' && b.type === 'task' && b.task?.status === 'done') return -1;
+      return a.sortTime - b.sortTime;
+    });
+    
+    return items;
+  }, [todayTasks, todayCalendarEvents]);
+
+  // Use fixed spacing between items (no time-based spacing)
   const minGap = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing; // Fixed spacing from constants
+  // Build layouts only for tasks (events will be inserted at their positions)
   const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, minGap, false), [todayTasks, minGap]); // Disable time-based spacing
 
-  // Auto-scroll to current time on mount and when tasks change
+  // Auto-scroll to current time on mount and when items change
   // On mobile (hideHeader=false), scroll the parent container in App.tsx
   // On desktop (hideHeader=true), scroll the ScrollArea viewport
   useEffect(() => {
-    if (todayTasks.length === 0) return;
+    if (combinedItems.length === 0) return;
 
     const scrollToCurrentTime = () => {
       const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+      const currentTimeMs = now.getTime();
 
-      // Find the task closest to current time
-      let closestTask = todayTasks[0];
+      // Find the item (task or event) closest to current time
+      let closestItem = combinedItems[0];
       let minDiff = Infinity;
 
-      todayTasks.forEach((task) => {
-        if (!task.scheduledDate) return;
-        const taskDate = new Date(task.scheduledDate);
-        const taskTimeInMinutes = taskDate.getHours() * 60 + taskDate.getMinutes();
-        const diff = Math.abs(taskTimeInMinutes - currentTimeInMinutes);
+      combinedItems.forEach((item) => {
+        let itemTimeMs: number;
+        if (item.type === 'task' && item.task?.scheduledDate) {
+          itemTimeMs = new Date(item.task.scheduledDate).getTime();
+        } else if (item.type === 'event' && item.event) {
+          itemTimeMs = new Date(item.event.start).getTime();
+        } else {
+          return;
+        }
         
+        const diff = Math.abs(itemTimeMs - currentTimeMs);
         if (diff < minDiff) {
           minDiff = diff;
-          closestTask = task;
+          closestItem = item;
         }
       });
 
-      // Scroll to the closest task or current time position
-      if (closestTask) {
-        const taskElement = timelineContainerRef.current?.querySelector(`[data-task-id="${closestTask.id}"]`);
-        if (taskElement) {
-          taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Scroll to the closest item
+      if (closestItem) {
+        let element: HTMLElement | null = null;
+        if (closestItem.type === 'task' && closestItem.task) {
+          element = timelineContainerRef.current?.querySelector(`[data-task-id="${closestItem.task.id}"]`) || null;
+        } else if (closestItem.type === 'event' && closestItem.event) {
+          element = timelineContainerRef.current?.querySelector(`[data-event-id="${closestItem.event.id}"]`) || null;
+        }
+        
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
           // On mobile (hideHeader=false), scroll the parent scroll container in App.tsx
           // On desktop (hideHeader=true), scroll the ScrollArea viewport
@@ -171,6 +293,7 @@ export function TodayAgendaView({
             // Desktop: Find the scroll viewport within this component's ScrollArea
             const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
             if (scrollViewport) {
+              const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
               const baselineMinutes = TASK_CALCULATION_CONSTANTS.dragDrop.hourMin * 60;
               const offsetMinutes = Math.max(0, currentTimeInMinutes - baselineMinutes);
               const estimatedScrollTop = Math.max(
@@ -178,13 +301,6 @@ export function TodayAgendaView({
                 offsetMinutes * TASK_CARD_LAYOUT_METRICS.pixelsPerMinute - TASK_CARD_LAYOUT_METRICS.timelineScrollOffset
               );
               scrollViewport.scrollTop = estimatedScrollTop;
-            }
-          } else {
-            // Mobile: Scroll the parent scroll container (App.tsx's scroll container)
-            // Find the parent scroll container by looking up the DOM tree
-            const parentScrollContainer = timelineContainerRef.current?.closest('[style*="overflow-y-auto"]') as HTMLElement;
-            if (parentScrollContainer && taskElement) {
-              taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
           }
         }
@@ -194,7 +310,7 @@ export function TodayAgendaView({
     // Small delay to ensure DOM is ready
     const timer = setTimeout(scrollToCurrentTime, TIMING_CONSTANTS.delays.scroll);
     return () => clearTimeout(timer);
-  }, [todayTasks, hideHeader]);
+  }, [combinedItems, hideHeader]);
 
 
   // Find the next uncompleted task after current time (next up)
@@ -536,33 +652,73 @@ export function TodayAgendaView({
                   className="flex flex-col w-full relative z-10"
                   style={{ overflow: 'visible' }}
                 >
-                  {timelineTaskLayouts.map(({ task, marginTop }, index) => (
-                    <div
-                      key={task.id}
-                      style={{
-                        marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`, // Fixed spacing from constants
-                      }}
-                    >
-                      <DraggableTodayAgendaTask
-                      task={task}
-                      index={index}
-                      totalTasks={todayTasks.length}
-                      onClick={handleTaskClick}
-                      getTaskHeight={getTaskHeight}
-                      getTaskTime={getTaskTime}
-                      getPriorityColor={getPriorityColor}
-                      isNextUp={task.id === nextUpTaskId}
-                      onComplete={() => {
-                        if (confettiTimeoutRef.current) {
-                          clearTimeout(confettiTimeoutRef.current);
-                        }
-                        if (!showConfetti) {
-                          setShowConfetti(true);
-                        }
-                      }}
-                    />
-                    </div>
-                  ))}
+                  {combinedItems.map((item, index) => {
+                    if (item.type === 'task' && item.task) {
+                      // Find the layout for this task
+                      const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
+                      const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      
+                      return (
+                        <div
+                          key={`task-${item.task.id}`}
+                          data-task-id={item.task.id}
+                          style={{
+                            marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
+                          }}
+                        >
+                          <DraggableTodayAgendaTask
+                            task={item.task}
+                            index={todayTasks.findIndex(t => t.id === item.task!.id)}
+                            totalTasks={todayTasks.length}
+                            onClick={handleTaskClick}
+                            getTaskHeight={getTaskHeight}
+                            getTaskTime={getTaskTime}
+                            getPriorityColor={getPriorityColor}
+                            isNextUp={item.task.id === nextUpTaskId}
+                            onComplete={() => {
+                              if (confettiTimeoutRef.current) {
+                                clearTimeout(confettiTimeoutRef.current);
+                              }
+                              if (!showConfetti) {
+                                setShowConfetti(true);
+                              }
+                            }}
+                          />
+                        </div>
+                      );
+                    } else if (item.type === 'event' && item.event) {
+                      // Calculate margin for events based on previous item
+                      const prevItem = index > 0 ? combinedItems[index - 1] : null;
+                      let marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                      
+                      if (index === 0) {
+                        marginTop = 0;
+                      } else if (prevItem) {
+                        // Use fixed spacing between items
+                        marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                      }
+                      
+                      return (
+                        <div
+                          key={`event-${item.event.id}`}
+                          data-event-id={item.event.id}
+                          style={{
+                            marginTop: `${marginTop}px`,
+                          }}
+                        >
+                          <CalendarEventCard
+                            title={item.event.title}
+                            start={item.event.start}
+                            end={item.event.end}
+                            location={item.event.location}
+                            provider={item.event.provider}
+                            calendarColor={item.event.calendarColor}
+                          />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
 
                 {/* Next Up Task Details - Shows notes for the next uncompleted task */}
