@@ -217,7 +217,7 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
       {
         icon: "🔄",
         title: "Recurrence",
-        description: "Repeat tasks automatically",
+        description: "Up to 5 active (Pro Monthly)",
       },
       {
         icon: "🔗",
@@ -355,7 +355,7 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
   {
     title: "Calendar Integration 📅",
     description:
-      "Sync your tasks with Google Calendar, Apple Calendar, and Outlook (coming soon). Keep all your events and tasks in one place with automatic bidirectional sync.",
+      "Sync your tasks with Google Calendar, Apple Calendar, and Outlook (coming soon). Keep all your events and tasks in one place with automatic bidirectional sync. Pro Monthly includes 1 calendar connection; Pro Yearly includes unlimited connections.",
     icon: Calendar,
     iconColor: "from-[#C9E4F7] to-[#E6D5F0]",
     features: [
@@ -384,7 +384,7 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
   {
     title: "Unlock Pro Features 💎",
     description:
-      `Upgrade to TaskZM Pro for just ${monthlyPrice}/month and unlock unlimited AI scheduling, full calendar sync, analytics dashboard, task rollover, advanced Pomodoro, and more!`,
+      `Upgrade to TaskZM Pro for just ${monthlyPrice}/month and unlock unlimited AI scheduling, calendar sync, analytics dashboard, recurring tasks, task rollover, advanced Pomodoro, and more!`,
     icon: Sparkles,
     iconColor: "from-[#E6D5F0] to-[#9B87E8]",
     illustration: "features",
@@ -396,18 +396,18 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
       },
       {
         icon: "📅",
-        title: "Full Calendar Sync",
-        description: "Google, Outlook, Apple",
+        title: "Calendar Sync",
+        description: "1 calendar (Monthly)",
       },
       {
         icon: "📊",
         title: "Analytics Dashboard",
-        description: "Track productivity",
+        description: "30-day history (Monthly)",
       },
       {
         icon: "🔄",
-        title: "Auto Task Rollover",
-        description: "Never miss tasks",
+        title: "Recurring Tasks",
+        description: "Up to 5 active (Monthly)",
       },
       {
         icon: "⏰",
@@ -417,7 +417,7 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
       {
         icon: "👥",
         title: "Team Collaboration",
-        description: "Unlimited members (Yearly)",
+        description: "Unlimited (Yearly)",
       },
     ],
   },

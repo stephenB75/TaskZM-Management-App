@@ -696,8 +696,37 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     )}
                     <span className={features.calendarSync ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.calendarSync}
+                      {features.calendarSync && features.calendarSyncLimit !== undefined && (
+                        <span className="text-muted-foreground/70"> ({features.calendarSyncLimit} connection{features.calendarSyncLimit === 1 ? '' : 's'})</span>
+                      )}
+                      {features.calendarSync && features.calendarSyncLimit === undefined && (
+                        <span className="text-muted-foreground/70"> (Unlimited)</span>
+                      )}
                     </span>
                     {!features.calendarSync && (
+                      <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                        {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Recurring Tasks - PRO (Monthly with limit, Yearly unlimited) */}
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                    {features.recurringTasks ? (
+                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                    ) : (
+                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                    )}
+                    <span className={features.recurringTasks ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                      {SUBSCRIPTION_UI_TEXT.settings.features.recurringTasks}
+                      {features.recurringTasks && features.recurringTasksLimit !== undefined && (
+                        <span className="text-muted-foreground/70"> (up to {features.recurringTasksLimit} active)</span>
+                      )}
+                      {features.recurringTasks && features.recurringTasksLimit === undefined && (
+                        <span className="text-muted-foreground/70"> (Unlimited)</span>
+                      )}
+                    </span>
+                    {!features.recurringTasks && (
                       <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
@@ -723,27 +752,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
                   {/* Yearly-only features section */}
                   {(subscription.tier === 'pro' && subscription.billingPeriod === 'yearly') || 
-                   (!features.recurringTasks || !features.taskTemplates || !features.taskDependencies || !features.multipleWorkspaces) ? (
+                   (!features.taskTemplates || !features.taskDependencies || !features.multipleWorkspaces) ? (
                     <>
                       <Separator className="my-2" />
                       <div className="text-xs font-semibold text-muted-foreground mb-2">Pro Yearly Features:</div>
-                      
-                      {/* Recurring Tasks - PRO YEARLY only */}
-                      <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
-                        {features.recurringTasks ? (
-                          <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
-                        ) : (
-                          <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
-                        )}
-                        <span className={features.recurringTasks ? '' : 'text-muted-foreground/60'} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
-                          {SUBSCRIPTION_UI_TEXT.settings.features.recurringTasks}
-                        </span>
-                        {!features.recurringTasks && (
-                          <Badge variant="outline" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
-                            {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
-                          </Badge>
-                        )}
-                      </div>
 
                       {/* Task Templates - PRO YEARLY only */}
                       <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
