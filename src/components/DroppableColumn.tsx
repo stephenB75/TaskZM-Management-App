@@ -25,14 +25,6 @@ export function DroppableColumn({
       ref={setNodeRef}
       className={cn(
         "select-none transition-all duration-300",
-        isMobile ? "min-h-0" : "min-h-[200px]", // No min-height on mobile to prevent white box
-        className,
-        !isMobile &&
-          isOver &&
-          "ring-4 ring-primary/80 ring-inset bg-primary/20 scale-[1.02] shadow-xl shadow-primary/20 border-2 border-primary/50",
-      )}
-      className={cn(
-        "select-none transition-all duration-300",
         isMobile ? "min-h-0 [background:transparent!important] [background-color:transparent!important]" : "min-h-[200px]", // No min-height on mobile to prevent white box
         className,
         !isMobile &&
