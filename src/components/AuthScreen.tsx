@@ -772,16 +772,16 @@ export function AuthScreen() {
                       </motion.span>
                     )}
                   </CardDescription>
-                  <TabsList className="!flex w-full !h-8 sm:!h-10 !p-0.5 !gap-0.5 sm:!gap-1 bg-gradient-to-r from-[#E8F5F1] to-[#F3E8FF] dark:from-gray-800 dark:to-purple-900/50 !rounded-lg">
+                  <TabsList className="w-full h-9 sm:h-10 p-1 gap-1 bg-muted rounded-lg">
                     <TabsTrigger
                       value="signin"
-                      className="!flex-1 !h-auto !py-1.5 sm:!py-2 !px-2 sm:!px-3 text-[10px] sm:text-xs"
+                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm"
                     >
                       {AUTH_UI_TEXT.signIn.title}
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="!flex-1 !h-auto !py-1.5 sm:!py-2 !px-2 sm:!px-3 text-[10px] sm:text-xs"
+                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm"
                     >
                       {AUTH_UI_TEXT.signUp.title}
                     </TabsTrigger>
