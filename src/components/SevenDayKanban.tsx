@@ -575,7 +575,7 @@ export function SevenDayKanban({
 
     return (
       <div 
-        className="min-h-full flex flex-col"
+        className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "flex flex-col" : "min-h-full flex flex-col"}
         style={{
           backgroundImage: isDark
             ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
