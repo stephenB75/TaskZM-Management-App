@@ -75,7 +75,9 @@ if (typeof window !== 'undefined') {
           fullMessage.includes('length') ||
           fullMessage.includes('background.js') ||
           fullMessage.includes('content.js') ||
-          fullMessage.includes('serviceWorker.js')
+          fullMessage.includes('serviceWorker.js') ||
+          fullMessage.includes('service-worker.js') ||
+          fullMessage.includes('chrome-extension://')
         )) ||
         (fullMessage.includes('MutationObserver') && fullMessage.includes('Failed to execute')) ||
         fullMessage.includes('asynchronous response')) {
@@ -112,10 +114,13 @@ if (typeof window !== 'undefined') {
           message.includes('Frame with ID') ||
           message.includes('was removed') ||
           (message.includes('Cannot read properties of undefined') && (
+            message.includes('length') ||
+            message.includes('checkoutUrls') ||
             filename.includes('background.js') ||
             filename.includes('content.js') ||
             filename.includes('serviceWorker.js') ||
-            filename.includes('service-worker.js')
+            filename.includes('service-worker.js') ||
+            filename.includes('chrome-extension://')
           )) ||
           (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||
