@@ -94,22 +94,6 @@ interface FeatureCard {
   subtitle: string;
 }
 
-const MARKETING_FEATURES: FeatureCard[] = [
-  { icon: Calendar, title: "7-Day Kanban", subtitle: "Visual weekly planning" },
-  { icon: Calendar, title: "Month Planner", subtitle: "Zoomed-out focus" },
-  { icon: Clock, title: "Time Blocking", subtitle: "Smart agenda view" },
-  { icon: Zap, title: "AI Scheduler", subtitle: "Smart planning in seconds" },
-  { icon: Brain, title: "AI Insights", subtitle: "Weekly summaries" },
-  { icon: BarChart3, title: "Analytics", subtitle: "Trends & tracking" },
-  { icon: Timer, title: "Pomodoro + Stats", subtitle: "Deep work focus" },
-  { icon: Users, title: "Team Collaboration", subtitle: "Unlimited members" },
-  { icon: Tag, title: "Folders + Tags", subtitle: "Organize everything" },
-  { icon: Trophy, title: "23 Awards", subtitle: "Motivational streaks" },
-  { icon: Sparkles, title: "Smart Templates", subtitle: "Reusable flows" },
-  { icon: Repeat, title: "Recurring Tasks", subtitle: "Automation built-in" },
-  { icon: Shield, title: "Privacy-first", subtitle: "Encrypted & secure" },
-  { icon: Activity, title: "Live Sync", subtitle: "Realtime updates" },
-];
 
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
@@ -442,20 +426,19 @@ export function AuthScreen() {
         initial="hidden"
         animate="visible"
       >
-        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 items-start lg:items-stretch">
-          {/* Left Side - Branding & Features */}
+        <div className="flex items-center justify-center w-full">
+          {/* Branding Section - Centered */}
           <motion.div
-            className="order-2 lg:order-1 text-center w-full lg:flex lg:flex-col lg:justify-center lg:h-full"
+            className="text-center w-full flex flex-col items-center"
             variants={itemVariants}
           >
-            {/* Branding Section */}
-            <motion.div className="flex flex-col items-center mb-2 sm:mb-2.5 lg:mb-3 lg:flex-shrink-0" variants={logoVariants}>
+            <motion.div className="flex flex-col items-center mb-4 sm:mb-6" variants={logoVariants}>
               <div className="flex flex-col items-center">
                 <motion.div
-                  className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-border"
+                  className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-border mb-3"
                   whileHover={{ scale: 1.05 }}
                 >
-                  <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#7B68EE]" />
+                  <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-primary" />
                   <span className="text-[8px] sm:text-[9px] text-gray-700 dark:text-foreground">
                     {AUTH_UI_TEXT.neurodivergentBadge}
                   </span>
@@ -463,111 +446,21 @@ export function AuthScreen() {
                 <motion.img
                   src={taskzmLogo}
                   alt="TaskZM Logo"
-                  className="w-[198px] sm:w-[180px] md:w-[240px] lg:w-[280px] object-contain"
+                  className="w-[198px] sm:w-[240px] md:w-[280px] lg:w-[320px] object-contain mb-2"
                   whileHover={{ scale: 1.02 }}
                 />
-                <p className="text-[10px] sm:text-[11px] text-gray-600 dark:text-muted-foreground text-center px-2 sm:px-0 max-w-md mt-1">
+                <p className="text-sm sm:text-base text-muted-foreground text-center px-2 sm:px-0 max-w-md">
                   {AUTH_UI_TEXT.subtitle}
                 </p>
               </div>
             </motion.div>
 
-            {/* Features Section - Completely different design for mobile vs desktop */}
-            <motion.div
-              className="lg:flex-1 lg:flex lg:flex-col lg:max-h-[340px] lg:min-h-0"
-              variants={itemVariants}
-            >
-              {/* MOBILE: Compact static grid layout */}
-              <div className="sm:hidden">
-                <div className="relative">
-                  <div className="grid grid-cols-3 gap-1.5 p-1">
-                    {MARKETING_FEATURES.map(({ icon: Icon, title }, idx) => (
-                      <motion.div
-                        key={title}
-                        className="flex flex-col items-center gap-1 text-center group cursor-default"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ 
-                          duration: 0.5, 
-                          delay: idx * 0.03,
-                          ease: "easeOut"
-                        }}
-                      >
-                        <div className="relative">
-                          <motion.div 
-                            className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-md shadow-[#7B68EE]/20 transition-all duration-300"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Icon className="w-4 h-4 text-white" />
-                          </motion.div>
-                        </div>
-                        <span className="text-[8px] font-medium text-foreground/80 leading-tight transition-colors duration-300 line-clamp-2">
-                          {title}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* DESKTOP: Static grid layout */}
-              <div className="hidden sm:block space-y-4">
-                {/* Section Header */}
-                <div className="relative flex items-center justify-center">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#7B68EE]/20 to-transparent" />
-                  </div>
-                  <div className="relative px-4 py-1 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-full border border-[#7B68EE]/20">
-                    <h3 className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent">
-                      {AUTH_UI_TEXT.featuresHeader}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* Static Grid Container */}
-                <div className="relative rounded-2xl p-4 lg:flex-1 lg:min-h-0">
-                  {/* Decorative corner accents */}
-                  <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-[#7B68EE]/10 to-transparent rounded-br-full" />
-                  <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-[#D4C5F9]/10 to-transparent rounded-tl-full" />
-                  
-                  <div className="grid grid-cols-3 gap-3 pt-2">
-                    {MARKETING_FEATURES.map(({ icon: Icon, title }, idx) => (
-                      <motion.div
-                        key={title}
-                        className="flex flex-col items-center gap-2 text-center group cursor-default"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ 
-                          duration: 0.5, 
-                          delay: idx * 0.03,
-                          ease: "easeOut"
-                        }}
-                      >
-                        <div className="relative">
-                          <motion.div 
-                            className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-lg shadow-[#7B68EE]/20 transition-all duration-300"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Icon className="w-5 h-5 text-white" />
-                          </motion.div>
-                        </div>
-                        <span className="text-[10px] font-medium text-foreground/80 leading-tight transition-colors duration-300 max-w-[70px]">
-                          {title}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
           </motion.div>
 
-          {/* Right Side - Auth Card */}
+          {/* Auth Card - Centered */}
           <motion.div
             variants={cardVariants}
-            className="order-1 lg:order-2 flex items-center justify-center w-full"
+            className="flex items-center justify-center w-full max-w-md"
           >
             <Tabs
               value={activeTab}
@@ -575,79 +468,46 @@ export function AuthScreen() {
               className="w-full"
             >
               {/* Mobile: Tabs outside card */}
-              <div className="sm:hidden w-full mb-2">
+              <div className="sm:hidden w-full mb-3">
                 <TabsList className="w-full h-9 p-1 gap-1 bg-muted rounded-lg">
                   <TabsTrigger
                     value="signin"
-                    className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                    className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                   >
                     {AUTH_UI_TEXT.signIn.title}
                   </TabsTrigger>
                   <TabsTrigger
                     value="signup"
-                    className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                    className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                   >
                     {AUTH_UI_TEXT.signUp.title}
                   </TabsTrigger>
                 </TabsList>
               </div>
 
-              <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95 mb-2 sm:mb-6 lg:mb-0 max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-3rem)] lg:max-h-none overflow-y-auto lg:overflow-visible">
+              <Card className="w-full shadow-xl border border-primary/20 bg-card dark:bg-card mb-2 sm:mb-6 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto">
                 {/* Desktop: Tabs inside card header */}
-                <CardHeader className="space-y-1 pb-1.5 sm:pb-3 px-2.5 sm:px-4 pt-2 sm:pt-4 hidden sm:block">
-                  <CardTitle className="text-center text-xs sm:text-base">
-                    <motion.div
-                      className="inline-flex items-center gap-1 sm:gap-1.5"
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <motion.div
-                        animate={{
-                          rotate: [0, 10, -10, 0],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        👋
-                      </motion.div>
-                      <span>{AUTH_UI_TEXT.welcomeMessage}</span>
-                    </motion.div>
+                <CardHeader className="space-y-2 pb-3 px-4 pt-4 hidden sm:block">
+                  <CardTitle className="text-center text-base sm:text-lg font-semibold text-foreground">
+                    {AUTH_UI_TEXT.welcomeMessage}
                   </CardTitle>
-                  <CardDescription className="text-center text-[9px] sm:text-[11px] px-1 sm:px-0">
+                  <CardDescription className="text-center text-xs sm:text-sm text-muted-foreground">
                     {activeTab === "signin" ? (
-                      <motion.span
-                        key="signin-desc"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        {AUTH_UI_TEXT.signIn.description}
-                      </motion.span>
+                      AUTH_UI_TEXT.signIn.description
                     ) : (
-                      <motion.span
-                        key="signup-desc"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        {AUTH_UI_TEXT.signUp.description}
-                      </motion.span>
+                      AUTH_UI_TEXT.signUp.description
                     )}
                   </CardDescription>
-                  <TabsList className="w-full h-8 sm:h-10 p-0.5 sm:p-1 gap-1 sm:gap-1.5 bg-muted rounded-lg">
+                  <TabsList className="w-full h-9 sm:h-10 p-1 gap-1 bg-muted rounded-lg">
                     <TabsTrigger
                       value="signin"
-                      className="flex-1 h-6 sm:h-8 py-1 sm:py-2 px-2 sm:px-4 text-[10px] sm:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signIn.title}
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="flex-1 h-6 sm:h-8 py-1 sm:py-2 px-2 sm:px-4 text-[10px] sm:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signUp.title}
                     </TabsTrigger>
@@ -656,9 +516,16 @@ export function AuthScreen() {
 
                 {/* Mobile: Minimal header */}
                 <CardHeader className="space-y-0 pb-1 px-3 pt-3 sm:hidden">
-                  <CardTitle className="text-center text-sm">
+                  <CardTitle className="text-center text-base sm:text-lg font-semibold text-foreground">
                     {AUTH_UI_TEXT.welcomeMessage}
                   </CardTitle>
+                  <CardDescription className="text-center text-xs sm:text-sm text-muted-foreground">
+                    {activeTab === "signin" ? (
+                      AUTH_UI_TEXT.signIn.description
+                    ) : (
+                      AUTH_UI_TEXT.signUp.description
+                    )}
+                  </CardDescription>
                 </CardHeader>
 
                 <CardContent className="pb-3 sm:pb-3 pt-2 sm:pt-1.5 px-3 sm:px-4">
@@ -779,7 +646,7 @@ export function AuthScreen() {
                         type="button"
                         onClick={handleDemoSignIn}
                         variant="outline"
-                        className="w-full h-10 sm:h-9 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-sm"
+                          className="w-full h-10 sm:h-9 border-2 border-primary text-primary hover:bg-primary/10 text-sm"
                         disabled={isLoading}
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
@@ -831,7 +698,7 @@ export function AuthScreen() {
                               }
                             }}
                             required
-                            className={`border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm pr-10 ${
+                            className={`border-2 focus:border-primary transition-colors h-10 sm:h-9 text-sm bg-background dark:bg-card shadow-sm pr-10 ${
                               emailError ? 'border-red-500' : ''
                             }`}
                           />
@@ -935,7 +802,7 @@ export function AuthScreen() {
                               )
                             }
                             required
-                            className={`border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm pr-10 ${
+                            className={`border-2 focus:border-primary transition-colors h-10 sm:h-9 text-sm bg-background dark:bg-card shadow-sm pr-10 ${
                               signUpConfirmPassword && !passwordsMatch ? 'border-red-500' : ''
                             } ${
                               signUpConfirmPassword && passwordsMatch ? 'border-green-500' : ''
@@ -989,7 +856,7 @@ export function AuthScreen() {
                           <button
                             type="button"
                             onClick={() => setShowTermsDialog(true)}
-                            className="text-[#7B68EE] hover:text-[#6A5ACD] underline"
+                            className="text-primary hover:text-primary/80 underline"
                           >
                             Terms of Service
                           </button>
@@ -997,7 +864,7 @@ export function AuthScreen() {
                           <button
                             type="button"
                             onClick={() => setShowPrivacyDialog(true)}
-                            className="text-[#7B68EE] hover:text-[#6A5ACD] underline"
+                            className="text-primary hover:text-primary/80 underline"
                           >
                             Privacy Policy
                           </button>
