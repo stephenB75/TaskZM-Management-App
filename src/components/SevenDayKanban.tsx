@@ -585,10 +585,10 @@ export function SevenDayKanban({
 
         {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
         <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` }}>
-          <DroppableColumn id={currentColumn.dateString} className="min-h-full">
+          <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                <div className="w-full">
-                  <div className="w-full">
+                <div className="w-full min-h-0">
+                  <div className="w-full min-h-0">
                     <div className="flex items-center gap-2 mb-3 min-w-0">
                       <div className={cn(
                         "w-1 h-5 sm:h-6 rounded-full flex-shrink-0",
