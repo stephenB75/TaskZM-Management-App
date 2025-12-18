@@ -1119,25 +1119,25 @@ export function TeamPanel() {
       {/* Team Members List */}
       {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
       {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-        <ScrollArea className="flex-1">
-          <div 
-            className="pb-safe md:pb-4" 
-            style={{ 
-              padding: PANEL_PADDING,
-              paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
-              paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
-              gap: PANEL_CONTENT_SPACING
-            }}
-          >
-            {filteredMembers.length === 0 ? (
-                <div 
-                  className="text-center" 
-                  style={{
-                    paddingTop: PANEL_EMPTY_STATE_PADDING_Y, 
-                    paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
-                  }}
-                >
-                  <Users 
+      <ScrollArea className="flex-1">
+        <div 
+          className="pb-safe md:pb-4" 
+          style={{ 
+            padding: PANEL_PADDING,
+            paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
+            paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
+            gap: PANEL_CONTENT_SPACING
+          }}
+        >
+          {filteredMembers.length === 0 ? (
+            <div 
+              className="text-center" 
+              style={{ 
+                paddingTop: PANEL_EMPTY_STATE_PADDING_Y, 
+                paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
+              }}
+            >
+              <Users 
                 className="mx-auto text-muted-foreground opacity-50" 
                 style={{ 
                   width: TEAM_PANEL_EMPTY_STATE_ICON_SIZE, 
@@ -1204,8 +1204,8 @@ export function TeamPanel() {
               })}
             </div>
           )}
-          </div>
-        </ScrollArea>
+        </div>
+      </ScrollArea>
       ) : (
           <div className="flex-1">
             <div 

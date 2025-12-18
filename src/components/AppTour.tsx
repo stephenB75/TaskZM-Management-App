@@ -1029,13 +1029,13 @@ export function AppTour({
 
                 {/* Show upgrade button on pricing step for free users */}
                 {isPricingStep && subscription.tier === 'free' && onShowPricing ? (
-                  <Button
-                    size="sm"
+                <Button
+                  size="sm"
                     onClick={() => {
                       onShowPricing();
                       handleNext();
                     }}
-                    className="rounded-lg sm:rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground border-0 shadow-lg shadow-primary/30 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-1 sm:flex-initial"
+                  className="rounded-lg sm:rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground border-0 shadow-lg shadow-primary/30 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-1 sm:flex-initial"
                   >
                     <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                     <span className="text-xs sm:text-sm">Upgrade to Pro</span>

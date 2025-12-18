@@ -1085,15 +1085,15 @@ export function TaskDialog({
         });
         return;
       }
-      if (recurrenceType === "monthly" && (!recurrenceDayOfMonth ||
-          recurrenceDayOfMonth < TIMING_CONSTANTS.calendar.minDayOfMonth ||
+      if (recurrenceType === "monthly" && (!recurrenceDayOfMonth || 
+          recurrenceDayOfMonth < TIMING_CONSTANTS.calendar.minDayOfMonth || 
           recurrenceDayOfMonth > TIMING_CONSTANTS.calendar.maxDayOfMonth)) {
         toast.error("Monthly Recurrence Required", {
           description: `Please select a valid day of the month (${TIMING_CONSTANTS.calendar.minDayOfMonth}-${TIMING_CONSTANTS.calendar.maxDayOfMonth}) for monthly recurrence.`,
         });
         return;
       }
-      if (recurrenceInterval < TIMING_CONSTANTS.calendar.minRecurrenceInterval ||
+      if (recurrenceInterval < TIMING_CONSTANTS.calendar.minRecurrenceInterval || 
           recurrenceInterval > TIMING_CONSTANTS.calendar.maxRecurrenceInterval) {
         toast.error("Invalid Recurrence Interval", {
           description: `Recurrence interval must be between ${TIMING_CONSTANTS.calendar.minRecurrenceInterval} and ${TIMING_CONSTANTS.calendar.maxRecurrenceInterval}.`,
@@ -2548,7 +2548,7 @@ export function TaskDialog({
                     </div>
                   ) : (
                     <>
-                      {availableTasksForDependencies.length > 0 ? (
+                  {availableTasksForDependencies.length > 0 ? (
                     <Select
                       value={selectedDependencyValue || undefined}
                       onValueChange={(value) => {

@@ -878,17 +878,17 @@ export function MonthCalendarView({
               })}
                 </div>
               ) : (
-                <ScrollArea ref={scrollAreaRef} className="h-full w-full">
-                  <div 
-                    ref={calendarGridRef}
-                    className={cn(
-                      "grid grid-cols-7 gap-0 md:gap-1.5 pb-4 w-full"
-                    )}
-                    style={{
-                      // Adjust padding when scaled to maintain proper spacing
+              <ScrollArea ref={scrollAreaRef} className="h-full w-full">
+                <div 
+                  ref={calendarGridRef}
+                  className={cn(
+                    "grid grid-cols-7 gap-0 md:gap-1.5 pb-4 w-full"
+                  )}
+                  style={{
+                    // Adjust padding when scaled to maintain proper spacing
                       paddingBottom: expandedDays.size > 0 ? '2rem' : '1rem',
-                    }}
-                  >
+                  }}
+                >
               {calendarDays.map((dayData, index) => {
                 const dateString = dayData.date
                   .toISOString()

@@ -348,25 +348,25 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       // Use Promise.allSettled to handle all notifications in parallel
       await Promise.allSettled(
         overdueTasks.map(async (task) => {
-          try {
-            // Use dueDate if available, otherwise use scheduledDate
-            const dateToUse = task.dueDate || task.scheduledDate;
-            const dateText = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
+        try {
+          // Use dueDate if available, otherwise use scheduledDate
+          const dateToUse = task.dueDate || task.scheduledDate;
+          const dateText = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
             
             await showNativeNotification({
               title: NOTIFICATION_TITLES.taskOverdue,
-              body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
-              tag: `${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`,
-              requireInteraction: false,
+            body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
+            tag: `${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`,
+            requireInteraction: false,
               data: { taskId: task.id, type: 'overdue' },
             });
-            
-            logger.debug('Notification sent for overdue task:', task.id, task.title);
-            notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
-          } catch (error) {
-            logger.error('Failed to show notification:', error);
+          
+          logger.debug('Notification sent for overdue task:', task.id, task.title);
+          notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
+        } catch (error) {
+          logger.error('Failed to show notification:', error);
             toast.error('Failed to show notification. Please check your notification settings.');
-          }
+        }
         })
       );
     }
@@ -401,20 +401,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       // Use Promise.allSettled to handle all notifications in parallel
       await Promise.allSettled(
         dueSoonTasks.map(async (task) => {
-          try {
-            // Use dueDate if available, otherwise use scheduledDate
-            const dateToUse = task.dueDate || task.scheduledDate;
-            if (!dateToUse) return;
-            
-            const targetDate = new Date(dateToUse);
-            const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
-            
-            // Distinguish between "due now" (within 5 minutes) and "upcoming" (more than 5 minutes away)
-            const isDueNow = timeUntil <= 5;
-            const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
-              ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
-              : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
-            
+        try {
+          // Use dueDate if available, otherwise use scheduledDate
+          const dateToUse = task.dueDate || task.scheduledDate;
+          if (!dateToUse) return;
+          
+          const targetDate = new Date(dateToUse);
+          const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
+          
+          // Distinguish between "due now" (within 5 minutes) and "upcoming" (more than 5 minutes away)
+          const isDueNow = timeUntil <= 5;
+          const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
+            ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
+            : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
+          
             await showNativeNotification({
               title: isDueNow ? NOTIFICATION_TITLES.taskDueNow : NOTIFICATION_TITLES.taskUpcoming,
               body: isDueNow 
@@ -424,13 +424,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               requireInteraction: isDueNow, // Require interaction for tasks due now
               data: { taskId: task.id, type: isDueNow ? 'dueNow' : 'upcoming' },
             });
-            
-            logger.debug('Notification sent for due soon task:', task.id, task.title, isDueNow ? 'due now' : timeText);
-            notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
-          } catch (error) {
-            logger.error('Failed to show notification:', error);
+          
+          logger.debug('Notification sent for due soon task:', task.id, task.title, isDueNow ? 'due now' : timeText);
+          notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
+        } catch (error) {
+          logger.error('Failed to show notification:', error);
             toast.error('Failed to show notification. Please check your notification settings.');
-          }
+        }
         })
       );
     }

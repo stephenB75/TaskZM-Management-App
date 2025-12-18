@@ -627,71 +627,71 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
       {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
       <div className="flex-1 min-h-0">
         {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-          <ScrollArea className="h-full">
-            <div 
-              className="pb-safe md:pb-4" 
-              style={{ 
-                padding: PANEL_PADDING,
-                paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
+        <ScrollArea className="h-full">
+        <div 
+          className="pb-safe md:pb-4" 
+          style={{ 
+            padding: PANEL_PADDING,
+            paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
                 paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
-                gap: PANEL_CONTENT_SPACING
+            gap: PANEL_CONTENT_SPACING
+          }}
+        >
+          {filteredFolders.length === 0 ? (
+            <div 
+              className="text-center" 
+              style={{ 
+                paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
+                paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
               }}
             >
-              {filteredFolders.length === 0 ? (
-                <div 
-                  className="text-center" 
-                  style={{ 
-                    paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
-                    paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
-                  }}
+              <Folder 
+                className="mx-auto text-primary/50" 
+                style={{ 
+                  width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                  height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                  marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
+                }} 
+              />
+              <p 
+                className="text-muted-foreground dark:text-muted-foreground"
+                style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
+              >
+                {searchQuery
+                  ? "No folders match your search"
+                  : "No folders yet"}
+              </p>
+              {!searchQuery && (
+                <Button
+                  onClick={() => setShowAddFolder(true)}
+                  size="sm"
+                  style={{ marginTop: PANEL_PADDING }}
                 >
-                  <Folder 
-                    className="mx-auto text-primary/50" 
-                    style={{ 
-                      width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
-                      height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
-                      marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
-                    }} 
-                  />
-                  <p 
-                    className="text-muted-foreground dark:text-muted-foreground"
-                    style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
-                  >
-                    {searchQuery
-                      ? "No folders match your search"
-                      : "No folders yet"}
-                  </p>
-                  {!searchQuery && (
-                    <Button
-                      onClick={() => setShowAddFolder(true)}
-                      size="sm"
-                      style={{ marginTop: PANEL_PADDING }}
-                    >
-                      <FolderPlus style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
-                      Create Your First Folder
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                filteredFolders.map((folder) => {
-                  const taskCount = getFolderTaskCount(folder.id);
-                  const projectCount = getFolderProjectCount(folder.id);
-
-                  return (
-                    <DroppableFolderCard 
-                      key={folder.id} 
-                      folder={folder} 
-                      taskCount={taskCount} 
-                      projectCount={projectCount}
-                      onFolderClick={handleFolderClick}
-                      onEditFolder={handleEditFolder}
-                      onDeleteFolder={handleDeleteFolderClick}
-                    />
-                  );
-                })
+                  <FolderPlus style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
+                  Create Your First Folder
+                </Button>
               )}
             </div>
-          </ScrollArea>
+          ) : (
+            filteredFolders.map((folder) => {
+              const taskCount = getFolderTaskCount(folder.id);
+              const projectCount = getFolderProjectCount(folder.id);
+
+              return (
+                <DroppableFolderCard 
+                  key={folder.id} 
+                  folder={folder} 
+                  taskCount={taskCount} 
+                  projectCount={projectCount}
+                  onFolderClick={handleFolderClick}
+                  onEditFolder={handleEditFolder}
+                  onDeleteFolder={handleDeleteFolderClick}
+                />
+              );
+            })
+          )}
+        </div>
+      </ScrollArea>
         ) : (
           <div className="h-full">
             <div 

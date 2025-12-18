@@ -263,7 +263,7 @@ export function ArchiveView() {
   };
 
   return (
-    <div
+    <div 
       className={cn("flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900", isMobile ? 'min-h-full' : 'h-full')}
     >
       <AppHeader
@@ -378,8 +378,8 @@ export function ArchiveView() {
         {/* On mobile, rely on parent scroll container in App.tsx - no overflow-y-auto */}
         <div className="flex-1 min-h-0">
           {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-            <div className="h-full overflow-y-auto overscroll-contain">
-              <div className="p-4 md:px-8 pb-safe md:pb-8">
+          <div className="h-full overflow-y-auto overscroll-contain">
+            <div className="p-4 md:px-8 pb-safe md:pb-8">
                 <div className="space-y-3">
                   <AnimatePresence mode="popLayout">
                     {sortedTasks.length === 0 ? (
