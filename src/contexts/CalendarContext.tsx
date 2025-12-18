@@ -276,6 +276,21 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
       // Listen for messages from popup
       const messageHandler = (event: MessageEvent) => {
+        // Fast path: Early return for non-matching message types (most common case)
+        if (!event.data || typeof event.data !== 'object' || !event.data.type) {
+          return;
+        }
+        
+        // Fast path: Only process calendar OAuth messages
+        if (event.data.type !== 'calendar-oauth-success' && event.data.type !== 'calendar-oauth-error') {
+          return;
+        }
+        
+        // Fast path: Only process messages for the current provider
+        if (event.data.provider !== provider) {
+          return;
+        }
+        
         try {
           // Ignore messages from browser extensions and other origins
           // Only process messages from our own origin or the OAuth popup
@@ -292,25 +307,25 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             return;
           }
           
-          // Verify message is from our OAuth flow
-          if (event.data?.type === 'calendar-oauth-success' && event.data?.provider === provider) {
-            window.removeEventListener('message', messageHandler);
-            clearInterval(checkPopup);
-            popup.close();
-            
-            // Recheck status after successful connection
+          // Clean up listeners immediately (synchronous, fast)
+          window.removeEventListener('message', messageHandler);
+          clearInterval(checkPopup);
+          popup.close();
+          
+          // Defer all heavy operations to next tick to keep handler fast
+          if (event.data.type === 'calendar-oauth-success') {
+            // Use setTimeout(0) to defer to next event loop tick
             setTimeout(() => {
               checkCalendarStatus();
               toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar connected successfully!`);
-            }, TIMING_CONSTANTS.animations.long);
-          } else if (event.data?.type === 'calendar-oauth-error' && event.data?.provider === provider) {
-            window.removeEventListener('message', messageHandler);
-            clearInterval(checkPopup);
-            popup.close();
-            
-            toast.error(`Failed to connect ${provider} Calendar`, {
-              description: event.data.error || 'An error occurred during authorization',
-            });
+            }, 0);
+          } else if (event.data.type === 'calendar-oauth-error') {
+            // Defer toast to next tick
+            setTimeout(() => {
+              toast.error(`Failed to connect ${provider} Calendar`, {
+                description: event.data.error || 'An error occurred during authorization',
+              });
+            }, 0);
           }
         } catch (error) {
           // Silently ignore errors from message handling (likely from browser extensions)
