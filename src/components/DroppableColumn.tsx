@@ -31,11 +31,20 @@ export function DroppableColumn({
           isOver &&
           "ring-4 ring-primary/80 ring-inset bg-primary/20 scale-[1.02] shadow-xl shadow-primary/20 border-2 border-primary/50",
       )}
+      className={cn(
+        "select-none transition-all duration-300",
+        isMobile ? "min-h-0 [background:transparent!important] [background-color:transparent!important]" : "min-h-[200px]", // No min-height on mobile to prevent white box
+        className,
+        !isMobile &&
+          isOver &&
+          "ring-4 ring-primary/80 ring-inset bg-primary/20 scale-[1.02] shadow-xl shadow-primary/20 border-2 border-primary/50",
+      )}
       style={{
         // Ensure drop zone is always accessible, even when empty
         position: 'relative',
         zIndex: isOver ? 100 : 'auto',
         backgroundColor: isMobile ? 'transparent' : undefined, // Transparent background on mobile to prevent white box
+        background: isMobile ? 'transparent' : undefined,
       }}
     >
       {children}

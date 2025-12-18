@@ -630,12 +630,13 @@ function AppContent() {
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
           <div className="lg:hidden flex-1 flex flex-col min-h-0">
             <div 
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
+              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 [background:transparent!important]"
               style={{
                 scrollBehavior: 'smooth',
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehaviorY: 'contain',
-                backgroundColor: 'transparent', // Ensure transparent background to prevent white box
+                backgroundColor: 'transparent',
+                background: 'transparent',
               } as React.CSSProperties}
             >
               {/* Header spacer - must be first element to push content down underneath fixed header */}
