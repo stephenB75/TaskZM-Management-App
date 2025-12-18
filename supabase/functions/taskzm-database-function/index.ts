@@ -3378,21 +3378,32 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       return c.json({ error: 'Webhook not configured' }, 500);
     }
 
-    const signature = c.req.header('Authorization');
+    // Check Authorization header - RevenueCat sends it as "Bearer {secret}"
+    const authHeader = c.req.header('Authorization');
     
     // Verify webhook signature (RevenueCat sends Authorization header with secret)
-    if (!signature || signature !== `Bearer ${webhookSecret}`) {
-      console.error('Invalid RevenueCat webhook signature');
-      return c.json({ error: 'Unauthorized' }, 401);
+    if (!authHeader) {
+      console.error('Missing Authorization header in RevenueCat webhook');
+      return c.json({ code: 401, message: "Auth header is not 'Bearer {token}'" }, 401);
+    }
+
+    // Extract token from "Bearer {token}" format
+    const token = authHeader.startsWith('Bearer ') 
+      ? authHeader.substring(7).trim() 
+      : authHeader.trim();
+    
+    if (token !== webhookSecret) {
+      console.error('Invalid RevenueCat webhook signature. Expected:', webhookSecret.substring(0, 4) + '...', 'Got:', token.substring(0, 4) + '...');
+      return c.json({ code: 401, message: "Auth header is not 'Bearer {token}'" }, 401);
     }
 
     const event = await c.req.json();
     
-    // Extract user ID from event
-    const userId = event.event?.app_user_id || event.app_user_id;
+    // Extract user ID from event (handle both nested and flat event structures)
+    const userId = event.event?.app_user_id || event.app_user_id || event.original_app_user_id;
     
     if (!userId) {
-      console.error('No user ID in RevenueCat webhook event');
+      console.error('No user ID in RevenueCat webhook event:', JSON.stringify(event, null, 2));
       return c.json({ error: 'Missing user ID' }, 400);
     }
 
@@ -3401,29 +3412,84 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
     
     console.log(`📥 RevenueCat webhook: ${eventType} for user ${userId}`);
 
-    // Map RevenueCat entitlements to subscription tier
+    // Extract entitlement information from event
+    // RevenueCat can send entitlements in different formats:
+    // 1. event.event.entitlement_ids (array)
+    // 2. event.entitlement_ids (array)
+    // 3. event.event.entitlements.active (object)
+    // 4. event.entitlements.active (object)
+    const entitlementIds = event.event?.entitlement_ids || event.entitlement_ids || [];
     const entitlements = event.event?.entitlements || event.entitlements || {};
+    
+    // Check if user has any pro entitlement
+    // Entitlement IDs can be: "Yearly", "PRO-Yearly", "PRO-Monthly", "pro", etc.
     const hasProEntitlement = 
+      entitlementIds.some((id: string) => 
+        id.toLowerCase().includes('yearly') || 
+        id.toLowerCase().includes('monthly') || 
+        id.toLowerCase() === 'pro'
+      ) ||
       entitlements.active?.['pro'] ||
       entitlements.active?.['PRO-Monthly'] ||
-      entitlements.active?.['PRO-Yearly'];
+      entitlements.active?.['PRO-Yearly'] ||
+      entitlements.active?.['Yearly'];
 
     const tier = hasProEntitlement ? 'pro' : 'free';
     
-    // Get subscription details
-    const subscription = entitlements.active?.['pro'] ||
-                        entitlements.active?.['PRO-Monthly'] ||
-                        entitlements.active?.['PRO-Yearly'];
-
-    const status = subscription?.will_renew ? 'active' : 
-                   subscription?.expires_date ? 'expired' : 'inactive';
+    // Get subscription details from event
+    const eventData = event.event || event;
     
-    const startDate = subscription?.purchase_date || null;
-    const endDate = subscription?.expires_date || null;
-    const cancelAtPeriodEnd = !subscription?.will_renew;
+    // Handle different event types
+    let status = 'inactive';
+    let startDate = null;
+    let endDate = null;
+    let cancelAtPeriodEnd = false;
+    
+    if (eventType === 'NON_RENEWING_PURCHASE' || eventType === 'INITIAL_PURCHASE') {
+      // For non-renewing purchases (like lifetime subscriptions), check expiration
+      const expirationAtMs = eventData.expiration_at_ms || event.expiration_at_ms;
+      
+      if (expirationAtMs) {
+        const expirationDate = new Date(expirationAtMs);
+        const now = new Date();
+        
+        if (expirationDate > now) {
+          status = 'active';
+          endDate = expirationDate.toISOString();
+        } else {
+          status = 'expired';
+          endDate = expirationDate.toISOString();
+        }
+      } else {
+        // Lifetime subscription (no expiration)
+        status = 'active';
+      }
+      
+      const purchasedAtMs = eventData.purchased_at_ms || event.purchased_at_ms;
+      if (purchasedAtMs) {
+        startDate = new Date(purchasedAtMs).toISOString();
+      }
+    } else {
+      // For other event types, try to extract from entitlements
+      const subscription = entitlements.active?.['pro'] ||
+                          entitlements.active?.['PRO-Monthly'] ||
+                          entitlements.active?.['PRO-Yearly'] ||
+                          entitlements.active?.['Yearly'];
+      
+      if (subscription) {
+        status = subscription.will_renew ? 'active' : 
+                 subscription.expires_date ? 'expired' : 'inactive';
+        startDate = subscription.purchase_date || null;
+        endDate = subscription.expires_date || null;
+        cancelAtPeriodEnd = !subscription.will_renew;
+      } else if (hasProEntitlement) {
+        // If we have entitlements but no subscription object, assume active
+        status = 'active';
+      }
+    }
 
-    // Determine subscription store (stripe, app_store, play_store)
-    const store = subscription?.store || 'revenuecat';
+    // Determine subscription store
+    const store = eventData.store || event.store || 'revenuecat';
 
     // Save subscription data
     const subscriptionData = {
@@ -3447,8 +3513,10 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
     }
 
     console.log(`✅ RevenueCat webhook processed: ${eventType} - User ${userId} -> ${tier} (${status})`);
+    console.log(`   Entitlements: ${JSON.stringify(entitlementIds)}`);
+    console.log(`   Store: ${store}, Start: ${startDate}, End: ${endDate}`);
 
-    return c.json({ success: true, event: eventType });
+    return c.json({ success: true, event: eventType, tier, status });
   } catch (error) {
     console.error('❌ RevenueCat webhook error:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
