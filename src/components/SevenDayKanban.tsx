@@ -1005,14 +1005,17 @@ export function SevenDayKanban({
                           return (
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 flex flex-col h-full min-h-full',
+                            'p-2 sm:p-3 flex flex-col',
+                            typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '' : 'h-full min-h-full',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
                             backgroundImage: isDark
                               ? darkColumnGradient
                               : getColumnBgGradient(column.dayName),
-                                  minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
+                            ...(typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet && {
+                              minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
+                            }),
                           }}
                         >
                           <AnimatePresence mode="popLayout">
