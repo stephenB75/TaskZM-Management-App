@@ -691,15 +691,29 @@ export function SevenDayKanban({
                       const hasContent = combinedItems.length > 0;
                       
                       return (
-                    <div className="w-full [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', minHeight: 0, height: 'auto', width: '100%' }}>
+                    <div 
+                      className="w-full" 
+                      style={{ 
+                        minHeight: 0, 
+                        height: 'auto', 
+                        width: '100%',
+                        backgroundImage: isDark
+                          ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+                          : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
+                      }}
+                    >
                     <AnimatePresence mode="popLayout">
                           {!hasContent ? (
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2 [background:transparent!important] [background-color:transparent!important]"
-                          style={{ backgroundColor: 'transparent', background: 'transparent' }}
+                          className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
+                          style={{
+                            backgroundImage: isDark
+                              ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+                              : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
+                          }}
                         >
                           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
                             <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
