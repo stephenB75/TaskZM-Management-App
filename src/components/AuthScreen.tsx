@@ -569,30 +569,30 @@ export function AuthScreen() {
             variants={cardVariants}
             className="order-1 lg:order-2 flex items-center justify-center w-full"
           >
-            {/* Mobile: Tabs outside card */}
-            <div className="sm:hidden w-full mb-2">
-              <TabsList className="w-full h-9 p-1 gap-1 bg-muted rounded-lg">
-                <TabsTrigger
-                  value="signin"
-                  className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
-                >
-                  {AUTH_UI_TEXT.signIn.title}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="signup"
-                  className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
-                >
-                  {AUTH_UI_TEXT.signUp.title}
-                </TabsTrigger>
-              </TabsList>
-            </div>
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
+              {/* Mobile: Tabs outside card */}
+              <div className="sm:hidden w-full mb-2">
+                <TabsList className="w-full h-9 p-1 gap-1 bg-muted rounded-lg">
+                  <TabsTrigger
+                    value="signin"
+                    className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                  >
+                    {AUTH_UI_TEXT.signIn.title}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="signup"
+                    className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                  >
+                    {AUTH_UI_TEXT.signUp.title}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-            <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95 mb-2 sm:mb-6 lg:mb-0 max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-3rem)] lg:max-h-none overflow-y-auto lg:overflow-visible">
-              <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="w-full"
-              >
+              <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95 mb-2 sm:mb-6 lg:mb-0 max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-3rem)] lg:max-h-none overflow-y-auto lg:overflow-visible">
                 {/* Desktop: Tabs inside card header */}
                 <CardHeader className="space-y-1 pb-1.5 sm:pb-3 px-2.5 sm:px-4 pt-2 sm:pt-4 hidden sm:block">
                   <CardTitle className="text-center text-xs sm:text-base">
@@ -1036,11 +1036,9 @@ export function AuthScreen() {
                       </div>
                     </motion.form>
                   </TabsContent>
-                </CardContent>
-              </Tabs>
-              
-              {/* App Store Badges */}
-              <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-0 sm:pt-3 border-t border-gray-200/50 dark:border-border/50">
+                  </CardContent>
+                {/* App Store Badges */}
+                <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-0 sm:pt-3 border-t border-gray-200/50 dark:border-border/50">
                 <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-muted-foreground mb-2 sm:mb-3">
                   {AUTH_UI_TEXT.mobileApps.comingSoon}
                 </p>
@@ -1236,7 +1234,8 @@ export function AuthScreen() {
                   </motion.div>
                 </div>
               </div>
-            </Card>
+              </Card>
+            </Tabs>
           </motion.div>
         </div>
       </motion.div>
