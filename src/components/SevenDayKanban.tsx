@@ -587,8 +587,8 @@ export function SevenDayKanban({
         <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`, backgroundColor: 'transparent', background: 'transparent' }}>
           <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', minHeight: 0, height: 'auto' }}>
-                  <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', minHeight: 0, height: 'auto' }}>
+                <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', minHeight: 0, height: 'auto', width: '100%' }}>
+                  <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', minHeight: 0, height: 'auto', width: '100%' }}>
                     <div className="flex items-center gap-2 mb-3 min-w-0">
                       <div className={cn(
                         "w-1 h-5 sm:h-6 rounded-full flex-shrink-0",
@@ -691,13 +691,15 @@ export function SevenDayKanban({
                       const hasContent = combinedItems.length > 0;
                       
                       return (
+                    <div className="w-full [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', minHeight: 0, height: 'auto', width: '100%' }}>
                     <AnimatePresence mode="popLayout">
                           {!hasContent ? (
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
+                          className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2 [background:transparent!important] [background-color:transparent!important]"
+                          style={{ backgroundColor: 'transparent', background: 'transparent' }}
                         >
                           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
                             <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
@@ -762,6 +764,7 @@ export function SevenDayKanban({
                             </div>
                       )}
                     </AnimatePresence>
+                    </div>
                       );
                     })()}
                 </div>
