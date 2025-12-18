@@ -95,6 +95,15 @@ if (typeof window !== 'undefined') {
           message.includes('listener indicated an asynchronous response') ||
           message.includes('asynchronous response by returning true') ||
           message.includes('ERR_FILE_NOT_FOUND') ||
+          message.includes('No tab with id') ||
+          message.includes('Frame with ID') ||
+          message.includes('was removed') ||
+          (message.includes('Cannot read properties of undefined') && (
+            filename.includes('background.js') ||
+            filename.includes('content.js') ||
+            filename.includes('serviceWorker.js') ||
+            filename.includes('service-worker.js')
+          )) ||
           (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||
           (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
@@ -104,6 +113,9 @@ if (typeof window !== 'undefined') {
           filename.includes('safari-extension://') ||
           filename.includes('contentScript.bundle.js') ||
           filename.includes('content.js') ||
+          filename.includes('background.js') ||
+          filename.includes('serviceWorker.js') ||
+          filename.includes('service-worker.js') ||
           filename.includes('web-client-content-script.js') ||
           filename.includes('web-client-content-script') ||
           filename.includes('userReportLinkedCandidate.json')) {
@@ -214,22 +226,30 @@ if (typeof window !== 'undefined') {
           message.includes('listener indicated an asynchronous response') ||
           message.includes('asynchronous response by returning true') ||
           message.includes('checkoutUrls') ||
+          message.includes('No tab with id') ||
+          message.includes('Frame with ID') ||
+          message.includes('was removed') ||
           message.includes('chrome-extension://') ||
           message.includes('moz-extension://') ||
           message.includes('safari-extension://') ||
           message.includes('ERR_FILE_NOT_FOUND') ||
+          (message.includes('Cannot read properties of undefined') && (
+            message.includes('checkoutUrls') ||
+            message.includes('length') ||
+            stack.includes('content.js') ||
+            stack.includes('background.js') ||
+            stack.includes('serviceWorker.js') ||
+            stack.includes('service-worker.js') ||
+            stack.includes('contentScript')
+          )) ||
           (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||
           (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
           (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
-          (message.includes('Cannot read properties of undefined') && (
-            message.includes('checkoutUrls') ||
-            stack.includes('content.js') ||
-            stack.includes('background.js') ||
-            stack.includes('contentScript')
-          )) ||
           stack.includes('content.js') ||
           stack.includes('background.js') ||
+          stack.includes('serviceWorker.js') ||
+          stack.includes('service-worker.js') ||
           stack.includes('contentScript') ||
           stack.includes('contentScript.bundle.js') ||
           stack.includes('web-client-content-script') ||
