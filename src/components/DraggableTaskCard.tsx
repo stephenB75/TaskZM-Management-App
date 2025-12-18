@@ -573,7 +573,10 @@ export const DraggableTaskCard = React.forwardRef<
             e.stopPropagation();
             // Only trigger onClick if not dragging and not in the middle of a drag operation
             if (!isDragging && !isSortableDragging && !document.body.classList.contains('dragging')) {
-              onClick();
+              // Defer onClick to next frame to avoid blocking click handler and prevent forced reflows
+              requestAnimationFrame(() => {
+                onClick();
+              });
             }
           }}
         >

@@ -109,14 +109,21 @@ function showPaymentFormMessage(checkoutUrl: string): void {
           }
         });
         
+        // Defer DOM reads to avoid forced reflows - batch all reads first, then writes
         const allOverlays = document.querySelectorAll('[style*="z-index"]');
+        const overlaysToHide: HTMLElement[] = [];
         allOverlays.forEach((overlay) => {
           const element = overlay as HTMLElement;
+          // Batch DOM reads
           const zIndex = window.getComputedStyle(element).zIndex;
           if (parseInt(zIndex) > 100) {
-            element.style.pointerEvents = 'none';
-            element.style.display = 'none';
+            overlaysToHide.push(element);
           }
+        });
+        // Batch DOM writes after all reads
+        overlaysToHide.forEach((element) => {
+          element.style.pointerEvents = 'none';
+          element.style.display = 'none';
         });
         
         document.body.style.pointerEvents = 'auto';
