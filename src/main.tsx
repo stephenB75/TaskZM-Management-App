@@ -60,10 +60,23 @@ if (typeof window !== 'undefined') {
     // Suppress browser extension errors
     if (fullMessage.includes('chrome-extension://') || 
         fullMessage.includes('content.js') || 
+        fullMessage.includes('background.js') ||
+        fullMessage.includes('serviceWorker.js') ||
+        fullMessage.includes('service-worker.js') ||
         fullMessage.includes('contentScript') ||
         fullMessage.includes('web-client-content-script') ||
         fullMessage.includes('ERR_FILE_NOT_FOUND') ||
         fullMessage.includes('checkoutUrls') ||
+        fullMessage.includes('No tab with id') ||
+        fullMessage.includes('Frame with ID') ||
+        fullMessage.includes('was removed') ||
+        (fullMessage.includes('Cannot read properties of undefined') && (
+          fullMessage.includes('checkoutUrls') ||
+          fullMessage.includes('length') ||
+          fullMessage.includes('background.js') ||
+          fullMessage.includes('content.js') ||
+          fullMessage.includes('serviceWorker.js')
+        )) ||
         (fullMessage.includes('MutationObserver') && fullMessage.includes('Failed to execute')) ||
         fullMessage.includes('asynchronous response')) {
       // Silently suppress - these are browser extension errors
