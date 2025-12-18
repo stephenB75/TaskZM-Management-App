@@ -1025,7 +1025,6 @@ export function AuthScreen() {
                               AUTH_UI_TEXT.signUp.button
                             )}
                           </Button>
-                        </motion.div>
                       </div>
 
                       {/* Info message */}
