@@ -459,7 +459,7 @@ export function AuthScreen() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <Card className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card">
+              <Card className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card max-h-[calc(100vh-12rem)] sm:max-h-[calc(100vh-10rem)] overflow-y-auto">
                 {/* Card Header with Tabs - Same for mobile and desktop */}
                 <CardHeader className="space-y-2 pb-3 px-4 pt-4">
                   <CardTitle className="text-center text-base sm:text-lg font-semibold text-foreground">
@@ -618,7 +618,7 @@ export function AuthScreen() {
                   <TabsContent value="signup" className="mt-0">
                     <motion.form
                       onSubmit={handleSignUp}
-                      className="space-y-4"
+                      className="space-y-3"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
@@ -801,7 +801,7 @@ export function AuthScreen() {
                       </div>
 
                       {/* Terms and Privacy */}
-                      <div className="flex items-start space-x-2 pt-1">
+                      <div className="flex items-start space-x-2 pt-0.5">
                         <Checkbox
                           id="accept-terms"
                           checked={acceptedTerms}
@@ -865,7 +865,7 @@ export function AuthScreen() {
                   </TabsContent>
                   </CardContent>
                 {/* App Store Badges */}
-                <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-0 sm:pt-3 border-t border-gray-200/50 dark:border-border/50">
+                <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-2 sm:pt-3 border-t border-gray-200/50 dark:border-border/50">
                 <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-muted-foreground mb-2 sm:mb-3">
                   {AUTH_UI_TEXT.mobileApps.comingSoon}
                 </p>
