@@ -193,9 +193,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password, name, isDemo }),
       });
 
+      // Parse response body first to get error details
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        logger.error('Failed to parse signup response:', parseError);
+        throw new Error(`Signup failed: Unable to parse server response (Status: ${response.status})`);
+      }
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Signup failed');
+        // Log full error details for debugging
+        logger.error('Signup endpoint error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: responseData?.error || 'Unknown error',
+          responseData,
+        });
+        throw new Error(responseData?.error || `Signup failed (Status: ${response.status})`);
+      }
+
+      // Verify we got the expected success response
+      if (!responseData?.user) {
+        logger.error('Signup response missing user data:', responseData);
+        throw new Error('Signup succeeded but user data is missing');
       }
 
       // Clear localStorage for new signup to prevent seeing old data
