@@ -459,27 +459,9 @@ export function AuthScreen() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              {/* Mobile: Tabs outside card */}
-              <div className="sm:hidden w-full mb-3">
-                <TabsList className="w-full h-9 p-1 gap-1 bg-muted rounded-lg">
-                  <TabsTrigger
-                    value="signin"
-                    className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
-                  >
-                    {AUTH_UI_TEXT.signIn.title}
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="signup"
-                    className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
-                  >
-                    {AUTH_UI_TEXT.signUp.title}
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              <Card className="w-full shadow-xl border border-primary/20 bg-card dark:bg-card mb-2 sm:mb-6 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto">
-                {/* Desktop: Tabs inside card header */}
-                <CardHeader className="space-y-2 pb-3 px-4 pt-4 hidden sm:block">
+              <Card className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card">
+                {/* Card Header with Tabs - Same for mobile and desktop */}
+                <CardHeader className="space-y-2 pb-3 px-4 pt-4">
                   <CardTitle className="text-center text-base sm:text-lg font-semibold text-foreground">
                     {AUTH_UI_TEXT.welcomeMessage}
                   </CardTitle>
@@ -493,31 +475,17 @@ export function AuthScreen() {
                   <TabsList className="w-full h-9 sm:h-10 p-1 gap-1 bg-muted rounded-lg">
                     <TabsTrigger
                       value="signin"
-                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                      className="flex-1 h-full py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signIn.title}
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                      className="flex-1 h-full py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signUp.title}
                     </TabsTrigger>
                   </TabsList>
-                </CardHeader>
-
-                {/* Mobile: Minimal header */}
-                <CardHeader className="space-y-0 pb-1 px-3 pt-3 sm:hidden">
-                  <CardTitle className="text-center text-base sm:text-lg font-semibold text-foreground">
-                    {AUTH_UI_TEXT.welcomeMessage}
-                  </CardTitle>
-                  <CardDescription className="text-center text-xs sm:text-sm text-muted-foreground">
-                    {activeTab === "signin" ? (
-                      AUTH_UI_TEXT.signIn.description
-                    ) : (
-                      AUTH_UI_TEXT.signUp.description
-                    )}
-                  </CardDescription>
                 </CardHeader>
 
                 <CardContent className="pb-4 sm:pb-6 pt-3 sm:pt-4 px-4 sm:px-6">
