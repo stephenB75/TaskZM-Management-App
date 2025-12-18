@@ -584,8 +584,8 @@ export function SevenDayKanban({
       >
 
         {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
-        <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`, backgroundColor: 'transparent', background: 'transparent' }}>
-          <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
+        <div className={cn("px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "flex-1")} style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`, backgroundColor: 'transparent', background: 'transparent' }}>
+          <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "h-auto" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
                   <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
