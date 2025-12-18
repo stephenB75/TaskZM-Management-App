@@ -1074,7 +1074,7 @@ export function TodayAgendaView({
               ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing
               : '3rem', // 48px on desktop for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-              ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`
+              ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 3rem)`
               : undefined,
           }}
         >

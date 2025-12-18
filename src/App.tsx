@@ -637,6 +637,9 @@ function AppContent() {
                 overscrollBehaviorY: 'contain',
                 backgroundColor: 'transparent',
                 background: 'transparent',
+                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
+                  ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 1rem)` 
+                  : undefined,
               } as React.CSSProperties}
             >
               {/* Header spacer - must be first element to push content down underneath fixed header */}

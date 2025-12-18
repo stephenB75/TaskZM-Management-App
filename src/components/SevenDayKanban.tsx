@@ -697,6 +697,7 @@ export function SevenDayKanban({
                         minHeight: 0, 
                         height: 'auto', 
                         width: '100%',
+                        paddingBottom: mobileMode ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` : undefined,
                         backgroundImage: isDark
                           ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
                           : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
@@ -730,17 +731,18 @@ export function SevenDayKanban({
                           </Button>
                         </motion.div>
                       ) : (
-                            <div 
-                              className="flex flex-col items-center gap-3 w-full" 
-                              style={{ 
-                                padding: 0, 
-                                minHeight: 0, 
-                                height: 'auto',
-                                backgroundImage: isDark
-                                  ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
-                                  : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
-                              }}
-                            >
+                          <div
+                            className="flex flex-col items-center gap-3 w-full"
+                            style={{
+                              padding: 0,
+                              paddingBottom: mobileMode ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` : undefined,
+                              minHeight: 0,
+                              height: 'auto',
+                              backgroundImage: isDark
+                                ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+                                : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
+                            }}
+                          >
                               {combinedItems.map((item, idx) => {
                                 if (item.type === 'event') {
                                   return (
@@ -820,7 +822,10 @@ export function SevenDayKanban({
   
   return (
     <div 
-      className="h-full flex flex-col" 
+      className={cn(
+        "flex flex-col",
+        mobileMode ? "w-full" : "h-full"
+      )}
       data-tour="kanban"
       data-kanban-view="true"
       style={{
@@ -829,11 +834,14 @@ export function SevenDayKanban({
     >
       
       {/* Week View - Kanban Board */}
-        <div className="flex-1 overflow-hidden">
+        <div className={cn(
+          mobileMode ? "w-full" : "flex-1 overflow-hidden"
+        )}>
           <div 
             ref={scrollContainerRef}
             className={cn(
-              "h-full overflow-x-auto",
+              mobileMode ? "w-full" : "h-full",
+              "overflow-x-auto",
               // On mobile, rely on parent scroll container - no overflow-y-auto
               // On desktop, allow vertical scrolling within the kanban
               mobileMode ? "" : "overflow-y-auto",
@@ -852,6 +860,12 @@ export function SevenDayKanban({
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
                 transformOrigin: 'top left',
                 transition: KANBAN_ANIMATION.transformTransition,
+                paddingBottom: mobileMode ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 3rem)` : undefined,
+                minHeight: mobileMode ? '100%' : undefined,
+                backgroundImage: mobileMode ? (isDark
+                  ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+                  : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`)
+                  : undefined,
               }}
             >
               {weekGroups.map((group, groupIndex) => (
