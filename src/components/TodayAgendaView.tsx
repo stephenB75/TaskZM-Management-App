@@ -599,7 +599,7 @@ export function TodayAgendaView({
       {/* On desktop (when hideHeader is true), use ScrollArea for standalone scrolling */}
       {hideHeader ? (
         isMobile ? (
-          <div className="flex-1 w-full relative">
+          <div className="w-full relative">
             <div 
               ref={timelineContainerRef}
               className="px-5 w-full relative"

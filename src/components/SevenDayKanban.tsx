@@ -714,7 +714,7 @@ export function SevenDayKanban({
                           </Button>
                         </motion.div>
                       ) : (
-                            <div className="flex flex-col items-center gap-3 p-2">
+                            <div className="flex flex-col items-center gap-3 p-2 w-full">
                               {combinedItems.map((item, idx) => {
                                 if (item.type === 'event') {
                                   return (
