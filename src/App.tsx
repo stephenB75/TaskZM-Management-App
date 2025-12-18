@@ -635,6 +635,7 @@ function AppContent() {
                 scrollBehavior: 'smooth',
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehaviorY: 'contain',
+                backgroundColor: 'transparent', // Ensure transparent background to prevent white box
               } as React.CSSProperties}
             >
               {/* Header spacer - must be first element to push content down underneath fixed header */}
