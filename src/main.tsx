@@ -121,6 +121,7 @@ if (typeof window !== 'undefined') {
           (message.includes('observe') && message.includes('MutationObserver')) ||
           (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
           (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
+          (message.includes('Failed to execute \'observe\' on \'MutationObserver\'')) ||
           filename.includes('chrome-extension://') ||
           filename.includes('moz-extension://') ||
           filename.includes('safari-extension://') ||
@@ -259,6 +260,7 @@ if (typeof window !== 'undefined') {
           (message.includes('observe') && message.includes('MutationObserver')) ||
           (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
           (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
+          (message.includes('Failed to execute \'observe\' on \'MutationObserver\'')) ||
           stack.includes('content.js') ||
           stack.includes('background.js') ||
           stack.includes('serviceWorker.js') ||
