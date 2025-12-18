@@ -584,8 +584,8 @@ export function SevenDayKanban({
       >
 
         {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
-        <div className={cn("px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "flex-1")} style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`, backgroundColor: 'transparent', background: 'transparent' }}>
-          <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "h-auto" : "min-h-full"}>
+        <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`, backgroundColor: 'transparent', background: 'transparent' }}>
+          <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
                   <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
@@ -714,7 +714,7 @@ export function SevenDayKanban({
                           </Button>
                         </motion.div>
                       ) : (
-                            <div className="flex flex-col items-center gap-3 p-2 w-full [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
+                            <div className="flex flex-col items-center gap-3 w-full [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', padding: 0, minHeight: 0, height: 'auto' }}>
                               {combinedItems.map((item, idx) => {
                                 if (item.type === 'event') {
                                   return (
@@ -1005,17 +1005,14 @@ export function SevenDayKanban({
                           return (
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 flex flex-col',
-                            typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '' : 'h-full min-h-full',
+                            'p-2 sm:p-3 flex flex-col h-full min-h-full',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
                             backgroundImage: isDark
                               ? darkColumnGradient
                               : getColumnBgGradient(column.dayName),
-                            ...(typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet && {
-                              minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
-                            }),
+                                  minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
                           }}
                         >
                           <AnimatePresence mode="popLayout">
