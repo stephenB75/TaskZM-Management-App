@@ -376,7 +376,7 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative flex items-start lg:items-center justify-center py-4 sm:py-6 lg:py-0 pb-6 sm:pb-8 lg:pb-0">
+    <div className="min-h-screen w-full overflow-x-hidden overflow-y-auto relative flex items-start lg:items-center justify-center py-4 sm:py-6 lg:py-0 pb-8 sm:pb-12 lg:pb-0">
       {/* Background Image with Overlay - Full viewport coverage */}
       <div className="fixed inset-0 z-0 w-screen h-screen">
         <ImageWithFallback
@@ -416,7 +416,7 @@ export function AuthScreen() {
 
       {/* Main Content */}
       <motion.div
-        className="relative z-10 w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:py-6 pb-4 sm:pb-6 lg:pb-6"
+        className="relative z-10 w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:py-6 pb-8 sm:pb-6 lg:pb-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
