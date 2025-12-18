@@ -88,11 +88,6 @@ function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 
   return { strength, score, feedback };
 }
 
-interface FeatureCard {
-  icon: typeof Calendar;
-  title: string;
-  subtitle: string;
-}
 
 
 export function AuthScreen() {
