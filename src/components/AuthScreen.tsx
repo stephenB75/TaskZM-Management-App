@@ -831,10 +831,10 @@ export function AuthScreen() {
                         </Label>
                       </div>
 
-                      <div className="pt-1">
+                      <div className="pt-0.5">
                         <Button
                           type="submit"
-                          className="w-full h-10 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-sm border-0"
+                          className="w-full h-10 sm:h-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg text-sm border-0"
                           disabled={isLoading}
                           >
                             {isLoading ? (
