@@ -569,13 +569,32 @@ export function AuthScreen() {
             variants={cardVariants}
             className="order-1 lg:order-2 flex items-center justify-center w-full"
           >
+            {/* Mobile: Tabs outside card */}
+            <div className="sm:hidden w-full mb-2">
+              <TabsList className="w-full h-9 p-1 gap-1 bg-muted rounded-lg">
+                <TabsTrigger
+                  value="signin"
+                  className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                >
+                  {AUTH_UI_TEXT.signIn.title}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="signup"
+                  className="flex-1 h-7 py-1.5 px-3 text-xs data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                >
+                  {AUTH_UI_TEXT.signUp.title}
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
             <Card className="w-full max-w-lg sm:max-w-md shadow-2xl border border-white/60 backdrop-blur-xl bg-gradient-to-br from-[#B4E4FF]/85 via-[#E0BBE4]/80 to-[#FFDAB9]/85 dark:from-gray-800/95 dark:via-gray-850/95 dark:to-gray-900/95 mb-2 sm:mb-6 lg:mb-0 max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-3rem)] lg:max-h-none overflow-y-auto lg:overflow-visible">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
                 className="w-full"
               >
-                <CardHeader className="space-y-1 pb-1.5 sm:pb-3 px-2.5 sm:px-4 pt-2 sm:pt-4">
+                {/* Desktop: Tabs inside card header */}
+                <CardHeader className="space-y-1 pb-1.5 sm:pb-3 px-2.5 sm:px-4 pt-2 sm:pt-4 hidden sm:block">
                   <CardTitle className="text-center text-xs sm:text-base">
                     <motion.div
                       className="inline-flex items-center gap-1 sm:gap-1.5"
@@ -598,7 +617,7 @@ export function AuthScreen() {
                       <span>{AUTH_UI_TEXT.welcomeMessage}</span>
                     </motion.div>
                   </CardTitle>
-                  <CardDescription className="text-center text-[9px] sm:text-[11px] px-1 sm:px-0 hidden sm:block">
+                  <CardDescription className="text-center text-[9px] sm:text-[11px] px-1 sm:px-0">
                     {activeTab === "signin" ? (
                       <motion.span
                         key="signin-desc"
@@ -635,133 +654,120 @@ export function AuthScreen() {
                   </TabsList>
                 </CardHeader>
 
-                <CardContent className="pb-2 sm:pb-3 pt-1 sm:pt-1.5 px-2.5 sm:px-4">
+                {/* Mobile: Minimal header */}
+                <CardHeader className="space-y-0 pb-1 px-3 pt-3 sm:hidden">
+                  <CardTitle className="text-center text-sm">
+                    {AUTH_UI_TEXT.welcomeMessage}
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent className="pb-3 sm:pb-3 pt-2 sm:pt-1.5 px-3 sm:px-4">
                   <TabsContent value="signin" className="mt-0">
                     <motion.form
                       onSubmit={handleSignIn}
-                      className="space-y-1 sm:space-y-2"
+                      className="space-y-3 sm:space-y-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <div className="space-y-0.5">
-                        <Label htmlFor="signin-email" className="text-[10px] sm:text-sm">
-                          {AUTH_UI_TEXT.signIn.emailLabel}
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="signin-email"
-                            type="email"
-                            placeholder={AUTH_UI_TEXT.signIn.emailPlaceholder}
-                            value={signInEmail}
-                            onChange={(e) =>
-                              setSignInEmail(e.target.value)
+                      <div className="space-y-1">
+                        <Input
+                          id="signin-email"
+                          type="email"
+                          placeholder={AUTH_UI_TEXT.signIn.emailPlaceholder}
+                          value={signInEmail}
+                          onChange={(e) =>
+                            setSignInEmail(e.target.value)
+                          }
+                          onBlur={() => {
+                            if (signInEmail) {
+                              validateEmail(signInEmail, false);
                             }
-                            onBlur={() => {
-                              if (signInEmail) {
-                                validateEmail(signInEmail, false);
-                              }
-                            }}
-                            required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-7 sm:h-9 text-[11px] sm:text-sm bg-white dark:bg-card shadow-sm pr-8 sm:pr-10"
-                          />
-                          <Mail className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
-                        </div>
+                          }}
+                          required
+                          className="border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm"
+                        />
                       </div>
 
-                      <div className="space-y-0.5">
-                        <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor="signin-password"
-                            className="text-[10px] sm:text-sm"
-                          >
-                            {AUTH_UI_TEXT.signIn.passwordLabel}
-                          </Label>
-                          <button
-                            type="button"
-                            onClick={() => setShowForgotPasswordDialog(true)}
-                            className="text-[9px] sm:text-xs text-[#7B68EE] hover:text-[#6A5ACD] transition-colors"
-                          >
-                            {AUTH_UI_TEXT.signIn.forgotPassword}
-                          </button>
-                        </div>
+                      <div className="space-y-1">
                         <div className="relative">
                           <Input
                             id="signin-password"
                             type={showSignInPassword ? "text" : "password"}
-                            placeholder="••••••••"
+                            placeholder={AUTH_UI_TEXT.signIn.passwordLabel}
                             value={signInPassword}
                             onChange={(e) =>
                               setSignInPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-7 sm:h-9 text-[11px] sm:text-sm bg-white dark:bg-card shadow-sm pr-8 sm:pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm pr-10"
                           />
                           <button
                             type="button"
                             onClick={() => setShowSignInPassword(!showSignInPassword)}
-                            className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                             aria-label={showSignInPassword ? "Hide password" : "Show password"}
                           >
                             {showSignInPassword ? (
-                              <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <EyeOff className="w-4 h-4" />
                             ) : (
-                              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <Eye className="w-4 h-4" />
                             )}
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              id="remember-me"
+                              checked={rememberMe}
+                              onCheckedChange={(checked) => setRememberMe(checked)}
+                            />
+                            <Label
+                              htmlFor="remember-me"
+                              className="text-xs text-gray-600 dark:text-muted-foreground cursor-pointer"
+                            >
+                              {AUTH_UI_TEXT.signIn.rememberMe}
+                            </Label>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowForgotPasswordDialog(true)}
+                            className="text-xs text-[#7B68EE] hover:text-[#6A5ACD] transition-colors"
+                          >
+                            {AUTH_UI_TEXT.signIn.forgotPassword}
                           </button>
                         </div>
                       </div>
 
-                      {/* Remember Me */}
-                      <div className="flex items-center justify-between gap-2 py-0.5 sm:py-2">
-                        <Label
-                          htmlFor="remember-me"
-                          className="text-[9px] sm:text-xs text-gray-600 dark:text-muted-foreground cursor-pointer"
+                      <div className="pt-1">
+                        <Button
+                          type="submit"
+                          className="w-full h-10 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-sm border-0"
+                          disabled={isLoading}
                         >
-                          {AUTH_UI_TEXT.signIn.rememberMe}
-                        </Label>
-                        <Switch
-                          id="remember-me"
-                          checked={rememberMe}
-                          onCheckedChange={(checked) => setRememberMe(checked)}
-                        />
-                      </div>
-
-                      <div className="pt-0.5">
-                        <motion.div
-                          whileHover={{ scale: 1.01 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="w-full"
-                        >
-                          <Button
-                            type="submit"
-                            className="w-full h-7 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[10px] sm:text-xs border-0"
-                            disabled={isLoading}
-                          >
-                            {isLoading ? (
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{
-                                  duration: 1,
-                                  repeat: Infinity,
-                                  ease: "linear",
-                                }}
-                              >
-                                ⏳
-                              </motion.div>
-                            ) : (
-                              AUTH_UI_TEXT.signIn.button
-                            )}
-                          </Button>
-                        </motion.div>
+                          {isLoading ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                ease: "linear",
+                              }}
+                            >
+                              ⏳
+                            </motion.div>
+                          ) : (
+                            AUTH_UI_TEXT.signIn.button
+                          )}
+                        </Button>
                       </div>
 
                       {/* Divider */}
-                      <div className="relative py-0.5 sm:py-1">
+                      <div className="relative py-2">
                         <div className="absolute inset-0 flex items-center">
                           <span className="w-full border-t border-gray-300 dark:border-border" />
                         </div>
-                        <div className="relative flex justify-center text-[9px] sm:text-xs uppercase">
+                        <div className="relative flex justify-center text-xs uppercase">
                           <span className="bg-card dark:bg-background px-2 text-muted-foreground">
                             {AUTH_UI_TEXT.or}
                           </span>
@@ -769,39 +775,28 @@ export function AuthScreen() {
                       </div>
 
                       {/* Try Demo Button */}
-                      <motion.div
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.98 }}
+                      <Button
+                        type="button"
+                        onClick={handleDemoSignIn}
+                        variant="outline"
+                        className="w-full h-10 sm:h-9 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-sm"
+                        disabled={isLoading}
                       >
-                        <Button
-                          type="button"
-                          onClick={handleDemoSignIn}
-                          variant="outline"
-                          className="w-full h-7 sm:h-9 border-2 border-[#7B68EE] text-[#7B68EE] hover:bg-[#7B68EE]/10 text-[10px] sm:text-xs"
-                          disabled={isLoading}
-                        >
-                          <Sparkles className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                          {AUTH_UI_TEXT.demo.button}
-                        </Button>
-                      </motion.div>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        {AUTH_UI_TEXT.demo.button}
+                      </Button>
                     </motion.form>
                   </TabsContent>
 
                   <TabsContent value="signup" className="mt-0">
                     <motion.form
                       onSubmit={handleSignUp}
-                      className="space-y-1 sm:space-y-2"
+                      className="space-y-3 sm:space-y-2"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <div className="space-y-0.5">
-                        <Label
-                          htmlFor="signup-name"
-                          className="text-[10px] sm:text-sm"
-                        >
-                          {AUTH_UI_TEXT.signUp.nameLabel}
-                        </Label>
+                      <div className="space-y-1">
                         <Input
                           id="signup-name"
                           type="text"
@@ -811,17 +806,11 @@ export function AuthScreen() {
                             setSignUpName(e.target.value)
                           }
                           required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-7 sm:h-9 text-[11px] sm:text-sm bg-white dark:bg-card shadow-sm"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm"
                         />
                       </div>
 
-                      <div className="space-y-0.5">
-                        <Label
-                          htmlFor="signup-email"
-                          className="text-[10px] sm:text-sm"
-                        >
-                          {AUTH_UI_TEXT.signUp.emailLabel}
-                        </Label>
+                      <div className="space-y-1">
                         <div className="relative">
                           <Input
                             id="signup-email"
@@ -842,65 +831,59 @@ export function AuthScreen() {
                               }
                             }}
                             required
-                            className={`border-2 focus:border-[#7B68EE] transition-colors h-7 sm:h-9 text-[11px] sm:text-sm bg-white dark:bg-card shadow-sm pr-8 sm:pr-10 ${
+                            className={`border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm pr-10 ${
                               emailError ? 'border-red-500' : ''
                             }`}
                           />
-                          <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2">
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
                             {signUpEmail && (
                               emailError ? (
-                                <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
+                                <AlertCircle className="w-4 h-4 text-red-500" />
                               ) : (
-                                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" />
+                                <CheckCircle className="w-4 h-4 text-green-500" />
                               )
                             )}
                           </div>
                         </div>
                         {emailError && (
-                          <p className="text-[9px] sm:text-[10px] text-red-500 flex items-center gap-1">
-                            <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
                             {emailError}
                           </p>
                         )}
                       </div>
 
-                      <div className="space-y-0.5">
-                        <Label
-                          htmlFor="signup-password"
-                          className="text-[10px] sm:text-sm"
-                        >
-                          {AUTH_UI_TEXT.signUp.passwordLabel}
-                        </Label>
+                      <div className="space-y-1">
                         <div className="relative">
                           <Input
                             id="signup-password"
                             type={showSignUpPassword ? "text" : "password"}
-                            placeholder="••••••••"
+                            placeholder={AUTH_UI_TEXT.signUp.passwordLabel}
                             value={signUpPassword}
                             onChange={(e) =>
                               setSignUpPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-7 sm:h-9 text-[11px] sm:text-sm bg-white dark:bg-card shadow-sm pr-8 sm:pr-10"
+                            className="border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm pr-10"
                           />
                           <button
                             type="button"
                             onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                            className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                             aria-label={showSignUpPassword ? "Hide password" : "Show password"}
                           >
                             {showSignUpPassword ? (
-                              <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <EyeOff className="w-4 h-4" />
                             ) : (
-                              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <Eye className="w-4 h-4" />
                             )}
                           </button>
                         </div>
                         {/* Password Strength Indicator */}
                         {signUpPassword && (
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 sm:gap-2">
-                              <div className="flex-1 h-1 sm:h-1.5 bg-gray-200 dark:bg-muted rounded-full overflow-hidden">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-gray-200 dark:bg-muted rounded-full overflow-hidden">
                                 <div
                                   className={`h-full transition-all duration-300 ${
                                     passwordStrength.strength === 'weak'
@@ -911,7 +894,7 @@ export function AuthScreen() {
                                   }`}
                                 />
                               </div>
-                              <span className={`text-[9px] sm:text-[10px] font-medium ${
+                              <span className={`text-xs font-medium ${
                                 passwordStrength.strength === 'weak'
                                   ? 'text-red-500'
                                   : passwordStrength.strength === 'medium'
@@ -926,7 +909,7 @@ export function AuthScreen() {
                               </span>
                             </div>
                             {passwordStrength.feedback.length > 0 && passwordStrength.strength !== 'strong' && (
-                              <ul className="text-[9px] sm:text-[10px] text-gray-600 dark:text-muted-foreground space-y-0.5">
+                              <ul className="text-xs text-gray-600 dark:text-muted-foreground space-y-0.5">
                                 {passwordStrength.feedback.slice(0, 2).map((item, idx) => (
                                   <li key={idx} className="flex items-center gap-1">
                                     <span className="text-red-500">•</span>
@@ -939,18 +922,12 @@ export function AuthScreen() {
                         )}
                       </div>
 
-                      <div className="space-y-0.5">
-                        <Label
-                          htmlFor="signup-confirm-password"
-                          className="text-[10px] sm:text-sm"
-                        >
-                          {AUTH_UI_TEXT.signUp.confirmPasswordLabel}
-                        </Label>
+                      <div className="space-y-1">
                         <div className="relative">
                           <Input
                             id="signup-confirm-password"
                             type={showConfirmPassword ? "text" : "password"}
-                            placeholder="••••••••"
+                            placeholder={AUTH_UI_TEXT.signUp.confirmPasswordLabel}
                             value={signUpConfirmPassword}
                             onChange={(e) =>
                               setSignUpConfirmPassword(
@@ -958,7 +935,7 @@ export function AuthScreen() {
                               )
                             }
                             required
-                            className={`border-2 focus:border-[#7B68EE] transition-colors h-7 sm:h-9 text-[11px] sm:text-sm bg-white dark:bg-card shadow-sm pr-8 sm:pr-10 ${
+                            className={`border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm pr-10 ${
                               signUpConfirmPassword && !passwordsMatch ? 'border-red-500' : ''
                             } ${
                               signUpConfirmPassword && passwordsMatch ? 'border-green-500' : ''
@@ -967,28 +944,28 @@ export function AuthScreen() {
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                             aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                           >
                             {showConfirmPassword ? (
-                              <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <EyeOff className="w-4 h-4" />
                             ) : (
-                              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <Eye className="w-4 h-4" />
                             )}
                           </button>
                         </div>
                         {signUpConfirmPassword && (
-                          <p className={`text-[9px] sm:text-[10px] flex items-center gap-1 ${
+                          <p className={`text-xs flex items-center gap-1 ${
                             passwordsMatch ? 'text-green-500' : 'text-red-500'
                           }`}>
                             {passwordsMatch ? (
                               <>
-                                <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <CheckCircle className="w-3 h-3" />
                                 {AUTH_UI_TEXT.validation.passwordsNoMatch.replace('do not match', 'match')}
                               </>
                             ) : (
                               <>
-                                <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <AlertCircle className="w-3 h-3" />
                                 {AUTH_UI_TEXT.validation.passwordsNoMatch}
                               </>
                             )}
@@ -997,16 +974,16 @@ export function AuthScreen() {
                       </div>
 
                       {/* Terms and Privacy */}
-                      <div className="flex items-start space-x-1.5 sm:space-x-2 pt-0.5 sm:pt-1">
+                      <div className="flex items-start space-x-2 pt-1">
                         <Checkbox
                           id="accept-terms"
                           checked={acceptedTerms}
                           onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                          className="mt-0.5 !h-3 !w-3 sm:!h-4 sm:!w-4"
+                          className="mt-0.5 !h-4 !w-4"
                         />
                         <Label
                           htmlFor="accept-terms"
-                          className="text-[9px] sm:text-xs text-gray-600 dark:text-muted-foreground cursor-pointer leading-tight"
+                          className="text-xs text-gray-600 dark:text-muted-foreground cursor-pointer leading-tight"
                         >
                           {AUTH_UI_TEXT.signUp.acceptTerms.split('Terms of Service')[0]}
                           <button
@@ -1027,16 +1004,11 @@ export function AuthScreen() {
                         </Label>
                       </div>
 
-                      <div className="pt-0.5">
-                        <motion.div
-                          whileHover={{ scale: 1.01 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="w-full"
-                        >
-                          <Button
-                            type="submit"
-                            className="w-full h-7 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-[10px] sm:text-xs border-0"
-                            disabled={isLoading}
+                      <div className="pt-1">
+                        <Button
+                          type="submit"
+                          className="w-full h-10 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-sm border-0"
+                          disabled={isLoading}
                           >
                             {isLoading ? (
                               <motion.div
