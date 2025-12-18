@@ -730,7 +730,17 @@ export function SevenDayKanban({
                           </Button>
                         </motion.div>
                       ) : (
-                            <div className="flex flex-col items-center gap-3 w-full [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', padding: 0, minHeight: 0, height: 'auto' }}>
+                            <div 
+                              className="flex flex-col items-center gap-3 w-full" 
+                              style={{ 
+                                padding: 0, 
+                                minHeight: 0, 
+                                height: 'auto',
+                                backgroundImage: isDark
+                                  ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+                                  : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
+                              }}
+                            >
                               {combinedItems.map((item, idx) => {
                                 if (item.type === 'event') {
                                   return (
