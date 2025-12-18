@@ -1430,7 +1430,7 @@ export function DashboardView({
           </div>
 
           {/* Mobile: Tabbed Content */}
-          <div className="md:hidden min-h-full">
+          <div className={cn("md:hidden", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full")} style={{ backgroundColor: 'transparent' }}>
             {mobileView === "today" ? (
               <TodayAgendaView hideHeader={true} />
             ) : viewMode === "week" ? (
