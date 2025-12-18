@@ -477,33 +477,32 @@ export function AuthScreen() {
               className="lg:flex-1 lg:flex lg:flex-col lg:max-h-[340px] lg:min-h-0"
               variants={itemVariants}
             >
-              {/* MOBILE: Static grid layout */}
+              {/* MOBILE: Compact static grid layout */}
               <div className="sm:hidden">
                 <div className="relative">
-                  <div className="grid grid-cols-3 gap-3 p-2">
+                  <div className="grid grid-cols-3 gap-1.5 p-1">
                     {MARKETING_FEATURES.map(({ icon: Icon, title }, idx) => (
                       <motion.div
                         key={title}
-                        className="flex flex-col items-center gap-2 text-center group cursor-default"
+                        className="flex flex-col items-center gap-1 text-center group cursor-default"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ 
                           duration: 0.5, 
-                          delay: idx * 0.05,
+                          delay: idx * 0.03,
                           ease: "easeOut"
                         }}
                       >
                         <div className="relative">
-                          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#7B68EE]/20 to-[#D4C5F9]/20 scale-125 opacity-0 group-hover:opacity-100 transition-all duration-500" />
                           <motion.div 
-                            className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-lg shadow-[#7B68EE]/20 group-hover:shadow-xl group-hover:shadow-[#7B68EE]/30 transition-all duration-500"
-                            whileHover={{ scale: 1.1, rotate: 3 }}
-                            transition={{ duration: 0.3 }}
+                            className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-md shadow-[#7B68EE]/20 transition-all duration-300"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.2 }}
                           >
-                            <Icon className="w-5 h-5 text-white" />
+                            <Icon className="w-4 h-4 text-white" />
                           </motion.div>
                         </div>
-                        <span className="text-[9px] font-medium text-foreground/80 group-hover:text-foreground leading-tight transition-colors duration-300">
+                        <span className="text-[8px] font-medium text-foreground/80 leading-tight transition-colors duration-300 line-clamp-2">
                           {title}
                         </span>
                       </motion.div>
@@ -532,31 +531,29 @@ export function AuthScreen() {
                   <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-[#7B68EE]/10 to-transparent rounded-br-full" />
                   <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-[#D4C5F9]/10 to-transparent rounded-tl-full" />
                   
-                  <div className="grid grid-cols-3 gap-4 pt-2">
+                  <div className="grid grid-cols-3 gap-3 pt-2">
                     {MARKETING_FEATURES.map(({ icon: Icon, title }, idx) => (
                       <motion.div
                         key={title}
-                        className="flex flex-col items-center gap-2.5 text-center group cursor-default"
+                        className="flex flex-col items-center gap-2 text-center group cursor-default"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ 
                           duration: 0.5, 
-                          delay: idx * 0.05,
+                          delay: idx * 0.03,
                           ease: "easeOut"
                         }}
                       >
                         <div className="relative">
-                          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7B68EE]/20 to-[#D4C5F9]/20 scale-125 opacity-0 group-hover:opacity-100 transition-all duration-500" />
                           <motion.div 
-                            className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-lg shadow-[#7B68EE]/20 group-hover:shadow-xl group-hover:shadow-[#7B68EE]/30 transition-all duration-500"
-                            whileHover={{ scale: 1.1, rotate: 3 }}
-                            transition={{ duration: 0.3 }}
+                            className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-[#7B68EE] via-[#8B7AE8] to-[#9B8AE8] flex items-center justify-center shadow-lg shadow-[#7B68EE]/20 transition-all duration-300"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.2 }}
                           >
-                            <Icon className="w-6 h-6 text-white" />
+                            <Icon className="w-5 h-5 text-white" />
                           </motion.div>
-                          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#D4C5F9] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         </div>
-                        <span className="text-xs font-medium text-foreground/80 group-hover:text-foreground leading-tight transition-colors duration-300 max-w-[80px]">
+                        <span className="text-[10px] font-medium text-foreground/80 leading-tight transition-colors duration-300 max-w-[70px]">
                           {title}
                         </span>
                       </motion.div>
@@ -622,16 +619,16 @@ export function AuthScreen() {
                       </motion.span>
                     )}
                   </CardDescription>
-                  <TabsList className="w-full h-9 sm:h-10 p-1 gap-1 bg-muted rounded-lg">
+                  <TabsList className="w-full h-9 sm:h-10 p-1 gap-1.5 bg-muted rounded-lg">
                     <TabsTrigger
                       value="signin"
-                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm"
+                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signIn.title}
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm"
+                      className="flex-1 h-7 sm:h-8 py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signUp.title}
                     </TabsTrigger>
