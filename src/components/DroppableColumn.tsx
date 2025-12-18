@@ -35,6 +35,7 @@ export function DroppableColumn({
         // Ensure drop zone is always accessible, even when empty
         position: 'relative',
         zIndex: isOver ? 100 : 'auto',
+        backgroundColor: isMobile ? 'transparent' : undefined, // Transparent background on mobile to prevent white box
       }}
     >
       {children}
