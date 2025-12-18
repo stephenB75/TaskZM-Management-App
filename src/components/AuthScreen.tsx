@@ -421,7 +421,7 @@ export function AuthScreen() {
         initial="hidden"
         animate="visible"
       >
-        <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto">
+        <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto pb-4">
           {/* Branding Section - Above form */}
           <motion.div
             className="text-center w-full flex flex-col items-center mb-6 sm:mb-8"
@@ -472,16 +472,16 @@ export function AuthScreen() {
                       AUTH_UI_TEXT.signUp.description
                     )}
                   </CardDescription>
-                  <TabsList className="w-full h-9 sm:h-10 p-1 gap-1 bg-muted rounded-lg">
+                  <TabsList className="w-full h-9 sm:h-10 p-1 gap-1 bg-muted rounded-lg flex items-center">
                     <TabsTrigger
                       value="signin"
-                      className="flex-1 h-full py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                      className="flex-1 h-7 sm:h-8 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signIn.title}
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="flex-1 h-full py-1.5 sm:py-2 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                      className="flex-1 h-7 sm:h-8 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signUp.title}
                     </TabsTrigger>
