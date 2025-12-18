@@ -443,7 +443,10 @@ export function InboxView() {
 
       <div className="flex-1 flex flex-col min-h-0">
         {/* Quick Add and Filters Section */}
-        <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
+        <div 
+          className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0"
+          style={isMobile ? { paddingTop: `calc(${HEADER_MOBILE_SAFE_AREA_SPACER} + 1.5rem)` } : undefined}
+        >
           <div className="flex flex-col gap-4">
             {/* Quick Add */}
             <AnimatePresence>
