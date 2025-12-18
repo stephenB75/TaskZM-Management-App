@@ -597,7 +597,7 @@ export function AuthScreen() {
                 </div>
 
                 {/* Carousel Container */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/40 to-white/20 dark:from-gray-800/40 dark:to-gray-900/40 backdrop-blur-md border border-white/30 dark:border-gray-700/30 p-4 lg:flex-1 lg:min-h-0">
+                <div className="relative overflow-hidden rounded-2xl p-4 lg:flex-1 lg:min-h-0">
                   {/* Decorative corner accents */}
                   <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-[#7B68EE]/10 to-transparent rounded-br-full" />
                   <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-[#D4C5F9]/10 to-transparent rounded-tl-full" />
