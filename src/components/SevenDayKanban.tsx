@@ -932,7 +932,7 @@ export function SevenDayKanban({
                       </div>
                     </div>
 
-                    <DroppableColumn id={column.dateString} className="flex-1">
+                    <DroppableColumn id={column.dateString} className="flex-1 min-h-0">
                       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                         {(() => {
                           // Get calendar events for this day
@@ -1005,7 +1005,7 @@ export function SevenDayKanban({
                           return (
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 flex flex-col h-full',
+                            'p-2 sm:p-3 flex flex-col h-full min-h-full',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
