@@ -421,41 +421,38 @@ export function AuthScreen() {
         initial="hidden"
         animate="visible"
       >
-        <div className="flex items-center justify-center w-full">
-          {/* Branding Section - Centered */}
+        <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto">
+          {/* Branding Section - Above form */}
           <motion.div
-            className="text-center w-full flex flex-col items-center"
+            className="text-center w-full flex flex-col items-center mb-6 sm:mb-8"
             variants={itemVariants}
           >
-            <motion.div className="flex flex-col items-center mb-4 sm:mb-6" variants={logoVariants}>
-              <div className="flex flex-col items-center">
-                <motion.div
-                  className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm border border-border mb-3"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-primary" />
-                  <span className="text-[8px] sm:text-[9px] text-gray-700 dark:text-foreground">
-                    {AUTH_UI_TEXT.neurodivergentBadge}
-                  </span>
-                </motion.div>
-                <motion.img
-                  src={taskzmLogo}
-                  alt="TaskZM Logo"
-                  className="w-[198px] sm:w-[240px] md:w-[280px] lg:w-[320px] object-contain mb-2"
-                  whileHover={{ scale: 1.02 }}
-                />
-                <p className="text-sm sm:text-base text-muted-foreground text-center px-2 sm:px-0 max-w-md">
-                  {AUTH_UI_TEXT.subtitle}
-                </p>
-              </div>
+            <motion.div className="flex flex-col items-center" variants={logoVariants}>
+              <motion.div
+                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-border mb-4"
+                whileHover={{ scale: 1.05 }}
+              >
+                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
+                <span className="text-[9px] sm:text-[10px] font-medium text-gray-700 dark:text-foreground">
+                  {AUTH_UI_TEXT.neurodivergentBadge}
+                </span>
+              </motion.div>
+              <motion.img
+                src={taskzmLogo}
+                alt="TaskZM Logo"
+                className="w-[180px] sm:w-[220px] md:w-[260px] object-contain mb-3"
+                whileHover={{ scale: 1.02 }}
+              />
+              <p className="text-sm sm:text-base text-muted-foreground text-center px-4 max-w-sm">
+                {AUTH_UI_TEXT.subtitle}
+              </p>
             </motion.div>
-
           </motion.div>
 
-          {/* Auth Card - Centered */}
+          {/* Auth Card - Below logo */}
           <motion.div
             variants={cardVariants}
-            className="flex items-center justify-center w-full max-w-md"
+            className="w-full"
           >
             <Tabs
               value={activeTab}
@@ -523,7 +520,7 @@ export function AuthScreen() {
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="pb-3 sm:pb-3 pt-2 sm:pt-1.5 px-3 sm:px-4">
+                <CardContent className="pb-4 sm:pb-6 pt-3 sm:pt-4 px-4 sm:px-6">
                   <TabsContent value="signin" className="mt-0">
                     <motion.form
                       onSubmit={handleSignIn}
@@ -547,7 +544,7 @@ export function AuthScreen() {
                             }
                           }}
                           required
-                          className="border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm"
+                          className="border-2 focus:border-primary transition-colors h-10 sm:h-9 text-sm bg-background dark:bg-card shadow-sm"
                         />
                       </div>
 
@@ -653,9 +650,9 @@ export function AuthScreen() {
                   <TabsContent value="signup" className="mt-0">
                     <motion.form
                       onSubmit={handleSignUp}
-                      className="space-y-3 sm:space-y-2"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      className="space-y-4"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
                     >
                       <div className="space-y-1">
@@ -668,7 +665,7 @@ export function AuthScreen() {
                             setSignUpName(e.target.value)
                           }
                           required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm"
+                            className="border-2 focus:border-primary transition-colors h-10 sm:h-9 text-sm bg-background dark:bg-card shadow-sm"
                         />
                       </div>
 
