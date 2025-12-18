@@ -871,7 +871,7 @@ export function SevenDayKanban({
                     key={column.dateString}
                     className={cn(
                       'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
-                      !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-white/80'),
+                      !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-transparent'),
                             column.isWeekend && isDark && 'bg-card/60',
                             isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
                     )}
