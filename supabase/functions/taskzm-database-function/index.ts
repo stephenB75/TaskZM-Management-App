@@ -3414,21 +3414,33 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
 
     // Extract entitlement information from event
     // RevenueCat can send entitlements in different formats:
-    // 1. event.event.entitlement_ids (array)
-    // 2. event.entitlement_ids (array)
-    // 3. event.event.entitlements.active (object)
-    // 4. event.entitlements.active (object)
+    // 1. event.event.entitlement_ids (array) - most common
+    // 2. event.entitlement_ids (array) - flat structure
+    // 3. event.event.entitlements.active (object) - legacy format
+    // 4. event.entitlements.active (object) - legacy format
     const entitlementIds = event.event?.entitlement_ids || event.entitlement_ids || [];
     const entitlements = event.event?.entitlements || event.entitlements || {};
+    
+    // Log full event structure for debugging
+    console.log('📋 RevenueCat webhook event structure:', {
+      hasEvent: !!event.event,
+      hasEntitlementIds: !!entitlementIds.length,
+      entitlementIds,
+      hasEntitlements: !!Object.keys(entitlements).length,
+      eventType,
+      productId: event.event?.product_id || event.product_id,
+    });
     
     // Check if user has any pro entitlement
     // Entitlement IDs can be: "Yearly", "PRO-Yearly", "PRO-Monthly", "pro", etc.
     const hasProEntitlement = 
-      entitlementIds.some((id: string) => 
-        id.toLowerCase().includes('yearly') || 
-        id.toLowerCase().includes('monthly') || 
-        id.toLowerCase() === 'pro'
-      ) ||
+      entitlementIds.some((id: string) => {
+        const lowerId = id.toLowerCase();
+        return lowerId.includes('yearly') || 
+               lowerId.includes('monthly') || 
+               lowerId === 'pro' ||
+               lowerId.includes('lifetime');
+      }) ||
       entitlements.active?.['pro'] ||
       entitlements.active?.['PRO-Monthly'] ||
       entitlements.active?.['PRO-Yearly'] ||
@@ -3436,7 +3448,7 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
 
     const tier = hasProEntitlement ? 'pro' : 'free';
     
-    // Get subscription details from event
+    // Get subscription details from event (prefer nested structure)
     const eventData = event.event || event;
     
     // Handle different event types
@@ -3453,7 +3465,15 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
         const expirationDate = new Date(expirationAtMs);
         const now = new Date();
         
-        if (expirationDate > now) {
+        // Check if it's a lifetime subscription (expiration far in the future, e.g., > 100 years)
+        const yearsUntilExpiration = (expirationAtMs - now.getTime()) / (1000 * 60 * 60 * 24 * 365);
+        
+        if (yearsUntilExpiration > 100) {
+          // Lifetime subscription - treat as active with no expiration
+          status = 'active';
+          endDate = null; // No expiration for lifetime
+          console.log('🔓 Lifetime subscription detected (expires in', Math.round(yearsUntilExpiration), 'years)');
+        } else if (expirationDate > now) {
           status = 'active';
           endDate = expirationDate.toISOString();
         } else {
@@ -3461,16 +3481,18 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
           endDate = expirationDate.toISOString();
         }
       } else {
-        // Lifetime subscription (no expiration)
+        // No expiration date - assume lifetime subscription
         status = 'active';
+        endDate = null;
+        console.log('🔓 Lifetime subscription detected (no expiration date)');
       }
       
       const purchasedAtMs = eventData.purchased_at_ms || event.purchased_at_ms;
       if (purchasedAtMs) {
         startDate = new Date(purchasedAtMs).toISOString();
       }
-    } else {
-      // For other event types, try to extract from entitlements
+    } else if (eventType === 'RENEWAL' || eventType === 'CANCELLATION' || eventType === 'UNCANCELLATION') {
+      // For renewal/cancellation events, try to extract from entitlements
       const subscription = entitlements.active?.['pro'] ||
                           entitlements.active?.['PRO-Monthly'] ||
                           entitlements.active?.['PRO-Yearly'] ||
@@ -3483,8 +3505,34 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
         endDate = subscription.expires_date || null;
         cancelAtPeriodEnd = !subscription.will_renew;
       } else if (hasProEntitlement) {
-        // If we have entitlements but no subscription object, assume active
-        status = 'active';
+        // If we have entitlements but no subscription object, check expiration from event
+        const expirationAtMs = eventData.expiration_at_ms || event.expiration_at_ms;
+        if (expirationAtMs) {
+          const expirationDate = new Date(expirationAtMs);
+          const now = new Date();
+          status = expirationDate > now ? 'active' : 'expired';
+          endDate = expirationDate.toISOString();
+        } else {
+          status = 'active';
+        }
+      }
+    } else {
+      // For other event types, check if entitlements exist
+      if (hasProEntitlement) {
+        const expirationAtMs = eventData.expiration_at_ms || event.expiration_at_ms;
+        if (expirationAtMs) {
+          const expirationDate = new Date(expirationAtMs);
+          const now = new Date();
+          status = expirationDate > now ? 'active' : 'expired';
+          endDate = expirationDate.toISOString();
+        } else {
+          status = 'active';
+        }
+        
+        const purchasedAtMs = eventData.purchased_at_ms || event.purchased_at_ms;
+        if (purchasedAtMs) {
+          startDate = new Date(purchasedAtMs).toISOString();
+        }
       }
     }
 
