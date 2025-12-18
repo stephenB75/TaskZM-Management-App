@@ -1442,22 +1442,29 @@ export async function purchaseProSubscription(
         });
         
         // Remove any high z-index overlays, backdrops, or modals
+        // Batch DOM reads first to avoid forced reflows, then batch writes
         const allOverlays = document.querySelectorAll(
           '[style*="z-index"], [class*="overlay"], [class*="backdrop"], [class*="modal"], [class*="dialog"]'
         );
+        const overlaysToHide: HTMLElement[] = [];
         allOverlays.forEach((overlay) => {
           const element = overlay as HTMLElement;
+          // Batch all DOM reads first
           const zIndex = window.getComputedStyle(element).zIndex;
           const computedZIndex = parseInt(zIndex) || 0;
           
-          // Remove high z-index elements that could block clicks
+          // Collect elements to hide (don't write yet)
           if (computedZIndex > 100 || element.classList.contains('overlay') || 
               element.classList.contains('backdrop') || element.classList.contains('modal')) {
-            element.style.pointerEvents = 'none';
-            element.style.display = 'none';
-            element.style.visibility = 'hidden';
-            element.style.opacity = '0';
+            overlaysToHide.push(element);
           }
+        });
+        // Batch all DOM writes after reads complete
+        overlaysToHide.forEach((element) => {
+          element.style.pointerEvents = 'none';
+          element.style.display = 'none';
+          element.style.visibility = 'hidden';
+          element.style.opacity = '0';
         });
         
         // Clear pointer-events on body and html to ensure nothing blocks clicks
