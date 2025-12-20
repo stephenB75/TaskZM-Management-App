@@ -819,7 +819,7 @@ export function DashboardView({
     return matchingTasks;
   };
 
-  const handleScheduleUnscheduledTasks = () => {
+  const handleScheduleUnscheduledTasks = async () => {
     if (!safeHasFeature('aiScheduler')) {
       toast.error('AI Scheduler is a Pro feature', {
         description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
@@ -867,7 +867,7 @@ export function DashboardView({
     end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1)); // 14 days total (today + 13 more)
     end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
     const range = { startDate: today, endDate: end };
-    const result = generateSchedulePlan(undefined, range, { 
+    const result = await generateSchedulePlan(undefined, range, { 
       forceCategoryHours: true,
       enforceMinimumHours: true // Always enforce 5-hour minimum before pushing to next day
     });
@@ -1016,6 +1016,9 @@ export function DashboardView({
           }
         } else if (type === "week") {
           // Calculate Monday of the selected week
+          if (!selectedDate) {
+            throw new Error('selectedDate is required for week reschedule');
+          }
           const monday = new Date(selectedDate);
           const day = monday.getDay();
           const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
@@ -1039,6 +1042,9 @@ export function DashboardView({
           description = `Rescheduled ${result?.scheduled?.length || 0} task${(result?.scheduled?.length || 0) === 1 ? '' : 's'} for the week starting ${monday.toLocaleDateString()}`;
         } else {
           // Use first day of the selected month
+          if (!selectedDate) {
+            throw new Error('selectedDate is required for month reschedule');
+          }
           const targetMonth = new Date(selectedDate);
           targetMonth.setDate(1);
           targetMonth.setHours(0, 0, 0, 0);
