@@ -437,7 +437,7 @@ export const TASK_CARD_CALCULATIONS = {
       desktop: 60, // px
     },
     containerOffset: {
-      mobile: 60, // px for max-w-[calc(100%-60px)]
+      mobile: 64, // px for max-w-[calc(100%-64px)] - accounts for 8px left + 8px right (pomodoro) + 48px pomodoro width
       desktop: 80, // px for max-w-[calc(100%-80px)]
     },
   },
@@ -530,16 +530,16 @@ export const TASK_CARD_TEXT_COLORS = {
 export const TASK_CARD_POSITIONING = {
   assignedUsers: {
     bottom: {
-      mobile: 6, // bottom-1.5 = 6px (matches padding pb-2 = 8px, leaving 2px clearance)
+      mobile: 8, // 8px from bottom (matches card padding px-2 = 8px for proper clearance)
       desktop: 10, // bottom-2.5 = 10px (matches padding pb-2.5 = 10px, leaving adequate clearance)
     },
     left: {
-      mobile: 6, // left-1.5 = 6px (matches padding px-2 = 8px, leaving 2px clearance)
+      mobile: 8, // 8px from left (matches card padding px-2 = 8px for proper clearance)
       desktop: 10, // left-2.5 = 10px (matches padding px-3 = 12px, leaving 2px clearance)
     },
     // Timeline view positioning
     timeline: {
-      mobile: 'bottom-1.5 left-1.5 gap-1',
+      mobile: 'bottom-2 left-2 gap-1',
       desktop: 'bottom-2.5 left-2.5 gap-2',
     },
   },

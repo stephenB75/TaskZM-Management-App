@@ -686,7 +686,7 @@ export function DraggableTodayAgendaTask({
               <div
                 className={cn(
                   "absolute flex items-center",
-                  isMobile ? "bottom-1.5 left-1.5 gap-1.5 max-w-[calc(100%-60px)]" : "bottom-2.5 left-2.5 gap-2 max-w-[calc(100%-80px)]",
+                  isMobile ? "bottom-2 left-2 gap-1.5 max-w-[calc(100%-64px)]" : "bottom-2.5 left-2.5 gap-2 max-w-[calc(100%-80px)]",
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -780,7 +780,7 @@ export function DraggableTodayAgendaTask({
             {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) - only for tasks >= 45 mins, tasks < 45 mins show in inline bottom row */}
             {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
               <div
-                className={cn("absolute", isMobile ? "bottom-0 right-1" : "bottom-2 right-2")}
+                className={cn("absolute", isMobile ? "bottom-2 right-2" : "bottom-2.5 right-2.5")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <PomodoroTimer
