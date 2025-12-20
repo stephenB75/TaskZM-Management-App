@@ -3487,6 +3487,17 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
     if (eventType === 'NON_RENEWING_PURCHASE' || eventType === 'INITIAL_PURCHASE') {
       // For non-renewing purchases (like lifetime subscriptions), check expiration
       const expirationAtMs = eventData.expiration_at_ms || event.expiration_at_ms;
+      const productId = eventData.product_id || event.product_id || '';
+      const isLifetimeProduct = productId.toLowerCase().includes('lifetime') || 
+                                productId.toLowerCase().includes('promo');
+      
+      console.log(`📦 NON_RENEWING_PURCHASE event details:`, {
+        expirationAtMs,
+        productId,
+        isLifetimeProduct,
+        periodType: eventData.period_type || event.period_type,
+        store: eventData.store || event.store,
+      });
       
       if (expirationAtMs) {
         const expirationDate = new Date(expirationAtMs);
@@ -3508,15 +3519,18 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
           endDate = expirationDate.toISOString();
         }
       } else {
-        // No expiration date - assume lifetime subscription
+        // No expiration date - assume lifetime subscription (common for promotional/lifetime products)
         status = 'active';
         endDate = null;
-        console.log('🔓 Lifetime subscription detected (no expiration date)');
+        console.log(`🔓 Lifetime subscription detected (no expiration date) - Product: ${productId}, Store: ${eventData.store || event.store || 'unknown'}`);
       }
       
       const purchasedAtMs = eventData.purchased_at_ms || event.purchased_at_ms;
       if (purchasedAtMs) {
         startDate = new Date(purchasedAtMs).toISOString();
+        console.log(`📅 Subscription start date: ${startDate} (from purchased_at_ms: ${purchasedAtMs})`);
+      } else {
+        console.warn('⚠️ No purchased_at_ms found in NON_RENEWING_PURCHASE event');
       }
     } else if (eventType === 'RENEWAL' || eventType === 'CANCELLATION' || eventType === 'UNCANCELLATION') {
       // For renewal/cancellation events, try to extract from entitlements
@@ -3596,13 +3610,17 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
     console.log(`✅ RevenueCat webhook processed: ${eventType} - User ${userId} -> ${tier} (${status})`);
     console.log(`   Entitlements: ${JSON.stringify(entitlementIds.slice(0, 10))}`); // Limit log size
     console.log(`   Store: ${store}, Start: ${startDate}, End: ${endDate}`);
+    console.log(`   Subscription Data:`, JSON.stringify(subscriptionData));
 
     return c.json({ 
       success: true, 
       event: eventType, 
       tier, 
       status,
-      userId, // Include userId in response for debugging
+      userId,
+      subscription: subscriptionData, // Include full subscription data for verification
+      entitlements: entitlementIds,
+      store,
     });
   } catch (error) {
     console.error('❌ RevenueCat webhook error:', error);
