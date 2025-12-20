@@ -682,11 +682,12 @@ export function DraggableTodayAgendaTask({
 
             {/* Assignee Display and Time Tracker - Inline Layout at bottom left */}
             {(task.assignedTo && task.assignedTo.length > 0) || 
-             (task.estimatedTime && task.estimatedTime >= 45 && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.actualTime && task.actualTime > 0))) ? (
+             (task.estimatedTime && task.estimatedTime >= 45 && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.actualTime && task.actualTime > 0))) ||
+             (isMobile && task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer")) ? (
               <div
                 className={cn(
                   "absolute flex items-center",
-                  isMobile ? "bottom-2 left-2 gap-1.5 max-w-[calc(100%-64px)]" : "bottom-2.5 left-2.5 gap-2 max-w-[calc(100%-80px)]",
+                  isMobile ? "bottom-2 left-2 right-2 gap-1.5" : "bottom-2.5 left-2.5 gap-2 max-w-[calc(100%-80px)]",
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -774,22 +775,31 @@ export function DraggableTodayAgendaTask({
                     </span>
                   </div>
                 )}
+
+                {/* Pomodoro Timer - Inline on mobile, separate on desktop */}
+                {isMobile && task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
+                  <div
+                    className="flex items-center flex-shrink-0 ml-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <PomodoroTimer
+                      taskId={task.id}
+                      taskTitle={task.title}
+                      onTimeUpdate={handlePomodoroTimeUpdate}
+                      compact={true}
+                      initialTime={task.actualTime || 0}
+                      estimatedTime={task.estimatedTime || undefined}
+                      isMobile={isMobile}
+                    />
+                  </div>
+                )}
               </div>
             ) : null}
 
-            {/* Pomodoro Timer - Right side inline with assignee/tracker on mobile, bottom right on desktop */}
-            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
+            {/* Pomodoro Timer - Bottom right on desktop only (mobile is inline with assignee/tracker above) */}
+            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && !isMobile && (
               <div
-                className={cn(
-                  "absolute flex items-center",
-                  isMobile 
-                    ? "bottom-2 right-2" 
-                    : "bottom-2.5 right-2.5"
-                )}
-                style={isMobile ? {
-                  bottom: '8px', // Same as TASK_CARD_POSITIONING.assignedUsers.bottom.mobile
-                  right: '8px', // Same as TASK_CARD_POSITIONING.assignedUsers.left.mobile
-                } : undefined}
+                className={cn("absolute flex items-center", "bottom-2.5 right-2.5")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <PomodoroTimer

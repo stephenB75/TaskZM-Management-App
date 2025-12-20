@@ -672,10 +672,17 @@ export function SevenDayKanban({
                         height: '100%',
                         width: '100%',
                         // No paddingBottom - nav bar clearance handled by spacer in App.tsx
-                        backgroundImage: isDark
-                          ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
-                          : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
-                      }}
+                        // On mobile, make background transparent to show parent gradient
+                        // On desktop, use the gradient background
+                        backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                          ? 'transparent'
+                          : (isDark
+                            ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+                            : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`),
+                        backgroundColor: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                          ? 'transparent'
+                          : undefined,
+                      } as React.CSSProperties}
                     >
                     <AnimatePresence mode="popLayout">
                           {!hasContent ? (
@@ -685,10 +692,17 @@ export function SevenDayKanban({
                           exit={{ opacity: 0 }}
                           className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
                           style={{
-                            backgroundImage: isDark
-                              ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
-                              : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
-                          }}
+                            // On mobile, make background transparent to show parent gradient
+                            // On desktop, use the gradient background
+                            backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                              ? 'transparent'
+                              : (isDark
+                                ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+                                : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`),
+                            backgroundColor: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                              ? 'transparent'
+                              : undefined,
+                          } as React.CSSProperties}
                         >
                           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
                             <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
@@ -712,10 +726,17 @@ export function SevenDayKanban({
                               // No paddingBottom - nav bar clearance handled by spacer in App.tsx
                               minHeight: 0,
                               height: 'auto',
-                              backgroundImage: isDark
-                                ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
-                                : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
-                            }}
+                              // On mobile, make background transparent to show parent gradient
+                              // On desktop, use the gradient background
+                              backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                                ? 'transparent'
+                                : (isDark
+                                  ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+                                  : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`),
+                              backgroundColor: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                                ? 'transparent'
+                                : undefined,
+                            } as React.CSSProperties}
                           >
                               {combinedItems.map((item, idx) => {
                                 if (item.type === 'event') {
