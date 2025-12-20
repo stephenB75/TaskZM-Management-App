@@ -487,47 +487,47 @@ export function InboxView() {
         }
         hideDesktopLogo
         actions={
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {selectedTaskIds.size > 0 ? (
               <>
                 <Button
                   onClick={handleSelectAll}
                   variant="outline"
-                  className="rounded-full px-2.5 sm:px-3"
+                  className="rounded-full px-2 sm:px-2.5 text-xs"
                   size="sm"
                 >
-                  <span className="hidden sm:inline">
+                  <span className="hidden md:inline">
                     {selectedTaskIds.size === sortedTasks.length ? "Deselect All" : "Select All"}
                   </span>
-                  <span className="sm:hidden">
-                    {selectedTaskIds.size === sortedTasks.length ? "Deselect" : "Select All"}
+                  <span className="md:hidden text-[10px]">
+                    {selectedTaskIds.size === sortedTasks.length ? "Deselect" : "All"}
                   </span>
                 </Button>
                 <Button
                   onClick={handleScheduleSelected}
-                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2.5 sm:px-3`}
+                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2 sm:px-2.5 text-xs`}
                   size="sm"
                   disabled={isScheduling}
                 >
-                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">
+                  <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <span className="hidden md:inline">
                     Schedule ({selectedTaskIds.size})
                   </span>
-                  <span className="sm:hidden">
+                  <span className="md:hidden text-[10px]">
                     {selectedTaskIds.size}
                   </span>
                 </Button>
                 <Button
                   onClick={() => setShowBulkDeleteConfirm(true)}
                   variant="destructive"
-                  className="rounded-full px-2.5 sm:px-3"
+                  className="rounded-full px-2 sm:px-2.5 text-xs"
                   size="sm"
                 >
-                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">
+                  <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <span className="hidden md:inline">
                     Delete ({selectedTaskIds.size})
                   </span>
-                  <span className="sm:hidden">
+                  <span className="md:hidden text-[10px]">
                     {selectedTaskIds.size}
                   </span>
                 </Button>
@@ -536,13 +536,16 @@ export function InboxView() {
               <>
                 <Button
                   onClick={handleScheduleAll}
-                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2.5 sm:px-3`}
+                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2 sm:px-2.5 text-xs`}
                   size="sm"
                   disabled={unscheduledTasks.length === 0}
                 >
-                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">
+                  <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <span className="hidden md:inline">
                     Schedule All
+                  </span>
+                  <span className="md:hidden text-[10px]">
+                    All
                   </span>
                 </Button>
                 <Button
@@ -550,11 +553,11 @@ export function InboxView() {
                     setSelectedTask(undefined);
                     setIsTaskDialogOpen(true);
                   }}
-                  className="hidden sm:flex rounded-full px-2.5 sm:px-3"
+                  className="hidden sm:flex rounded-full px-2 sm:px-2.5 text-xs"
                   size="sm"
                 >
-                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline ml-2">
+                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <span className="hidden md:inline ml-1">
                     New Task
                   </span>
                 </Button>
