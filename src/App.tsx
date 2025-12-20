@@ -48,7 +48,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
@@ -637,9 +637,6 @@ function AppContent() {
                 overscrollBehaviorY: 'contain',
                 backgroundColor: 'transparent',
                 background: 'transparent',
-                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
-                  ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 1rem)` 
-                  : undefined,
               } as React.CSSProperties}
             >
               {/* Header spacer - must be first element to push content down underneath fixed header */}
@@ -678,7 +675,11 @@ function AppContent() {
               {/* Bottom nav spacer - inside scrollable container to prevent content from hiding behind nav bar */}
               <div 
                 className="flex-shrink-0 w-full" 
-                style={{ height: NAV_BAR_BOTTOM_PADDING_MOBILE }}
+                style={{ 
+                  height: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                    ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
+                    : 0
+                }}
                 aria-hidden="true"
               />
             </div>
