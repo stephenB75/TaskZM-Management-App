@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import { TodayAgendaView } from "./TodayAgendaView";
 import { SevenDayKanban } from "./SevenDayKanban";
@@ -53,6 +53,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useCalendar } from "../contexts/CalendarContext";
 import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
+import { useCalendarEventCounts } from "../hooks/useCalendarEvents";
 import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
@@ -622,56 +623,30 @@ export function DashboardView({
     };
   }, [weekColumns]);
 
-  // Fetch calendar events for the visible week to show dots on mobile day selector
+  // Fetch calendar events for the visible week to show dots on mobile day selector using optimized hook
+  const startDate = useMemo(() => {
+    if (!visibleRange) return new Date();
+    return new Date(visibleRange.startIso);
+  }, [visibleRange?.startIso]);
+
+  const endDate = useMemo(() => {
+    if (!visibleRange) return new Date();
+    return new Date(visibleRange.endIso);
+  }, [visibleRange?.endIso]);
+
+  const { eventCounts: calendarEventsByDateData } = useCalendarEventCounts(
+    startDate,
+    endDate,
+    {
+      enabled: !!accessToken && !!visibleRange,
+      debounceMs: 300,
+    }
+  );
+
+  // Update state when event counts change
   useEffect(() => {
-    const fetchCalendarEvents = async () => {
-      try {
-        if (!accessToken) return;
-        const providers: Array<'google' | 'apple'> = [];
-        if (calendarStatus.google) providers.push('google');
-        if (calendarStatus.apple) providers.push('apple');
-        if (providers.length === 0 || !visibleRange) {
-          setCalendarEventsByDate({});
-          return;
-        }
-
-        const projectId = 'gflesnyfpxqhaunfskrw';
-        const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
-        const eventCounts: Record<string, number> = {};
-
-        for (const provider of providers) {
-          const resp = await fetch(
-            `${BASE_URL}/calendar/events/${provider}?startDate=${visibleRange.startIso}&endDate=${visibleRange.endIso}`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
-          if (!resp.ok) continue;
-          const data = await resp.json();
-          if (!Array.isArray(data.events)) continue;
-          for (const event of data.events) {
-            if (!event?.start) continue;
-            const eventStart = new Date(event.start);
-            if (isNaN(eventStart.getTime())) continue;
-            // Normalize to local date to match dateString format used in weekColumns
-            // This ensures consistent date matching regardless of timezone
-            const normalizedEventDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
-            const year = normalizedEventDate.getFullYear();
-            const month = String(normalizedEventDate.getMonth() + 1).padStart(2, '0');
-            const day = String(normalizedEventDate.getDate()).padStart(2, '0');
-            const dateKey = `${year}-${month}-${day}`;
-            eventCounts[dateKey] = (eventCounts[dateKey] || 0) + 1;
-          }
-        }
-        setCalendarEventsByDate(eventCounts);
-      } catch (error) {
-        console.error('Failed to fetch calendar events for dots:', error);
-      }
-    };
-    fetchCalendarEvents();
-  }, [accessToken, calendarStatus.apple, calendarStatus.google, visibleRange?.startIso, visibleRange?.endIso]);
+    setCalendarEventsByDate(calendarEventsByDateData);
+  }, [calendarEventsByDateData]);
 
   // Update day index to tomorrow when returning to current week
   useEffect(() => {

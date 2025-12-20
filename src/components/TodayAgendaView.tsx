@@ -29,6 +29,7 @@ import { buildTaskLayouts } from "../lib/task-layout";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { projectId } from "../utils/supabase/info";
 import { logger } from "../lib/logger";
+import { useCalendarEvents } from "../hooks/useCalendarEvents";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -152,72 +153,28 @@ export function TodayAgendaView({
     });
   }, [incompleteTasks]);
 
-  // Fetch calendar events for today
+  // Fetch calendar events for today using optimized hook
+  const todayStart = useMemo(() => {
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }, [today]);
+
+  const todayEnd = useMemo(() => {
+    const end = new Date(today);
+    end.setHours(23, 59, 59, 999);
+    return end;
+  }, [today]);
+
+  const { events: todayCalendarEventsData } = useCalendarEvents(todayStart, todayEnd, {
+    enabled: !!accessToken,
+    debounceMs: 200, // Slightly faster for today view
+  });
+
+  // Update state when events change
   useEffect(() => {
-    const fetchTodayCalendarEvents = async () => {
-      try {
-        if (!accessToken) {
-          logger.debug('TodayAgenda: No access token, skipping calendar events fetch');
-          setTodayCalendarEvents([]);
-          return;
-        }
-        const providers: Array<'google' | 'apple'> = [];
-        if (calendarStatus.google) providers.push('google');
-        if (calendarStatus.apple) providers.push('apple');
-        if (providers.length === 0) {
-          logger.debug('TodayAgenda: No calendar providers enabled, skipping calendar events fetch');
-          setTodayCalendarEvents([]);
-          return;
-        }
-        
-        logger.debug(`TodayAgenda: Fetching calendar events for providers: ${providers.join(', ')}`);
-
-        const todayStart = new Date(today);
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date(today);
-        todayEnd.setHours(23, 59, 59, 999);
-
-        const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
-        const allEvents: Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }> = [];
-
-        for (const provider of providers) {
-          const resp = await fetch(
-            `${BASE_URL}/calendar/events/${provider}?startDate=${todayStart.toISOString()}&endDate=${todayEnd.toISOString()}`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
-          if (!resp.ok) continue;
-          const data = await resp.json();
-          if (!Array.isArray(data.events)) continue;
-          for (const event of data.events) {
-            if (!event?.start || !event?.end) continue;
-            const eventStart = new Date(event.start);
-            if (isNaN(eventStart.getTime())) continue;
-            allEvents.push({
-              id: event.id || `${provider}-${event.providerEventId || event.start}-${allEvents.length}`,
-              title: event.title || 'Calendar Event',
-              start: event.start,
-              end: event.end,
-              location: event.location,
-              provider,
-              calendarColor: event.calendarColor,
-            });
-          }
-        }
-
-        logger.debug(`TodayAgenda: Fetched ${allEvents.length} calendar events for today`);
-        setTodayCalendarEvents(allEvents);
-      } catch (error) {
-        logger.warn('Failed to fetch calendar events for today agenda:', error);
-        setTodayCalendarEvents([]);
-      }
-    };
-
-    fetchTodayCalendarEvents();
-  }, [accessToken, calendarStatus.apple, calendarStatus.google, today]);
+    setTodayCalendarEvents(todayCalendarEventsData);
+  }, [todayCalendarEventsData]);
 
   // Combine tasks and events, sort chronologically
   interface CombinedItem {

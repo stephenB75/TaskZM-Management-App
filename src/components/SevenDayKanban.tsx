@@ -19,6 +19,7 @@ import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
 import { projectId } from '../utils/supabase/info';
+import { useCalendarEventsByDate } from '../hooks/useCalendarEvents';
 import {
   KANBAN_DAY_COLORS,
   KANBAN_BACKGROUND_GRADIENTS,
@@ -215,66 +216,30 @@ export function SevenDayKanban({
     };
   }, [weekColumns]);
 
-  // Fetch external calendar events (Google/Apple) for the visible week to overlay in the kanban view
+  // Fetch external calendar events (Google/Apple) for the visible week using optimized hook
+  const startDate = React.useMemo(() => {
+    if (!visibleRange) return new Date();
+    return new Date(visibleRange.startIso);
+  }, [visibleRange?.startIso]);
+
+  const endDate = React.useMemo(() => {
+    if (!visibleRange) return new Date();
+    return new Date(visibleRange.endIso);
+  }, [visibleRange?.endIso]);
+
+  const { eventsByDate: calendarEventsByDateData } = useCalendarEventsByDate(
+    startDate,
+    endDate,
+    {
+      enabled: !!accessToken && !!visibleRange,
+      debounceMs: 300,
+    }
+  );
+
+  // Update state when events change
   React.useEffect(() => {
-    const fetchCalendarEvents = async () => {
-      try {
-        if (!accessToken) return;
-        const providers: Array<'google' | 'apple'> = [];
-        if (calendarStatus.google) providers.push('google');
-        if (calendarStatus.apple) providers.push('apple');
-        if (providers.length === 0 || !visibleRange) {
-          setCalendarEventsByDate({});
-          return;
-        }
-
-        const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
-        const aggregated: Record<string, Array<{ title: string; start: string; end: string; provider: 'google' | 'apple' }>> = {};
-
-        for (const provider of providers) {
-          const resp = await fetch(
-            `${BASE_URL}/calendar/events/${provider}?startDate=${visibleRange.startIso}&endDate=${visibleRange.endIso}`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
-          if (!resp.ok) continue;
-          const data = await resp.json();
-          if (!Array.isArray(data.events)) continue;
-          for (const event of data.events) {
-            if (!event?.start || !event?.end) continue;
-            const eventStart = new Date(event.start);
-            if (isNaN(eventStart.getTime())) continue;
-            // Normalize to local date to match dateString format used in weekColumns
-            // This ensures consistent date matching regardless of timezone
-            const normalizedEventDate = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
-            const year = normalizedEventDate.getFullYear();
-            const month = String(normalizedEventDate.getMonth() + 1).padStart(2, '0');
-            const day = String(normalizedEventDate.getDate()).padStart(2, '0');
-            const dateKey = `${year}-${month}-${day}`;
-            aggregated[dateKey] = aggregated[dateKey] || [];
-            aggregated[dateKey].push({
-              id: event.id || `${provider}-${event.providerEventId || dateKey}-${aggregated[dateKey].length}`,
-              title: event.title || 'Calendar Event',
-              start: event.start,
-              end: event.end,
-              location: event.location,
-              provider,
-              calendarColor: event.calendarColor,
-            });
-          }
-        }
-
-        setCalendarEventsByDate(aggregated);
-      } catch (error) {
-        logger.warn('Failed to fetch external calendar events for kanban view:', error);
-      }
-    };
-
-    fetchCalendarEvents();
-  }, [accessToken, calendarStatus.apple, calendarStatus.google, visibleRange?.startIso, visibleRange?.endIso]);
+    setCalendarEventsByDate(calendarEventsByDateData);
+  }, [calendarEventsByDateData]);
 
   // Stop scroll dragging when task drag starts
   React.useEffect(() => {

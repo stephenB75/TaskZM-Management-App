@@ -19,6 +19,7 @@ import { useDragDrop } from "../contexts/DragDropContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useCalendar } from "../contexts/CalendarContext";
 import { projectId } from "../utils/supabase/info";
+import { useCalendarEventsByDate, type CalendarEvent } from "../hooks/useCalendarEvents";
 import {
   ChevronLeft,
   ChevronRight,
@@ -460,65 +461,46 @@ export function MonthCalendarView({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const calendarGridRef = useRef<HTMLDivElement>(null);
 
-  // Fetch calendar events for the visible month
+  // Fetch calendar events for the visible month using optimized hook
+  const monthStartDate = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    return new Date(year, month - 1, 1);
+  }, [currentDate]);
+
+  const monthEndDate = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    return new Date(year, month + 2, 0);
+  }, [currentDate]);
+
+  const { eventsByDate: calendarEventsByDateData } = useCalendarEventsByDate(
+    monthStartDate,
+    monthEndDate,
+    {
+      enabled: !!accessToken,
+      debounceMs: 300,
+    }
+  );
+
+  // Convert to CalendarEventData format and update state
   useEffect(() => {
-    const fetchCalendarEvents = async () => {
-      try {
-        if (!accessToken) return;
-        const providers: Array<'google' | 'apple'> = [];
-        if (calendarStatus.google) providers.push('google');
-        if (calendarStatus.apple) providers.push('apple');
-        if (providers.length === 0) {
-          setCalendarEventsByDate({});
-          return;
-        }
+    const aggregated: Record<string, CalendarEventData[]> = {};
+    
+    for (const [dateKey, events] of Object.entries(calendarEventsByDateData)) {
+      aggregated[dateKey] = events.map(event => ({
+        id: event.id,
+        title: event.title,
+        start: event.start,
+        end: event.end,
+        location: event.location,
+        provider: event.provider,
+        calendarColor: event.calendarColor,
+      }));
+    }
 
-        // Get first and last day of the month (plus buffer for prev/next month days shown)
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        const startDate = new Date(year, month - 1, 1).toISOString();
-        const endDate = new Date(year, month + 2, 0).toISOString();
-
-        const aggregated: Record<string, CalendarEventData[]> = {};
-
-        for (const provider of providers) {
-          const resp = await fetch(
-            `${BASE_URL}/calendar/events/${provider}?startDate=${startDate}&endDate=${endDate}`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
-          if (!resp.ok) continue;
-          const data = await resp.json();
-          if (!Array.isArray(data.events)) continue;
-          for (const event of data.events) {
-            if (!event?.start || !event?.end) continue;
-            const eventStart = new Date(event.start);
-            if (isNaN(eventStart.getTime())) continue;
-            const dateKey = eventStart.toISOString().split('T')[0];
-            aggregated[dateKey] = aggregated[dateKey] || [];
-            aggregated[dateKey].push({
-              id: event.id || `${provider}-${event.providerEventId || dateKey}-${aggregated[dateKey].length}`,
-              title: event.title || 'Calendar Event',
-              start: event.start,
-              end: event.end,
-              location: event.location,
-              provider,
-              calendarColor: event.calendarColor,
-            });
-          }
-        }
-
-        setCalendarEventsByDate(aggregated);
-      } catch (error) {
-        console.warn('Failed to fetch calendar events for month view:', error);
-      }
-    };
-
-    fetchCalendarEvents();
-  }, [accessToken, calendarStatus.apple, calendarStatus.google, currentDate]);
+    setCalendarEventsByDate(aggregated);
+  }, [calendarEventsByDateData]);
 
   const goToPreviousMonth = () => {
     setCurrentDate((prev) => {
