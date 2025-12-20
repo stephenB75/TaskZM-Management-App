@@ -73,7 +73,7 @@ const getTwoWeekDateRange = () => {
 export function InboxView() {
   const { tasks, addTask, bulkDeleteTasks } = useTasks();
   const { getTeamMember } = useTeam();
-  const { scheduleAllTasks, isScheduling } = useAIScheduler();
+  const { scheduleAllTasks, generateSchedulePlan, applySchedulePlan, isScheduling } = useAIScheduler();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] =
@@ -221,6 +221,112 @@ export function InboxView() {
 
   const isSchedulingRef = useRef(false);
   
+  const handleScheduleSelected = useCallback(async () => {
+    if (selectedTaskIds.size === 0) {
+      toast.info("No tasks selected", {
+        description: "Please select tasks to schedule",
+      });
+      return;
+    }
+
+    // Prevent duplicate calls - if already scheduling, return early
+    if (isScheduling || isSchedulingRef.current) {
+      console.log('⚠️ Already scheduling, ignoring duplicate call', { isScheduling, isSchedulingRef: isSchedulingRef.current });
+      return;
+    }
+
+    // Get selected tasks
+    const selectedTasks = sortedTasks.filter(task => selectedTaskIds.has(task.id));
+    
+    if (selectedTasks.length === 0) {
+      toast.info("No valid tasks to schedule", {
+        description: "Selected tasks may have been filtered out",
+      });
+      return;
+    }
+
+    // Set flag to prevent duplicate calls
+    isSchedulingRef.current = true;
+
+    const loadingToast = toast.loading(
+      "Scheduling selected tasks...",
+      {
+        description: `Organizing ${selectedTasks.length} task${selectedTasks.length === 1 ? "" : "s"}`,
+      },
+    );
+
+    try {
+      // Calculate two week date range
+      const { startDate, endDate } = getTwoWeekDateRange();
+      
+      // Generate schedule plan for selected tasks only
+      const result = await generateSchedulePlan(
+        selectedTasks,
+        { startDate, endDate },
+        {
+          forceCategoryHours: true,
+          enforceMinimumHours: true
+        }
+      ).catch((error) => {
+        console.error('❌ Promise rejected in generateSchedulePlan:', error);
+        throw error;
+      });
+
+      // Apply the schedule plan
+      if (result && result.scheduled && result.scheduled.length > 0) {
+        await applySchedulePlan(result.scheduled, false).catch((planError) => {
+          console.error('❌ Error applying schedule plan:', planError);
+          // Don't throw - result is still valid even if some tasks failed to update
+        });
+      }
+
+      toast.dismiss(loadingToast);
+
+      if (result && result.scheduled && result.scheduled.length > 0) {
+        toast.success("Tasks scheduled!", {
+          description: `Scheduled ${result.scheduled.length} task${result.scheduled.length === 1 ? "" : "s"} across the next two weeks`,
+        });
+        
+        // Clear selection after successful scheduling
+        setSelectedTaskIds(new Set());
+      } else {
+        toast.info("No available slots", {
+          description: "AI Scheduler couldn't find openings within the next two weeks.",
+        });
+      }
+
+      if (result && result.exceedsLimit && result.exceedsLimit.length > 0) {
+        toast.warning(
+          `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? "" : "s"} need manual scheduling`,
+          {
+            description: "No remaining time within the next two weeks for these tasks.",
+          },
+        );
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error('❌ Error in handleScheduleSelected:', error);
+      
+      // Filter out browser extension errors from user-facing messages
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isExtensionError = errorMessage.includes('message channel') || 
+                               errorMessage.includes('listener indicated') ||
+                               errorMessage.includes('asynchronous response');
+      
+      if (!isExtensionError) {
+        toast.error("Scheduling failed", {
+          description: errorMessage || "Please try again",
+        });
+      } else {
+        // Extension error - log but don't show to user, scheduler might still work
+        console.warn('⚠️ Browser extension error detected (non-critical):', errorMessage);
+      }
+    } finally {
+      // Reset flag when done
+      isSchedulingRef.current = false;
+    }
+  }, [selectedTaskIds, sortedTasks, generateSchedulePlan, applySchedulePlan, isScheduling]);
+
   const handleScheduleAll = useCallback(async () => {
     console.log('🎬 handleScheduleAll CALLED', { 
       unscheduledTasksCount: unscheduledTasks.length,
@@ -395,6 +501,20 @@ export function InboxView() {
                   </span>
                   <span className="sm:hidden">
                     {selectedTaskIds.size === sortedTasks.length ? "Deselect" : "Select All"}
+                  </span>
+                </Button>
+                <Button
+                  onClick={handleScheduleSelected}
+                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2.5 sm:px-3`}
+                  size="sm"
+                  disabled={isScheduling}
+                >
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    Schedule ({selectedTaskIds.size})
+                  </span>
+                  <span className="sm:hidden">
+                    {selectedTaskIds.size}
                   </span>
                 </Button>
                 <Button
