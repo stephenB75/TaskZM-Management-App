@@ -10,6 +10,8 @@ if (typeof window !== 'undefined') {
   const originalWarn = console.warn;
   console.warn = (...args: any[]) => {
     const message = args[0]?.toString() || '';
+    const fullMessage = args.map(a => String(a)).join(' ');
+    
     if (message.includes('Multiple GoTrueClient instances') || 
         message.includes('GoTrueClient instances detected')) {
       // Suppress this specific warning - we've fixed it by using a shared client
@@ -26,10 +28,25 @@ if (typeof window !== 'undefined') {
       }
       return;
     }
-    // Suppress preload warnings from extensions
+    // Suppress preload warnings from extensions (Rokt, shopping extensions, etc.)
     if (message.includes('was preloaded using link preload but not used') ||
-        message.includes('rokt-icons.woff')) {
+        message.includes('rokt-icons.woff') ||
+        message.includes('apps.rokt.com') ||
+        fullMessage.includes('rokt-icons.woff') ||
+        fullMessage.includes('apps.rokt.com') ||
+        fullMessage.includes('rokt.com')) {
       console.debug('Suppressed extension preload warning', args);
+      return;
+    }
+    // Suppress performance violation warnings from browser extensions
+    if (message.includes('[Violation]') ||
+        message.includes('handler took') ||
+        fullMessage.includes('[Violation]') ||
+        fullMessage.includes('handler took') ||
+        fullMessage.includes('vendor-CC_ZIGTP') ||
+        fullMessage.includes('web-client-content-script') ||
+        fullMessage.includes('inner.html')) {
+      console.debug('Suppressed extension performance violation warning', args);
       return;
     }
     originalWarn.apply(console, args);

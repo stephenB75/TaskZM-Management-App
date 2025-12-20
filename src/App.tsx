@@ -662,7 +662,7 @@ function AppContent() {
 
   return (
     <>
-      <div className="h-screen flex bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      <div className="h-screen flex bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 relative overflow-hidden">
         <AppSidebar 
           currentView={currentView} 
           onViewChange={handleViewChange}
@@ -675,13 +675,13 @@ function AppContent() {
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
           <div className="lg:hidden flex-1 flex flex-col min-h-0">
             <div 
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 [background:transparent!important]"
+              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
               style={{
                 scrollBehavior: 'smooth',
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehaviorY: 'contain',
+                // Allow parent gradient to show through on mobile - extends behind nav bar
                 backgroundColor: 'transparent',
-                background: 'transparent',
               } as React.CSSProperties}
             >
               {/* Header spacer - must be first element to push content down underneath fixed header */}
