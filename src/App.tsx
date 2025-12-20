@@ -108,12 +108,15 @@ function AppContent() {
   const { tasks } = useTasks();
   const { settings: notificationSettings } = useNotifications();
   
-  // Calculate count of upcoming and due now tasks for mobile badge
+  // Calculate count of overdue and due now tasks for mobile badge
+  // Only show tasks that are actually due (overdue or due now), not tasks scheduled for later today
   const getUpcomingAndDueNowCount = () => {
     const now = new Date();
-    const reminderTime = new Date(now.getTime() + notificationSettings.reminderTime * 60 * 1000);
+    // Only show tasks that are overdue or due within the next 15 minutes
+    // This prevents showing tasks scheduled for later today that aren't actually due yet
+    const dueSoonThreshold = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes
     
-    const dueAndUpcomingTasks = tasks.filter(task => {
+    const dueTasks = tasks.filter(task => {
       if (task.status === 'done') return false;
       
       let targetDate: Date | null = null;
@@ -127,12 +130,12 @@ function AppContent() {
       
       if (!targetDate) return false;
       
-      // Task is due or upcoming if it's overdue, due now, or within reminder time
-      // Include tasks that are <= reminderTime (covers overdue, due now, and upcoming)
-      return targetDate <= reminderTime;
+      // Only include tasks that are overdue or due within the next 15 minutes
+      // This excludes tasks scheduled for later today that aren't actually due yet
+      return targetDate <= dueSoonThreshold;
     });
     
-    return dueAndUpcomingTasks.length;
+    return dueTasks.length;
   };
   
   const upcomingAndDueNowCount = getUpcomingAndDueNowCount();
