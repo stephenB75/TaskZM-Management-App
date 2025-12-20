@@ -3009,6 +3009,7 @@ export function useTasks() {
         addTask: async () => {},
         updateTask: async () => {},
         deleteTask: async () => {},
+        bulkDeleteTasks: async () => {},
         addProject: async () => {},
         updateProject: async () => {},
         addFolder: async () => {},

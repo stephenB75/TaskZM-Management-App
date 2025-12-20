@@ -179,7 +179,7 @@ export function InboxView() {
       aiEstimatedMinutes,
     });
 
-    const newTask: Omit<Task, "id"> = {
+    const newTask: Partial<Task> = {
       title: quickAddTitle.trim(),
       description: "",
       status: "todo",
