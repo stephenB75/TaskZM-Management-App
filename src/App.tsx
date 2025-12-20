@@ -786,12 +786,12 @@ function AppContent() {
                   onStartTour={handleTourStart}
                 />
               )}
-              {/* Bottom nav spacer - inside scrollable container to prevent content from hiding behind nav bar */}
+              {/* Bottom nav spacer - minimal clearance for fixed nav bar */}
               <div 
                 className="flex-shrink-0 w-full" 
                 style={{ 
                   height: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                    ? `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
+                    ? `env(safe-area-inset-bottom, 0px)`
                     : 0,
                   // Transparent background - parent gradient shows through naturally
                   background: 'transparent',
