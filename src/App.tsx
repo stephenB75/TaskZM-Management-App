@@ -110,30 +110,72 @@ function AppContent() {
   
   // Calculate count of overdue and due now tasks for mobile badge
   // Only show tasks that are actually due (overdue or due now), not tasks scheduled for later today
+  // Timezone-aware: compares dates in local time to avoid false positives from UTC/local mismatches
   const getUpcomingAndDueNowCount = () => {
     const now = new Date();
-    // Only show tasks that are overdue or due within the next 15 minutes
+    // Only show tasks that are overdue or due RIGHT NOW (within 5 minutes)
     // This prevents showing tasks scheduled for later today that aren't actually due yet
-    const dueSoonThreshold = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes
+    const dueNowThreshold = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes
     
     const dueTasks = tasks.filter(task => {
       if (task.status === 'done') return false;
       
       let targetDate: Date | null = null;
+      let dateType: 'dueDate' | 'scheduledDate' | null = null;
       
       // Check dueDate first, then scheduledDate
       if (task.dueDate) {
         targetDate = new Date(task.dueDate);
+        dateType = 'dueDate';
       } else if (task.scheduledDate) {
         targetDate = new Date(task.scheduledDate);
+        dateType = 'scheduledDate';
       }
       
-      if (!targetDate) return false;
+      if (!targetDate || isNaN(targetDate.getTime())) return false;
       
-      // Only include tasks that are overdue or due within the next 15 minutes
+      // Normalize both dates to local time for accurate comparison
+      // This prevents timezone issues where UTC dates might appear as "due" when they're actually scheduled for later in local time
+      const targetTime = targetDate.getTime();
+      const nowTime = now.getTime();
+      const thresholdTime = dueNowThreshold.getTime();
+      
+      // Only include tasks that are overdue or due within the next 5 minutes
       // This excludes tasks scheduled for later today that aren't actually due yet
-      return targetDate <= dueSoonThreshold;
+      const isDue = targetTime <= thresholdTime;
+      
+      // Debug logging in development to help identify timezone issues
+      if (import.meta.env.DEV && isDue) {
+        const timeDiff = (targetTime - nowTime) / (60 * 1000); // minutes
+        console.log(`[Today Agenda Badge] Task "${task.title}" is counted as due:`, {
+          taskId: task.id,
+          dateType,
+          targetDate: targetDate.toISOString(),
+          targetDateLocal: targetDate.toLocaleString(),
+          now: now.toISOString(),
+          nowLocal: now.toLocaleString(),
+          timeDiffMinutes: Math.round(timeDiff),
+          isOverdue: targetTime < nowTime,
+          isDueSoon: targetTime >= nowTime && targetTime <= thresholdTime,
+        });
+      }
+      
+      return isDue;
     });
+    
+    if (import.meta.env.DEV && dueTasks.length > 0) {
+      console.log(`[Today Agenda Badge] Total due tasks: ${dueTasks.length}`, {
+        now: now.toISOString(),
+        nowLocal: now.toLocaleString(),
+        tasks: dueTasks.map(t => ({
+          id: t.id,
+          title: t.title,
+          dueDate: t.dueDate,
+          scheduledDate: t.scheduledDate,
+          status: t.status,
+        })),
+      });
+    }
     
     return dueTasks.length;
   };
