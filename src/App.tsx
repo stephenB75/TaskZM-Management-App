@@ -117,6 +117,10 @@ function AppContent() {
     // This prevents showing tasks scheduled for later today that aren't actually due yet
     const dueNowThreshold = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes
     
+    // Get today's date boundaries in local time for date comparison
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
     // Enhanced logging to debug badge count
     const allTasksWithDates = tasks.filter(t => (t.dueDate || t.scheduledDate) && t.status !== 'done');
     
@@ -137,6 +141,16 @@ function AppContent() {
       
       if (!targetDate || isNaN(targetDate.getTime())) return false;
       
+      // CRITICAL: Only count tasks for today or past dates (not future dates)
+      // Normalize target date to local date (ignore time) for date comparison
+      const targetDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      const todayDateOnly = new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate());
+      
+      // Skip tasks scheduled for future dates (tomorrow or later)
+      if (targetDateOnly > todayDateOnly) {
+        return false;
+      }
+      
       // Normalize both dates to local time for accurate comparison
       // This prevents timezone issues where UTC dates might appear as "due" when they're actually scheduled for later in local time
       const targetTime = targetDate.getTime();
@@ -155,6 +169,9 @@ function AppContent() {
           dateType,
           targetDateUTC: targetDate.toISOString(),
           targetDateLocal: targetDate.toLocaleString(),
+          targetDateOnly: targetDateOnly.toLocaleDateString(),
+          todayDateOnly: todayDateOnly.toLocaleDateString(),
+          isTodayOrPast: targetDateOnly <= todayDateOnly,
           targetTime: targetTime,
           nowUTC: now.toISOString(),
           nowLocal: now.toLocaleString(),
@@ -167,6 +184,22 @@ function AppContent() {
           taskDueDate: task.dueDate,
           taskScheduledDate: task.scheduledDate,
         });
+      } else {
+        // Log why task is NOT counted (for debugging)
+        const timeDiff = (targetTime - nowTime) / (60 * 1000);
+        const isFutureDate = targetDateOnly > todayDateOnly;
+        const isTooFarInFuture = targetTime > thresholdTime;
+        if (isFutureDate || (timeDiff > 5 && timeDiff < 60)) {
+          console.debug(`⏭️ [Today Agenda Badge] Task "${task.title}" NOT counted:`, {
+            taskId: task.id,
+            reason: isFutureDate ? 'Future date (tomorrow or later)' : `Scheduled for later today (${Math.round(timeDiff)} minutes from now)`,
+            targetDateOnly: targetDateOnly.toLocaleDateString(),
+            todayDateOnly: todayDateOnly.toLocaleDateString(),
+            timeDiffMinutes: Math.round(timeDiff * 10) / 10,
+            isFutureDate,
+            isTooFarInFuture,
+          });
+        }
       }
       
       return isDue;
