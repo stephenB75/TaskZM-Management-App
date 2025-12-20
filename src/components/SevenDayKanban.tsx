@@ -540,7 +540,7 @@ export function SevenDayKanban({
 
     return (
       <div 
-        className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "flex flex-col" : "min-h-full flex flex-col"}
+        className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "flex flex-col h-full" : "min-h-full flex flex-col"}
         style={{
           backgroundImage: isDark
             ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
@@ -552,7 +552,7 @@ export function SevenDayKanban({
         <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]" style={{ paddingBottom: '2rem', backgroundColor: 'transparent', background: 'transparent' }}>
           <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                <div className="w-full min-h-0" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
+                <div className="w-full min-h-0 flex-1 flex flex-col" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
                     <div className="flex items-center gap-2 mb-3 min-w-0">
                       <div className={cn(
                         "w-1 h-5 sm:h-6 rounded-full flex-shrink-0",
@@ -656,10 +656,10 @@ export function SevenDayKanban({
                       
                       return (
                     <div 
-                      className="w-full" 
+                      className="w-full flex flex-col" 
                       style={{ 
                         minHeight: 0, 
-                        height: 'auto', 
+                        height: '100%',
                         width: '100%',
                         paddingBottom: mobileMode ? '2rem' : undefined, // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                         backgroundImage: isDark
