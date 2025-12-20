@@ -692,7 +692,7 @@ export function DraggableTodayAgendaTask({
               >
                 {/* Assignee Display */}
                 {task.assignedTo && task.assignedTo.length > 0 && (
-                  <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-2")}>
+                  <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-1" : "gap-2")}>
                     {task.assignedTo.slice(0, 3).map((userId) => {
                       const member = getTeamMember(userId);
                       if (!member) return null;
@@ -713,7 +713,7 @@ export function DraggableTodayAgendaTask({
                                   {initials}
                                 </div>
                                 <span className={cn(
-                                  "text-gray-600 dark:text-gray-200 font-semibold whitespace-nowrap",
+                                  "text-gray-600 dark:text-gray-200 font-semibold whitespace-nowrap flex-shrink-0",
                                   isMobile ? "text-[10px]" : "text-[11px]",
                                 )}>
                                   {member.name}

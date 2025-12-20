@@ -914,7 +914,7 @@ export const DraggableTaskCard = React.forwardRef<
                 >
                   {/* Assignee Display */}
                   {task.assignedTo && task.assignedTo.length > 0 && (
-                    <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-2")}>
+                    <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-1" : "gap-2")}>
                       {task.assignedTo.slice(0, 3).map((userId) => {
                         const member = getTeamMember(userId);
                         if (!member) return null;
@@ -939,7 +939,7 @@ export const DraggableTaskCard = React.forwardRef<
                                     {initials}
                                   </div>
                                   <span className={cn(
-                                    `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold whitespace-nowrap`,
+                                    `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold whitespace-nowrap flex-shrink-0`,
                                     isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop,
                                   )}>
                                     {member.name}
