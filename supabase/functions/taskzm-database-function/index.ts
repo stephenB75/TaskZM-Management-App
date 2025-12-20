@@ -3384,6 +3384,7 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
     // Verify webhook signature (RevenueCat sends Authorization header with secret)
     if (!authHeader) {
       console.error('Missing Authorization header in RevenueCat webhook');
+      console.error('Request headers:', Object.fromEntries(c.req.raw.headers.entries()));
       return c.json({ code: 401, message: "Auth header is not 'Bearer {token}'" }, 401);
     }
 
@@ -3397,7 +3398,26 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       return c.json({ code: 401, message: "Auth header is not 'Bearer {token}'" }, 401);
     }
 
-    const event = await c.req.json();
+    // Parse request body with better error handling
+    let event;
+    try {
+      const bodyText = await c.req.text();
+      if (!bodyText || bodyText.trim() === '') {
+        console.error('Empty request body in RevenueCat webhook');
+        return c.json({ error: 'Empty request body' }, 400);
+      }
+      
+      event = JSON.parse(bodyText);
+      console.log('📥 RevenueCat webhook received:', {
+        hasEvent: !!event.event,
+        eventType: event.event?.type || event.type,
+        hasAppUserId: !!(event.event?.app_user_id || event.app_user_id || event.original_app_user_id),
+        bodyLength: bodyText.length,
+      });
+    } catch (parseError) {
+      console.error('Failed to parse RevenueCat webhook JSON:', parseError);
+      return c.json({ error: 'Invalid JSON in request body', details: getErrorMessage(parseError) }, 400);
+    }
     
     // Extract user ID from event (handle both nested and flat event structures)
     const userId = event.event?.app_user_id || event.app_user_id || event.original_app_user_id;
@@ -3418,29 +3438,36 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
     // 2. event.entitlement_ids (array) - flat structure
     // 3. event.event.entitlements.active (object) - legacy format
     // 4. event.entitlements.active (object) - legacy format
-    const entitlementIds = event.event?.entitlement_ids || event.entitlement_ids || [];
+    const entitlementIds = Array.isArray(event.event?.entitlement_ids) 
+      ? event.event.entitlement_ids 
+      : Array.isArray(event.entitlement_ids) 
+        ? event.entitlement_ids 
+        : [];
     const entitlements = event.event?.entitlements || event.entitlements || {};
     
-    // Log full event structure for debugging
-    console.log('📋 RevenueCat webhook event structure:', {
+    // Log full event structure for debugging (but limit size to prevent log overflow)
+    const logEvent = {
       hasEvent: !!event.event,
-      hasEntitlementIds: !!entitlementIds.length,
-      entitlementIds,
+      hasEntitlementIds: entitlementIds.length > 0,
+      entitlementIdsCount: entitlementIds.length,
+      entitlementIds: entitlementIds.slice(0, 5), // Only log first 5
       hasEntitlements: !!Object.keys(entitlements).length,
       eventType,
       productId: event.event?.product_id || event.product_id,
-    });
+    };
+    console.log('📋 RevenueCat webhook event structure:', JSON.stringify(logEvent));
     
     // Check if user has any pro entitlement
     // Entitlement IDs can be: "Yearly", "PRO-Yearly", "PRO-Monthly", "pro", etc.
     const hasProEntitlement = 
-      entitlementIds.some((id: string) => {
+      (Array.isArray(entitlementIds) && entitlementIds.length > 0 && entitlementIds.some((id: string) => {
+        if (typeof id !== 'string') return false;
         const lowerId = id.toLowerCase();
         return lowerId.includes('yearly') || 
                lowerId.includes('monthly') || 
                lowerId === 'pro' ||
                lowerId.includes('lifetime');
-      }) ||
+      })) ||
       entitlements.active?.['pro'] ||
       entitlements.active?.['PRO-Monthly'] ||
       entitlements.active?.['PRO-Yearly'] ||
@@ -3548,26 +3575,44 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       cancelAtPeriodEnd,
     };
 
-    // Save in both formats for compatibility
-    await kv.set(`user_${userId}_subscription`, subscriptionData);
-    await kv.set(`user:${userId}:tier`, tier);
-    await kv.set(`user:${userId}:subscription_status`, status);
-    await kv.set(`user:${userId}:subscription_store`, store);
-    if (startDate) {
-      await kv.set(`user:${userId}:subscription_start`, startDate);
-    }
-    if (endDate) {
-      await kv.set(`user:${userId}:subscription_expires_at`, endDate);
+    // Save in both formats for compatibility with error handling
+    try {
+      await kv.set(`user_${userId}_subscription`, subscriptionData);
+      await kv.set(`user:${userId}:tier`, tier);
+      await kv.set(`user:${userId}:subscription_status`, status);
+      await kv.set(`user:${userId}:subscription_store`, store);
+      if (startDate) {
+        await kv.set(`user:${userId}:subscription_start`, startDate);
+      }
+      if (endDate) {
+        await kv.set(`user:${userId}:subscription_expires_at`, endDate);
+      }
+    } catch (kvError) {
+      console.error('❌ Failed to save subscription data to KV store:', kvError);
+      // Continue execution but log the error - we still want to return success to RevenueCat
+      // to prevent retries, but log the issue for debugging
     }
 
     console.log(`✅ RevenueCat webhook processed: ${eventType} - User ${userId} -> ${tier} (${status})`);
-    console.log(`   Entitlements: ${JSON.stringify(entitlementIds)}`);
+    console.log(`   Entitlements: ${JSON.stringify(entitlementIds.slice(0, 10))}`); // Limit log size
     console.log(`   Store: ${store}, Start: ${startDate}, End: ${endDate}`);
 
-    return c.json({ success: true, event: eventType, tier, status });
+    return c.json({ 
+      success: true, 
+      event: eventType, 
+      tier, 
+      status,
+      userId, // Include userId in response for debugging
+    });
   } catch (error) {
     console.error('❌ RevenueCat webhook error:', error);
-    return c.json({ error: getErrorMessage(error) }, 500);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    const errorMessage = getErrorMessage(error);
+    return c.json({ 
+      error: errorMessage,
+      code: 500,
+      message: 'Internal server error processing webhook'
+    }, 500);
   }
 });
 
