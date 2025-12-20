@@ -754,8 +754,9 @@ export function SevenDayKanban({
                             </div>
                       )}
                     </AnimatePresence>
-                      );
-                    })()}
+                    </div>
+                  );
+                })()}
                 </div>
               </SortableContext>
             </DroppableColumn>
