@@ -51,6 +51,7 @@ export function TodayAgendaView({
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
   const hasAutoScrolledRef = useRef(false); // Track if we've auto-scrolled on initial load
   const userHasScrolledRef = useRef(false); // Track if user has manually scrolled
+  const initialScrollAttemptedRef = useRef(false); // Track if we've attempted initial scroll
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
   const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }>>([]);
@@ -99,6 +100,7 @@ export function TodayAgendaView({
       // Day has changed, reset scroll flags to allow auto-scroll again
       hasAutoScrolledRef.current = false;
       userHasScrolledRef.current = false;
+      initialScrollAttemptedRef.current = false;
     }
     prevDateStringRef.current = todayDateString;
   }, [todayDateString]);
@@ -289,11 +291,17 @@ export function TodayAgendaView({
   // On desktop (hideHeader=true), scroll the ScrollArea viewport
   // Only scroll once on initial load, then allow user to scroll freely
   useEffect(() => {
-    // Don't auto-scroll if user has already scrolled manually
-    if (userHasScrolledRef.current || hasAutoScrolledRef.current) return;
+    // Don't auto-scroll if user has already scrolled manually, we've already auto-scrolled, or we've already attempted
+    if (userHasScrolledRef.current || hasAutoScrolledRef.current || initialScrollAttemptedRef.current) return;
     if (combinedItems.length === 0 || !nextUpTaskId) return;
 
+    // Mark that we've attempted initial scroll
+    initialScrollAttemptedRef.current = true;
+
     const scrollToNextUpTask = () => {
+      // Check again before scrolling (user might have scrolled in the meantime)
+      if (userHasScrolledRef.current) return;
+      
       // Find the next up task element
       const nextUpElement = timelineContainerRef.current?.querySelector(`[data-task-id="${nextUpTaskId}"]`) as HTMLElement;
       
@@ -330,22 +338,64 @@ export function TodayAgendaView({
     return () => clearTimeout(timer);
   }, [combinedItems.length, nextUpTaskId, hideHeader]); // Only depend on length, not full array
 
-  // Track user scroll to prevent auto-scroll after user interaction
+  // Track user scroll to prevent auto-scroll after user interaction (both desktop and mobile)
   useEffect(() => {
-    if (!hideHeader) return; // Only needed for desktop ScrollArea
+    let scrollViewport: HTMLElement | null = null;
+    let scrollContainer: HTMLElement | null = null;
+    let lastScrollTop = 0;
+    let scrollTimeout: NodeJS.Timeout | null = null;
 
-    const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
-    if (!scrollViewport) return;
+    if (hideHeader) {
+      // Desktop: Track ScrollArea viewport
+      scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+      if (scrollViewport) {
+        lastScrollTop = scrollViewport.scrollTop;
+      }
+    } else {
+      // Mobile: Track parent scroll container in App.tsx
+      scrollContainer = timelineContainerRef.current?.closest('[class*="overflow-y-auto"]') as HTMLElement;
+      if (scrollContainer) {
+        lastScrollTop = scrollContainer.scrollTop;
+      }
+    }
 
     const handleScroll = () => {
-      // Mark that user has scrolled (only after initial auto-scroll)
-      if (hasAutoScrolledRef.current) {
+      const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
+      
+      // Only mark as user scroll if the scroll position actually changed
+      // This prevents false positives from programmatic scrolling
+      if (Math.abs(currentScrollTop - lastScrollTop) > 1) {
+        // Clear any pending auto-scroll
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+          scrollTimeout = null;
+        }
+        
+        // Mark that user has scrolled
         userHasScrolledRef.current = true;
+        lastScrollTop = currentScrollTop;
       }
     };
 
-    scrollViewport.addEventListener('scroll', handleScroll, { passive: true });
-    return () => scrollViewport.removeEventListener('scroll', handleScroll);
+    // Use a small delay to detect user-initiated scroll vs programmatic scroll
+    const handleScrollWithDelay = () => {
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(handleScroll, 50);
+    };
+
+    if (scrollViewport) {
+      scrollViewport.addEventListener('scroll', handleScrollWithDelay, { passive: true });
+      return () => {
+        scrollViewport?.removeEventListener('scroll', handleScrollWithDelay);
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+      };
+    } else if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScrollWithDelay, { passive: true });
+      return () => {
+        scrollContainer?.removeEventListener('scroll', handleScrollWithDelay);
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+      };
+    }
   }, [hideHeader]);
 
   const handleTaskClick = (task: Task) => {
