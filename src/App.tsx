@@ -690,6 +690,15 @@ function AppContent() {
   return (
     <>
       <div className="h-screen flex bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 relative overflow-hidden">
+        {/* Mobile gradient extension - ensures gradient extends behind nav bar */}
+        <div 
+          className="lg:hidden fixed bottom-0 left-0 right-0 pointer-events-none z-40"
+          style={{
+            height: `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`,
+            background: 'linear-gradient(to bottom, transparent, rgba(227, 220, 241, 0.3))',
+          }}
+          aria-hidden="true"
+        />
         <AppSidebar 
           currentView={currentView} 
           onViewChange={handleViewChange}
@@ -750,7 +759,11 @@ function AppContent() {
                 style={{ 
                   height: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                     ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
-                    : 0
+                    : 0,
+                  // Match parent gradient to ensure seamless extension to nav bar
+                  background: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                    ? 'linear-gradient(to bottom, transparent, rgba(227, 220, 241, 0.5))'
+                    : 'transparent',
                 }}
                 aria-hidden="true"
               />
