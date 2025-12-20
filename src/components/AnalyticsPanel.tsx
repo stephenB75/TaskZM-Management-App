@@ -78,6 +78,7 @@ import {
   getColorWithOpacity,
 } from "../lib/color-theme";
 import { UI_CHART_COLORS, UI_ANALYTICS_COLORS } from "../lib/ui-colors";
+import { cn } from "../lib/utils";
 
 interface AnalyticsPanelProps {
   onClose: () => void;
@@ -681,7 +682,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
       {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
       <div className="flex-1 min-h-0">
-        {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+        {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet ? (
         <ScrollArea className="h-full">
             <div className="p-4 space-y-4 pt-4 md:pt-4 pb-safe md:pb-4">
             {/* Compact KPI Metrics Row */}

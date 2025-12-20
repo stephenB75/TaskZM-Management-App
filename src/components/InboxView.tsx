@@ -448,7 +448,7 @@ export function InboxView() {
         {/* Quick Add and Filters Section */}
         <div 
           className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0"
-          style={isMobile ? { paddingTop: `calc(${HEADER_MOBILE_SAFE_AREA_SPACER} + 1.5rem)` } : undefined}
+          style={isMobile ? { paddingTop: '1.5rem' } : undefined} // App.tsx header spacer handles top spacing
         >
           <div className="flex flex-col gap-4">
             {/* Quick Add */}
@@ -597,7 +597,7 @@ export function InboxView() {
         {/* Task List */}
         {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
         <div className="flex-1 min-h-0">
-          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet ? (
             <ScrollArea className="h-full">
               <div className="p-4 md:p-8 pb-safe">
                 <div className="space-y-2">
