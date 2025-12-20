@@ -542,10 +542,17 @@ export function SevenDayKanban({
       <div 
         className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "flex flex-col h-full" : "min-h-full flex flex-col"}
         style={{
-          backgroundImage: isDark
-            ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
-            : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
-        }}
+          // On mobile, use transparent background to show parent gradient from App.tsx
+          // On desktop, use the gradient background
+          backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+            ? 'transparent'
+            : (isDark
+              ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
+              : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`),
+          backgroundColor: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+            ? 'transparent'
+            : undefined,
+        } as React.CSSProperties}
       >
 
         {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
@@ -561,7 +568,7 @@ export function SevenDayKanban({
         >
           <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                <div className="w-full min-h-0 flex-1 flex flex-col" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
+                <div className="w-full min-h-0 flex-1 flex flex-col" style={{ backgroundColor: 'transparent', background: 'transparent' } as React.CSSProperties}>
                     <div className="flex items-center gap-2 mb-3 min-w-0">
                       <div className={cn(
                         "w-1 h-5 sm:h-6 rounded-full flex-shrink-0",

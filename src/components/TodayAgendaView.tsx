@@ -558,7 +558,10 @@ export function TodayAgendaView({
         data-droppable-id="today-agenda"
         data-today-agenda="true"
         className={cn(
-          `flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
+          // On mobile, remove gradient background to show parent gradient from App.tsx
+          // On desktop, keep the gradient background
+          `flex flex-col transition-all duration-300`,
+          !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
           isMobile ? "w-full" : "h-full min-h-0", // min-h-0 needed for flex child to properly constrain ScrollArea
@@ -567,6 +570,9 @@ export function TodayAgendaView({
         style={{
           position: 'relative',
           zIndex: isOver ? Z_INDEX.DROP_ZONE : Z_INDEX.TIMELINE_LINE, // Ensure drop zone is above other elements when dragging over
+          // On mobile, ensure transparent background to show parent gradient
+          backgroundColor: isMobile ? 'transparent' : undefined,
+          background: isMobile ? 'transparent' : undefined,
         } as React.CSSProperties}
         data-tour="today-panel"
       >
@@ -627,7 +633,10 @@ export function TodayAgendaView({
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? '2rem' // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                   : undefined,
-              }}
+                // Ensure transparent background to show parent gradient
+                backgroundColor: 'transparent',
+                background: 'transparent',
+              } as React.CSSProperties}
             >
             {combinedItems.length === 0 ? (
               <div className={cn(
@@ -1095,7 +1104,10 @@ export function TodayAgendaView({
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
               ? '2rem' // Small visual spacing - nav bar clearance handled by spacer in App.tsx
               : undefined,
-          }}
+            // Ensure transparent background to show parent gradient
+            backgroundColor: 'transparent',
+            background: 'transparent',
+          } as React.CSSProperties}
         >
           {combinedItems.length === 0 ? (
             <div className={cn(
