@@ -699,7 +699,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               style={{ 
                 padding: PANEL_PADDING,
                 paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
-                paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`,
+                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '2rem' : undefined,
                 gap: PANEL_CONTENT_SPACING
               }}
             >

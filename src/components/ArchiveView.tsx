@@ -554,7 +554,7 @@ export function ArchiveView() {
               </div>
             </div>
           ) : (
-            <div className="p-4 md:px-8" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` }}>
+            <div className="p-4 md:px-8" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '2rem' : undefined }}>
               <div className="space-y-3">
                 <AnimatePresence mode="popLayout">
                   {sortedTasks.length === 0 ? (

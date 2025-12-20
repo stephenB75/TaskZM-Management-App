@@ -608,7 +608,7 @@ export function TodayAgendaView({
                   ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing
                   : '3rem',
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                  ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`
+                  ? '2rem' // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                   : undefined,
               }}
             >
@@ -1074,7 +1074,7 @@ export function TodayAgendaView({
               ? `${TIMELINE_PADDING.mobile}px` // Add spacing between header and first item on mobile
               : '3rem', // 48px on desktop for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-              ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 3rem)`
+              ? '2rem' // Small visual spacing - nav bar clearance handled by spacer in App.tsx
               : undefined,
           }}
         >

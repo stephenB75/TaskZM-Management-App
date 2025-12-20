@@ -838,7 +838,7 @@ export function MonthCalendarView({
                     "grid grid-cols-7 gap-0 md:gap-1.5 w-full"
                   )}
                   style={{
-                    paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
+                    paddingBottom: '2rem', // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                   }}
                 >
               {calendarDays.map((dayData, index) => {

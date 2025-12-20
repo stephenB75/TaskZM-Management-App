@@ -1065,7 +1065,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           </div>
         </ScrollArea>
       ) : (
-          <div className="p-4 space-y-4 pt-4 md:pt-4" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` }}>
+          <div className="p-4 space-y-4 pt-4 md:pt-4" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '2rem' : undefined }}>
             {/* Compact KPI Metrics Row */}
             <div className="grid grid-cols-2 gap-3">
               <MetricCard

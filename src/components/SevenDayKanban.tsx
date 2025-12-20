@@ -584,7 +584,7 @@ export function SevenDayKanban({
       >
 
         {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
-        <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)`, backgroundColor: 'transparent', background: 'transparent' }}>
+        <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]" style={{ paddingBottom: '2rem', backgroundColor: 'transparent', background: 'transparent' }}>
           <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <div className="w-full min-h-0 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent', minHeight: 0, height: 'auto', width: '100%' }}>
@@ -697,7 +697,7 @@ export function SevenDayKanban({
                         minHeight: 0, 
                         height: 'auto', 
                         width: '100%',
-                        paddingBottom: mobileMode ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` : undefined,
+                        paddingBottom: mobileMode ? '2rem' : undefined, // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                         backgroundImage: isDark
                           ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
                           : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`,
@@ -735,7 +735,7 @@ export function SevenDayKanban({
                             className="flex flex-col items-center gap-3 w-full"
                             style={{
                               padding: 0,
-                              paddingBottom: mobileMode ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` : undefined,
+                              paddingBottom: mobileMode ? '2rem' : undefined, // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                               minHeight: 0,
                               height: 'auto',
                               backgroundImage: isDark
@@ -860,7 +860,7 @@ export function SevenDayKanban({
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
                 transformOrigin: 'top left',
                 transition: KANBAN_ANIMATION.transformTransition,
-                paddingBottom: mobileMode ? `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 3rem)` : undefined,
+                paddingBottom: mobileMode ? '2rem' : undefined, // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                 minHeight: mobileMode ? '100%' : undefined,
                 backgroundImage: mobileMode ? (isDark
                   ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`

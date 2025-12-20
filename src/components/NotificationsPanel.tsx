@@ -548,7 +548,7 @@ export function NotificationsPanel() {
               </div>
             </ScrollArea>
           ) : (
-            <div className="p-4 space-y-3" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 2rem)` }}>
+            <div className="p-4 space-y-3" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '2rem' : undefined }}>
               {filteredNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

@@ -858,7 +858,7 @@ export function InboxView() {
               </div>
             </ScrollArea>
             ) : (
-              <div className="p-4 md:p-8" style={{ paddingBottom: `calc(${NAV_BAR_BOTTOM_PADDING_MOBILE} + 3rem)` }}>
+              <div className="p-4 md:p-8" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '2rem' : undefined }}>
               <div className="space-y-2">
                 <AnimatePresence mode="popLayout">
                   {sortedTasks.length === 0 ? (
