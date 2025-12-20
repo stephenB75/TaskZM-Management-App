@@ -80,8 +80,10 @@ function CheckboxSwitch({
   // Circular thumb: use thumb dimensions (both are 14px for perfect circle)
   const circularThumbSize = TOGGLE_SWITCH_DIMENSIONS.thumb.width; // Both width and height are 14px
   
-  // Calculate transform translateX value for checked state: same calculation as Switch component
-  const translateXValue = TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked;
+  // Use calculated thumbOffset for custom sizes, or constant for default sizes
+  const checkedOffset = width !== TOGGLE_SWITCH_DIMENSIONS.container.width 
+    ? thumbOffset 
+    : TOGGLE_SWITCH_DIMENSIONS.thumbOffset.checked;
 
   return (
     <label 
@@ -130,10 +132,11 @@ function CheckboxSwitch({
           // Circular thumb: perfectly circular, perfectly centered
           height: `${circularThumbSize}px`,
           width: `${circularThumbSize}px`,
-          // Calculate top position for perfect vertical centering: (container height - thumb height) / 2
+          // Perfect vertical centering: (container height - thumb height) / 2
           top: `${(height - circularThumbSize) / 2}px`,
+          // Perfect horizontal positioning: use calculated offset for custom sizes, constant for defaults
           left: isChecked 
-            ? `${width - circularThumbSize - TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px` 
+            ? `${checkedOffset}px` 
             : `${TOGGLE_SWITCH_DIMENSIONS.thumbOffset.unchecked}px`,
           // Remove transform to avoid subpixel rendering issues on mobile
         }}

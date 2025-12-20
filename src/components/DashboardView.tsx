@@ -24,7 +24,7 @@ import {
 } from "../lib/business-constants";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { Button } from "./ui/button";
-import { Switch } from "./ui/switch";
+import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import {
   Sheet,
   SheetContent,
