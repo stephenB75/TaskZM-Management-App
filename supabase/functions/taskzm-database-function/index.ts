@@ -1213,6 +1213,181 @@ app.post("/taskzm-database-function/subscription", async (c) => {
 });
 
 // ========================================
+// DELETE ACCOUNT ENDPOINT
+// ========================================
+
+// Delete user account and all associated data (for all users, not just demo)
+app.delete("/taskzm-database-function/delete-account", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    console.log(`🗑️ Starting account deletion for user: ${userId}`);
+
+    const supabase = getSupabaseClient();
+
+    // 1. Get user's workspace
+    const workspaceId = await kv.get(`user_${userId}_workspace`);
+    
+    if (workspaceId) {
+      console.log(`  📦 Deleting workspace: ${workspaceId}`);
+      
+      // Delete all workspace-related data
+      const allKeys = await kv.getByPrefix(`workspace_${workspaceId}_`);
+      console.log(`  🗑️  Found ${allKeys.length} workspace keys to delete`);
+      
+      let deletedWorkspaceKeys = 0;
+      for (const item of allKeys) {
+        try {
+          await kv.del(item.key);
+          deletedWorkspaceKeys++;
+        } catch (e) {
+          console.warn(`  ⚠️  Failed to delete workspace key ${item.key}: ${e}`);
+        }
+      }
+      
+      // Delete workspace reference
+      try {
+        await kv.del(`user_${userId}_workspace`);
+        deletedWorkspaceKeys++;
+      } catch (e) {
+        console.warn(`  ⚠️  Failed to delete workspace reference: ${e}`);
+      }
+      
+      console.log(`  ✅ Deleted ${deletedWorkspaceKeys}/${allKeys.length + 1} workspace keys`);
+    }
+
+    // 2. Delete user-specific data
+    console.log(`  👤 Deleting user data for: ${userId}`);
+    const userKeys = await kv.getByPrefix(`user_${userId}_`);
+    console.log(`  🗑️  Found ${userKeys.length} user keys to delete`);
+    
+    let deletedUserKeys = 0;
+    for (const item of userKeys) {
+      try {
+        await kv.del(item.key);
+        deletedUserKeys++;
+      } catch (e) {
+        console.warn(`  ⚠️  Failed to delete key ${item.key}: ${e}`);
+      }
+    }
+    
+    // Also delete subscription data in the alternative format (user:userId:key)
+    const subscriptionKeys = [
+      `user:${userId}:tier`,
+      `user:${userId}:subscription_status`,
+      `user:${userId}:subscription_store`,
+      `user:${userId}:subscription_start`,
+      `user:${userId}:subscription_expires_at`,
+      `user:${userId}:billing_period`,
+    ];
+    
+    let deletedSubscriptionKeys = 0;
+    for (const key of subscriptionKeys) {
+      try {
+        await kv.del(key);
+        deletedSubscriptionKeys++;
+      } catch (e) {
+        // Subscription keys might not exist - not an error
+      }
+    }
+    
+    console.log(`  ✅ Deleted ${deletedUserKeys}/${userKeys.length} user keys and ${deletedSubscriptionKeys} subscription keys`);
+
+    // 3. Delete calendar tokens if any
+    try {
+      await kv.del(`calendar_tokens_${userId}_google`);
+      await kv.del(`calendar_tokens_${userId}_outlook`);
+      await kv.del(`calendar_tokens_${userId}_apple`);
+      console.log('  ✅ Deleted calendar tokens');
+    } catch (e) {
+      console.log('  ℹ️  No calendar tokens to delete');
+    }
+
+    // 4. Delete tasks from Supabase database
+    try {
+      const { data: membership } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (membership?.workspace_id) {
+        const { error: deleteError } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('workspace_id', membership.workspace_id);
+        
+        if (deleteError) {
+          console.warn('  ⚠️  Failed to delete tasks from database:', deleteError);
+        } else {
+          console.log('  ✅ Deleted tasks from database');
+        }
+
+        // Delete workspace members
+        const { error: membersError } = await supabase
+          .from('workspace_members')
+          .delete()
+          .eq('workspace_id', membership.workspace_id);
+        
+        if (membersError) {
+          console.warn('  ⚠️  Failed to delete workspace members:', membersError);
+        }
+
+        // Delete workspace if user is the only member
+        const { data: remainingMembers } = await supabase
+          .from('workspace_members')
+          .select('id')
+          .eq('workspace_id', membership.workspace_id)
+          .limit(1);
+        
+        if (!remainingMembers || remainingMembers.length === 0) {
+          const { error: workspaceError } = await supabase
+            .from('workspaces')
+            .delete()
+            .eq('id', membership.workspace_id);
+          
+          if (workspaceError) {
+            console.warn('  ⚠️  Failed to delete workspace:', workspaceError);
+          } else {
+            console.log('  ✅ Deleted workspace from database');
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('  ⚠️  Error deleting database records:', e);
+    }
+
+    // 5. Delete the user from Supabase Auth
+    console.log(`  🔐 Deleting user from Supabase Auth: ${userId}`);
+    let authDeleteSuccess = true;
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+    
+    if (deleteError) {
+      console.error('  ⚠️  Failed to delete user from Auth:', deleteError);
+      authDeleteSuccess = false;
+      // Continue anyway - KV data is already cleaned
+    } else {
+      console.log('  ✅ Deleted user from Supabase Auth');
+    }
+
+    return c.json({
+      success: true,
+      message: 'Account and all associated data deleted successfully',
+      deletedWorkspaceKeys: workspaceId ? deletedWorkspaceKeys : 0,
+      deletedUserKeys,
+      deletedSubscriptionKeys,
+      authDeleted: authDeleteSuccess,
+    });
+  } catch (error) {
+    console.error('❌ Error deleting account:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// ========================================
 // DEMO USER CLEANUP ENDPOINT
 // ========================================
 

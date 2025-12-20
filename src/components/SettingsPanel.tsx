@@ -4,7 +4,7 @@ import {
   Bell, Clock, RotateCcw, Briefcase, CreditCard, Info, RefreshCw, Trophy, Award, Lock, Compass,
   Target, CheckCircle, Shield, Zap, Crown, Star, Flame, TrendingUp, Activity, Timer, Brain,
   BatteryCharging, Sunrise, Moon as MoonIcon, Calendar as CalendarIcon, Sparkles as SparklesIcon,
-  BarChart3, Users, Check, X
+  BarChart3, Users, Check, X, Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -28,6 +28,16 @@ import { PrivacyPolicyDialog } from './PrivacyPolicyDialog';
 import { TermsOfServiceDialog } from './TermsOfServiceDialog';
 import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import { useIsMobile } from './ui/use-mobile';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
@@ -100,6 +110,7 @@ import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 import { COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY, COLOR_PASTEL_MINT, getColorWithOpacity } from '../lib/color-theme';
+import { projectId } from '../utils/supabase/info';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -119,6 +130,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
   const [profileName, setProfileName] = useState(user?.name || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -230,6 +243,51 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       toast.success('Signed out successfully');
     } catch (error) {
       toast.error('Failed to sign out');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user?.id || !accessToken) {
+      toast.error('Unable to delete account: User not authenticated');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
+      const response = await fetch(`${BASE_URL}/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to delete account');
+      }
+
+      const result = await response.json();
+      
+      toast.success('Account deleted successfully', {
+        description: 'All your data has been permanently deleted.',
+      });
+
+      // Sign out and redirect
+      await signOut();
+      
+      // Clear all local storage
+      localStorage.clear();
+      
+      // Redirect to home/login page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast.error('Failed to delete account', {
+        description: error instanceof Error ? error.message : 'Please try again or contact support.',
+      });
+      setIsDeletingAccount(false);
     }
   };
 
@@ -461,6 +519,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 >
                   <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                   Sign Out
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => setShowDeleteAccountDialog(true)} 
+                  className="w-full border-destructive/50"
+                >
+                  <Trash2 style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                  Delete Account
                 </Button>
               </div>
 
@@ -2618,6 +2685,37 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         open={showTermsDialog}
         onOpenChange={setShowTermsDialog}
       />
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={showDeleteAccountDialog} onOpenChange={setShowDeleteAccountDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete your account? This action cannot be undone.
+              <br /><br />
+              This will permanently delete:
+              <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                <li>All your tasks and projects</li>
+                <li>Your workspace and team data</li>
+                <li>Your subscription information</li>
+                <li>Your calendar connections</li>
+                <li>All other account data</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingAccount}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={isDeletingAccount}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   </div>
 );
