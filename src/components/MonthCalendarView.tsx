@@ -12,6 +12,7 @@ import {
   verticalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
+import { useIsMobile } from "./ui/use-mobile";
 import { CSS } from "@dnd-kit/utilities";
 import { useTasks } from "../contexts/TaskContext";
 import { useDragDrop } from "../contexts/DragDropContext";
@@ -62,6 +63,7 @@ function DraggableMonthTask({
   onTaskClick: (task: Task) => void;
   onToggleComplete?: (task: Task) => void;
 }) {
+  const isMobile = useIsMobile();
   const {
     attributes,
     listeners,
@@ -69,7 +71,10 @@ function DraggableMonthTask({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ 
+    id: task.id,
+    disabled: isMobile, // Disable drag on mobile
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -77,6 +82,7 @@ function DraggableMonthTask({
       transition ||
       "transform 250ms cubic-bezier(0.25, 0.8, 0.25, 1)",
     opacity: isDragging ? 0.7 : 1,
+    touchAction: isMobile ? "auto" : "none", // Allow normal touch on mobile
   };
 
   const priorityColors = {
@@ -98,9 +104,10 @@ function DraggableMonthTask({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
+      {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
       className={cn(
-        "text-xs p-1 rounded border-l-2 cursor-grab hover:shadow-sm transition-all relative active:cursor-grabbing select-none smooth-drag-transform",
+        "text-xs p-1 rounded border-l-2 transition-all relative select-none smooth-drag-transform",
+        !isMobile && "cursor-grab hover:shadow-sm active:cursor-grabbing", // Only show drag cursor on desktop
         priorityColors[task.priority],
         task.status === "done" && "opacity-60",
       )}
@@ -309,8 +316,10 @@ function DroppableDay({
   isExpanded?: boolean;
   onExpandToggle?: () => void;
 }) {
+  const isMobile = useIsMobile();
   const { setNodeRef, isOver } = useDroppable({
     id: dateString,
+    disabled: isMobile, // Disable drop on mobile
   });
 
   // Combine and sort tasks and events by time

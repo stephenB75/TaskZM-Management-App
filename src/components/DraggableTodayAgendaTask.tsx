@@ -685,7 +685,7 @@ export function DraggableTodayAgendaTask({
               <div
                 className={cn(
                   "absolute flex items-center flex-wrap",
-                  isMobile ? "bottom-1 left-1 gap-1 max-w-[calc(100%-60px)]" : "bottom-2 left-2 gap-2 max-w-[calc(100%-80px)]",
+                  isMobile ? "bottom-1.5 left-1.5 gap-1 max-w-[calc(100%-60px)]" : "bottom-2.5 left-2.5 gap-2 max-w-[calc(100%-80px)]",
                 )}
                 onClick={(e) => e.stopPropagation()}
               >

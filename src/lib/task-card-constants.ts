@@ -530,17 +530,17 @@ export const TASK_CARD_TEXT_COLORS = {
 export const TASK_CARD_POSITIONING = {
   assignedUsers: {
     bottom: {
-      mobile: 4, // bottom-1 = 4px
-      desktop: 8, // bottom-2 = 8px
+      mobile: 6, // bottom-1.5 = 6px (matches padding pb-2 = 8px, leaving 2px clearance)
+      desktop: 10, // bottom-2.5 = 10px (matches padding pb-2.5 = 10px, leaving adequate clearance)
     },
     left: {
-      mobile: 4, // left-1 = 4px
-      desktop: 8, // left-2 = 8px
+      mobile: 6, // left-1.5 = 6px (matches padding px-2 = 8px, leaving 2px clearance)
+      desktop: 10, // left-2.5 = 10px (matches padding px-3 = 12px, leaving 2px clearance)
     },
     // Timeline view positioning
     timeline: {
-      mobile: 'bottom-1 left-1 gap-1',
-      desktop: 'bottom-2 left-2 gap-2',
+      mobile: 'bottom-1.5 left-1.5 gap-1',
+      desktop: 'bottom-2.5 left-2.5 gap-2',
     },
   },
   // Timeline line positioning

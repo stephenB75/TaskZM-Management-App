@@ -1009,7 +1009,7 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) - only for tasks >= 45 mins, tasks < 45 mins show in inline bottom row */}
               {showAbsolutePomodoroTimer && (
                 <div
-                  className={cn("absolute", isMobile ? "bottom-0 right-1" : "bottom-2 right-2")}
+                  className={cn("absolute", isMobile ? "bottom-1.5 right-1.5" : "bottom-2.5 right-2.5")}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <PomodoroTimer

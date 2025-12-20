@@ -13,6 +13,7 @@ import {
 import { useDroppable } from "@dnd-kit/core";
 import { AppHeader } from "./AppHeader";
 import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { useIsMobile } from "./ui/use-mobile";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -276,8 +277,10 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
     onEditFolder: (folder: FolderType) => void;
     onDeleteFolder: (folder: FolderType) => void;
   }) => {
+    const isMobile = useIsMobile();
     const { setNodeRef, isOver } = useDroppable({
       id: `folder_${folder.id}`,
+      disabled: isMobile, // Disable drop on mobile
     });
 
     // Local state to control dropdown menu
