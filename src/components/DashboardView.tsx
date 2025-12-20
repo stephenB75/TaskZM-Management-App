@@ -842,6 +842,8 @@ export function DashboardView({
       incrementAIUsage();
     }
 
+    // Consistent definition: unscheduled = scheduledDate === null/undefined and not done
+    // This includes: regular tasks, recurring tasks, and rollover tasks
     const unscheduledTasks = tasks.filter((t) => !t.scheduledDate && t.status !== "done");
     if (unscheduledTasks.length === 0) {
       toast.info("No unscheduled tasks found", {

@@ -92,6 +92,8 @@ export function InboxView() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Get unscheduled tasks (or scheduled if showScheduled is true)
+  // Consistent definition: unscheduled = scheduledDate === null/undefined and not done
+  // This includes: regular tasks, recurring tasks, and rollover tasks
   const unscheduledTasks = tasks.filter(
     (t) => {
       if (showScheduled) {
@@ -99,6 +101,7 @@ export function InboxView() {
         return t.scheduledDate && t.status !== "done";
       } else {
         // Show unscheduled tasks that are not done
+        // Includes: regular tasks, recurring tasks, and rollover tasks (all have scheduledDate === null)
         return !t.scheduledDate && t.status !== "done";
       }
     }

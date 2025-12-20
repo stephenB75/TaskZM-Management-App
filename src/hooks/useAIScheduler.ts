@@ -120,84 +120,27 @@ export function useAIScheduler() {
   };
 
   const getUnscheduledTasks = () => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+    // Consistent definition: unscheduled tasks are those with scheduledDate === null/undefined
+    // This includes: regular tasks, recurring tasks, and rollover tasks (all have scheduledDate === null)
     const filtered = tasks.filter(t => {
       // Exclude done tasks
       if (t.status === 'done') {
         return false;
       }
       
-      // Exclude blocked tasks
-      if (isTaskBlocked(t, tasks)) {
-        return false;
-      }
-      
-      // Check if this is a recurring task
-      const isRecurring = t.recurrence && t.recurrence.type !== 'none';
-      
-      // ALWAYS include recurring tasks that don't have a scheduledDate
-      // Recurring tasks need a base scheduledDate to function properly
-      if (isRecurring && !t.scheduledDate) {
-        logger.debug('Including recurring task without scheduledDate', {
-          taskId: t.id,
-          title: t.title,
-          recurrenceType: t.recurrence.type,
-        });
-        return true;
-      }
-      
-      // Include non-recurring tasks without scheduledDate
-      if (!t.scheduledDate && !isRecurring) {
-        return true;
-      }
-      
-      // Include recurring tasks that need rescheduling:
-      // If scheduled date is today or in the past, it needs to be rescheduled to next occurrence
-      if (isRecurring && t.scheduledDate) {
-        try {
-          const scheduledDate = new Date(t.scheduledDate);
-          scheduledDate.setHours(0, 0, 0, 0);
-          
-          // If scheduled date is today or in the past, it needs to be rescheduled to next occurrence
-          // This ensures recurring tasks are properly scheduled for future dates
-          if (scheduledDate <= today) {
-            logger.debug('Including recurring task with past/today scheduledDate', {
-              taskId: t.id,
-              title: t.title,
-              scheduledDate: t.scheduledDate,
-            });
-            return true;
-          }
-          
-          // If scheduled date is in the future, don't reschedule (already properly scheduled)
-          return false;
-        } catch (error) {
-          // If date parsing fails, include the task to be rescheduled
-          console.error('❌ Error parsing scheduledDate for recurring task, including in schedule:', {
-            taskId: t.id,
-            title: t.title,
-            scheduledDate: t.scheduledDate,
-            error: error instanceof Error ? error.message : String(error),
-          });
-          logger.warn('Error parsing scheduledDate for recurring task, including in schedule:', {
-            taskId: t.id,
-            scheduledDate: t.scheduledDate,
-            error,
-          });
-          return true;
-        }
-      }
-      
-      // For non-recurring tasks, only include if they don't have a scheduledDate
-      return false;
+      // Only include tasks with no scheduledDate (null or undefined)
+      // This covers:
+      // - Regular tasks that were never scheduled
+      // - Recurring tasks without a scheduledDate
+      // - Rollover tasks (which have scheduledDate set to null after rollover)
+      return !t.scheduledDate;
     });
     
     logger.debug('getUnscheduledTasks result', {
       totalTasks: tasks.length,
       unscheduledCount: filtered.length,
-      recurringTasksIncluded: filtered.filter(t => t.recurrence && t.recurrence.type !== 'none').length,
+      regularTasks: filtered.filter(t => !t.recurrence || t.recurrence.type === 'none').length,
+      recurringTasks: filtered.filter(t => t.recurrence && t.recurrence.type !== 'none').length,
     });
     
     return filtered;
