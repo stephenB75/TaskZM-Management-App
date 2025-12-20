@@ -727,8 +727,8 @@ function AppContent() {
         <div 
           className="lg:hidden fixed bottom-0 left-0 right-0 pointer-events-none z-40"
           style={{
-            height: `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`,
-            background: 'linear-gradient(to bottom, transparent, rgba(227, 220, 241, 0.3))',
+            height: `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`,
+            background: 'transparent',
           }}
           aria-hidden="true"
         />
@@ -791,12 +791,10 @@ function AppContent() {
                 className="flex-shrink-0 w-full" 
                 style={{ 
                   height: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                    ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
+                    ? `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
                     : 0,
-                  // Match parent gradient to ensure seamless extension to nav bar
-                  background: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                    ? 'linear-gradient(to bottom, transparent, rgba(227, 220, 241, 0.5))'
-                    : 'transparent',
+                  // Transparent background - parent gradient shows through naturally
+                  background: 'transparent',
                 }}
                 aria-hidden="true"
               />
