@@ -117,6 +117,9 @@ function AppContent() {
     // This prevents showing tasks scheduled for later today that aren't actually due yet
     const dueNowThreshold = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes
     
+    // Enhanced logging to debug badge count
+    const allTasksWithDates = tasks.filter(t => (t.dueDate || t.scheduledDate) && t.status !== 'done');
+    
     const dueTasks = tasks.filter(task => {
       if (task.status === 'done') return false;
       
@@ -144,37 +147,61 @@ function AppContent() {
       // This excludes tasks scheduled for later today that aren't actually due yet
       const isDue = targetTime <= thresholdTime;
       
-      // Debug logging in development to help identify timezone issues
-      if (import.meta.env.DEV && isDue) {
+      // Enhanced debug logging - always log when task is counted as due
+      if (isDue) {
         const timeDiff = (targetTime - nowTime) / (60 * 1000); // minutes
-        console.log(`[Today Agenda Badge] Task "${task.title}" is counted as due:`, {
+        console.log(`🔔 [Today Agenda Badge] Task "${task.title}" is counted as due:`, {
           taskId: task.id,
           dateType,
-          targetDate: targetDate.toISOString(),
+          targetDateUTC: targetDate.toISOString(),
           targetDateLocal: targetDate.toLocaleString(),
-          now: now.toISOString(),
+          targetTime: targetTime,
+          nowUTC: now.toISOString(),
           nowLocal: now.toLocaleString(),
-          timeDiffMinutes: Math.round(timeDiff),
+          nowTime: nowTime,
+          thresholdTime: thresholdTime,
+          timeDiffMinutes: Math.round(timeDiff * 10) / 10,
           isOverdue: targetTime < nowTime,
           isDueSoon: targetTime >= nowTime && targetTime <= thresholdTime,
+          taskStatus: task.status,
+          taskDueDate: task.dueDate,
+          taskScheduledDate: task.scheduledDate,
         });
       }
       
       return isDue;
     });
     
-    if (import.meta.env.DEV && dueTasks.length > 0) {
-      console.log(`[Today Agenda Badge] Total due tasks: ${dueTasks.length}`, {
-        now: now.toISOString(),
-        nowLocal: now.toLocaleString(),
-        tasks: dueTasks.map(t => ({
+    // Always log badge calculation details - make it very visible
+    if (dueTasks.length > 0) {
+      console.group(`🔔 [Today Agenda Badge] BADGE SHOWING: ${dueTasks.length} task(s) counted as due`);
+      console.log('Current Time:', {
+        UTC: now.toISOString(),
+        Local: now.toLocaleString(),
+        Timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      console.log('Threshold (5 minutes from now):', {
+        UTC: dueNowThreshold.toISOString(),
+        Local: dueNowThreshold.toLocaleString(),
+      });
+      console.log('Tasks being counted:', dueTasks.map(t => {
+        const targetDate = t.dueDate ? new Date(t.dueDate) : (t.scheduledDate ? new Date(t.scheduledDate) : null);
+        const timeDiff = targetDate ? (targetDate.getTime() - now.getTime()) / (60 * 1000) : null;
+        return {
           id: t.id,
           title: t.title,
-          dueDate: t.dueDate,
-          scheduledDate: t.scheduledDate,
           status: t.status,
-        })),
-      });
+          dateType: t.dueDate ? 'dueDate' : 'scheduledDate',
+          targetDateUTC: targetDate?.toISOString(),
+          targetDateLocal: targetDate?.toLocaleString(),
+          timeDiffMinutes: timeDiff ? Math.round(timeDiff * 10) / 10 : null,
+          isOverdue: timeDiff ? timeDiff < 0 : false,
+          isDueSoon: timeDiff ? timeDiff >= 0 && timeDiff <= 5 : false,
+        };
+      }));
+      console.groupEnd();
+    } else {
+      console.log(`✅ [Today Agenda Badge] No badge - ${allTasksWithDates.length} task(s) with dates, but none are due within 5 minutes`);
     }
     
     return dueTasks.length;
