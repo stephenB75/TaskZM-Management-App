@@ -30,10 +30,8 @@ if (!SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
-if (!REVENUECAT_WEBHOOK_SECRET) {
-  console.error('❌ Error: REVENUECAT_WEBHOOK_SECRET not found in environment variables');
-  process.exit(1);
-}
+// REVENUECAT_WEBHOOK_SECRET is optional for verification script
+// (only needed for processing webhooks, not for reading subscription data)
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
