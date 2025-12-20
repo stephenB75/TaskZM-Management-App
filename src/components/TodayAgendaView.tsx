@@ -49,6 +49,8 @@ export function TodayAgendaView({
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+  const hasAutoScrolledRef = useRef(false); // Track if we've auto-scrolled on initial load
+  const userHasScrolledRef = useRef(false); // Track if user has manually scrolled
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
   const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }>>([]);
@@ -87,6 +89,19 @@ export function TodayAgendaView({
   // Get today's tasks
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  
+  // Track date to reset scroll flags when day changes
+  const todayDateString = today.toDateString();
+  const prevDateStringRef = useRef<string | null>(null);
+  
+  useEffect(() => {
+    if (prevDateStringRef.current !== null && prevDateStringRef.current !== todayDateString) {
+      // Day has changed, reset scroll flags to allow auto-scroll again
+      hasAutoScrolledRef.current = false;
+      userHasScrolledRef.current = false;
+    }
+    prevDateStringRef.current = todayDateString;
+  }, [todayDateString]);
   const allTodayTasks = Array.isArray(tasks) ? tasks.filter((task) => {
     // Defensive check: ensure task is valid
     if (!task || typeof task !== 'object') {
@@ -249,77 +264,8 @@ export function TodayAgendaView({
   // Build layouts only for tasks (events will be inserted at their positions)
   const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, minGap, false), [todayTasks, minGap]); // Disable time-based spacing
 
-  // Auto-scroll to current time on mount and when items change
-  // On mobile (hideHeader=false), scroll the parent container in App.tsx
-  // On desktop (hideHeader=true), scroll the ScrollArea viewport
-  useEffect(() => {
-    if (combinedItems.length === 0) return;
-
-    const scrollToCurrentTime = () => {
-      const now = new Date();
-      const currentTimeMs = now.getTime();
-
-      // Find the item (task or event) closest to current time
-      let closestItem = combinedItems[0];
-      let minDiff = Infinity;
-
-      combinedItems.forEach((item) => {
-        let itemTimeMs: number;
-        if (item.type === 'task' && item.task?.scheduledDate) {
-          itemTimeMs = new Date(item.task.scheduledDate).getTime();
-        } else if (item.type === 'event' && item.event) {
-          itemTimeMs = new Date(item.event.start).getTime();
-        } else {
-          return;
-        }
-        
-        const diff = Math.abs(itemTimeMs - currentTimeMs);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestItem = item;
-        }
-      });
-
-      // Scroll to the closest item
-      if (closestItem) {
-        let element: HTMLElement | null = null;
-        if (closestItem.type === 'task' && closestItem.task) {
-          element = timelineContainerRef.current?.querySelector(`[data-task-id="${closestItem.task.id}"]`) || null;
-        } else if (closestItem.type === 'event' && closestItem.event) {
-          element = timelineContainerRef.current?.querySelector(`[data-event-id="${closestItem.event.id}"]`) || null;
-        }
-        
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-          // On mobile (hideHeader=false), scroll the parent scroll container in App.tsx
-          // On desktop (hideHeader=true), scroll the ScrollArea viewport
-          if (hideHeader) {
-            // Desktop: Find the scroll viewport within this component's ScrollArea
-            const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
-            if (scrollViewport) {
-              const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-              const baselineMinutes = TASK_CALCULATION_CONSTANTS.dragDrop.hourMin * 60;
-              const offsetMinutes = Math.max(0, currentTimeInMinutes - baselineMinutes);
-              const estimatedScrollTop = Math.max(
-                0,
-                offsetMinutes * TASK_CARD_LAYOUT_METRICS.pixelsPerMinute - TASK_CARD_LAYOUT_METRICS.timelineScrollOffset
-              );
-              scrollViewport.scrollTop = estimatedScrollTop;
-            }
-          }
-        }
-      }
-    };
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(scrollToCurrentTime, TIMING_CONSTANTS.delays.scroll);
-    return () => clearTimeout(timer);
-  }, [combinedItems, hideHeader]);
-
-
   // Find the next uncompleted task after current time (next up)
-  const nextUpTaskId = (() => {
+  const nextUpTaskId = useMemo(() => {
     if (todayTasks.length === 0) return null;
     
     const now = new Date();
@@ -336,7 +282,71 @@ export function TodayAgendaView({
     
     // If no task is after current time, return the first task
     return todayTasks[0]?.id || null;
-  })();
+  }, [todayTasks]);
+
+  // Auto-scroll to "next up" task on initial load only
+  // On mobile (hideHeader=false), scroll the parent container in App.tsx
+  // On desktop (hideHeader=true), scroll the ScrollArea viewport
+  // Only scroll once on initial load, then allow user to scroll freely
+  useEffect(() => {
+    // Don't auto-scroll if user has already scrolled manually
+    if (userHasScrolledRef.current || hasAutoScrolledRef.current) return;
+    if (combinedItems.length === 0 || !nextUpTaskId) return;
+
+    const scrollToNextUpTask = () => {
+      // Find the next up task element
+      const nextUpElement = timelineContainerRef.current?.querySelector(`[data-task-id="${nextUpTaskId}"]`) as HTMLElement;
+      
+      if (nextUpElement) {
+        if (hideHeader) {
+          // Desktop: Scroll within ScrollArea viewport
+          const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+          if (scrollViewport) {
+            // Get the container that holds the scrollable content
+            const scrollContainer = timelineContainerRef.current;
+            if (scrollContainer) {
+              // Calculate position relative to scroll container
+              const containerRect = scrollContainer.getBoundingClientRect();
+              const elementRect = nextUpElement.getBoundingClientRect();
+              const relativeTop = elementRect.top - containerRect.top + scrollViewport.scrollTop;
+              
+              // Scroll to center the next up task in the viewport
+              scrollViewport.scrollTo({
+                top: relativeTop - (scrollViewport.clientHeight / 2) + (elementRect.height / 2),
+                behavior: 'smooth',
+              });
+            }
+          }
+        } else {
+          // Mobile: Use scrollIntoView on the parent scroll container
+          nextUpElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        hasAutoScrolledRef.current = true;
+      }
+    };
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(scrollToNextUpTask, TIMING_CONSTANTS.delays.scroll);
+    return () => clearTimeout(timer);
+  }, [combinedItems.length, nextUpTaskId, hideHeader]); // Only depend on length, not full array
+
+  // Track user scroll to prevent auto-scroll after user interaction
+  useEffect(() => {
+    if (!hideHeader) return; // Only needed for desktop ScrollArea
+
+    const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+    if (!scrollViewport) return;
+
+    const handleScroll = () => {
+      // Mark that user has scrolled (only after initial auto-scroll)
+      if (hasAutoScrolledRef.current) {
+        userHasScrolledRef.current = true;
+      }
+    };
+
+    scrollViewport.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollViewport.removeEventListener('scroll', handleScroll);
+  }, [hideHeader]);
 
   const handleTaskClick = (task: Task) => {
     if (!task?.id) {
