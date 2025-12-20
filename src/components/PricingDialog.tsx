@@ -830,6 +830,12 @@ export function PricingDialog({
                   </div>
                 </div>
 
+                <div className="mb-2">
+                  <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground italic text-center`}>
+                    Includes all features from Free and Monthly plans
+                  </p>
+                </div>
+
                 <ul className="space-y-1 mb-2.5 flex-1 min-h-0 overflow-y-auto">
                   {/* Show only Yearly-exclusive features (monthly features are shown in monthly column) */}
                   {yearlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
