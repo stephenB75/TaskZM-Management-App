@@ -735,13 +735,19 @@ function AppContent() {
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
           <div className="lg:hidden flex-1 flex flex-col min-h-0">
             <div 
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
+              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 relative"
               style={{
                 scrollBehavior: 'smooth',
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehaviorY: 'contain',
-                // Allow parent gradient to show through on mobile - extends behind nav bar
-                backgroundColor: 'transparent',
+                // Minimum height to fill space between header and nav bar, extends with content
+                minHeight: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                  ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
+                  : 'auto',
+                // Background gradient fills the container and extends with content
+                backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                  ? 'linear-gradient(to bottom, rgb(228, 224, 239), rgb(220, 214, 235))'
+                  : 'transparent',
               } as React.CSSProperties}
             >
               {/* Header spacer - must be first element to push content down underneath fixed header */}
