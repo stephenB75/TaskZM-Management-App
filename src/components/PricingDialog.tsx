@@ -831,25 +831,7 @@ export function PricingDialog({
                 </div>
 
                 <ul className="space-y-1 mb-2.5 flex-1 min-h-0 overflow-y-auto">
-                  {/* Show all Monthly features first, then all Yearly-exclusive features */}
-                  {monthlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
-                    <li key={`monthly-${index}`} className="flex items-start gap-1.5">
-                      <div className={cn(
-                        "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5",
-                        feature.highlight
-                          ? UI_PRICING_GRADIENT_COLORS.primaryBr.className
-                          : `${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentDarkClass}`
-                      )}>
-                        <feature.icon className={cn(
-                          "w-1.5 h-1.5",
-                          feature.highlight ? "text-white" : "text-gray-800 dark:text-foreground"
-                        )} />
-                      </div>
-                      <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground leading-snug`}>
-                        {feature.text}
-                      </span>
-                    </li>
-                  ))}
+                  {/* Show only Yearly-exclusive features (monthly features are shown in monthly column) */}
                   {yearlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
                     <li key={`yearly-${index}`} className="flex items-start gap-1.5">
                       <div className={cn(

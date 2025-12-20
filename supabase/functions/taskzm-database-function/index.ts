@@ -3722,6 +3722,98 @@ app.get("/taskzm-database-function/subscription-status", async (c) => {
 });
 
 // ============================================================================
+// ADMIN: SYNC REVENUECAT SUBSCRIPTIONS
+// ============================================================================
+// Admin endpoint to verify and sync subscription data
+// Note: RevenueCat webhooks automatically sync subscriptions when events occur
+// This endpoint allows admins to verify subscription data is correct
+
+app.post("/taskzm-database-function/admin/sync-subscriptions", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyAdmin(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized - Admin access required' }, 401);
+    }
+
+    const { userEmail, userId: targetUserId } = await c.req.json();
+    
+    // Helper function to find user ID by email
+    const findUserIdByEmail = async (email: string): Promise<string | null> => {
+      try {
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase.auth.admin.listUsers();
+        if (error) return null;
+        const user = data.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+        return user?.id || null;
+      } catch {
+        return null;
+      }
+    };
+    
+    // If specific user provided, verify their subscription data
+    if (userEmail || targetUserId) {
+      const userIdToSync = targetUserId || (userEmail ? await findUserIdByEmail(userEmail) : null);
+      
+      if (!userIdToSync) {
+        return c.json({ error: 'User not found' }, 404);
+      }
+
+      // Get current subscription data from both formats
+      const tier = await kv.get(`user:${userIdToSync}:tier`) || 'free';
+      const status = await kv.get(`user:${userIdToSync}:subscription_status`) || 'none';
+      const store = await kv.get(`user:${userIdToSync}:subscription_store`);
+      const startDate = await kv.get(`user:${userIdToSync}:subscription_start`);
+      const expiresAt = await kv.get(`user:${userIdToSync}:subscription_expires_at`);
+      const billingPeriod = await kv.get(`user:${userIdToSync}:billing_period`);
+      const legacySubscription = await kv.get(`user_${userIdToSync}_subscription`);
+
+      // Check for data consistency
+      const webhookTier = tier;
+      const legacyTier = legacySubscription?.tier || 'free';
+      const finalTier = webhookTier !== 'free' ? webhookTier : legacyTier;
+      
+      const webhookStatus = status;
+      const legacyStatus = legacySubscription?.status || 'active';
+      const finalStatus = webhookStatus !== 'none' ? webhookStatus : legacyStatus;
+
+      const hasInconsistency = 
+        (webhookTier !== 'free' && legacyTier !== 'free' && webhookTier !== legacyTier) ||
+        (webhookStatus !== 'none' && legacyStatus !== 'active' && webhookStatus !== legacyStatus);
+
+      return c.json({
+        success: true,
+        userId: userIdToSync,
+        subscription: {
+          tier: finalTier,
+          status: finalStatus,
+          store: store || legacySubscription?.store,
+          startDate: startDate || legacySubscription?.startDate,
+          endDate: expiresAt || legacySubscription?.endDate,
+          billingPeriod: billingPeriod || legacySubscription?.billingPeriod,
+        },
+        dataFormats: {
+          webhook: { tier: webhookTier, status: webhookStatus },
+          legacy: { tier: legacyTier, status: legacyStatus },
+        },
+        hasInconsistency,
+        message: hasInconsistency 
+          ? 'Data inconsistency detected - webhook and legacy formats differ'
+          : 'Subscription data is consistent (RevenueCat webhooks automatically sync when events occur)',
+      });
+    }
+
+    // If no specific user, return summary
+    return c.json({
+      success: true,
+      message: 'Use userEmail or userId parameter to verify specific user. RevenueCat webhooks automatically sync subscriptions when events occur.',
+    });
+  } catch (error) {
+    console.error('❌ Admin sync error:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// ============================================================================
 // STRIPE BILLING PORTAL
 // ============================================================================
 // Create Stripe billing portal session for subscription management
