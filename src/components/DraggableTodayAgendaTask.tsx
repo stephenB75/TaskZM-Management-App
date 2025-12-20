@@ -680,96 +680,102 @@ export function DraggableTodayAgendaTask({
               </div>
             )}
 
-            {/* Assignee Display - Positioned in lower left corner */}
-            {task.assignedTo && task.assignedTo.length > 0 && (
+            {/* Assignee Display and Time Tracker - Inline Layout at bottom left */}
+            {(task.assignedTo && task.assignedTo.length > 0) || 
+             (task.estimatedTime && task.estimatedTime >= 45 && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.actualTime && task.actualTime > 0))) ? (
               <div
                 className={cn(
-                  "absolute flex items-center flex-wrap",
-                  isMobile ? "bottom-1.5 left-1.5 gap-1 max-w-[calc(100%-60px)]" : "bottom-2.5 left-2.5 gap-2 max-w-[calc(100%-80px)]",
+                  "absolute flex items-center",
+                  isMobile ? "bottom-1.5 left-1.5 gap-1.5 max-w-[calc(100%-60px)]" : "bottom-2.5 left-2.5 gap-2 max-w-[calc(100%-80px)]",
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
-                {task.assignedTo.slice(0, 3).map((userId) => {
-                  const member = getTeamMember(userId);
-                  if (!member) return null;
+                {/* Assignee Display */}
+                {task.assignedTo && task.assignedTo.length > 0 && (
+                  <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-2")}>
+                    {task.assignedTo.slice(0, 3).map((userId) => {
+                      const member = getTeamMember(userId);
+                      if (!member) return null;
 
-                  const initials = getInitials(member.name);
+                      const initials = getInitials(member.name);
 
-                  return (
-                    <TooltipProvider key={userId}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
-                            <div className={cn(
-                              TASK_CARD_ASSIGNED_USER_COLORS.gradient,
-                              TASK_CARD_ASSIGNED_USER_COLORS.text,
-                              "rounded-full flex items-center justify-center font-semibold",
-                              isMobile ? `w-3 h-3 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile}` : `w-4 h-4 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop}`,
-                            )}>
-                              {initials}
-                            </div>
-                            <span className={cn(
-                              "text-gray-600 dark:text-gray-200 font-semibold",
-                              isMobile ? "text-[10px]" : "text-[11px]",
-                            )}>
-                              {member.name}
-                            </span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{member.name}</p>
-                          <p className="text-[13px] text-gray-400 dark:text-gray-300">
-                            {member.email}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  );
-                })}
-                {task.assignedTo.length > 3 && (
-                  <span className={cn("text-gray-500 dark:text-gray-300", isMobile ? "text-[10px]" : "text-[11px]")}>
-                    +{task.assignedTo.length - 3}
-                  </span>
+                      return (
+                        <TooltipProvider key={userId}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
+                                <div className={cn(
+                                  TASK_CARD_ASSIGNED_USER_COLORS.gradient,
+                                  TASK_CARD_ASSIGNED_USER_COLORS.text,
+                                  "rounded-full flex items-center justify-center font-semibold",
+                                  isMobile ? `w-3 h-3 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile}` : `w-4 h-4 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop}`,
+                                )}>
+                                  {initials}
+                                </div>
+                                <span className={cn(
+                                  "text-gray-600 dark:text-gray-200 font-semibold whitespace-nowrap",
+                                  isMobile ? "text-[10px]" : "text-[11px]",
+                                )}>
+                                  {member.name}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{member.name}</p>
+                              <p className="text-[13px] text-gray-400 dark:text-gray-300">
+                                {member.email}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    })}
+                    {task.assignedTo.length > 3 && (
+                      <span className={cn("text-gray-500 dark:text-gray-300 flex-shrink-0", isMobile ? "text-[10px]" : "text-[11px]")}>
+                        +{task.assignedTo.length - 3}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Tracking Status - Show when timer is running (only for tasks >= 45 mins, tasks < 45 mins show at top) */}
+                {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
+                  <div className={cn(
+                    "flex items-center animate-pulse flex-shrink-0",
+                    isMobile ? "gap-0.5" : "gap-1"
+                  )}>
+                    <div 
+                      className={cn(
+                        "flex items-center rounded-full px-1.5 py-0.5 text-white whitespace-nowrap",
+                        isMobile ? "gap-0.5 text-[9px]" : "gap-1 text-[11px]"
+                      )}
+                      style={{
+                        background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
+                      }}
+                    >
+                      <Timer className={cn("animate-spin flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                      <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top */}
+                {task.estimatedTime && task.estimatedTime >= 45 && task.actualTime && task.actualTime > 0 && !(hasFeature("pomodoroTimer") && timerState.isRunning) && (
+                  <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
+                    <Timer 
+                      className={cn("flex-shrink-0", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} 
+                      style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                    />
+                    <span 
+                      className={cn("font-medium whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}
+                      style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                    >
+                      {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
+                    </span>
+                  </div>
                 )}
               </div>
-            )}
-
-            {/* Tracking Status - Show when timer is running (only for tasks >= 45 mins, tasks < 45 mins show at top) */}
-            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && timerState.isRunning && (
-              <div className={cn(
-                "flex items-center pt-0.5 animate-pulse",
-                isMobile ? "gap-0.5" : "gap-1"
-              )}>
-                <div 
-                  className={cn(
-                    "flex items-center rounded-full px-1.5 py-0.5 text-white",
-                    isMobile ? "gap-0.5 text-[9px]" : "gap-1 text-[11px]"
-                  )}
-                  style={{
-                    background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
-                  }}
-                >
-                  <Timer className={cn("animate-spin", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
-                  <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top */}
-            {task.estimatedTime && task.estimatedTime >= 45 && task.actualTime && task.actualTime > 0 && (
-              <div className={cn("flex items-center pt-0.5", "gap-1")}>
-                <Timer 
-                  className={cn("w-3 h-3")} 
-                  style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                />
-                <span 
-                  className={cn("font-medium", TASK_CARD_FONT_SIZES.duration.desktop)}
-                  style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                >
-                  {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
-                </span>
-              </div>
-            )}
+            ) : null}
 
             {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) - only for tasks >= 45 mins, tasks < 45 mins show in inline bottom row */}
             {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (

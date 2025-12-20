@@ -905,7 +905,7 @@ export const DraggableTaskCard = React.forwardRef<
                (task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && (pomodoroIsRunning || (task.actualTime && task.actualTime > 0))) ? (
                 <div
                   className={cn(
-                    "absolute flex items-center flex-wrap",
+                    "absolute flex items-center",
                     isMobile ? "gap-1.5" : "gap-2",
                   )}
                   style={{
@@ -917,7 +917,7 @@ export const DraggableTaskCard = React.forwardRef<
                 >
                   {/* Assignee Display */}
                   {task.assignedTo && task.assignedTo.length > 0 && (
-                    <div className={cn("flex items-center flex-wrap", isMobile ? "gap-1" : "gap-2")}>
+                    <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-2")}>
                       {task.assignedTo.slice(0, 3).map((userId) => {
                         const member = getTeamMember(userId);
                         if (!member) return null;
@@ -928,7 +928,7 @@ export const DraggableTaskCard = React.forwardRef<
                           <TooltipProvider key={userId}>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
+                                <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
                                   <div 
                                     className={cn(
                                       `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center font-semibold`,
@@ -942,7 +942,7 @@ export const DraggableTaskCard = React.forwardRef<
                                     {initials}
                                   </div>
                                   <span className={cn(
-                                    `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`,
+                                    `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold whitespace-nowrap`,
                                     isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop,
                                   )}>
                                     {member.name}
@@ -960,7 +960,7 @@ export const DraggableTaskCard = React.forwardRef<
                         );
                       })}
                       {task.assignedTo.length > 3 && (
-                        <span className={cn("text-gray-500 dark:text-gray-300", isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop)}>
+                        <span className={cn("text-gray-500 dark:text-gray-300 flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop)}>
                           {TASK_CARD_TEXT.moreAssigned(task.assignedTo.length - 3)}
                         </span>
                       )}
@@ -970,33 +970,33 @@ export const DraggableTaskCard = React.forwardRef<
                   {/* Tracking Status - Show when timer is running (only for tasks >= 45 mins, tasks < 45 mins show at top) */}
                   {task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && pomodoroIsRunning && (
                     <div className={cn(
-                      "flex items-center animate-pulse",
+                      "flex items-center animate-pulse flex-shrink-0",
                       isMobile ? "gap-0.5" : "gap-1"
                     )}>
                       <div 
                         className={cn(
-                          "flex items-center rounded-full px-1.5 py-0.5 text-white",
+                          "flex items-center rounded-full px-1.5 py-0.5 text-white whitespace-nowrap",
                           isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
                         )}
                         style={{
                           background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
                         }}
                       >
-                        <Timer className={cn("animate-spin", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                        <Timer className={cn("animate-spin flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
                         <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top */}
+                  {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top) */}
                   {task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && task.actualTime && task.actualTime > 0 && !pomodoroIsRunning && (
-                    <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
+                    <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
                       <Timer 
-                        className={cn(isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop)} 
+                        className={cn("flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop)} 
                         style={{ color: TASK_CARD_THEME_COLORS.primary }}
                       />
                       <span 
-                        className={cn("font-medium", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}
+                        className={cn("font-medium whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}
                         style={{ color: TASK_CARD_THEME_COLORS.primary }}
                       >
                         {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
