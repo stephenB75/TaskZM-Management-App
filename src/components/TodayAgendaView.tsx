@@ -544,7 +544,7 @@ export function TodayAgendaView({
           `flex flex-col transition-all duration-300 ${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
-          isMobile ? "w-full" : "h-full",
+          isMobile ? "w-full" : "h-full min-h-0", // min-h-0 needed for flex child to properly constrain ScrollArea
           !isMobile && "min-h-[400px]", // Ensure drop zone is always accessible
         )}
         style={{
@@ -692,7 +692,7 @@ export function TodayAgendaView({
                     } else if (item.type === 'event' && item.event) {
                       // Calculate margin for events based on previous item
                       const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                      let marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                      let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
                       
                       if (index === 0) {
                         marginTop = 0;
@@ -830,9 +830,9 @@ export function TodayAgendaView({
             </div>
           </div>
         ) : (
-          <div className={cn("flex-1 w-full relative", "overflow-hidden")}>
+          <div className={cn("flex-1 w-full relative min-h-0", "overflow-hidden")}>
           <ScrollArea 
-            className="h-full w-full" 
+            className="h-full w-full min-h-0" 
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}
           >
             <div 
@@ -927,7 +927,7 @@ export function TodayAgendaView({
                       } else if (item.type === 'event' && item.event) {
                         // Calculate margin for events based on previous item
                         const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                        let marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                        let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
                         
                         if (index === 0) {
                           marginTop = 0;
@@ -1160,7 +1160,7 @@ export function TodayAgendaView({
                   } else if (item.type === 'event' && item.event) {
                     // Calculate margin for events based on previous item
                     const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                    let marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                    let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
                     
                     if (index === 0) {
                       marginTop = 0;
