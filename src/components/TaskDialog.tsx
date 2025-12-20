@@ -1002,7 +1002,67 @@ export function TaskDialog({
 
         // Final validation before converting to ISO
         if (!isNaN(dateWithTime.getTime())) {
-          finalScheduledDate = dateWithTime.toISOString();
+          // If a specific timezone is selected (not "local"), convert the time to UTC
+          // based on the selected timezone
+          if (timezone && timezone !== "local") {
+            try {
+              // Extract date and time components from the local date
+              const year = dateWithTime.getFullYear();
+              const month = dateWithTime.getMonth();
+              const day = dateWithTime.getDate();
+              const hour = dateWithTime.getHours();
+              const minute = dateWithTime.getMinutes();
+              const second = dateWithTime.getSeconds();
+              
+              // Create a date string representing the time in the selected timezone
+              // We need to find the UTC time that, when displayed in the selected timezone,
+              // equals our target time
+              const targetTzFormatter = new Intl.DateTimeFormat("en-US", {
+                timeZone: timezone,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false,
+              });
+              
+              // Try different UTC offsets to find the correct UTC time
+              // that produces our target time in the selected timezone
+              let found = false;
+              for (let offsetHours = -12; offsetHours <= 14; offsetHours++) {
+                const testUTC = new Date(Date.UTC(year, month, day, hour - offsetHours, minute, second));
+                const testParts = targetTzFormatter.formatToParts(testUTC);
+                const getPart = (type: string) => parseInt(testParts.find(p => p.type === type)?.value || "0", 10);
+                
+                const testYear = getPart("year");
+                const testMonth = getPart("month") - 1; // JS months are 0-indexed
+                const testDay = getPart("day");
+                const testHour = getPart("hour");
+                const testMinute = getPart("minute");
+                
+                if (testYear === year && testMonth === month && testDay === day && 
+                    testHour === hour && testMinute === minute) {
+                  finalScheduledDate = testUTC.toISOString();
+                  found = true;
+                  break;
+                }
+              }
+              
+              // Fallback: if conversion failed, use the original date
+              if (!found) {
+                finalScheduledDate = dateWithTime.toISOString();
+              }
+            } catch (error) {
+              console.warn('Error converting timezone:', error);
+              // Fallback to local timezone conversion
+              finalScheduledDate = dateWithTime.toISOString();
+            }
+          } else {
+            // Use local timezone (default behavior)
+            finalScheduledDate = dateWithTime.toISOString();
+          }
         }
       }
     }
