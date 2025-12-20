@@ -382,14 +382,14 @@ export const DraggableTaskCard = React.forwardRef<
       }
       // For medium/long tasks (>= 45 mins), assigned users are absolutely positioned at bottom
       // We need to reserve space at the bottom to prevent overlap with content
-      // Reserve: assigned user height (20px) + bottom position (4-8px) + small buffer (4px) = ~28-32px
+      // Reserve: assigned user height (20px) + bottom position (8px mobile, 10px desktop) + small buffer (4px) = ~32-34px
       if (hasAssignedUsers && !isShortTask) {
         const assignedUsersBottomPosition = isMobile 
-          ? TASK_CARD_POSITIONING.assignedUsers.bottom.mobile // 4px
-          : TASK_CARD_POSITIONING.assignedUsers.bottom.desktop; // 8px
+          ? TASK_CARD_POSITIONING.assignedUsers.bottom.mobile // 8px
+          : TASK_CARD_POSITIONING.assignedUsers.bottom.desktop; // 10px
         const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base; // 20px
         const bottomBuffer = 4; // Small buffer to prevent overlap
-        baseHeight += assignedUsersBaseHeight + assignedUsersBottomPosition + bottomBuffer; // ~28-32px
+        baseHeight += assignedUsersBaseHeight + assignedUsersBottomPosition + bottomBuffer; // ~32-34px
       }
       
       // AUTO-ADJUST: Pomodoro timer is absolutely positioned, so it doesn't add to height
