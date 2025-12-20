@@ -33,7 +33,7 @@ import {
   KANBAN_TEXT_SIZES,
   KANBAN_SPACING,
 } from '../lib/kanban-constants';
-import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE } from '../lib/layout-constants';
+import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT } from '../lib/layout-constants';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
 
@@ -549,7 +549,16 @@ export function SevenDayKanban({
       >
 
         {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
-        <div className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 [background:transparent!important] [background-color:transparent!important]" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
+        <div 
+          className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4" 
+          style={{ 
+            // Remove transparent background override to allow parent gradient to show through
+            // Add minimum height to fill space between header and nav bar when no tasks
+            minHeight: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+              ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
+              : 'auto',
+          } as React.CSSProperties}
+        >
           <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <div className="w-full min-h-0 flex-1 flex flex-col" style={{ backgroundColor: 'transparent', background: 'transparent' }}>
