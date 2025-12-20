@@ -899,7 +899,8 @@ export const DraggableTaskCard = React.forwardRef<
             <>
               {/* Assignee Display and Time Tracker - Inline Layout at bottom left */}
               {(task.assignedTo && task.assignedTo.length > 0) || 
-               (task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && (pomodoroIsRunning || (task.actualTime && task.actualTime > 0))) ? (
+               (task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && (pomodoroIsRunning || (task.actualTime && task.actualTime > 0))) ||
+               (isMobile && showAbsolutePomodoroTimer) ? (
                 <div
                   className={cn(
                     "absolute flex items-center",
@@ -1000,13 +1001,31 @@ export const DraggableTaskCard = React.forwardRef<
                       </span>
                     </div>
                   )}
+
+                  {/* Pomodoro Timer - Inline on mobile, separate on desktop */}
+                  {isMobile && showAbsolutePomodoroTimer && (
+                    <div
+                      className="flex items-center flex-shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <PomodoroTimer
+                        taskId={pomodoroTimerId}
+                        taskTitle={task.title}
+                        onTimeUpdate={handlePomodoroTimeUpdate}
+                        compact={true}
+                        initialTime={task.actualTime || 0}
+                        estimatedTime={task.estimatedTime || undefined}
+                        isMobile={isMobile}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : null}
 
-              {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) - only for tasks >= 45 mins, tasks < 45 mins show in inline bottom row */}
-              {showAbsolutePomodoroTimer && (
+              {/* Pomodoro Timer - Bottom right on desktop only (mobile is inline with assignee/tracker above) */}
+              {showAbsolutePomodoroTimer && !isMobile && (
                 <div
-                  className={cn("absolute", isMobile ? "bottom-2 right-2" : "bottom-2.5 right-2.5")}
+                  className={cn("absolute", "bottom-2.5 right-2.5")}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <PomodoroTimer

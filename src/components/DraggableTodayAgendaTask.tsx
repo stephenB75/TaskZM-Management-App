@@ -682,7 +682,8 @@ export function DraggableTodayAgendaTask({
 
             {/* Assignee Display and Time Tracker - Inline Layout at bottom left */}
             {(task.assignedTo && task.assignedTo.length > 0) || 
-             (task.estimatedTime && task.estimatedTime >= 45 && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.actualTime && task.actualTime > 0))) ? (
+             (task.estimatedTime && task.estimatedTime >= 45 && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.actualTime && task.actualTime > 0))) ||
+             (isMobile && task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer")) ? (
               <div
                 className={cn(
                   "absolute flex items-center",
@@ -774,13 +775,31 @@ export function DraggableTodayAgendaTask({
                     </span>
                   </div>
                 )}
+
+                {/* Pomodoro Timer - Inline on mobile, separate on desktop */}
+                {isMobile && task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
+                  <div
+                    className="flex items-center flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <PomodoroTimer
+                      taskId={task.id}
+                      taskTitle={task.title}
+                      onTimeUpdate={handlePomodoroTimeUpdate}
+                      compact={true}
+                      initialTime={task.actualTime || 0}
+                      estimatedTime={task.estimatedTime || undefined}
+                      isMobile={isMobile}
+                    />
+                  </div>
+                )}
               </div>
             ) : null}
 
-            {/* Pomodoro Timer - Positioned in lower right corner (PRO feature) - only for tasks >= 45 mins, tasks < 45 mins show in inline bottom row */}
-            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
+            {/* Pomodoro Timer - Bottom right on desktop only (mobile is inline with assignee/tracker above) */}
+            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && !isMobile && (
               <div
-                className={cn("absolute", isMobile ? "bottom-2 right-2" : "bottom-2.5 right-2.5")}
+                className={cn("absolute", "bottom-2.5 right-2.5")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <PomodoroTimer

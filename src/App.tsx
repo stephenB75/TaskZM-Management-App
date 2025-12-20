@@ -744,10 +744,16 @@ function AppContent() {
                 minHeight: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
                   : 'auto',
-                // Background gradient fills the container and extends with content
+                // Background gradient fills the container and extends with content - extends to nav bar
                 backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? 'linear-gradient(to bottom, rgb(228, 224, 239), rgb(220, 214, 235))'
                   : 'transparent',
+                // Ensure background extends fully to nav bar and beyond with content
+                backgroundSize: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                  ? '100% auto'
+                  : 'auto',
+                backgroundRepeat: 'repeat-y',
+                backgroundAttachment: 'scroll',
               } as React.CSSProperties}
             >
               {/* Header spacer - must be first element to push content down underneath fixed header */}
