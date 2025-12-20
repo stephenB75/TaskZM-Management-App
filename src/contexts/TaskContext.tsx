@@ -2883,9 +2883,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const more = tasksToRollover.length > 3 ? ` and ${tasksToRollover.length - 3} more` : '';
           
           toast('🔄 Task Rollover', {
-            description: `Roll over ${tasksToRollover.length} incomplete task(s) to today? (${taskTitles}${more})`,
+            description: `Move ${tasksToRollover.length} incomplete task(s) to inbox? (${taskTitles}${more})`,
             action: {
-              label: 'Roll Over',
+              label: 'Move to Inbox',
               onClick: () => performRollover(tasksToRollover, todayString),
             },
             cancel: {
@@ -2908,166 +2908,21 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     };
 
     const performRollover = async (tasksToRollover: Task[], todayString: string) => {
-      let rolledCount = 0;
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-      const now = new Date();
+      let movedCount = 0;
       
-      // Sort tasks by priority and scheduled time to maintain chronological order
-      const sortedTasksToRollover = [...tasksToRollover].sort((a, b) => {
-        // First by priority
-        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-        const aPriority = priorityOrder[a.priority] || 1;
-        const bPriority = priorityOrder[b.priority] || 1;
-        if (aPriority !== bPriority) return bPriority - aPriority;
-        
-        // Then by original scheduled time (if available)
-        if (a.scheduledDate && b.scheduledDate) {
-          return new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime();
-        }
-        if (a.scheduledDate) return -1;
-        if (b.scheduledDate) return 1;
-        
-        return 0;
-      });
-      
-      // Track scheduled tasks to maintain chronological order and prevent overlaps
-      // This array is updated as we schedule tasks to ensure findNextAvailableSlot
-      // knows about previously scheduled rollover tasks
-      const scheduledRolloverTasks: Task[] = [];
-      let lastScheduledEnd: number | null = null; // Track the end time of the last scheduled task
-      
-      for (const task of sortedTasksToRollover) {
+      // Move tasks to inbox by setting scheduledDate to null
+      for (const task of tasksToRollover) {
         try {
-          // Get category hours for this task
-          const categoryHours = getCategoryHoursForTask(task, today, hoursSettings);
-          
-          // Determine start time based on category hours or current time
-          let startTime: Date;
-          if (categoryHours) {
-            // Start from category hours start time, but not before current time
-            const categoryStartMinutes = categoryHours.start;
-            const categoryStartHours = Math.floor(categoryStartMinutes / MINUTES_PER_HOUR);
-            const categoryStartMins = categoryStartMinutes % MINUTES_PER_HOUR;
-            
-            startTime = new Date(today);
-            startTime.setHours(categoryStartHours, categoryStartMins, 0, 0);
-            
-            // If category start is before current time, use current time (rounded up)
-            if (startTime.getTime() < now.getTime()) {
-              const currentMinutes = now.getMinutes();
-              const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-              startTime = new Date(now);
-              if (roundedMinutes >= MINUTES_PER_HOUR) {
-                startTime.setHours(startTime.getHours() + 1);
-                startTime.setMinutes(0);
-              } else {
-                startTime.setMinutes(roundedMinutes);
-              }
-              startTime.setSeconds(0);
-              startTime.setMilliseconds(0);
-              
-              // Ensure we're still within category hours
-              const currentTotalMinutes = startTime.getHours() * MINUTES_PER_HOUR + startTime.getMinutes();
-              if (currentTotalMinutes < categoryHours.start) {
-                startTime.setHours(Math.floor(categoryHours.start / MINUTES_PER_HOUR), categoryHours.start % MINUTES_PER_HOUR, 0, 0);
-              }
-            }
-          } else {
-            // No category hours - start from current time (rounded up) or 9:00 AM, whichever is later
-            const currentMinutes = now.getMinutes();
-            const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-            startTime = new Date(now);
-            if (roundedMinutes >= MINUTES_PER_HOUR) {
-              startTime.setHours(startTime.getHours() + 1);
-              startTime.setMinutes(0);
-            } else {
-              startTime.setMinutes(roundedMinutes);
-            }
-            startTime.setSeconds(0);
-            startTime.setMilliseconds(0);
-            
-            // Ensure not before default work start time
-            const workStartTime = new Date(today);
-            const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
-            workStartTime.setHours(workStartHour, 0, 0, 0);
-            if (startTime.getTime() < workStartTime.getTime()) {
-              startTime = workStartTime;
-            }
-          }
-          
-          // If we have a previously scheduled task, start from its end time to maintain chronological order
-          if (lastScheduledEnd !== null) {
-            const lastEndDate = new Date(lastScheduledEnd);
-            // Round to nearest 15-minute slot
-            const minutes = lastEndDate.getMinutes();
-            const roundedMinutes = Math.ceil(minutes / 15) * 15;
-            if (roundedMinutes >= 60) {
-              lastEndDate.setHours(lastEndDate.getHours() + 1);
-              lastEndDate.setMinutes(0);
-            } else {
-              lastEndDate.setMinutes(roundedMinutes);
-            }
-            lastEndDate.setSeconds(0);
-            lastEndDate.setMilliseconds(0);
-            
-            // Use the later of: last scheduled end or calculated start time
-            // This ensures chronological order while respecting category hours
-            if (lastEndDate.getTime() > startTime.getTime()) {
-              startTime = lastEndDate;
-            }
-          }
-          
-          // Get task duration
-          const taskDuration = getTaskMinutes(task); // Use AI estimator
-          
-          // Combine existing tasks with previously scheduled rollover tasks
-          // This ensures findNextAvailableSlot knows about all scheduled tasks
-          const allTasksIncludingRollover = [...tasks, ...scheduledRolloverTasks];
-          
-          // Find next available slot on today, respecting category hours
-          const availableSlot = findNextAvailableSlot(
-            task.id,
-            startTime,
-            taskDuration,
-            allTasksIncludingRollover,
-            {
-              ensureAfterCurrentTime: true,
-              categoryHours: categoryHours,
-            }
-          );
-          
-          // Ensure the slot is on today (not tomorrow) and within valid hours
-          if (availableSlot.getDate() === today.getDate() && 
-              availableSlot.getMonth() === today.getMonth() && 
-              availableSlot.getFullYear() === today.getFullYear() &&
-              availableSlot.getHours() < HOURS_PER_DAY) {
-            // Use the available slot time
-            await updateTask(task.id, { scheduledDate: availableSlot.toISOString() });
-            
-            // Track this scheduled task for subsequent iterations
-            const scheduledTask: Task = {
-              ...task,
-              scheduledDate: availableSlot.toISOString(),
-            };
-            scheduledRolloverTasks.push(scheduledTask);
-            
-            // Update last scheduled end time for chronological ordering
-            const taskEndTime = availableSlot.getTime() + (taskDuration * MILLISECONDS_PER_MINUTE);
-            lastScheduledEnd = taskEndTime;
-            
-            rolledCount++;
-          } else {
-            // No valid slot found - skip this task
-            logger.warn('No available slot found for rollover task:', task.id);
-          }
+          // Set scheduledDate to null to make it unscheduled (moves to inbox)
+          await updateTask(task.id, { scheduledDate: null });
+          movedCount++;
         } catch (error) {
-          logger.error('Failed to rollover task:', task.id, error);
+          logger.error('Failed to move task to inbox:', task.id, error);
         }
       }
       
-      if (rolledCount > 0) {
-        toast.success(`✅ Rolled over ${rolledCount} task(s) to today`);
+      if (movedCount > 0) {
+        toast.success(`✅ Moved ${movedCount} task(s) to inbox`);
       }
       
       // Ensure we're marked as checked (should already be set, but double-check)
