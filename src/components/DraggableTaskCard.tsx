@@ -825,7 +825,7 @@ export const DraggableTaskCard = React.forwardRef<
                     : isMobile ? "gap-1.5 mt-2 pt-2 pb-2" : "gap-2 mt-2.5 pt-2.5 pb-2.5") // pb-2 (8px) mobile, pb-2.5 (10px) desktop
             )}>
               {/* Left: Assigned Users - Always render container to maintain layout, even if empty */}
-              <div className="flex items-center flex-wrap gap-1 flex-1 min-w-0">
+              <div className="flex items-center gap-1 flex-1 min-w-0">
                 {task.assignedTo && task.assignedTo.length > 0 ? (
                   <>
                     {task.assignedTo.slice(0, 2).map((userId) => {
@@ -836,7 +836,7 @@ export const DraggableTaskCard = React.forwardRef<
                         <TooltipProvider key={userId}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}>
+                              <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
                                 <div 
                                   className={cn(
                                     `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center font-semibold`,
@@ -851,12 +851,9 @@ export const DraggableTaskCard = React.forwardRef<
                                 </div>
                                 <span 
                                   className={cn(
-                                    `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold truncate`,
+                                    `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold whitespace-nowrap flex-shrink-0`,
                                     isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameInline.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameInline.desktop
                                   )}
-                                  style={{
-                                    maxWidth: `${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.nameMaxWidth.mobile : TASK_CARD_CALCULATIONS.assignedUser.nameMaxWidth.desktop}px`,
-                                  }}
                                 >
                                   {member.name}
                                 </span>
