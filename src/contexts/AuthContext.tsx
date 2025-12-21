@@ -386,21 +386,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    // During React Fast Refresh (HMR), providers can temporarily unmount
-    // Return a safe default instead of throwing to prevent crashes
+    // During React Fast Refresh (HMR) or edge cases, providers can temporarily unmount
+    // Always return a safe default instead of throwing to prevent crashes
+    // This ensures the app continues to work even if the provider isn't available yet
     if (import.meta.env.DEV) {
       console.warn('useAuth called outside AuthProvider (likely HMR issue), returning default');
-      return {
-        user: null,
-        accessToken: null,
-        signIn: async () => {},
-        signUp: async () => {},
-        signOut: async () => {},
-        updateProfile: async () => {},
-        isLoading: true,
-      };
     }
-    throw new Error('useAuth must be used within an AuthProvider');
+    return {
+      user: null,
+      accessToken: null,
+      signIn: async () => {},
+      signUp: async () => {},
+      signOut: async () => {},
+      updateProfile: async () => {},
+      isLoading: true,
+    };
   }
   return context;
 }

@@ -26,18 +26,18 @@ export function usePermissions(): Permissions {
   const teamMembers = teamContext?.teamMembers || [];
   const getTeamMember = teamContext?.getTeamMember || null;
 
-  const permissions = useMemo(() => {
-    // Default permissions (if not in a team or role not found)
-    const defaultPermissions: Permissions = {
-      canCreateTask: true,
-      canEditTask: true,
-      canDeleteTask: true,
-      canAssignTask: true,
-      canManageTeam: true,
-      canViewAnalytics: true,
-      role: 'admin',
-    };
+  // Default permissions (if not in a team or role not found)
+  const defaultPermissions: Permissions = {
+    canCreateTask: true,
+    canEditTask: true,
+    canDeleteTask: true,
+    canAssignTask: true,
+    canManageTeam: true,
+    canViewAnalytics: true,
+    role: 'admin',
+  };
 
+  const permissions = useMemo(() => {
     if (!user) {
       return defaultPermissions;
     }
@@ -92,7 +92,8 @@ export function usePermissions(): Permissions {
     }
   }, [user, teamMembers, getTeamMember]);
 
-  return permissions;
+  // Always return a valid permissions object, even if useMemo hasn't run yet
+  return permissions || defaultPermissions;
 }
 
 /**

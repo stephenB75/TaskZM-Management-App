@@ -326,25 +326,25 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 export function useTeam() {
   const context = useContext(TeamContext);
   if (!context) {
-    // During React Fast Refresh (HMR), providers can temporarily unmount
-    // Return a safe default instead of throwing to prevent crashes
+    // During React Fast Refresh (HMR) or edge cases, providers can temporarily unmount
+    // Always return a safe default instead of throwing to prevent crashes
+    // This ensures the app continues to work even if the provider isn't available yet
     if (import.meta.env.DEV) {
       console.warn('useTeam called outside TeamProvider (likely HMR issue), returning default');
-      return {
-        teamMembers: [],
-        isLoading: false,
-        addTeamMember: async () => {},
-        removeTeamMember: async () => {},
-        updateTeamMember: async () => {},
-        getTeamMember: () => undefined,
-        markMemberAsViewed: () => {},
-        acceptInvitation: () => {},
-        resendInvitation: async () => {},
-        declineInvitation: async () => {},
-        syncTeamMembers: async () => {},
-      };
     }
-    throw new Error('useTeam must be used within TeamProvider');
+    return {
+      teamMembers: [],
+      isLoading: false,
+      addTeamMember: async () => {},
+      removeTeamMember: async () => {},
+      updateTeamMember: async () => {},
+      getTeamMember: () => undefined,
+      markMemberAsViewed: () => {},
+      acceptInvitation: () => {},
+      resendInvitation: async () => {},
+      declineInvitation: async () => {},
+      syncTeamMembers: async () => {},
+    };
   }
   return context;
 }

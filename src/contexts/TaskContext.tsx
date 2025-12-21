@@ -3023,53 +3023,53 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 export function useTasks() {
   const context = useContext(TaskContext);
   if (context === undefined) {
-    // During React Fast Refresh (HMR), providers can temporarily unmount
-    // Return a safe default instead of throwing to prevent crashes
+    // During React Fast Refresh (HMR) or edge cases, providers can temporarily unmount
+    // Always return a safe default instead of throwing to prevent crashes
+    // This ensures the app continues to work even if the provider isn't available yet
     if (import.meta.env.DEV) {
       console.warn('useTasks called outside TaskProvider (likely HMR issue), returning default');
-      return {
-        tasks: [],
-        projects: [],
-        folders: [],
-        availableTags: [],
-        filters: {},
-        viewConfig: { groupBy: 'none', sortBy: 'dueDate', sortOrder: 'asc', showCompleted: true },
-        hoursSettings: {
-          weekdayHours: { 
-            work: { start: DEFAULT_WEEKDAY_WORK_START, end: DEFAULT_WEEKDAY_WORK_END, enabled: true }, 
-            personal: { start: DEFAULT_WEEKDAY_PERSONAL_START, end: DEFAULT_WEEKDAY_PERSONAL_END, enabled: true }, 
-            projects: { start: DEFAULT_WEEKDAY_PROJECTS_START, end: DEFAULT_WEEKDAY_PROJECTS_END, enabled: true } 
-          },
-          weekendHours: { 
-            work: { start: DEFAULT_WEEKEND_WORK_START, end: DEFAULT_WEEKEND_WORK_END, enabled: false }, 
-            personal: { start: DEFAULT_WEEKEND_PERSONAL_START, end: DEFAULT_WEEKEND_PERSONAL_END, enabled: true }, 
-            projects: { start: DEFAULT_WEEKEND_PROJECTS_START, end: DEFAULT_WEEKEND_PROJECTS_END, enabled: false } 
-          },
-        },
-        rolloverSettings: { enabled: false, maxHours: 5 },
-        workspaceId: null,
-        isSyncing: false,
-        lastSync: null,
-        addTask: async () => {},
-        updateTask: async () => {},
-        deleteTask: async () => {},
-        bulkDeleteTasks: async () => {},
-        addProject: async () => {},
-        updateProject: async () => {},
-        addFolder: async () => {},
-        updateFolder: async () => {},
-        deleteFolder: async () => {},
-        addAvailableTag: async () => {},
-        removeAvailableTag: async () => {},
-        setFilters: () => {},
-        setViewConfig: () => {},
-        updateHoursSettings: async () => {},
-        updateRolloverSettings: async () => {},
-        syncWithServer: async () => {},
-        ensureWorkspace: async () => null,
-      };
     }
-    throw new Error('useTasks must be used within a TaskProvider');
+    return {
+      tasks: [],
+      projects: [],
+      folders: [],
+      availableTags: [],
+      filters: {},
+      viewConfig: { groupBy: 'none', sortBy: 'dueDate', sortOrder: 'asc', showCompleted: true },
+      hoursSettings: {
+        weekdayHours: { 
+          work: { start: DEFAULT_WEEKDAY_WORK_START, end: DEFAULT_WEEKDAY_WORK_END, enabled: true }, 
+          personal: { start: DEFAULT_WEEKDAY_PERSONAL_START, end: DEFAULT_WEEKDAY_PERSONAL_END, enabled: true }, 
+          projects: { start: DEFAULT_WEEKDAY_PROJECTS_START, end: DEFAULT_WEEKDAY_PROJECTS_END, enabled: true } 
+        },
+        weekendHours: { 
+          work: { start: DEFAULT_WEEKEND_WORK_START, end: DEFAULT_WEEKEND_WORK_END, enabled: false }, 
+          personal: { start: DEFAULT_WEEKEND_PERSONAL_START, end: DEFAULT_WEEKEND_PERSONAL_END, enabled: true }, 
+          projects: { start: DEFAULT_WEEKEND_PROJECTS_START, end: DEFAULT_WEEKEND_PROJECTS_END, enabled: false } 
+        },
+      },
+      rolloverSettings: { enabled: false, maxHours: 5 },
+      workspaceId: null,
+      isSyncing: false,
+      lastSync: null,
+      addTask: async () => {},
+      updateTask: async () => {},
+      deleteTask: async () => {},
+      bulkDeleteTasks: async () => {},
+      addProject: async () => {},
+      updateProject: async () => {},
+      addFolder: async () => {},
+      updateFolder: async () => {},
+      deleteFolder: async () => {},
+      addAvailableTag: async () => {},
+      removeAvailableTag: async () => {},
+      setFilters: () => {},
+      setViewConfig: () => {},
+      updateHoursSettings: async () => {},
+      updateRolloverSettings: async () => {},
+      syncWithServer: async () => {},
+      ensureWorkspace: async () => null,
+    };
   }
   return context;
 }

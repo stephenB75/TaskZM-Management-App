@@ -433,22 +433,24 @@ export function DraggableTodayAgendaTask({
             }}
           />
           {/* Vertical line - starts at headline center (aligned with dot center) and extends to bottom of task card, colored by priority */}
-          {index < totalTasks - 1 && (
-            <div 
-              className="absolute left-1/2 -translate-x-1/2"
-              style={{ 
-                zIndex: Z_INDEX.TIMELINE_LINE,
-                width: `${TASK_CARD_POSITIONING.timelineLine.width}px`,
-                // Line starts at headline center position (same as dot center)
-                top: `${headlineCenterPosition}px`, // Headline center position (dot center)
-                height: `${taskCardHeight - headlineCenterPosition}px`, // From headline center to bottom
-                minHeight: `${TASK_CARD_POSITIONING.timelineLine.minHeight}px`, // Minimum visible line
-                backgroundColor: isNextUp 
-                  ? `${getPriorityLineColor(task.priority)}${TASK_CARD_OPACITY.timelineLine.nextUp}` // 80% opacity for Next Up
-                  : getPriorityLineColor(task.priority), // Full color for regular tasks
-              }}
-            />
-          )}
+          {/* Show line for all tasks - extends to next task or bottom of card */}
+          <div 
+            className="absolute left-1/2 -translate-x-1/2"
+            style={{ 
+              zIndex: Z_INDEX.TIMELINE_LINE,
+              width: `${TASK_CARD_POSITIONING.timelineLine.width}px`,
+              // Line starts at headline center position (same as dot center)
+              top: `${headlineCenterPosition}px`, // Headline center position (dot center)
+              // For last task, line extends to bottom of card. For others, it extends to connect with next task
+              height: index < totalTasks - 1 
+                ? `${taskCardHeight - headlineCenterPosition}px` // Full height to connect with next task
+                : `${taskCardHeight - headlineCenterPosition}px`, // Also full height for last task
+              minHeight: `${TASK_CARD_POSITIONING.timelineLine.minHeight}px`, // Minimum visible line
+              backgroundColor: isNextUp 
+                ? `${getPriorityLineColor(task.priority)}${TASK_CARD_OPACITY.timelineLine.nextUp}` // 80% opacity for Next Up
+                : getPriorityLineColor(task.priority), // Full color for regular tasks
+            }}
+          />
         </div>
 
         {/* Task Content - Match Kanban Week View */}
