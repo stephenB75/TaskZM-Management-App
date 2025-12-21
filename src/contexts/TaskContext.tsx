@@ -97,7 +97,7 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
   const { hasFeature } = useSubscription();
-  const { getTeamMember } = useTeam();
+  const { getTeamMember } = useTeam(); // Now TeamProvider is above TaskProvider, so this is safe
   const { updateActivity } = useDemoActivity(); // Track demo user activity
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([
@@ -1729,7 +1729,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
     
-    // Check permissions
+    // Check permissions (TeamProvider is now above TaskProvider, so getTeamMember is available)
     if (user) {
       const currentUserMember = getTeamMember(user.id);
       const role = currentUserMember?.role || 'admin';
@@ -2139,7 +2139,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const deleteTask = useCallback(async (taskId: string) => {
     updateActivity(); // Track demo user activity
     
-    // Check permissions
+    // Check permissions (TeamProvider is now above TaskProvider, so getTeamMember is available)
     if (user) {
       const currentUserMember = getTeamMember(user.id);
       const role = currentUserMember?.role || 'admin';

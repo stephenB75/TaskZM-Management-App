@@ -657,8 +657,11 @@ export async function fetchCalendarEvents(
     events.push(...parsedEvents);
   }
 
-  console.log(`Fetched ${events.length} events (including expanded recurring events)`);
-  return events;
+  // Deduplicate events to prevent duplicates from recurring event expansion
+  const deduplicatedEvents = deduplicateEvents(events);
+  
+  console.log(`Fetched ${deduplicatedEvents.length} events (${events.length} before deduplication, including expanded recurring events)`);
+  return deduplicatedEvents;
 }
 
 /**
@@ -668,6 +671,27 @@ export async function fetchCalendarEvents(
 function formatDatePreservingTimezone(date: Date, _isUtc: boolean): string {
   // Always output in UTC format for consistent timezone handling
   return date.toISOString();
+}
+
+/**
+ * Deduplicate calendar events based on start time, end time, and title
+ * This prevents duplicate recurring event instances
+ */
+function deduplicateEvents(events: CalendarEvent[]): CalendarEvent[] {
+  const seen = new Map<string, CalendarEvent>();
+  
+  for (const event of events) {
+    // Create a unique key from start time, end time, and title
+    // This identifies duplicate occurrences of the same recurring event
+    const key = `${event.dtstart}_${event.dtend}_${event.summary}`;
+    
+    // Only keep the first occurrence of each unique event
+    if (!seen.has(key)) {
+      seen.set(key, event);
+    }
+  }
+  
+  return Array.from(seen.values());
 }
 
 /**
@@ -1005,12 +1029,11 @@ function parseVEvent(
   // If this is a recurring event and we have a date range, expand it
   if (rrule && rangeStart && rangeEnd && !recurrenceId) {
     const expandedEvents = expandRecurringEvent(baseEvent, rrule, rangeStart, rangeEnd);
-    // Also include the base event if it falls within range
-    const baseDate = new Date(parsedDtstart);
-    if (baseDate >= rangeStart && baseDate <= rangeEnd) {
-      return [baseEvent, ...expandedEvents.filter(e => e.uid !== baseEvent.uid)];
-    }
-    return expandedEvents;
+    // expandRecurringEvent already includes the base event if it's in range,
+    // so we don't need to add it separately. Just return the expanded events.
+    // Deduplicate by start time and title to prevent duplicates
+    const deduplicated = deduplicateEvents(expandedEvents);
+    return deduplicated;
   }
 
   return [baseEvent];
@@ -1091,6 +1114,11 @@ export async function syncCalendarsToDatabase(
       }
     }
 
+    // Deduplicate events before syncing to database
+    // This prevents duplicate recurring event instances from being stored
+    const deduplicatedEvents = deduplicateEvents(allEvents);
+    console.log(`Syncing ${deduplicatedEvents.length} unique events (${allEvents.length} before deduplication)`);
+
     // Get existing synced events for this user
     const { data: existingEvents, error: fetchError } = await supabase
       .from('calendar_events')
@@ -1107,10 +1135,10 @@ export async function syncCalendarsToDatabase(
     const existingMap = new Map(
       (existingEvents || []).map((e: any) => [e.external_id, e])
     );
-    const fetchedUids = new Set(allEvents.map(e => e.uid));
+    const fetchedUids = new Set(deduplicatedEvents.map(e => e.uid));
 
-    // Process each fetched event
-    for (const event of allEvents) {
+    // Process each fetched event (using deduplicated list)
+    for (const event of deduplicatedEvents) {
       const existing = existingMap.get(event.uid);
       
       if (existing) {

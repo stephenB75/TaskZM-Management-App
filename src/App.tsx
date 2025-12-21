@@ -909,9 +909,9 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <SubscriptionProvider>
-            <TaskProvider>
-              <AwardProvider>
-                <TeamProvider>
+            <TeamProvider>
+              <TaskProvider>
+                <AwardProvider>
                   <CalendarProvider>
                     <AIProvider>
                       <NotificationProvider>
@@ -927,9 +927,9 @@ export default function App() {
                       </NotificationProvider>
                     </AIProvider>
                   </CalendarProvider>
-                </TeamProvider>
-              </AwardProvider>
-            </TaskProvider>
+                </AwardProvider>
+              </TaskProvider>
+            </TeamProvider>
           </SubscriptionProvider>
         </AuthProvider>
       </ThemeProvider>
