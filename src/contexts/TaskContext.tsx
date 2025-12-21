@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
+import { useTeam } from './TeamContext';
 import { useDemoActivity } from '../hooks/useDemoActivity';
 import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
@@ -96,6 +97,7 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
   const { hasFeature } = useSubscription();
+  const { getTeamMember } = useTeam();
   const { updateActivity } = useDemoActivity(); // Track demo user activity
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([
@@ -1584,6 +1586,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const addTask = useCallback(async (taskData: Partial<Task>) => {
     updateActivity(); // Track demo user activity
     
+    // Check permissions
+    if (user) {
+      const currentUserMember = getTeamMember(user.id);
+      const role = currentUserMember?.role || 'admin';
+      if (role === 'viewer') {
+        toast.error('Permission Denied', {
+          description: 'Viewer role does not have permission to create tasks. Please contact an admin.',
+        });
+        return;
+      }
+    }
+    
     // Validate workspace ID
     let currentWorkspaceId = workspaceId;
     if (!currentWorkspaceId) {
@@ -1714,6 +1728,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
+    
+    // Check permissions
+    if (user) {
+      const currentUserMember = getTeamMember(user.id);
+      const role = currentUserMember?.role || 'admin';
+      if (role === 'viewer') {
+        toast.error('Permission Denied', {
+          description: 'Viewer role does not have permission to edit tasks. Please contact an admin.',
+        });
+        return;
+      }
+    }
     
     // Validate workspace ID
     let currentWorkspaceId = workspaceId;
@@ -2112,6 +2138,19 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const deleteTask = useCallback(async (taskId: string) => {
     updateActivity(); // Track demo user activity
+    
+    // Check permissions
+    if (user) {
+      const currentUserMember = getTeamMember(user.id);
+      const role = currentUserMember?.role || 'admin';
+      if (role === 'viewer') {
+        toast.error('Permission Denied', {
+          description: 'Viewer role does not have permission to delete tasks. Please contact an admin.',
+        });
+        return;
+      }
+    }
+    
     // Delete from Supabase FIRST (source of truth)
     if (workspaceId && accessToken) {
       try {

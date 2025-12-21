@@ -10,9 +10,11 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { cn, formatTimeAMPM, getInitials, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
+import { usePermissions } from "../hooks/usePermissions";
 import { usePomodoro } from "../contexts/PomodoroContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { PomodoroTimer } from "./PomodoroTimer";
@@ -62,6 +64,7 @@ export const DraggableTaskCard = React.forwardRef<
     const { updateTask } = useTasks();
     const { getTeamMember } = useTeam();
     const { hasFeature } = useSubscription();
+    const { permissions } = usePermissions();
     const { getTimerState } = usePomodoro();
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
@@ -99,6 +102,15 @@ export const DraggableTaskCard = React.forwardRef<
 
     const handleToggleComplete = (e: React.MouseEvent) => {
       e.stopPropagation();
+      
+      // Check permissions
+      if (!permissions.canEditTask) {
+        toast.error('Permission Denied', {
+          description: 'Viewer role does not have permission to edit tasks. Please contact an admin.',
+        });
+        return;
+      }
+      
       updateTask(task.id, {
         status: task.status === "done" ? "todo" : "done",
         completedAt:

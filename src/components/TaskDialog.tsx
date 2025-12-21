@@ -69,6 +69,7 @@ import { MINUTES_PER_HOUR, HOURS_PER_DAY } from "../lib/business-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
+import { usePermissions } from "../hooks/usePermissions";
 import { useCalendar } from "../contexts/CalendarContext";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
@@ -558,6 +559,7 @@ export function TaskDialog({
   const { teamMembers, getTeamMember } = useTeam();
   const { hasFeature, features } = useSubscription();
   const { calendarStatus, syncTask: syncTaskToCalendar } = useCalendar();
+  const { permissions } = usePermissions();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
@@ -1638,6 +1640,14 @@ export function TaskDialog({
   const handleDelete = async () => {
     if (!task) return;
 
+    // Check permissions
+    if (!permissions.canDeleteTask) {
+      toast.error('Permission Denied', {
+        description: 'Viewer role does not have permission to delete tasks. Please contact an admin.',
+      });
+      return;
+    }
+
     try {
       await deleteTask(task.id);
       toast.success("Task deleted", {
@@ -1810,6 +1820,7 @@ export function TaskDialog({
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Enter task name..."
                     autoFocus
+                    disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                     className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-11 text-base"
                   />
                 </div>
@@ -1828,6 +1839,7 @@ export function TaskDialog({
                       onValueChange={(value) =>
                         setStatus(value as TaskStatus)
                       }
+                      disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                     >
                       <SelectTrigger className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
                         <SelectValue />
@@ -1853,6 +1865,7 @@ export function TaskDialog({
                       onValueChange={(value) =>
                         setPriority(value as TaskPriority)
                       }
+                      disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                     >
                       <SelectTrigger className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
                         <SelectValue />
@@ -3173,7 +3186,8 @@ export function TaskDialog({
                 Cancel
               </Button>
               <Button 
-                type="submit" 
+                type="submit"
+                disabled={task ? !permissions.canEditTask : !permissions.canCreateTask} 
                 className="bg-primary hover:bg-primary/90 text-white h-10 px-5 text-sm font-medium flex-1 sm:flex-initial min-w-[140px] shadow-md"
               >
                 {task ? "Update Task" : "Create Task"}

@@ -5,8 +5,10 @@ import { motion } from "motion/react";
 import { Circle, Timer, Clock, Repeat } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
+import { usePermissions } from "../hooks/usePermissions";
 import { usePomodoro } from "../contexts/PomodoroContext";
 import { useTheme } from "../contexts/ThemeContext";
 import {
@@ -70,6 +72,7 @@ export function DraggableTodayAgendaTask({
   const { updateTask } = useTasks();
   const { getTeamMember } = useTeam();
   const { hasFeature } = useSubscription();
+  const { permissions } = usePermissions();
   const { getTimerState } = usePomodoro();
   const { actualTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -316,6 +319,15 @@ export function DraggableTodayAgendaTask({
 
   const handleToggleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Check permissions
+    if (!permissions.canEditTask) {
+      toast.error('Permission Denied', {
+        description: 'Viewer role does not have permission to edit tasks. Please contact an admin.',
+      });
+      return;
+    }
+    
     const wasDone = task.status === "done";
     const willBeDone = !wasDone;
     

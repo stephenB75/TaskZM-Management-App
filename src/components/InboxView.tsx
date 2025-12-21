@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
+import { usePermissions } from "../hooks/usePermissions";
 import { useAIScheduler } from "../hooks/useAIScheduler";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { PRIORITY_WEIGHTS } from "../lib/ai-config";
@@ -73,6 +74,7 @@ const getTwoWeekDateRange = () => {
 export function InboxView() {
   const { tasks, addTask, bulkDeleteTasks } = useTasks();
   const { getTeamMember } = useTeam();
+  const { permissions } = usePermissions();
   const { scheduleAllTasks, generateSchedulePlan, applySchedulePlan, isScheduling } = useAIScheduler();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
@@ -178,6 +180,14 @@ export function InboxView() {
       taskTitle: quickAddTitle.trim(),
       aiEstimatedMinutes,
     });
+
+    // Check permissions
+    if (!permissions.canCreateTask) {
+      toast.error('Permission Denied', {
+        description: 'Viewer role does not have permission to create tasks. Please contact an admin.',
+      });
+      return;
+    }
 
     const newTask: Partial<Task> = {
       title: quickAddTitle.trim(),
@@ -442,6 +452,15 @@ export function InboxView() {
 
   const handleBulkDelete = async () => {
     if (selectedTaskIds.size === 0) return;
+    
+    // Check permissions
+    if (!permissions.canDeleteTask) {
+      toast.error('Permission Denied', {
+        description: 'Viewer role does not have permission to delete tasks. Please contact an admin.',
+      });
+      return;
+    }
+    
     const taskIdsArray = Array.from(selectedTaskIds);
     await bulkDeleteTasks(taskIdsArray);
     setSelectedTaskIds(new Set());
@@ -518,7 +537,16 @@ export function InboxView() {
                   </span>
                 </Button>
                 <Button
-                  onClick={() => setShowBulkDeleteConfirm(true)}
+                  onClick={() => {
+                    if (!permissions.canDeleteTask) {
+                      toast.error('Permission Denied', {
+                        description: 'Viewer role does not have permission to delete tasks. Please contact an admin.',
+                      });
+                      return;
+                    }
+                    setShowBulkDeleteConfirm(true);
+                  }}
+                  disabled={!permissions.canDeleteTask}
                   variant="destructive"
                   className="rounded-full px-2 sm:px-2.5 text-xs"
                   size="sm"
@@ -550,9 +578,16 @@ export function InboxView() {
                 </Button>
                 <Button
                   onClick={() => {
+                    if (!permissions.canCreateTask) {
+                      toast.error('Permission Denied', {
+                        description: 'Viewer role does not have permission to create tasks. Please contact an admin.',
+                      });
+                      return;
+                    }
                     setSelectedTask(undefined);
                     setIsTaskDialogOpen(true);
                   }}
+                  disabled={!permissions.canCreateTask}
                   className="hidden sm:flex rounded-full px-2 sm:px-2.5 text-xs"
                   size="sm"
                 >
@@ -623,7 +658,16 @@ export function InboxView() {
                   <Button
                     variant="outline"
                     className="w-full rounded-xl border-dashed border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5"
-                    onClick={() => setIsQuickAddOpen(true)}
+                    onClick={() => {
+                      if (!permissions.canCreateTask) {
+                        toast.error('Permission Denied', {
+                          description: 'Viewer role does not have permission to create tasks. Please contact an admin.',
+                        });
+                        return;
+                      }
+                      setIsQuickAddOpen(true);
+                    }}
+                    disabled={!permissions.canCreateTask}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Quick add task to inbox

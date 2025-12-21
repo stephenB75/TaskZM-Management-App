@@ -30,6 +30,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   rows?: number;
+  disabled?: boolean;
 }
 
 export function RichTextEditor({
@@ -38,6 +39,7 @@ export function RichTextEditor({
   placeholder = "Add a description...",
   className,
   rows = 3,
+  disabled = false,
 }: RichTextEditorProps) {
   const { actualTheme } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -345,7 +347,10 @@ export function RichTextEditor({
       )}
     >
       {/* Formatting Toolbar */}
-      <div className="flex flex-wrap items-center gap-1.5 p-2 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl">
+      <div className={cn(
+        "flex flex-wrap items-center gap-1.5 p-2 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl",
+        disabled && "opacity-60 pointer-events-none"
+      )}>
         {/* Text Formatting Group */}
         <Button
           type="button"
@@ -583,16 +588,17 @@ export function RichTextEditor({
       {/* Editor */}
       <div
         ref={editorRef}
-        contentEditable
-        onInput={handleInput}
-        onPaste={handlePaste}
-        onKeyDown={handleKeyDown}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        contentEditable={!disabled}
+        onInput={disabled ? undefined : handleInput}
+        onPaste={disabled ? undefined : handlePaste}
+        onKeyDown={disabled ? undefined : handleKeyDown}
+        onFocus={() => !disabled && setIsFocused(true)}
+        onBlur={() => !disabled && setIsFocused(false)}
         className={cn(
           "min-h-[60px] p-3 outline-none rounded-b-xl",
           "focus:ring-2 focus:ring-primary/20 focus:border-primary/40",
           !value && "text-muted-foreground",
+          disabled && "cursor-not-allowed opacity-60",
           rows === 3 && "min-h-[60px]",
           rows === 4 && "min-h-[80px]",
           rows === 5 && "min-h-[100px]",
