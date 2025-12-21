@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
@@ -6,6 +6,7 @@ import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
+import { clearCalendarEventsCache } from '../hooks/useCalendarEvents';
 
 type CalendarProvider = 'google' | 'outlook' | 'apple';
 
@@ -56,6 +57,17 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [showAppleCalDAVDialog, setShowAppleCalDAVDialog] = useState(false);
+  
+  // Refs to prevent multiple simultaneous syncs and track sync state
+  const isSyncingRef = useRef(false);
+  const lastAutoSyncRef = useRef<number>(0);
+  const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Calendar sync interval: 15 minutes (900000 ms)
+  const CALENDAR_SYNC_INTERVAL = 15 * 60 * 1000;
+  
+  // Minimum time between auto syncs: 5 minutes (300000 ms)
+  const MIN_AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
 
   // Load calendar status from localStorage on mount
   useEffect(() => {
@@ -457,53 +469,105 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
   }, [user, accessToken, tasks, workspaceId]);
 
+  // Internal function to sync Apple Calendar (can be called silently for auto-sync)
+  const syncAppleCalendarInternal = useCallback(async (silent: boolean = false): Promise<boolean> => {
+    if (!user || !accessToken) return false;
+    
+    // Prevent multiple simultaneous syncs
+    if (isSyncingRef.current) {
+      console.debug('Apple Calendar sync already in progress, skipping...');
+      return false;
+    }
+    
+    // Check minimum interval for auto-sync
+    if (silent) {
+      const now = Date.now();
+      const timeSinceLastSync = now - lastAutoSyncRef.current;
+      if (timeSinceLastSync < MIN_AUTO_SYNC_INTERVAL) {
+        console.debug(`Apple Calendar auto-sync skipped (last sync was ${Math.round(timeSinceLastSync / 1000)}s ago)`);
+        return false;
+      }
+    }
+    
+    try {
+      isSyncingRef.current = true;
+      if (!silent) {
+        setIsSyncing(true);
+      }
+      
+      // Auto-detect user's timezone from browser
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
+      
+      const response = await fetch(`${BASE_URL}/calendar/apple/caldav/sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userTimezone }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setLastSync(new Date());
+        lastAutoSyncRef.current = Date.now();
+        
+        // Clear calendar events cache to force refresh
+        clearCalendarEventsCache();
+        
+        if (!silent) {
+          toast.success('iCloud Calendar synced!', {
+            description: `Imported ${data.created} new, updated ${data.updated}, removed ${data.deleted} events`,
+          });
+        } else {
+          console.debug(`Apple Calendar auto-sync complete: ${data.created} new, ${data.updated} updated, ${data.deleted} removed`);
+        }
+        return true;
+      } else if (response.status === 400 && data.error?.includes('not configured')) {
+        // CalDAV not set up yet
+        if (!silent) {
+          toast.info('Apple Calendar not configured', {
+            description: 'Please complete the setup first.',
+          });
+          setShowAppleCalDAVDialog(true);
+        }
+        return false;
+      } else {
+        if (!silent) {
+          toast.error('Sync failed', {
+            description: data.error || 'Failed to sync with iCloud Calendar',
+          });
+        } else {
+          console.debug('Apple Calendar auto-sync failed:', data.error);
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error('Apple CalDAV sync error:', error);
+      if (!silent) {
+        toast.error('Sync failed', {
+          description: 'Could not connect to iCloud Calendar',
+        });
+      } else {
+        console.debug('Apple Calendar auto-sync error (silent):', error);
+      }
+      return false;
+    } finally {
+      isSyncingRef.current = false;
+      if (!silent) {
+        setIsSyncing(false);
+      }
+    }
+  }, [user, accessToken]);
+
   // Sync all tasks to calendar
   const syncAllTasks = useCallback(async (provider: CalendarProvider) => {
     if (!user) return;
 
     // Apple Calendar - trigger CalDAV sync (import from iCloud)
     if (provider === 'apple') {
-      try {
-        setIsSyncing(true);
-        
-        // Auto-detect user's timezone from browser
-        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
-        
-        const response = await fetch(`${BASE_URL}/calendar/apple/caldav/sync`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userTimezone }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          setLastSync(new Date());
-          toast.success('iCloud Calendar synced!', {
-            description: `Imported ${data.created} new, updated ${data.updated}, removed ${data.deleted} events`,
-          });
-        } else if (response.status === 400 && data.error?.includes('not configured')) {
-          // CalDAV not set up yet - show setup dialog
-          toast.info('Apple Calendar not configured', {
-            description: 'Please complete the setup first.',
-          });
-          setShowAppleCalDAVDialog(true);
-        } else {
-          toast.error('Sync failed', {
-            description: data.error || 'Failed to sync with iCloud Calendar',
-          });
-        }
-      } catch (error) {
-        console.error('Apple CalDAV sync error:', error);
-        toast.error('Sync failed', {
-          description: 'Could not connect to iCloud Calendar',
-        });
-      } finally {
-        setIsSyncing(false);
-      }
+      await syncAppleCalendarInternal(false);
       return;
     }
 
@@ -636,7 +700,72 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(newStatus));
     }
     setShowAppleCalDAVDialog(false);
-  }, [user, calendarStatus]);
+    
+    // Trigger initial sync after setup
+    setTimeout(() => {
+      syncAppleCalendarInternal(false);
+    }, 1000);
+  }, [user, calendarStatus, syncAppleCalendarInternal]);
+
+  // Automatic Apple Calendar sync on mount (if connected)
+  useEffect(() => {
+    if (!user || !accessToken || !calendarStatus.apple) return;
+    
+    // Wait a bit after mount to avoid blocking initial render
+    const initialSyncTimer = setTimeout(() => {
+      console.debug('Auto-syncing Apple Calendar on app load...');
+      syncAppleCalendarInternal(true);
+    }, 2000); // 2 second delay after mount
+    
+    return () => clearTimeout(initialSyncTimer);
+  }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal]);
+
+  // Periodic automatic sync for Apple Calendar
+  useEffect(() => {
+    if (!user || !accessToken || !calendarStatus.apple) {
+      // Clear interval if calendar is disconnected
+      if (autoSyncIntervalRef.current) {
+        clearInterval(autoSyncIntervalRef.current);
+        autoSyncIntervalRef.current = null;
+      }
+      return;
+    }
+    
+    // Set up periodic sync
+    autoSyncIntervalRef.current = setInterval(() => {
+      console.debug('Periodic Apple Calendar sync triggered...');
+      syncAppleCalendarInternal(true);
+    }, CALENDAR_SYNC_INTERVAL);
+    
+    return () => {
+      if (autoSyncIntervalRef.current) {
+        clearInterval(autoSyncIntervalRef.current);
+        autoSyncIntervalRef.current = null;
+      }
+    };
+  }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal, CALENDAR_SYNC_INTERVAL]);
+
+  // Sync when page becomes visible (user returns to app)
+  useEffect(() => {
+    if (!user || !accessToken || !calendarStatus.apple) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Check if enough time has passed since last sync
+        const now = Date.now();
+        const timeSinceLastSync = now - lastAutoSyncRef.current;
+        
+        // Only sync if it's been at least 2 minutes since last sync
+        if (timeSinceLastSync >= 2 * 60 * 1000) {
+          console.debug('Auto-syncing Apple Calendar on visibility change...');
+          syncAppleCalendarInternal(true);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal]);
 
   return (
     <CalendarContext.Provider
