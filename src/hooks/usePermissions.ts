@@ -1,6 +1,6 @@
 import { useAuth } from '../contexts/AuthContext';
-import { useTeam } from '../contexts/TeamContext';
-import { useMemo } from 'react';
+import { TeamContext } from '../contexts/TeamContext';
+import { useContext, useMemo } from 'react';
 import { toast } from 'sonner';
 
 export type UserRole = 'admin' | 'member' | 'viewer';
@@ -20,7 +20,11 @@ export interface Permissions {
  */
 export function usePermissions(): Permissions {
   const { user } = useAuth();
-  const { teamMembers, getTeamMember } = useTeam();
+  
+  // Safely get team context - handle case where TeamProvider might not be available yet
+  const teamContext = useContext(TeamContext);
+  const teamMembers = teamContext?.teamMembers || [];
+  const getTeamMember = teamContext?.getTeamMember || null;
 
   const permissions = useMemo(() => {
     // Default permissions (if not in a team or role not found)
@@ -38,10 +42,10 @@ export function usePermissions(): Permissions {
       return defaultPermissions;
     }
 
-    // Get current user's team member info
-    const currentUserMember = getTeamMember(user.id);
+    // Get current user's team member info (only if getTeamMember is available)
+    const currentUserMember = getTeamMember ? getTeamMember(user.id) : undefined;
     
-    // If user is not in team members list, default to admin (workspace owner)
+    // If user is not in team members list or TeamProvider not available, default to admin (workspace owner)
     if (!currentUserMember) {
       return defaultPermissions;
     }
