@@ -330,7 +330,7 @@ function FixedMiniCalendar({
             variant="ghost"
             size="sm"
               onClick={() => {
-              onDateSelect(undefined!, activeField);
+              onDateSelect(undefined, activeField);
             }}
             className="h-6 px-2 text-xs"
           >
@@ -559,7 +559,16 @@ export function TaskDialog({
   const { teamMembers, getTeamMember } = useTeam();
   const { hasFeature, features } = useSubscription();
   const { calendarStatus, syncTask: syncTaskToCalendar } = useCalendar();
-  const { permissions } = usePermissions();
+  const permissionsResult = usePermissions();
+  const permissions = permissionsResult || {
+    canCreateTask: true,
+    canEditTask: true,
+    canDeleteTask: true,
+    canAssignTask: true,
+    canManageTeam: true,
+    canViewAnalytics: true,
+    role: 'admin' as const,
+  };
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
@@ -1119,12 +1128,13 @@ export function TaskDialog({
       // Check recurring tasks limit for Pro Monthly (5 active recurring tasks)
       if (features.recurringTasksLimit !== undefined) {
         // Count active recurring tasks (excluding the current task if editing)
-        const activeRecurringTasks = tasks.filter(t => 
+        const activeRecurringTasks = Array.isArray(tasks) ? tasks.filter(t => 
+          t && 
           t.recurrence && 
           t.recurrence.type !== 'none' && 
           t.status !== 'done' &&
           t.id !== task?.id // Exclude current task if editing
-        );
+        ) : [];
         
         if (activeRecurringTasks.length >= features.recurringTasksLimit) {
           toast.error('Recurring Tasks Limit Reached', {
@@ -1723,9 +1733,9 @@ export function TaskDialog({
   };
 
   // Get available tasks for dependencies (exclude self and completed tasks)
-  const availableTasksForDependencies = tasks.filter(
-    (t) => t.id !== task?.id && t.status !== "done",
-  );
+  const availableTasksForDependencies = Array.isArray(tasks) ? tasks.filter(
+    (t) => t && t.id && t.id !== task?.id && t.status !== "done",
+  ) : [];
 
   // Convert time between timezones
   const getTimezoneDisplay = () => {
@@ -2657,8 +2667,8 @@ export function TaskDialog({
 
                   {dependencies.length > 0 && (
                     <div className="space-y-2 mt-3">
-                      {dependencies.map((depId) => {
-                        const depTask = tasks.find((t) => t.id === depId);
+                      {Array.isArray(dependencies) && dependencies.map((depId) => {
+                        const depTask = Array.isArray(tasks) ? tasks.find((t) => t && t.id === depId) : undefined;
                         if (!depTask) return null;
                         const isComplete = depTask.status === "done";
                         return (

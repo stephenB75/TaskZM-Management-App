@@ -44,8 +44,8 @@ export function usePermissions(): Permissions {
         return DEFAULT_PERMISSIONS;
       }
 
-      // Get current user's team member info (only if getTeamMember is available)
-      const currentUserMember = getTeamMember ? getTeamMember(user.id) : undefined;
+      // Get current user's team member info (only if getTeamMember is available and user has an id)
+      const currentUserMember = getTeamMember && user?.id ? getTeamMember(user.id) : undefined;
       
       // If user is not in team members list or TeamProvider not available, default to admin (workspace owner)
       if (!currentUserMember) {

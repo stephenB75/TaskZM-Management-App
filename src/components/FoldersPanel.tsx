@@ -220,9 +220,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
 
   const getFolderTaskCount = (folderId: string) => {
     // Count tasks by folder name in tags (primary method)
-    const folder = folders.find(f => f.id === folderId);
+    if (!Array.isArray(folders) || !Array.isArray(tasks)) return 0;
+    const folder = folders.find(f => f && f.id === folderId);
     if (!folder || !folder.name) return 0;
     return tasks.filter((task) => 
+      task && 
       task.tags && 
       Array.isArray(task.tags) && 
       task.tags.includes(folder.name)
@@ -230,7 +232,8 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
   };
 
   const getFolderProjectCount = (folderId: string) => {
-    return projects.filter((project) => project.folderId === folderId).length;
+    if (!Array.isArray(projects)) return 0;
+    return projects.filter((project) => project && project.folderId === folderId).length;
   };
 
   // Track which folders have been mounted to prevent re-animation

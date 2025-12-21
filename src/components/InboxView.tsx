@@ -74,7 +74,16 @@ const getTwoWeekDateRange = () => {
 export function InboxView() {
   const { tasks, addTask, bulkDeleteTasks } = useTasks();
   const { getTeamMember } = useTeam();
-  const { permissions } = usePermissions();
+  const permissionsResult = usePermissions();
+  const permissions = permissionsResult || {
+    canCreateTask: true,
+    canEditTask: true,
+    canDeleteTask: true,
+    canAssignTask: true,
+    canManageTeam: true,
+    canViewAnalytics: true,
+    role: 'admin' as const,
+  };
   const { scheduleAllTasks, generateSchedulePlan, applySchedulePlan, isScheduling } = useAIScheduler();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");

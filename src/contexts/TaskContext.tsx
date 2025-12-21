@@ -1592,7 +1592,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     updateActivity(); // Track demo user activity
     
     // Check permissions
-    if (user && getTeamMember) {
+    if (user?.id && getTeamMember) {
       const currentUserMember = getTeamMember(user.id);
       const role = currentUserMember?.role || 'admin';
       if (role === 'viewer') {
@@ -1735,7 +1735,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     updateActivity(); // Track demo user activity
     
     // Check permissions
-    if (user && getTeamMember) {
+    if (user?.id && getTeamMember) {
       const currentUserMember = getTeamMember(user.id);
       const role = currentUserMember?.role || 'admin';
       if (role === 'viewer') {
@@ -2145,7 +2145,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     updateActivity(); // Track demo user activity
     
     // Check permissions
-    if (user && getTeamMember) {
+    if (user?.id && getTeamMember) {
       const currentUserMember = getTeamMember(user.id);
       const role = currentUserMember?.role || 'admin';
       if (role === 'viewer') {

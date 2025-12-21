@@ -64,7 +64,16 @@ export const DraggableTaskCard = React.forwardRef<
     const { updateTask } = useTasks();
     const { getTeamMember } = useTeam();
     const { hasFeature } = useSubscription();
-    const { permissions } = usePermissions();
+    const permissionsResult = usePermissions();
+    const permissions = permissionsResult || {
+      canCreateTask: true,
+      canEditTask: true,
+      canDeleteTask: true,
+      canAssignTask: true,
+      canManageTeam: true,
+      canViewAnalytics: true,
+      role: 'admin' as const,
+    };
     const { getTimerState } = usePomodoro();
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
