@@ -15,6 +15,18 @@ export interface Permissions {
   role: UserRole;
 }
 
+// Default permissions (if not in a team or role not found)
+// Defined outside the hook to ensure it's always available
+const DEFAULT_PERMISSIONS: Permissions = {
+  canCreateTask: true,
+  canEditTask: true,
+  canDeleteTask: true,
+  canAssignTask: true,
+  canManageTeam: true,
+  canViewAnalytics: true,
+  role: 'admin',
+};
+
 /**
  * Hook to get current user's permissions based on their team role
  */
@@ -26,74 +38,69 @@ export function usePermissions(): Permissions {
   const teamMembers = teamContext?.teamMembers || [];
   const getTeamMember = teamContext?.getTeamMember || null;
 
-  // Default permissions (if not in a team or role not found)
-  const defaultPermissions: Permissions = {
-    canCreateTask: true,
-    canEditTask: true,
-    canDeleteTask: true,
-    canAssignTask: true,
-    canManageTeam: true,
-    canViewAnalytics: true,
-    role: 'admin',
-  };
-
   const permissions = useMemo(() => {
-    if (!user) {
-      return defaultPermissions;
-    }
+    try {
+      if (!user) {
+        return DEFAULT_PERMISSIONS;
+      }
 
-    // Get current user's team member info (only if getTeamMember is available)
-    const currentUserMember = getTeamMember ? getTeamMember(user.id) : undefined;
-    
-    // If user is not in team members list or TeamProvider not available, default to admin (workspace owner)
-    if (!currentUserMember) {
-      return defaultPermissions;
-    }
+      // Get current user's team member info (only if getTeamMember is available)
+      const currentUserMember = getTeamMember ? getTeamMember(user.id) : undefined;
+      
+      // If user is not in team members list or TeamProvider not available, default to admin (workspace owner)
+      if (!currentUserMember) {
+        return DEFAULT_PERMISSIONS;
+      }
 
-    const role = currentUserMember.role || 'member';
+      const role = currentUserMember.role || 'member';
 
-    // Define permissions based on role
-    switch (role) {
-      case 'admin':
-        return {
-          canCreateTask: true,
-          canEditTask: true,
-          canDeleteTask: true,
-          canAssignTask: true,
-          canManageTeam: true,
-          canViewAnalytics: true,
-          role: 'admin',
-        };
-      
-      case 'member':
-        return {
-          canCreateTask: true,
-          canEditTask: true,
-          canDeleteTask: true,
-          canAssignTask: true,
-          canManageTeam: false,
-          canViewAnalytics: true,
-          role: 'member',
-        };
-      
-      case 'viewer':
-        return {
-          canCreateTask: false,
-          canEditTask: false,
-          canDeleteTask: false,
-          canAssignTask: false,
-          canManageTeam: false,
-          canViewAnalytics: true, // Viewers can still view analytics
-          role: 'viewer',
-        };
-      
-      default:
-        return defaultPermissions;
+      // Define permissions based on role
+      switch (role) {
+        case 'admin':
+          return {
+            canCreateTask: true,
+            canEditTask: true,
+            canDeleteTask: true,
+            canAssignTask: true,
+            canManageTeam: true,
+            canViewAnalytics: true,
+            role: 'admin',
+          };
+        
+        case 'member':
+          return {
+            canCreateTask: true,
+            canEditTask: true,
+            canDeleteTask: true,
+            canAssignTask: true,
+            canManageTeam: false,
+            canViewAnalytics: true,
+            role: 'member',
+          };
+        
+        case 'viewer':
+          return {
+            canCreateTask: false,
+            canEditTask: false,
+            canDeleteTask: false,
+            canAssignTask: false,
+            canManageTeam: false,
+            canViewAnalytics: true, // Viewers can still view analytics
+            role: 'viewer',
+          };
+        
+        default:
+          return DEFAULT_PERMISSIONS;
+      }
+    } catch (error) {
+      // If anything goes wrong, return default permissions
+      console.error('Error calculating permissions:', error);
+      return DEFAULT_PERMISSIONS;
     }
   }, [user, teamMembers, getTeamMember]);
 
-  // Always return a valid permissions object, even if useMemo hasn't run yet
-  return permissions || defaultPermissions;
+  // Always return a valid permissions object - useMemo should never return undefined, but be extra safe
+  return permissions ?? DEFAULT_PERMISSIONS;
 }
 
 /**
