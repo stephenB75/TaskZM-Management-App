@@ -127,6 +127,12 @@ function AppContent() {
     const dueTasks = tasks.filter(task => {
       if (task.status === 'done') return false;
       
+      // CRITICAL: Exclude tasks that have been rolled over to inbox (scheduledDate === null)
+      // Rolled over tasks are unscheduled and have been moved to inbox, so they shouldn't trigger badge notifications
+      if (task.scheduledDate === null) {
+        return false;
+      }
+      
       let targetDate: Date | null = null;
       let dateType: 'dueDate' | 'scheduledDate' | null = null;
       
