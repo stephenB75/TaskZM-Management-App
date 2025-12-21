@@ -20,7 +20,7 @@ interface TeamContextType {
   syncTeamMembers: (workspaceId: string) => Promise<void>;
 }
 
-const TeamContext = createContext<TeamContextType | undefined>(undefined);
+export const TeamContext = createContext<TeamContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'taskzm_team_members';
 

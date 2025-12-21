@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
-import { useTeam } from './TeamContext';
+import { useTeam, TeamContext } from './TeamContext';
 import { useDemoActivity } from '../hooks/useDemoActivity';
 import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
@@ -97,7 +97,12 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
   const { hasFeature } = useSubscription();
-  const { getTeamMember } = useTeam(); // Now TeamProvider is above TaskProvider, so this is safe
+  
+  // Safely get team member function - handle case where TeamProvider might not be available yet
+  // Use useContext directly to avoid throwing errors
+  const teamContext = useContext(TeamContext);
+  const getTeamMember = teamContext?.getTeamMember || null;
+  
   const { updateActivity } = useDemoActivity(); // Track demo user activity
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([
@@ -1587,7 +1592,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     updateActivity(); // Track demo user activity
     
     // Check permissions
-    if (user) {
+    if (user && getTeamMember) {
       const currentUserMember = getTeamMember(user.id);
       const role = currentUserMember?.role || 'admin';
       if (role === 'viewer') {
@@ -1729,8 +1734,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
     
-    // Check permissions (TeamProvider is now above TaskProvider, so getTeamMember is available)
-    if (user) {
+    // Check permissions
+    if (user && getTeamMember) {
       const currentUserMember = getTeamMember(user.id);
       const role = currentUserMember?.role || 'admin';
       if (role === 'viewer') {
@@ -2139,8 +2144,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const deleteTask = useCallback(async (taskId: string) => {
     updateActivity(); // Track demo user activity
     
-    // Check permissions (TeamProvider is now above TaskProvider, so getTeamMember is available)
-    if (user) {
+    // Check permissions
+    if (user && getTeamMember) {
       const currentUserMember = getTeamMember(user.id);
       const role = currentUserMember?.role || 'admin';
       if (role === 'viewer') {
