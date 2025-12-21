@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.7';
-export const VERSION_NAME = 'Feature Tier Rebalancing & Limit Enforcement';
-export const VERSION_DATE = 'December 15, 2025';
-export const BUILD_NUMBER = '20251215-3';
+export const APP_VERSION = '1.0.8';
+export const VERSION_NAME = 'Error Resilience & Stability Improvements';
+export const VERSION_DATE = 'December 20, 2025';
+export const BUILD_NUMBER = '20251220-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,25 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.8',
+    date: 'December 20, 2025',
+    name: 'Error Resilience & Stability Improvements',
+    changes: [
+      'Fixed TypeError: Cannot read properties of undefined (reading "canCreateTask") errors',
+      'Enhanced usePermissions hook with comprehensive fallback handling and null checks',
+      'Added component-level safety checks for permissions in InboxView, TaskDialog, DraggableTaskCard, and DraggableTodayAgendaTask',
+      'Improved useTeam, useTasks, and useAuth hooks to return safe fallback objects instead of throwing errors',
+      'Fixed provider hierarchy issues between TaskProvider and TeamProvider',
+      'Added null safety checks for user.id access across TaskContext and usePermissions',
+      'Fixed undefined! non-null assertion in TaskDialog date selection',
+      'Added Array.isArray() safety checks for all array operations in FoldersPanel and TaskDialog',
+      'Enhanced error resilience during React Fast Refresh and initial render edge cases',
+      'Improved context provider dependency handling with graceful degradation',
+      'Added defensive programming patterns to prevent runtime crashes from undefined values',
+      'Fixed array filtering operations to handle null/undefined task objects safely',
+    ],
+  },
   {
     version: '1.0.7',
     date: 'December 15, 2025',
