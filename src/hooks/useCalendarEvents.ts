@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCalendar } from '../contexts/CalendarContext';
 import { projectId } from '../utils/supabase/info';
 import { logger } from '../lib/logger';
+import { getCalendarEventsCache, getInFlightRequests } from '../lib/calendar-events-cache';
 
 export interface CalendarEvent {
   id: string;
@@ -30,11 +31,9 @@ const CACHE_DURATION = 2 * 60 * 1000;
 // Debounce delay: 300ms (prevents rapid re-fetches during view changes)
 const DEBOUNCE_DELAY = 300;
 
-// Global cache shared across all hook instances
-const globalCache: CalendarEventsCache = {};
-
-// In-flight requests cache to prevent duplicate simultaneous requests
-const inFlightRequests = new Map<string, Promise<CalendarEvent[]>>();
+// Get cache and in-flight requests from shared utility (breaks circular dependency)
+const globalCache = getCalendarEventsCache();
+const inFlightRequests = getInFlightRequests();
 
 /**
  * Generate cache key from date range
@@ -369,14 +368,7 @@ export function useCalendarEventCounts(
   };
 }
 
-/**
- * Clear the global cache (useful after calendar sync)
- */
-export function clearCalendarEventsCache() {
-  Object.keys(globalCache).forEach((key) => {
-    delete globalCache[key];
-  });
-  inFlightRequests.clear();
-  logger.debug('Calendar events cache cleared');
-}
+// clearCalendarEventsCache moved to ../lib/calendar-events-cache.ts to break circular dependency
+// Re-export for backward compatibility
+export { clearCalendarEventsCache } from '../lib/calendar-events-cache';
 

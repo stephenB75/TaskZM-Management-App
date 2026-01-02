@@ -6,7 +6,7 @@ import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
-import { clearCalendarEventsCache } from '../hooks/useCalendarEvents';
+import { clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { createDefaultCalendarContext } from '../lib/context-defaults';
 
 type CalendarProvider = 'google' | 'outlook' | 'apple';
