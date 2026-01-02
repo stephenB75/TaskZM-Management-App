@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { SUBSCRIPTION_UI_TEXT, SUBSCRIPTION_STORAGE_KEY_PREFIX, SUBSCRIPTION_SYNC_INTERVAL } from '../lib/subscription-constants';
 import { configureRevenueCat, resetRevenueCat, getCustomerInfo as getRevenueCatCustomerInfo, isRevenueCatConfigured } from '../lib/revenuecat';
 import { DAYS_IN_MONTH_APPROX } from '../lib/business-constants';
+import { createDefaultSubscriptionContext } from '../lib/context-defaults';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo;
@@ -513,23 +514,7 @@ export function useSubscription() {
     // Return a safe default instead of throwing to prevent crashes
     if (import.meta.env.DEV) {
       console.warn('useSubscription called outside SubscriptionProvider (likely HMR issue), returning default');
-      return {
-        subscription: {
-          tier: 'free',
-          status: 'active',
-          startDate: null,
-          endDate: null,
-          cancelAtPeriodEnd: false,
-          billingPeriod: null,
-        },
-        features: getFeatures('free'),
-        isLoading: true,
-        upgradeToPro: async () => {},
-        cancelSubscription: async () => {},
-        downgradeToFree: async () => {},
-        refreshSubscription: async () => {},
-        hasFeature: () => false,
-      };
+      return createDefaultSubscriptionContext();
     }
     throw new Error(SUBSCRIPTION_UI_TEXT.context.hookError);
   }

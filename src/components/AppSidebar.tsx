@@ -59,12 +59,12 @@ export function AppSidebar({
   const { hasFeature } = useSubscription();
   const { badgeCount } = useNotifications();
   const completedCount = tasks.filter(
-    (t) => t.status === "done",
+    (t: { status: string }) => t.status === "done",
   ).length;
 
   // Count team members with unread notifications (accepted invites that haven't been viewed)
   const teamNotificationCount = teamMembers.filter(
-    (m) =>
+    (m: { hasUnreadNotification?: boolean; inviteStatus?: string }) =>
       m.hasUnreadNotification && m.inviteStatus === "accepted",
   ).length;
 
@@ -189,7 +189,7 @@ export function AppSidebar({
       {/* Navigation */}
       <div className="space-y-2 flex-1">
         {menuItems
-          .filter((item) => !item.desktopOnly) // Mobile sidebar excludes desktop-only items
+          .filter((item) => !('desktopOnly' in item && item.desktopOnly)) // Mobile sidebar excludes desktop-only items
           .map((item) => {
             const Icon = item.icon;
             return (

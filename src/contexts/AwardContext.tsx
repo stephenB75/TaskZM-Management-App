@@ -20,6 +20,7 @@ import {
   MINUTES_PER_HOUR,
 } from '../lib/business-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { createDefaultAwardContext } from '../lib/context-defaults';
 
 interface AwardContextType {
   awards: Award[];
@@ -478,6 +479,12 @@ export function AwardProvider({ children }: { children: ReactNode }) {
 export function useAwards() {
   const context = useContext(AwardContext);
   if (!context) {
+    // During React Fast Refresh (HMR), providers can temporarily unmount
+    // Return a safe default instead of throwing to prevent crashes
+    if (import.meta.env.DEV) {
+      console.warn('useAwards called outside AwardProvider (likely HMR issue), returning default');
+      return createDefaultAwardContext();
+    }
     throw new Error('useAwards must be used within AwardProvider');
   }
   return context;

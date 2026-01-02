@@ -17,6 +17,7 @@ import {
   NOTIFICATION_INTERVALS,
 } from '../lib/notification-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { createDefaultNotificationContext } from '../lib/context-defaults';
 import {
   requestNotificationPermission as requestNativePermission,
   getNotificationPermission as getNativePermission,
@@ -597,6 +598,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 export function useNotifications() {
   const context = useContext(NotificationContext);
   if (context === undefined) {
+    // During React Fast Refresh (HMR), providers can temporarily unmount
+    // Return a safe default instead of throwing to prevent crashes
+    if (import.meta.env.DEV) {
+      console.warn('useNotifications called outside NotificationProvider (likely HMR issue), returning default');
+      return createDefaultNotificationContext();
+    }
     throw new Error(NOTIFICATION_ERRORS.contextError);
   }
   return context;

@@ -119,7 +119,7 @@ export function AIRecommendationPanel({
   const [suggestionDate, setSuggestionDate] = useState<Date | undefined>(new Date());
   const [suggestionDateOpen, setSuggestionDateOpen] = useState(false);
 
-  const handleScheduleUnscheduledTasks = () => {
+  const handleScheduleUnscheduledTasks = async () => {
     // Check if user has access to AI Scheduler feature
     if (!hasFeature('aiScheduler')) {
       toast.error('AI Scheduler is a Pro feature', {
@@ -191,7 +191,7 @@ export function AIRecommendationPanel({
       range = { startDate: start, endDate: end };
     }
     
-    const result = generateSchedulePlan(undefined, range, { forceCategoryHours: true });
+    const result = await generateSchedulePlan(undefined, range, { forceCategoryHours: true });
     
     // Check if any days exceed 5 hours
     if (result.daysExceedingLimit.length > 0) {
@@ -220,7 +220,7 @@ export function AIRecommendationPanel({
     }
   };
 
-  const handleProceedWithExceedsLimit = () => {
+  const handleProceedWithExceedsLimit = async () => {
     setShowExceedsLimitDialog(false);
     // Regenerate plan and proceed with scheduling using category hours
     // Use the same period as the original suggestion
@@ -259,7 +259,7 @@ export function AIRecommendationPanel({
       range = { startDate: start, endDate: end };
     }
     
-    const result = generateSchedulePlan(undefined, range, { 
+    const result = await generateSchedulePlan(undefined, range, { 
       forceCategoryHours: true,
       enforceMinimumHours: false // Don't enforce minimum for suggestions
     });

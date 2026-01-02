@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
+import { createDefaultAIContext } from '../lib/context-defaults';
 
 interface AISettings {
   autoSchedulingEnabled: boolean;
@@ -67,6 +68,12 @@ export function AIProvider({ children }: { children: ReactNode }) {
 export function useAI() {
   const context = useContext(AIContext);
   if (context === undefined) {
+    // During React Fast Refresh (HMR), providers can temporarily unmount
+    // Return a safe default instead of throwing to prevent crashes
+    if (import.meta.env.DEV) {
+      console.warn('useAI called outside AIProvider (likely HMR issue), returning default');
+      return createDefaultAIContext();
+    }
     throw new Error('useAI must be used within an AIProvider');
   }
   return context;

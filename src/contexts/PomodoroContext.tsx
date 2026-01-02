@@ -9,6 +9,7 @@ import {
 } from '../lib/business-constants';
 import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES } from '../lib/notification-constants';
 import { useTasks } from './TaskContext';
+import { createDefaultPomodoroContext } from '../lib/context-defaults';
 
 type TimerMode = 'work' | 'shortBreak' | 'longBreak';
 
@@ -651,6 +652,12 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
 export function usePomodoro() {
   const context = useContext(PomodoroContext);
   if (!context) {
+    // During React Fast Refresh (HMR), providers can temporarily unmount
+    // Return a safe default instead of throwing to prevent crashes
+    if (import.meta.env.DEV) {
+      console.warn('usePomodoro called outside PomodoroProvider (likely HMR issue), returning default');
+      return createDefaultPomodoroContext();
+    }
     throw new Error('usePomodoro must be used within PomodoroProvider');
   }
   return context;

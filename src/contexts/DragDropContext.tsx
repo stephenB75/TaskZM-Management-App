@@ -6,6 +6,7 @@ import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from '../lib/daily-hours-utils';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
+import { createDefaultDragDropContext } from '../lib/context-defaults';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
 import { TASK_CARD_LAYOUT_METRICS, TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS } from '../lib/task-card-constants';
 import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
@@ -35,12 +36,12 @@ export function useDragDrop(optional?: boolean) {
   const context = useContext(DragDropContext);
   if (!context) {
     if (optional) {
-      return { activeId: null };
+      return createDefaultDragDropContext();
     }
     if (process.env.NODE_ENV !== 'production') {
       console.warn('useDragDrop called outside DragDropProvider. Returning fallback context.');
     }
-    return { activeId: null };
+    return createDefaultDragDropContext();
   }
   return context;
 }

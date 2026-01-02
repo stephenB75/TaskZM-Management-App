@@ -5,6 +5,7 @@ import { useTasks } from './TaskContext';
 import * as api from '../lib/api';
 import { toast } from 'sonner';
 import { DAYS_IN_WEEK } from '../lib/business-constants';
+import { createDefaultTeamContext } from '../lib/context-defaults';
 
 interface TeamContextType {
   teamMembers: User[];
@@ -332,19 +333,7 @@ export function useTeam() {
     if (import.meta.env.DEV) {
       console.warn('useTeam called outside TeamProvider (likely HMR issue), returning default');
     }
-    return {
-      teamMembers: [],
-      isLoading: false,
-      addTeamMember: async () => {},
-      removeTeamMember: async () => {},
-      updateTeamMember: async () => {},
-      getTeamMember: () => undefined,
-      markMemberAsViewed: () => {},
-      acceptInvitation: () => {},
-      resendInvitation: async () => {},
-      declineInvitation: async () => {},
-      syncTeamMembers: async () => {},
-    };
+    return createDefaultTeamContext();
   }
   return context;
 }

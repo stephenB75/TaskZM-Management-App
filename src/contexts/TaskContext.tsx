@@ -58,6 +58,7 @@ import {
 } from '../lib/business-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
+import { createDefaultTaskContext } from '../lib/context-defaults';
 
 interface TaskContextType {
   tasks: Task[];
@@ -3029,47 +3030,7 @@ export function useTasks() {
     if (import.meta.env.DEV) {
       console.warn('useTasks called outside TaskProvider (likely HMR issue), returning default');
     }
-    return {
-      tasks: [],
-      projects: [],
-      folders: [],
-      availableTags: [],
-      filters: {},
-      viewConfig: { groupBy: 'none', sortBy: 'dueDate', sortOrder: 'asc', showCompleted: true },
-      hoursSettings: {
-        weekdayHours: { 
-          work: { start: DEFAULT_WEEKDAY_WORK_START, end: DEFAULT_WEEKDAY_WORK_END, enabled: true }, 
-          personal: { start: DEFAULT_WEEKDAY_PERSONAL_START, end: DEFAULT_WEEKDAY_PERSONAL_END, enabled: true }, 
-          projects: { start: DEFAULT_WEEKDAY_PROJECTS_START, end: DEFAULT_WEEKDAY_PROJECTS_END, enabled: true } 
-        },
-        weekendHours: { 
-          work: { start: DEFAULT_WEEKEND_WORK_START, end: DEFAULT_WEEKEND_WORK_END, enabled: false }, 
-          personal: { start: DEFAULT_WEEKEND_PERSONAL_START, end: DEFAULT_WEEKEND_PERSONAL_END, enabled: true }, 
-          projects: { start: DEFAULT_WEEKEND_PROJECTS_START, end: DEFAULT_WEEKEND_PROJECTS_END, enabled: false } 
-        },
-      },
-      rolloverSettings: { enabled: false, maxHours: 5 },
-      workspaceId: null,
-      isSyncing: false,
-      lastSync: null,
-      addTask: async () => {},
-      updateTask: async () => {},
-      deleteTask: async () => {},
-      bulkDeleteTasks: async () => {},
-      addProject: async () => {},
-      updateProject: async () => {},
-      addFolder: async () => {},
-      updateFolder: async () => {},
-      deleteFolder: async () => {},
-      addAvailableTag: async () => {},
-      removeAvailableTag: async () => {},
-      setFilters: () => {},
-      setViewConfig: () => {},
-      updateHoursSettings: async () => {},
-      updateRolloverSettings: async () => {},
-      syncWithServer: async () => {},
-      ensureWorkspace: async () => null,
-    };
+    return createDefaultTaskContext();
   }
   return context;
 }

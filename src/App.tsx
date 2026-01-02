@@ -122,9 +122,9 @@ function AppContent() {
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     
     // Enhanced logging to debug badge count
-    const allTasksWithDates = tasks.filter(t => (t.dueDate || t.scheduledDate) && t.status !== 'done');
+    const allTasksWithDates = tasks.filter((t: { dueDate?: string | null; scheduledDate?: string | null; status: string }) => (t.dueDate || t.scheduledDate) && t.status !== 'done');
     
-    const dueTasks = tasks.filter(task => {
+    const dueTasks = tasks.filter((task: { id: string; title: string; status: string; dueDate?: string | null; scheduledDate?: string | null }) => {
       if (task.status === 'done') return false;
       
       // CRITICAL: Exclude tasks that have been rolled over to inbox (scheduledDate === null)
@@ -223,7 +223,7 @@ function AppContent() {
         UTC: dueNowThreshold.toISOString(),
         Local: dueNowThreshold.toLocaleString(),
       });
-      console.log('Tasks being counted:', dueTasks.map(t => {
+      console.log('Tasks being counted:', dueTasks.map((t: { id: string; title: string; status: string; dueDate?: string | null; scheduledDate?: string | null }) => {
         const targetDate = t.dueDate ? new Date(t.dueDate) : (t.scheduledDate ? new Date(t.scheduledDate) : null);
         const timeDiff = targetDate ? (targetDate.getTime() - now.getTime()) / (60 * 1000) : null;
         return {
@@ -265,7 +265,7 @@ function AppContent() {
       if (!isNewSignup || !tourCompleted) return;
       
       // Count completed tasks
-      const completedTasks = tasks.filter(t => t.status === 'done');
+      const completedTasks = tasks.filter((t: { status: string }) => t.status === 'done');
       const completedCount = completedTasks.length;
       
       // Show upgrade prompt after completing 3-5 tasks (if not already shown)

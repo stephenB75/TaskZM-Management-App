@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
+import { createDefaultThemeContext } from '../lib/context-defaults';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -112,11 +113,7 @@ export function useTheme() {
     // Return a safe default instead of throwing to prevent crashes
     if (import.meta.env.DEV) {
       console.warn('useTheme called outside ThemeProvider (likely HMR issue), returning default');
-      return {
-        theme: 'system' as Theme,
-        setTheme: () => {},
-        actualTheme: 'light' as const,
-      };
+      return createDefaultThemeContext();
     }
     throw new Error('useTheme must be used within a ThemeProvider');
   }

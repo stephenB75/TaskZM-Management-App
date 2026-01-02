@@ -411,7 +411,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     filteredTasks.forEach((task) => {
       try {
         if (task?.tags && Array.isArray(task.tags)) {
-          task.tags.forEach((tag) => {
+          task.tags.forEach((tag: string) => {
             if (tag) {
               typeCount[tag] = (typeCount[tag] || 0) + 1;
             }

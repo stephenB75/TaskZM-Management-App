@@ -7,6 +7,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
 import { clearCalendarEventsCache } from '../hooks/useCalendarEvents';
+import { createDefaultCalendarContext } from '../lib/context-defaults';
 
 type CalendarProvider = 'google' | 'outlook' | 'apple';
 
@@ -796,17 +797,7 @@ export function useCalendar() {
   if (context === undefined) {
     // Return fallback values instead of throwing to prevent app crashes
     console.warn('useCalendar called outside CalendarProvider, using fallback values');
-    return {
-      calendarStatus: { google: false, outlook: false, apple: false },
-      isSyncing: false,
-      lastSync: null,
-      connectCalendar: async () => {},
-      disconnectCalendar: async () => {},
-      syncTask: async () => {},
-      syncAllTasks: async () => {},
-      checkCalendarStatus: async () => {},
-      testAppleConnection: async () => ({ success: false, error: 'Not signed in' }),
-    };
+    return createDefaultCalendarContext();
   }
   return context;
 }
