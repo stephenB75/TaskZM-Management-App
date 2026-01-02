@@ -7,6 +7,7 @@ import { SUBSCRIPTION_UI_TEXT, SUBSCRIPTION_STORAGE_KEY_PREFIX, SUBSCRIPTION_SYN
 import { configureRevenueCat, resetRevenueCat, getCustomerInfo as getRevenueCatCustomerInfo, isRevenueCatConfigured } from '../lib/revenuecat';
 import { DAYS_IN_MONTH_APPROX } from '../lib/business-constants';
 import { createDefaultSubscriptionContext } from '../lib/context-defaults';
+import { REVENUECAT_YEARLY_PRODUCT_ID, REVENUECAT_MONTHLY_PRODUCT_ID } from '../lib/subscription-constants';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo;
@@ -73,7 +74,13 @@ const getFeatures = (tier: SubscriptionTier, billingPeriod?: 'monthly' | 'yearly
 };
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SubscriptionContext.tsx:75',message:'SubscriptionProvider entry',data:{step:'before-useAuth'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   const { user, accessToken } = useAuth();
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SubscriptionContext.tsx:77',message:'SubscriptionProvider - useAuth result',data:{hasUser:!!user,hasAccessToken:!!accessToken,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   
   // Initial state: Default to free tier (safe default)
   // NOTE: Actual subscription data comes from backend database (source of truth)
@@ -206,7 +213,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       return {
         tier: 'pro',
-        status: entitlement.willRenew ? 'active' : 'cancelled',
+        status: entitlement.willRenew ? 'active' : 'canceled',
         startDate: entitlement.latestPurchaseDate?.toISOString?.() ?? current.startDate,
         endDate: entitlement.expirationDate?.toISOString?.() ?? current.endDate,
         cancelAtPeriodEnd: !entitlement.willRenew,
@@ -486,7 +493,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }
 
   function hasFeature(feature: keyof SubscriptionFeatures): boolean {
-    return features[feature];
+    return !!features[feature];
   }
 
   return (

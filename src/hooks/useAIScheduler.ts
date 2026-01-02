@@ -2373,7 +2373,14 @@ export function useAIScheduler() {
             
             // Try again without category hours constraint to find ANY available slot
             // This ensures we NEVER schedule at the same time as existing tasks
-            // Get calendar events for this specific day (already filtered above)
+            // Get calendar events for this specific day (filter from main calendarEvents array)
+            const dayCalendarEventsForFallback = calendarEvents.filter(event => {
+              const eventDate = new Date(event.start);
+              eventDate.setHours(0, 0, 0, 0);
+              const scheduleDateOnly = new Date(scheduleDate);
+              scheduleDateOnly.setHours(0, 0, 0, 0);
+              return eventDate.getTime() === scheduleDateOnly.getTime();
+            });
             const fallbackSlot = findNextAvailableSlot(
               task.id,
               proposedTime,
@@ -2382,7 +2389,7 @@ export function useAIScheduler() {
               {
                 ensureAfterCurrentTime: isToday,
                 categoryHours: undefined, // Remove category hours constraint to find ANY slot
-                calendarEvents: dayCalendarEvents, // Include calendar events to avoid conflicts
+                calendarEvents: dayCalendarEventsForFallback, // Include calendar events to avoid conflicts
               }
             );
             
@@ -2412,6 +2419,13 @@ export function useAIScheduler() {
               // Last resort: try to find a slot starting from the earliest time
               const earliestTime = new Date(scheduleDate);
               earliestTime.setHours(6, 0, 0, 0); // Start from 6 AM
+              const dayCalendarEventsForLastResort = calendarEvents.filter(event => {
+                const eventDate = new Date(event.start);
+                eventDate.setHours(0, 0, 0, 0);
+                const scheduleDateOnly = new Date(scheduleDate);
+                scheduleDateOnly.setHours(0, 0, 0, 0);
+                return eventDate.getTime() === scheduleDateOnly.getTime();
+              });
               const lastResortSlot = findNextAvailableSlot(
                 task.id,
                 earliestTime,
@@ -2420,7 +2434,7 @@ export function useAIScheduler() {
                 {
                   ensureAfterCurrentTime: isToday,
                   categoryHours: undefined,
-                  calendarEvents: dayCalendarEvents, // Include calendar events to avoid conflicts
+                  calendarEvents: dayCalendarEventsForLastResort, // Include calendar events to avoid conflicts
                 }
               );
               

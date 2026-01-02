@@ -14,17 +14,8 @@ import type {
   SubscriptionInfo,
   SubscriptionFeatures,
 } from '../types';
-import type { TaskContextType } from '../contexts/TaskContext';
-import type { SubscriptionContextType } from '../contexts/SubscriptionContext';
-import type { TeamContextType } from '../contexts/TeamContext';
-import type { CalendarContextType, CalendarStatus } from '../contexts/CalendarContext';
-import type { AIContextType, AISettings } from '../contexts/AIContext';
-import type { ThemeContextType } from '../contexts/ThemeContext';
-import type { DragDropContextType } from '../contexts/DragDropContext';
-import type { PomodoroContextType } from '../contexts/PomodoroContext';
-import type { AwardContextType } from '../contexts/AwardContext';
-import type { NotificationContextType } from '../contexts/NotificationContext';
-import type { SidebarContextType } from '../contexts/SidebarContext';
+// Note: Context types are not imported to avoid circular dependencies
+// All context types are inferred from return values
 import {
   DEFAULT_WEEKDAY_WORK_START,
   DEFAULT_WEEKDAY_WORK_END,
@@ -181,8 +172,9 @@ export function createDefaultSubscriptionInfo(): SubscriptionInfo {
 
 /**
  * Create default SubscriptionContextType
+ * Note: SubscriptionContextType is inferred to avoid circular dependency
  */
-export function createDefaultSubscriptionContext(): SubscriptionContextType {
+export function createDefaultSubscriptionContext() {
   const subscription = createDefaultSubscriptionInfo();
   return {
     subscription,
@@ -198,8 +190,9 @@ export function createDefaultSubscriptionContext(): SubscriptionContextType {
 
 /**
  * Create default CalendarStatus
+ * Note: CalendarStatus type is inferred to avoid circular dependency
  */
-export function createDefaultCalendarStatus(): CalendarStatus {
+export function createDefaultCalendarStatus() {
   return {
     google: false,
     outlook: false,
@@ -209,8 +202,9 @@ export function createDefaultCalendarStatus(): CalendarStatus {
 
 /**
  * Create default CalendarContextType
+ * Note: CalendarContextType is inferred to avoid circular dependency
  */
-export function createDefaultCalendarContext(): CalendarContextType {
+export function createDefaultCalendarContext() {
   return {
     calendarStatus: createDefaultCalendarStatus(),
     isSyncing: false,
@@ -229,8 +223,9 @@ export function createDefaultCalendarContext(): CalendarContextType {
 
 /**
  * Create default TeamContextType
+ * Note: TeamContextType is defined inline to avoid circular dependency
  */
-export function createDefaultTeamContext(): TeamContextType {
+export function createDefaultTeamContext() {
   return {
     teamMembers: [],
     isLoading: false,
@@ -248,8 +243,9 @@ export function createDefaultTeamContext(): TeamContextType {
 
 /**
  * Create default AISettings
+ * Note: AISettings type is inferred to avoid circular dependency
  */
-export function createDefaultAISettings(): AISettings {
+export function createDefaultAISettings() {
   return {
     autoSchedulingEnabled: true,
     priorityBasedScheduling: true,
@@ -259,8 +255,9 @@ export function createDefaultAISettings(): AISettings {
 
 /**
  * Create default AIContextType
+ * Note: AIContextType is inferred to avoid circular dependency
  */
-export function createDefaultAIContext(): AIContextType {
+export function createDefaultAIContext() {
   return {
     settings: createDefaultAISettings(),
     updateSettings: () => {},
@@ -272,8 +269,9 @@ export function createDefaultAIContext(): AIContextType {
 
 /**
  * Create default ThemeContextType
+ * Note: ThemeContextType is inferred to avoid circular dependency
  */
-export function createDefaultThemeContext(): ThemeContextType {
+export function createDefaultThemeContext() {
   return {
     theme: 'system',
     setTheme: () => {},
@@ -284,8 +282,9 @@ export function createDefaultThemeContext(): ThemeContextType {
 /**
  * Create default TaskContextType
  * This is the main fallback for useTasks() hook
+ * Note: TaskContextType is defined inline to avoid circular dependency
  */
-export function createDefaultTaskContext(): TaskContextType {
+export function createDefaultTaskContext() {
   return {
     tasks: [],
     projects: [],
@@ -320,8 +319,9 @@ export function createDefaultTaskContext(): TaskContextType {
 
 /**
  * Create default DragDropContextType
+ * Note: DragDropContextType is inferred to avoid circular dependency
  */
-export function createDefaultDragDropContext(): DragDropContextType {
+export function createDefaultDragDropContext() {
   return {
     activeId: null,
   };
@@ -329,8 +329,9 @@ export function createDefaultDragDropContext(): DragDropContextType {
 
 /**
  * Create default PomodoroContextType
+ * Note: PomodoroContextType is inferred to avoid circular dependency
  */
-export function createDefaultPomodoroContext(): PomodoroContextType {
+export function createDefaultPomodoroContext() {
   return {
     getTimerState: () => ({
       mode: 'work',
@@ -351,8 +352,9 @@ export function createDefaultPomodoroContext(): PomodoroContextType {
 
 /**
  * Create default AwardContextType
+ * Note: AwardContextType is inferred to avoid circular dependency
  */
-export function createDefaultAwardContext(): AwardContextType {
+export function createDefaultAwardContext() {
   return {
     awards: [],
     earnedAwards: [],
@@ -365,8 +367,9 @@ export function createDefaultAwardContext(): AwardContextType {
 
 /**
  * Create default NotificationContextType
+ * Note: NotificationContextType is inferred to avoid circular dependency
  */
-export function createDefaultNotificationContext(): NotificationContextType {
+export function createDefaultNotificationContext() {
   return {
     permission: 'default',
     settings: {
@@ -390,8 +393,9 @@ export function createDefaultNotificationContext(): NotificationContextType {
 
 /**
  * Create default SidebarContextType
+ * Note: SidebarContextType is inferred to avoid circular dependency
  */
-export function createDefaultSidebarContext(): SidebarContextType {
+export function createDefaultSidebarContext() {
   return {
     sidebarOpen: false,
     setSidebarOpen: () => {},

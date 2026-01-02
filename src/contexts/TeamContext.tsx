@@ -26,8 +26,17 @@ export const TeamContext = createContext<TeamContextType | undefined>(undefined)
 const STORAGE_KEY = 'taskzm_team_members';
 
 export function TeamProvider({ children }: { children: ReactNode }) {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TeamContext.tsx:28',message:'TeamProvider entry',data:{step:'before-useAuth'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   const { user, accessToken } = useAuth();
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TeamContext.tsx:30',message:'TeamProvider - useAuth result',data:{hasUser:!!user,hasAccessToken:!!accessToken},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   const { workspaceId } = useTasks();
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TeamContext.tsx:32',message:'TeamProvider - useTasks result',data:{workspaceId,hasWorkspaceId:!!workspaceId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
