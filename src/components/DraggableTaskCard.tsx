@@ -1,7 +1,7 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Circle, Timer, Clock, Repeat } from "lucide-react";
+import { Circle, Timer, Clock, Repeat, ChevronDown, ChevronUp, FileText, ListChecks, Link2, Sparkles } from "lucide-react";
 import { Badge } from "./ui/badge";
 import {
   Tooltip,
@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { cn, formatTimeAMPM, getInitials, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
@@ -42,9 +43,14 @@ import {
   TASK_CARD_POSITIONING,
   TASK_CARD_ADDITIONAL_FONT_SIZES,
   TASK_CARD_OPACITY,
+  TASK_CARD_DROPDOWN_COLORS,
+  TASK_CARD_STANDARD_HEIGHTS,
 } from "../lib/task-card-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
+import { COLOR_PRIMARY, COLOR_BACKGROUND_LIGHT_COLOR, COLOR_BACKGROUND_DARK_COLOR } from "../lib/color-theme";
+import { TIMING_CONSTANTS } from "../lib/timing-constants";
+import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -61,7 +67,7 @@ export const DraggableTaskCard = React.forwardRef<
     { task, onClick, droppableId, isDragging = false },
     forwardedRef,
   ) => {
-    const { updateTask } = useTasks();
+    const { updateTask, tasks } = useTasks();
     const { getTeamMember } = useTeam();
     const { hasFeature } = useSubscription();
     const permissionsResult = usePermissions();
@@ -78,6 +84,10 @@ export const DraggableTaskCard = React.forwardRef<
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
     const isMobile = useIsMobile();
+    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+    
+    // AI Task Breakdown
+    const breakdown = useTaskBreakdown(task, { enabled: true });
     
     // For recurring tasks, use a date-specific timer ID so Pomodoro only affects
     // the individual occurrence, not the entire series
@@ -269,51 +279,33 @@ export const DraggableTaskCard = React.forwardRef<
       const hasSubtasks = task.subtasks && task.subtasks.length > 0;
       
       // STANDARD HEIGHT CALCULATION: Use standard heights first, then auto-adjust for components
-      // Step 1: Calculate the standard height for this duration (this is the MINIMUM BASE)
+      // Step 1: Calculate the standard height for this duration using TASK_CARD_STANDARD_HEIGHTS
       // Use AI Duration Estimator instead of hardcoded fallback
       const effectiveEstimatedTime = hasEstimatedTime ? currentEstimatedTimeValue! : getTaskMinutes(task);
       
-      // Calculate standard height ONCE - this is the absolute minimum for this duration
+      // Calculate standard height using TASK_CARD_STANDARD_HEIGHTS mapping
       let standardHeightForThisDuration: number;
       // Use effectiveEstimatedTime for consistency (handles null/undefined cases)
       const isVeryShortTaskInCalc = effectiveEstimatedTime <= 35; // Tasks 35 mins or less need extra compact handling
-      if (isShortTask || (!hasEstimatedTime && effectiveEstimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short)) {
-        // Short tasks (< 45 mins): Use height with 20px increments per 15-minute interval
-        // Base: 72px at 15 mins
-        // Increments: +20px for each 15-minute interval (15, 30, 45 mins)
-        // 15-29 mins: 72px, 30-35 mins: 92px (very short), 36-39 mins: 112px, 40-44 mins: 132px
-        if (effectiveEstimatedTime < 30) {
-          // 15-29 mins: Base height (72px)
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort; // 72px
-        } else if (effectiveEstimatedTime <= 35) {
-          // 30-35 mins: Base + 1 increment (72px + 20px = 92px) - includes 35 mins for auto-adjust
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins; // 92px
-        } else if (effectiveEstimatedTime < 40) {
-          // 36-39 mins: Base + 2 increments (72px + 40px = 112px)
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + (TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins * 2); // 112px
-        } else {
-          // 40-44 mins: Base + 3 increments (72px + 60px = 132px)
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.veryShort + (TASK_CARD_HEIGHT_CONFIG.baseHeights.short.incrementPer15Mins * 3); // 132px
-        }
-      } else if (isMediumTask || (!hasEstimatedTime && effectiveEstimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && effectiveEstimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.long)) {
-        // Medium tasks (45-60 mins): Use standard minimum height
-        standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px standard
+      
+      // Use standard heights: 15=100px, 25=160px, 30=220px, 45=300px, 60=380px, 80=430px, 120=500px
+      if (effectiveEstimatedTime <= 15) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at15mins; // 100px
+      } else if (effectiveEstimatedTime <= 25) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at25mins; // 160px
+      } else if (effectiveEstimatedTime <= 30) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at30mins; // 220px
+      } else if (effectiveEstimatedTime <= 45) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at45mins; // 300px
+      } else if (effectiveEstimatedTime <= 60) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at60mins; // 380px
+      } else if (effectiveEstimatedTime <= 80) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at80mins; // 430px
+      } else if (effectiveEstimatedTime <= 120) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 500px
       } else {
-        // Long tasks (>= 60 mins): Use standard heights at defined points
-        // Use AI Duration Estimator instead of hardcoded fallback
-        const timeValue = hasEstimatedTime ? currentEstimatedTimeValue! : getTaskMinutes(task);
-        if (timeValue >= 180) {
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px standard
-        } else if (timeValue >= 150) {
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins; // 425px standard
-        } else if (timeValue >= 120) {
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins; // 350px standard (2 hours)
-        } else if (timeValue >= 90) {
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins; // 275px standard
-        } else {
-          // 60-89 mins: Use standard base height (1 hour = 200px)
-          standardHeightForThisDuration = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px standard
-        }
+        // For tasks > 120 mins, use 500px as base (same as 120 mins)
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 500px
       }
       
       // Step 2: Start with the standard height as the base
@@ -723,6 +715,38 @@ export const DraggableTaskCard = React.forwardRef<
             </h3>
           </div>
 
+          {/* AI Action Plan Breakdown - Show if available */}
+          {breakdown?.actionPlan && breakdown.actionPlan.steps.length > 0 && (
+            <div className={cn(
+              "px-1.5 py-1 mt-0.5 mb-1 rounded text-xs",
+              isDark ? "bg-purple-950/20 border border-purple-800/30" : "bg-purple-50/50 border border-purple-200"
+            )}>
+              <div className="flex items-center gap-1 mb-1">
+                <Sparkles className={cn("w-3 h-3", isDark ? "text-purple-300" : "text-purple-700")} />
+                <span className={cn("font-medium", isDark ? "text-purple-300" : "text-purple-700")}>
+                  AI Action Plan
+                </span>
+              </div>
+              <div className="space-y-0.5">
+                {breakdown.actionPlan.steps.slice(0, 2).map((step, idx) => (
+                  <div key={idx} className="flex items-start gap-1.5">
+                    <span className={cn("text-[10px] mt-0.5 flex-shrink-0", isDark ? "text-purple-400" : "text-purple-600")}>
+                      {idx + 1}.
+                    </span>
+                    <span className={cn("text-[10px] leading-tight flex-1", isDark ? "text-purple-200" : "text-purple-800")}>
+                      {step.action}
+                    </span>
+                  </div>
+                ))}
+                {breakdown.actionPlan.steps.length > 2 && (
+                  <div className={cn("text-[10px] mt-0.5", isDark ? "text-purple-400" : "text-purple-600")}>
+                    +{breakdown.actionPlan.steps.length - 2} more steps
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Row 3: Subhead (Description) - Show if description exists */}
           {task.description && (
             <div 
@@ -1065,6 +1089,194 @@ export const DraggableTaskCard = React.forwardRef<
               )}
 
             </>
+          )}
+
+          {/* Dropdown Tab Section */}
+          {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
+            <div 
+              className={cn(
+                "mt-1 border-t",
+                isDark ? "border-gray-700" : "border-gray-200"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={cn(
+                  "w-full flex items-center justify-between px-2 py-1.5 text-xs font-medium transition-colors",
+                  isDark 
+                    ? "text-gray-100 hover:bg-gray-800/50"
+                    : "text-gray-800 hover:bg-gray-100/50"
+                )}
+                style={{
+                  transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
+                }}
+              >
+                <span>Details</span>
+                {isDropdownOpen ? (
+                  <ChevronUp className="w-3 h-3" />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+              </button>
+
+              {isDropdownOpen && (
+                <div
+                  className={cn(
+                    "px-2 pb-2 rounded-b-lg",
+                    isDark ? "bg-gray-900/95" : "bg-white"
+                  )}
+                  style={{
+                    transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
+                  }}
+                >
+                  <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
+                    <TabsList 
+                      className={cn(
+                        "h-7 w-full justify-start bg-transparent p-0 gap-1",
+                        isDark ? "text-gray-400" : "text-gray-600"
+                      )}
+                    >
+                      {task.description && (
+                        <TabsTrigger
+                          value="description"
+                          className={cn(
+                            "h-6 px-2 text-[10px] data-[state=active]:text-white",
+                            isDark 
+                              ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
+                              : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
+                          )}
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          Description
+                        </TabsTrigger>
+                      )}
+                      {task.subtasks && task.subtasks.length > 0 && (
+                        <TabsTrigger
+                          value="subtasks"
+                          className={cn(
+                            "h-6 px-2 text-[10px] data-[state=active]:text-white",
+                            isDark 
+                              ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
+                              : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
+                          )}
+                        >
+                          <ListChecks className="w-3 h-3 mr-1" />
+                          Subtasks ({task.subtasks.length})
+                        </TabsTrigger>
+                      )}
+                      {task.dependencies && task.dependencies.length > 0 && (
+                        <TabsTrigger
+                          value="dependencies"
+                          className={cn(
+                            "h-6 px-2 text-[10px] data-[state=active]:text-white",
+                            isDark 
+                              ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
+                              : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
+                          )}
+                        >
+                          <Link2 className="w-3 h-3 mr-1" />
+                          Dependencies ({task.dependencies.length})
+                        </TabsTrigger>
+                      )}
+                    </TabsList>
+
+                    {task.description && (
+                      <TabsContent value="description" className="mt-2 p-2 rounded text-xs max-h-32 overflow-y-auto">
+                        <div
+                          className={cn(
+                            "break-words text-xs",
+                            isDark ? "text-gray-100" : "text-gray-800"
+                          )}
+                          {...(hasHTMLTags(task.description) 
+                            ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                            : { children: task.description }
+                          )}
+                        />
+                      </TabsContent>
+                    )}
+
+                    {task.subtasks && task.subtasks.length > 0 && (
+                      <TabsContent value="subtasks" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                        {task.subtasks.map((subtask) => (
+                          <div
+                            key={subtask.id}
+                            className={cn(
+                              "flex items-center gap-2 p-1.5 rounded text-xs",
+                              isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "w-3 h-3 rounded-sm border flex-shrink-0",
+                                subtask.completed
+                                  ? "bg-primary border-primary"
+                                  : isDark 
+                                    ? "border-gray-600"
+                                    : "border-gray-300"
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "flex-1 text-xs",
+                                subtask.completed
+                                  ? "line-through opacity-60"
+                                  : isDark
+                                    ? "text-gray-100"
+                                    : "text-gray-800"
+                              )}
+                            >
+                              {subtask.title}
+                            </span>
+                          </div>
+                        ))}
+                      </TabsContent>
+                    )}
+
+                    {task.dependencies && task.dependencies.length > 0 && (
+                      <TabsContent value="dependencies" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                        {task.dependencies.map((depId) => {
+                          const depTask = tasks.find((t) => t?.id === depId);
+                          if (!depTask) return null;
+                          const isComplete = depTask.status === "done";
+                          
+                          return (
+                            <div
+                              key={depId}
+                              className={cn(
+                                "flex items-center gap-2 p-1.5 rounded text-xs",
+                                isComplete
+                                  ? isDark ? "bg-green-950/20 border border-green-800/30" : "bg-green-50/50 border border-green-200"
+                                  : isDark ? "bg-amber-950/20 border border-amber-800/30" : "bg-amber-50/50 border border-amber-200"
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0",
+                                  isComplete ? "bg-green-500" : "bg-amber-500"
+                                )}
+                              >
+                                {isComplete && <span className="text-white text-[8px]">✓</span>}
+                              </div>
+                              <span
+                                className={cn(
+                                  "flex-1 truncate text-xs",
+                                  isDark
+                                    ? "text-gray-100"
+                                    : "text-gray-800"
+                                )}
+                              >
+                                {depTask.title}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </TabsContent>
+                    )}
+                  </Tabs>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

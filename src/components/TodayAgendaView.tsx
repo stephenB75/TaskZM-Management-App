@@ -593,13 +593,28 @@ export function TodayAgendaView({
             description={
               isOver
                 ? "✨ Drop task here to schedule for today"
-                : today.toLocaleDateString("en-US", {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })
+                : undefined
             }
             hideDesktopLogo
+            actions={
+              <div className="flex flex-col items-end text-right">
+                <span 
+                  className="font-semibold text-foreground uppercase tracking-wide"
+                  style={{ fontSize: HEADER_DESCRIPTION_SIZE }}
+                >
+                  {today.toLocaleDateString("en-US", { weekday: "short" })}
+                </span>
+                <span 
+                  className="text-muted-foreground"
+                  style={{ 
+                    fontSize: HEADER_DESCRIPTION_SIZE,
+                    marginTop: HEADER_DESCRIPTION_MARGIN_TOP,
+                  }}
+                >
+                  {today.getDate()}
+                </span>
+              </div>
+            }
           />
             {/* Current Time Indicator - Desktop only (bottom right corner of header) */}
             <div 

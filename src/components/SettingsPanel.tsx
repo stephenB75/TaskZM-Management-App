@@ -125,7 +125,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   // #region agent log
   fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsPanel.tsx:123',message:'SettingsPanel accessing rolloverSettings',data:{hasRolloverSettings:!!rolloverSettings,hasAutoRollover:'autoRollover' in (rolloverSettings||{}),hasEnabled:'enabled' in (rolloverSettings||{}),rolloverSettingsKeys:rolloverSettings?Object.keys(rolloverSettings):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
   // #endregion
-  const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks } = useAI();
+  const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks, updateSettings } = useAI();
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
   const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
   const { awards, earnedAwards, getAwardProgress } = useAwards();
@@ -1550,6 +1550,63 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   className="flex-shrink-0 mt-0.5"
                 />
               </div>
+
+              <div className="space-y-2 pt-2 border-t border-primary/10">
+                <Label className="text-sm font-semibold">Daily Work Hour Limit</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3 py-1">
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <Label htmlFor="ai-hours-5" className="text-sm cursor-pointer">5 Hours</Label>
+                      <p className="text-xs text-muted-foreground">Standard work day limit</p>
+                    </div>
+                    <Switch 
+                      id="ai-hours-5" 
+                      checked={aiSettings.maxHoursPerDay === 5}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          updateSettings({ maxHoursPerDay: 5 });
+                        }
+                      }}
+                      disabled={!aiSettings.autoSchedulingEnabled}
+                      className="flex-shrink-0 mt-0.5"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 py-1">
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <Label htmlFor="ai-hours-8" className="text-sm cursor-pointer">8 Hours</Label>
+                      <p className="text-xs text-muted-foreground">Full work day limit</p>
+                    </div>
+                    <Switch 
+                      id="ai-hours-8" 
+                      checked={aiSettings.maxHoursPerDay === 8}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          updateSettings({ maxHoursPerDay: 8 });
+                        }
+                      }}
+                      disabled={!aiSettings.autoSchedulingEnabled}
+                      className="flex-shrink-0 mt-0.5"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 py-1">
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <Label htmlFor="ai-hours-10" className="text-sm cursor-pointer">10 Hours</Label>
+                      <p className="text-xs text-muted-foreground">Extended work day limit</p>
+                    </div>
+                    <Switch 
+                      id="ai-hours-10" 
+                      checked={aiSettings.maxHoursPerDay === 10}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          updateSettings({ maxHoursPerDay: 10 });
+                        }
+                      }}
+                      disabled={!aiSettings.autoSchedulingEnabled}
+                      className="flex-shrink-0 mt-0.5"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/10 space-y-3">
@@ -1576,7 +1633,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <div className="space-y-1.5 pl-1">
                     <p className="font-medium text-foreground">⏰ Scheduling Rules:</p>
                     <ul className="space-y-1 list-disc list-inside ml-1">
-                      <li>Enforces a 5-hour daily limit per day to prevent over-scheduling</li>
+                      <li>Enforces a {aiSettings.maxHoursPerDay}-hour daily limit per day to prevent over-scheduling</li>
                       <li>Schedules tasks within your defined category hours (e.g., Work hours 9 AM-5 PM)</li>
                       <li>Separates weekday and weekend schedules based on your preferences</li>
                       <li>Distributes tasks across available days, starting from tomorrow</li>
@@ -1587,7 +1644,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <div className="space-y-1.5 pl-1">
                     <p className="font-medium text-foreground">🔄 Smart Features:</p>
                     <ul className="space-y-1 list-disc list-inside ml-1">
-                      <li>If a day exceeds 5 hours, you'll be consulted before proceeding</li>
+                      <li>If a day exceeds {aiSettings.maxHoursPerDay} hours, you'll be consulted before proceeding</li>
                       <li>Tasks that can't be scheduled within 14 days are flagged for manual scheduling</li>
                       <li>You can reschedule entire days, weeks, or months with one click</li>
                       <li>All schedules can be manually adjusted anytime</li>

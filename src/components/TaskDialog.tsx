@@ -81,6 +81,9 @@ import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskM
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
+import { generateDescription } from "../lib/description-generator";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_GAP_SMALL } from "../lib/layout-constants";
+import { Sparkles } from "lucide-react";
 import type {
   Task,
   TaskPriority,
@@ -1905,7 +1908,36 @@ export function TaskDialog({
 
                 {/* Description - Optional */}
                 <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                  <Label htmlFor="description" className="text-sm font-semibold text-foreground">Description (Optional)</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="description" className="text-sm font-semibold text-foreground">Description (Optional)</Label>
+                    {title.trim() && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const generated = generateDescription(title);
+                          if (generated.description) {
+                            const newDescription = description 
+                              ? `${description}\n\n${generated.description}`
+                              : generated.description;
+                            setDescription(newDescription);
+                            toast.success('AI description generated', {
+                              description: `Generated based on ${generated.domain} context`,
+                            });
+                          }
+                        }}
+                        className="h-7 px-2 text-xs"
+                        style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
+                      >
+                        <Sparkles 
+                          className="w-3 h-3" 
+                          style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }}
+                        />
+                        <span className="hidden sm:inline">AI Generate</span>
+                      </Button>
+                    )}
+                  </div>
                   <RichTextEditor
                     value={description}
                     onChange={setDescription}

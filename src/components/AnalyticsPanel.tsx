@@ -12,6 +12,7 @@ import {
   Activity,
   Zap,
   PieChart as PieChartIcon,
+  Download,
 } from "lucide-react";
 import { AppHeader } from "./AppHeader";
 import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
@@ -79,6 +80,8 @@ import {
 } from "../lib/color-theme";
 import { UI_CHART_COLORS, UI_ANALYTICS_COLORS } from "../lib/ui-colors";
 import { cn } from "../lib/utils";
+import { ANALYTICS_PDF_CONFIG, ANALYTICS_PDF_BUTTON } from "../lib/analytics-constants";
+import jsPDF from "jspdf";
 
 interface AnalyticsPanelProps {
   onClose: () => void;
@@ -192,6 +195,85 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   const { tasks, projects } = useTasks();
   const { features } = useSubscription();
   const { actualTheme } = useTheme();
+
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF({
+        orientation: ANALYTICS_PDF_CONFIG.orientation,
+        unit: "mm",
+        format: ANALYTICS_PDF_CONFIG.pageSize,
+      });
+
+      let yPos = ANALYTICS_PDF_CONFIG.margins.top;
+
+      // Title
+      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title);
+      doc.setTextColor(
+        ANALYTICS_PDF_CONFIG.colors.primary.split("#")[1].substring(0, 2),
+        ANALYTICS_PDF_CONFIG.colors.primary.split("#")[1].substring(2, 4),
+        ANALYTICS_PDF_CONFIG.colors.primary.split("#")[1].substring(4, 6)
+      );
+      doc.text("TaskZM Analytics Report", ANALYTICS_PDF_CONFIG.margins.left, yPos);
+      yPos += 10;
+
+      // Date
+      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
+      doc.setTextColor(
+        ANALYTICS_PDF_CONFIG.colors.textSecondary.split("#")[1].substring(0, 2),
+        ANALYTICS_PDF_CONFIG.colors.textSecondary.split("#")[1].substring(2, 4),
+        ANALYTICS_PDF_CONFIG.colors.textSecondary.split("#")[1].substring(4, 6)
+      );
+      doc.text(
+        `Generated: ${new Date().toLocaleDateString()}`,
+        ANALYTICS_PDF_CONFIG.margins.left,
+        yPos
+      );
+      yPos += 15;
+
+      // Summary Statistics
+      if (analytics) {
+        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
+        doc.setTextColor(
+          ANALYTICS_PDF_CONFIG.colors.text.split("#")[1].substring(0, 2),
+          ANALYTICS_PDF_CONFIG.colors.text.split("#")[1].substring(2, 4),
+          ANALYTICS_PDF_CONFIG.colors.text.split("#")[1].substring(4, 6)
+        );
+        doc.text("Summary", ANALYTICS_PDF_CONFIG.margins.left, yPos);
+        yPos += 8;
+
+        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
+        doc.text(
+          `Total Tasks: ${analytics.totalTasks || 0}`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 6;
+        doc.text(
+          `Completed: ${analytics.completedTasks || 0}`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 6;
+        doc.text(
+          `In Progress: ${analytics.inProgressTasks || 0}`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 6;
+        doc.text(
+          `Completion Rate: ${analytics.completionRate?.toFixed(1) || 0}%`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 10;
+      }
+
+      // Save PDF
+      doc.save(`${ANALYTICS_PDF_CONFIG.fileName}-${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+    }
+  };
   const isDark = actualTheme === 'dark';
   
   // Safety check: ensure tasks and projects are arrays
@@ -669,14 +751,28 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         description="Productivity insights"
         hideDesktopLogo
         actions={
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-8 w-8"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center" style={{ gap: ANALYTICS_PDF_BUTTON.gap }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleExportPDF}
+              className="h-8 w-8"
+              title="Download PDF Report"
+            >
+              <Download 
+                className="w-4 h-4" 
+                style={{ width: ANALYTICS_PDF_BUTTON.iconSize, height: ANALYTICS_PDF_BUTTON.iconSize }}
+              />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         }
       />
 

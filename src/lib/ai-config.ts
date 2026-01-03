@@ -30,11 +30,31 @@ const parseTimeToHour = (timeStr: string): number => {
 // ============================================================================
 
 /**
+ * Daily hour limit options for AI scheduling
+ */
+export const AI_DAILY_HOUR_OPTIONS = {
+  FIVE_HOURS: 5,
+  EIGHT_HOURS: 8,
+  TEN_HOURS: 10,
+} as const;
+
+/**
  * Maximum hours per day for task scheduling
  * Default: 5 hours
- * TODO: Make this user-configurable through settings
+ * This is now user-configurable through settings (5HR/8HR/10HR)
  */
-export const MAX_HOURS_PER_DAY = 5;
+export const MAX_HOURS_PER_DAY = AI_DAILY_HOUR_OPTIONS.FIVE_HOURS; // Default fallback
+
+/**
+ * AI function explanation text
+ */
+export const AI_FUNCTION_EXPLANATION = {
+  TITLE: "How AI Schedules Tasks:",
+  DESCRIPTION: "The AI scheduler intelligently organizes your tasks and events by analyzing multiple factors to create an optimal schedule that fits your workflow.",
+  TASK_ANALYSIS_TITLE: "📊 Task Analysis:",
+  SCHEDULING_RULES_TITLE: "⏰ Scheduling Rules:",
+  SMART_FEATURES_TITLE: "🔄 Smart Features:",
+} as const;
 
 /**
  * Minimum hours requirement per day

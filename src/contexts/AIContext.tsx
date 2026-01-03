@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import { createDefaultAIContext } from '../lib/context-defaults';
+import { AI_DAILY_HOUR_OPTIONS } from '../lib/ai-config';
 
 interface AISettings {
   autoSchedulingEnabled: boolean;
   priorityBasedScheduling: boolean;
   scheduleUnscheduledTasks: boolean;
+  maxHoursPerDay: number; // Daily work hour limit (5, 8, or 10)
 }
 
 interface AIContextType {
@@ -22,6 +24,7 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   autoSchedulingEnabled: true,
   priorityBasedScheduling: true,
   scheduleUnscheduledTasks: true,
+  maxHoursPerDay: AI_DAILY_HOUR_OPTIONS.FIVE_HOURS, // Default to 5 hours
 };
 
 export function AIProvider({ children }: { children: ReactNode }) {

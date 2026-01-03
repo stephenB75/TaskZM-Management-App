@@ -142,6 +142,17 @@ export const TASK_CARD_BADGE_SIZES = {
   },
 } as const;
 
+// Standard Task Card Heights by Duration
+export const TASK_CARD_STANDARD_HEIGHTS = {
+  at15mins: 100, // 15 minutes = 100px
+  at25mins: 160, // 25 minutes = 160px
+  at30mins: 220, // 30 minutes = 220px
+  at45mins: 300, // 45 minutes = 300px
+  at60mins: 380, // 60 minutes = 380px
+  at80mins: 430, // 80 minutes = 430px
+  at120mins: 500, // 120 minutes = 500px
+} as const;
+
 // Card Height Configuration
 export const TASK_CARD_HEIGHT_CONFIG = {
   maxHeight: 550, // Capped at 550px
@@ -602,6 +613,39 @@ export const TASK_CARD_TIMELINE = {
   },
   scale: {
     dragging: 'scale-90 origin-left',
+  },
+} as const;
+
+// Dropdown Tab Colors (using app theme colors, distinct from task card and column colors)
+export const TASK_CARD_DROPDOWN_COLORS = {
+  background: {
+    light: '#FFFFFF', // White background for light mode
+    dark: 'rgba(17, 24, 39, 0.95)', // Dark gray background for dark mode
+  },
+  border: {
+    light: 'rgba(148, 163, 184, 0.2)', // Light border
+    dark: 'rgba(148, 163, 184, 0.3)', // Dark border
+  },
+  tab: {
+    active: {
+      background: '#9B87E8', // Primary color for active tab
+      text: '#FFFFFF', // White text on active tab
+    },
+    inactive: {
+      background: 'transparent',
+      text: '#6B7280', // Muted text for inactive tabs
+      darkText: '#9CA3AF', // Dark mode muted text
+    },
+  },
+  content: {
+    text: {
+      light: '#1F2937', // Primary text color
+      dark: '#F9FAFB', // Light text for dark mode
+    },
+    muted: {
+      light: '#6B7280', // Muted text color
+      dark: '#9CA3AF', // Dark mode muted text
+    },
   },
 } as const;
 

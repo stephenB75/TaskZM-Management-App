@@ -31,6 +31,7 @@ import {
   TASK_CARD_SPACING,
   TASK_CARD_TEXT,
   TASK_CARD_HEIGHT_CONFIG,
+  TASK_CARD_STANDARD_HEIGHTS,
   TASK_CARD_CALCULATIONS,
   TASK_CARD_LINE_CLAMP,
   TASK_CARD_BACKGROUNDS,
@@ -150,33 +151,28 @@ export function DraggableTodayAgendaTask({
     const hasSubtasks = task.subtasks && task.subtasks.length > 0;
     
     // STANDARD HEIGHT CALCULATION: Use standard heights first, then auto-adjust for components
-    // Step 1: Get standard height for this duration category (this is the BASE)
+    // Step 1: Get standard height for this duration using TASK_CARD_STANDARD_HEIGHTS
+    const effectiveEstimatedTime = hasEstimatedTime ? currentEstimatedTimeValue! : getTaskMinutes(task);
+    
     let baseHeight: number;
-    if (isShortTask) {
-      // Short tasks (< 45 mins): Use standard base height
-      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard
-    } else if (isMediumTask) {
-      // Medium tasks (45-60 mins): Use standard minimum height
-      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px standard
+    // Use standard heights: 15=100px, 25=160px, 30=220px, 45=300px, 60=380px, 80=430px, 120=500px
+    if (effectiveEstimatedTime <= 15) {
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at15mins; // 100px
+    } else if (effectiveEstimatedTime <= 25) {
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at25mins; // 160px
+    } else if (effectiveEstimatedTime <= 30) {
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at30mins; // 220px
+    } else if (effectiveEstimatedTime <= 45) {
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at45mins; // 300px
+    } else if (effectiveEstimatedTime <= 60) {
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at60mins; // 380px
+    } else if (effectiveEstimatedTime <= 80) {
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at80mins; // 430px
+    } else if (effectiveEstimatedTime <= 120) {
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 500px
     } else {
-      // Long tasks (>= 60 mins): Use standard heights at defined points
-      if (currentEstimatedTimeValue !== null) {
-        if (currentEstimatedTimeValue >= 180) {
-          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px standard
-        } else if (currentEstimatedTimeValue >= 150) {
-          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins; // 425px standard
-        } else if (currentEstimatedTimeValue >= 120) {
-          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins; // 350px standard (2 hours)
-        } else if (currentEstimatedTimeValue >= 90) {
-          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins; // 275px standard
-        } else {
-          // 60-89 mins: Use standard base height (1 hour = 200px)
-          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px standard
-        }
-      } else {
-        // Fallback if estimatedTime is null
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px standard
-      }
+      // For tasks > 120 mins, use 500px as base (same as 120 mins)
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 500px
     }
     
     // Step 2: Now add component heights on top of the standard base height

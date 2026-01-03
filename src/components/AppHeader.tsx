@@ -62,7 +62,7 @@ import {
   getColorWithOpacity,
 } from "../lib/color-theme";
 import { cn } from "../lib/utils";
-import logoImageColor from "../assets/taskzm-logo-light.png"; // Purple color logo for all themes
+import logoImageColor from "../assets/Taskzm_Logo_BLK-removebg.png"; // Black logo version
 
 interface AppHeaderProps {
   title: string | React.ReactNode;

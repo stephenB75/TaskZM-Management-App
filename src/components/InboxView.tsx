@@ -39,7 +39,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
@@ -346,6 +346,56 @@ export function InboxView() {
     }
   }, [selectedTaskIds, sortedTasks, generateSchedulePlan, applySchedulePlan, isScheduling]);
 
+  const handleUnscheduleSelected = useCallback(async () => {
+    if (selectedTaskIds.size === 0) {
+      toast.info("No tasks selected", {
+        description: "Please select tasks to unschedule",
+      });
+      return;
+    }
+
+    const selectedTasks = sortedTasks.filter(task => selectedTaskIds.has(task.id));
+    
+    if (selectedTasks.length === 0) {
+      toast.info("No valid tasks to unschedule", {
+        description: "Selected tasks may have been filtered out",
+      });
+      return;
+    }
+
+    const loadingToast = toast.loading(
+      "Unscheduling selected tasks...",
+      {
+        description: `Removing schedule from ${selectedTasks.length} task${selectedTasks.length === 1 ? "" : "s"}`,
+      },
+    );
+
+    try {
+      // Remove scheduledDate from all selected tasks
+      const updatePromises = selectedTasks.map(task =>
+        updateTask(task.id, { scheduledDate: null })
+      );
+
+      await Promise.all(updatePromises);
+
+      toast.dismiss(loadingToast);
+      toast.success("Tasks unscheduled!", {
+        description: `Removed schedule from ${selectedTasks.length} task${selectedTasks.length === 1 ? "" : "s"}`,
+      });
+      
+      // Clear selection after successful unscheduling
+      setSelectedTaskIds(new Set());
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error('❌ Error in handleUnscheduleSelected:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error("Unscheduling failed", {
+        description: errorMessage || "Please try again",
+      });
+    }
+  }, [selectedTaskIds, sortedTasks, updateTask]);
+
   const handleScheduleAll = useCallback(async () => {
     console.log('🎬 handleScheduleAll CALLED', { 
       unscheduledTasksCount: unscheduledTasks.length,
@@ -515,7 +565,7 @@ export function InboxView() {
         }
         hideDesktopLogo
         actions={
-          <div className="flex items-center gap-1">
+          <div className="flex items-center flex-wrap" style={{ gap: HEADER_GAP_SMALL }}>
             {selectedTaskIds.size > 0 ? (
               <>
                 <Button
@@ -540,6 +590,20 @@ export function InboxView() {
                   <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
                   <span className="hidden md:inline">
                     Schedule ({selectedTaskIds.size})
+                  </span>
+                  <span className="md:hidden text-[10px]">
+                    {selectedTaskIds.size}
+                  </span>
+                </Button>
+                <Button
+                  onClick={handleUnscheduleSelected}
+                  variant="outline"
+                  className="rounded-full px-2 sm:px-2.5 text-xs"
+                  size="sm"
+                >
+                  <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <span className="hidden md:inline">
+                    Unschedule ({selectedTaskIds.size})
                   </span>
                   <span className="md:hidden text-[10px]">
                     {selectedTaskIds.size}
