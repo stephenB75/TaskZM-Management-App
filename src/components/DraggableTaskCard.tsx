@@ -1090,195 +1090,196 @@ export const DraggableTaskCard = React.forwardRef<
 
             </>
           )}
+        </div>
 
-          {/* Dropdown Tab Section */}
-          {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
-            <div 
+        {/* Dropdown Tab Section - Attached at bottom of card */}
+        {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
+          <div 
+            className={cn(
+              "mt-1 rounded-b-lg border-t shadow-sm",
+              isDark ? "border-gray-700 bg-gray-900/95" : "border-gray-200 bg-white",
+              isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={cn(
-                "mt-1 border-t",
-                isDark ? "border-gray-700" : "border-gray-200"
+                "w-full flex items-center justify-between px-2 py-1.5 text-xs font-medium transition-colors rounded-b-lg",
+                isDark 
+                  ? "text-gray-100 hover:bg-gray-800/50"
+                  : "text-gray-800 hover:bg-gray-100/50"
               )}
-              onClick={(e) => e.stopPropagation()}
+              style={{
+                transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
+              }}
             >
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              <span>Details</span>
+              {isDropdownOpen ? (
+                <ChevronUp className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
+            </button>
+
+            {isDropdownOpen && (
+              <div
                 className={cn(
-                  "w-full flex items-center justify-between px-2 py-1.5 text-xs font-medium transition-colors",
-                  isDark 
-                    ? "text-gray-100 hover:bg-gray-800/50"
-                    : "text-gray-800 hover:bg-gray-100/50"
+                  "px-2 pb-2 rounded-b-lg",
+                  isDark ? "bg-gray-900/95" : "bg-white"
                 )}
                 style={{
                   transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
                 }}
               >
-                <span>Details</span>
-                {isDropdownOpen ? (
-                  <ChevronUp className="w-3 h-3" />
-                ) : (
-                  <ChevronDown className="w-3 h-3" />
-                )}
-              </button>
-
-              {isDropdownOpen && (
-                <div
-                  className={cn(
-                    "px-2 pb-2 rounded-b-lg",
-                    isDark ? "bg-gray-900/95" : "bg-white"
-                  )}
-                  style={{
-                    transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
-                  }}
-                >
-                  <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
-                    <TabsList 
-                      className={cn(
-                        "h-7 w-full justify-start bg-transparent p-0 gap-1",
-                        isDark ? "text-gray-400" : "text-gray-600"
-                      )}
-                    >
-                      {task.description && (
-                        <TabsTrigger
-                          value="description"
-                          className={cn(
-                            "h-6 px-2 text-[10px] data-[state=active]:text-white",
-                            isDark 
-                              ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
-                              : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
-                          )}
-                        >
-                          <FileText className="w-3 h-3 mr-1" />
-                          Description
-                        </TabsTrigger>
-                      )}
-                      {task.subtasks && task.subtasks.length > 0 && (
-                        <TabsTrigger
-                          value="subtasks"
-                          className={cn(
-                            "h-6 px-2 text-[10px] data-[state=active]:text-white",
-                            isDark 
-                              ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
-                              : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
-                          )}
-                        >
-                          <ListChecks className="w-3 h-3 mr-1" />
-                          Subtasks ({task.subtasks.length})
-                        </TabsTrigger>
-                      )}
-                      {task.dependencies && task.dependencies.length > 0 && (
-                        <TabsTrigger
-                          value="dependencies"
-                          className={cn(
-                            "h-6 px-2 text-[10px] data-[state=active]:text-white",
-                            isDark 
-                              ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
-                              : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
-                          )}
-                        >
-                          <Link2 className="w-3 h-3 mr-1" />
-                          Dependencies ({task.dependencies.length})
-                        </TabsTrigger>
-                      )}
-                    </TabsList>
-
-                    {task.description && (
-                      <TabsContent value="description" className="mt-2 p-2 rounded text-xs max-h-32 overflow-y-auto">
-                        <div
-                          className={cn(
-                            "break-words text-xs",
-                            isDark ? "text-gray-100" : "text-gray-800"
-                          )}
-                          {...(hasHTMLTags(task.description) 
-                            ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                            : { children: task.description }
-                          )}
-                        />
-                      </TabsContent>
+                <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
+                  <TabsList 
+                    className={cn(
+                      "h-7 w-full justify-start bg-transparent p-0 gap-1",
+                      isDark ? "text-gray-400" : "text-gray-600"
                     )}
-
+                  >
+                    {task.description && (
+                      <TabsTrigger
+                        value="description"
+                        className={cn(
+                          "h-6 px-2 text-[10px] data-[state=active]:text-white",
+                          isDark 
+                            ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
+                            : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
+                        )}
+                      >
+                        <FileText className="w-3 h-3 mr-1" />
+                        Description
+                      </TabsTrigger>
+                    )}
                     {task.subtasks && task.subtasks.length > 0 && (
-                      <TabsContent value="subtasks" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                        {task.subtasks.map((subtask) => (
+                      <TabsTrigger
+                        value="subtasks"
+                        className={cn(
+                          "h-6 px-2 text-[10px] data-[state=active]:text-white",
+                          isDark 
+                            ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
+                            : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
+                        )}
+                      >
+                        <ListChecks className="w-3 h-3 mr-1" />
+                        Subtasks ({task.subtasks.length})
+                      </TabsTrigger>
+                    )}
+                    {task.dependencies && task.dependencies.length > 0 && (
+                      <TabsTrigger
+                        value="dependencies"
+                        className={cn(
+                          "h-6 px-2 text-[10px] data-[state=active]:text-white",
+                          isDark 
+                            ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
+                            : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
+                        )}
+                      >
+                        <Link2 className="w-3 h-3 mr-1" />
+                        Dependencies ({task.dependencies.length})
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+
+                  {task.description && (
+                    <TabsContent value="description" className="mt-2 p-2 rounded text-xs max-h-32 overflow-y-auto">
+                      <div
+                        className={cn(
+                          "break-words text-xs",
+                          isDark ? "text-gray-100" : "text-gray-800"
+                        )}
+                        {...(hasHTMLTags(task.description) 
+                          ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                          : { children: task.description }
+                        )}
+                      />
+                    </TabsContent>
+                  )}
+
+                  {task.subtasks && task.subtasks.length > 0 && (
+                    <TabsContent value="subtasks" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                      {task.subtasks.map((subtask) => (
+                        <div
+                          key={subtask.id}
+                          className={cn(
+                            "flex items-center gap-2 p-1.5 rounded text-xs",
+                            isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
+                          )}
+                        >
                           <div
-                            key={subtask.id}
+                            className={cn(
+                              "w-3 h-3 rounded-sm border flex-shrink-0",
+                              subtask.completed
+                                ? "bg-primary border-primary"
+                                : isDark 
+                                  ? "border-gray-600"
+                                  : "border-gray-300"
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "flex-1 text-xs",
+                              subtask.completed
+                                ? "line-through opacity-60"
+                                : isDark
+                                  ? "text-gray-100"
+                                  : "text-gray-800"
+                            )}
+                          >
+                            {subtask.title}
+                          </span>
+                        </div>
+                      ))}
+                    </TabsContent>
+                  )}
+
+                  {task.dependencies && task.dependencies.length > 0 && (
+                    <TabsContent value="dependencies" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                      {task.dependencies.map((depId) => {
+                        const depTask = tasks.find((t) => t?.id === depId);
+                        if (!depTask) return null;
+                        const isComplete = depTask.status === "done";
+                        
+                        return (
+                          <div
+                            key={depId}
                             className={cn(
                               "flex items-center gap-2 p-1.5 rounded text-xs",
-                              isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
+                              isComplete
+                                ? isDark ? "bg-green-950/20 border border-green-800/30" : "bg-green-50/50 border border-green-200"
+                                : isDark ? "bg-amber-950/20 border border-amber-800/30" : "bg-amber-50/50 border border-amber-200"
                             )}
                           >
                             <div
                               className={cn(
-                                "w-3 h-3 rounded-sm border flex-shrink-0",
-                                subtask.completed
-                                  ? "bg-primary border-primary"
-                                  : isDark 
-                                    ? "border-gray-600"
-                                    : "border-gray-300"
+                                "w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0",
+                                isComplete ? "bg-green-500" : "bg-amber-500"
                               )}
-                            />
+                            >
+                              {isComplete && <span className="text-white text-[8px]">✓</span>}
+                            </div>
                             <span
                               className={cn(
-                                "flex-1 text-xs",
-                                subtask.completed
-                                  ? "line-through opacity-60"
-                                  : isDark
-                                    ? "text-gray-100"
-                                    : "text-gray-800"
+                                "flex-1 truncate text-xs",
+                                isDark
+                                  ? "text-gray-100"
+                                  : "text-gray-800"
                               )}
                             >
-                              {subtask.title}
+                              {depTask.title}
                             </span>
                           </div>
-                        ))}
-                      </TabsContent>
-                    )}
-
-                    {task.dependencies && task.dependencies.length > 0 && (
-                      <TabsContent value="dependencies" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                        {task.dependencies.map((depId) => {
-                          const depTask = tasks.find((t) => t?.id === depId);
-                          if (!depTask) return null;
-                          const isComplete = depTask.status === "done";
-                          
-                          return (
-                            <div
-                              key={depId}
-                              className={cn(
-                                "flex items-center gap-2 p-1.5 rounded text-xs",
-                                isComplete
-                                  ? isDark ? "bg-green-950/20 border border-green-800/30" : "bg-green-50/50 border border-green-200"
-                                  : isDark ? "bg-amber-950/20 border border-amber-800/30" : "bg-amber-50/50 border border-amber-200"
-                              )}
-                            >
-                              <div
-                                className={cn(
-                                  "w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0",
-                                  isComplete ? "bg-green-500" : "bg-amber-500"
-                                )}
-                              >
-                                {isComplete && <span className="text-white text-[8px]">✓</span>}
-                              </div>
-                              <span
-                                className={cn(
-                                  "flex-1 truncate text-xs",
-                                  isDark
-                                    ? "text-gray-100"
-                                    : "text-gray-800"
-                                )}
-                              >
-                                {depTask.title}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </TabsContent>
-                    )}
-                  </Tabs>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                        );
+                      })}
+                    </TabsContent>
+                  )}
+                </Tabs>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   },
