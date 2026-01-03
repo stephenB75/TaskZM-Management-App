@@ -409,9 +409,6 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
   // Split by spaces and also handle common separators
   // Improved regex to handle more cases: spaces, hyphens, underscores, and common punctuation
   const words = text.split(/[\s\-_.,!?;:()\[\]{}'"]+/).filter(w => w.length > 0);
-    words: words.slice(0, 15), // Log first 15 words for better debugging
-    fullText: text,
-  });
   
   // Find verbs in the text
   const foundVerbs: Array<{ verb: string; effort: number; position: number; originalWord: string }> = [];
