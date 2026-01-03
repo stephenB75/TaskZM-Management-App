@@ -1910,15 +1910,25 @@ export function TaskDialog({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          const generated = generateDescription(title);
-                          if (generated.description) {
-                            const newDescription = description 
-                              ? `${description}\n\n${generated.description}`
-                              : generated.description;
-                            setDescription(newDescription);
-                            toast.success('AI description generated', {
-                              description: `Generated based on ${generated.domain} context`,
+                        onClick={async () => {
+                          try {
+                            const generated = await generateDescription(title);
+                            if (generated.description) {
+                              const newDescription = description 
+                                ? `${description}\n\n${generated.description}`
+                                : generated.description;
+                              setDescription(newDescription);
+                              const source = generated.confidence > 0.7 
+                                ? 'DuckDuckGo search + browser AI' 
+                                : 'local terminology';
+                              toast.success('AI description generated', {
+                                description: `Generated based on ${generated.domain} context using ${source}`,
+                              });
+                            }
+                          } catch (error) {
+                            logger.warn('Description generation failed:', error);
+                            toast.error('Failed to generate description', {
+                              description: 'Please try again or enter description manually',
                             });
                           }
                         }}

@@ -46,6 +46,25 @@ export const AI_DAILY_HOUR_OPTIONS = {
 export const MAX_HOURS_PER_DAY = AI_DAILY_HOUR_OPTIONS.FIVE_HOURS; // Default fallback
 
 /**
+ * DuckDuckGo Search Configuration
+ */
+export const DUCKDUCKGO_CONFIG = {
+  instantAnswerApiUrl: 'https://api.duckduckgo.com/',
+  timeout: 5000, // 5 seconds timeout for search requests
+  maxResults: 5, // Maximum number of search results to process
+  minConfidenceForSearch: 0.5, // Minimum confidence to use search results
+} as const;
+
+/**
+ * Description Generation Configuration
+ */
+export const DESCRIPTION_GENERATION_CONFIG = {
+  maxContextLength: 500, // Maximum characters from search results to use
+  minSearchResults: 1, // Minimum search results needed to use search-based description
+  searchTimeout: 5000, // Timeout for DuckDuckGo search (ms)
+} as const;
+
+/**
  * AI function explanation text
  */
 export const AI_FUNCTION_EXPLANATION = {
