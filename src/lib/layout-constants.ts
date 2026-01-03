@@ -428,6 +428,42 @@ export const COMPONENT_DIMENSIONS = {
       combined: 'min-w-[70px] sm:min-w-[90px]',
     },
     buttonMinWidth: 'min-w-[140px]',
+    footer: {
+      padding: {
+        horizontal: '1.5rem', // px-6 = 1.5rem (24px) - matches dialog content padding
+        bottom: 'calc(1.5rem + 1rem)', // 1.5rem (24px) + 1rem (16px) = 40px total
+        top: {
+          mobile: '1rem', // pt-4 = 1rem (16px)
+          tablet: '1.25rem', // sm:pt-5 = 1.25rem (20px)
+          desktop: '1.5rem', // md:pt-6 = 1.5rem (24px)
+        },
+      },
+      margin: {
+        horizontal: '-1.5rem', // Negative margin to extend to dialog edges
+        bottom: '-1.5rem', // Negative margin to extend to dialog bottom
+      },
+      gap: {
+        mobile: '0.75rem', // gap-3 = 0.75rem (12px)
+        tablet: '1rem', // sm:gap-4 = 1rem (16px)
+      },
+      button: {
+        height: '2.5rem', // h-10 = 2.5rem (40px)
+        padding: {
+          horizontal: {
+            small: '1rem', // px-4 = 1rem (16px)
+            medium: '1.25rem', // px-5 = 1.25rem (20px)
+          },
+        },
+        gap: {
+          mobile: '0.5rem', // gap-2 = 0.5rem (8px)
+          tablet: '0.75rem', // sm:gap-3 = 0.75rem (12px)
+          icon: {
+            mobile: '0.375rem', // gap-1.5 = 0.375rem (6px)
+            tablet: '0.5rem', // sm:gap-2 = 0.5rem (8px)
+          },
+        },
+      },
+    },
   },
   todayAgenda: {
     dropZoneMinHeight: 'min-h-[400px]',

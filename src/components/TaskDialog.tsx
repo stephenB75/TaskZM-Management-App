@@ -49,7 +49,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { UI_GRADIENT_COLORS, UI_FOLDER_COLORS } from "../lib/ui-colors";
-import { Z_INDEX, MAX_HEIGHT } from "../lib/layout-constants";
+import { Z_INDEX, MAX_HEIGHT, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
@@ -3050,14 +3050,17 @@ export function TaskDialog({
 
           {/* Footer Actions - Single Set for All Tabs */}
           <div 
-            className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6 border-t-2 border-primary/30 bg-white dark:bg-card rounded-b-lg" 
+            className={cn(
+              "flex flex-col sm:flex-row justify-between items-stretch sm:items-center border-t-2 border-primary/30 bg-white dark:bg-card rounded-b-lg",
+              "gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6"
+            )}
             style={{ 
-              marginLeft: '-1.5rem',
-              marginRight: '-1.5rem',
-              marginBottom: '-1.5rem',
-              paddingLeft: '1.5rem',
-              paddingRight: '1.5rem',
-              paddingBottom: 'calc(1.5rem + 1rem)',
+              marginLeft: COMPONENT_DIMENSIONS.taskDialog.footer.margin.horizontal,
+              marginRight: COMPONENT_DIMENSIONS.taskDialog.footer.margin.horizontal,
+              marginBottom: COMPONENT_DIMENSIONS.taskDialog.footer.margin.bottom,
+              paddingLeft: COMPONENT_DIMENSIONS.taskDialog.footer.padding.horizontal,
+              paddingRight: COMPONENT_DIMENSIONS.taskDialog.footer.padding.horizontal,
+              paddingBottom: COMPONENT_DIMENSIONS.taskDialog.footer.padding.bottom,
             }}
           >
             {/* Left side - Action buttons (only for edit mode) */}
@@ -3101,7 +3104,10 @@ export function TaskDialog({
               <Button 
                 type="submit"
                 disabled={task ? !permissions.canEditTask : !permissions.canCreateTask} 
-                className="bg-primary hover:bg-primary/90 text-white h-10 px-5 text-sm font-medium flex-1 sm:flex-initial min-w-[140px] shadow-md"
+                className={cn(
+                  "bg-primary hover:bg-primary/90 text-white h-10 px-5 text-sm font-medium flex-1 sm:flex-initial shadow-md",
+                  COMPONENT_DIMENSIONS.taskDialog.buttonMinWidth
+                )}
               >
                 {task ? "Update Task" : "Create Task"}
               </Button>
