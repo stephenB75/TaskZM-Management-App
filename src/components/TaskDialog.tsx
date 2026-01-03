@@ -605,7 +605,6 @@ export function TaskDialog({
   const [estimatedTime, setEstimatedTime] = useState("");
   const [estimatedHours, setEstimatedHours] = useState("0");
   const [estimatedMinutes, setEstimatedMinutes] = useState("0");
-  const [notes, setNotes] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const [scheduledHours, setScheduledHours] = useState("");
   const [scheduledMinutes, setScheduledMinutes] = useState("");
@@ -866,7 +865,6 @@ export function TaskDialog({
           setEstimatedHours("0");
           setEstimatedMinutes("0");
         }
-        setNotes(task.notes || "");
         setDependencies(Array.isArray(task.dependencies) ? task.dependencies : []);
 
         // Set recurrence values with safe defaults
@@ -947,7 +945,6 @@ export function TaskDialog({
       setEstimatedTime("");
       setEstimatedHours("0");
       setEstimatedMinutes("0");
-      setNotes("");
       setScheduledTime(""); // No default time - let AI choose based on parameters
       setScheduledHours("");
       setScheduledMinutes("");
@@ -1244,7 +1241,7 @@ export function TaskDialog({
         tags: taskTags,
         subtasks,
         estimatedTime: null, // Explicitly null to trigger AI estimator
-        notes: notes,
+        notes: '',
         dependencies,
         recurrence: recurrenceConfig,
         assignedTo,
@@ -1294,7 +1291,7 @@ export function TaskDialog({
       tags: taskTags,
       subtasks,
       estimatedTime: finalEstimatedTime,
-      notes: notes, // Preserve HTML formatting from RichTextEditor
+      notes: '', // Notes section removed
       dependencies,
       recurrence: recurrenceConfig,
       assignedTo,
@@ -1733,7 +1730,7 @@ export function TaskDialog({
         tags: Array.isArray(task.tags) ? [...task.tags] : [], // Copy tags array
         subtasks: duplicatedSubtasks,
         estimatedTime: (typeof task.estimatedTime === 'number') ? task.estimatedTime : null,
-        notes: task.notes || '',
+        notes: '',
         dependencies: [], // Don't copy dependencies to avoid circular references
         recurrence: recurrenceConfig,
         assignedTo: Array.isArray(task.assignedTo) ? [...task.assignedTo] : [], // Copy assigned users
@@ -1821,13 +1818,8 @@ export function TaskDialog({
                 <span className="sm:hidden">Time</span>
               </TabsTrigger>
               <TabsTrigger value="organization" className="text-xs sm:text-sm">
-                <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
-                <span className="hidden sm:inline">Organize</span>
-                <span className="sm:hidden">Tags</span>
-              </TabsTrigger>
-              <TabsTrigger value="advanced" className="text-xs sm:text-sm">
                 <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
-                <span className="hidden sm:inline">Advanced</span>
+                <span className="hidden sm:inline">Organize & Advanced</span>
                 <span className="sm:hidden">More</span>
               </TabsTrigger>
             </TabsList>
@@ -1950,32 +1942,95 @@ export function TaskDialog({
                   />
                 </div>
 
-                {/* AI Task Breakdown Panel */}
+                {/* AI Task Breakdown Panel - Simplified (no action plan, inline components) */}
                 {(title.trim() || description.trim()) && (
-                  <ActionPlanPanel
-                    actionPlan={breakdown?.actionPlan || null}
-                    descriptionAnalysis={breakdown?.descriptionAnalysis || null}
-                    estimatedMinutes={breakdown?.estimatedMinutes || 0}
-                    estimatedHours={breakdown?.estimatedHours || 0}
-                    effortScore={breakdown?.effortScore || 0}
-                    primaryVerb={breakdown?.primaryVerb || 'unknown'}
-                    domain={breakdown?.domain || 'personal'}
-                    confidence={breakdown?.confidence || 0}
-                    isLoading={isBreakdownLoading}
-                    onAcceptSuggestion={(suggestion) => {
-                      // Add suggestion as a subtask
-                      const newSubtask: Subtask = {
-                        id: `subtask-${Date.now()}`,
-                        title: suggestion,
-                        completed: false,
-                        createdAt: new Date().toISOString(),
-                      };
-                      setSubtasks([...subtasks, newSubtask]);
-                      toast.success('Added as subtask', {
-                        description: suggestion,
-                      });
-                    }}
-                  />
+                  <div className="bg-white dark:bg-card rounded-lg p-3 border-2 border-primary/30 shadow-sm">
+                    {isBreakdownLoading ? (
+                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                        <Sparkles className="w-4 h-4 animate-pulse" />
+                        <span>Analyzing task...</span>
+                      </div>
+                    ) : breakdown ? (
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                          <span className="font-semibold text-foreground">AI Analysis</span>
+                        </div>
+                        {breakdown.estimatedMinutes > 0 && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                            <Clock className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-xs font-medium text-foreground">
+                              {breakdown.estimatedHours}h {breakdown.estimatedMinutes % 60}m
+                            </span>
+                          </div>
+                        )}
+                        {breakdown.effortScore > 0 && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                            <span className="text-xs font-medium text-foreground">
+                              Effort: {breakdown.effortScore.toFixed(1)}/5
+                            </span>
+                          </div>
+                        )}
+                        {breakdown.primaryVerb && breakdown.primaryVerb !== 'unknown' && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                            <span className="text-xs font-medium text-foreground capitalize">
+                              {breakdown.primaryVerb}
+                            </span>
+                          </div>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className="text-xs border-primary/30"
+                        >
+                          {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
+                        </Badge>
+                        {breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {breakdown.descriptionAnalysis.suggestions.slice(0, 2).map((suggestion, idx) => (
+                              <Badge
+                                key={idx}
+                                variant="secondary"
+                                className="cursor-pointer hover:bg-primary/10 text-xs"
+                                onClick={() => {
+                                  const newDescription = description 
+                                    ? `${description}\n\n${suggestion}`
+                                    : suggestion;
+                                  setDescription(newDescription);
+                                }}
+                              >
+                                {suggestion}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        {breakdown.actionPlan && breakdown.actionPlan.suggestedSubtasks.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {breakdown.actionPlan.suggestedSubtasks.slice(0, 3).map((subtask, idx) => (
+                              <Badge
+                                key={idx}
+                                variant="secondary"
+                                className="cursor-pointer hover:bg-primary/10 text-xs"
+                                onClick={() => {
+                                  const newSubtask: Subtask = {
+                                    id: `subtask-${Date.now()}-${idx}`,
+                                    title: subtask,
+                                    completed: false,
+                                    createdAt: new Date().toISOString(),
+                                  };
+                                  setSubtasks([...subtasks, newSubtask]);
+                                  toast.success('Added as subtask', {
+                                    description: subtask,
+                                  });
+                                }}
+                              >
+                                + {subtask}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
                 )}
 
                 {/* Folder Selector */}
@@ -2510,7 +2565,7 @@ export function TaskDialog({
                 </div>
               </TabsContent>
 
-              {/* Organization Tab - Step 3: Assign Tags, Step 4: Create Subtask, Step 5: Add Dependency */}
+              {/* Organization & Advanced Tab - Consolidated */}
               <TabsContent value="organization" className="mt-0 space-y-4 sm:space-y-5">
                 {/* Step 3: Assign Tags */}
                   <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
@@ -2683,115 +2738,312 @@ export function TaskDialog({
                   )}
                 </div>
 
-                {/* Step 5: Add Dependency */}
-                <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">5</span>
+                <Separator className="bg-primary/20" />
+
+                {/* Recurrence with Toggle - Moved from Advanced */}
+                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Repeat className="w-4 h-4 text-primary" />
+                      <Label className="text-sm font-semibold">Repeat Task</Label>
+                      {!hasFeature('recurringTasks') && (
+                        <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
+                          PRO
+                        </Badge>
+                      )}
                     </div>
-                    <Label className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <Link2 className="w-4 h-4 text-primary" />
-                      Add Dependency
-                    </Label>
-                    {!hasFeature('taskDependencies') && (
-                      <Badge variant="secondary" className="ml-auto bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
-                        PRO YEARLY
-                      </Badge>
-                    )}
+                    <Switch
+                      checked={recurrenceType !== "none"}
+                      onCheckedChange={(checked) => {
+                        if (!hasFeature('recurringTasks')) {
+                          window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+                            detail: { feature: 'recurringTasks' } 
+                          }));
+                          if (onShowUpgradePrompt) {
+                            onShowUpgradePrompt('recurringTasks');
+                          }
+                          return;
+                        }
+                        if (!checked) {
+                          setRecurrenceType("none");
+                          setRecurrenceDaysOfWeek([]);
+                          setRecurrenceDayOfMonth(undefined);
+                          setRecurrenceEndDate(undefined);
+                        } else {
+                          setRecurrenceType("daily");
+                        }
+                      }}
+                      disabled={!hasFeature('recurringTasks')}
+                    />
                   </div>
-                  {!hasFeature('taskDependencies') ? (
-                    <div className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <p className="text-sm text-muted-foreground">
-                        Task Dependencies is a Pro Yearly feature. Upgrade to link related tasks and manage task relationships.
-                      </p>
+
+                  {recurrenceType !== "none" && (
+                    <div className="space-y-4 sm:space-y-5 pl-6 border-l-2 border-primary/20">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs sm:text-sm font-medium">Frequency</Label>
+                          <Select
+                            value={recurrenceType}
+                            onValueChange={(value) => {
+                              try {
+                                const newType = value as RecurrenceType;
+                                setRecurrenceType(newType);
+                                
+                                if (newType === "none") {
+                                  setRecurrenceDaysOfWeek([]);
+                                  setRecurrenceDayOfMonth(undefined);
+                                  setRecurrenceEndDate(undefined);
+                                } else if (newType === "daily") {
+                                  setRecurrenceDaysOfWeek([]);
+                                  setRecurrenceDayOfMonth(undefined);
+                                } else if (newType === "weekly") {
+                                  setRecurrenceDayOfMonth(undefined);
+                                } else if (newType === "monthly") {
+                                  setRecurrenceDaysOfWeek([]);
+                                  setRecurrenceDayOfMonth((prev) => prev || 1);
+                                }
+                              } catch (error) {
+                                logger.error('Error setting recurrence type:', error);
+                                toast.error('Failed to set recurrence type', {
+                                  description: error instanceof Error ? error.message : 'Please try again',
+                                  duration: TOAST_DURATION_SHORT_MS,
+                                });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Repeat Every</span>
+                            <span className="font-medium text-primary">{recurrenceInterval} {recurrenceType === "daily" ? "day(s)" : recurrenceType === "weekly" ? "week(s)" : "month(s)"}</span>
+                          </div>
+                          <Slider
+                            value={[recurrenceInterval]}
+                            onValueChange={(values) => setRecurrenceInterval(values[0])}
+                            min={1}
+                            max={30}
+                            step={1}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Weekly: Days of Week */}
+                      {recurrenceType === "weekly" && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Repeat on</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+                              <Badge
+                                key={index}
+                                variant={
+                                  recurrenceDaysOfWeek.includes(index)
+                                    ? "default"
+                                    : "outline"
+                                }
+                                className={cn(
+                                  "cursor-pointer border-primary/20",
+                                  recurrenceDaysOfWeek.includes(index)
+                                    ? "bg-primary text-primary-foreground"
+                                    : "hover:bg-primary/10"
+                                )}
+                                onClick={() => {
+                                  if (recurrenceDaysOfWeek.includes(index)) {
+                                    setRecurrenceDaysOfWeek(
+                                      recurrenceDaysOfWeek.filter((d) => d !== index),
+                                    );
+                                  } else {
+                                    setRecurrenceDaysOfWeek(
+                                      [...recurrenceDaysOfWeek, index].sort(),
+                                    );
+                                  }
+                                }}
+                              >
+                                {day}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Monthly: Day of Month */}
+                      {recurrenceType === "monthly" && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Day of month</Label>
+                          <Select
+                            value={recurrenceDayOfMonth?.toString() || "1"}
+                            onValueChange={(value) =>
+                              setRecurrenceDayOfMonth(parseInt(value))
+                            }
+                          >
+                            <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent 
+                              className="max-h-60"
+                              style={{ zIndex: Z_INDEX.SELECT_CONTENT }}
+                            >
+                              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                                <SelectItem key={day} value={day.toString()}>
+                                  {day}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* End Date for Recurrence */}
+                      {(recurrenceType === "daily" || recurrenceType === "weekly" || recurrenceType === "monthly") && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Ends</Label>
+                          <div className="w-full flex justify-center py-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                            <SingleDateMiniCalendar
+                              selectedDate={recurrenceEndDate}
+                              onDateSelect={(date) => {
+                                setRecurrenceEndDate(date);
+                              }}
+                              label="End Date"
+                            />
+                          </div>
+                          {!recurrenceEndDate && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              No end date set - task will repeat indefinitely
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Recurrence Summary */}
+                      {(recurrenceType === "daily" || recurrenceType === "weekly" || recurrenceType === "monthly") && (
+                        <div className="p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                          <p className="text-xs text-muted-foreground">
+                            {recurrenceType === "daily" &&
+                              `Repeats every ${recurrenceInterval} day${recurrenceInterval > 1 ? "s" : ""}`}
+                            {recurrenceType === "weekly" && (
+                              <>
+                                Repeats every {recurrenceInterval} week{recurrenceInterval > 1 ? "s" : ""}
+                                {recurrenceDaysOfWeek.length > 0 &&
+                                  ` on ${recurrenceDaysOfWeek.map((d) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]).join(", ")}`}
+                              </>
+                            )}
+                            {recurrenceType === "monthly" &&
+                              `Repeats every ${recurrenceInterval} month${recurrenceInterval > 1 ? "s" : ""} on day ${recurrenceDayOfMonth || 1}`}
+                            {recurrenceEndDate &&
+                              ` until ${formatDate(recurrenceEndDate.toISOString())}`}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <>
-                  {availableTasksForDependencies.length > 0 ? (
+                  )}
+                </div>
+
+                <Separator className="bg-primary/20" />
+
+                {/* Team Assignment - Moved from Advanced */}
+                {teamMembers.length > 0 && (
+                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      <Label className="text-sm font-semibold">Assign To</Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Select team members to assign this task
+                    </p>
+
                     <Select
-                      value={selectedDependencyValue || undefined}
+                      value={selectedAssigneeValue || undefined}
                       onValueChange={(value) => {
-                        if (value) {
-                          addDependency(value);
-                          setSelectedDependencyValue("");
+                        if (value && !assignedTo.includes(value)) {
+                          setAssignedTo([...assignedTo, value]);
+                          setSelectedAssigneeValue("");
                         }
                       }}
                     >
                       <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
-                        <SelectValue placeholder="Select a task..." />
+                        <SelectValue placeholder="Add assignee..." />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                        {availableTasksForDependencies
-                          .filter((t) => !dependencies.includes(t.id))
-                          .map((t) => (
-                            <SelectItem key={t.id} value={t.id}>
+                        {teamMembers
+                          .filter((member) => !assignedTo.includes(member.id))
+                          .map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
                               <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs border-primary/30">
-                                  {t.status}
-                                </Badge>
-                                <span className="truncate">{t.title}</span>
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-xs font-medium">
+                                  {member.name
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase()}
+                                </div>
+                                <span>{member.name}</span>
                               </div>
                             </SelectItem>
                           ))}
                       </SelectContent>
                     </Select>
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">
-                      No available tasks to add as dependencies
-                    </p>
-                  )}
 
-                  {dependencies.length > 0 && (
-                    <div className="space-y-2 mt-3">
-                      {Array.isArray(dependencies) && dependencies.map((depId) => {
-                        const depTask = Array.isArray(tasks) ? tasks.find((t) => t && t.id === depId) : undefined;
-                        if (!depTask) return null;
-                        const isComplete = depTask.status === "done";
-                        return (
-                          <div
-                            key={depId}
-                            className={cn(
-                              "flex items-center gap-2 p-2 rounded-lg border-2",
-                              isComplete
-                                ? "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
-                                : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800",
-                            )}
-                          >
-                            {isComplete ? (
-                              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                <span className="text-white text-xs">✓</span>
-                              </div>
-                            ) : (
-                              <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm truncate">{depTask.title}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Status: {depTask.status} · Priority: {depTask.priority}
-                              </p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeDependency(depId)}
-                              className="h-7 w-7 p-0"
+                    {assignedTo.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {assignedTo.map((memberId) => {
+                          const member = getTeamMember(memberId);
+                          if (!member) return null;
+
+                          return (
+                            <Badge
+                              key={memberId}
+                              variant="secondary"
+                              className="cursor-pointer hover:bg-destructive/10 transition-colors border-primary/20"
+                              onClick={() =>
+                                setAssignedTo(assignedTo.filter((id) => id !== memberId))
+                              }
                             >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                    </>
-                  )}
-                </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
+                                  {getInitials(member.name)}
+                                </div>
+                                <span>{member.name}</span>
+                                <X className="w-3 h-3 ml-1" />
+                              </div>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <Separator className="bg-primary/20" />
+
+                {/* Pomodoro Timer - Moved from Advanced */}
+                {task && hasFeature("pomodoroTimer") && (
+                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <Label className="text-sm font-semibold flex items-center gap-2">
+                      🍅 Pomodoro Timer
+                    </Label>
+                    <PomodoroTimer
+                      taskId={task.id}
+                      taskTitle={task.title}
+                      onTimeUpdate={handlePomodoroTimeUpdate}
+                      compact={false}
+                      initialTime={task.actualTime || 0}
+                      estimatedTime={task.estimatedTime || undefined}
+                    />
+                  </div>
+                )}
               </TabsContent>
 
-              {/* Advanced Tab */}
-              <TabsContent value="advanced" className="mt-0 space-y-4 sm:space-y-5">
-                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+              {/* Advanced Tab - Removed (merged into Organization) */}
                   {/* Recurrence with Toggle */}
                   <div className="space-y-4 sm:space-y-5">
                     <div className="flex items-center justify-between">
@@ -3079,151 +3331,12 @@ export function TaskDialog({
 
                   <Separator className="bg-primary/20" />
 
-                  {/* Dependencies */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Link2 className="w-4 h-4 text-primary" />
-                      <Label className="text-sm font-semibold">Task Dependencies</Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Select tasks that must be completed before this task can start
-                    </p>
-
-                    {availableTasksForDependencies.length > 0 ? (
-                      <Select
-                        value={selectedDependencyValue || undefined}
-                        onValueChange={(value) => {
-                          if (value) {
-                            addDependency(value);
-                            // Reset the select after adding
-                            setSelectedDependencyValue("");
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
-                          <SelectValue placeholder="Add a dependency..." />
-                        </SelectTrigger>
-                        <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                          {availableTasksForDependencies
-                            .filter((t) => !dependencies.includes(t.id))
-                            .map((t) => (
-                              <SelectItem key={t.id} value={t.id}>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs border-primary/20">
-                                    {t.status}
-                                  </Badge>
-                                  <span className="truncate">{t.title}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic">
-                        No available tasks to add as dependencies
-                      </p>
-                    )}
-
-                    {dependencies.length > 0 && (
-                      <div className="space-y-2 mt-3">
-                        {dependencies.map((depId) => {
-                          const depTask = tasks.find((t) => t.id === depId);
-                          if (!depTask) return null;
-
-                          const isComplete = depTask.status === "done";
-
-                          return (
-                            <div
-                              key={depId}
-                              className={cn(
-                                "flex items-center gap-2 p-2 rounded-lg border",
-                                isComplete
-                                  ? "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
-                                  : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800",
-                              )}
-                            >
-                              {isComplete ? (
-                                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-white text-xs">✓</span>
-                                </div>
-                              ) : (
-                                <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm truncate">{depTask.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Status: {depTask.status} · Priority: {depTask.priority}
-                                </p>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeDependency(depId)}
-                                className="h-7 w-7 p-0"
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {task &&
-                      dependencies.length > 0 &&
-                      getIncompleteDependencies({ ...task, dependencies }, tasks).length > 0 && (
-                        <div className="flex items-start gap-2 p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                          <div className="text-xs text-amber-800 dark:text-amber-200">
-                            <p className="font-medium">Task is blocked</p>
-                            <p>This task cannot be started until all dependencies are completed.</p>
-                          </div>
-                        </div>
-                      )}
-                  </div>
-
-                  <Separator className="bg-primary/20" />
-
-                  {/* Notes */}
-                  <div className="space-y-2">
-                    <Label htmlFor="notes" className="text-sm font-semibold">Notes</Label>
-                    <RichTextEditor
-                      value={notes}
-                      onChange={setNotes}
-                      placeholder="Additional notes... (Press Enter for new paragraphs)"
-                      rows={4}
-                      className="bg-white dark:bg-card/80"
-                    />
-                  </div>
-
-                  {/* Pomodoro Timer */}
-                  {task && hasFeature("pomodoroTimer") && (
-                    <>
-                      <Separator className="bg-primary/20" />
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold flex items-center gap-2">
-                          🍅 Pomodoro Timer
-                        </Label>
-                        <PomodoroTimer
-                          taskId={task.id}
-                          taskTitle={task.title}
-                          onTimeUpdate={handlePomodoroTimeUpdate}
-                          compact={false}
-                          initialTime={task.actualTime || 0}
-                          estimatedTime={task.estimatedTime || undefined}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-              </TabsContent>
             </div>
           </Tabs>
 
           {/* Footer Actions - Single Set for All Tabs */}
           <div 
-            className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6 border-t-2 border-primary/30 bg-white dark:bg-card rounded-b-lg" 
+            className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6 border-t-2 border-primary/30 bg-background dark:bg-background rounded-b-lg" 
             style={{ 
               marginLeft: '-1.5rem',
               marginRight: '-1.5rem',

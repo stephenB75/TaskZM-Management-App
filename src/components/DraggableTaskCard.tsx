@@ -727,19 +727,29 @@ export const DraggableTaskCard = React.forwardRef<
                   </span>
                 </div>
                 <div className="space-y-0.5">
-                  {breakdown.actionPlan.steps.slice(0, 2).map((step: { action: string; estimatedMinutes: number }, idx: number) => (
+                  {breakdown.actionPlan.steps.slice(0, 3).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
                     <div key={idx} className="flex items-start gap-1.5">
                       <span className={cn("text-[10px] mt-0.5 flex-shrink-0", domainColors.textMuted)}>
-                        {idx + 1}.
+                        {step.order || (idx + 1)}.
                       </span>
                       <span className={cn("text-[10px] leading-tight flex-1", domainColors.textLight)}>
                         {step.action}
                       </span>
+                      {step.estimatedMinutes > 0 && (
+                        <span className={cn("text-[9px] flex-shrink-0", domainColors.textMuted)}>
+                          {step.estimatedMinutes}m
+                        </span>
+                      )}
                     </div>
                   ))}
-                  {breakdown.actionPlan.steps.length > 2 && (
+                  {breakdown.actionPlan.steps.length > 3 && (
                     <div className={cn("text-[10px] mt-0.5", domainColors.textMuted)}>
-                      +{breakdown.actionPlan.steps.length - 2} more steps
+                      +{breakdown.actionPlan.steps.length - 3} more steps
+                    </div>
+                  )}
+                  {breakdown.actionPlan.totalEstimatedMinutes > 0 && (
+                    <div className={cn("text-[9px] mt-0.5 pt-0.5 border-t", domainColors.border)}>
+                      Total: {Math.floor(breakdown.actionPlan.totalEstimatedMinutes / 60)}h {breakdown.actionPlan.totalEstimatedMinutes % 60}m
                     </div>
                   )}
                 </div>
