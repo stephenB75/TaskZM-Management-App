@@ -702,6 +702,10 @@ export const TASK_CARD_DROPDOWN = {
     iconMargin: 4, // mr-1 = 4px margin right for icons
     tabsGap: 4, // gap-1 = 4px between tabs
     attachmentGap: 0, // No gap - dropdown attached directly to card
+    // Alignment with compact card (excluding priority line)
+    cardOffset: {
+      left: TASK_CARD_CALCULATIONS.priorityLine.width + 8, // priority line width (4px) + gap-2 (8px) = 12px
+    },
   },
   text: {
     description: 'Description',
