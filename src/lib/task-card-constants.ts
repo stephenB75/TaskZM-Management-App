@@ -3,7 +3,18 @@
  * Centralized configuration for task card styling, colors, sizes, and text
  */
 
-import { COLOR_PRIMARY, COLOR_BACKGROUND_WHITE, COLOR_BACKGROUND_DARK_COLOR } from './color-theme';
+import { 
+  COLOR_PRIMARY, 
+  COLOR_BACKGROUND_WHITE, 
+  COLOR_BACKGROUND_DARK_COLOR,
+  COLOR_TEXT_PRIMARY,
+  COLOR_TEXT_SECONDARY,
+  COLOR_TEXT_MUTED,
+  COLOR_TEXT_WHITE,
+  COLOR_BORDER_LIGHT,
+  COLOR_BORDER_MEDIUM,
+  getColorWithOpacity,
+} from './color-theme';
 
 // Priority Colors (for priority line and badges) - Improved contrast for dark mode
 export const TASK_CARD_PRIORITY_COLORS = {
@@ -625,28 +636,28 @@ export const TASK_CARD_DROPDOWN_COLORS = {
     dark: COLOR_BACKGROUND_DARK_COLOR, // Dark background for dark mode
   },
   border: {
-    light: 'rgba(148, 163, 184, 0.2)', // Light border
-    dark: 'rgba(148, 163, 184, 0.3)', // Dark border
+    light: getColorWithOpacity(COLOR_BORDER_LIGHT, 0.2), // Light border with opacity
+    dark: getColorWithOpacity(COLOR_BORDER_MEDIUM, 0.3), // Medium border with opacity for dark mode
   },
   tab: {
     active: {
       background: COLOR_PRIMARY, // Primary color for active tab
-      text: '#FFFFFF', // White text on active tab
+      text: COLOR_TEXT_WHITE, // White text on active tab
     },
     inactive: {
       background: 'transparent',
-      text: '#6B7280', // Muted text for inactive tabs
-      darkText: '#9CA3AF', // Dark mode muted text
+      text: COLOR_TEXT_SECONDARY, // Secondary text for inactive tabs
+      darkText: COLOR_TEXT_MUTED, // Muted text for dark mode inactive tabs
     },
   },
   content: {
     text: {
-      light: '#1F2937', // Primary text color
-      dark: '#F9FAFB', // Light text for dark mode
+      light: COLOR_TEXT_PRIMARY, // Primary text color
+      dark: COLOR_TEXT_WHITE, // White text for dark mode
     },
     muted: {
-      light: '#6B7280', // Muted text color
-      dark: '#9CA3AF', // Dark mode muted text
+      light: COLOR_TEXT_SECONDARY, // Secondary text color
+      dark: COLOR_TEXT_MUTED, // Muted text for dark mode
     },
   },
 } as const;

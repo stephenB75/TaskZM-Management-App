@@ -501,30 +501,211 @@ export const DraggableTaskCard = React.forwardRef<
 
     return (
       <div
-        ref={setNodeRef}
-        style={{
-          ...style,
-          touchAction: isMobile ? "auto" : "none", // Allow normal touch on mobile
-        }}
-        {...attributes}
-        {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
         className={cn(
-          "flex gap-2 transition-all duration-200 mx-auto",
-          isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal,
-          !isMobile && (isDragging || isSortableDragging)
-            ? "opacity-30 cursor-grabbing scale-95 ring-2 ring-primary/50 ring-offset-2"
-            : "",
-          !isMobile && !(isDragging || isSortableDragging)
-            ? "cursor-grab hover:scale-[1.02]"
-            : "",
+          "relative flex flex-col gap-1",
+          isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
         )}
-        data-dnd-kit-dragging={isDragging || isSortableDragging}
-        data-task-card="true"
-        data-task-id={task.id}
-        data-sortable-id={sortableId}
-        id={`task-${sortableId}`}
-        data-tour="task-card"
       >
+        {/* Dropdown Layer - Behind the card */}
+        {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
+          <div 
+            className={cn(
+              "rounded-lg border-t shadow-sm transition-all duration-200",
+              isDropdownOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
+            style={{
+              backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
+              borderColor: isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light,
+              zIndex: 1,
+              marginTop: isDropdownOpen ? '0.25rem' : '0',
+              maxHeight: isDropdownOpen ? '500px' : '0',
+              overflow: 'hidden',
+            }}
+          >
+            {isDropdownOpen && (
+              <div
+                className="px-2 pb-2 rounded-b-lg"
+                style={{
+                  transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
+                  backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
+                }}
+              >
+                <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
+                  <TabsList 
+                    className="h-7 w-full justify-start bg-transparent p-0 gap-1"
+                    style={{
+                      color: isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                    }}
+                  >
+                    {task.description && (
+                      <TabsTrigger
+                        value="description"
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
+                      >
+                        <FileText className="w-3 h-3 mr-1" />
+                        Description
+                      </TabsTrigger>
+                    )}
+                    {task.subtasks && task.subtasks.length > 0 && (
+                      <TabsTrigger
+                        value="subtasks"
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
+                      >
+                        <ListChecks className="w-3 h-3 mr-1" />
+                        Subtasks ({task.subtasks.length})
+                      </TabsTrigger>
+                    )}
+                    {task.dependencies && task.dependencies.length > 0 && (
+                      <TabsTrigger
+                        value="dependencies"
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
+                      >
+                        <Link2 className="w-3 h-3 mr-1" />
+                        Dependencies ({task.dependencies.length})
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+
+                  {task.description && (
+                    <TabsContent value="description" className="mt-2 p-2 rounded text-xs max-h-32 overflow-y-auto">
+                      <div
+                        className="break-words text-xs"
+                        style={{
+                          color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
+                        }}
+                        {...(hasHTMLTags(task.description) 
+                          ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                          : { children: task.description }
+                        )}
+                      />
+                    </TabsContent>
+                  )}
+
+                  {task.subtasks && task.subtasks.length > 0 && (
+                    <TabsContent value="subtasks" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                      {task.subtasks.map((subtask) => (
+                        <div
+                          key={subtask.id}
+                          className={cn(
+                            "flex items-center gap-2 p-1.5 rounded text-xs",
+                            isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-3 h-3 rounded-sm border flex-shrink-0",
+                              subtask.completed
+                                ? "bg-primary border-primary"
+                                : isDark 
+                                  ? "border-gray-600"
+                                  : "border-gray-300"
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "flex-1 text-xs",
+                              subtask.completed
+                                ? "line-through opacity-60"
+                                : isDark
+                                  ? "text-gray-100"
+                                  : "text-gray-800"
+                            )}
+                          >
+                            {subtask.title}
+                          </span>
+                        </div>
+                      ))}
+                    </TabsContent>
+                  )}
+
+                  {task.dependencies && task.dependencies.length > 0 && (
+                    <TabsContent value="dependencies" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                      {task.dependencies.map((depId) => {
+                        const depTask = tasks.find((t) => t?.id === depId);
+                        if (!depTask) return null;
+                        const isComplete = depTask.status === "done";
+                        
+                        return (
+                          <div
+                            key={depId}
+                            className={cn(
+                              "flex items-center gap-2 p-1.5 rounded text-xs",
+                              isComplete
+                                ? isDark ? "bg-green-950/20 border border-green-800/30" : "bg-green-50/50 border border-green-200"
+                                : isDark ? "bg-amber-950/20 border border-amber-800/30" : "bg-amber-50/50 border border-amber-200"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0",
+                                isComplete ? "bg-green-500" : "bg-amber-500"
+                              )}
+                            >
+                              {isComplete && <span className="text-white text-[8px]">✓</span>}
+                            </div>
+                            <span
+                              className={cn(
+                                "flex-1 truncate text-xs",
+                                isDark
+                                  ? "text-gray-100"
+                                  : "text-gray-800"
+                              )}
+                            >
+                              {depTask.title}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </TabsContent>
+                  )}
+                </Tabs>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Main Card Layer - In front */}
+        <div
+          ref={setNodeRef}
+          style={{
+            ...style,
+            touchAction: isMobile ? "auto" : "none", // Allow normal touch on mobile
+            zIndex: 2,
+            position: 'relative',
+          }}
+          {...attributes}
+          {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
+          className={cn(
+            "flex gap-2 transition-all duration-200 mx-auto",
+            !isMobile && (isDragging || isSortableDragging)
+              ? "opacity-30 cursor-grabbing scale-95 ring-2 ring-primary/50 ring-offset-2"
+              : "",
+            !isMobile && !(isDragging || isSortableDragging)
+              ? "cursor-grab hover:scale-[1.02]"
+              : "",
+          )}
+          data-dnd-kit-dragging={isDragging || isSortableDragging}
+          data-task-card="true"
+          data-task-id={task.id}
+          data-sortable-id={sortableId}
+          id={`task-${sortableId}`}
+          data-tour="task-card"
+        >
         {/* Vertical colored priority line */}
         <div
           className={TASK_CARD_BORDERS.priorityLine.className}
@@ -1100,196 +1281,32 @@ export const DraggableTaskCard = React.forwardRef<
 
             </>
           )}
-        </div>
 
-        {/* Dropdown Tab Section - Attached at bottom of card */}
-        {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
-          <div 
-            className={cn(
-              "mt-1 rounded-b-lg border-t shadow-sm",
-              isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
-            )}
-            style={{
-              backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
-              borderColor: isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+          {/* Chevron Button to Toggle Dropdown - Bottom right of card */}
+          {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDropdownOpen(!isDropdownOpen);
+              }}
               className={cn(
-                "w-full flex items-center justify-between px-2 py-1.5 text-xs font-medium transition-colors rounded-b-lg",
-                isDark ? "hover:bg-gray-800/50" : "hover:bg-gray-100/50"
+                "absolute bottom-2 right-2 p-1 rounded-full transition-colors",
+                isDark ? "hover:bg-gray-800/50 text-gray-300" : "hover:bg-gray-100/50 text-gray-600"
               )}
               style={{
                 transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
-                color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
+                zIndex: 3,
               }}
+              aria-label="Toggle details"
             >
-              <span>Details</span>
               {isDropdownOpen ? (
-                <ChevronUp className="w-3 h-3" />
+                <ChevronDown className="w-4 h-4" />
               ) : (
-                <ChevronDown className="w-3 h-3" />
+                <ChevronUp className="w-4 h-4" />
               )}
             </button>
-
-            {isDropdownOpen && (
-              <div
-                className="px-2 pb-2 rounded-b-lg"
-                style={{
-                  transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
-                  backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
-                }}
-              >
-                <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
-                  <TabsList 
-                    className="h-7 w-full justify-start bg-transparent p-0 gap-1"
-                    style={{
-                      color: isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                    }}
-                  >
-                    {task.description && (
-                      <TabsTrigger
-                        value="description"
-                        className="h-6 px-2 text-[10px]"
-                        style={{
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        Description
-                      </TabsTrigger>
-                    )}
-                    {task.subtasks && task.subtasks.length > 0 && (
-                      <TabsTrigger
-                        value="subtasks"
-                        className="h-6 px-2 text-[10px]"
-                        style={{
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <ListChecks className="w-3 h-3 mr-1" />
-                        Subtasks ({task.subtasks.length})
-                      </TabsTrigger>
-                    )}
-                    {task.dependencies && task.dependencies.length > 0 && (
-                      <TabsTrigger
-                        value="dependencies"
-                        className="h-6 px-2 text-[10px]"
-                        style={{
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <Link2 className="w-3 h-3 mr-1" />
-                        Dependencies ({task.dependencies.length})
-                      </TabsTrigger>
-                    )}
-                  </TabsList>
-
-                  {task.description && (
-                    <TabsContent value="description" className="mt-2 p-2 rounded text-xs max-h-32 overflow-y-auto">
-                      <div
-                        className="break-words text-xs"
-                        style={{
-                          color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
-                        }}
-                        {...(hasHTMLTags(task.description) 
-                          ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                          : { children: task.description }
-                        )}
-                      />
-                    </TabsContent>
-                  )}
-
-                  {task.subtasks && task.subtasks.length > 0 && (
-                    <TabsContent value="subtasks" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                      {task.subtasks.map((subtask) => (
-                        <div
-                          key={subtask.id}
-                          className={cn(
-                            "flex items-center gap-2 p-1.5 rounded text-xs",
-                            isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "w-3 h-3 rounded-sm border flex-shrink-0",
-                              subtask.completed
-                                ? "bg-primary border-primary"
-                                : isDark 
-                                  ? "border-gray-600"
-                                  : "border-gray-300"
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              "flex-1 text-xs",
-                              subtask.completed
-                                ? "line-through opacity-60"
-                                : isDark
-                                  ? "text-gray-100"
-                                  : "text-gray-800"
-                            )}
-                          >
-                            {subtask.title}
-                          </span>
-                        </div>
-                      ))}
-                    </TabsContent>
-                  )}
-
-                  {task.dependencies && task.dependencies.length > 0 && (
-                    <TabsContent value="dependencies" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                      {task.dependencies.map((depId) => {
-                        const depTask = tasks.find((t) => t?.id === depId);
-                        if (!depTask) return null;
-                        const isComplete = depTask.status === "done";
-                        
-                        return (
-                          <div
-                            key={depId}
-                            className={cn(
-                              "flex items-center gap-2 p-1.5 rounded text-xs",
-                              isComplete
-                                ? isDark ? "bg-green-950/20 border border-green-800/30" : "bg-green-50/50 border border-green-200"
-                                : isDark ? "bg-amber-950/20 border border-amber-800/30" : "bg-amber-50/50 border border-amber-200"
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                "w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0",
-                                isComplete ? "bg-green-500" : "bg-amber-500"
-                              )}
-                            >
-                              {isComplete && <span className="text-white text-[8px]">✓</span>}
-                            </div>
-                            <span
-                              className={cn(
-                                "flex-1 truncate text-xs",
-                                isDark
-                                  ? "text-gray-100"
-                                  : "text-gray-800"
-                              )}
-                            >
-                              {depTask.title}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </TabsContent>
-                  )}
-                </Tabs>
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   },
