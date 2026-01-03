@@ -3,6 +3,8 @@
  * Centralized configuration for task card styling, colors, sizes, and text
  */
 
+import { COLOR_PRIMARY, COLOR_BACKGROUND_WHITE, COLOR_BACKGROUND_DARK_COLOR } from './color-theme';
+
 // Priority Colors (for priority line and badges) - Improved contrast for dark mode
 export const TASK_CARD_PRIORITY_COLORS = {
   urgent: {
@@ -619,8 +621,8 @@ export const TASK_CARD_TIMELINE = {
 // Dropdown Tab Colors (using app theme colors, distinct from task card and column colors)
 export const TASK_CARD_DROPDOWN_COLORS = {
   background: {
-    light: '#FFFFFF', // White background for light mode
-    dark: 'rgba(17, 24, 39, 0.95)', // Dark gray background for dark mode
+    light: COLOR_BACKGROUND_WHITE, // White background for light mode
+    dark: COLOR_BACKGROUND_DARK_COLOR, // Dark background for dark mode
   },
   border: {
     light: 'rgba(148, 163, 184, 0.2)', // Light border
@@ -628,7 +630,7 @@ export const TASK_CARD_DROPDOWN_COLORS = {
   },
   tab: {
     active: {
-      background: '#9B87E8', // Primary color for active tab
+      background: COLOR_PRIMARY, // Primary color for active tab
       text: '#FFFFFF', // White text on active tab
     },
     inactive: {

@@ -4,7 +4,8 @@ import { useTasks } from './TaskContext';
 // DraggableTaskCard import removed - using lightweight drag overlay instead
 import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
-import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from '../lib/daily-hours-utils';
+import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from '../lib/daily-hours-utils';
+import { useAI } from './AIContext';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { createDefaultDragDropContext } from '../lib/context-defaults';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
@@ -52,6 +53,7 @@ interface DragDropProviderProps {
 
 export function DragDropProvider({ children }: DragDropProviderProps) {
   const { tasks, updateTask, folders, hoursSettings } = useTasks();
+  const { settings: aiSettings } = useAI();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [pendingTaskUpdate, setPendingTaskUpdate] = useState<{
@@ -636,9 +638,10 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         return;
       }
 
-      // Check 5-hour daily limit before scheduling
-      const limitCheck = checkDailyLimit(finalTime, task, tasks);
-      const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours);
+      // Check daily limit before scheduling
+      const maxHoursPerDay = aiSettings.maxHoursPerDay;
+      const limitCheck = checkDailyLimit(finalTime, task, tasks, maxHoursPerDay);
+      const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours, maxHoursPerDay);
       
       if (limitCheck.wouldExceed) {
         // Would exceed limit - try to find a slot that fits
@@ -654,10 +657,10 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         );
         
         // Check if alternative time would also exceed limit
-        const altLimitCheck = checkDailyLimit(alternativeTime, task, tasks);
+        const altLimitCheck = checkDailyLimit(alternativeTime, task, tasks, maxHoursPerDay);
         if (altLimitCheck.wouldExceed) {
           toast.error('Daily limit exceeded', {
-            description: `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
+            description: `This task would exceed the ${maxHoursPerDay}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
             duration: 5000,
           });
           return;
@@ -673,7 +676,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       if (warningLevel === 'warning') {
         // Close to limit - show warning but allow
         toast.warning('Approaching daily limit', {
-          description: `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`,
+          description: `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${maxHoursPerDay}h)`,
           duration: 4000,
         });
       }

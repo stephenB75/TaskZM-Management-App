@@ -203,19 +203,21 @@ export function calculateDailyHours(
  * @param date - The date to check
  * @param task - The task being added
  * @param allTasks - All tasks to check against
+ * @param maxHoursPerDay - Maximum hours per day (defaults to MAX_HOURS_PER_DAY constant)
  * @returns Object with wouldExceed (boolean) and currentHours (number)
  */
 export function checkDailyLimit(
   date: Date,
   task: Task,
-  allTasks: Task[]
+  allTasks: Task[],
+  maxHoursPerDay: number = MAX_HOURS_PER_DAY
 ): { wouldExceed: boolean; currentHours: number; newTotalHours: number } {
   const currentHours = calculateDailyHours(date, allTasks, task.id);
   const taskHours = estimateTaskHours(task);
   const newTotalHours = currentHours + taskHours;
   
   return {
-    wouldExceed: newTotalHours >= MAX_HOURS_PER_DAY,
+    wouldExceed: newTotalHours >= maxHoursPerDay,
     currentHours,
     newTotalHours,
   };
@@ -225,15 +227,17 @@ export function checkDailyLimit(
  * Get warning level for daily hours
  * @param currentHours - Current hours scheduled
  * @param taskHours - Hours of task being added
+ * @param maxHoursPerDay - Maximum hours per day (defaults to MAX_HOURS_PER_DAY constant)
  * @returns 'none' | 'warning' | 'error'
  */
 export function getDailyHoursWarningLevel(
   currentHours: number,
-  taskHours: number
+  taskHours: number,
+  maxHoursPerDay: number = MAX_HOURS_PER_DAY
 ): 'none' | 'warning' | 'error' {
   const newTotal = currentHours + taskHours;
   
-  if (newTotal >= MAX_HOURS_PER_DAY) {
+  if (newTotal >= maxHoursPerDay) {
     return 'error'; // Would exceed limit
   }
   

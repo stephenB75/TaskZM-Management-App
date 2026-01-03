@@ -71,13 +71,14 @@ import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { usePermissions } from "../hooks/usePermissions";
 import { useCalendar } from "../contexts/CalendarContext";
+import { useAI } from "../contexts/AIContext";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
-import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from "../lib/daily-hours-utils";
+import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../lib/daily-hours-utils";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
@@ -565,6 +566,7 @@ export function TaskDialog({
   const { teamMembers, getTeamMember } = useTeam();
   const { hasFeature, features } = useSubscription();
   const { calendarStatus, syncTask: syncTaskToCalendar } = useCalendar();
+  const { settings: aiSettings } = useAI();
   const permissionsResult = usePermissions();
   const permissions = permissionsResult || {
     canCreateTask: true,
@@ -1447,8 +1449,9 @@ export function TaskDialog({
             estimatedTime: finalEstimatedTime, // Use AI-estimated duration if available
           } as Task;
           
-          const limitCheck = checkDailyLimit(scheduledDateOnly, tempTaskForLimit, tasks);
-          const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours);
+          const maxHoursPerDay = aiSettings.maxHoursPerDay;
+          const limitCheck = checkDailyLimit(scheduledDateOnly, tempTaskForLimit, tasks, maxHoursPerDay);
+          const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours, maxHoursPerDay);
           
           if (limitCheck.wouldExceed) {
             // Only suggest alternative time if time has changed
@@ -1467,11 +1470,11 @@ export function TaskDialog({
               );
               
               // Check if alternative time would also exceed limit
-              const altLimitCheck = checkDailyLimit(alternativeTime, tempTaskForLimit, tasks);
+              const altLimitCheck = checkDailyLimit(alternativeTime, tempTaskForLimit, tasks, maxHoursPerDay);
               if (altLimitCheck.wouldExceed) {
                 const message = isExistingTaskOnToday 
-                  ? `Updating this task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Task: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`
-                  : `This task would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`;
+                  ? `Updating this task would exceed the ${maxHoursPerDay}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Task: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`
+                  : `This task would exceed the ${maxHoursPerDay}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`;
                 
                 toast.error('Daily limit exceeded', {
                   description: message,
@@ -1486,7 +1489,7 @@ export function TaskDialog({
             } else {
               // Only estimated time changed, but would exceed limit
               // Don't relocate, just show error
-              const message = `Updating this task's duration would exceed the ${MAX_HOURS_PER_DAY}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Task: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`;
+              const message = `Updating this task's duration would exceed the ${maxHoursPerDay}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Task: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`;
               
               toast.error('Daily limit exceeded', {
                 description: message,
@@ -1499,8 +1502,8 @@ export function TaskDialog({
           if (warningLevel === 'warning' && !limitCheck.wouldExceed) {
             // Close to limit - show warning but allow
             const message = isExistingTaskOnToday
-              ? `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Updating this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`
-              : `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${MAX_HOURS_PER_DAY}h)`;
+              ? `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Updating this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${maxHoursPerDay}h)`
+              : `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${maxHoursPerDay}h)`;
             
             toast.warning('Approaching daily limit', {
               description: message,

@@ -42,6 +42,7 @@ import {
 import { useIsMobile } from './ui/use-mobile';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
+import { AI_FUNCTION_EXPLANATION } from '../lib/ai-config';
 import taskzmLogoLight from '../assets/taskzm-logo-light.png';  // Light (purple) logo for dark backgrounds
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
 import { SETTINGS_PANEL_TEXT_SIZES } from '../lib/text-size-constants';
@@ -84,6 +85,8 @@ import {
   SETTINGS_PANEL_TEXT_SIZE_XSMALL,
   SETTINGS_PANEL_TEXT_SIZE_SMALL,
   SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+  TOGGLE_SWITCH_DIMENSIONS,
+  TOGGLE_SWITCH_SPACING,
   SETTINGS_PANEL_MARGIN_TOP_XSMALL,
   SETTINGS_PANEL_MARGIN_TOP_SMALL,
   SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
@@ -1552,12 +1555,28 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
 
               <div className="space-y-2 pt-2 border-t border-primary/10">
-                <Label className="text-sm font-semibold">Daily Work Hour Limit</Label>
+                <Label 
+                  className="font-semibold cursor-pointer"
+                  style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                >
+                  Daily Work Hour Limit
+                </Label>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-3 py-1">
+                  <div className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
                     <div className="space-y-0.5 flex-1 min-w-0">
-                      <Label htmlFor="ai-hours-5" className="text-sm cursor-pointer">5 Hours</Label>
-                      <p className="text-xs text-muted-foreground">Standard work day limit</p>
+                      <Label 
+                        htmlFor="ai-hours-5" 
+                        className="cursor-pointer"
+                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                      >
+                        5 Hours
+                      </Label>
+                      <p 
+                        className="text-muted-foreground"
+                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}
+                      >
+                        Standard work day limit
+                      </p>
                     </div>
                     <Switch 
                       id="ai-hours-5" 
@@ -1568,13 +1587,28 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         }
                       }}
                       disabled={!aiSettings.autoSchedulingEnabled}
-                      className="flex-shrink-0 mt-0.5"
+                      className="flex-shrink-0"
+                      style={{
+                        width: TOGGLE_SWITCH_DIMENSIONS.container.width,
+                        height: TOGGLE_SWITCH_DIMENSIONS.container.height,
+                      }}
                     />
                   </div>
-                  <div className="flex items-center justify-between gap-3 py-1">
+                  <div className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
                     <div className="space-y-0.5 flex-1 min-w-0">
-                      <Label htmlFor="ai-hours-8" className="text-sm cursor-pointer">8 Hours</Label>
-                      <p className="text-xs text-muted-foreground">Full work day limit</p>
+                      <Label 
+                        htmlFor="ai-hours-8" 
+                        className="cursor-pointer"
+                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                      >
+                        8 Hours
+                      </Label>
+                      <p 
+                        className="text-muted-foreground"
+                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}
+                      >
+                        Full work day limit
+                      </p>
                     </div>
                     <Switch 
                       id="ai-hours-8" 
@@ -1585,13 +1619,28 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         }
                       }}
                       disabled={!aiSettings.autoSchedulingEnabled}
-                      className="flex-shrink-0 mt-0.5"
+                      className="flex-shrink-0"
+                      style={{
+                        width: TOGGLE_SWITCH_DIMENSIONS.container.width,
+                        height: TOGGLE_SWITCH_DIMENSIONS.container.height,
+                      }}
                     />
                   </div>
-                  <div className="flex items-center justify-between gap-3 py-1">
+                  <div className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
                     <div className="space-y-0.5 flex-1 min-w-0">
-                      <Label htmlFor="ai-hours-10" className="text-sm cursor-pointer">10 Hours</Label>
-                      <p className="text-xs text-muted-foreground">Extended work day limit</p>
+                      <Label 
+                        htmlFor="ai-hours-10" 
+                        className="cursor-pointer"
+                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                      >
+                        10 Hours
+                      </Label>
+                      <p 
+                        className="text-muted-foreground"
+                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}
+                      >
+                        Extended work day limit
+                      </p>
                     </div>
                     <Switch 
                       id="ai-hours-10" 
@@ -1602,7 +1651,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         }
                       }}
                       disabled={!aiSettings.autoSchedulingEnabled}
-                      className="flex-shrink-0 mt-0.5"
+                      className="flex-shrink-0"
+                      style={{
+                        width: TOGGLE_SWITCH_DIMENSIONS.container.width,
+                        height: TOGGLE_SWITCH_DIMENSIONS.container.height,
+                      }}
                     />
                   </div>
                 </div>
@@ -1612,11 +1665,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/10 space-y-3">
               <div className="flex items-start gap-2">
                 <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-muted-foreground space-y-2">
+                <div className="space-y-2" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                   <div>
-                    <p className="mb-1 font-semibold text-foreground">How AI Schedules Tasks:</p>
-                    <p className="leading-relaxed">
-                      The AI scheduler intelligently organizes your tasks and events by analyzing multiple factors to create an optimal schedule that fits your workflow.
+                    <p 
+                      className="mb-1 font-semibold text-foreground"
+                      style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                    >
+                      {AI_FUNCTION_EXPLANATION.TITLE}
+                    </p>
+                    <p className="leading-relaxed text-muted-foreground">
+                      {AI_FUNCTION_EXPLANATION.DESCRIPTION}
                     </p>
                   </div>
                   

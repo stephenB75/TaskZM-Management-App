@@ -13,7 +13,6 @@ import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { projectId } from '../utils/supabase/info';
 import {
-  MAX_HOURS_PER_DAY,
   MIN_HOURS_PER_DAY,
   DEFAULT_SCHEDULING_PERIOD_DAYS,
   DEFAULT_WEEK_RESCHEDULE_DAYS,
@@ -1060,11 +1059,12 @@ export function useAIScheduler() {
     
     // Helper: Check if adding task would exceed daily limit
     // Allow tasks that would make the day exactly at the limit (for efficient packing)
+    const maxHoursPerDay = aiSettings.maxHoursPerDay;
     const wouldExceedLimit = (date: Date, taskHours: number): boolean => {
       const dateKey = getDateKey(date);
       const currentHours = dailyHours.get(dateKey) || 0;
       // Use > to allow tasks that would make the day exactly at the limit (efficient packing)
-      return (currentHours + taskHours) > MAX_HOURS_PER_DAY;
+      return (currentHours + taskHours) > maxHoursPerDay;
     };
     
     // Helper: Check if day has minimum hours requirement met
@@ -1133,8 +1133,8 @@ export function useAIScheduler() {
             }
             
             // Check if this day now exceeds the limit (for tracking/reporting)
-            // Note: Allow exactly 5 hours for efficient packing
-            if (newHours > MAX_HOURS_PER_DAY) {
+            // Note: Allow exactly maxHoursPerDay for efficient packing
+            if (newHours > maxHoursPerDay) {
               // Check if we already have this day in exceedsLimit
               const existing = daysExceedingLimit.find(d => d.date === dateKey);
               if (!existing) {
@@ -1168,8 +1168,8 @@ export function useAIScheduler() {
         dailyTasks.set(dateKey, dayTasks);
         
         // Check if this day now exceeds the limit (for tracking/reporting)
-        // Note: Allow exactly 5 hours for efficient packing
-        if (newHours > MAX_HOURS_PER_DAY) {
+        // Note: Allow exactly maxHoursPerDay for efficient packing
+        if (newHours > maxHoursPerDay) {
           // Check if we already have this day in exceedsLimit
           const existing = daysExceedingLimit.find(d => d.date === dateKey);
           if (!existing) {
@@ -1505,11 +1505,11 @@ export function useAIScheduler() {
             }
           }
           
-          // Check if this day has space for the task (within 5-hour limit)
+          // Check if this day has space for the task (within maxHoursPerDay limit)
           if (!wouldExceedLimit(testDate, taskHours)) {
             const dateKey = getDateKey(testDate);
             const currentHours = dailyHours.get(dateKey) || 0;
-            const availableHours = MAX_HOURS_PER_DAY - currentHours;
+            const availableHours = maxHoursPerDay - currentHours;
             candidateDays.push({
               date: new Date(testDate),
               availableHours,

@@ -716,36 +716,46 @@ export const DraggableTaskCard = React.forwardRef<
           </div>
 
           {/* AI Action Plan Breakdown - Show if available */}
-          {breakdown?.actionPlan && breakdown.actionPlan.steps.length > 0 && (
-            <div className={cn(
-              "px-1.5 py-1 mt-0.5 mb-1 rounded text-xs",
-              isDark ? "bg-purple-950/20 border border-purple-800/30" : "bg-purple-50/50 border border-purple-200"
-            )}>
-              <div className="flex items-center gap-1 mb-1">
-                <Sparkles className={cn("w-3 h-3", isDark ? "text-purple-300" : "text-purple-700")} />
-                <span className={cn("font-medium", isDark ? "text-purple-300" : "text-purple-700")}>
-                  AI Action Plan
-                </span>
+          {breakdown?.actionPlan && breakdown.actionPlan.steps.length > 0 && (() => {
+            // Get domain-specific colors
+            const domainColors = breakdown.domain === 'business' 
+              ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800' }
+              : breakdown.domain === 'home'
+              ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800' }
+              : breakdown.domain === 'personal'
+              ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800' }
+              : breakdown.domain === 'world'
+              ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800' }
+              : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800' };
+            
+            return (
+              <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded text-xs border", domainColors.bg)}>
+                <div className="flex items-center gap-1 mb-1">
+                  <Sparkles className={cn("w-3 h-3", domainColors.text)} />
+                  <span className={cn("font-medium", domainColors.text)}>
+                    AI Action Plan
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  {breakdown.actionPlan.steps.slice(0, 2).map((step, idx) => (
+                    <div key={idx} className="flex items-start gap-1.5">
+                      <span className={cn("text-[10px] mt-0.5 flex-shrink-0", domainColors.textMuted)}>
+                        {idx + 1}.
+                      </span>
+                      <span className={cn("text-[10px] leading-tight flex-1", domainColors.textLight)}>
+                        {step.action}
+                      </span>
+                    </div>
+                  ))}
+                  {breakdown.actionPlan.steps.length > 2 && (
+                    <div className={cn("text-[10px] mt-0.5", domainColors.textMuted)}>
+                      +{breakdown.actionPlan.steps.length - 2} more steps
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="space-y-0.5">
-                {breakdown.actionPlan.steps.slice(0, 2).map((step, idx) => (
-                  <div key={idx} className="flex items-start gap-1.5">
-                    <span className={cn("text-[10px] mt-0.5 flex-shrink-0", isDark ? "text-purple-400" : "text-purple-600")}>
-                      {idx + 1}.
-                    </span>
-                    <span className={cn("text-[10px] leading-tight flex-1", isDark ? "text-purple-200" : "text-purple-800")}>
-                      {step.action}
-                    </span>
-                  </div>
-                ))}
-                {breakdown.actionPlan.steps.length > 2 && (
-                  <div className={cn("text-[10px] mt-0.5", isDark ? "text-purple-400" : "text-purple-600")}>
-                    +{breakdown.actionPlan.steps.length - 2} more steps
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Row 3: Subhead (Description) - Show if description exists */}
           {task.description && (
@@ -1097,21 +1107,23 @@ export const DraggableTaskCard = React.forwardRef<
           <div 
             className={cn(
               "mt-1 rounded-b-lg border-t shadow-sm",
-              isDark ? "border-gray-700 bg-gray-900/95" : "border-gray-200 bg-white",
               isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
             )}
+            style={{
+              backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
+              borderColor: isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={cn(
                 "w-full flex items-center justify-between px-2 py-1.5 text-xs font-medium transition-colors rounded-b-lg",
-                isDark 
-                  ? "text-gray-100 hover:bg-gray-800/50"
-                  : "text-gray-800 hover:bg-gray-100/50"
+                isDark ? "hover:bg-gray-800/50" : "hover:bg-gray-100/50"
               )}
               style={{
                 transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
+                color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
               }}
             >
               <span>Details</span>
@@ -1124,30 +1136,28 @@ export const DraggableTaskCard = React.forwardRef<
 
             {isDropdownOpen && (
               <div
-                className={cn(
-                  "px-2 pb-2 rounded-b-lg",
-                  isDark ? "bg-gray-900/95" : "bg-white"
-                )}
+                className="px-2 pb-2 rounded-b-lg"
                 style={{
                   transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
+                  backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
                 }}
               >
                 <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
                   <TabsList 
-                    className={cn(
-                      "h-7 w-full justify-start bg-transparent p-0 gap-1",
-                      isDark ? "text-gray-400" : "text-gray-600"
-                    )}
+                    className="h-7 w-full justify-start bg-transparent p-0 gap-1"
+                    style={{
+                      color: isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                    }}
                   >
                     {task.description && (
                       <TabsTrigger
                         value="description"
-                        className={cn(
-                          "h-6 px-2 text-[10px] data-[state=active]:text-white",
-                          isDark 
-                            ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
-                            : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
-                        )}
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
                       >
                         <FileText className="w-3 h-3 mr-1" />
                         Description
@@ -1156,12 +1166,12 @@ export const DraggableTaskCard = React.forwardRef<
                     {task.subtasks && task.subtasks.length > 0 && (
                       <TabsTrigger
                         value="subtasks"
-                        className={cn(
-                          "h-6 px-2 text-[10px] data-[state=active]:text-white",
-                          isDark 
-                            ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
-                            : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
-                        )}
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
                       >
                         <ListChecks className="w-3 h-3 mr-1" />
                         Subtasks ({task.subtasks.length})
@@ -1170,12 +1180,12 @@ export const DraggableTaskCard = React.forwardRef<
                     {task.dependencies && task.dependencies.length > 0 && (
                       <TabsTrigger
                         value="dependencies"
-                        className={cn(
-                          "h-6 px-2 text-[10px] data-[state=active]:text-white",
-                          isDark 
-                            ? "data-[state=inactive]:text-gray-400 data-[state=active]:bg-primary"
-                            : "data-[state=inactive]:text-gray-600 data-[state=active]:bg-primary"
-                        )}
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
                       >
                         <Link2 className="w-3 h-3 mr-1" />
                         Dependencies ({task.dependencies.length})
@@ -1186,10 +1196,10 @@ export const DraggableTaskCard = React.forwardRef<
                   {task.description && (
                     <TabsContent value="description" className="mt-2 p-2 rounded text-xs max-h-32 overflow-y-auto">
                       <div
-                        className={cn(
-                          "break-words text-xs",
-                          isDark ? "text-gray-100" : "text-gray-800"
-                        )}
+                        className="break-words text-xs"
+                        style={{
+                          color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
+                        }}
                         {...(hasHTMLTags(task.description) 
                           ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
                           : { children: task.description }
