@@ -44,6 +44,8 @@ import {
   TASK_CARD_ADDITIONAL_FONT_SIZES,
   TASK_CARD_OPACITY,
   TASK_CARD_DROPDOWN_COLORS,
+  TASK_CARD_DROPDOWN_DOMAIN_COLORS,
+  TASK_CARD_DROPDOWN_BADGE_COLORS,
   TASK_CARD_DROPDOWN,
   TASK_CARD_STANDARD_HEIGHTS,
 } from "../lib/task-card-constants";
@@ -988,21 +990,26 @@ export const DraggableTaskCard = React.forwardRef<
         </div>
 
         {/* Dropdown Tab - Accordion attached directly to the card, aligned with compact card (excluding priority line) */}
-        {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
-          <div 
-            className="rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden"
-            style={{
-              marginTop: `${TASK_CARD_DROPDOWN.spacing.attachmentGap}px`,
-              marginLeft: `${TASK_CARD_DROPDOWN.spacing.cardOffset.left + TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
-              marginRight: `${TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
-              width: `calc(100% - ${TASK_CARD_DROPDOWN.spacing.cardOffset.left + (TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal * 2)}px)`,
-              backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
-              borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
-              maxHeight: isDropdownOpen ? 'none' : 'auto',
-              transition: 'max-height 0.3s ease-in-out',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (() => {
+          // Get domain-based colors for dropdown background
+          const taskDomain = breakdown?.domain || 'default';
+          const domainColors = TASK_CARD_DROPDOWN_DOMAIN_COLORS[taskDomain] || TASK_CARD_DROPDOWN_DOMAIN_COLORS.default;
+          
+          return (
+            <div 
+              className="rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden"
+              style={{
+                marginTop: `${TASK_CARD_DROPDOWN.spacing.attachmentGap}px`,
+                marginLeft: `${TASK_CARD_DROPDOWN.spacing.cardOffset.left + TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
+                marginRight: `${TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
+                width: `calc(100% - ${TASK_CARD_DROPDOWN.spacing.cardOffset.left + (TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal * 2)}px)`,
+                backgroundColor: isDark ? domainColors.dark : domainColors.light,
+                borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
+                maxHeight: isDropdownOpen ? 'none' : 'auto',
+                transition: 'max-height 0.3s ease-in-out',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Accordion Tab Header with Badges */}
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -1022,7 +1029,7 @@ export const DraggableTaskCard = React.forwardRef<
                 paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.header.paddingY}px`,
                 transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
                 color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
-                backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
+                backgroundColor: isDark ? domainColors.dark : domainColors.light,
                 fontSize: `${dropdownFontSize}px`,
               }}
             >
@@ -1040,8 +1047,8 @@ export const DraggableTaskCard = React.forwardRef<
                       paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
                       paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
                       fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                      backgroundColor: TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                      color: TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                      backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.description.background,
+                      color: TASK_CARD_DROPDOWN_BADGE_COLORS.description.text,
                     }}
                   >
                     <FileText 
@@ -1065,8 +1072,8 @@ export const DraggableTaskCard = React.forwardRef<
                       paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
                       paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
                       fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                      backgroundColor: TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                      color: TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                      backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.background,
+                      color: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.text,
                     }}
                   >
                     <ListChecks 
@@ -1090,8 +1097,8 @@ export const DraggableTaskCard = React.forwardRef<
                       paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
                       paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
                       fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                      backgroundColor: TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                      color: TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                      backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.dependencies.background,
+                      color: TASK_CARD_DROPDOWN_BADGE_COLORS.dependencies.text,
                     }}
                   >
                     <Link2 
@@ -1131,7 +1138,7 @@ export const DraggableTaskCard = React.forwardRef<
                   paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.content.paddingX}px`,
                   paddingRight: `${TASK_CARD_DROPDOWN.dimensions.content.paddingX}px`,
                   paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.content.paddingBottom}px`,
-                  backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
+                  backgroundColor: isDark ? domainColors.dark : domainColors.light,
                 }}
               >
                 <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
@@ -1383,7 +1390,8 @@ export const DraggableTaskCard = React.forwardRef<
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
       </div>
     );
   },

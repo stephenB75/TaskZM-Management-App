@@ -17,6 +17,7 @@ import {
   COLOR_SUCCESS,
   COLOR_WARNING,
   COLOR_PASTEL_SAGE,
+  COLOR_PASTEL_SAGE_BORDER,
   COLOR_PASTEL_SKY,
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_PEACH,
@@ -640,16 +641,60 @@ export const TASK_CARD_TIMELINE = {
   },
 } as const;
 
-// Dropdown Tab Colors (using app pastel theme colors, distinct from task card and column colors)
-// Note: Uses pastel colors similar to kanban columns but different shade for distinction
-export const TASK_CARD_DROPDOWN_COLORS = {
-  background: {
-    light: COLOR_PASTEL_SAGE, // Sage green pastel background for light mode (distinct from columns)
+// Dropdown Tab Colors - Domain-based pastel colors (using app pastel theme colors)
+// Each task domain gets a different pastel color for the dropdown background
+export const TASK_CARD_DROPDOWN_DOMAIN_COLORS: Record<string, { light: string; dark: string }> = {
+  business: {
+    light: COLOR_PASTEL_SKY, // Sky blue pastel for business domain
+    dark: getColorWithOpacity(COLOR_PASTEL_SKY, 0.3), // Muted sky for dark mode
+  },
+  home: {
+    light: COLOR_PASTEL_MINT, // Mint green pastel for home domain
+    dark: getColorWithOpacity(COLOR_PASTEL_MINT, 0.3), // Muted mint for dark mode
+  },
+  personal: {
+    light: COLOR_PASTEL_LAVENDER, // Lavender pastel for personal domain
+    dark: getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.3), // Muted lavender for dark mode
+  },
+  world: {
+    light: COLOR_PASTEL_PEACH, // Peach pastel for world domain
+    dark: getColorWithOpacity(COLOR_PASTEL_PEACH, 0.3), // Muted peach for dark mode
+  },
+  mixed: {
+    light: COLOR_PASTEL_SAGE, // Sage green pastel for mixed domain (default)
     dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.3), // Muted sage for dark mode
   },
+  default: {
+    light: COLOR_PASTEL_SAGE, // Sage green pastel as default
+    dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.3), // Muted sage for dark mode
+  },
+} as const;
+
+// Badge colors for Description, Subtasks, and Dependencies (different colors for each)
+export const TASK_CARD_DROPDOWN_BADGE_COLORS = {
+  description: {
+    background: COLOR_PASTEL_LAVENDER, // Lavender for Description badge
+    text: COLOR_TEXT_PRIMARY, // Dark text on light background
+  },
+  subtasks: {
+    background: COLOR_PASTEL_PINK, // Pink for Subtasks badge
+    text: COLOR_TEXT_PRIMARY, // Dark text on light background
+  },
+  dependencies: {
+    background: COLOR_PASTEL_LILAC, // Lilac for Dependencies badge
+    text: COLOR_TEXT_PRIMARY, // Dark text on light background
+  },
+} as const;
+
+// Base dropdown colors (for borders, hover, etc.)
+export const TASK_CARD_DROPDOWN_COLORS = {
+  background: {
+    light: COLOR_PASTEL_SAGE, // Default sage green (will be overridden by domain)
+    dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.3), // Default muted sage
+  },
   border: {
-    light: getColorWithOpacity('#9CAF9C', 0.3), // Soft green border for light mode (complements sage)
-    dark: getColorWithOpacity('#9CAF9C', 0.4), // Soft green border for dark mode
+    light: getColorWithOpacity(COLOR_PASTEL_SAGE_BORDER, 0.3), // Soft green border for light mode (complements sage)
+    dark: getColorWithOpacity(COLOR_PASTEL_SAGE_BORDER, 0.4), // Soft green border for dark mode
   },
   tab: {
     active: {
@@ -674,7 +719,7 @@ export const TASK_CARD_DROPDOWN_COLORS = {
   },
   hover: {
     background: {
-      light: getColorWithOpacity('#9CAF9C', 0.2), // Soft green hover for light mode (on pastel background)
+      light: getColorWithOpacity(COLOR_PASTEL_SAGE_BORDER, 0.2), // Soft green hover for light mode (on pastel background)
       dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.2), // Muted sage hover for dark mode
     },
     opacity: 0.5, // Hover opacity for buttons
@@ -682,13 +727,13 @@ export const TASK_CARD_DROPDOWN_COLORS = {
   subtask: {
     hover: {
       background: {
-        light: getColorWithOpacity('#9CAF9C', 0.2), // Soft green hover for subtasks in light mode
+        light: getColorWithOpacity(COLOR_PASTEL_SAGE_BORDER, 0.2), // Soft green hover for subtasks in light mode
         dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.2), // Muted sage hover for subtasks in dark mode
       },
     },
     border: {
-      light: '#9CAF9C', // Soft green border for subtask checkbox (on pastel background)
-      dark: '#9CAF9C', // Soft green border for subtask checkbox
+      light: COLOR_PASTEL_SAGE_BORDER, // Soft green border for subtask checkbox (on pastel background)
+      dark: COLOR_PASTEL_SAGE_BORDER, // Soft green border for subtask checkbox
     },
     text: {
       light: COLOR_TEXT_PRIMARY, // Dark text for subtasks (on pastel background)

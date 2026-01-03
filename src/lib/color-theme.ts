@@ -21,6 +21,7 @@ export const COLOR_PASTEL_LILAC = '#E1D4F0'; // Lilac
 export const COLOR_PASTEL_PINK = '#FFD6E8'; // Pink
 export const COLOR_PASTEL_YELLOW = '#FFF4CC'; // Yellow
 export const COLOR_PASTEL_SAGE = '#D4E8D4'; // Sage green
+export const COLOR_PASTEL_SAGE_BORDER = '#9CAF9C'; // Soft green border color (complements sage)
 
 // Additional colors for analytics (Power BI inspired)
 export const COLOR_ANALYTICS_GREEN = '#10B981'; // Success green (matches COLOR_SUCCESS)
