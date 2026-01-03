@@ -439,7 +439,7 @@ export const COMPONENT_DIMENSIONS = {
     buttonMinWidth: 'min-w-[140px]',
     footer: {
       padding: {
-        horizontal: '1.5rem', // px-6 = 1.5rem (24px) - matches dialog content padding
+        horizontal: '1.75rem', // px-7 = 1.75rem (28px) - increased from 1.5rem (24px)
         bottom: 'calc(1.5rem + 1rem)', // 1.5rem (24px) + 1rem (16px) = 40px total
         top: {
           mobile: '1rem', // pt-4 = 1rem (16px)
@@ -448,9 +448,10 @@ export const COMPONENT_DIMENSIONS = {
         },
       },
       margin: {
-        horizontal: '-1.5rem', // Negative margin to extend to dialog edges
+        horizontal: '0', // No horizontal margin (changed from -1.5rem)
         bottom: '-1.5rem', // Negative margin to extend to dialog bottom
       },
+      lineHeight: '1.625rem', // 26px - line-height for footer content
       gap: {
         mobile: '0.75rem', // gap-3 = 0.75rem (12px)
         tablet: '1rem', // sm:gap-4 = 1rem (16px)

@@ -3051,7 +3051,9 @@ export function TaskDialog({
           {/* Footer Actions - Single Set for All Tabs */}
           <div 
             className={cn(
-              "flex flex-col sm:flex-row justify-between items-stretch sm:items-center border-t-2 border-primary/30 bg-white dark:bg-card rounded-b-lg",
+              "flex flex-col sm:flex-row justify-between items-stretch sm:items-center border-t-2 border-primary/30 rounded-b-lg",
+              UI_GRADIENT_COLORS.dialog.className,
+              "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950",
               "gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6"
             )}
             style={{ 
@@ -3061,6 +3063,7 @@ export function TaskDialog({
               paddingLeft: COMPONENT_DIMENSIONS.taskDialog.footer.padding.horizontal,
               paddingRight: COMPONENT_DIMENSIONS.taskDialog.footer.padding.horizontal,
               paddingBottom: COMPONENT_DIMENSIONS.taskDialog.footer.padding.bottom,
+              lineHeight: COMPONENT_DIMENSIONS.taskDialog.footer.lineHeight,
             }}
           >
             {/* Left side - Action buttons (only for edit mode) */}
