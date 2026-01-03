@@ -507,7 +507,7 @@ export const DraggableTaskCard = React.forwardRef<
           {...attributes}
           {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
           className={cn(
-            "flex gap-2 transition-all duration-200 mx-auto",
+            "w-full flex gap-2 transition-all duration-200",
             !isMobile && (isDragging || isSortableDragging)
               ? "opacity-30 cursor-grabbing scale-95 ring-2 ring-primary/50 ring-offset-2"
               : "",
@@ -547,7 +547,7 @@ export const DraggableTaskCard = React.forwardRef<
               isMobile ? TASK_CARD_SHADOWS.mobile : TASK_CARD_SHADOWS.desktop,
               `${TASK_CARD_BACKGROUNDS.hover} ${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
-              isDragging ? TASK_CARD_WIDTHS.dragging : "flex-shrink-0 w-full",
+              "flex-shrink-0 w-full",
               // Padding: based on components, not description (description is in dropdown)
               // Tasks with components: standard padding
               ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
@@ -987,14 +987,12 @@ export const DraggableTaskCard = React.forwardRef<
           </div>
         </div>
 
-        {/* Dropdown Tab - Accordion underneath the card */}
+        {/* Dropdown Tab - Accordion attached directly to the card */}
         {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
           <div 
-            className={cn(
-              "mt-1 rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden w-full",
-              isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
-            )}
+            className="w-full rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden"
             style={{
+              marginTop: `${TASK_CARD_DROPDOWN.spacing.attachmentGap}px`,
               backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
               borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
               maxHeight: isDropdownOpen ? 'none' : 'auto',

@@ -701,6 +701,7 @@ export const TASK_CARD_DROPDOWN = {
     badgeGap: 8, // gap-2 = 8px between badges
     iconMargin: 4, // mr-1 = 4px margin right for icons
     tabsGap: 4, // gap-1 = 4px between tabs
+    attachmentGap: 0, // No gap - dropdown attached directly to card
   },
   text: {
     description: 'Description',
