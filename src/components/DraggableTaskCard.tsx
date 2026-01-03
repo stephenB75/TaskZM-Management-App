@@ -48,7 +48,7 @@ import {
 } from "../lib/task-card-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
-import { COLOR_PRIMARY, COLOR_BACKGROUND_LIGHT_COLOR, COLOR_BACKGROUND_DARK_COLOR } from "../lib/color-theme";
+import { COLOR_PRIMARY } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 
@@ -87,7 +87,7 @@ export const DraggableTaskCard = React.forwardRef<
     const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
     
     // AI Task Breakdown
-    const breakdown = useTaskBreakdown(task, { enabled: true });
+    const { breakdown } = useTaskBreakdown(task.title || '', task.description || '', { enabled: true });
     
     // For recurring tasks, use a date-specific timer ID so Pomodoro only affects
     // the individual occurrence, not the entire series
@@ -275,7 +275,7 @@ export const DraggableTaskCard = React.forwardRef<
       const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
       const hasTrackedTimeFull = task.actualTime && task.actualTime > 0;
       const inlinePomodoroPresent = currentShowInlinePomodoroTimer;
-      const hasDescription = !!task.description; // Always show description if present, regardless of duration
+      // Description is now in dropdown tab, not in main card
       const hasSubtasks = task.subtasks && task.subtasks.length > 0;
       
       // STANDARD HEIGHT CALCULATION: Use standard heights first, then auto-adjust for components
@@ -319,35 +319,7 @@ export const DraggableTaskCard = React.forwardRef<
         baseHeight += badgeWrapHeight;
       }
         
-      // AUTO-ADJUST: Description (if description exists)
-      // Calculate actual description height based on content, with minimal padding
-      // For tasks under 20 mins, use even more compact spacing
-        if (hasDescription) {
-        const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
-          const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
-        // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
-        // For tasks under 20 mins: cap at 1 line with minimal padding
-        // For tasks under 45 minutes: cap at 1 line
-        // For tasks 45-60 minutes: cap at 2 lines
-        let actualLines: number;
-        if (isShortTask) {
-          actualLines = Math.min(Math.max(estimatedLines, 1), 1); // Cap at 1 line for tasks < 45 mins
-        } else if (isMediumTask) {
-          actualLines = Math.min(Math.max(estimatedLines, 1), 2); // Cap at 2 lines for tasks 45-60 mins
-        } else {
-          actualLines = Math.max(estimatedLines, 1); // Full calculation for tasks >= 60 mins
-        }
-        const descriptionContentHeight = actualLines * lineHeight;
-        // For tasks under 20 mins: use minimal padding (0px if assigned users follow, 4px otherwise)
-        // For other short tasks: use standard minimal padding (0px if assigned users follow, 6px otherwise)
-        const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
-          ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap // 0px
-          : (isVeryShortTaskInCalc 
-              ? 4 // Reduced padding for tasks under 35 mins
-              : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard); // 6px standard
-        const descriptionHeight = descriptionContentHeight + descriptionBottomPadding;
-        baseHeight += descriptionHeight;
-        }
+      // Description is now in dropdown tab, not in main card - no height calculation needed
         
       // AUTO-ADJUST: Inline bottom row components (for tasks < 45 mins)
       // The bottom row can contain: assigned users, pomodoro timer, or both
@@ -371,15 +343,13 @@ export const DraggableTaskCard = React.forwardRef<
         // Calculate spacing based on component combination
         // For tasks 35 mins or less: use optimized spacing
         if (isVeryShortTaskInCalc) {
-          if (hasDescription && !hasSubtasks) {
-            bottomRowSpacing = 12; // Extra reduced spacing when description has mb-0
-          } else if (hasSubtasks) {
+          if (hasSubtasks) {
             bottomRowSpacing = 10; // Reduced spacing when subtasks are present (they add their own spacing)
           } else {
-            bottomRowSpacing = 14; // Reduced spacing without description or subtasks
+            bottomRowSpacing = 14; // Reduced spacing without subtasks
           }
         } else {
-          bottomRowSpacing = (hasDescription && !hasSubtasks) 
+          bottomRowSpacing = hasSubtasks
             ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced // 16px
             : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard; // 20px
         }
@@ -440,13 +410,9 @@ export const DraggableTaskCard = React.forwardRef<
         // Calculate total subtask height: items + spacing between items
           const subtaskHeight = subtaskCount * subtaskItemHeight + 
           (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
-        // For tasks under 35 mins: use optimized top spacing based on component combination
-        // - With description: 4px (reduced from 6px)
-        // - Without description: 2px (minimal spacing before subtasks)
-        // For other tasks: use standard top spacing (6px when description present, 0 otherwise)
-        const subtaskTopSpacing = hasDescription 
-          ? (isVeryShortTaskInCalc ? 4 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing)
-          : (isVeryShortTaskInCalc ? 2 : 0); // Minimal spacing for tasks under 35 mins without description
+        // For tasks under 35 mins: use optimized top spacing (2px minimal spacing before subtasks)
+        // For other tasks: use standard top spacing (6px)
+        const subtaskTopSpacing = isVeryShortTaskInCalc ? 2 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing;
         baseHeight += subtaskHeight + subtaskTopSpacing;
         }
         
@@ -502,184 +468,11 @@ export const DraggableTaskCard = React.forwardRef<
     return (
       <div
         className={cn(
-          "relative flex flex-col gap-1",
+          "relative flex flex-col",
           isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
         )}
       >
-        {/* Dropdown Layer - Behind the card */}
-        {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
-          <div 
-            className={cn(
-              "rounded-lg border-t shadow-sm transition-all duration-200",
-              isDropdownOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}
-            style={{
-              backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
-              borderColor: isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light,
-              zIndex: 1,
-              marginTop: isDropdownOpen ? '0.25rem' : '0',
-              maxHeight: isDropdownOpen ? '500px' : '0',
-              overflow: 'hidden',
-            }}
-          >
-            {isDropdownOpen && (
-              <div
-                className="px-2 pb-2 rounded-b-lg"
-                style={{
-                  transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
-                  backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
-                }}
-              >
-                <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
-                  <TabsList 
-                    className="h-7 w-full justify-start bg-transparent p-0 gap-1"
-                    style={{
-                      color: isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                    }}
-                  >
-                    {task.description && (
-                      <TabsTrigger
-                        value="description"
-                        className="h-6 px-2 text-[10px]"
-                        style={{
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        Description
-                      </TabsTrigger>
-                    )}
-                    {task.subtasks && task.subtasks.length > 0 && (
-                      <TabsTrigger
-                        value="subtasks"
-                        className="h-6 px-2 text-[10px]"
-                        style={{
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <ListChecks className="w-3 h-3 mr-1" />
-                        Subtasks ({task.subtasks.length})
-                      </TabsTrigger>
-                    )}
-                    {task.dependencies && task.dependencies.length > 0 && (
-                      <TabsTrigger
-                        value="dependencies"
-                        className="h-6 px-2 text-[10px]"
-                        style={{
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <Link2 className="w-3 h-3 mr-1" />
-                        Dependencies ({task.dependencies.length})
-                      </TabsTrigger>
-                    )}
-                  </TabsList>
-
-                  {task.description && (
-                    <TabsContent value="description" className="mt-2 p-2 rounded text-xs max-h-32 overflow-y-auto">
-                      <div
-                        className="break-words text-xs"
-                        style={{
-                          color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
-                        }}
-                        {...(hasHTMLTags(task.description) 
-                          ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                          : { children: task.description }
-                        )}
-                      />
-                    </TabsContent>
-                  )}
-
-                  {task.subtasks && task.subtasks.length > 0 && (
-                    <TabsContent value="subtasks" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                      {task.subtasks.map((subtask) => (
-                        <div
-                          key={subtask.id}
-                          className={cn(
-                            "flex items-center gap-2 p-1.5 rounded text-xs",
-                            isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "w-3 h-3 rounded-sm border flex-shrink-0",
-                              subtask.completed
-                                ? "bg-primary border-primary"
-                                : isDark 
-                                  ? "border-gray-600"
-                                  : "border-gray-300"
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              "flex-1 text-xs",
-                              subtask.completed
-                                ? "line-through opacity-60"
-                                : isDark
-                                  ? "text-gray-100"
-                                  : "text-gray-800"
-                            )}
-                          >
-                            {subtask.title}
-                          </span>
-                        </div>
-                      ))}
-                    </TabsContent>
-                  )}
-
-                  {task.dependencies && task.dependencies.length > 0 && (
-                    <TabsContent value="dependencies" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                      {task.dependencies.map((depId) => {
-                        const depTask = tasks.find((t) => t?.id === depId);
-                        if (!depTask) return null;
-                        const isComplete = depTask.status === "done";
-                        
-                        return (
-                          <div
-                            key={depId}
-                            className={cn(
-                              "flex items-center gap-2 p-1.5 rounded text-xs",
-                              isComplete
-                                ? isDark ? "bg-green-950/20 border border-green-800/30" : "bg-green-50/50 border border-green-200"
-                                : isDark ? "bg-amber-950/20 border border-amber-800/30" : "bg-amber-50/50 border border-amber-200"
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                "w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0",
-                                isComplete ? "bg-green-500" : "bg-amber-500"
-                              )}
-                            >
-                              {isComplete && <span className="text-white text-[8px]">✓</span>}
-                            </div>
-                            <span
-                              className={cn(
-                                "flex-1 truncate text-xs",
-                                isDark
-                                  ? "text-gray-100"
-                                  : "text-gray-800"
-                              )}
-                            >
-                              {depTask.title}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </TabsContent>
-                  )}
-                </Tabs>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Main Card Layer - In front */}
+        {/* Main Card Layer */}
         <div
           ref={setNodeRef}
           style={{
@@ -732,21 +525,12 @@ export const DraggableTaskCard = React.forwardRef<
               `${TASK_CARD_BACKGROUNDS.hover} ${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
               isDragging ? TASK_CARD_WIDTHS.dragging : "flex-shrink-0 w-full",
-              // Padding: based on content (description and components), not duration
-              // Tasks with description: more padding for descriptions
-              task.description && 
-                !(pomodoroIsRunning || (task.assignedTo && task.assignedTo.length > 0)) && 
-                (isMobile ? TASK_CARD_SPACING.long.mobile.standard : TASK_CARD_SPACING.long.desktop.standard),
-              task.description && 
-                (pomodoroIsRunning || (task.assignedTo && task.assignedTo.length > 0)) && 
-                (isMobile ? TASK_CARD_SPACING.long.mobile.withComponents : TASK_CARD_SPACING.long.desktop.withComponents),
-              // Tasks without description but with components: standard padding
-              !task.description && 
-                ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
+              // Padding: based on components, not description (description is in dropdown)
+              // Tasks with components: standard padding
+              ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
                 (isMobile ? TASK_CARD_SPACING.medium.mobile.withComponents : TASK_CARD_SPACING.medium.desktop.withComponents),
-              // Tasks without description and without components: minimal padding
-              !task.description && 
-                !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
+              // Tasks without components: minimal padding
+              !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
                 (isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop),
             )}
           style={{
@@ -918,7 +702,7 @@ export const DraggableTaskCard = React.forwardRef<
                   </span>
                 </div>
                 <div className="space-y-0.5">
-                  {breakdown.actionPlan.steps.slice(0, 2).map((step, idx) => (
+                  {breakdown.actionPlan.steps.slice(0, 2).map((step: { action: string; estimatedMinutes: number }, idx: number) => (
                     <div key={idx} className="flex items-start gap-1.5">
                       <span className={cn("text-[10px] mt-0.5 flex-shrink-0", domainColors.textMuted)}>
                         {idx + 1}.
@@ -938,38 +722,6 @@ export const DraggableTaskCard = React.forwardRef<
             );
           })()}
 
-          {/* Row 3: Subhead (Description) - Show if description exists */}
-          {task.description && (
-            <div 
-              className={cn(
-                `${TASK_CARD_TEXT_COLORS.description} leading-snug break-words ${TASK_CARD_FONT_SIZES.description} px-1.5 py-1 mt-0.5`,
-                // For tasks under 45 minutes, limit to 1 line
-                isShortTask && TASK_CARD_LINE_CLAMP.description.under45mins,
-                // For tasks 45-60 minutes, limit to 2 lines
-                isMediumTask && TASK_CARD_LINE_CLAMP.description.oneHour,
-                // Reduce bottom margin when assigned users are present and no subtasks to eliminate white space
-                (task.assignedTo && task.assignedTo.length > 0 && (!task.subtasks || task.subtasks.length === 0))
-                  ? "mb-0" // No bottom margin when assigned users follow directly
-                  : "mb-1.5", // Standard bottom margin when subtasks are present
-                // Rich text formatting styles - only apply if HTML is present
-                // Note: Rich text editor font size changes will override this base size via inline styles
-                hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
-                hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
-                hasHTMLTags(task.description) && "[&_u]:underline",
-                hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
-                hasHTMLTags(task.description) && `[&_mark]:${TASK_CARD_RICH_TEXT_COLORS.mark.light} [&_mark]:${TASK_CARD_RICH_TEXT_COLORS.mark.dark} [&_mark]:px-0.5 [&_mark]:rounded`,
-                hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5",
-                hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
-                hasHTMLTags(task.description) && "[&_li]:ml-1",
-                hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words",
-                hasHTMLTags(task.description) && `[&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.light} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.dark} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.padding} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.rounded} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.fontSize} [&_code]:${TASK_CARD_RICH_TEXT_COLORS.code.fontFamily}`
-              )}
-              {...(hasHTMLTags(task.description) 
-                ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                : { children: task.description }
-              )}
-            />
-          )}
 
           {/* Subtasks Display */}
           {task.subtasks && task.subtasks.length > 0 && (
@@ -1282,32 +1034,198 @@ export const DraggableTaskCard = React.forwardRef<
             </>
           )}
 
-          {/* Chevron Button to Toggle Dropdown - Bottom right of card */}
-          {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
+          </div>
+        </div>
+
+        {/* Dropdown Tab - Colored accordion tab at bottom */}
+        {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
+          <div 
+            className="mt-1 rounded-b-lg transition-all duration-200 overflow-hidden"
+            style={{
+              backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
+              borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
+              maxHeight: isDropdownOpen ? '500px' : 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Accordion Tab Header */}
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsDropdownOpen(!isDropdownOpen);
-              }}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={cn(
-                "absolute bottom-2 right-2 p-1 rounded-full transition-colors",
-                isDark ? "hover:bg-gray-800/50 text-gray-300" : "hover:bg-gray-100/50 text-gray-600"
+                "w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors rounded-b-lg",
+                isDark ? "hover:bg-gray-800/50" : "hover:bg-gray-100/50"
               )}
               style={{
                 transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
-                zIndex: 3,
+                color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
+                backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
               }}
-              aria-label="Toggle details"
             >
+              <span>Details</span>
               {isDropdownOpen ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
                 <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
               )}
             </button>
-          )}
+
+            {/* Accordion Content */}
+            {isDropdownOpen && (
+              <div
+                className="px-2 pb-2 rounded-b-lg"
+                style={{
+                  transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
+                  backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
+                }}
+              >
+                <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
+                  <TabsList 
+                    className="h-7 w-full justify-start bg-transparent p-0 gap-1"
+                    style={{
+                      color: isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                    }}
+                  >
+                    {task.description && (
+                      <TabsTrigger
+                        value="description"
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
+                      >
+                        <FileText className="w-3 h-3 mr-1" />
+                        Description
+                      </TabsTrigger>
+                    )}
+                    {task.subtasks && task.subtasks.length > 0 && (
+                      <TabsTrigger
+                        value="subtasks"
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
+                      >
+                        <ListChecks className="w-3 h-3 mr-1" />
+                        Subtasks ({task.subtasks.length})
+                      </TabsTrigger>
+                    )}
+                    {task.dependencies && task.dependencies.length > 0 && (
+                      <TabsTrigger
+                        value="dependencies"
+                        className="h-6 px-2 text-[10px]"
+                        style={{
+                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
+                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
+                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
+                        } as React.CSSProperties}
+                      >
+                        <Link2 className="w-3 h-3 mr-1" />
+                        Dependencies ({task.dependencies.length})
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+
+                  {task.description && (
+                    <TabsContent value="description" className="mt-2 p-2 rounded text-xs max-h-32 overflow-y-auto">
+                      <div
+                        className="break-words text-xs"
+                        style={{
+                          color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
+                        }}
+                        {...(hasHTMLTags(task.description) 
+                          ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                          : { children: task.description }
+                        )}
+                      />
+                    </TabsContent>
+                  )}
+
+                  {task.subtasks && task.subtasks.length > 0 && (
+                    <TabsContent value="subtasks" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                      {task.subtasks.map((subtask) => (
+                        <div
+                          key={subtask.id}
+                          className={cn(
+                            "flex items-center gap-2 p-1.5 rounded text-xs",
+                            isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-3 h-3 rounded-sm border flex-shrink-0",
+                              subtask.completed
+                                ? "bg-primary border-primary"
+                                : isDark 
+                                  ? "border-gray-600"
+                                  : "border-gray-300"
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "flex-1 text-xs",
+                              subtask.completed
+                                ? "line-through opacity-60"
+                                : isDark
+                                  ? "text-gray-100"
+                                  : "text-gray-800"
+                            )}
+                          >
+                            {subtask.title}
+                          </span>
+                        </div>
+                      ))}
+                    </TabsContent>
+                  )}
+
+                  {task.dependencies && task.dependencies.length > 0 && (
+                    <TabsContent value="dependencies" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                      {task.dependencies.map((depId) => {
+                        const depTask = tasks.find((t) => t?.id === depId);
+                        if (!depTask) return null;
+                        const isComplete = depTask.status === "done";
+                        
+                        return (
+                          <div
+                            key={depId}
+                            className={cn(
+                              "flex items-center gap-2 p-1.5 rounded text-xs",
+                              isComplete
+                                ? isDark ? "bg-green-950/20 border border-green-800/30" : "bg-green-50/50 border border-green-200"
+                                : isDark ? "bg-amber-950/20 border border-amber-800/30" : "bg-amber-50/50 border border-amber-200"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0",
+                                isComplete ? "bg-green-500" : "bg-amber-500"
+                              )}
+                            >
+                              {isComplete && <span className="text-white text-[8px]">✓</span>}
+                            </div>
+                            <span
+                              className={cn(
+                                "flex-1 truncate text-xs",
+                                isDark
+                                  ? "text-gray-100"
+                                  : "text-gray-800"
+                              )}
+                            >
+                              {depTask.title}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </TabsContent>
+                  )}
+                </Tabs>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
     );
   },
