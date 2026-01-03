@@ -4,7 +4,13 @@ import tailwindcssAnimate from 'tailwindcss-animate';
 export default {
   content: [
     './index.html',
-    './**/*.{js,ts,jsx,tsx,mdx}',
+    './*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './contexts/**/*.{js,ts,jsx,tsx,mdx}',
+    './hooks/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx,mdx}',
+    './utils/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   safelist: [
     'from-[#B4E4FF]/90',
