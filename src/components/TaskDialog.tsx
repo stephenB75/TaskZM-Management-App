@@ -3052,8 +3052,7 @@ export function TaskDialog({
           <div 
             className={cn(
               "flex flex-col sm:flex-row justify-between items-stretch sm:items-center border-t-2 border-primary/30 rounded-b-lg",
-              UI_GRADIENT_COLORS.dialog.className,
-              "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950",
+              "bg-transparent",
               "gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6"
             )}
             style={{ 
@@ -3073,7 +3072,7 @@ export function TaskDialog({
                   type="button"
                   variant="outline"
                   onClick={handleDuplicate}
-                  className="gap-1.5 sm:gap-2 border-2 border-primary/30 bg-white dark:bg-card hover:border-primary hover:bg-primary/10 text-foreground h-10 px-4 text-sm font-medium"
+                  className="gap-1.5 sm:gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground h-10 px-4 text-sm font-medium"
                 >
                   <Copy className="w-4 h-4" />
                   <span className="hidden sm:inline">Duplicate</span>
@@ -3100,7 +3099,7 @@ export function TaskDialog({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-2 border-primary/30 bg-white dark:bg-card hover:border-primary hover:bg-primary/10 text-foreground h-10 px-5 text-sm font-medium flex-1 sm:flex-initial"
+                className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground h-10 px-5 text-sm font-medium flex-1 sm:flex-initial"
               >
                 Cancel
               </Button>
