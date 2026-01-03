@@ -65,21 +65,47 @@ export function useTaskBreakdown(
   isLoading: boolean;
   error: Error | null;
 } {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:68',message:'Hook entry - before useState calls',data:{titleLength:title?.length,descriptionLength:description?.length,enabled:options.enabled},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
   const { debounceMs = TASK_BREAKDOWN_DEBOUNCE_MS, enabled = true } = options;
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:69',message:'Before useState breakdown',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
   const [breakdown, setBreakdown] = useState<TaskBreakdown | null>(null);
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:70',message:'Before useState isLoading',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
   const [isLoading, setIsLoading] = useState(false);
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:71',message:'Before useState error',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
   const [error, setError] = useState<Error | null>(null);
 
   // Create cache key
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:74',message:'Before useMemo cacheKey',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
   const cacheKey = useMemo(() => {
     const text = `${title}${description}`.trim();
-    return text.length > 0 ? hashText(text) : '';
+    const key = text.length > 0 ? hashText(text) : '';
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:77',message:'useMemo cacheKey computed',data:{cacheKey:key,textLength:text.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    return key;
   }, [title, description]);
 
   // Check cache first
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:80',message:'Before useMemo cachedBreakdown',data:{cacheKey},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
   const cachedBreakdown = useMemo(() => {
     if (!cacheKey) return null;
-    return breakdownCache.get(cacheKey) || null;
+    const cached = breakdownCache.get(cacheKey) || null;
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:83',message:'useMemo cachedBreakdown computed',data:{hasCached:!!cached},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    return cached;
   }, [cacheKey]);
 
   // Analyze task breakdown
@@ -208,7 +234,13 @@ export function useTaskBreakdown(
   }, [title, description, enabled, cachedBreakdown, cacheKey]);
 
   // Debounce analysis
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:211',message:'Before useEffect',data:{enabled,titleLength:title?.length,descriptionLength:description?.length,hasCachedBreakdown:!!cachedBreakdown},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+  // #endregion
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useTaskBreakdown.ts:213',message:'useEffect executing',data:{enabled},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     if (!enabled) {
       setBreakdown(null);
       setIsLoading(false);

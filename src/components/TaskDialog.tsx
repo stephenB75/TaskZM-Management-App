@@ -633,11 +633,17 @@ export function TaskDialog({
     useState(false);
 
   // AI Task Breakdown - Real-time analysis
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskDialog.tsx:636',message:'useTaskBreakdown hook entry',data:{title:title?.substring(0,20),description:description?.substring(0,20),titleLength:title?.length,descriptionLength:description?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   const { breakdown, isLoading: isBreakdownLoading } = useTaskBreakdown(
     title,
     description,
     { debounceMs: 300, enabled: true }
   );
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskDialog.tsx:641',message:'useTaskBreakdown hook exit',data:{hasBreakdown:!!breakdown,isLoading:isBreakdownLoading},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
 
   // Helper function to update scheduled time
   const updateScheduledTime = (
