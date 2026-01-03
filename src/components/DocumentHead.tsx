@@ -17,30 +17,37 @@ export function DocumentHead() {
       const existingFavicons = document.querySelectorAll("link[rel~='icon']");
       existingFavicons.forEach((link) => link.remove());
       
-      // Use appIcon directly without cache busting to avoid service worker issues
-      // The browser will handle caching appropriately
-      const faviconUrl = appIcon;
+      // Use favicon.ico for the main favicon (smaller, optimized for browser tabs)
+      // This prevents the icon from being too large and touching borders
+      const faviconLink = document.createElement("link");
+      faviconLink.rel = "icon";
+      faviconLink.type = "image/x-icon";
+      faviconLink.href = "/favicon.ico";
+      document.head.appendChild(faviconLink);
       
-      // Create new favicon link
-      const link = document.createElement("link");
-      link.rel = "icon";
-      link.type = "image/png";
-      link.href = faviconUrl;
-      document.head.appendChild(link);
+      // Add PNG favicons with proper sizes for different use cases
+      // Small size for browser tabs (16x16 or 32x32)
+      const link32 = document.createElement("link");
+      link32.rel = "icon";
+      link32.type = "image/png";
+      link32.sizes = "32x32";
+      link32.href = "/icon-192.png"; // Browser will scale down automatically
+      document.head.appendChild(link32);
       
-      // Also set sizes for better browser support
+      // Medium size for browser bookmarks
       const link192 = document.createElement("link");
       link192.rel = "icon";
       link192.type = "image/png";
       link192.sizes = "192x192";
-      link192.href = faviconUrl;
+      link192.href = "/icon-192.png";
       document.head.appendChild(link192);
       
+      // Large size for PWA and high-DPI displays
       const link512 = document.createElement("link");
       link512.rel = "icon";
       link512.type = "image/png";
       link512.sizes = "512x512";
-      link512.href = faviconUrl;
+      link512.href = "/icon-512.png";
       document.head.appendChild(link512);
     };
 
