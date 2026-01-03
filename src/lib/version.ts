@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.8';
-export const VERSION_NAME = 'Error Resilience & Stability Improvements';
-export const VERSION_DATE = 'December 20, 2025';
-export const BUILD_NUMBER = '20251220-1';
+export const APP_VERSION = '1.0.9';
+export const VERSION_NAME = 'TypeScript & Architecture Improvements';
+export const VERSION_DATE = 'January 15, 2025';
+export const BUILD_NUMBER = '20250115-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,23 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.9',
+    date: 'January 15, 2025',
+    name: 'TypeScript & Architecture Improvements',
+    changes: [
+      'Refactored calendar events cache management: moved clearCalendarEventsCache to lib/calendar-events-cache.ts to break circular dependency',
+      'Resolved circular dependency between TaskContext and TeamContext by removing direct TeamContext import',
+      'Resolved circular dependency between useCalendarEvents and CalendarContext by extracting cache management',
+      'Enhanced TypeScript type safety with explicit type annotations in task filters and logging functions',
+      'Improved AIRecommendationPanel async handling for scheduling tasks with proper Promise await',
+      'Added comprehensive agent logging infrastructure across App, SettingsPanel, Calendar, Subscription, Task, and Team contexts',
+      'Enhanced error handling patterns with consistent logging structure for better debugging and monitoring',
+      'Improved context defaults consistency across all context providers to prevent crashes during development',
+      'Fixed type guards for safe property access on union types in AppSidebar and SevenDayKanban components',
+      'Updated context fallback patterns to use type-safe default factory functions',
+    ],
+  },
   {
     version: '1.0.8',
     date: 'December 20, 2025',
