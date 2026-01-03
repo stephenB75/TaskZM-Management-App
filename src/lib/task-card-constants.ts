@@ -788,6 +788,10 @@ export const TASK_CARD_DROPDOWN = {
     cardOffset: {
       left: TASK_CARD_CALCULATIONS.priorityLine.width + 8, // priority line width (4px) + gap-2 (8px) = 12px
     },
+    // Horizontal inset to respect task card corner radius (rounded-lg = 8px)
+    cornerInset: {
+      horizontal: 8, // 8px inset on each side to stay away from corner radius
+    },
   },
   text: {
     description: 'Description',

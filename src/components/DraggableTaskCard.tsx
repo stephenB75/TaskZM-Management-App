@@ -993,8 +993,9 @@ export const DraggableTaskCard = React.forwardRef<
             className="rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden"
             style={{
               marginTop: `${TASK_CARD_DROPDOWN.spacing.attachmentGap}px`,
-              marginLeft: `${TASK_CARD_DROPDOWN.spacing.cardOffset.left}px`,
-              width: `calc(100% - ${TASK_CARD_DROPDOWN.spacing.cardOffset.left}px)`,
+              marginLeft: `${TASK_CARD_DROPDOWN.spacing.cardOffset.left + TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
+              marginRight: `${TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
+              width: `calc(100% - ${TASK_CARD_DROPDOWN.spacing.cardOffset.left + (TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal * 2)}px)`,
               backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
               borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
               maxHeight: isDropdownOpen ? 'none' : 'auto',
