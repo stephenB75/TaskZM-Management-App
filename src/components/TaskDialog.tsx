@@ -3044,299 +3044,13 @@ export function TaskDialog({
               </TabsContent>
 
               {/* Advanced Tab - Removed (merged into Organization) */}
-                  {/* Recurrence with Toggle */}
-                  <div className="space-y-4 sm:space-y-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Repeat className="w-4 h-4 text-primary" />
-                        <Label className="text-sm font-semibold">Repeat Task</Label>
-                        {!hasFeature('recurringTasks') && (
-                          <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
-                            PRO
-                          </Badge>
-                        )}
-                      </div>
-                      <Switch
-                        checked={recurrenceType !== "none"}
-                        onCheckedChange={(checked) => {
-                          if (!hasFeature('recurringTasks')) {
-                            // Dispatch event to trigger upgrade prompt (recurring tasks available in Pro Monthly)
-                            window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
-                              detail: { feature: 'recurringTasks' } 
-                            }));
-                            if (onShowUpgradePrompt) {
-                              onShowUpgradePrompt('recurringTasks');
-                            }
-                            return;
-                          }
-                          if (!checked) {
-                            setRecurrenceType("none");
-                            setRecurrenceDaysOfWeek([]);
-                            setRecurrenceDayOfMonth(undefined);
-                            setRecurrenceEndDate(undefined);
-                          } else {
-                            setRecurrenceType("daily");
-                          }
-                        }}
-                        disabled={!hasFeature('recurringTasks')}
-                      />
-                    </div>
-
-                    {recurrenceType !== "none" && (
-                      <div className="space-y-4 sm:space-y-5 pl-6 border-l-2 border-primary/20">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-xs sm:text-sm font-medium">Frequency</Label>
-                            <Select
-                              value={recurrenceType}
-                              onValueChange={(value) => {
-                                try {
-                                  const newType = value as RecurrenceType;
-                                  setRecurrenceType(newType);
-                                  
-                                  if (newType === "none") {
-                                    setRecurrenceDaysOfWeek([]);
-                                    setRecurrenceDayOfMonth(undefined);
-                                    setRecurrenceEndDate(undefined);
-                                  } else if (newType === "daily") {
-                                    setRecurrenceDaysOfWeek([]);
-                                    setRecurrenceDayOfMonth(undefined);
-                                  } else if (newType === "weekly") {
-                                    setRecurrenceDayOfMonth(undefined);
-                                  } else if (newType === "monthly") {
-                                    setRecurrenceDaysOfWeek([]);
-                                    setRecurrenceDayOfMonth((prev) => prev || 1);
-                                  }
-                                } catch (error) {
-                                  logger.error('Error setting recurrence type:', error);
-                                  toast.error('Failed to set recurrence type', {
-                                    description: error instanceof Error ? error.message : 'Please try again',
-                                    duration: TOAST_DURATION_SHORT_MS,
-                                  });
-                                }
-                              }}
-                            >
-                          <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Repeat Every</span>
-                          <span className="font-medium text-primary">{recurrenceInterval} {recurrenceType === "daily" ? "day(s)" : recurrenceType === "weekly" ? "week(s)" : "month(s)"}</span>
-                        </div>
-                        <Slider
-                          value={[recurrenceInterval]}
-                          onValueChange={(values) => setRecurrenceInterval(values[0])}
-                          min={1}
-                          max={30}
-                          step={1}
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-
-                        {/* Weekly: Days of Week */}
-                    {recurrenceType === "weekly" && (
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Repeat on</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
-                            <Badge
-                              key={index}
-                              variant={
-                                recurrenceDaysOfWeek.includes(index)
-                                  ? "default"
-                                  : "outline"
-                              }
-                              className={cn(
-                                "cursor-pointer border-primary/20",
-                                recurrenceDaysOfWeek.includes(index)
-                                  ? "bg-primary text-primary-foreground"
-                                  : "hover:bg-primary/10"
-                              )}
-                              onClick={() => {
-                                if (recurrenceDaysOfWeek.includes(index)) {
-                                  setRecurrenceDaysOfWeek(
-                                    recurrenceDaysOfWeek.filter((d) => d !== index),
-                                  );
-                                } else {
-                                  setRecurrenceDaysOfWeek(
-                                    [...recurrenceDaysOfWeek, index].sort(),
-                                  );
-                                }
-                              }}
-                            >
-                              {day}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Monthly: Day of Month */}
-                    {recurrenceType === "monthly" && (
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Day of month</Label>
-                        <Select
-                          value={recurrenceDayOfMonth?.toString() || "1"}
-                          onValueChange={(value) =>
-                            setRecurrenceDayOfMonth(parseInt(value))
-                          }
-                        >
-                          <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent 
-                          className="max-h-60"
-                          style={{ zIndex: Z_INDEX.SELECT_CONTENT }}
-                        >
-                            {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                              <SelectItem key={day} value={day.toString()}>
-                                {day}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {/* End Date for Recurrence */}
-                    {(recurrenceType === "daily" || recurrenceType === "weekly" || recurrenceType === "monthly") && (
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Ends</Label>
-                        <div className="w-full flex justify-center py-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                          <SingleDateMiniCalendar
-                            selectedDate={recurrenceEndDate}
-                            onDateSelect={(date) => {
-                              setRecurrenceEndDate(date);
-                            }}
-                            label="End Date"
-                          />
-                        </div>
-                        {!recurrenceEndDate && (
-                          <p className="text-xs text-muted-foreground text-center">
-                            No end date set - task will repeat indefinitely
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                        {/* Recurrence Summary */}
-                        {(recurrenceType === "daily" || recurrenceType === "weekly" || recurrenceType === "monthly") && (
-                          <div className="p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                            <p className="text-xs text-muted-foreground">
-                              {recurrenceType === "daily" &&
-                                `Repeats every ${recurrenceInterval} day${recurrenceInterval > 1 ? "s" : ""}`}
-                              {recurrenceType === "weekly" && (
-                                <>
-                                  Repeats every {recurrenceInterval} week{recurrenceInterval > 1 ? "s" : ""}
-                                  {recurrenceDaysOfWeek.length > 0 &&
-                                    ` on ${recurrenceDaysOfWeek.map((d) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]).join(", ")}`}
-                                </>
-                              )}
-                              {recurrenceType === "monthly" &&
-                                `Repeats every ${recurrenceInterval} month${recurrenceInterval > 1 ? "s" : ""} on day ${recurrenceDayOfMonth || 1}`}
-                              {recurrenceEndDate &&
-                                ` until ${formatDate(recurrenceEndDate.toISOString())}`}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <Separator className="bg-primary/20" />
-
-                  {/* Team Assignment */}
-                  {teamMembers.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-primary" />
-                        <Label className="text-sm font-semibold">Assign To</Label>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Select team members to assign this task
-                      </p>
-
-                      <Select
-                        value={selectedAssigneeValue || undefined}
-                        onValueChange={(value) => {
-                          if (value && !assignedTo.includes(value)) {
-                            setAssignedTo([...assignedTo, value]);
-                            // Reset the select after adding
-                            setSelectedAssigneeValue("");
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
-                          <SelectValue placeholder="Add assignee..." />
-                        </SelectTrigger>
-                        <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                          {teamMembers
-                            .filter((member) => !assignedTo.includes(member.id))
-                            .map((member) => (
-                              <SelectItem key={member.id} value={member.id}>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-xs font-medium">
-                                    {member.name
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")
-                                      .toUpperCase()}
-                                  </div>
-                                  <span>{member.name}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-
-                      {assignedTo.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {assignedTo.map((memberId) => {
-                            const member = getTeamMember(memberId);
-                            if (!member) return null;
-
-                            return (
-                              <Badge
-                                key={memberId}
-                                variant="secondary"
-                                className="cursor-pointer hover:bg-destructive/10 transition-colors border-primary/20"
-                                onClick={() =>
-                                  setAssignedTo(assignedTo.filter((id) => id !== memberId))
-                                }
-                              >
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
-                                    {getInitials(member.name)}
-                                  </div>
-                                  <span>{member.name}</span>
-                                  <X className="w-3 h-3 ml-1" />
-                                </div>
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <Separator className="bg-primary/20" />
 
             </div>
           </Tabs>
 
           {/* Footer Actions - Single Set for All Tabs */}
           <div 
-            className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6 border-t-2 border-primary/30 bg-background dark:bg-background rounded-b-lg" 
+            className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6 border-t-2 border-primary/30 bg-white dark:bg-card rounded-b-lg" 
             style={{ 
               marginLeft: '-1.5rem',
               marginRight: '-1.5rem',
@@ -3353,7 +3067,7 @@ export function TaskDialog({
                   type="button"
                   variant="outline"
                   onClick={handleDuplicate}
-                  className="gap-1.5 sm:gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 px-4 text-sm font-medium"
+                  className="gap-1.5 sm:gap-2 border-2 border-primary/30 bg-white dark:bg-card hover:border-primary hover:bg-primary/10 text-foreground h-10 px-4 text-sm font-medium"
                 >
                   <Copy className="w-4 h-4" />
                   <span className="hidden sm:inline">Duplicate</span>
@@ -3364,7 +3078,7 @@ export function TaskDialog({
                     type="button"
                     variant="destructive"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="gap-1.5 sm:gap-2 h-10 px-4 text-sm font-medium"
+                    className="gap-1.5 sm:gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 text-sm font-medium"
                   >
                     <Trash2 className="w-4 h-4" />
                     <span className="hidden sm:inline">Delete</span>
@@ -3380,7 +3094,7 @@ export function TaskDialog({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 px-5 text-sm font-medium flex-1 sm:flex-initial"
+                className="border-2 border-primary/30 bg-white dark:bg-card hover:border-primary hover:bg-primary/10 text-foreground h-10 px-5 text-sm font-medium flex-1 sm:flex-initial"
               >
                 Cancel
               </Button>
