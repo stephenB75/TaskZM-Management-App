@@ -343,15 +343,9 @@ export const DraggableTaskCard = React.forwardRef<
         // Calculate spacing based on component combination
         // For tasks 35 mins or less: use optimized spacing
         if (isVeryShortTaskInCalc) {
-          if (hasSubtasks) {
-            bottomRowSpacing = 10; // Reduced spacing when subtasks are present (they add their own spacing)
-          } else {
-            bottomRowSpacing = 14; // Reduced spacing without subtasks
-          }
+          bottomRowSpacing = 14; // Reduced spacing
         } else {
-          bottomRowSpacing = hasSubtasks
-            ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced // 16px
-            : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard; // 20px
+          bottomRowSpacing = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard; // 20px
         }
         
         // Add bottom padding for the bottom row container to prevent tracker from being cut off
@@ -396,25 +390,7 @@ export const DraggableTaskCard = React.forwardRef<
         baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime;
         }
         
-      // AUTO-ADJUST: Subtasks (if present)
-      // Calculate subtask height with minimal spacing between items
-      // For tasks under 20 mins, use even more compact spacing
-        if (hasSubtasks) {
-        const subtaskCount = Math.min(task.subtasks.length, 3);
-        const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight; // 14px per item
-        // For tasks under 35 mins: use minimal spacing (1px mobile, 2px desktop)
-        // For other tasks: use standard spacing (2px mobile, 4px desktop)
-        const subtaskSpacing = isMobile 
-          ? (isVeryShortTaskInCalc ? 1 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.mobile) // 1px or 2px on mobile
-          : (isVeryShortTaskInCalc ? 2 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.desktop); // 2px or 4px on desktop
-        // Calculate total subtask height: items + spacing between items
-          const subtaskHeight = subtaskCount * subtaskItemHeight + 
-          (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
-        // For tasks under 35 mins: use optimized top spacing (2px minimal spacing before subtasks)
-        // For other tasks: use standard top spacing (6px)
-        const subtaskTopSpacing = isVeryShortTaskInCalc ? 2 : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing;
-        baseHeight += subtaskHeight + subtaskTopSpacing;
-        }
+      // Subtasks are now in dropdown tab, not in main card - no height calculation needed
         
       // Step 3: Enforce bounds - the standard height IS the absolute minimum
       // Since we started with standardHeight and only added to it, baseHeight should always be >= standardHeight
@@ -723,70 +699,6 @@ export const DraggableTaskCard = React.forwardRef<
           })()}
 
 
-          {/* Subtasks Display */}
-          {task.subtasks && task.subtasks.length > 0 && (
-            <div className={cn(
-              // For tasks under 35 mins: use extra compact padding
-              // For other tasks: use standard padding to prevent overlapping
-              isVeryShortTask
-                ? (isMobile ? "pt-1 pb-0.5" : "pt-1.5 pb-1")
-                : (isMobile ? "pt-1.5 pb-1" : "pt-2 pb-1.5"),
-              // For tasks under 35 mins: use minimal spacing between subtasks
-              // For other tasks: use standard spacing
-              isVeryShortTask
-                ? (isMobile ? "space-y-0.5" : "space-y-0.5")
-                : (isMobile ? "space-y-0.5" : "space-y-1")
-            )}>
-              {task.subtasks.slice(0, 3).map((subtask) => {
-                const handleSubtaskToggle = async (e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  const updatedSubtasks = task.subtasks.map((st) =>
-                    st.id === subtask.id
-                      ? { ...st, completed: !st.completed }
-                      : st
-                  );
-                  await updateTask(task.id, { subtasks: updatedSubtasks });
-                };
-
-                return (
-                  <div
-                    key={subtask.id}
-                    className={cn(
-                      "flex items-center cursor-pointer hover:opacity-80 transition-opacity",
-                      isMobile ? "gap-1" : "gap-1.5"
-                    )}
-                    onClick={handleSubtaskToggle}
-                  >
-                    <div
-                      className={cn(
-                        "rounded-sm border flex-shrink-0 transition-colors",
-                        isMobile ? "w-2 h-2" : "w-2.5 h-2.5",
-                        subtask.completed
-                          ? "bg-primary border-primary"
-                          : "border-gray-300 dark:border-border hover:border-primary/50",
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "leading-tight",
-                        isMobile ? TASK_CARD_FONT_SIZES.subtask.mobile : TASK_CARD_FONT_SIZES.subtask.desktop,
-                        subtask.completed
-                          ? `${TASK_CARD_TEXT_COLORS.subtaskCompleted} line-through`
-                          : "text-gray-600 dark:text-gray-200",
-                      )}
-                    >
-                      {subtask.title}
-                    </span>
-                  </div>
-                );
-              })}
-                {task.subtasks.length > 3 && (
-                  <div className={cn(TASK_CARD_TEXT_COLORS.subtaskCompleted, isMobile ? `${TASK_CARD_FONT_SIZES.subtask.mobile} pl-3` : `${TASK_CARD_FONT_SIZES.subtask.desktop} pl-4`)}>
-                    {TASK_CARD_TEXT.moreSubtasks(task.subtasks.length - 3)}
-                  </div>
-                )}
-            </div>
-          )}
 
           {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
           {shouldRenderInlineBottomRow ? (
@@ -796,21 +708,12 @@ export const DraggableTaskCard = React.forwardRef<
             // CRITICAL: Use justify-between to ensure assignee stays left and tracker stays right
             <div className={cn(
               "flex items-center justify-between border-t border-gray-200/50 dark:border-border/50",
-              // For tasks under 35 mins: extra compact spacing based on component presence
-              // - With subtasks: minimal spacing (subtasks already have their own spacing)
-              // - Without subtasks but with description: compact spacing
-              // - Without subtasks or description: standard compact spacing
+              // For tasks under 35 mins: extra compact spacing
               // Bottom padding: pb-1.5 (6px) mobile, pb-2 (8px) desktop for tasks under 35 mins
               // Bottom padding: pb-2 (8px) mobile, pb-2.5 (10px) desktop for other short tasks
               isVeryShortTask
-                ? (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1 mt-0.5 pt-0.5 pb-1.5" : "gap-1.5 mt-1 pt-1 pb-2" // pb-1.5 (6px) mobile, pb-2 (8px) desktop
-                    : (task.description
-                        ? isMobile ? "gap-1 mt-1 pt-1 pb-1.5" : "gap-1.5 mt-1.5 pt-1.5 pb-2" // pb-1.5 (6px) mobile, pb-2 (8px) desktop
-                        : isMobile ? "gap-1 mt-1.5 pt-1.5 pb-1.5" : "gap-1.5 mt-2 pt-2 pb-2")) // pb-1.5 (6px) mobile, pb-2 (8px) desktop
-                : (task.subtasks && task.subtasks.length > 0
-                    ? isMobile ? "gap-1.5 mt-1 pt-1 pb-2" : "gap-2 mt-1.5 pt-1.5 pb-2.5" // pb-2 (8px) mobile, pb-2.5 (10px) desktop
-                    : isMobile ? "gap-1.5 mt-2 pt-2 pb-2" : "gap-2 mt-2.5 pt-2.5 pb-2.5") // pb-2 (8px) mobile, pb-2.5 (10px) desktop
+                ? (isMobile ? "gap-1 mt-1.5 pt-1.5 pb-1.5" : "gap-1.5 mt-2 pt-2 pb-2") // pb-1.5 (6px) mobile, pb-2 (8px) desktop
+                : (isMobile ? "gap-1.5 mt-2 pt-2 pb-2" : "gap-2 mt-2.5 pt-2.5 pb-2.5") // pb-2 (8px) mobile, pb-2.5 (10px) desktop
             )}>
               {/* Left: Assigned Users - Always render container to maintain layout, even if empty */}
               <div className="flex items-center gap-1 flex-1 min-w-0">
@@ -1040,11 +943,15 @@ export const DraggableTaskCard = React.forwardRef<
         {/* Dropdown Tab - Colored accordion tab at bottom */}
         {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (
           <div 
-            className="mt-1 rounded-b-lg transition-all duration-200 overflow-hidden"
+            className={cn(
+              "mt-1 rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden",
+              isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
+            )}
             style={{
               backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
               borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
-              maxHeight: isDropdownOpen ? '500px' : 'auto',
+              maxHeight: isDropdownOpen ? '500px' : '40px',
+              transition: 'max-height 0.3s ease-in-out',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1069,15 +976,16 @@ export const DraggableTaskCard = React.forwardRef<
               )}
             </button>
 
-            {/* Accordion Content */}
-            {isDropdownOpen && (
-              <div
-                className="px-2 pb-2 rounded-b-lg"
-                style={{
-                  transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
-                  backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
-                }}
-              >
+            {/* Accordion Content - Slides down smoothly */}
+            <div
+              className={cn(
+                "px-2 pb-2 rounded-b-lg transition-all duration-300 ease-in-out",
+                isDropdownOpen ? "opacity-100 max-h-[500px]" : "opacity-0 max-h-0 overflow-hidden"
+              )}
+              style={{
+                backgroundColor: isDark ? TASK_CARD_DROPDOWN_COLORS.background.dark : TASK_CARD_DROPDOWN_COLORS.background.light,
+              }}
+            >
                 <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
                   <TabsList 
                     className="h-7 w-full justify-start bg-transparent p-0 gap-1"
@@ -1146,38 +1054,51 @@ export const DraggableTaskCard = React.forwardRef<
 
                   {task.subtasks && task.subtasks.length > 0 && (
                     <TabsContent value="subtasks" className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                      {task.subtasks.map((subtask) => (
-                        <div
-                          key={subtask.id}
-                          className={cn(
-                            "flex items-center gap-2 p-1.5 rounded text-xs",
-                            isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
-                          )}
-                        >
+                      {task.subtasks.map((subtask) => {
+                        const handleSubtaskToggle = async (e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          const updatedSubtasks = task.subtasks.map((st) =>
+                            st.id === subtask.id
+                              ? { ...st, completed: !st.completed }
+                              : st
+                          );
+                          await updateTask(task.id, { subtasks: updatedSubtasks });
+                        };
+
+                        return (
                           <div
+                            key={subtask.id}
                             className={cn(
-                              "w-3 h-3 rounded-sm border flex-shrink-0",
-                              subtask.completed
-                                ? "bg-primary border-primary"
-                                : isDark 
-                                  ? "border-gray-600"
-                                  : "border-gray-300"
+                              "flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity",
+                              isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
                             )}
-                          />
-                          <span
-                            className={cn(
-                              "flex-1 text-xs",
-                              subtask.completed
-                                ? "line-through opacity-60"
-                                : isDark
-                                  ? "text-gray-100"
-                                  : "text-gray-800"
-                            )}
+                            onClick={handleSubtaskToggle}
                           >
-                            {subtask.title}
-                          </span>
-                        </div>
-                      ))}
+                            <div
+                              className={cn(
+                                "w-3 h-3 rounded-sm border flex-shrink-0 transition-colors",
+                                subtask.completed
+                                  ? "bg-primary border-primary"
+                                  : isDark 
+                                    ? "border-gray-600 hover:border-primary/50"
+                                    : "border-gray-300 hover:border-primary/50"
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "flex-1 text-xs",
+                                subtask.completed
+                                  ? "line-through opacity-60"
+                                  : isDark
+                                    ? "text-gray-100"
+                                    : "text-gray-800"
+                              )}
+                            >
+                              {subtask.title}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </TabsContent>
                   )}
 
@@ -1223,7 +1144,6 @@ export const DraggableTaskCard = React.forwardRef<
                   )}
                 </Tabs>
               </div>
-            )}
           </div>
         )}
       </div>
