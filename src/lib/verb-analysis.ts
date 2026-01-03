@@ -394,7 +394,6 @@ function matchesVerb(word: string): { verb: string; effort: number } | null {
 export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb: string } {
   // Validate task input
   if (!task) {
-    console.warn('⚠️ analyzeTaskVerbs: No task provided');
     return { effortScore: 2.5, primaryVerb: 'unknown' };
   }
   
@@ -403,25 +402,13 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
   const description = (task.description || '').trim();
   const text = `${title} ${description}`.toLowerCase().trim();
   
-  console.log('🔬 analyzeTaskVerbs: Analyzing text', {
-    taskId: task.id,
-    taskTitle: title,
-    text,
-    textLength: text.length,
-  });
-  
   if (!text || text.length === 0) {
-    console.log('⚠️ analyzeTaskVerbs: No text to analyze, using default');
     return { effortScore: 2.5, primaryVerb: 'unknown' };
   }
   
   // Split by spaces and also handle common separators
   // Improved regex to handle more cases: spaces, hyphens, underscores, and common punctuation
   const words = text.split(/[\s\-_.,!?;:()\[\]{}'"]+/).filter(w => w.length > 0);
-  
-  console.log('🔬 analyzeTaskVerbs: Words extracted', {
-    taskId: task.id,
-    wordCount: words.length,
     words: words.slice(0, 15), // Log first 15 words for better debugging
     fullText: text,
   });
@@ -438,40 +425,17 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
     // Check for verb match (exact or base form)
     const match = matchesVerb(word);
     if (match) {
-      console.log('✅ analyzeTaskVerbs: Found verb', {
-        taskId: task.id,
-        originalWord: word,
-        matchedVerb: match.verb,
-        effort: match.effort,
-        position: i,
-      });
       foundVerbs.push({ 
         verb: match.verb, 
         effort: match.effort, 
         position: i,
         originalWord: word 
       });
-    } else {
-      // Log words that didn't match for debugging
-      if (words.length <= 10) { // Only log for short tasks to avoid spam
-        console.log('🔍 analyzeTaskVerbs: Word did not match verb', {
-          taskId: task.id,
-          word,
-          position: i,
-        });
-      }
     }
   }
   
   // If no verbs found, use default medium effort
   if (foundVerbs.length === 0) {
-    console.log('⚠️ analyzeTaskVerbs: No verbs found, using default effort', {
-      taskId: task.id,
-      taskTitle: title,
-      wordsChecked: words.length,
-      allWords: words.slice(0, 20), // Show first 20 words for debugging
-      availableVerbs: ACTION_VERBS.slice(0, 10), // Show sample of available verbs
-    });
     return { effortScore: 2.5, primaryVerb: 'unknown' };
   }
   
@@ -490,20 +454,11 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
   
   // Validate effort score is a valid number
   if (typeof effortScore !== 'number' || isNaN(effortScore) || !isFinite(effortScore)) {
-    console.warn('⚠️ analyzeTaskVerbs: Invalid effort score, using default', { effortScore, foundVerbs });
     effortScore = 2.5;
   }
   
   // Clamp effort score between 1.0 and 5.0
   effortScore = Math.max(1.0, Math.min(5.0, effortScore));
-  
-  console.log('✅ analyzeTaskVerbs: Final result', {
-    taskId: task.id,
-    taskTitle: title,
-    primaryVerb,
-    effortScore,
-    totalVerbsFound: foundVerbs.length,
-  });
   
   return { 
     effortScore: typeof effortScore === 'number' && !isNaN(effortScore) ? effortScore : 2.5, 
@@ -517,7 +472,6 @@ export function analyzeTaskVerbs(task: Task): { effortScore: number; primaryVerb
  */
 export function calculateComplexity(task: Task): number {
   if (!task) {
-    console.warn('⚠️ calculateComplexity: No task provided');
     return 2.5; // Default medium complexity
   }
   
@@ -555,7 +509,6 @@ export function calculateComplexity(task: Task): number {
   
   // Validate complexity is a valid number
   if (typeof complexity !== 'number' || isNaN(complexity) || !isFinite(complexity)) {
-    console.warn('⚠️ calculateComplexity: Invalid complexity calculated, using default', { complexity, task });
     complexity = 2.5;
   }
   

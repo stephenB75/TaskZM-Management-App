@@ -98,10 +98,10 @@ export function useTaskBreakdown(
       return;
     }
 
-    // Check cache directly using current cacheKey
-    // Use cacheKey from closure, but verify it's valid
-    const currentCacheKey = `${title}${description}`.trim();
-    const hashKey = currentCacheKey.length > 0 ? hashText(currentCacheKey) : '';
+    // Check cache directly using current text (not from closure)
+    // Recompute hash to ensure we're using current values
+    const currentText = `${title}${description}`.trim();
+    const hashKey = currentText.length > 0 ? hashText(currentText) : '';
     if (hashKey && breakdownCache.has(hashKey)) {
       const cached = breakdownCache.get(hashKey);
       if (cached) {
@@ -189,13 +189,14 @@ export function useTaskBreakdown(
             confidence: domainDetection.confidence,
           };
 
-          // Cache result
-          if (cacheKey) {
-            breakdownCache.set(cacheKey, result);
+          // Cache result using current hash (not from closure)
+          const resultHashKey = currentText.length > 0 ? hashText(currentText) : '';
+          if (resultHashKey) {
+            breakdownCache.set(resultHashKey, result);
             // Limit cache size
             if (breakdownCache.size > TASK_BREAKDOWN_CACHE_SIZE) {
               const firstKey = breakdownCache.keys().next().value;
-              if (firstKey) {
+              if (firstKey !== undefined) {
                 breakdownCache.delete(firstKey);
               }
             }
@@ -214,7 +215,7 @@ export function useTaskBreakdown(
       setError(error);
       setIsLoading(false);
     }
-  }, [title, description, enabled, cacheKey]);
+  }, [title, description, enabled]);
 
   // Debounce analysis
   useEffect(() => {
