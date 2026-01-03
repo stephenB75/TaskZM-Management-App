@@ -72,7 +72,7 @@ const getTwoWeekDateRange = () => {
 };
 
 export function InboxView() {
-  const { tasks, addTask, bulkDeleteTasks } = useTasks();
+  const { tasks, addTask, bulkDeleteTasks, updateTask } = useTasks();
   const { getTeamMember } = useTeam();
   const permissionsResult = usePermissions();
   const permissions = permissionsResult || {
