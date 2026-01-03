@@ -1006,9 +1006,14 @@ export const DraggableTaskCard = React.forwardRef<
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={cn(
-                "w-full flex items-center justify-between font-medium transition-colors rounded-b-lg",
-                isDark ? "hover:opacity-50" : "hover:opacity-50"
+                "w-full flex items-center justify-between font-medium transition-colors rounded-b-lg"
               )}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = `${1 - TASK_CARD_DROPDOWN_COLORS.hover.opacity}`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
               style={{
                 paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.header.paddingX}px`,
                 paddingRight: `${TASK_CARD_DROPDOWN.dimensions.header.paddingX}px`,
@@ -1212,7 +1217,14 @@ export const DraggableTaskCard = React.forwardRef<
                   </TabsList>
 
                   {task.description && (
-                    <TabsContent value="description" className="mt-2 p-2 rounded">
+                    <TabsContent 
+                      value="description" 
+                      className="rounded"
+                      style={{
+                        marginTop: `${TASK_CARD_DROPDOWN.dimensions.content.marginTop}px`,
+                        padding: `${TASK_CARD_DROPDOWN.dimensions.content.padding}px`,
+                      }}
+                    >
                       <div
                         className="break-words"
                         style={{
@@ -1228,7 +1240,15 @@ export const DraggableTaskCard = React.forwardRef<
                   )}
 
                   {task.subtasks && task.subtasks.length > 0 && (
-                    <TabsContent value="subtasks" className="mt-2 space-y-1">
+                    <TabsContent 
+                      value="subtasks"
+                      style={{
+                        marginTop: `${TASK_CARD_DROPDOWN.dimensions.content.marginTop}px`,
+                        gap: `${TASK_CARD_DROPDOWN.dimensions.subtask.gap / 2}px`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
                       {task.subtasks.map((subtask) => {
                         const handleSubtaskToggle = async (e: React.MouseEvent) => {
                           e.stopPropagation();
@@ -1243,33 +1263,47 @@ export const DraggableTaskCard = React.forwardRef<
                         return (
                           <div
                             key={subtask.id}
-                            className={cn(
-                              "flex items-center gap-2 p-1.5 rounded cursor-pointer hover:opacity-80 transition-opacity",
-                              isDark ? "hover:bg-gray-800/30" : "hover:bg-gray-100/50"
-                            )}
+                            className="flex items-center rounded cursor-pointer transition-opacity"
+                            style={{
+                              fontSize: `${dropdownFontSize}px`,
+                              gap: `${TASK_CARD_DROPDOWN.dimensions.subtask.gap}px`,
+                              padding: `${TASK_CARD_DROPDOWN.dimensions.subtask.padding}px`,
+                              opacity: subtask.completed ? TASK_CARD_DROPDOWN_COLORS.subtask.completed.opacity : 1,
+                            }}
                             onClick={handleSubtaskToggle}
-                            style={{ fontSize: `${dropdownFontSize}px` }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = isDark 
+                                ? TASK_CARD_DROPDOWN_COLORS.subtask.hover.background.dark 
+                                : TASK_CARD_DROPDOWN_COLORS.subtask.hover.background.light;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                           >
                             <div
-                              className={cn(
-                                "w-3 h-3 rounded-sm border flex-shrink-0 transition-colors",
-                                subtask.completed
-                                  ? "bg-primary border-primary"
-                                  : isDark 
-                                    ? "border-gray-600 hover:border-primary/50"
-                                    : "border-gray-300 hover:border-primary/50"
-                              )}
+                              className="rounded-sm border flex-shrink-0 transition-colors"
+                              style={{
+                                width: `${TASK_CARD_DROPDOWN.dimensions.subtask.checkbox.size}px`,
+                                height: `${TASK_CARD_DROPDOWN.dimensions.subtask.checkbox.size}px`,
+                                backgroundColor: subtask.completed ? COLOR_PRIMARY : 'transparent',
+                                borderColor: subtask.completed 
+                                  ? COLOR_PRIMARY 
+                                  : (isDark 
+                                      ? TASK_CARD_DROPDOWN_COLORS.subtask.border.dark 
+                                      : TASK_CARD_DROPDOWN_COLORS.subtask.border.light),
+                              }}
                             />
                             <span
                               className={cn(
                                 "flex-1",
-                                subtask.completed
-                                  ? "line-through opacity-60"
-                                  : isDark
-                                    ? "text-gray-100"
-                                    : "text-gray-800"
+                                subtask.completed && "line-through"
                               )}
-                              style={{ fontSize: `${dropdownFontSize}px` }}
+                              style={{
+                                fontSize: `${dropdownFontSize}px`,
+                                color: isDark 
+                                  ? TASK_CARD_DROPDOWN_COLORS.subtask.text.dark 
+                                  : TASK_CARD_DROPDOWN_COLORS.subtask.text.light,
+                              }}
                             >
                               {subtask.title}
                             </span>
@@ -1280,39 +1314,62 @@ export const DraggableTaskCard = React.forwardRef<
                   )}
 
                   {task.dependencies && task.dependencies.length > 0 && (
-                    <TabsContent value="dependencies" className="mt-2 space-y-1">
+                    <TabsContent 
+                      value="dependencies"
+                      style={{
+                        marginTop: `${TASK_CARD_DROPDOWN.dimensions.content.marginTop}px`,
+                        gap: `${TASK_CARD_DROPDOWN.dimensions.dependency.gap / 2}px`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
                       {task.dependencies.map((depId) => {
                         const depTask = tasks.find((t) => t?.id === depId);
                         if (!depTask) return null;
                         const isComplete = depTask.status === "done";
+                        const depColors = isComplete 
+                          ? TASK_CARD_DROPDOWN_COLORS.dependency.complete
+                          : TASK_CARD_DROPDOWN_COLORS.dependency.incomplete;
                         
                         return (
                           <div
                             key={depId}
-                            className={cn(
-                              "flex items-center gap-2 p-1.5 rounded",
-                              isComplete
-                                ? isDark ? "bg-green-950/20 border border-green-800/30" : "bg-green-50/50 border border-green-200"
-                                : isDark ? "bg-amber-950/20 border border-amber-800/30" : "bg-amber-50/50 border border-amber-200"
-                            )}
-                            style={{ fontSize: `${dropdownFontSize}px` }}
+                            className="flex items-center rounded"
+                            style={{
+                              fontSize: `${dropdownFontSize}px`,
+                              gap: `${TASK_CARD_DROPDOWN.dimensions.dependency.gap}px`,
+                              padding: `${TASK_CARD_DROPDOWN.dimensions.dependency.padding}px`,
+                              backgroundColor: isDark ? depColors.background.dark : depColors.background.light,
+                              border: `1px solid ${isDark ? depColors.border.dark : depColors.border.light}`,
+                            }}
                           >
                             <div
-                              className={cn(
-                                "w-3 h-3 rounded-full flex items-center justify-center flex-shrink-0",
-                                isComplete ? "bg-green-500" : "bg-amber-500"
-                              )}
+                              className="rounded-full flex items-center justify-center flex-shrink-0"
+                              style={{
+                                width: `${TASK_CARD_DROPDOWN.dimensions.dependency.indicator.size}px`,
+                                height: `${TASK_CARD_DROPDOWN.dimensions.dependency.indicator.size}px`,
+                                backgroundColor: depColors.indicator,
+                              }}
                             >
-                              {isComplete && <span className="text-white text-[8px]">✓</span>}
+                              {isComplete && (
+                                <span 
+                                  style={{ 
+                                    fontSize: `${TASK_CARD_DROPDOWN.fontSizes.tiny}px`,
+                                    color: COLOR_TEXT_WHITE,
+                                  }}
+                                >
+                                  ✓
+                                </span>
+                              )}
                             </div>
                             <span
-                              className={cn(
-                                "flex-1 truncate",
-                                isDark
-                                  ? "text-gray-100"
-                                  : "text-gray-800"
-                              )}
-                              style={{ fontSize: `${dropdownFontSize}px` }}
+                              className="flex-1 truncate"
+                              style={{
+                                fontSize: `${dropdownFontSize}px`,
+                                color: isDark 
+                                  ? TASK_CARD_DROPDOWN_COLORS.dependency.text.dark 
+                                  : TASK_CARD_DROPDOWN_COLORS.dependency.text.light,
+                              }}
                             >
                               {depTask.title}
                             </span>

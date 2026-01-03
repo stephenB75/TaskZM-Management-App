@@ -7,12 +7,15 @@ import {
   COLOR_PRIMARY, 
   COLOR_BACKGROUND_WHITE, 
   COLOR_BACKGROUND_DARK_COLOR,
+  COLOR_BACKGROUND_GRAY,
   COLOR_TEXT_PRIMARY,
   COLOR_TEXT_SECONDARY,
   COLOR_TEXT_MUTED,
   COLOR_TEXT_WHITE,
   COLOR_BORDER_LIGHT,
   COLOR_BORDER_MEDIUM,
+  COLOR_SUCCESS,
+  COLOR_WARNING,
   getColorWithOpacity,
 } from './color-theme';
 
@@ -660,6 +663,60 @@ export const TASK_CARD_DROPDOWN_COLORS = {
       dark: COLOR_TEXT_MUTED, // Muted text for dark mode
     },
   },
+  hover: {
+    background: {
+      light: getColorWithOpacity(COLOR_BACKGROUND_GRAY, 0.5), // Light hover background
+      dark: getColorWithOpacity(COLOR_BACKGROUND_DARK_COLOR, 0.3), // Dark hover background
+    },
+    opacity: 0.5, // Hover opacity for buttons
+  },
+  subtask: {
+    hover: {
+      background: {
+        light: getColorWithOpacity(COLOR_BACKGROUND_GRAY, 0.5), // Light hover background for subtasks
+        dark: getColorWithOpacity(COLOR_BACKGROUND_DARK_COLOR, 0.3), // Dark hover background for subtasks
+      },
+    },
+    border: {
+      light: COLOR_BORDER_LIGHT, // Light border for subtask checkbox
+      dark: COLOR_BORDER_MEDIUM, // Dark border for subtask checkbox
+    },
+    text: {
+      light: COLOR_TEXT_PRIMARY, // Light text for subtasks
+      dark: COLOR_TEXT_WHITE, // Dark text for subtasks
+    },
+    completed: {
+      opacity: 0.6, // Opacity for completed subtasks
+    },
+  },
+  dependency: {
+    complete: {
+      background: {
+        light: getColorWithOpacity(COLOR_SUCCESS, 0.1), // Light green background for completed dependencies
+        dark: getColorWithOpacity(COLOR_SUCCESS, 0.2), // Dark green background for completed dependencies
+      },
+      border: {
+        light: getColorWithOpacity(COLOR_SUCCESS, 0.3), // Light green border
+        dark: getColorWithOpacity(COLOR_SUCCESS, 0.3), // Dark green border
+      },
+      indicator: COLOR_SUCCESS, // Green indicator for completed
+    },
+    incomplete: {
+      background: {
+        light: getColorWithOpacity(COLOR_WARNING, 0.1), // Light amber background for incomplete dependencies
+        dark: getColorWithOpacity(COLOR_WARNING, 0.2), // Dark amber background for incomplete dependencies
+      },
+      border: {
+        light: getColorWithOpacity(COLOR_WARNING, 0.3), // Light amber border
+        dark: getColorWithOpacity(COLOR_WARNING, 0.3), // Dark amber border
+      },
+      indicator: COLOR_WARNING, // Amber indicator for incomplete
+    },
+    text: {
+      light: COLOR_TEXT_PRIMARY, // Light text for dependencies
+      dark: COLOR_TEXT_WHITE, // Dark text for dependencies
+    },
+  },
 } as const;
 
 // Dropdown Tab Dimensions and Spacing
@@ -688,6 +745,8 @@ export const TASK_CARD_DROPDOWN = {
     content: {
       paddingX: 8, // px-2 = 8px
       paddingBottom: 8, // pb-2 = 8px
+      marginTop: 8, // mt-2 = 8px
+      padding: 8, // p-2 = 8px
     },
     tabsList: {
       height: 28, // h-7 = 28px
@@ -695,6 +754,20 @@ export const TASK_CARD_DROPDOWN = {
     tabsTrigger: {
       height: 24, // h-6 = 24px
       paddingX: 8, // px-2 = 8px
+    },
+    subtask: {
+      padding: 6, // p-1.5 = 6px
+      gap: 8, // gap-2 = 8px
+      checkbox: {
+        size: 12, // w-3 h-3 = 12px
+      },
+    },
+    dependency: {
+      padding: 6, // p-1.5 = 6px
+      gap: 8, // gap-2 = 8px
+      indicator: {
+        size: 12, // w-3 h-3 = 12px
+      },
     },
   },
   spacing: {
