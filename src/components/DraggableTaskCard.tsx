@@ -1306,6 +1306,7 @@ export const DraggableTaskCard = React.forwardRef<
               )}
             </button>
           )}
+          </div>
         </div>
       </div>
     );
