@@ -109,6 +109,7 @@ export function useTaskBreakdown(
   }, [cacheKey]);
 
   // Analyze task breakdown
+  // Remove cachedBreakdown from dependencies to break circular dependency
   const analyzeBreakdown = useCallback(() => {
     if (!enabled) {
       setBreakdown(null);
@@ -123,11 +124,17 @@ export function useTaskBreakdown(
       return;
     }
 
-    // Check cache
-    if (cachedBreakdown) {
-      setBreakdown(cachedBreakdown);
-      setIsLoading(false);
-      return;
+    // Check cache directly using current cacheKey
+    // Use cacheKey from closure, but verify it's valid
+    const currentCacheKey = `${title}${description}`.trim();
+    const hashKey = currentCacheKey.length > 0 ? hashText(currentCacheKey) : '';
+    if (hashKey && breakdownCache.has(hashKey)) {
+      const cached = breakdownCache.get(hashKey);
+      if (cached) {
+        setBreakdown(cached);
+        setIsLoading(false);
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -214,7 +221,9 @@ export function useTaskBreakdown(
             // Limit cache size
             if (breakdownCache.size > TASK_BREAKDOWN_CACHE_SIZE) {
               const firstKey = breakdownCache.keys().next().value;
-              breakdownCache.delete(firstKey);
+              if (firstKey) {
+                breakdownCache.delete(firstKey);
+              }
             }
           }
 
@@ -231,7 +240,7 @@ export function useTaskBreakdown(
       setError(error);
       setIsLoading(false);
     }
-  }, [title, description, enabled, cachedBreakdown, cacheKey]);
+  }, [title, description, enabled, cacheKey]);
 
   // Debounce analysis
   // #region agent log
@@ -254,8 +263,8 @@ export function useTaskBreakdown(
       return;
     }
 
-    // Check cache immediately
-    if (cachedBreakdown) {
+    // Check cache immediately using current cacheKey (not from closure)
+    if (cacheKey && cachedBreakdown) {
       setBreakdown(cachedBreakdown);
       setIsLoading(false);
       return;
@@ -269,7 +278,7 @@ export function useTaskBreakdown(
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [title, description, debounceMs, enabled, cachedBreakdown, analyzeBreakdown]);
+  }, [title, description, debounceMs, enabled, cacheKey, cachedBreakdown, analyzeBreakdown]);
 
   return {
     breakdown,
