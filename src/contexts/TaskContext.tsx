@@ -98,17 +98,8 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 // Constants moved to business-constants.ts
 
 export function TaskProvider({ children }: { children: ReactNode }) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskContext.tsx:98',message:'TaskProvider entry',data:{step:'before-useAuth'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const { user, accessToken } = useAuth();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskContext.tsx:100',message:'TaskProvider - useAuth result',data:{hasUser:!!user,hasAccessToken:!!accessToken},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const { hasFeature } = useSubscription();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskContext.tsx:102',message:'TaskProvider - useSubscription result',data:{hasHasFeature:typeof hasFeature==='function'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   
   // Removed TeamContext dependency to break circular dependency
   // TeamContext depends on TaskContext (for workspaceId), so TaskContext cannot depend on TeamContext
@@ -3006,9 +2997,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
 export function useTasks() {
   const context = useContext(TaskContext);
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskContext.tsx:3024',message:'useTasks called',data:{contextUndefined:context===undefined,hasRolloverSettings:!!context?.rolloverSettings,rolloverSettingsType:context?.rolloverSettings?'object':'undefined',hasAutoRollover:'autoRollover' in (context?.rolloverSettings||{}),hasEnabled:'enabled' in (context?.rolloverSettings||{})},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
   if (context === undefined) {
     // During React Fast Refresh (HMR) or edge cases, providers can temporarily unmount
     // Always return a safe default instead of throwing to prevent crashes
@@ -3017,13 +3005,7 @@ export function useTasks() {
       console.warn('useTasks called outside TaskProvider (likely HMR issue), returning default');
     }
     const defaultContext = createDefaultTaskContext();
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskContext.tsx:3032',message:'useTasks returning default - type check',data:{hasAutoRollover:'autoRollover' in defaultContext.rolloverSettings,hasEnabled:'enabled' in defaultContext.rolloverSettings,rolloverSettingsKeys:Object.keys(defaultContext.rolloverSettings)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     return defaultContext;
   }
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'TaskContext.tsx:3036',message:'useTasks returning context - type check',data:{hasAutoRollover:'autoRollover' in context.rolloverSettings,hasEnabled:'enabled' in context.rolloverSettings,rolloverSettingsKeys:Object.keys(context.rolloverSettings)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
   return context;
 }

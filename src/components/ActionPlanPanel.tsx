@@ -77,15 +77,9 @@ export function ActionPlanPanel({
   onAcceptSuggestion,
   className,
 }: ActionPlanPanelProps) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ActionPlanPanel.tsx:79',message:'ActionPlanPanel render entry',data:{isLoading,hasActionPlan:!!actionPlan,hasDescriptionAnalysis:!!descriptionAnalysis},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-  // #endregion
   const domainColors = DOMAIN_COLORS[domain] || DOMAIN_COLORS.personal;
 
   if (isLoading) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ActionPlanPanel.tsx:82',message:'Early return - isLoading',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     return (
       <Card className={cn('p-4 border-2 border-primary/30', className)}>
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -97,9 +91,6 @@ export function ActionPlanPanel({
   }
 
   if (!actionPlan && !descriptionAnalysis) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ActionPlanPanel.tsx:93',message:'Early return - no data',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     return null;
   }
 
