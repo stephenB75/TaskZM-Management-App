@@ -5,7 +5,7 @@
  * with domain-specific terminology, keywords, verbs, and action words.
  */
 
-import { detectDomain, type Domain, DOMAIN_TERMINOLOGY_MAP } from './domain-terminology';
+import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
 import { TASK_BREAKDOWN_DEBOUNCE_MS } from './ai-config';
 
 export interface GeneratedDescription {
@@ -28,8 +28,9 @@ export function generateDescription(taskName: string): GeneratedDescription {
   }
 
   // Detect domain from task name
-  const domain = detectDomain(taskName);
-  const domainTerms = DOMAIN_TERMINOLOGY_MAP[domain];
+  const domainResult = detectDomain(taskName, '');
+  const domain = domainResult.domain;
+  const domainTerms = getDomainTerminology(domain);
 
   // Extract keywords and verbs from task name
   const words = taskName.toLowerCase().split(/\s+/);
