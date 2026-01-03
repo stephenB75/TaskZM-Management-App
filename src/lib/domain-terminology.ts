@@ -16,6 +16,8 @@ export interface DomainTerminology {
   keywords: string[];
   phrases: string[];
   verbs: string[];
+  nouns: string[];
+  pronouns: string[];
   context: Domain;
   effortMultiplier: number; // Adjust effort based on domain complexity
 }
@@ -52,6 +54,19 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'deliver', 'execute', 'implement', 'manage', 'lead', 'facilitate', 'moderate',
     'document', 'report', 'track', 'monitor', 'measure', 'benchmark', 'improve'
   ],
+  nouns: [
+    'meeting', 'presentation', 'report', 'deadline', 'client', 'stakeholder', 'budget',
+    'revenue', 'roi', 'kpi', 'quarter', 'project', 'milestone', 'deliverable',
+    'strategy', 'analysis', 'forecast', 'proposal', 'contract', 'negotiation', 'deal',
+    'sales', 'marketing', 'campaign', 'product', 'service', 'customer', 'team',
+    'conference', 'workshop', 'training', 'review', 'audit', 'compliance', 'documentation',
+    'process', 'workflow', 'efficiency', 'optimization', 'growth', 'expansion', 'merger',
+    'acquisition', 'partnership', 'vendor', 'supplier', 'invoice', 'payment', 'finance'
+  ],
+  pronouns: [
+    'we', 'us', 'our', 'ours', 'ourselves', 'they', 'them', 'their', 'theirs', 'themselves',
+    'you', 'your', 'yours', 'yourself', 'yourselves', 'it', 'its', 'itself'
+  ],
   context: 'business',
   effortMultiplier: 1.0, // Base multiplier for business tasks
 };
@@ -85,6 +100,18 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'upgrade', 'refurbish', 'restore', 'refinish', 'polish', 'wax', 'seal',
     'caulk', 'grout', 'tile', 'sand', 'stain', 'varnish', 'prune', 'trim',
     'mow', 'weed', 'plant', 'harvest', 'water', 'fertilize', 'mulch', 'rake'
+  ],
+  nouns: [
+    'groceries', 'cleaning', 'maintenance', 'repair', 'cooking', 'laundry', 'organization',
+    'yard', 'garden', 'landscaping', 'plumbing', 'electrical', 'appliance', 'furniture',
+    'decoration', 'renovation', 'remodeling', 'painting', 'flooring', 'roofing', 'siding',
+    'windows', 'doors', 'heating', 'cooling', 'hvac', 'insurance', 'mortgage', 'utilities',
+    'bills', 'taxes', 'homeowner', 'property', 'supplies', 'shopping', 'meal', 'prep',
+    'room', 'closet', 'garage', 'attic', 'basement', 'exterior', 'interior', 'fixture'
+  ],
+  pronouns: [
+    'i', 'me', 'my', 'mine', 'myself', 'we', 'us', 'our', 'ours', 'ourselves',
+    'you', 'your', 'yours', 'yourself', 'yourselves', 'it', 'its', 'itself'
   ],
   context: 'home',
   effortMultiplier: 0.9, // Slightly lower effort for home tasks (often more straightforward)
@@ -124,6 +151,21 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'meditate', 'reflect', 'journal', 'plan', 'organize', 'schedule', 'coordinate',
     'socialize', 'connect', 'meet', 'celebrate', 'volunteer', 'help', 'support'
   ],
+  nouns: [
+    'exercise', 'workout', 'fitness', 'health', 'wellness', 'hobby', 'learning',
+    'travel', 'family', 'friends', 'social', 'self-care', 'meditation', 'yoga',
+    'reading', 'writing', 'creative', 'art', 'music', 'photography', 'cooking',
+    'baking', 'crafting', 'sewing', 'knitting', 'gardening', 'sports', 'running',
+    'cycling', 'swimming', 'hiking', 'camping', 'outdoor', 'adventure', 'exploration',
+    'education', 'course', 'class', 'workshop', 'seminar', 'conference', 'event',
+    'celebration', 'birthday', 'anniversary', 'holiday', 'vacation', 'trip',
+    'therapy', 'counseling', 'coaching', 'mentoring', 'volunteering', 'charity'
+  ],
+  pronouns: [
+    'i', 'me', 'my', 'mine', 'myself', 'we', 'us', 'our', 'ours', 'ourselves',
+    'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself',
+    'she', 'her', 'hers', 'herself', 'they', 'them', 'their', 'theirs', 'themselves'
+  ],
   context: 'personal',
   effortMultiplier: 0.85, // Personal tasks often have more flexibility
 };
@@ -161,6 +203,22 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
     'coordinate', 'synchronize', 'schedule', 'plan', 'book', 'reserve', 'confirm',
     'cancel', 'modify', 'update', 'track', 'monitor', 'manage', 'organize'
   ],
+  nouns: [
+    'travel', 'trip', 'journey', 'voyage', 'expedition', 'culture', 'language',
+    'translation', 'international', 'global', 'worldwide', 'overseas', 'abroad',
+    'foreign', 'immigration', 'visa', 'passport', 'customs', 'border', 'timezone',
+    'time zone', 'currency', 'exchange', 'conversion', 'exchange rate', 'call',
+    'video call', 'conference call', 'remote meeting', 'cross-cultural', 'multicultural',
+    'diversity', 'inclusion', 'globalization', 'international business', 'global market',
+    'world news', 'current events', 'geography', 'country', 'nation', 'continent',
+    'region', 'climate', 'weather', 'time difference', 'jet lag', 'accommodation',
+    'hotel', 'reservation', 'booking', 'flight', 'itinerary', 'sightseeing', 'tour'
+  ],
+  pronouns: [
+    'i', 'me', 'my', 'mine', 'myself', 'we', 'us', 'our', 'ours', 'ourselves',
+    'you', 'your', 'yours', 'yourself', 'yourselves', 'they', 'them', 'their',
+    'theirs', 'themselves', 'it', 'its', 'itself'
+  ],
   context: 'world',
   effortMultiplier: 1.1, // Slightly higher effort for global tasks (complexity, time zones, etc.)
 };
@@ -177,6 +235,8 @@ export const DOMAIN_TERMINOLOGIES: Record<Domain, DomainTerminology> = {
     keywords: [],
     phrases: [],
     verbs: [],
+    nouns: [],
+    pronouns: [],
     context: 'mixed',
     effortMultiplier: 1.0,
   },
