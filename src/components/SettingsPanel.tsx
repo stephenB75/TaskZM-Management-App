@@ -21,6 +21,7 @@ import { useTasks } from '../contexts/TaskContext';
 import { useAI } from '../contexts/AIContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useCalendar } from '../contexts/CalendarContext';
+import type { SubscriptionTier } from '../types';
 import { useAwards } from '../contexts/AwardContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { PricingDialog } from './PricingDialog';
@@ -943,7 +944,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       }}
                     >
                       <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                      {subscription.tier === 'free' ? SUBSCRIPTION_UI_TEXT.settings.upgradeToPro : SUBSCRIPTION_UI_TEXT.settings.manageSubscription}
+                      {(subscription.tier as SubscriptionTier) === 'free' ? SUBSCRIPTION_UI_TEXT.settings.upgradeToPro : SUBSCRIPTION_UI_TEXT.settings.manageSubscription}
                     </Button>
 
                     <div className="flex" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>

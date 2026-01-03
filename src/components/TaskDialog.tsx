@@ -80,6 +80,7 @@ import { getCategoryHoursForTask } from "../lib/category-hours-utils";
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from "../lib/daily-hours-utils";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
+import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import type {
   Task,
   TaskPriority,
@@ -109,7 +110,7 @@ function FixedMiniCalendar({
   scheduledDate: Date | undefined;
   dueDate: Date | undefined;
   activeField: "scheduled" | "due";
-  onDateSelect: (date: Date, field: "scheduled" | "due") => void;
+  onDateSelect: (date: Date | undefined, field: "scheduled" | "due") => void;
   onFieldChange: (field: "scheduled" | "due") => void;
 }) {
   const [viewDate, setViewDate] = useState(() => {
@@ -713,8 +714,8 @@ export function TaskDialog({
         }
 
         // Ensure task is a valid object with all required properties - use defaults if missing
-        const safeTitle = typeof task.title === 'string' ? task.title : (task.title?.toString() || 'Untitled Task');
-        const safeStatus = typeof task.status === 'string' ? task.status : ((task.status as any) || 'todo');
+        const safeTitle = typeof task.title === 'string' ? task.title : 'Untitled Task';
+        const safeStatus = typeof task.status === 'string' ? task.status : ((task.status as any) || DEFAULT_TASK_STATUS);
         const safePriority = typeof task.priority === 'string' ? task.priority : ((task.priority as any) || 'medium');
         
         if (typeof task.title !== 'string') {
@@ -1101,7 +1102,7 @@ export function TaskDialog({
 
     // Validate dependencies
     const currentTaskForValidation =
-      task || ({ id: "new", dependencies: [] } as Task);
+      task || ({ id: "new", dependencies: [] } as unknown as Task);
     const validation = validateDependencies(
       currentTaskForValidation,
       dependencies,
@@ -1511,9 +1512,12 @@ export function TaskDialog({
     let savedTask: Task;
     if (task) {
       await updateTask(task.id, taskData);
-      savedTask = { ...task, ...taskData };
+      savedTask = { ...task, ...taskData } as Task;
     } else {
-      savedTask = await addTask(taskData);
+      await addTask(taskData);
+      // After adding, the task will be in the tasks list - find it by matching properties
+      // Note: This is a workaround since addTask returns void
+      savedTask = { ...taskData, id: `temp-${Date.now()}` } as Task;
     }
 
     // Auto-sync to calendar if task has scheduled date and calendar is connected
@@ -1929,6 +1933,7 @@ export function TaskDialog({
                         id: `subtask-${Date.now()}`,
                         title: suggestion,
                         completed: false,
+                        createdAt: new Date().toISOString(),
                       };
                       setSubtasks([...subtasks, newSubtask]);
                       toast.success('Added as subtask', {
@@ -2917,7 +2922,7 @@ export function TaskDialog({
                     )}
 
                     {/* End Date for Recurrence */}
-                    {recurrenceType !== "none" && (
+                    {(recurrenceType === "daily" || recurrenceType === "weekly" || recurrenceType === "monthly") && (
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Ends</Label>
                         <div className="w-full flex justify-center py-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
@@ -2938,7 +2943,7 @@ export function TaskDialog({
                     )}
 
                         {/* Recurrence Summary */}
-                        {recurrenceType !== "none" && (
+                        {(recurrenceType === "daily" || recurrenceType === "weekly" || recurrenceType === "monthly") && (
                           <div className="p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
                             <p className="text-xs text-muted-foreground">
                               {recurrenceType === "daily" &&

@@ -61,6 +61,7 @@ import {
   AUTH_CONFIG,
   AUTH_BACKGROUND_IMAGE 
 } from '../lib/auth-constants';
+import { getUserFriendlyErrorMessage } from '../lib/error-utils';
 
 // Password strength calculation
 function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 'strong'; score: number; feedback: string[] } {
@@ -245,14 +246,7 @@ export function AuthScreen() {
       console.error("Demo account creation error:", error);
       
       // Provide more specific error messages
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      let userFriendlyMessage = AUTH_UI_TEXT.demo.errorMessage;
-      
-      if (errorMessage.toLowerCase().includes('already') || errorMessage.toLowerCase().includes('exists')) {
-        userFriendlyMessage = 'Demo account already exists. Please try again in a moment.';
-      } else if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('fetch')) {
-        userFriendlyMessage = 'Network error. Please check your connection and try again.';
-      }
+      const userFriendlyMessage = getUserFriendlyErrorMessage(error, AUTH_UI_TEXT.demo.errorMessage);
       
       toast.error(userFriendlyMessage, {
         duration: AUTH_CONFIG.toastDuration * 1.5, // Show longer for errors

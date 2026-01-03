@@ -394,6 +394,7 @@ export function PricingDialog({
   
   // Calculate per-month price for yearly plan
   const getYearlyPerMonthPrice = () => {
+    if (!yearlyOffering) return '0.00';
     const yearlyPriceStr = yearlyOffering.priceString.replace(/[^0-9.]/g, '');
     const yearlyPrice = parseFloat(yearlyPriceStr) || 0;
     return (yearlyPrice / 12).toFixed(2);

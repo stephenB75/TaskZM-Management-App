@@ -11,6 +11,7 @@ import { analyzeTaskVerbs } from './verb-analysis';
 import { estimateTaskHours } from './daily-hours-utils';
 import { MINUTES_PER_HOUR } from './business-constants';
 import { ACTION_PLAN_TIME_DISTRIBUTION } from './ai-config';
+import { DEFAULT_TASK_STATUS } from './task-constants';
 
 export interface ActionPlanStep {
   action: string;
@@ -58,7 +59,7 @@ export function generateActionPlan(
     id: task.id || 'temp',
     title,
     description,
-    status: (task.status as any) || 'todo',
+    status: (task.status as any) || DEFAULT_TASK_STATUS,
     priority: (task.priority as any) || 'medium',
     tags: task.tags || [],
     createdAt: task.createdAt || new Date().toISOString(),

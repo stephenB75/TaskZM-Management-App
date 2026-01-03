@@ -45,9 +45,8 @@ export function TaskCard({
   const blocked = isTaskBlocked(task, tasks);
   const incompleteDeps = getIncompleteDependencies(task, tasks);
 
-  const handleToggleComplete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onStatusChange(task.id, task.status === 'done' ? 'todo' : 'done');
+  const handleToggleComplete = (checked: boolean | string) => {
+    onStatusChange(task.id, checked ? 'done' : 'todo');
   };
 
   const getStatusIcon = () => {

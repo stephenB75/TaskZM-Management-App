@@ -403,7 +403,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
               const project = task.projectId ? projects.find(p => p.id === task.projectId) : undefined;
               const assignedMembers = (task.assignedTo || [])
                 .map((id) => getTeamMember(id))
-                .filter(Boolean);
+                .filter((member): member is NonNullable<typeof member> => member !== undefined && member !== null);
 
               return (
                 <motion.div

@@ -100,7 +100,9 @@ export function PomodoroTimer({
     // we'll use estimatedTime if available, otherwise default
     const initialDuration = timerState.mode === 'work' 
       ? (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)
-      : DURATIONS[timerState.mode];
+      : timerState.mode === 'shortBreak' 
+        ? DURATIONS.shortBreak 
+        : DURATIONS.longBreak;
     
     // Calculate how much time has elapsed
     const elapsed = initialDuration - timerState.timeLeft;
@@ -296,7 +298,9 @@ export function PomodoroTimer({
           timerState.timeLeft !==
             (timerState.mode === 'work' 
               ? (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)
-              : DURATIONS[timerState.mode])) && (
+              : timerState.mode === 'shortBreak' 
+                ? DURATIONS.shortBreak 
+                : DURATIONS.longBreak)) && (
           <Button
             size="sm"
             variant="outline"

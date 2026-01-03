@@ -9,6 +9,7 @@ import type { Task } from '../types';
 import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
 import { analyzeTaskVerbs } from './verb-analysis';
 import { DESCRIPTION_COMPLEXITY_THRESHOLDS } from './ai-config';
+import { DEFAULT_TASK_STATUS } from './task-constants';
 
 export interface DescriptionAnalysis {
   original: string;
@@ -53,7 +54,7 @@ export function analyzeDescription(
   const tempTask: Partial<Task> = {
     title,
     description,
-    status: 'todo',
+    status: DEFAULT_TASK_STATUS,
     priority: 'medium',
     tags: [],
   };

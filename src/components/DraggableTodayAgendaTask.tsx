@@ -160,16 +160,21 @@ export function DraggableTodayAgendaTask({
       baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px standard
     } else {
       // Long tasks (>= 60 mins): Use standard heights at defined points
-      if (currentEstimatedTimeValue >= 180) {
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px standard
-      } else if (currentEstimatedTimeValue >= 150) {
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins; // 425px standard
-      } else if (currentEstimatedTimeValue >= 120) {
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins; // 350px standard (2 hours)
-      } else if (currentEstimatedTimeValue >= 90) {
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins; // 275px standard
+      if (currentEstimatedTimeValue !== null) {
+        if (currentEstimatedTimeValue >= 180) {
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins; // 500px standard
+        } else if (currentEstimatedTimeValue >= 150) {
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins; // 425px standard
+        } else if (currentEstimatedTimeValue >= 120) {
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins; // 350px standard (2 hours)
+        } else if (currentEstimatedTimeValue >= 90) {
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins; // 275px standard
+        } else {
+          // 60-89 mins: Use standard base height (1 hour = 200px)
+          baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px standard
+        }
       } else {
-        // 60-89 mins: Use standard base height (1 hour = 200px)
+        // Fallback if estimatedTime is null
         baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins; // 200px standard
       }
     }

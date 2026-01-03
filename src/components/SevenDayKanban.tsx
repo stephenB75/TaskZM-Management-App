@@ -45,6 +45,11 @@ const getDayColors = (dayName: string) => {
   return KANBAN_DAY_COLORS[dayKey] || KANBAN_DAY_COLORS.monday;
 };
 
+// Type guard to check if day colors have header property
+const hasHeader = (colors: ReturnType<typeof getDayColors>): colors is typeof KANBAN_DAY_COLORS.monday => {
+  return 'header' in colors && 'background' in colors;
+};
+
 interface DayColumn {
   date: Date;
   dayName: string;
@@ -78,7 +83,7 @@ export function SevenDayKanban({
   const { calendarStatus } = useCalendar();
   
   // Calculate responsive column width based on viewport
-  const [columnWidth, setColumnWidth] = React.useState(KANBAN_COLUMN_DIMENSIONS.width.desktop);
+  const [columnWidth, setColumnWidth] = React.useState<number>(KANBAN_COLUMN_DIMENSIONS.width.desktop);
   
   React.useEffect(() => {
     const updateColumnWidth = () => {
@@ -128,10 +133,14 @@ export function SevenDayKanban({
   const getColumnBgGradient = (dayName: string) => {
     const dayColors = getDayColors(dayName);
     // Light mode: use day color with soft gradient
-    const base = dayColors.background;
-    const start = toAlphaHex(base, 28);
-    const end = toAlphaHex(base, 6);
-    return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
+    if (hasHeader(dayColors)) {
+      const base = dayColors.background;
+      const start = toAlphaHex(base, 28);
+      const end = toAlphaHex(base, 6);
+      return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
+    }
+    // Fallback for weekend colors
+    return 'transparent';
   };
 
   const darkColumnGradient = 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)';
@@ -532,11 +541,13 @@ export function SevenDayKanban({
     const dayTasks = getTasksForDay(currentColumn.dateString);
     const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
     // For recurring tasks, use unique ID per date occurrence to maintain chronological order
-    const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => {
-      if (!t?.id) return null;
-      const isRecurring = t.recurrence && t.recurrence.type !== 'none';
-      return isRecurring ? `${t.id}__${currentColumn.dateString}` : t.id;
-    }).filter(Boolean) : [];
+    const taskIds = Array.isArray(dayTasks) ? dayTasks
+      .map(t => {
+        if (!t?.id) return null;
+        const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+        return isRecurring ? `${t.id}__${currentColumn.dateString}` : t.id;
+      })
+      .filter((id): id is string => id !== null) : [];
 
     return (
       <div 
@@ -892,11 +903,13 @@ export function SevenDayKanban({
                       {group.map((column, columnIndex) => {
                 const dayTasks = getTasksForDay(column.dateString);
                 // For recurring tasks, use unique ID per date occurrence to maintain chronological order
-                const taskIds = Array.isArray(dayTasks) ? dayTasks.map(t => {
-                  if (!t?.id) return null;
-                  const isRecurring = t.recurrence && t.recurrence.type !== 'none';
-                  return isRecurring ? `${t.id}__${column.dateString}` : t.id;
-                }).filter(Boolean) : [];
+                const taskIds = Array.isArray(dayTasks) ? dayTasks
+                  .map(t => {
+                    if (!t?.id) return null;
+                    const isRecurring = t.recurrence && t.recurrence.type !== 'none';
+                    return isRecurring ? `${t.id}__${column.dateString}` : t.id;
+                  })
+                  .filter((id): id is string => id !== null) : [];
                       const globalIndex = groupIndex * 7 + columnIndex;
                       const isSecondWeek = groupIndex === 1;
                       const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
@@ -931,17 +944,22 @@ export function SevenDayKanban({
                         column.isToday && 'ring-2 ring-inset',
                         isDark 
                           ? 'bg-card/50 border-border' 
-                          : getDayColors(column.dayName).header && 'bg-transparent'
+                          : hasHeader(getDayColors(column.dayName)) && 'bg-transparent'
                       )}
-                      style={{
-                        ...(column.isToday && {
-                          ringColor: `${KANBAN_DAY_COLORS.today.ring}${Math.round(KANBAN_DAY_COLORS.today.ringOpacity * 2.55).toString(16).padStart(2, '0')}`,
-                        }),
-                        ...(!isDark && getDayColors(column.dayName).header && {
-                          backgroundImage: `linear-gradient(to right, ${getDayColors(column.dayName).header.from}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.via}${Math.round(70 * 2.55).toString(16).padStart(2, '0')}, ${getDayColors(column.dayName).header.to}${Math.round(getDayColors(column.dayName).header.opacity * 2.55).toString(16).padStart(2, '0')})`,
-                          borderColor: `${getDayColors(column.dayName).header.border}${Math.round(getDayColors(column.dayName).header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`,
-                        }),
-                      }}
+                      style={(() => {
+                        const baseStyle: React.CSSProperties & { '--ring-color'?: string } = {};
+                        if (column.isToday) {
+                          baseStyle['--ring-color'] = `${KANBAN_DAY_COLORS.today.ring}${Math.round(KANBAN_DAY_COLORS.today.ringOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                        }
+                        if (!isDark) {
+                          const dayColors = getDayColors(column.dayName);
+                          if (hasHeader(dayColors)) {
+                            baseStyle.backgroundImage = `linear-gradient(to right, ${dayColors.header.from}${Math.round(dayColors.header.opacity * 2.55).toString(16).padStart(2, '0')}, ${dayColors.header.via}${Math.round(70 * 2.55).toString(16).padStart(2, '0')}, ${dayColors.header.to}${Math.round(dayColors.header.opacity * 2.55).toString(16).padStart(2, '0')})`;
+                            baseStyle.borderColor = `${dayColors.header.border}${Math.round(dayColors.header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                          }
+                        }
+                        return baseStyle;
+                      })()}
                     >
                       <div className="flex items-center justify-between">
                         <div>

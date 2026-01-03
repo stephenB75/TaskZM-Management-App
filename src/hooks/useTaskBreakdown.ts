@@ -17,6 +17,7 @@ import {
   TASK_BREAKDOWN_DEBOUNCE_MS,
   TASK_BREAKDOWN_CACHE_SIZE,
 } from '../lib/ai-config';
+import { DEFAULT_TASK_STATUS } from '../lib/task-constants';
 
 export interface TaskBreakdown {
   estimatedMinutes: number;
@@ -125,7 +126,7 @@ export function useTaskBreakdown(
           const tempTask: Partial<Task> = {
             title,
             description,
-            status: 'todo',
+            status: DEFAULT_TASK_STATUS,
             priority: 'medium',
             tags: [],
           };
@@ -138,7 +139,7 @@ export function useTaskBreakdown(
             id: 'temp',
             title,
             description,
-            status: 'todo',
+            status: DEFAULT_TASK_STATUS,
             priority: 'medium',
             tags: [],
             createdAt: new Date().toISOString(),
