@@ -78,6 +78,8 @@ import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
 import { checkDailyLimit, getDailyHoursWarningLevel, MAX_HOURS_PER_DAY, getTaskMinutes } from "../lib/daily-hours-utils";
+import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
+import { ActionPlanPanel } from "./ActionPlanPanel";
 import type {
   Task,
   TaskPriority,
@@ -629,6 +631,13 @@ export function TaskDialog({
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] =
     useState(false);
+
+  // AI Task Breakdown - Real-time analysis
+  const { breakdown, isLoading: isBreakdownLoading } = useTaskBreakdown(
+    title,
+    description,
+    { debounceMs: 300, enabled: true }
+  );
 
   // Helper function to update scheduled time
   const updateScheduledTime = (
@@ -1901,6 +1910,33 @@ export function TaskDialog({
                     className="focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary"
                   />
                 </div>
+
+                {/* AI Task Breakdown Panel */}
+                {(title.trim() || description.trim()) && (
+                  <ActionPlanPanel
+                    actionPlan={breakdown?.actionPlan || null}
+                    descriptionAnalysis={breakdown?.descriptionAnalysis || null}
+                    estimatedMinutes={breakdown?.estimatedMinutes || 0}
+                    estimatedHours={breakdown?.estimatedHours || 0}
+                    effortScore={breakdown?.effortScore || 0}
+                    primaryVerb={breakdown?.primaryVerb || 'unknown'}
+                    domain={breakdown?.domain || 'personal'}
+                    confidence={breakdown?.confidence || 0}
+                    isLoading={isBreakdownLoading}
+                    onAcceptSuggestion={(suggestion) => {
+                      // Add suggestion as a subtask
+                      const newSubtask: Subtask = {
+                        id: `subtask-${Date.now()}`,
+                        title: suggestion,
+                        completed: false,
+                      };
+                      setSubtasks([...subtasks, newSubtask]);
+                      toast.success('Added as subtask', {
+                        description: suggestion,
+                      });
+                    }}
+                  />
+                )}
 
                 {/* Folder Selector */}
                 {folders.length > 0 && (

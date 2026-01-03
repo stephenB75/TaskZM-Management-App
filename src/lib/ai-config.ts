@@ -257,6 +257,85 @@ export const FREE_TIER_WEEKLY_AI_LIMIT = 3;
 export const AI_USAGE_STORAGE_KEY = 'ai_scheduler_usage';
 
 // ============================================================================
+// Browser AI Task Breakdown Configuration
+// ============================================================================
+
+/**
+ * Debounce delay for real-time task breakdown analysis (milliseconds)
+ */
+export const TASK_BREAKDOWN_DEBOUNCE_MS = 300;
+
+/**
+ * Maximum cache size for task breakdown results
+ */
+export const TASK_BREAKDOWN_CACHE_SIZE = 100;
+
+/**
+ * Domain detection confidence thresholds
+ */
+export const DOMAIN_DETECTION_THRESHOLDS = {
+  MIN_CONFIDENCE: 0.1, // Minimum confidence to return a domain
+  MIXED_THRESHOLD: 0.4, // Below this, mark as mixed if multiple domains are close
+  MIXED_SIMILARITY: 0.7, // Second domain must be at least this % of top domain to be mixed
+} as const;
+
+/**
+ * Domain detection scoring weights
+ */
+export const DOMAIN_SCORING_WEIGHTS = {
+  KEYWORD: 1.0, // Weight for keyword matches
+  PHRASE: 2.0, // Weight for phrase matches (more specific)
+  VERB: 1.5, // Weight for verb matches (action-oriented)
+} as const;
+
+/**
+ * Action plan time distribution percentages
+ */
+export const ACTION_PLAN_TIME_DISTRIBUTION = {
+  PREPARATION: {
+    BUSINESS_MEETING: 0.2,
+    BUSINESS_REPORT: 0.25,
+    HOME_REPAIR: 0.15,
+    HOME_CLEANING: 0.1,
+    PERSONAL_EXERCISE: 0.1,
+    PERSONAL_TRAVEL: 0.3,
+    WORLD_TRAVEL: 0.2,
+    WORLD_CALL: 0.15,
+    GENERIC: 0.2,
+  },
+  EXECUTION: {
+    BUSINESS: 0.6,
+    HOME: 0.7,
+    PERSONAL: 0.7,
+    WORLD: 0.6,
+    GENERIC: 0.6,
+  },
+  FOLLOW_UP: {
+    BUSINESS_MEETING: 0.15,
+    BUSINESS_REPORT: 0.15,
+    HOME_CLEANING: 0.15,
+    PERSONAL_EXERCISE: 0.2,
+    GENERIC: 0.2,
+  },
+} as const;
+
+/**
+ * Description analysis complexity thresholds
+ */
+export const DESCRIPTION_COMPLEXITY_THRESHOLDS = {
+  COMPLEX: {
+    WORD_COUNT: 50,
+    CHAR_COUNT: 300,
+  },
+  MODERATE: {
+    WORD_COUNT: 20,
+    CHAR_COUNT: 100,
+  },
+  MIN_DESCRIPTION_LENGTH: 20, // Minimum chars to suggest enhancement
+  MIN_PHRASE_LENGTH: 5, // Minimum chars for phrase extraction
+} as const;
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
