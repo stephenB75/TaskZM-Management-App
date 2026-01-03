@@ -16,6 +16,14 @@ import {
   COLOR_BORDER_MEDIUM,
   COLOR_SUCCESS,
   COLOR_WARNING,
+  COLOR_PASTEL_SAGE,
+  COLOR_PASTEL_SKY,
+  COLOR_PASTEL_LAVENDER,
+  COLOR_PASTEL_PEACH,
+  COLOR_PASTEL_LILAC,
+  COLOR_PASTEL_PINK,
+  COLOR_PASTEL_YELLOW,
+  COLOR_PASTEL_MINT,
   getColorWithOpacity,
 } from './color-theme';
 
@@ -632,15 +640,16 @@ export const TASK_CARD_TIMELINE = {
   },
 } as const;
 
-// Dropdown Tab Colors (using app theme colors, distinct from task card and column colors)
+// Dropdown Tab Colors (using app pastel theme colors, distinct from task card and column colors)
+// Note: Uses pastel colors similar to kanban columns but different shade for distinction
 export const TASK_CARD_DROPDOWN_COLORS = {
   background: {
-    light: COLOR_BACKGROUND_WHITE, // White background for light mode
-    dark: COLOR_BACKGROUND_DARK_COLOR, // Dark background for dark mode
+    light: COLOR_PASTEL_SAGE, // Sage green pastel background for light mode (distinct from columns)
+    dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.3), // Muted sage for dark mode
   },
   border: {
-    light: getColorWithOpacity(COLOR_BORDER_LIGHT, 0.2), // Light border with opacity
-    dark: getColorWithOpacity(COLOR_BORDER_MEDIUM, 0.3), // Medium border with opacity for dark mode
+    light: getColorWithOpacity('#9CAF9C', 0.3), // Soft green border for light mode (complements sage)
+    dark: getColorWithOpacity('#9CAF9C', 0.4), // Soft green border for dark mode
   },
   tab: {
     active: {
@@ -649,41 +658,41 @@ export const TASK_CARD_DROPDOWN_COLORS = {
     },
     inactive: {
       background: 'transparent',
-      text: COLOR_TEXT_SECONDARY, // Secondary text for inactive tabs
-      darkText: COLOR_TEXT_MUTED, // Muted text for dark mode inactive tabs
+      text: COLOR_TEXT_SECONDARY, // Secondary text for inactive tabs (on pastel background)
+      darkText: COLOR_TEXT_MUTED, // Muted text for inactive tabs in dark mode
     },
   },
   content: {
     text: {
-      light: COLOR_TEXT_PRIMARY, // Primary text color
+      light: COLOR_TEXT_PRIMARY, // Dark text for light mode (on pastel background)
       dark: COLOR_TEXT_WHITE, // White text for dark mode
     },
     muted: {
-      light: COLOR_TEXT_SECONDARY, // Secondary text color
+      light: COLOR_TEXT_SECONDARY, // Secondary text for light mode (on pastel background)
       dark: COLOR_TEXT_MUTED, // Muted text for dark mode
     },
   },
   hover: {
     background: {
-      light: getColorWithOpacity(COLOR_BACKGROUND_GRAY, 0.5), // Light hover background
-      dark: getColorWithOpacity(COLOR_BACKGROUND_DARK_COLOR, 0.3), // Dark hover background
+      light: getColorWithOpacity('#9CAF9C', 0.2), // Soft green hover for light mode (on pastel background)
+      dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.2), // Muted sage hover for dark mode
     },
     opacity: 0.5, // Hover opacity for buttons
   },
   subtask: {
     hover: {
       background: {
-        light: getColorWithOpacity(COLOR_BACKGROUND_GRAY, 0.5), // Light hover background for subtasks
-        dark: getColorWithOpacity(COLOR_BACKGROUND_DARK_COLOR, 0.3), // Dark hover background for subtasks
+        light: getColorWithOpacity('#9CAF9C', 0.2), // Soft green hover for subtasks in light mode
+        dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.2), // Muted sage hover for subtasks in dark mode
       },
     },
     border: {
-      light: COLOR_BORDER_LIGHT, // Light border for subtask checkbox
-      dark: COLOR_BORDER_MEDIUM, // Dark border for subtask checkbox
+      light: '#9CAF9C', // Soft green border for subtask checkbox (on pastel background)
+      dark: '#9CAF9C', // Soft green border for subtask checkbox
     },
     text: {
-      light: COLOR_TEXT_PRIMARY, // Light text for subtasks
-      dark: COLOR_TEXT_WHITE, // Dark text for subtasks
+      light: COLOR_TEXT_PRIMARY, // Dark text for subtasks (on pastel background)
+      dark: COLOR_TEXT_WHITE, // White text for subtasks
     },
     completed: {
       opacity: 0.6, // Opacity for completed subtasks
@@ -713,8 +722,8 @@ export const TASK_CARD_DROPDOWN_COLORS = {
       indicator: COLOR_WARNING, // Amber indicator for incomplete
     },
     text: {
-      light: COLOR_TEXT_PRIMARY, // Light text for dependencies
-      dark: COLOR_TEXT_WHITE, // Dark text for dependencies
+      light: COLOR_TEXT_PRIMARY, // Dark text for dependencies (on pastel background)
+      dark: COLOR_TEXT_WHITE, // White text for dependencies
     },
   },
 } as const;
