@@ -192,7 +192,104 @@ async function searchDomainContext(
 }
 
 /**
+ * Extract keywords and phrases directly from text using frequency analysis
+ */
+function extractTermsFromText(
+  text: string,
+  stopWords: string[]
+): {
+  keywords: string[];
+  phrases: string[];
+  verbs: string[];
+  nouns: string[];
+} {
+  const keywords: string[] = [];
+  const phrases: string[] = [];
+  const verbs: string[] = [];
+  const nouns: string[] = [];
+  
+  // Normalize text
+  const normalizedText = text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  const words = normalizedText.split(/\s+/)
+    .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
+    .filter(w => !stopWords.includes(w));
+  
+  // Word frequency analysis for keywords
+  const wordFreq = new Map<string, number>();
+  words.forEach(word => {
+    if (word.length >= DESCRIPTION_GENERATION_CONFIG.minKeywordLength && 
+        word.length <= DESCRIPTION_GENERATION_CONFIG.maxKeywordLength) {
+      wordFreq.set(word, (wordFreq.get(word) || 0) + 1);
+    }
+  });
+  
+  // Extract top keywords by frequency
+  const sortedKeywords = Array.from(wordFreq.entries())
+    .filter(([word, freq]) => freq >= DESCRIPTION_GENERATION_CONFIG.minWordFrequency)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords)
+    .map(([word]) => word);
+  
+  keywords.push(...sortedKeywords);
+  
+  // Extract phrases (2-5 word combinations)
+  for (let i = 0; i < words.length - 1; i++) {
+    for (let len = DESCRIPTION_GENERATION_CONFIG.minPhraseLength; 
+         len <= DESCRIPTION_GENERATION_CONFIG.maxPhraseLength && i + len <= words.length; 
+         len++) {
+      const phrase = words.slice(i, i + len).join(' ');
+      if (phrase.length > DESCRIPTION_GENERATION_CONFIG.minKeywordLength) {
+        phrases.push(phrase);
+      }
+    }
+  }
+  
+  // Remove duplicate phrases and sort by length (longer = more specific)
+  const uniquePhrases = Array.from(new Set(phrases))
+    .sort((a, b) => b.length - a.length)
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
+  
+  phrases.push(...uniquePhrases);
+  
+  // Simple verb/noun detection (common patterns)
+  // Verbs often end in -ing, -ed, -s, or are common action words
+  const verbPatterns = /(ing|ed|s|es)$/;
+  const commonVerbs = ['is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'get', 'got', 'make', 'made', 'take', 'took', 'go', 'went', 'come', 'came', 'see', 'saw', 'know', 'knew', 'think', 'thought', 'say', 'said', 'tell', 'told', 'give', 'gave', 'find', 'found', 'work', 'worked', 'call', 'called', 'try', 'tried', 'ask', 'asked', 'need', 'needed', 'want', 'wanted', 'use', 'used', 'help', 'helped', 'play', 'played', 'move', 'moved', 'like', 'liked', 'live', 'lived', 'believe', 'believed', 'bring', 'brought', 'happen', 'happened', 'write', 'wrote', 'sit', 'sat', 'stand', 'stood', 'lose', 'lost', 'pay', 'paid', 'meet', 'met', 'include', 'included', 'continue', 'continued', 'set', 'set', 'learn', 'learned', 'change', 'changed', 'lead', 'led', 'understand', 'understood', 'watch', 'watched', 'follow', 'followed', 'stop', 'stopped', 'create', 'created', 'speak', 'spoke', 'read', 'read', 'allow', 'allowed', 'add', 'added', 'spend', 'spent', 'grow', 'grew', 'open', 'opened', 'walk', 'walked', 'win', 'won', 'offer', 'offered', 'remember', 'remembered', 'love', 'loved', 'consider', 'considered', 'appear', 'appeared', 'buy', 'bought', 'wait', 'waited', 'serve', 'served', 'die', 'died', 'send', 'sent', 'build', 'built', 'stay', 'stayed', 'fall', 'fell', 'cut', 'cut', 'reach', 'reached', 'kill', 'killed', 'raise', 'raised', 'pass', 'passed', 'sell', 'sold', 'decide', 'decided', 'return', 'returned', 'explain', 'explained', 'develop', 'developed', 'carry', 'carried', 'break', 'broke', 'receive', 'received'];
+  
+  words.forEach(word => {
+    const baseWord = word.replace(verbPatterns, '');
+    if (commonVerbs.includes(word) || commonVerbs.includes(baseWord) || verbPatterns.test(word)) {
+      if (!verbs.includes(word) && word.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength) {
+        verbs.push(word);
+      }
+    }
+  });
+  
+  // Nouns are often capitalized or common objects (simplified detection)
+  // In practice, we'll extract nouns that appear frequently and aren't verbs
+  const nounCandidates = words.filter(w => 
+    !verbs.includes(w) && 
+    !stopWords.includes(w) &&
+    w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength
+  );
+  
+  nouns.push(...nounCandidates.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns));
+  
+  return {
+    keywords: keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+  };
+}
+
+/**
  * Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
+ * Extracts terms directly from API results AND matches against domain terminology
  */
 function extractKeywordsAndVerbsFromSearch(
   searchResults: string[],
@@ -214,50 +311,59 @@ function extractKeywordsAndVerbsFromSearch(
   
   const combinedText = searchResults.join(' ').toLowerCase();
   
-  // Find matching phrases from domain terminology (check first as they're most specific)
+  // STEP 1: Extract terms directly from Instant Answer API results
+  const extractedFromAPI = extractTermsFromText(
+    combinedText,
+    DESCRIPTION_GENERATION_CONFIG.stopWords
+  );
+  
+  // Add extracted terms (prioritize API results as they're context-specific)
+  foundKeywords.push(...extractedFromAPI.keywords);
+  foundPhrases.push(...extractedFromAPI.phrases);
+  foundVerbs.push(...extractedFromAPI.verbs);
+  foundNouns.push(...extractedFromAPI.nouns);
+  
+  // STEP 2: Find matching terms from domain terminology (for domain-specific context)
   domainTerms.phrases.forEach(phrase => {
-    if (combinedText.includes(phrase.toLowerCase())) {
+    if (combinedText.includes(phrase.toLowerCase()) && !foundPhrases.includes(phrase)) {
       foundPhrases.push(phrase);
     }
   });
   
-  // Find matching verbs (action words) from domain terminology
   domainTerms.verbs.forEach(verb => {
     const verbLower = verb.toLowerCase();
-    // Check for verb in various forms (verb, verb+ing, verb+ed, etc.)
-    if (combinedText.includes(verbLower) || 
-        combinedText.includes(`${verbLower}ing`) ||
-        combinedText.includes(`${verbLower}ed`) ||
-        combinedText.includes(`${verbLower}s`)) {
+    if ((combinedText.includes(verbLower) || 
+         combinedText.includes(`${verbLower}ing`) ||
+         combinedText.includes(`${verbLower}ed`) ||
+         combinedText.includes(`${verbLower}s`)) &&
+        !foundVerbs.some(v => v.toLowerCase() === verbLower)) {
       foundVerbs.push(verb);
     }
   });
   
-  // Find matching nouns from domain terminology
   domainTerms.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
-    if (combinedText.includes(nounLower) || 
-        combinedText.includes(`${nounLower}s`) ||
-        combinedText.includes(`${nounLower}es`)) {
+    if ((combinedText.includes(nounLower) || 
+         combinedText.includes(`${nounLower}s`) ||
+         combinedText.includes(`${nounLower}es`)) &&
+        !foundNouns.some(n => n.toLowerCase() === nounLower)) {
       foundNouns.push(noun);
     }
   });
   
-  // Find matching pronouns from domain terminology
   domainTerms.pronouns.forEach(pronoun => {
-    if (combinedText.includes(pronoun.toLowerCase())) {
+    if (combinedText.includes(pronoun.toLowerCase()) && !foundPronouns.includes(pronoun)) {
       foundPronouns.push(pronoun);
     }
   });
   
-  // Find matching keywords from domain terminology
   domainTerms.keywords.forEach(keyword => {
-    if (combinedText.includes(keyword.toLowerCase())) {
+    if (combinedText.includes(keyword.toLowerCase()) && !foundKeywords.includes(keyword)) {
       foundKeywords.push(keyword);
     }
   });
   
-  // Extract relevant context snippets based on found terms
+  // STEP 3: Extract relevant context snippets based on found terms
   searchResults.forEach(result => {
     const resultLower = result.toLowerCase();
     const hasPhrase = foundPhrases.some(phrase => resultLower.includes(phrase.toLowerCase()));
@@ -267,15 +373,18 @@ function extractKeywordsAndVerbsFromSearch(
     
     if (hasPhrase || hasVerb || hasNoun || hasKeyword) {
       contextSnippets.push(result.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength));
+    } else if (result.length > 0) {
+      // Also include results that don't match terms but provide context
+      contextSnippets.push(result.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength));
     }
   });
   
   return {
-    keywords: foundKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
-    phrases: foundPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
-    verbs: foundVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
-    nouns: foundNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
-    pronouns: foundPronouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
+    keywords: Array.from(new Set(foundKeywords)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: Array.from(new Set(foundPhrases)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: Array.from(new Set(foundVerbs)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: Array.from(new Set(foundNouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+    pronouns: Array.from(new Set(foundPronouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
     context: contextSnippets.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength),
   };
 }
@@ -378,52 +487,100 @@ function buildContextualDescription(
 ): string {
   let description = '';
   
+  // Remove duplicates and filter out terms that are too similar to task name
+  const taskWords = taskName.toLowerCase().split(/\s+/);
+  const uniquePhrases = Array.from(new Set(phrases))
+    .filter(phrase => !taskWords.some(word => phrase.toLowerCase().includes(word) && word.length > 3));
+  const uniqueKeywords = Array.from(new Set(keywords))
+    .filter(kw => !taskWords.some(word => kw.toLowerCase() === word.toLowerCase()));
+  const uniqueVerbs = Array.from(new Set(verbs))
+    .filter(v => !taskWords.some(word => v.toLowerCase() === word.toLowerCase()));
+  const uniqueNouns = Array.from(new Set(nouns))
+    .filter(n => !taskWords.some(word => n.toLowerCase() === word.toLowerCase()));
+  
   // Build description using found phrases, verbs (action words), nouns, and keywords
   // Prioritize phrases as they provide the most context
-  if (phrases.length > 0) {
-    const primaryPhrase = phrases[0];
+  if (uniquePhrases.length > 0) {
+    const primaryPhrase = uniquePhrases[0];
     description = `This task involves ${primaryPhrase}`;
     
-    // Add nouns or keywords for additional context
-    if (nouns.length > 0) {
-      description += ` related to ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
-    } else if (keywords.length > 0) {
-      description += ` focusing on ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
+    // Add additional context from other phrases or keywords if available
+    if (uniquePhrases.length > 1) {
+      description += ` and ${uniquePhrases[1]}`;
+    } else if (uniqueNouns.length > 0 && !primaryPhrase.toLowerCase().includes(uniqueNouns[0].toLowerCase())) {
+      description += ` related to ${uniqueNouns[0]}`;
+    } else if (uniqueKeywords.length > 0 && !primaryPhrase.toLowerCase().includes(uniqueKeywords[0].toLowerCase())) {
+      description += ` focusing on ${uniqueKeywords[0]}`;
     }
-  } else if (verbs.length > 0) {
+  } else if (uniqueVerbs.length > 0) {
     // Use action words (verbs) if no phrases found
-    const primaryVerb = verbs[0];
-    description = `This task involves ${primaryVerb}ing`;
+    const primaryVerb = uniqueVerbs[0];
+    // Check if verb already ends in 'ing', 'ed', etc.
+    const verbBase = primaryVerb.replace(/(ing|ed|s|es)$/, '');
+    const verbForm = primaryVerb.endsWith('ing') ? primaryVerb : 
+                     primaryVerb.endsWith('ed') ? primaryVerb :
+                     `${verbBase}ing`;
+    description = `This task involves ${verbForm}`;
     
-    // Add nouns for object context
-    if (nouns.length > 0) {
-      description += ` ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
-    } else if (keywords.length > 0) {
-      description += ` ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
+    // Add nouns or keywords for object context
+    if (uniqueNouns.length > 0) {
+      description += ` ${uniqueNouns[0]}`;
+    } else if (uniqueKeywords.length > 0) {
+      description += ` ${uniqueKeywords[0]}`;
     } else {
-      description += ` ${taskName.toLowerCase()}`;
+      // Use task name if no other context available
+      const taskNameLower = taskName.toLowerCase();
+      description += ` ${taskNameLower}`;
     }
-  } else if (nouns.length > 0) {
+  } else if (uniqueNouns.length > 0) {
     // Use nouns if no phrases or verbs found
-    description = `This task focuses on ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsPair).join(' and ')}`;
+    description = `This task focuses on ${uniqueNouns[0]}`;
     
-    if (keywords.length > 0) {
-      description += ` related to ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
+    if (uniqueNouns.length > 1) {
+      description += ` and ${uniqueNouns[1]}`;
+    } else if (uniqueKeywords.length > 0) {
+      description += ` related to ${uniqueKeywords[0]}`;
     }
-  } else if (keywords.length > 0) {
-    description = `This task focuses on ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsPair).join(' and ')}`;
+  } else if (uniqueKeywords.length > 0) {
+    description = `This task focuses on ${uniqueKeywords[0]}`;
+    if (uniqueKeywords.length > 1) {
+      description += ` and ${uniqueKeywords[1]}`;
+    }
   } else {
     description = `This task involves ${taskName.toLowerCase()}`;
   }
   
   // Add contextual information from Instant Answer API results if available
   if (context && context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength) {
-    // Extract a relevant sentence from context
-    const sentences = context.split(/[.!?]+/).filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength);
+    // Extract relevant sentences from context, prioritizing those with extracted terms
+    const sentences = context.split(/[.!?]+/)
+      .filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength)
+      .map(s => s.trim());
+    
     if (sentences.length > 0) {
-      const relevantSentence = sentences[0].trim();
-      if (relevantSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
-        description += `. ${relevantSentence}`;
+      // Find sentence with most extracted terms
+      let bestSentence = sentences[0];
+      let maxMatches = 0;
+      
+      sentences.forEach(sentence => {
+        const sentenceLower = sentence.toLowerCase();
+        const matches = 
+          (uniquePhrases.some(p => sentenceLower.includes(p.toLowerCase())) ? 2 : 0) +
+          (uniqueKeywords.some(k => sentenceLower.includes(k.toLowerCase())) ? 1 : 0) +
+          (uniqueVerbs.some(v => sentenceLower.includes(v.toLowerCase())) ? 1 : 0) +
+          (uniqueNouns.some(n => sentenceLower.includes(n.toLowerCase())) ? 1 : 0);
+        
+        if (matches > maxMatches) {
+          maxMatches = matches;
+          bestSentence = sentence;
+        }
+      });
+      
+      if (bestSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
+        description += `. ${bestSentence}`;
+      } else if (bestSentence.length > 0) {
+        // Truncate if too long
+        description += `. ${bestSentence.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength)}...`;
       }
     }
   }

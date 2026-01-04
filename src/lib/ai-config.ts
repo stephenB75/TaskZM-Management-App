@@ -115,6 +115,13 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     world: 'global international travel',
     mixed: 'general',
   },
+  // Text extraction from API results
+  minPhraseLength: 2, // Minimum phrase length (words)
+  maxPhraseLength: 5, // Maximum phrase length (words)
+  minKeywordLength: 3, // Minimum keyword length (characters)
+  maxKeywordLength: 20, // Maximum keyword length (characters)
+  minWordFrequency: 2, // Minimum word frequency to be considered a keyword
+  stopWords: ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'which', 'who', 'where', 'when', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just', 'now'],
 } as const;
 
 /**
