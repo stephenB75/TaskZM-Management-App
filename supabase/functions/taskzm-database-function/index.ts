@@ -4938,21 +4938,41 @@ const duckduckgoSearchHandler = async (c: any) => {
       const data = await response.json();
       const results: string[] = [];
 
+      console.log('DuckDuckGo API response structure:', {
+        hasAbstractText: !!data.AbstractText,
+        hasAnswer: !!data.Answer,
+        hasRelatedTopics: !!data.RelatedTopics,
+        hasResults: !!data.Results,
+        relatedTopicsCount: Array.isArray(data.RelatedTopics) ? data.RelatedTopics.length : 0,
+        resultsCount: Array.isArray(data.Results) ? data.Results.length : 0,
+        dataKeys: Object.keys(data)
+      });
+
       // Extract Abstract text (most relevant instant answer)
-      if (data.AbstractText && typeof data.AbstractText === 'string') {
-        results.push(data.AbstractText);
+      if (data.AbstractText && typeof data.AbstractText === 'string' && data.AbstractText.trim().length > 0) {
+        results.push(data.AbstractText.trim());
+        console.log('Added AbstractText:', data.AbstractText.substring(0, 100));
       }
 
       // Extract Answer (direct answer)
-      if (data.Answer && typeof data.Answer === 'string') {
-        results.push(data.Answer);
+      if (data.Answer && typeof data.Answer === 'string' && data.Answer.trim().length > 0) {
+        results.push(data.Answer.trim());
+        console.log('Added Answer:', data.Answer.substring(0, 100));
       }
 
       // Extract RelatedTopics
       if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-        data.RelatedTopics.slice(0, DUCKDUCKGO_CONFIG.maxResults - results.length).forEach((topic: any) => {
-          if (topic.Text && typeof topic.Text === 'string') {
-            results.push(topic.Text);
+        data.RelatedTopics.slice(0, DUCKDUCKGO_CONFIG.maxResults - results.length).forEach((topic: any, index: number) => {
+          if (topic.Text && typeof topic.Text === 'string' && topic.Text.trim().length > 0) {
+            results.push(topic.Text.trim());
+            console.log(`Added RelatedTopic ${index + 1}:`, topic.Text.substring(0, 100));
+          } else if (topic.FirstURL && typeof topic.FirstURL === 'string') {
+            // Sometimes RelatedTopics have FirstURL but no Text - use URL as context
+            const urlText = topic.FirstURL.split('/').pop()?.replace(/_/g, ' ') || '';
+            if (urlText.length > 0) {
+              results.push(urlText);
+              console.log(`Added RelatedTopic URL ${index + 1}:`, urlText);
+            }
           }
         });
       }
@@ -4960,12 +4980,15 @@ const duckduckgoSearchHandler = async (c: any) => {
       // Extract Results
       if (data.Results && Array.isArray(data.Results)) {
         const remainingSlots = DUCKDUCKGO_CONFIG.maxResults - results.length;
-        data.Results.slice(0, remainingSlots).forEach((result: any) => {
-          if (result.Text && typeof result.Text === 'string') {
-            results.push(result.Text);
+        data.Results.slice(0, remainingSlots).forEach((result: any, index: number) => {
+          if (result.Text && typeof result.Text === 'string' && result.Text.trim().length > 0) {
+            results.push(result.Text.trim());
+            console.log(`Added Result ${index + 1}:`, result.Text.substring(0, 100));
           }
         });
       }
+
+      console.log(`DuckDuckGo search completed for "${query}": ${results.length} results extracted`);
 
       return c.json({
         success: true,

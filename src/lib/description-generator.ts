@@ -71,23 +71,31 @@ async function searchDuckDuckGoInstantAnswer(query: string, accessToken?: string
           hasResults: !!data.results, 
           resultsType: Array.isArray(data.results) ? 'array' : typeof data.results,
           resultsLength: Array.isArray(data.results) ? data.results.length : 0,
-          responseKeys: Object.keys(data)
+          responseKeys: Object.keys(data),
+          resultsPreview: Array.isArray(data.results) ? data.results.slice(0, 2) : 'not an array'
         });
         
         if (data.success && Array.isArray(data.results)) {
           const results = data.results.filter((r: any): r is string => typeof r === 'string' && r.length > 0);
           
-          if (results.length >= DESCRIPTION_GENERATION_CONFIG.minSearchResults) {
+          logger.debug(`DuckDuckGo proxy filtered results for "${query}": ${results.length} valid results (from ${data.results.length} total)`, {
+            results: results.slice(0, 3).map(r => r.substring(0, 100))
+          });
+          
+          // Use results even if they're below minSearchResults threshold
+          // This ensures we use search results when available, even if minimal
+          if (results.length > 0) {
             logger.debug(`DuckDuckGo Instant Answer API successful (via Supabase proxy): ${results.length} results for "${query}"`);
             return results;
           } else {
-            logger.debug(`DuckDuckGo proxy returned insufficient results: ${results.length} < ${DESCRIPTION_GENERATION_CONFIG.minSearchResults} for "${query}"`);
+            logger.warn(`DuckDuckGo proxy returned empty results after filtering for "${query}". Raw results:`, data.results);
           }
         } else {
           logger.warn(`DuckDuckGo proxy response invalid structure for "${query}":`, { 
             success: data.success, 
             hasResults: !!data.results, 
             resultsIsArray: Array.isArray(data.results),
+            dataKeys: Object.keys(data),
             data 
           });
         }
@@ -217,15 +225,24 @@ async function searchDomainContext(
     const searchPromises = queriesToSearch.map(query => searchDuckDuckGoInstantAnswer(query, accessToken));
     const resultsArray = await Promise.allSettled(searchPromises);
     
+    logger.debug(`DuckDuckGo searchDomainContext: ${resultsArray.length} queries executed for "${taskName}"`);
+    
     resultsArray.forEach((result, index) => {
       if (result.status === 'fulfilled' && result.value.length > 0) {
         allResults.push(...result.value);
-        logger.debug(`DuckDuckGo Instant Answer API search ${index + 1} successful: "${queriesToSearch[index]}" - ${result.value.length} results`);
+        logger.debug(`DuckDuckGo Instant Answer API search ${index + 1} successful: "${queriesToSearch[index]}" - ${result.value.length} results`, {
+          resultsPreview: result.value.slice(0, 2).map((r: string) => r.substring(0, 100))
+        });
       } else if (result.status === 'rejected') {
         logger.warn(`DuckDuckGo Instant Answer API search ${index + 1} failed: "${queriesToSearch[index]}"`, result.reason);
       } else if (result.status === 'fulfilled' && result.value.length === 0) {
-        logger.debug(`DuckDuckGo Instant Answer API search ${index + 1} returned no results: "${queriesToSearch[index]}"`);
+        logger.warn(`DuckDuckGo Instant Answer API search ${index + 1} returned no results: "${queriesToSearch[index]}"`);
       }
+    });
+    
+    logger.debug(`DuckDuckGo searchDomainContext total results for "${taskName}": ${allResults.length} results from ${queriesToSearch.length} queries`, {
+      uniqueResults: [...new Set(allResults)].length,
+      resultsPreview: allResults.slice(0, 3).map(r => r.substring(0, 100))
     });
     
     // Remove duplicates and limit results
