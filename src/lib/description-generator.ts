@@ -810,8 +810,17 @@ function buildContextualDescription(
       
       // Use the best sentence - be more lenient to allow sentences even with lower scores
       // This ensures we use search result context even if keyword matching isn't perfect
-      const bestSentence = scoredSentences.find(s => s.score > 0)?.sentence || 
-                          (scoredSentences.length > 0 ? scoredSentences[0].sentence : null);
+      // If we have context from search results, prioritize using it even with low scores
+      let bestSentence = scoredSentences.find(s => s.score > 0)?.sentence || 
+                        (scoredSentences.length > 0 ? scoredSentences[0].sentence : null);
+      
+      // If no scored sentences but we have context, use first sentence from context
+      if (!bestSentence && context && context.length > 0) {
+        const firstSentence = context.split(/[.!?]+/)[0]?.trim();
+        if (firstSentence && firstSentence.length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength) {
+          bestSentence = firstSentence;
+        }
+      }
       
       if (bestSentence && bestSentence.length > 0) {
         // Use the sentence directly as description (more natural)
@@ -1134,6 +1143,11 @@ export async function generateDescription(taskName: string, accessToken?: string
       
       logger.debug(`DuckDuckGo search results: ${searchResults.length} results, extracted: ${extracted.keywords.length} keywords, ${extracted.phrases.length} phrases, ${extracted.verbs.length} verbs, ${extracted.nouns.length} nouns, context length: ${extracted.context.length}`);
       
+      // ALWAYS mark as using search results if we have any search results
+      // This ensures we prioritize search-based descriptions over local terminology
+      // Even if extracted terms are minimal, the search results provide valuable context
+      usedSearchResults = true;
+      
       // Build contextual description using search findings
       // Always use search results if we have them, even if extracted terms are minimal
       // The context from search results is valuable even without perfect term extraction
@@ -1149,24 +1163,62 @@ export async function generateDescription(taskName: string, accessToken?: string
         domainTerms
       );
       
-      // ALWAYS mark as using search results if we have any search results
-      // This ensures we prioritize search-based descriptions over local terminology
-      // Even if extracted terms are minimal, the search results provide valuable context
-      if (searchResults.length > 0) {
-        usedSearchResults = true;
+      // Calculate confidence for search-based results
+      // Boost confidence if we have context even if extracted terms are limited
+      const hasExtractedTerms = extracted.keywords.length > 0 || extracted.phrases.length > 0 || 
+                                extracted.verbs.length > 0 || extracted.nouns.length > 0;
+      const hasContext = extracted.context.length > 0;
+      // Boost confidence if we have meaningful context (even if shorter than minContextLength)
+      const contextBoost = extracted.context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
+                          extracted.context.length >= 20 ? 0.05 : 0; // Smaller boost for shorter but useful contexts
+      
+      // If buildContextualDescription returned empty, try using search results directly
+      if ((!description || description.trim().length === 0) && searchResults.length > 0) {
+        logger.debug(`buildContextualDescription returned empty, using search results directly for "${taskName}"`);
         
-        // Calculate confidence for search-based results
-        // Boost confidence if we have context even if extracted terms are limited
-        const hasExtractedTerms = extracted.keywords.length > 0 || extracted.phrases.length > 0 || 
-                                  extracted.verbs.length > 0 || extracted.nouns.length > 0;
-        const hasContext = extracted.context.length > 0;
-        // Boost confidence if we have meaningful context (even if shorter than minContextLength)
-        const contextBoost = extracted.context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
-                            extracted.context.length >= 20 ? 0.05 : 0; // Smaller boost for shorter but useful contexts
+        // If we have extracted context but description is still empty, try direct context
+        if (hasContext) {
+          // Use the context directly as description (it's already from search results)
+          const directDescription = extracted.context
+            .substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength)
+            .trim();
+          
+          if (directDescription.length > 0) {
+            // Clean up and capitalize
+            description = directDescription.charAt(0).toUpperCase() + directDescription.slice(1);
+            // Ensure it ends with punctuation
+            if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
+              description += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
+            }
+          }
+        }
         
-        // If we have search results but no extracted context, use search results directly as context
-        if (!hasContext && searchResults.length > 0) {
-          // Use first few search results as context
+        // If still empty, use search results directly
+        if ((!description || description.trim().length === 0) && searchResults.length > 0) {
+          // Use first few search results directly as description
+          const directContext = searchResults
+            .slice(0, DESCRIPTION_GENERATION_CONFIG.maxDirectSearchResultsForContext)
+            .map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength))
+            .join(' ')
+            .trim();
+          
+          if (directContext.length > 0) {
+            // Take first sentence or first 150 chars
+            const firstSentence = directContext.split(/[.!?]+/)[0]?.trim() || 
+                                 directContext.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength).trim();
+            
+            if (firstSentence.length > 0) {
+              description = firstSentence.charAt(0).toUpperCase() + firstSentence.slice(1);
+              // Ensure it ends with punctuation
+              if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
+                description += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
+              }
+            }
+          }
+        }
+        
+        // If still empty after trying direct search results, rebuild with direct context
+        if ((!description || description.trim().length === 0) && searchResults.length > 0) {
           const directContext = searchResults
             .slice(0, DESCRIPTION_GENERATION_CONFIG.maxDirectSearchResultsForContext)
             .map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength))
@@ -1185,6 +1237,7 @@ export async function generateDescription(taskName: string, accessToken?: string
             domainTerms
           );
         }
+      }
         
         confidence = Math.min(
           DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence + 
@@ -1198,11 +1251,18 @@ export async function generateDescription(taskName: string, accessToken?: string
           DESCRIPTION_GENERATION_CONFIG.maxConfidence
         );
         
-        logger.debug(`Using search results: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasExtractedTerms=${hasExtractedTerms}, hasContext=${hasContext}, searchResults=${searchResults.length}`);
+        logger.debug(`Using search results: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasExtractedTerms=${hasExtractedTerms}, hasContext=${hasContext}, searchResults=${searchResults.length}, description preview="${description.substring(0, 50)}..."`);
+        
+        // CRITICAL: If description is still empty after all attempts, log warning
+        if (!description || description.trim().length === 0) {
+          logger.warn(`WARNING: Search results exist but description is empty for "${taskName}". Search results:`, searchResults.slice(0, 3));
+        }
       }
+    } else {
+      logger.debug(`No search results for "${taskName}", will use fallback`);
     }
   } catch (error) {
-    logger.debug('DuckDuckGo Instant Answer API error, falling back to local terminology:', error);
+    logger.warn('DuckDuckGo Instant Answer API error, falling back to local terminology:', error);
   }
 
   // Fallback to local terminology ONLY if Instant Answer API didn't provide results
@@ -1260,6 +1320,11 @@ export async function generateDescription(taskName: string, accessToken?: string
   }
 
   logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedSearch=${usedSearchResults}, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
+  
+  // FINAL CHECK: If we used search results but got a fallback description, log warning
+  if (usedSearchResults && finalDescription.includes(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves)) {
+    logger.warn(`WARNING: Used search results but got fallback description for "${taskName}". This indicates search results weren't properly utilized.`);
+  }
 
   return {
     description: finalDescription,
