@@ -42,7 +42,7 @@ import {
 import { useIsMobile } from './ui/use-mobile';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
-import { AI_FUNCTION_EXPLANATION } from '../lib/ai-config';
+import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS } from '../lib/ai-config';
 import taskzmLogoLight from '../assets/taskzm-logo-light.png';  // Light (purple) logo for dark backgrounds
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
 import { SETTINGS_PANEL_TEXT_SIZES } from '../lib/text-size-constants';
@@ -1679,7 +1679,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   
                   <div className="space-y-1.5 pl-1">
-                    <p className="font-medium text-foreground">📊 Task Analysis:</p>
+                    <p className="font-medium text-foreground">{AI_FUNCTION_EXPLANATION.TASK_ANALYSIS_TITLE}</p>
                     <ul className="space-y-1 list-disc list-inside ml-1">
                       <li>Estimates task duration based on priority, description length, subtasks, and task complexity</li>
                       <li>Considers task categories (Work, Personal, Projects) and your custom category hours</li>
@@ -1689,21 +1689,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   <div className="space-y-1.5 pl-1">
-                    <p className="font-medium text-foreground">⏰ Scheduling Rules:</p>
+                    <p className="font-medium text-foreground">{AI_FUNCTION_EXPLANATION.SCHEDULING_RULES_TITLE}</p>
                     <ul className="space-y-1 list-disc list-inside ml-1">
-                      <li>Enforces a {aiSettings.maxHoursPerDay}-hour daily limit per day to prevent over-scheduling</li>
-                      <li>Schedules tasks within your defined category hours (e.g., Work hours 9 AM-5 PM)</li>
+                      <li>Enforces a {aiSettings.maxHoursPerDay}-hour daily limit to prevent over-scheduling</li>
+                      <li>Schedules tasks within your defined category hours (e.g., Work hours {AI_FUNCTION_EXPLANATION.DEFAULT_WORK_HOURS_EXAMPLE})</li>
                       <li>Separates weekday and weekend schedules based on your preferences</li>
                       <li>Distributes tasks across available days, starting from tomorrow</li>
-                      <li>Finds optimal time slots within work hours (9 AM-5 PM) when possible</li>
+                      <li>Finds optimal time slots within your configured work hours when possible</li>
                     </ul>
                   </div>
 
                   <div className="space-y-1.5 pl-1">
-                    <p className="font-medium text-foreground">🔄 Smart Features:</p>
+                    <p className="font-medium text-foreground">{AI_FUNCTION_EXPLANATION.SMART_FEATURES_TITLE}</p>
                     <ul className="space-y-1 list-disc list-inside ml-1">
                       <li>If a day exceeds {aiSettings.maxHoursPerDay} hours, you'll be consulted before proceeding</li>
-                      <li>Tasks that can't be scheduled within 14 days are flagged for manual scheduling</li>
+                      <li>Tasks that can't be scheduled within {DEFAULT_SCHEDULING_PERIOD_DAYS} days are flagged for manual scheduling</li>
                       <li>You can reschedule entire days, weeks, or months with one click</li>
                       <li>All schedules can be manually adjusted anytime</li>
                     </ul>

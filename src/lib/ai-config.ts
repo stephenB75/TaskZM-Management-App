@@ -133,6 +133,7 @@ export const AI_FUNCTION_EXPLANATION = {
   TASK_ANALYSIS_TITLE: "📊 Task Analysis:",
   SCHEDULING_RULES_TITLE: "⏰ Scheduling Rules:",
   SMART_FEATURES_TITLE: "🔄 Smart Features:",
+  DEFAULT_WORK_HOURS_EXAMPLE: "9 AM-5 PM", // Example work hours for display
 } as const;
 
 /**
