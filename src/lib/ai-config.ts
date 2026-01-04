@@ -85,8 +85,8 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   minSearchResults: 1, // Minimum search results needed to use search-based description
   searchTimeout: 5000, // Timeout for DuckDuckGo search (ms)
   // Context processing thresholds
-  minContextLength: 50, // Minimum context length to use in description
-  minSentenceLength: 20, // Minimum sentence length to extract
+  minContextLength: 30, // Minimum context length to use in description (reduced to allow shorter but useful contexts)
+  minSentenceLength: 15, // Minimum sentence length to extract (reduced to allow shorter useful sentences)
   maxSentenceLength: 150, // Maximum sentence length to extract
   // Query processing
   minWordLength: 2, // Minimum word length to consider in task name
@@ -97,10 +97,10 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   maxTopPhrases: 2, // Maximum top phrases to use in queries
   maxTopVerbs: 2, // Maximum top verbs to use in queries
   maxTopNouns: 2, // Maximum top nouns to use in queries
-  maxExtractedKeywords: 5, // Maximum extracted keywords to return
-  maxExtractedPhrases: 3, // Maximum extracted phrases to return
-  maxExtractedVerbs: 3, // Maximum extracted verbs to return
-  maxExtractedNouns: 3, // Maximum extracted nouns to return
+  maxExtractedKeywords: 8, // Maximum extracted keywords to return (increased for better context)
+  maxExtractedPhrases: 5, // Maximum extracted phrases to return (increased for better context)
+  maxExtractedVerbs: 5, // Maximum extracted verbs to return (increased for better context)
+  maxExtractedNouns: 5, // Maximum extracted nouns to return (increased for better context)
   maxExtractedPronouns: 2, // Maximum extracted pronouns to return
   maxSnippetLength: 200, // Maximum snippet length for context extraction
   // Confidence calculation weights
@@ -185,7 +185,10 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   contextMultiplier: 2, // Multiplier for context length (allows more context for better sentence extraction)
   topTermsMultiplier: 2, // Multiplier for top terms when building search queries
   sentenceLengthMultiplier: 2, // Multiplier for max sentence length when extracting from context
-  maxSearchResultsForContext: 10, // Maximum number of search results to use for context
+  maxSearchResultsForContext: 15, // Maximum number of search results to use for context (increased for better coverage)
+  maxDirectSearchResultsForContext: 5, // Maximum search results to use when building direct context from search results
+  maxActionWordsForFiltering: 7, // Maximum action words to check when filtering verbs
+  maxContextKeywordsForFallback: 2, // Maximum keywords to use as context in fallback descriptions
   // Sentence scoring bonuses and penalties
   sentenceScoringBonuses: {
     multipleKeywords2: 10, // Bonus for sentences with 2+ keywords

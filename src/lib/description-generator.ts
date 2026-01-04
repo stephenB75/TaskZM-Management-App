@@ -651,7 +651,8 @@ function buildContextualDescription(
   
   // STEP 1: Find the best sentence from search results that contains keywords and phrases
   // PRIORITY: Use actual complete sentences from search results, not just extracted terms
-  if (context && context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength) {
+  // Use context even if it's shorter than minContextLength - it might still be useful
+  if (context && context.length > 0) {
     // Try splitting by sentences first (periods, exclamation, question marks)
     // This is the most reliable way to get complete sentences
     let sentences = context.split(/[.!?]+/)
@@ -695,15 +696,19 @@ function buildContextualDescription(
         const sentenceLower = sentence.toLowerCase();
         let score = 0;
         
-        // Check for keywords (essential - must have at least one if we have keywords)
+        // Check for keywords (preferred but not required - allow sentences without keywords if they have phrases)
         const keywordCount = keywords.filter(kw => {
           const kwLower = kw.toLowerCase();
           // Use word boundary matching for better accuracy
           return new RegExp(`\\b${kwLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(sentenceLower);
         }).length;
         
-        if (keywordCount === 0 && keywords.length > 0) {
-          return { sentence, score: 0 }; // No keywords = not relevant (if we have keywords)
+        // Don't completely reject sentences without keywords if they have phrases or are from search results
+        // This allows using sentences that might be relevant even if keyword extraction wasn't perfect
+        if (keywordCount === 0 && keywords.length > 0 && relevantPhrases.length === 0) {
+          // Only reject if we have keywords but no phrases and no keyword matches
+          // This is less strict - allows sentences that might still be useful
+          score -= 5; // Penalty but don't reject completely
         }
         score += keywordCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.keywordWeight;
         
@@ -762,9 +767,10 @@ function buildContextualDescription(
         return b.sentence.length - a.sentence.length;
       });
       
-      // Only use sentences with a meaningful score
+      // Use the best sentence - be more lenient to allow sentences even with lower scores
+      // This ensures we use search result context even if keyword matching isn't perfect
       const bestSentence = scoredSentences.find(s => s.score > 0)?.sentence || 
-                          (scoredSentences.length > 0 && scoredSentences[0].score >= 0 ? scoredSentences[0].sentence : null);
+                          (scoredSentences.length > 0 ? scoredSentences[0].sentence : null);
       
       if (bestSentence && bestSentence.length > 0) {
         // Use the sentence directly as description (more natural)
@@ -884,7 +890,7 @@ function buildContextualDescription(
       const bestPhrase = phrases[0];
       const actionVerbs = verbs.filter(v => {
         const vLower = v.toLowerCase();
-        return DESCRIPTION_GENERATION_CONFIG.actionWordList.slice(0, 7).some(action => 
+        return DESCRIPTION_GENERATION_CONFIG.actionWordList.slice(0, DESCRIPTION_GENERATION_CONFIG.maxActionWordsForFiltering).some(action => 
           vLower.includes(action) || action.includes(vLower)
         );
       });
@@ -1012,7 +1018,7 @@ function buildContextualDescription(
           const kwLower = kw.toLowerCase();
           return !verb.toLowerCase().includes(kwLower) &&
                  !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
-        }).slice(0, 2);
+        }).slice(0, DESCRIPTION_GENERATION_CONFIG.maxContextKeywordsForFallback);
         
         if (relevantKeywords.length > 0) {
           description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${relevantKeywords.join(' ')}`;
@@ -1111,13 +1117,15 @@ export async function generateDescription(taskName: string, accessToken?: string
         const hasExtractedTerms = extracted.keywords.length > 0 || extracted.phrases.length > 0 || 
                                   extracted.verbs.length > 0 || extracted.nouns.length > 0;
         const hasContext = extracted.context.length > 0;
-        const contextBoost = extracted.context.length > DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 0;
+        // Boost confidence if we have meaningful context (even if shorter than minContextLength)
+        const contextBoost = extracted.context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
+                            extracted.context.length >= 20 ? 0.05 : 0; // Smaller boost for shorter but useful contexts
         
         // If we have search results but no extracted context, use search results directly as context
         if (!hasContext && searchResults.length > 0) {
           // Use first few search results as context
           const directContext = searchResults
-            .slice(0, 3)
+            .slice(0, DESCRIPTION_GENERATION_CONFIG.maxDirectSearchResultsForContext)
             .map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength))
             .join(' ');
           
