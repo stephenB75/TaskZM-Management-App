@@ -195,85 +195,6 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   const { tasks, projects } = useTasks();
   const { features } = useSubscription();
   const { actualTheme } = useTheme();
-
-  const handleExportPDF = () => {
-    try {
-      const doc = new jsPDF({
-        orientation: ANALYTICS_PDF_CONFIG.orientation,
-        unit: "mm",
-        format: ANALYTICS_PDF_CONFIG.pageSize,
-      });
-
-      let yPos = ANALYTICS_PDF_CONFIG.margins.top;
-
-      // Title
-      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title);
-      doc.setTextColor(
-        ANALYTICS_PDF_CONFIG.colors.primary.split("#")[1].substring(0, 2),
-        ANALYTICS_PDF_CONFIG.colors.primary.split("#")[1].substring(2, 4),
-        ANALYTICS_PDF_CONFIG.colors.primary.split("#")[1].substring(4, 6)
-      );
-      doc.text("TaskZM Analytics Report", ANALYTICS_PDF_CONFIG.margins.left, yPos);
-      yPos += 10;
-
-      // Date
-      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
-      doc.setTextColor(
-        ANALYTICS_PDF_CONFIG.colors.textSecondary.split("#")[1].substring(0, 2),
-        ANALYTICS_PDF_CONFIG.colors.textSecondary.split("#")[1].substring(2, 4),
-        ANALYTICS_PDF_CONFIG.colors.textSecondary.split("#")[1].substring(4, 6)
-      );
-      doc.text(
-        `Generated: ${new Date().toLocaleDateString()}`,
-        ANALYTICS_PDF_CONFIG.margins.left,
-        yPos
-      );
-      yPos += 15;
-
-      // Summary Statistics
-      if (analytics) {
-        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
-        doc.setTextColor(
-          ANALYTICS_PDF_CONFIG.colors.text.split("#")[1].substring(0, 2),
-          ANALYTICS_PDF_CONFIG.colors.text.split("#")[1].substring(2, 4),
-          ANALYTICS_PDF_CONFIG.colors.text.split("#")[1].substring(4, 6)
-        );
-        doc.text("Summary", ANALYTICS_PDF_CONFIG.margins.left, yPos);
-        yPos += 8;
-
-        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
-        doc.text(
-          `Total Tasks: ${analytics.totalTasks || 0}`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
-        );
-        yPos += 6;
-        doc.text(
-          `Completed: ${analytics.completedTasks || 0}`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
-        );
-        yPos += 6;
-        doc.text(
-          `In Progress: ${analytics.inProgressTasks || 0}`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
-        );
-        yPos += 6;
-        doc.text(
-          `Completion Rate: ${analytics.completionRate?.toFixed(1) || 0}%`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
-        );
-        yPos += 10;
-      }
-
-      // Save PDF
-      doc.save(`${ANALYTICS_PDF_CONFIG.fileName}-${new Date().toISOString().split("T")[0]}.pdf`);
-    } catch (error) {
-      console.error("Error exporting PDF:", error);
-    }
-  };
   const isDark = actualTheme === 'dark';
   
   // Safety check: ensure tasks and projects are arrays
@@ -622,6 +543,170 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       statusDistribution,
     };
   }, [safeTasks, safeProjects, maxDate, dateRangeLimit]);
+
+  // Helper function to convert hex color to RGB for jsPDF
+  const hexToRgb = (hex: string): [number, number, number] => {
+    try {
+      const cleanHex = hex.replace('#', '');
+      const r = parseInt(cleanHex.substring(0, 2), 16);
+      const g = parseInt(cleanHex.substring(2, 4), 16);
+      const b = parseInt(cleanHex.substring(4, 6), 16);
+      return [r, g, b];
+    } catch {
+      return [0, 0, 0]; // Default to black if parsing fails
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF({
+        orientation: ANALYTICS_PDF_CONFIG.orientation,
+        unit: "mm",
+        format: ANALYTICS_PDF_CONFIG.pageSize,
+      });
+
+      let yPos = ANALYTICS_PDF_CONFIG.margins.top;
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Title
+      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title);
+      const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
+      doc.setTextColor(r, g, b);
+      doc.text("TaskZM Analytics Report", ANALYTICS_PDF_CONFIG.margins.left, yPos);
+      yPos += 10;
+
+      // Date
+      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
+      const [r2, g2, b2] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.textSecondary);
+      doc.setTextColor(r2, g2, b2);
+      doc.text(
+        `Generated: ${new Date().toLocaleDateString()}`,
+        ANALYTICS_PDF_CONFIG.margins.left,
+        yPos
+      );
+      yPos += 15;
+
+      // Summary Statistics
+      if (analytics) {
+        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
+        const [r3, g3, b3] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.text);
+        doc.setTextColor(r3, g3, b3);
+        doc.text("Summary", ANALYTICS_PDF_CONFIG.margins.left, yPos);
+        yPos += 8;
+
+        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
+        doc.text(
+          `Total Tasks: ${analytics.totalTasks || 0}`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 6;
+        doc.text(
+          `Completed: ${analytics.completedTasks || 0}`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 6;
+        doc.text(
+          `In Progress: ${analytics.inProgressTasks || 0}`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 6;
+        doc.text(
+          `Completion Rate: ${analytics.completionRate?.toFixed(1) || 0}%`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 8;
+
+        // Time Tracking
+        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
+        doc.text("Time Tracking", ANALYTICS_PDF_CONFIG.margins.left, yPos);
+        yPos += 8;
+
+        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
+        const totalHours = Math.floor(analytics.totalTimeTracked / MINUTES_PER_HOUR);
+        const totalMinutes = Math.round(analytics.totalTimeTracked % MINUTES_PER_HOUR);
+        doc.text(
+          `Total Time: ${totalHours}h ${totalMinutes}m`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 6;
+        const weeklyHours = Math.floor(analytics.weeklyTimeTracked / MINUTES_PER_HOUR);
+        const weeklyMinutes = Math.round(analytics.weeklyTimeTracked % MINUTES_PER_HOUR);
+        doc.text(
+          `This Week: ${weeklyHours}h ${weeklyMinutes}m`,
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos
+        );
+        yPos += 6;
+        if (analytics.avgTimePerTask > 0) {
+          const avgHours = Math.floor(analytics.avgTimePerTask / MINUTES_PER_HOUR);
+          const avgMinutes = Math.round(analytics.avgTimePerTask % MINUTES_PER_HOUR);
+          doc.text(
+            `Avg per Task: ${avgHours}h ${avgMinutes}m`,
+            ANALYTICS_PDF_CONFIG.margins.left,
+            yPos
+          );
+          yPos += 8;
+        }
+
+        // Status Distribution
+        if (analytics.statusDistribution && analytics.statusDistribution.length > 0) {
+          doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
+          doc.text("Status Distribution", ANALYTICS_PDF_CONFIG.margins.left, yPos);
+          yPos += 8;
+
+          doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
+          analytics.statusDistribution.forEach((status) => {
+            if (yPos > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom - 20) {
+              doc.addPage();
+              yPos = ANALYTICS_PDF_CONFIG.margins.top;
+            }
+            const percentage = analytics.totalTasks > 0
+              ? ((status.value / analytics.totalTasks) * PERCENTAGE_MULTIPLIER).toFixed(1)
+              : '0.0';
+            doc.text(
+              `${status.name}: ${status.value} (${percentage}%)`,
+              ANALYTICS_PDF_CONFIG.margins.left,
+              yPos
+            );
+            yPos += 6;
+          });
+          yPos += 8;
+        }
+
+        // Project Progress
+        if (analytics.projectProgress && analytics.projectProgress.length > 0) {
+          doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
+          doc.text("Project Progress", ANALYTICS_PDF_CONFIG.margins.left, yPos);
+          yPos += 8;
+
+          doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
+          analytics.projectProgress.slice(0, 5).forEach((project) => {
+            if (yPos > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom - 20) {
+              doc.addPage();
+              yPos = ANALYTICS_PDF_CONFIG.margins.top;
+            }
+            doc.text(
+              `${project.name}: ${project.completed}/${project.total} (${project.completionRate.toFixed(1)}%)`,
+              ANALYTICS_PDF_CONFIG.margins.left,
+              yPos
+            );
+            yPos += 6;
+          });
+        }
+      }
+
+      // Save PDF
+      const fileName = `${ANALYTICS_PDF_CONFIG.fileName}-${new Date().toISOString().split("T")[0]}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+    }
+  };
 
   const peakHourLabel =
     analytics.timePatterns.peakHour === 0
