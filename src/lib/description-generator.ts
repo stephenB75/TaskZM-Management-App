@@ -1245,10 +1245,24 @@ export async function generateDescription(taskName: string, accessToken?: string
     }
   }
 
-  logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedSearch=${usedSearchResults}, descriptionLength=${description.length}`);
+  // Ensure we always return a non-empty description
+  const finalDescription = description.trim();
+  
+  if (!finalDescription || finalDescription.length === 0) {
+    // Ultimate fallback: create a basic description from task name
+    const fallbackDescription = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}.`;
+    logger.warn(`Generated description is empty for "${taskName}", using fallback`);
+    return {
+      description: fallbackDescription,
+      domain,
+      confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
+    };
+  }
+
+  logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedSearch=${usedSearchResults}, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
 
   return {
-    description: description.trim(),
+    description: finalDescription,
     domain,
     confidence,
   };

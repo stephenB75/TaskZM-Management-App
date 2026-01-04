@@ -71,7 +71,14 @@ export function RichTextEditor({
 
   // Initialize editor content
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
+    if (!editorRef.current) return;
+    
+    // Get current content (strip HTML tags for comparison)
+    const currentText = editorRef.current.innerText || editorRef.current.textContent || '';
+    const newText = value ? (value.replace(/<[^>]*>/g, '') || value) : '';
+    
+    // Only update if content actually changed (compare text content, not HTML)
+    if (currentText.trim() !== newText.trim()) {
       // If value is plain text without HTML tags, wrap it in paragraph tags
       if (value && !value.trim().match(/^<[^>]+>/)) {
         // Plain text - wrap in paragraph tags for proper formatting

@@ -1975,17 +1975,49 @@ export function TaskDialog({
                           size="sm"
                           onClick={async () => {
                             try {
+                              logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken });
                               const generated = await generateDescription(title, accessToken);
-                              if (generated.description) {
+                              logger.debug('AI Generate result received:', { 
+                                hasDescription: !!generated.description,
+                                descriptionLength: generated.description?.length || 0,
+                                descriptionPreview: generated.description?.substring(0, 50) || 'empty',
+                                confidence: generated.confidence,
+                                domain: generated.domain
+                              });
+                              
+                              if (generated.description && generated.description.trim().length > 0) {
                                 const newDescription = description 
                                   ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${generated.description}`
                                   : generated.description;
+                                
+                                logger.debug('Setting description:', { 
+                                  oldLength: description.length,
+                                  newLength: newDescription.length,
+                                  newDescriptionPreview: newDescription.substring(0, 50),
+                                  oldDescription: description.substring(0, 30),
+                                  newDescription: newDescription.substring(0, 30)
+                                });
+                                
                                 setDescription(newDescription);
+                                
+                                // Log after state update to verify it was set
+                                setTimeout(() => {
+                                  logger.debug('Description state after update:', { 
+                                    currentDescription: description,
+                                    expectedDescription: newDescription.substring(0, 50)
+                                  });
+                                }, 100);
+                                
                                 const source = generated.confidence >= DUCKDUCKGO_CONFIG.highConfidenceThreshold 
                                   ? 'DuckDuckGo search + browser AI' 
                                   : 'local terminology';
                                 toast.success('AI description generated', {
                                   description: `Generated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,
+                                });
+                              } else {
+                                logger.warn('AI Generate returned empty description:', generated);
+                                toast.error('Failed to generate description', {
+                                  description: 'The AI could not generate a description. Please try again or enter description manually.',
                                 });
                               }
                             } catch (error) {
