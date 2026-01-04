@@ -414,7 +414,7 @@ export function DraggableTodayAgendaTask({
         className={cn(
           "flex gap-3 group w-full min-w-0 relative transition-all duration-200",
           !isMobile && isDragging ? "cursor-grabbing opacity-70 scale-95" : "",
-          !isMobile && !isDragging ? "cursor-grab hover:scale-[1.01]" : "",
+          !isMobile && !isDragging ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hover}` : "",
         )}
         data-task-id={task.id}
       >
@@ -470,35 +470,26 @@ export function DraggableTodayAgendaTask({
             className={cn(
               "rounded-lg relative flex-1 overflow-hidden box-border",
               isDragging && TASK_CARD_TIMELINE.scale.dragging,
-              // Responsive padding: smaller on mobile, comfortable on desktop
-              TASK_CARD_SPACING.timeline.base,
-              // Background: solid on mobile, semi-transparent on desktop - match task card backgrounds
-              isMobile ? TASK_CARD_BACKGROUNDS.timeline.mobile : TASK_CARD_BACKGROUNDS.timeline.desktop,
-              // Responsive borders: thinner on mobile, standard on desktop - dark mode variants
-              TASK_CARD_BORDERS.timeline.mobile,
-              TASK_CARD_BORDERS.timeline.desktop,
-              // Shadows: better blending on mobile
-              isMobile ? TASK_CARD_SHADOWS.timeline.mobile : TASK_CARD_SHADOWS.timeline.desktop,
-              `${TASK_CARD_BACKGROUNDS.timeline.hover} ${TASK_CARD_SHADOWS.timeline.hover} ${TASK_CARD_BORDERS.timeline.hover} transition-all duration-200`,
+              // Responsive spacing between children - match Kanban styling
+              TASK_CARD_SPACING.spaceY.mobile,
+              TASK_CARD_SPACING.spaceY.desktop,
+              // Background: solid on mobile, semi-transparent on desktop - match Kanban task card backgrounds
+              isMobile ? TASK_CARD_BACKGROUNDS.mobile : TASK_CARD_BACKGROUNDS.desktop,
+              // Responsive borders: thinner on mobile, standard on desktop - match Kanban styling
+              `border-l border-b border-r ${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
+              // Shadows: better blending on mobile - match Kanban styling
+              isMobile ? TASK_CARD_SHADOWS.mobile : TASK_CARD_SHADOWS.desktop,
+              `${TASK_CARD_BACKGROUNDS.hover} ${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
               isNextUp && TASK_CARD_TIMELINE.nextUp.ring,
-              // Bottom padding: auto-adjusts based on content (pomodoro timer, assigned users)
-              // Base bottom padding for all tasks
-              !isMobile && TASK_CARD_SPACING.timeline.bottomPadding.desktop,
-              isMobile && !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && TASK_CARD_SPACING.timeline.bottomPadding.mobile.standard,
-              // Extra bottom padding on mobile when pomodoro/assigned users present to fit components
-              isMobile && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && TASK_CARD_SPACING.timeline.bottomPadding.mobile.withComponents,
-              // Compact padding for shorter tasks (< 45 mins) - auto-adjusts when pomodoro/assigned users are present
-              // Only applies to tasks < 45 mins, but considers pomodoro timer and assigned users for better fit
-              (task.estimatedTime && task.estimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short) && !isMobile && TASK_CARD_SPACING.timeline.short.desktop,
-              // On mobile: adjust padding based on components to ensure all elements fit
-              (task.estimatedTime && task.estimatedTime < TASK_CARD_HEIGHT_CONFIG.thresholds.short) && isMobile && 
-                ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0))
-                ? TASK_CARD_SPACING.timeline.short.withComponents // More space when components present
-                : TASK_CARD_SPACING.timeline.short.mobile, // Standard compact with adequate spacing
-              // Enhanced padding for tasks with descriptions to accommodate descriptions
-              task.description && !isMobile && TASK_CARD_SPACING.timeline.long.desktop,
-              task.description && isMobile && TASK_CARD_SPACING.timeline.long.mobile,
+              "flex-shrink-0 w-full",
+              // Padding: based on components, not description (description is in dropdown) - match Kanban styling
+              // Tasks with components: standard padding
+              ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
+                (isMobile ? TASK_CARD_SPACING.medium.mobile.withComponents : TASK_CARD_SPACING.medium.desktop.withComponents),
+              // Tasks without components: minimal padding
+              !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
+                (isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop),
             )}
             style={{
               height: `${taskCardHeight}px`,

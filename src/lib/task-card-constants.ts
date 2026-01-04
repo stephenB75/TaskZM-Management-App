@@ -638,6 +638,7 @@ export const TASK_CARD_TIMELINE = {
   },
   scale: {
     dragging: 'scale-90 origin-left',
+    hover: 'hover:scale-[1.005]', // Reduced magnification for Today Agenda (was 1.01)
   },
 } as const;
 
