@@ -68,6 +68,20 @@ import {
   SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
   SETTINGS_PANEL_ICON_SIZE_SMALL,
   SETTINGS_PANEL_ICON_SIZE_MEDIUM,
+  SETTINGS_PANEL_GAP_SMALL,
+  SETTINGS_PANEL_SPACING_XSMALL,
+  SETTINGS_PANEL_SPACING_SMALL,
+  SETTINGS_PANEL_SPACING_MEDIUM,
+  SETTINGS_PANEL_SPACING_LARGE,
+  SETTINGS_PANEL_MARGIN_TOP_XSMALL,
+  SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
+  SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+  SETTINGS_PANEL_PADDING_LARGE,
+  SETTINGS_PANEL_PADDING_Y_SMALL,
+  SETTINGS_PANEL_TEXT_SIZE_XSMALL,
+  SETTINGS_PANEL_TEXT_SIZE_SMALL,
+  SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+  SETTINGS_PANEL_ICON_SIZE_MEDIUM,
   SETTINGS_PANEL_ICON_SIZE_LARGE,
   SETTINGS_PANEL_ICON_SIZE_XLARGE,
   VIEWPORT_BREAKPOINTS,
@@ -1604,25 +1618,71 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
             </div>
 
-            <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/10 space-y-3">
-              <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <div className="space-y-2" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+            <div 
+              className="bg-primary/5 rounded-lg border border-primary/10 flex flex-col"
+              style={{ 
+                marginTop: SETTINGS_PANEL_SPACING_LARGE,
+                padding: SETTINGS_PANEL_PADDING_LARGE,
+                gap: SETTINGS_PANEL_SPACING_MEDIUM,
+              }}
+            >
+              <div 
+                className="flex items-start"
+                style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
+              >
+                <Info 
+                  className="text-primary flex-shrink-0" 
+                  style={{ 
+                    width: SETTINGS_PANEL_ICON_SIZE_MEDIUM,
+                    height: SETTINGS_PANEL_ICON_SIZE_MEDIUM,
+                    marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL,
+                  }}
+                />
+                <div 
+                  className="flex flex-col"
+                  style={{ 
+                    fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL,
+                    gap: SETTINGS_PANEL_SPACING_SMALL,
+                  }}
+                >
                   <div>
                     <p 
-                      className="mb-1 font-semibold text-foreground"
-                      style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                      className="font-semibold text-foreground"
+                      style={{ 
+                        fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+                        marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
+                      }}
                     >
                       {AI_FUNCTION_EXPLANATION.TITLE}
                     </p>
-                    <p className="leading-relaxed text-muted-foreground">
+                    <p 
+                      className="text-muted-foreground"
+                      style={{ lineHeight: '1.625' }}
+                    >
                       {AI_FUNCTION_EXPLANATION.DESCRIPTION}
                     </p>
                   </div>
                   
-                  <div className="space-y-1.5 pl-1">
-                    <p className="font-medium text-foreground">{AI_FUNCTION_EXPLANATION.TASK_ANALYSIS_TITLE}</p>
-                    <ul className="space-y-1 list-disc list-inside ml-1">
+                  <div 
+                    className="flex flex-col"
+                    style={{ 
+                      gap: SETTINGS_PANEL_SPACING_XSMALL,
+                      paddingLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+                    }}
+                  >
+                    <p 
+                      className="font-medium text-foreground"
+                      style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                    >
+                      {AI_FUNCTION_EXPLANATION.TASK_ANALYSIS_TITLE}
+                    </p>
+                    <ul 
+                      className="list-disc list-inside flex flex-col"
+                      style={{ 
+                        gap: SETTINGS_PANEL_SPACING_XSMALL,
+                        marginLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+                      }}
+                    >
                       <li>Estimates task duration based on priority, description length, subtasks, and task complexity</li>
                       <li>Considers task categories (Work, Personal, Projects) and your custom category hours</li>
                       <li>Respects due dates and schedules urgent tasks first when priority-based scheduling is enabled</li>
@@ -1630,9 +1690,26 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     </ul>
                   </div>
 
-                  <div className="space-y-1.5 pl-1">
-                    <p className="font-medium text-foreground">{AI_FUNCTION_EXPLANATION.SCHEDULING_RULES_TITLE}</p>
-                    <ul className="space-y-1 list-disc list-inside ml-1">
+                  <div 
+                    className="flex flex-col"
+                    style={{ 
+                      gap: SETTINGS_PANEL_SPACING_XSMALL,
+                      paddingLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+                    }}
+                  >
+                    <p 
+                      className="font-medium text-foreground"
+                      style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                    >
+                      {AI_FUNCTION_EXPLANATION.SCHEDULING_RULES_TITLE}
+                    </p>
+                    <ul 
+                      className="list-disc list-inside flex flex-col"
+                      style={{ 
+                        gap: SETTINGS_PANEL_SPACING_XSMALL,
+                        marginLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+                      }}
+                    >
                       <li>Enforces a {aiSettings.maxHoursPerDay}-hour daily limit to prevent over-scheduling</li>
                       <li>Schedules tasks within your defined category hours (e.g., Work hours {AI_FUNCTION_EXPLANATION.DEFAULT_WORK_HOURS_EXAMPLE})</li>
                       <li>Separates weekday and weekend schedules based on your preferences</li>
@@ -1641,9 +1718,26 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     </ul>
                   </div>
 
-                  <div className="space-y-1.5 pl-1">
-                    <p className="font-medium text-foreground">{AI_FUNCTION_EXPLANATION.SMART_FEATURES_TITLE}</p>
-                    <ul className="space-y-1 list-disc list-inside ml-1">
+                  <div 
+                    className="flex flex-col"
+                    style={{ 
+                      gap: SETTINGS_PANEL_SPACING_XSMALL,
+                      paddingLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+                    }}
+                  >
+                    <p 
+                      className="font-medium text-foreground"
+                      style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                    >
+                      {AI_FUNCTION_EXPLANATION.SMART_FEATURES_TITLE}
+                    </p>
+                    <ul 
+                      className="list-disc list-inside flex flex-col"
+                      style={{ 
+                        gap: SETTINGS_PANEL_SPACING_XSMALL,
+                        marginLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+                      }}
+                    >
                       <li>If a day exceeds {aiSettings.maxHoursPerDay} hours, you'll be consulted before proceeding</li>
                       <li>Tasks that can't be scheduled within {DEFAULT_SCHEDULING_PERIOD_DAYS} days are flagged for manual scheduling</li>
                       <li>You can reschedule entire days, weeks, or months with one click</li>
@@ -1651,8 +1745,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     </ul>
                   </div>
 
-                  <div className="pt-1 border-t border-primary/10">
-                    <p className="text-xs italic">
+                  <div 
+                    className="border-t border-primary/10"
+                    style={{ paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL }}
+                  >
+                    <p 
+                      className="italic"
+                      style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL }}
+                    >
                       💡 Tip: Enable "Priority-Based Scheduling" to automatically prioritize urgent and high-priority tasks first.
                     </p>
                   </div>
