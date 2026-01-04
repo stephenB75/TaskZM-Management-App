@@ -102,39 +102,71 @@ async function searchDomainContext(
   searchQueries.push(taskName);
   
   // 2. Domain-specific queries with phrases, verbs (action words), nouns, and pronouns
-  const topKeywords = domainTerms.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopKeywords).filter(kw => 
-    taskWords.some(word => kw.toLowerCase().includes(word) || word.includes(kw.toLowerCase()))
-  );
-  const topPhrases = domainTerms.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopPhrases).filter(phrase => 
-    taskWords.some(word => phrase.toLowerCase().includes(word) || word.includes(phrase.toLowerCase()))
-  );
-  const topVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopVerbs).filter(v => 
-    taskWords.some(word => v.toLowerCase().includes(word) || word.includes(v.toLowerCase()))
-  );
-  const topNouns = domainTerms.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopNouns).filter(noun => 
-    taskWords.some(word => noun.toLowerCase().includes(word) || word.includes(noun.toLowerCase()))
-  );
+  // Use domain terms that are relevant to the domain, not just ones matching task name
+  // This provides better context by searching for domain-specific concepts related to the task
+  const topKeywords = domainTerms.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopKeywords * 2);
+  const topPhrases = domainTerms.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopPhrases * 2);
+  const topVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopVerbs * 2);
+  const topNouns = domainTerms.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopNouns * 2);
   
-  // Add queries with phrases (action phrases)
-  if (topPhrases.length > 0) {
+  // Prioritize domain terms that relate to task name, but also include general domain terms
+  // This ensures we get both task-specific and domain-general context
+  const relevantPhrases = topPhrases.filter(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    return taskWords.some(word => phraseLower.includes(word) || word.includes(phraseLower)) ||
+           taskName.toLowerCase().includes(phraseLower);
+  });
+  const relevantVerbs = topVerbs.filter(v => {
+    const vLower = v.toLowerCase();
+    return taskWords.some(word => vLower.includes(word) || word.includes(vLower)) ||
+           taskName.toLowerCase().includes(vLower);
+  });
+  const relevantNouns = topNouns.filter(noun => {
+    const nounLower = noun.toLowerCase();
+    return taskWords.some(word => nounLower.includes(word) || word.includes(nounLower)) ||
+           taskName.toLowerCase().includes(nounLower);
+  });
+  const relevantKeywords = topKeywords.filter(kw => {
+    const kwLower = kw.toLowerCase();
+    return taskWords.some(word => kwLower.includes(word) || word.includes(kwLower)) ||
+           taskName.toLowerCase().includes(kwLower);
+  });
+  
+  // Add queries with phrases (action phrases) - prioritize relevant ones
+  if (relevantPhrases.length > 0) {
+    searchQueries.push(`${taskName} ${relevantPhrases[0]}`);
+    if (relevantPhrases.length > 1) {
+      searchQueries.push(`${taskName} ${relevantPhrases[1]}`);
+    }
+  } else if (topPhrases.length > 0) {
+    // Fallback to general domain phrases if no relevant ones found
     searchQueries.push(`${taskName} ${topPhrases[0]}`);
   }
   
-  // Add queries with verbs (action words)
-  if (topVerbs.length > 0) {
-    searchQueries.push(`${topVerbs[0]} ${taskName}`);
-    if (topVerbs.length > 1) {
-      searchQueries.push(`${taskName} ${topVerbs[1]}`);
+  // Add queries with verbs (action words) - prioritize relevant ones
+  if (relevantVerbs.length > 0) {
+    searchQueries.push(`${relevantVerbs[0]} ${taskName}`);
+    if (relevantVerbs.length > 1) {
+      searchQueries.push(`${taskName} ${relevantVerbs[1]}`);
     }
+  } else if (topVerbs.length > 0) {
+    // Fallback to general domain verbs if no relevant ones found
+    searchQueries.push(`${topVerbs[0]} ${taskName}`);
   }
   
-  // Add queries with nouns
-  if (topNouns.length > 0) {
+  // Add queries with nouns - prioritize relevant ones
+  if (relevantNouns.length > 0) {
+    searchQueries.push(`${taskName} ${relevantNouns[0]}`);
+  } else if (topNouns.length > 0) {
+    // Fallback to general domain nouns if no relevant ones found
     searchQueries.push(`${taskName} ${topNouns[0]}`);
   }
   
-  // Add queries with keywords
-  if (topKeywords.length > 0) {
+  // Add queries with keywords - prioritize relevant ones
+  if (relevantKeywords.length > 0) {
+    searchQueries.push(`${taskName} ${relevantKeywords[0]}`);
+  } else if (topKeywords.length > 0) {
+    // Fallback to general domain keywords if no relevant ones found
     searchQueries.push(`${taskName} ${topKeywords[0]}`);
   }
   
@@ -278,10 +310,104 @@ function extractTermsFromText(
 }
 
 /**
+ * Extract keywords from task name (user input)
+ * Returns significant words that are not stop words
+ */
+function extractKeywordsFromTaskName(taskName: string): string[] {
+  const taskWords = taskName.toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
+    .filter(w => !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
+  
+  // Remove duplicates and return
+  return Array.from(new Set(taskWords));
+}
+
+/**
+ * Find phrases in search results using keywords from task name
+ * Looks for phrases (2-5 words) that contain the keywords
+ */
+function findPhrasesUsingKeywords(
+  searchResults: string[],
+  keywords: string[]
+): string[] {
+  const foundPhrases: string[] = [];
+  const combinedText = searchResults.join(' ').toLowerCase();
+  
+  // For each keyword, find phrases that contain it
+  keywords.forEach(keyword => {
+    const keywordLower = keyword.toLowerCase();
+    
+    // Extract phrases containing this keyword from search results
+    searchResults.forEach(result => {
+      const resultLower = result.toLowerCase();
+      const words = resultLower.split(/\s+/);
+      
+      // Find all positions of the keyword in the text
+      for (let i = 0; i < words.length; i++) {
+        if (words[i].includes(keywordLower) || keywordLower.includes(words[i])) {
+          // Extract phrases of different lengths (2-5 words) starting from this position
+          for (let len = DESCRIPTION_GENERATION_CONFIG.minPhraseLength; 
+               len <= DESCRIPTION_GENERATION_CONFIG.maxPhraseLength && i + len <= words.length; 
+               len++) {
+            const phrase = words.slice(i, i + len).join(' ');
+            
+            // Only add if phrase contains the keyword and is meaningful
+            if (phrase.includes(keywordLower) && 
+                phrase.length > keywordLower.length + 2 && // Phrase should be longer than just the keyword
+                !foundPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
+              foundPhrases.push(phrase);
+            }
+          }
+        }
+      }
+    });
+  });
+  
+  // Also extract phrases from combined text using frequency analysis
+  const words = combinedText.split(/\s+/)
+    .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
+    .filter(w => !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
+  
+  const phraseFreq = new Map<string, number>();
+  
+  for (let i = 0; i < words.length - 1; i++) {
+    for (let len = DESCRIPTION_GENERATION_CONFIG.minPhraseLength; 
+         len <= DESCRIPTION_GENERATION_CONFIG.maxPhraseLength && i + len <= words.length; 
+         len++) {
+      const phrase = words.slice(i, i + len).join(' ');
+      
+      // Check if phrase contains any of our keywords
+      const containsKeyword = keywords.some(kw => phrase.includes(kw.toLowerCase()));
+      
+      if (containsKeyword && phrase.length > DESCRIPTION_GENERATION_CONFIG.minKeywordLength) {
+        phraseFreq.set(phrase, (phraseFreq.get(phrase) || 0) + 1);
+      }
+    }
+  }
+  
+  // Add top phrases by frequency
+  const sortedPhrases = Array.from(phraseFreq.entries())
+    .filter(([phrase, freq]) => freq >= DESCRIPTION_GENERATION_CONFIG.minWordFrequency)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases)
+    .map(([phrase]) => phrase);
+  
+  sortedPhrases.forEach(phrase => {
+    if (!foundPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
+      foundPhrases.push(phrase);
+    }
+  });
+  
+  return foundPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
+}
+
+/**
  * Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
- * Extracts terms directly from API results AND matches against domain terminology
+ * NEW FLOW: Uses keywords from task name to find phrases in search results
  */
 function extractKeywordsAndVerbsFromSearch(
+  taskName: string,
   searchResults: string[],
   domainTerms: ReturnType<typeof getDomainTerminology>
 ): { 
@@ -292,140 +418,143 @@ function extractKeywordsAndVerbsFromSearch(
   pronouns: string[];
   context: string;
 } {
-  const foundKeywords: string[] = [];
-  const foundPhrases: string[] = [];
+  // STEP 1: Extract keywords from task name (user input)
+  const taskKeywords = extractKeywordsFromTaskName(taskName);
+  
+  // STEP 2: Find phrases in search results using keywords
+  const foundPhrases = findPhrasesUsingKeywords(searchResults, taskKeywords);
+  
+  // STEP 3: Extract additional terms from search results for context
   const foundVerbs: string[] = [];
   const foundNouns: string[] = [];
   const foundPronouns: string[] = [];
-  const contextSnippets: string[] = [];
   
   const combinedText = searchResults.join(' ').toLowerCase();
   
-  // STEP 1: Extract terms directly from Instant Answer API results
-  // Process each search result individually to preserve context and extract better phrases
+  // Extract verbs and nouns from search results that relate to keywords
   searchResults.forEach(result => {
     const extractedFromResult = extractTermsFromText(
       result,
       DESCRIPTION_GENERATION_CONFIG.stopWords
     );
     
-    // Add extracted terms from this result
-    foundKeywords.push(...extractedFromResult.keywords);
-    foundPhrases.push(...extractedFromResult.phrases);
-    foundVerbs.push(...extractedFromResult.verbs);
-    foundNouns.push(...extractedFromResult.nouns);
+    // Only add verbs/nouns that relate to our keywords
+    extractedFromResult.verbs.forEach(verb => {
+      const verbLower = verb.toLowerCase();
+      const relatesToKeyword = taskKeywords.some(kw => 
+        verbLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbLower)
+      );
+      if (relatesToKeyword && !foundVerbs.some(v => v.toLowerCase() === verbLower)) {
+        foundVerbs.push(verb);
+      }
+    });
+    
+    extractedFromResult.nouns.forEach(noun => {
+      const nounLower = noun.toLowerCase();
+      const relatesToKeyword = taskKeywords.some(kw => 
+        nounLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounLower)
+      );
+      if (relatesToKeyword && !foundNouns.some(n => n.toLowerCase() === nounLower)) {
+        foundNouns.push(noun);
+      }
+    });
   });
   
-  // Also extract from combined text to catch cross-result patterns
-  const extractedFromCombined = extractTermsFromText(
-    combinedText,
-    DESCRIPTION_GENERATION_CONFIG.stopWords
-  );
+  // STEP 4: Find matching domain terminology terms that appear in search results
+  const wordBoundaryRegex = (term: string) => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
   
-  // Merge with individual results (avoid duplicates)
-  extractedFromCombined.keywords.forEach(kw => {
-    if (!foundKeywords.some(k => k.toLowerCase() === kw.toLowerCase())) {
-      foundKeywords.push(kw);
-    }
-  });
-  extractedFromCombined.phrases.forEach(phrase => {
-    if (!foundPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
-      foundPhrases.push(phrase);
-    }
-  });
-  extractedFromCombined.verbs.forEach(verb => {
-    if (!foundVerbs.some(v => v.toLowerCase() === verb.toLowerCase())) {
-      foundVerbs.push(verb);
-    }
-  });
-  extractedFromCombined.nouns.forEach(noun => {
-    if (!foundNouns.some(n => n.toLowerCase() === noun.toLowerCase())) {
-      foundNouns.push(noun);
-    }
-  });
-  
-  // STEP 2: Find matching terms from domain terminology (for domain-specific context)
+  // Match domain phrases that contain our keywords
   domainTerms.phrases.forEach(phrase => {
-    if (combinedText.includes(phrase.toLowerCase()) && !foundPhrases.includes(phrase)) {
+    const phraseLower = phrase.toLowerCase();
+    const phraseRegex = wordBoundaryRegex(phrase);
+    const containsKeyword = taskKeywords.some(kw => phraseLower.includes(kw.toLowerCase()));
+    
+    if (phraseRegex.test(combinedText) && containsKeyword && 
+        !foundPhrases.some(p => p.toLowerCase() === phraseLower)) {
       foundPhrases.push(phrase);
     }
   });
   
+  // Match domain verbs that relate to keywords
   domainTerms.verbs.forEach(verb => {
     const verbLower = verb.toLowerCase();
-    if ((combinedText.includes(verbLower) || 
-         combinedText.includes(`${verbLower}ing`) ||
-         combinedText.includes(`${verbLower}ed`) ||
-         combinedText.includes(`${verbLower}s`)) &&
+    const verbBase = verbLower.replace(/(ing|ed|s|es)$/, '');
+    const verbPatterns = [
+      new RegExp(`\\b${verbBase}\\b`, 'i'),
+      new RegExp(`\\b${verbBase}ing\\b`, 'i'),
+      new RegExp(`\\b${verbBase}ed\\b`, 'i'),
+      new RegExp(`\\b${verbBase}s\\b`, 'i'),
+    ];
+    
+    const relatesToKeyword = taskKeywords.some(kw => 
+      verbLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbLower) ||
+      verbBase.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbBase)
+    );
+    
+    if (verbPatterns.some(pattern => pattern.test(combinedText)) && relatesToKeyword &&
         !foundVerbs.some(v => v.toLowerCase() === verbLower)) {
       foundVerbs.push(verb);
     }
   });
   
+  // Match domain nouns that relate to keywords
   domainTerms.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
-    if ((combinedText.includes(nounLower) || 
-         combinedText.includes(`${nounLower}s`) ||
-         combinedText.includes(`${nounLower}es`)) &&
+    const nounBase = nounLower.replace(/s$|es$/, '');
+    const nounPatterns = [
+      new RegExp(`\\b${nounBase}\\b`, 'i'),
+      new RegExp(`\\b${nounBase}s\\b`, 'i'),
+    ];
+    
+    const relatesToKeyword = taskKeywords.some(kw => 
+      nounLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounLower) ||
+      nounBase.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounBase)
+    );
+    
+    if (nounPatterns.some(pattern => pattern.test(combinedText)) && relatesToKeyword &&
         !foundNouns.some(n => n.toLowerCase() === nounLower)) {
       foundNouns.push(noun);
     }
   });
   
-  domainTerms.pronouns.forEach(pronoun => {
-    if (combinedText.includes(pronoun.toLowerCase()) && !foundPronouns.includes(pronoun)) {
-      foundPronouns.push(pronoun);
-    }
-  });
+  // STEP 5: Build context from search results using keywords and phrases
+  // Prioritize sentences that contain both keywords and found phrases
+  const contextSnippets: string[] = [];
   
-  domainTerms.keywords.forEach(keyword => {
-    if (combinedText.includes(keyword.toLowerCase()) && !foundKeywords.includes(keyword)) {
-      foundKeywords.push(keyword);
-    }
-  });
-  
-  // STEP 3: Extract relevant context snippets based on found terms
-  // Prioritize results with extracted terms, but include all results for context
   searchResults.forEach(result => {
     if (result && result.length > 0) {
       const resultLower = result.toLowerCase();
-      const hasPhrase = foundPhrases.some(phrase => resultLower.includes(phrase.toLowerCase()));
-      const hasVerb = foundVerbs.some(v => resultLower.includes(v.toLowerCase()));
-      const hasNoun = foundNouns.some(n => resultLower.includes(n.toLowerCase()));
-      const hasKeyword = foundKeywords.some(kw => resultLower.includes(kw.toLowerCase()));
       
-      // Always include results - prioritize those with extracted terms
-      if (hasPhrase || hasVerb || hasNoun || hasKeyword) {
-        // Results with extracted terms get full snippet length
+      // Check if result contains keywords
+      const hasKeywords = taskKeywords.some(kw => resultLower.includes(kw.toLowerCase()));
+      // Check if result contains found phrases
+      const hasPhrases = foundPhrases.some(phrase => resultLower.includes(phrase.toLowerCase()));
+      
+      // Prioritize results with both keywords and phrases
+      if (hasKeywords && hasPhrases) {
         contextSnippets.push(result.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength));
-      } else {
-        // Results without extracted terms still provide valuable context
-        // Use a slightly shorter snippet to prioritize term-matched results
+      } else if (hasKeywords || hasPhrases) {
         contextSnippets.push(result.substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSnippetLength, result.length)));
       }
     }
   });
   
-  // Ensure we always have context from search results, even if no terms were extracted
-  // If contextSnippets is empty but we have search results, use them directly
-  let finalContext = contextSnippets.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength);
-  
-  if (!finalContext || finalContext.trim().length === 0) {
-    // Fallback: use search results directly as context
-    finalContext = searchResults
-      .slice(0, 3) // Use first 3 results
-      .map(r => r && r.length > 0 ? r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength) : '')
-      .filter(r => r.length > 0)
-      .join(' ')
-      .substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength);
-  }
+  // If no context snippets found, use all search results
+  let finalContext = contextSnippets.length > 0
+    ? contextSnippets.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength)
+    : searchResults
+        .slice(0, 3)
+        .map(r => r && r.length > 0 ? r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength) : '')
+        .filter(r => r.length > 0)
+        .join(' ')
+        .substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength);
   
   return {
-    keywords: Array.from(new Set(foundKeywords)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
-    phrases: Array.from(new Set(foundPhrases)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
-    verbs: Array.from(new Set(foundVerbs)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
-    nouns: Array.from(new Set(foundNouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
-    pronouns: Array.from(new Set(foundPronouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
+    keywords: taskKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: foundPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: foundVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: foundNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+    pronouns: foundPronouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
     context: finalContext,
   };
 }
@@ -512,8 +641,8 @@ function extractTermsFromTaskName(
 }
 
 /**
- * Build contextual description using extracted phrases, verbs (action words), nouns, pronouns, keywords, and search context
- * Creates a comprehensive description based on DuckDuckGo Instant Answer API findings or local terminology
+ * Build contextual description from search results using keywords and phrases
+ * NEW FLOW: Constructs natural description from search results that contain keywords and phrases
  */
 function buildContextualDescription(
   taskName: string,
@@ -528,252 +657,94 @@ function buildContextualDescription(
 ): string {
   let description = '';
   
-  // Remove duplicates and filter out terms that are too similar to task name
-  const taskWords = taskName.toLowerCase().split(/\s+/);
   const taskNameLower = taskName.toLowerCase();
   
-  // More aggressive filtering: exclude terms that are too generic or don't add value
-  const uniquePhrases = Array.from(new Set(phrases))
-    .filter(phrase => {
-      const phraseLower = phrase.toLowerCase();
-      // Exclude if phrase is too similar to task name
-      if (taskNameLower.includes(phraseLower) || phraseLower.includes(taskNameLower)) {
-        return false;
-      }
-      // Exclude generic phrases that don't add value
-      const genericPhrases = ['therapy session', 'coaching session', 'personal approach', 'well-being', 'wellbeing', 'preferences', 'thoughtful approach'];
-      if (genericPhrases.some(gp => phraseLower.includes(gp))) {
-        return false;
-      }
-      // Exclude if phrase only contains common words from task name
-      const phraseWords = phraseLower.split(/\s+/);
-      const allWordsInTaskName = phraseWords.every(w => 
-        taskWords.some(tw => tw === w || w.includes(tw) || tw.includes(w)) && 
-        w.length > DESCRIPTION_GENERATION_CONFIG.minWordLengthForFiltering
-      );
-      if (allWordsInTaskName) {
-        return false;
-      }
-      // Check if phrase is relevant to task - at least one significant word should relate
-      const significantWords = phraseWords.filter(w => w.length > 3 && !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
-      const hasRelevance = significantWords.some(pw => 
-        taskWords.some(tw => 
-          tw.includes(pw) || pw.includes(tw) || 
-          (tw.length > 3 && pw.length > 3 && 
-           (tw.substring(0, 3) === pw.substring(0, 3) || 
-            tw.substring(0, 4) === pw.substring(0, 4)))
-        )
-      );
-      // If phrase is from domain terminology, it's likely relevant
-      const isDomainTerm = domainTerms.phrases.some(dp => dp.toLowerCase() === phraseLower || phraseLower.includes(dp.toLowerCase()));
-      return hasRelevance || isDomainTerm;
-    });
-    
-  const uniqueKeywords = Array.from(new Set(keywords))
-    .filter(kw => {
-      const kwLower = kw.toLowerCase();
-      // Exclude if keyword is exactly in task name or is too generic
-      if (taskWords.some(word => kwLower === word.toLowerCase()) ||
-          taskNameLower.includes(kwLower) ||
-          kwLower.length <= 2) {
-        return false;
-      }
-      // Exclude generic/common words that don't add value
-      const genericWords = ['course', 'performing', 'journaling', 'therapy', 'session', 'wellbeing', 'well-being', 'preferences', 'thoughtful', 'personal', 'approach'];
-      if (genericWords.includes(kwLower)) {
-        return false;
-      }
-      // Check if keyword is relevant to task - at least one word from task should relate
-      const kwWords = kwLower.split(/\s+/);
-      const hasRelevance = kwWords.some(kwWord => 
-        taskWords.some(tw => 
-          tw.includes(kwWord) || kwWord.includes(tw) || 
-          (tw.length > 3 && kwWord.length > 3 && 
-           (tw.substring(0, 3) === kwWord.substring(0, 3) || 
-            tw.substring(0, 4) === kwWord.substring(0, 4)))
-        )
-      );
-      // If keyword is from domain terminology, it's likely relevant
-      const isDomainTerm = domainTerms.keywords.some(dk => dk.toLowerCase() === kwLower) ||
-                           domainTerms.phrases.some(dp => dp.toLowerCase().includes(kwLower));
-      return hasRelevance || isDomainTerm;
-    });
-    
-  const uniqueVerbs = Array.from(new Set(verbs))
-    .filter(v => {
-      const vLower = v.toLowerCase();
-      // Exclude if verb is exactly in task name
-      if (taskWords.some(word => vLower === word.toLowerCase()) ||
-          taskNameLower.includes(vLower)) {
-        return false;
-      }
-      // Exclude generic verbs that don't add value
-      const genericVerbs = ['performing', 'doing', 'making', 'getting', 'having', 'being', 'going'];
-      if (genericVerbs.includes(vLower)) {
-        return false;
-      }
-      // Check if verb is relevant to task or from domain terminology
-      const isDomainTerm = domainTerms.verbs.some(dv => dv.toLowerCase() === vLower);
-      return isDomainTerm || vLower.length > 4; // Prefer longer, more specific verbs
-    });
-    
-  const uniqueNouns = Array.from(new Set(nouns))
-    .filter(n => {
-      const nLower = n.toLowerCase();
-      // Exclude if noun is exactly in task name or is too generic
-      return !taskWords.some(word => nLower === word.toLowerCase()) &&
-             !taskNameLower.includes(nLower) &&
-             nLower.length > 2; // Exclude very short nouns
-    });
-  
-  // Build description by combining keywords and phrases intelligently
-  // Strategy: Use phrases + keywords together to create richer context
-  
-  // Combine phrases and keywords for richer descriptions
-  const combinedTerms: Array<{ type: 'phrase' | 'keyword' | 'verb' | 'noun'; value: string; priority: number }> = [];
-  
-  // Add phrases with highest priority (most specific)
-  uniquePhrases.forEach((phrase, index) => {
-    combinedTerms.push({ type: 'phrase', value: phrase, priority: DESCRIPTION_GENERATION_CONFIG.termPriority.phrase - index });
+  // Filter phrases to only include those that relate to keywords
+  const relevantPhrases = phrases.filter(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    return keywords.some(kw => phraseLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(phraseLower));
   });
   
-  // Add keywords with medium-high priority
-  uniqueKeywords.forEach((keyword, index) => {
-    combinedTerms.push({ type: 'keyword', value: keyword, priority: DESCRIPTION_GENERATION_CONFIG.termPriority.keyword - index });
-  });
-  
-  // Add verbs with medium priority
-  uniqueVerbs.forEach((verb, index) => {
-    combinedTerms.push({ type: 'verb', value: verb, priority: DESCRIPTION_GENERATION_CONFIG.termPriority.verb - index });
-  });
-  
-  // Add nouns with lower priority
-  uniqueNouns.forEach((noun, index) => {
-    combinedTerms.push({ type: 'noun', value: noun, priority: DESCRIPTION_GENERATION_CONFIG.termPriority.noun - index });
-  });
-  
-  // Sort by priority (highest first)
-  combinedTerms.sort((a, b) => b.priority - a.priority);
-  
-  // Build description using combined terms
-  if (combinedTerms.length > 0) {
-    const primaryTerm = combinedTerms[0];
-    let primaryValue = primaryTerm.value;
-    
-    // Format verbs properly
-    if (primaryTerm.type === 'verb') {
-      const verbBase = primaryValue.replace(/(ing|ed|s|es)$/, '');
-      primaryValue = primaryValue.endsWith('ing') ? primaryValue : 
-                     primaryValue.endsWith('ed') ? primaryValue :
-                     `${verbBase}ing`;
-    }
-    
-    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${primaryValue}`;
-    
-    // Add secondary terms (combine up to maxSecondaryTerms for richer context)
-    const secondaryTerms = combinedTerms.slice(1, DESCRIPTION_GENERATION_CONFIG.maxSecondaryTerms).filter(term => {
-      // Avoid duplicates and terms already included in primary
-      const primaryLower = primaryValue.toLowerCase();
-      const termLower = term.value.toLowerCase();
-      return !primaryLower.includes(termLower) && !termLower.includes(primaryLower);
-    });
-    
-    if (secondaryTerms.length > 0) {
-      // Combine secondary terms intelligently
-      const termValues = secondaryTerms.map(term => {
-        if (term.type === 'verb') {
-          const verbBase = term.value.replace(/(ing|ed|s|es)$/, '');
-          return term.value.endsWith('ing') ? term.value : 
-                 term.value.endsWith('ed') ? term.value :
-                 `${verbBase}ing`;
-        }
-        return term.value;
-      });
-      
-      if (termValues.length === 1) {
-        description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma}${termValues[0]}`;
-      } else if (termValues.length === 2) {
-        description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma}${termValues[0]}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.commaAnd}${termValues[1]}`;
-      } else {
-        description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma}${termValues.slice(0, -1).join(DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma)}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.commaAnd}${termValues[termValues.length - 1]}`;
-      }
-    }
-  } else {
-    // Fallback if no terms found
-    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}`;
-  }
-  
-  // Add contextual information from Instant Answer API results if available
-  // Use context to enhance description with actual information from search results
+  // STEP 1: Find the best sentence from search results that contains keywords and phrases
+  // This creates a natural description like "Take family pet for a walk to get their daily exercise"
   if (context && context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength) {
-    // Extract relevant sentences from context, prioritizing those with extracted terms
     const sentences = context.split(/[.!?]+/)
       .filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength)
       .map(s => s.trim());
     
     if (sentences.length > 0) {
-      // Score sentences based on how many extracted terms they contain
+      // Score sentences based on how many keywords and phrases they contain
       const scoredSentences = sentences.map(sentence => {
         const sentenceLower = sentence.toLowerCase();
         let score = 0;
         
-        // Check for phrases (highest weight)
-        uniquePhrases.forEach(phrase => {
-          if (sentenceLower.includes(phrase.toLowerCase())) {
-            score += DESCRIPTION_GENERATION_CONFIG.sentenceScoring.phraseWeight;
-          }
-        });
+        // Check for keywords (essential - must have at least one)
+        const keywordCount = keywords.filter(kw => sentenceLower.includes(kw.toLowerCase())).length;
+        if (keywordCount === 0) {
+          return { sentence, score: 0 }; // No keywords = not relevant
+        }
+        score += keywordCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.keywordWeight;
         
-        // Check for keywords
-        uniqueKeywords.forEach(keyword => {
-          if (sentenceLower.includes(keyword.toLowerCase())) {
-            score += DESCRIPTION_GENERATION_CONFIG.sentenceScoring.keywordWeight;
-          }
-        });
+        // Check for phrases (high value)
+        const phraseCount = relevantPhrases.filter(phrase => sentenceLower.includes(phrase.toLowerCase())).length;
+        score += phraseCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.phraseWeight;
         
-        // Check for verbs
-        uniqueVerbs.forEach(verb => {
-          if (sentenceLower.includes(verb.toLowerCase())) {
-            score += DESCRIPTION_GENERATION_CONFIG.sentenceScoring.verbWeight;
-          }
-        });
+        // Check for verbs and nouns (additional context)
+        const verbCount = verbs.filter(v => {
+          const vLower = v.toLowerCase();
+          const vBase = vLower.replace(/(ing|ed|s|es)$/, '');
+          return sentenceLower.includes(vLower) || sentenceLower.includes(vBase);
+        }).length;
+        score += verbCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.verbWeight;
         
-        // Check for nouns
-        uniqueNouns.forEach(noun => {
-          if (sentenceLower.includes(noun.toLowerCase())) {
-            score += DESCRIPTION_GENERATION_CONFIG.sentenceScoring.nounWeight;
-          }
-        });
+        const nounCount = nouns.filter(n => sentenceLower.includes(n.toLowerCase())).length;
+        score += nounCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.nounWeight;
         
         return { sentence, score };
       });
       
-      // Sort by score and get best sentence
+      // Get the best sentence (highest score)
       scoredSentences.sort((a, b) => b.score - a.score);
-      const bestSentence = scoredSentences[0]?.sentence || sentences[0];
+      const bestSentence = scoredSentences.find(s => s.score > 0)?.sentence || sentences[0];
       
       if (bestSentence && bestSentence.length > 0) {
+        // Use the sentence directly as description (more natural)
         if (bestSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
-          description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period}${bestSentence}`;
+          description = bestSentence;
         } else {
-          // Truncate if too long, but try to end at a word boundary
+          // Truncate if too long
           const truncated = bestSentence.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength);
           const lastSpace = truncated.lastIndexOf(' ');
           const threshold = DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.truncationThreshold;
-          if (lastSpace > threshold) {
-            description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period}${truncated.substring(0, lastSpace)}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.ellipsis}`;
-          } else {
-            description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period}${truncated}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.ellipsis}`;
-          }
+          description = lastSpace > threshold 
+            ? truncated.substring(0, lastSpace) + DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.ellipsis
+            : truncated + DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.ellipsis;
         }
       }
     }
   }
   
-  // Add domain-specific guidance based on scenarios
-  description += ` ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
+  // STEP 2: If no good sentence found, construct description from keywords and phrases
+  if (!description || description.trim().length === 0) {
+    if (relevantPhrases.length > 0 && keywords.length > 0) {
+      // Use first phrase that contains keywords
+      const bestPhrase = relevantPhrases[0];
+      description = bestPhrase;
+    } else if (keywords.length > 0) {
+      // Fallback: use keywords to create simple description
+      const primaryKeyword = keywords[0];
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${primaryKeyword}`;
+      if (keywords.length > 1) {
+        description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma}${keywords.slice(1).join(DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma)}`;
+      }
+    } else {
+      // Ultimate fallback
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}`;
+    }
+  }
   
-  return description;
+  // Return the natural description (no domain guidance appended - keep it natural)
+  return description.trim();
 }
 
 /**
@@ -805,8 +776,8 @@ export async function generateDescription(taskName: string, accessToken?: string
     const searchResults = await searchDomainContext(taskName, domain, domainTerms, accessToken);
     
     if (searchResults.length > 0) {
-      // Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
-      const extracted = extractKeywordsAndVerbsFromSearch(searchResults, domainTerms);
+      // Extract keywords from task name, find phrases using keywords, and build context from search results
+      const extracted = extractKeywordsAndVerbsFromSearch(taskName, searchResults, domainTerms);
       
       logger.debug(`DuckDuckGo search results: ${searchResults.length} results, extracted: ${extracted.keywords.length} keywords, ${extracted.phrases.length} phrases, ${extracted.verbs.length} verbs, ${extracted.nouns.length} nouns, context length: ${extracted.context.length}`);
       
