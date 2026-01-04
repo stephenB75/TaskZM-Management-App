@@ -209,24 +209,41 @@ function extractTermsFromText(
   
   keywords.push(...sortedKeywords);
   
-  // Extract phrases (2-5 word combinations)
+  // Extract phrases (2-5 word combinations) with frequency analysis
+  const phraseFreq = new Map<string, number>();
+  
   for (let i = 0; i < words.length - 1; i++) {
     for (let len = DESCRIPTION_GENERATION_CONFIG.minPhraseLength; 
          len <= DESCRIPTION_GENERATION_CONFIG.maxPhraseLength && i + len <= words.length; 
          len++) {
       const phrase = words.slice(i, i + len).join(' ');
       if (phrase.length > DESCRIPTION_GENERATION_CONFIG.minKeywordLength) {
-        phrases.push(phrase);
+        // Filter out phrases that are just stop words
+        const phraseWords = phrase.split(/\s+/);
+        const hasContentWords = phraseWords.some(w => !stopWords.includes(w));
+        
+        if (hasContentWords) {
+          phraseFreq.set(phrase, (phraseFreq.get(phrase) || 0) + 1);
+        }
       }
     }
   }
   
-  // Remove duplicate phrases and sort by length (longer = more specific)
-  const uniquePhrases = Array.from(new Set(phrases))
-    .sort((a, b) => b.length - a.length)
-    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
+  // Sort phrases by frequency and length (prioritize frequent, longer phrases)
+  const sortedPhrases = Array.from(phraseFreq.entries())
+    .filter(([phrase, freq]) => freq >= DESCRIPTION_GENERATION_CONFIG.minWordFrequency)
+    .sort((a, b) => {
+      // First sort by frequency (higher = better)
+      if (b[1] !== a[1]) {
+        return b[1] - a[1];
+      }
+      // Then by length (longer = more specific)
+      return b[0].length - a[0].length;
+    })
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases)
+    .map(([phrase]) => phrase);
   
-  phrases.push(...uniquePhrases);
+  phrases.push(...sortedPhrases);
   
   // Simple verb/noun detection (common patterns)
   // Verbs often end in -ing, -ed, -s, or are common action words
@@ -285,16 +302,47 @@ function extractKeywordsAndVerbsFromSearch(
   const combinedText = searchResults.join(' ').toLowerCase();
   
   // STEP 1: Extract terms directly from Instant Answer API results
-  const extractedFromAPI = extractTermsFromText(
+  // Process each search result individually to preserve context and extract better phrases
+  searchResults.forEach(result => {
+    const extractedFromResult = extractTermsFromText(
+      result,
+      DESCRIPTION_GENERATION_CONFIG.stopWords
+    );
+    
+    // Add extracted terms from this result
+    foundKeywords.push(...extractedFromResult.keywords);
+    foundPhrases.push(...extractedFromResult.phrases);
+    foundVerbs.push(...extractedFromResult.verbs);
+    foundNouns.push(...extractedFromResult.nouns);
+  });
+  
+  // Also extract from combined text to catch cross-result patterns
+  const extractedFromCombined = extractTermsFromText(
     combinedText,
     DESCRIPTION_GENERATION_CONFIG.stopWords
   );
   
-  // Add extracted terms (prioritize API results as they're context-specific)
-  foundKeywords.push(...extractedFromAPI.keywords);
-  foundPhrases.push(...extractedFromAPI.phrases);
-  foundVerbs.push(...extractedFromAPI.verbs);
-  foundNouns.push(...extractedFromAPI.nouns);
+  // Merge with individual results (avoid duplicates)
+  extractedFromCombined.keywords.forEach(kw => {
+    if (!foundKeywords.some(k => k.toLowerCase() === kw.toLowerCase())) {
+      foundKeywords.push(kw);
+    }
+  });
+  extractedFromCombined.phrases.forEach(phrase => {
+    if (!foundPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
+      foundPhrases.push(phrase);
+    }
+  });
+  extractedFromCombined.verbs.forEach(verb => {
+    if (!foundVerbs.some(v => v.toLowerCase() === verb.toLowerCase())) {
+      foundVerbs.push(verb);
+    }
+  });
+  extractedFromCombined.nouns.forEach(noun => {
+    if (!foundNouns.some(n => n.toLowerCase() === noun.toLowerCase())) {
+      foundNouns.push(noun);
+    }
+  });
   
   // STEP 2: Find matching terms from domain terminology (for domain-specific context)
   domainTerms.phrases.forEach(phrase => {
@@ -471,59 +519,85 @@ function buildContextualDescription(
   const uniqueNouns = Array.from(new Set(nouns))
     .filter(n => !taskWords.some(word => n.toLowerCase() === word.toLowerCase()));
   
-  // Build description using found phrases, verbs (action words), nouns, and keywords
-  // Prioritize phrases as they provide the most context
-  if (uniquePhrases.length > 0) {
-    const primaryPhrase = uniquePhrases[0];
-    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${primaryPhrase}`;
+  // Build description by combining keywords and phrases intelligently
+  // Strategy: Use phrases + keywords together to create richer context
+  
+  // Combine phrases and keywords for richer descriptions
+  const combinedTerms: Array<{ type: 'phrase' | 'keyword' | 'verb' | 'noun'; value: string; priority: number }> = [];
+  
+  // Add phrases with highest priority (most specific)
+  uniquePhrases.forEach((phrase, index) => {
+    combinedTerms.push({ type: 'phrase', value: phrase, priority: DESCRIPTION_GENERATION_CONFIG.termPriority.phrase - index });
+  });
+  
+  // Add keywords with medium-high priority
+  uniqueKeywords.forEach((keyword, index) => {
+    combinedTerms.push({ type: 'keyword', value: keyword, priority: DESCRIPTION_GENERATION_CONFIG.termPriority.keyword - index });
+  });
+  
+  // Add verbs with medium priority
+  uniqueVerbs.forEach((verb, index) => {
+    combinedTerms.push({ type: 'verb', value: verb, priority: DESCRIPTION_GENERATION_CONFIG.termPriority.verb - index });
+  });
+  
+  // Add nouns with lower priority
+  uniqueNouns.forEach((noun, index) => {
+    combinedTerms.push({ type: 'noun', value: noun, priority: DESCRIPTION_GENERATION_CONFIG.termPriority.noun - index });
+  });
+  
+  // Sort by priority (highest first)
+  combinedTerms.sort((a, b) => b.priority - a.priority);
+  
+  // Build description using combined terms
+  if (combinedTerms.length > 0) {
+    const primaryTerm = combinedTerms[0];
+    let primaryValue = primaryTerm.value;
     
-    // Add additional context from other phrases or keywords if available
-    if (uniquePhrases.length > 1) {
-      description += ` and ${uniquePhrases[1]}`;
-    } else if (uniqueNouns.length > 0 && !primaryPhrase.toLowerCase().includes(uniqueNouns[0].toLowerCase())) {
-      description += ` related to ${uniqueNouns[0]}`;
-    } else if (uniqueKeywords.length > 0 && !primaryPhrase.toLowerCase().includes(uniqueKeywords[0].toLowerCase())) {
-      description += ` focusing on ${uniqueKeywords[0]}`;
-    }
-  } else if (uniqueVerbs.length > 0) {
-    // Use action words (verbs) if no phrases found
-    const primaryVerb = uniqueVerbs[0];
-    // Check if verb already ends in 'ing', 'ed', etc.
-    const verbBase = primaryVerb.replace(/(ing|ed|s|es)$/, '');
-    const verbForm = primaryVerb.endsWith('ing') ? primaryVerb : 
-                     primaryVerb.endsWith('ed') ? primaryVerb :
+    // Format verbs properly
+    if (primaryTerm.type === 'verb') {
+      const verbBase = primaryValue.replace(/(ing|ed|s|es)$/, '');
+      primaryValue = primaryValue.endsWith('ing') ? primaryValue : 
+                     primaryValue.endsWith('ed') ? primaryValue :
                      `${verbBase}ing`;
-    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm}`;
-    
-    // Add nouns or keywords for object context
-    if (uniqueNouns.length > 0) {
-      description += ` ${uniqueNouns[0]}`;
-    } else if (uniqueKeywords.length > 0) {
-      description += ` ${uniqueKeywords[0]}`;
-    } else {
-      // Use task name if no other context available
-      const taskNameLower = taskName.toLowerCase();
-      description += ` ${taskNameLower}`;
     }
-  } else if (uniqueNouns.length > 0) {
-    // Use nouns if no phrases or verbs found
-    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.focuses} ${uniqueNouns[0]}`;
     
-    if (uniqueNouns.length > 1) {
-      description += ` and ${uniqueNouns[1]}`;
-    } else if (uniqueKeywords.length > 0) {
-      description += ` related to ${uniqueKeywords[0]}`;
-    }
-  } else if (uniqueKeywords.length > 0) {
-    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.focuses} ${uniqueKeywords[0]}`;
-    if (uniqueKeywords.length > 1) {
-      description += ` and ${uniqueKeywords[1]}`;
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${primaryValue}`;
+    
+    // Add secondary terms (combine up to maxSecondaryTerms for richer context)
+    const secondaryTerms = combinedTerms.slice(1, DESCRIPTION_GENERATION_CONFIG.maxSecondaryTerms).filter(term => {
+      // Avoid duplicates and terms already included in primary
+      const primaryLower = primaryValue.toLowerCase();
+      const termLower = term.value.toLowerCase();
+      return !primaryLower.includes(termLower) && !termLower.includes(primaryLower);
+    });
+    
+    if (secondaryTerms.length > 0) {
+      // Combine secondary terms intelligently
+      const termValues = secondaryTerms.map(term => {
+        if (term.type === 'verb') {
+          const verbBase = term.value.replace(/(ing|ed|s|es)$/, '');
+          return term.value.endsWith('ing') ? term.value : 
+                 term.value.endsWith('ed') ? term.value :
+                 `${verbBase}ing`;
+        }
+        return term.value;
+      });
+      
+      if (termValues.length === 1) {
+        description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma}${termValues[0]}`;
+      } else if (termValues.length === 2) {
+        description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma}${termValues[0]}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.commaAnd}${termValues[1]}`;
+      } else {
+        description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma}${termValues.slice(0, -1).join(DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.comma)}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.commaAnd}${termValues[termValues.length - 1]}`;
+      }
     }
   } else {
+    // Fallback if no terms found
     description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}`;
   }
   
   // Add contextual information from Instant Answer API results if available
+  // Use context to enhance description with actual information from search results
   if (context && context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength) {
     // Extract relevant sentences from context, prioritizing those with extracted terms
     const sentences = context.split(/[.!?]+/)
@@ -531,29 +605,60 @@ function buildContextualDescription(
       .map(s => s.trim());
     
     if (sentences.length > 0) {
-      // Find sentence with most extracted terms
-      let bestSentence = sentences[0];
-      let maxMatches = 0;
-      
-      sentences.forEach(sentence => {
+      // Score sentences based on how many extracted terms they contain
+      const scoredSentences = sentences.map(sentence => {
         const sentenceLower = sentence.toLowerCase();
-        const matches = 
-          (uniquePhrases.some(p => sentenceLower.includes(p.toLowerCase())) ? 2 : 0) +
-          (uniqueKeywords.some(k => sentenceLower.includes(k.toLowerCase())) ? 1 : 0) +
-          (uniqueVerbs.some(v => sentenceLower.includes(v.toLowerCase())) ? 1 : 0) +
-          (uniqueNouns.some(n => sentenceLower.includes(n.toLowerCase())) ? 1 : 0);
+        let score = 0;
         
-        if (matches > maxMatches) {
-          maxMatches = matches;
-          bestSentence = sentence;
-        }
+        // Check for phrases (highest weight)
+        uniquePhrases.forEach(phrase => {
+          if (sentenceLower.includes(phrase.toLowerCase())) {
+            score += DESCRIPTION_GENERATION_CONFIG.sentenceScoring.phraseWeight;
+          }
+        });
+        
+        // Check for keywords
+        uniqueKeywords.forEach(keyword => {
+          if (sentenceLower.includes(keyword.toLowerCase())) {
+            score += DESCRIPTION_GENERATION_CONFIG.sentenceScoring.keywordWeight;
+          }
+        });
+        
+        // Check for verbs
+        uniqueVerbs.forEach(verb => {
+          if (sentenceLower.includes(verb.toLowerCase())) {
+            score += DESCRIPTION_GENERATION_CONFIG.sentenceScoring.verbWeight;
+          }
+        });
+        
+        // Check for nouns
+        uniqueNouns.forEach(noun => {
+          if (sentenceLower.includes(noun.toLowerCase())) {
+            score += DESCRIPTION_GENERATION_CONFIG.sentenceScoring.nounWeight;
+          }
+        });
+        
+        return { sentence, score };
       });
       
-      if (bestSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
-        description += `. ${bestSentence}`;
-      } else if (bestSentence.length > 0) {
-        // Truncate if too long
-        description += `. ${bestSentence.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength)}...`;
+      // Sort by score and get best sentence
+      scoredSentences.sort((a, b) => b.score - a.score);
+      const bestSentence = scoredSentences[0]?.sentence || sentences[0];
+      
+      if (bestSentence && bestSentence.length > 0) {
+        if (bestSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
+          description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period}${bestSentence}`;
+        } else {
+          // Truncate if too long, but try to end at a word boundary
+          const truncated = bestSentence.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength);
+          const lastSpace = truncated.lastIndexOf(' ');
+          const threshold = DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.truncationThreshold;
+          if (lastSpace > threshold) {
+            description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period}${truncated.substring(0, lastSpace)}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.ellipsis}`;
+          } else {
+            description += `${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period}${truncated}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.ellipsis}`;
+          }
+        }
       }
     }
   }

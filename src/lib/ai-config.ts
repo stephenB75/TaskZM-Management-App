@@ -156,6 +156,31 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   },
   // Description separator for appending
   descriptionSeparator: '\n\n', // Separator when appending descriptions
+  // Term priority weights for combining terms in descriptions
+  termPriority: {
+    phrase: 10, // Highest priority for phrases (most specific)
+    keyword: 7, // Medium-high priority for keywords
+    verb: 5, // Medium priority for verbs
+    noun: 3, // Lower priority for nouns
+  },
+  // Maximum secondary terms to combine in description
+  maxSecondaryTerms: 4, // Combine up to 4 terms (1 primary + 3 secondary)
+  // Sentence scoring weights for context selection
+  sentenceScoring: {
+    phraseWeight: 3, // Highest weight for phrases in sentence scoring
+    keywordWeight: 2, // Medium-high weight for keywords
+    verbWeight: 1, // Medium weight for verbs
+    nounWeight: 1, // Medium weight for nouns
+  },
+  // Truncation threshold for sentence truncation
+  truncationThreshold: 0.8, // Use word boundary if truncation point is within 80% of max length
+  // String separators for description building
+  descriptionSeparators: {
+    comma: ', ',
+    commaAnd: ', and ',
+    period: '. ',
+    ellipsis: '...',
+  },
 } as const;
 
 /**
