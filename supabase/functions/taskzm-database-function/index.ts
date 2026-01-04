@@ -9,6 +9,13 @@ import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
 import * as appleCaldavSync from "./apple-caldav-sync.tsx";
 
+// DuckDuckGo API Configuration Constants
+const DUCKDUCKGO_CONFIG = {
+  instantAnswerApiUrl: 'https://api.duckduckgo.com/',
+  timeout: 5000, // 5 seconds timeout for search requests
+  maxResults: 5, // Maximum number of search results to process
+} as const;
+
 // Helper function to safely extract error messages
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -4887,11 +4894,11 @@ app.get("/taskzm-database-function/duckduckgo/search", async (c) => {
 
     // Encode query for DuckDuckGo API
     const searchQuery = encodeURIComponent(query);
-    const instantAnswerUrl = `https://api.duckduckgo.com/?q=${searchQuery}&format=json&no_html=1&skip_disambig=1`;
+    const instantAnswerUrl = `${DUCKDUCKGO_CONFIG.instantAnswerApiUrl}?q=${searchQuery}&format=json&no_html=1&skip_disambig=1`;
     
-    // Create abort controller for timeout (5 seconds)
+    // Create abort controller for timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), DUCKDUCKGO_CONFIG.timeout);
     
     try {
       // Fetch from DuckDuckGo Instant Answer API
@@ -4927,7 +4934,7 @@ app.get("/taskzm-database-function/duckduckgo/search", async (c) => {
 
       // Extract RelatedTopics
       if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-        data.RelatedTopics.slice(0, 5 - results.length).forEach((topic: any) => {
+        data.RelatedTopics.slice(0, DUCKDUCKGO_CONFIG.maxResults - results.length).forEach((topic: any) => {
           if (topic.Text && typeof topic.Text === 'string') {
             results.push(topic.Text);
           }
@@ -4936,7 +4943,7 @@ app.get("/taskzm-database-function/duckduckgo/search", async (c) => {
 
       // Extract Results
       if (data.Results && Array.isArray(data.Results)) {
-        const remainingSlots = 5 - results.length;
+        const remainingSlots = DUCKDUCKGO_CONFIG.maxResults - results.length;
         data.Results.slice(0, remainingSlots).forEach((result: any) => {
           if (result.Text && typeof result.Text === 'string') {
             results.push(result.Text);
