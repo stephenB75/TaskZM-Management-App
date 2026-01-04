@@ -42,6 +42,18 @@ export const ANALYTICS_PDF_CONFIG = {
   limits: {
     maxProjects: 5,
   },
+  chart: {
+    width: 170, // Chart width in mm (fits A4 with margins)
+    height: 80, // Chart height in mm
+    spacing: 10, // Spacing between charts in mm
+    quality: 1.5, // Image quality multiplier for html2canvas
+    backgroundColor: {
+      dark: '#1a1a1a', // Dark theme background color for chart capture
+      light: '#ffffff', // Light theme background color for chart capture
+    },
+    imageFormat: 'image/png', // Image format for chart capture
+    pdfImageFormat: 'PNG', // Image format for PDF (jsPDF format)
+  },
   labels: {
     title: "TaskZM Analytics Report",
     generated: "Generated:",
@@ -59,6 +71,11 @@ export const ANALYTICS_PDF_CONFIG = {
     hours: "h",
     minutes: "m",
     fallbackPercentage: "0.0",
+    // Chart titles
+    chartTimeTracked: "Time Tracked (7 Days)",
+    chartTasksCreatedCompleted: "Tasks Created vs Completed",
+    chartCompletionByTimeOfDay: "Completion by Time of Day",
+    chartTopTaskTags: "Top Task Tags",
   },
 } as const;
 
