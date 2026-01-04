@@ -41,8 +41,10 @@ export const HEADER_TITLE_SIZE_MOBILE = '1.25rem'; // text-xl = 1.25rem (20px)
 export const HEADER_TITLE_SIZE_DESKTOP = '0.875rem'; // text-sm = 0.875rem (14px)
 export const HEADER_DESCRIPTION_SIZE = '0.75rem'; // text-xs = 0.75rem (12px)
 export const HEADER_DESCRIPTION_MARGIN_TOP = '0.125rem'; // mt-0.5 = 0.125rem (2px)
-export const HEADER_DATE_SIZE = '1.25rem'; // text-xl = 1.25rem (20px) - Large, bold date display
-export const HEADER_DATE_NUMBER_SIZE = '1.5rem'; // text-2xl = 1.5rem (24px) - Large, bold number display
+export const HEADER_DATE_SIZE = '1.25rem'; // text-xl = 1.25rem (20px) - Large, bold date display (desktop)
+export const HEADER_DATE_SIZE_MOBILE = '0.875rem'; // text-sm = 0.875rem (14px) - Smaller date display for mobile
+export const HEADER_DATE_NUMBER_SIZE = '1.5rem'; // text-2xl = 1.5rem (24px) - Large, bold number display (desktop)
+export const HEADER_DATE_NUMBER_SIZE_MOBILE = '1.125rem'; // text-lg = 1.125rem (18px) - Smaller number display for mobile
 export const HEADER_DATE_MARGIN_TOP = '0'; // No margin - Minimal spacing between day name and number
 export const HEADER_GAP_SMALL = '0.375rem'; // gap-1.5 = 0.375rem (6px)
 export const HEADER_GAP_MEDIUM = '0.5rem'; // gap-2 = 0.5rem (8px)
