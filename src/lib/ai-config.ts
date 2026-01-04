@@ -53,6 +53,7 @@ export const DUCKDUCKGO_CONFIG = {
   timeout: 5000, // 5 seconds timeout for search requests
   maxResults: 5, // Maximum number of search results to process
   minConfidenceForSearch: 0.5, // Minimum confidence to use search results
+  highConfidenceThreshold: 0.7, // Confidence threshold for high-quality search results (used in UI to indicate source)
   cacheEnabled: true, // Enable caching for search results
   cacheExpiryHours: 24 * 7, // Cache expires after 7 days
   maxCacheSize: 1000, // Maximum number of cached search results

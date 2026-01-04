@@ -18,6 +18,8 @@ import {
   ListChecks,
   Copy,
   Folder,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import {
   Dialog,
@@ -83,8 +85,8 @@ import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription } from "../lib/description-generator";
+import { DUCKDUCKGO_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_GAP_SMALL } from "../lib/layout-constants";
-import { Sparkles } from "lucide-react";
 import type {
   Task,
   TaskPriority,
@@ -1906,47 +1908,91 @@ export function TaskDialog({
                   <div className="flex items-center justify-between">
                     <Label htmlFor="description" className="text-sm font-semibold text-foreground">Description (Optional)</Label>
                     {title.trim() && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            const generated = await generateDescription(title);
-                            if (generated.description) {
-                              const newDescription = description 
-                                ? `${description}\n\n${generated.description}`
-                                : generated.description;
-                              setDescription(newDescription);
-                              const source = generated.confidence > 0.7 
-                                ? 'DuckDuckGo search + browser AI' 
-                                : 'local terminology';
-                              toast.success('AI description generated', {
-                                description: `Generated based on ${generated.domain} context using ${source}`,
+                      <div className="flex items-center gap-1">
+                        {/* Refresh/Regenerate Description Button - Only show if description exists */}
+                        {description.trim() && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const generated = await generateDescription(title);
+                                if (generated.description) {
+                                  // Replace existing description with regenerated one
+                                  setDescription(generated.description);
+                                  const source = generated.confidence >= DUCKDUCKGO_CONFIG.highConfidenceThreshold 
+                                    ? 'DuckDuckGo search + browser AI' 
+                                    : 'local terminology';
+                                  toast.success('Description regenerated', {
+                                    description: `Regenerated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,
+                                  });
+                                }
+                              } catch (error) {
+                                logger.warn('Description regeneration failed:', error);
+                                toast.error('Failed to regenerate description', {
+                                  description: 'Please try again',
+                                });
+                              }
+                            }}
+                            className="h-7 px-2 text-xs"
+                            style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
+                            title="Refresh/Regenerate description (replaces current)"
+                          >
+                            <RefreshCw 
+                              className="w-3 h-3" 
+                              style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }}
+                            />
+                            <span className="hidden sm:inline">Refresh</span>
+                          </Button>
+                        )}
+                        {/* Generate New Description Button - Appends to existing or creates new */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const generated = await generateDescription(title);
+                              if (generated.description) {
+                                const newDescription = description 
+                                  ? `${description}\n\n${generated.description}`
+                                  : generated.description;
+                                setDescription(newDescription);
+                                const source = generated.confidence >= DUCKDUCKGO_CONFIG.highConfidenceThreshold 
+                                  ? 'DuckDuckGo search + browser AI' 
+                                  : 'local terminology';
+                                toast.success('AI description generated', {
+                                  description: `Generated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,
+                                });
+                              }
+                            } catch (error) {
+                              logger.warn('Description generation failed:', error);
+                              toast.error('Failed to generate description', {
+                                description: 'Please try again or enter description manually',
                               });
                             }
-                          } catch (error) {
-                            logger.warn('Description generation failed:', error);
-                            toast.error('Failed to generate description', {
-                              description: 'Please try again or enter description manually',
-                            });
-                          }
-                        }}
-                        className="h-7 px-2 text-xs"
-                        style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
-                      >
-                        <Sparkles 
-                          className="w-3 h-3" 
-                          style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }}
-                        />
-                        <span className="hidden sm:inline">AI Generate</span>
-                      </Button>
+                          }}
+                          className="h-7 px-2 text-xs"
+                          style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
+                          title="Generate new description (appends to existing)"
+                        >
+                          <Sparkles 
+                            className="w-3 h-3" 
+                            style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }}
+                          />
+                          <span className="hidden sm:inline">AI Generate</span>
+                        </Button>
+                      </div>
                     )}
                   </div>
                   <RichTextEditor
                     value={description}
-                    onChange={setDescription}
-                    placeholder="Add a description..."
+                    onChange={(newDescription) => {
+                      // Update description - useTaskBreakdown hook automatically updates AI Action Plan when description changes
+                      setDescription(newDescription);
+                    }}
+                    placeholder="Add a description... (Editable - AI Action Plan updates automatically as you type)"
                     rows={3}
                     className="focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary"
                   />

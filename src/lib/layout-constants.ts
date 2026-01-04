@@ -43,7 +43,7 @@ export const HEADER_DESCRIPTION_SIZE = '0.75rem'; // text-xs = 0.75rem (12px)
 export const HEADER_DESCRIPTION_MARGIN_TOP = '0.125rem'; // mt-0.5 = 0.125rem (2px)
 export const HEADER_DATE_SIZE = '1.25rem'; // text-xl = 1.25rem (20px) - Large, bold date display
 export const HEADER_DATE_NUMBER_SIZE = '1.5rem'; // text-2xl = 1.5rem (24px) - Large, bold number display
-export const HEADER_DATE_MARGIN_TOP = '0.125rem'; // mt-0.5 = 0.125rem (2px) - Reduced spacing between day name and number
+export const HEADER_DATE_MARGIN_TOP = '0'; // No margin - Minimal spacing between day name and number
 export const HEADER_GAP_SMALL = '0.375rem'; // gap-1.5 = 0.375rem (6px)
 export const HEADER_GAP_MEDIUM = '0.5rem'; // gap-2 = 0.5rem (8px)
 export const HEADER_GAP_LARGE = '0.75rem'; // gap-3 = 0.75rem (12px)
