@@ -48,6 +48,8 @@ import {
   TASK_CARD_DROPDOWN_BADGE_COLORS,
   TASK_CARD_DROPDOWN,
   TASK_CARD_STANDARD_HEIGHTS,
+  TASK_CARD_OPACITY,
+  TASK_CARD_TIMELINE,
 } from "../lib/task-card-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
@@ -511,12 +513,13 @@ export const DraggableTaskCard = React.forwardRef<
           className={cn(
             "w-full flex gap-2 transition-all duration-200",
             !isMobile && (isDragging || isSortableDragging)
-              ? "opacity-30 cursor-grabbing scale-95 ring-2 ring-primary/50 ring-offset-2"
+              ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.draggingKanban} ring-2 ring-primary/50 ring-offset-2`
               : "",
             !isMobile && !(isDragging || isSortableDragging)
-              ? "cursor-grab hover:scale-[1.02]"
+              ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hoverKanban}`
               : "",
           )}
+          style={!isMobile && (isDragging || isSortableDragging) ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 } : undefined}
           data-dnd-kit-dragging={isDragging || isSortableDragging}
           data-task-card="true"
           data-task-id={task.id}

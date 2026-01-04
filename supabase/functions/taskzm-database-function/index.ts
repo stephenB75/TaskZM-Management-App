@@ -3181,7 +3181,7 @@ app.post("/taskzm-database-function/calendar/apple/caldav/test", async (c) => {
       message: getErrorMessage(error)
     }, 500);
   }
-};
+});
 
 // Discover calendars
 app.post("/taskzm-database-function/calendar/apple/caldav/discover", async (c) => {

@@ -413,9 +413,10 @@ export function DraggableTodayAgendaTask({
         transition={{ duration: 0.2, delay: index * 0.05 }}
         className={cn(
           "flex gap-3 group w-full min-w-0 relative transition-all duration-200",
-          !isMobile && isDragging ? "cursor-grabbing opacity-70 scale-95" : "",
+          !isMobile && isDragging ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.dragging}` : "",
           !isMobile && !isDragging ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hover}` : "",
         )}
+        style={!isMobile && isDragging ? { opacity: TASK_CARD_OPACITY.dragging / 100 } : undefined}
         data-task-id={task.id}
       >
         {/* Timeline Marker */}

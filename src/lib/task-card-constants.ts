@@ -607,6 +607,7 @@ export const TASK_CARD_ADDITIONAL_FONT_SIZES = {
 export const TASK_CARD_OPACITY = {
   done: 60, // opacity-60 for completed tasks
   dragging: 70, // opacity-70 for dragging state
+  draggingKanban: 30, // opacity-30 for Kanban dragging state
   overlay: 95, // opacity-95 for drag overlay
   timelineLine: {
     nextUp: 'CC', // 80% opacity hex for Next Up timeline line
@@ -637,8 +638,10 @@ export const TASK_CARD_TIMELINE = {
     ring: 'ring-2 ring-primary/20',
   },
   scale: {
-    dragging: 'scale-90 origin-left',
+    dragging: 'scale-95', // scale-95 for dragging state
+    draggingKanban: 'scale-95', // scale-95 for Kanban dragging state
     hover: 'hover:scale-[1.005]', // Reduced magnification for Today Agenda (was 1.01)
+    hoverKanban: 'hover:scale-[1.02]', // Hover scale for Kanban cards
   },
 } as const;
 
