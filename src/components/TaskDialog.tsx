@@ -86,7 +86,7 @@ import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription } from "../lib/description-generator";
-import { DUCKDUCKGO_CONFIG } from "../lib/ai-config";
+import { DUCKDUCKGO_CONFIG, DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_GAP_SMALL } from "../lib/layout-constants";
 import type {
   Task,
@@ -702,6 +702,7 @@ export function TaskDialog({
     
     // If we've already initialized from this task ID, don't re-initialize
     // This prevents reverting user changes when task object reference changes
+    // IMPORTANT: This also prevents resetting the description field when AI generates a description
     if (initializedTaskIdRef.current === currentTaskId && currentTaskId !== null) {
       return;
     }
@@ -1920,7 +1921,14 @@ export function TaskDialog({
                             onClick={async () => {
                               try {
                                 const generated = await generateDescription(title, accessToken);
-                                if (generated.description) {
+                                logger.debug('AI Refresh description result:', { 
+                                  hasDescription: !!generated.description, 
+                                  descriptionLength: generated.description?.length || 0,
+                                  confidence: generated.confidence,
+                                  domain: generated.domain
+                                });
+                                
+                                if (generated.description && generated.description.trim().length > 0) {
                                   // Replace existing description with regenerated one
                                   setDescription(generated.description);
                                   const source = generated.confidence >= DUCKDUCKGO_CONFIG.highConfidenceThreshold 
@@ -1928,6 +1936,11 @@ export function TaskDialog({
                                     : 'local terminology';
                                   toast.success('Description regenerated', {
                                     description: `Regenerated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,
+                                  });
+                                } else {
+                                  logger.warn('Regenerated description is empty:', generated);
+                                  toast.error('Failed to regenerate description', {
+                                    description: 'The AI could not generate a description. Please try again or enter description manually.',
                                   });
                                 }
                               } catch (error) {
@@ -1958,7 +1971,7 @@ export function TaskDialog({
                               const generated = await generateDescription(title, accessToken);
                               if (generated.description) {
                                 const newDescription = description 
-                                  ? `${description}\n\n${generated.description}`
+                                  ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${generated.description}`
                                   : generated.description;
                                 setDescription(newDescription);
                                 const source = generated.confidence >= DUCKDUCKGO_CONFIG.highConfidenceThreshold 

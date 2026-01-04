@@ -463,7 +463,7 @@ function buildContextualDescription(
   // Remove duplicates and filter out terms that are too similar to task name
   const taskWords = taskName.toLowerCase().split(/\s+/);
   const uniquePhrases = Array.from(new Set(phrases))
-    .filter(phrase => !taskWords.some(word => phrase.toLowerCase().includes(word) && word.length > 3));
+    .filter(phrase => !taskWords.some(word => phrase.toLowerCase().includes(word) && word.length > DESCRIPTION_GENERATION_CONFIG.minWordLengthForFiltering));
   const uniqueKeywords = Array.from(new Set(keywords))
     .filter(kw => !taskWords.some(word => kw.toLowerCase() === word.toLowerCase()));
   const uniqueVerbs = Array.from(new Set(verbs))
@@ -475,7 +475,7 @@ function buildContextualDescription(
   // Prioritize phrases as they provide the most context
   if (uniquePhrases.length > 0) {
     const primaryPhrase = uniquePhrases[0];
-    description = `This task involves ${primaryPhrase}`;
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${primaryPhrase}`;
     
     // Add additional context from other phrases or keywords if available
     if (uniquePhrases.length > 1) {
@@ -493,7 +493,7 @@ function buildContextualDescription(
     const verbForm = primaryVerb.endsWith('ing') ? primaryVerb : 
                      primaryVerb.endsWith('ed') ? primaryVerb :
                      `${verbBase}ing`;
-    description = `This task involves ${verbForm}`;
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm}`;
     
     // Add nouns or keywords for object context
     if (uniqueNouns.length > 0) {
@@ -507,7 +507,7 @@ function buildContextualDescription(
     }
   } else if (uniqueNouns.length > 0) {
     // Use nouns if no phrases or verbs found
-    description = `This task focuses on ${uniqueNouns[0]}`;
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.focuses} ${uniqueNouns[0]}`;
     
     if (uniqueNouns.length > 1) {
       description += ` and ${uniqueNouns[1]}`;
@@ -515,12 +515,12 @@ function buildContextualDescription(
       description += ` related to ${uniqueKeywords[0]}`;
     }
   } else if (uniqueKeywords.length > 0) {
-    description = `This task focuses on ${uniqueKeywords[0]}`;
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.focuses} ${uniqueKeywords[0]}`;
     if (uniqueKeywords.length > 1) {
       description += ` and ${uniqueKeywords[1]}`;
     }
   } else {
-    description = `This task involves ${taskName.toLowerCase()}`;
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}`;
   }
   
   // Add contextual information from Instant Answer API results if available
@@ -559,15 +559,7 @@ function buildContextualDescription(
   }
   
   // Add domain-specific guidance based on scenarios
-  const domainGuidance: Record<Domain, string> = {
-    business: 'Apply professional standards, best practices, and ensure efficiency in execution.',
-    home: 'Follow established home maintenance methods and organize your living space effectively.',
-    personal: 'Take a thoughtful and personal approach, prioritizing your well-being and preferences.',
-    world: 'Consider global perspectives, cultural contexts, and broader implications.',
-    mixed: 'Balance multiple aspects and consider different perspectives.',
-  };
-  
-  description += ` ${domainGuidance[domain]}`;
+  description += ` ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
   
   return description;
 }
@@ -638,12 +630,12 @@ export async function generateDescription(taskName: string, accessToken?: string
   }
 
   // Fallback to local terminology if Instant Answer API didn't provide good results
-  if (!usedSearchResults || !description) {
+  if (!usedSearchResults || !description || description.trim().length === 0) {
     // Extract terms from task name using domain terminology
     const extracted = extractTermsFromTaskName(taskName, domainTerms);
     
     // Build description using domain-specific terminology
-    description = buildContextualDescription(
+    const fallbackDescription = buildContextualDescription(
       taskName,
       extracted.keywords,
       extracted.phrases,
@@ -655,22 +647,31 @@ export async function generateDescription(taskName: string, accessToken?: string
       domainTerms
     );
 
-    // Calculate confidence based on keyword/verb matches
-    confidence = Math.min(
-      DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
-      (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
-      (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
-      (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight) +
-      (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
-      (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight),
-      DESCRIPTION_GENERATION_CONFIG.fallbackMaxConfidence
-    );
+    // Only use fallback if we got a valid description, otherwise keep the search-based one
+    if (fallbackDescription && fallbackDescription.trim().length > 0) {
+      description = fallbackDescription;
+      
+      // Calculate confidence based on keyword/verb matches
+      confidence = Math.min(
+        DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
+        (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
+        (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+        (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight) +
+        (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
+        (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight),
+        DESCRIPTION_GENERATION_CONFIG.fallbackMaxConfidence
+      );
+    } else if (!description || description.trim().length === 0) {
+      // Ultimate fallback: create a basic description from task name
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
+      confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
+    }
   }
 
-  logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedSearch=${usedSearchResults}`);
+  logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedSearch=${usedSearchResults}, descriptionLength=${description.length}`);
 
   return {
-    description,
+    description: description.trim(),
     domain,
     confidence,
   };
