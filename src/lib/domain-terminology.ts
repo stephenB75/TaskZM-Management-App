@@ -36,7 +36,14 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'review', 'audit', 'compliance', 'documentation', 'process', 'workflow',
     'efficiency', 'optimization', 'scalability', 'growth', 'expansion', 'merger',
     'acquisition', 'partnership', 'vendor', 'supplier', 'invoice', 'payment',
-    'accounting', 'finance', 'investment', 'portfolio', 'risk', 'assessment'
+    'accounting', 'finance', 'investment', 'portfolio', 'risk', 'assessment',
+    'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
+    'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'fix', 'bugfix',
+    'feature', 'implementation', 'deployment', 'release', 'version', 'update', 'patch',
+    'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
+    'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
+    'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
+    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
   ],
   phrases: [
     'quarterly review', 'client call', 'project milestone', 'stakeholder update',
@@ -45,14 +52,26 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'product launch', 'go-to-market', 'sales pipeline', 'customer acquisition',
     'performance review', 'one-on-one', 'stand-up meeting', 'sprint planning',
     'retrospective', 'code review', 'technical debt', 'system architecture',
-    'data analysis', 'financial report', 'quarterly earnings', 'annual planning'
+    'data analysis', 'financial report', 'quarterly earnings', 'annual planning',
+    'test code', 'code testing', 'unit test', 'integration test', 'test suite',
+    'test case', 'test coverage', 'code base', 'codebase', 'source code',
+    'dialog box', 'task dialog', 'user interface', 'ui component', 'ui element',
+    'software development', 'application development', 'feature development',
+    'bug fix', 'bug fixing', 'code fix', 'debug code', 'code debugging',
+    'pull request', 'code merge', 'git commit', 'version control', 'code repository',
+    'technical specification', 'system design', 'architecture design', 'api design'
   ],
   verbs: [
     'present', 'negotiate', 'strategize', 'analyze', 'forecast', 'delegate', 'coordinate',
     'collaborate', 'communicate', 'pitch', 'propose', 'approve', 'reject', 'review',
     'audit', 'assess', 'evaluate', 'optimize', 'scale', 'expand', 'launch', 'release',
     'deliver', 'execute', 'implement', 'manage', 'lead', 'facilitate', 'moderate',
-    'document', 'report', 'track', 'monitor', 'measure', 'benchmark', 'improve'
+    'document', 'report', 'track', 'monitor', 'measure', 'benchmark', 'improve',
+    'test', 'testing', 'debug', 'debugging', 'fix', 'fixing', 'develop', 'developing',
+    'code', 'coding', 'program', 'programming', 'build', 'building', 'compile',
+    'deploy', 'deploying', 'integrate', 'integrating', 'refactor', 'refactoring',
+    'optimize', 'optimizing', 'validate', 'validating', 'verify', 'verifying',
+    'conduct', 'conducting', 'perform', 'performing', 'run', 'running', 'execute', 'executing'
   ],
   nouns: [
     'meeting', 'presentation', 'report', 'deadline', 'client', 'stakeholder', 'budget',
@@ -61,7 +80,14 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'sales', 'marketing', 'campaign', 'product', 'service', 'customer', 'team',
     'conference', 'workshop', 'training', 'review', 'audit', 'compliance', 'documentation',
     'process', 'workflow', 'efficiency', 'optimization', 'growth', 'expansion', 'merger',
-    'acquisition', 'partnership', 'vendor', 'supplier', 'invoice', 'payment', 'finance'
+    'acquisition', 'partnership', 'vendor', 'supplier', 'invoice', 'payment', 'finance',
+    'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
+    'development', 'programming', 'coding', 'bug', 'fix', 'bugfix', 'feature',
+    'implementation', 'deployment', 'release', 'version', 'update', 'patch',
+    'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
+    'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
+    'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
+    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
   ],
   pronouns: [
     'we', 'us', 'our', 'ours', 'ourselves', 'they', 'them', 'their', 'theirs', 'themselves',

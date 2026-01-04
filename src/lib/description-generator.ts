@@ -530,14 +530,50 @@ function buildContextualDescription(
   
   // Remove duplicates and filter out terms that are too similar to task name
   const taskWords = taskName.toLowerCase().split(/\s+/);
+  const taskNameLower = taskName.toLowerCase();
+  
+  // More aggressive filtering: exclude terms that are too generic or don't add value
   const uniquePhrases = Array.from(new Set(phrases))
-    .filter(phrase => !taskWords.some(word => phrase.toLowerCase().includes(word) && word.length > DESCRIPTION_GENERATION_CONFIG.minWordLengthForFiltering));
+    .filter(phrase => {
+      const phraseLower = phrase.toLowerCase();
+      // Exclude if phrase is too similar to task name
+      if (taskNameLower.includes(phraseLower) || phraseLower.includes(taskNameLower)) {
+        return false;
+      }
+      // Exclude if phrase only contains common words from task name
+      const phraseWords = phraseLower.split(/\s+/);
+      const allWordsInTaskName = phraseWords.every(w => 
+        taskWords.some(tw => tw === w || w.includes(tw) || tw.includes(w)) && 
+        w.length > DESCRIPTION_GENERATION_CONFIG.minWordLengthForFiltering
+      );
+      return !allWordsInTaskName;
+    });
+    
   const uniqueKeywords = Array.from(new Set(keywords))
-    .filter(kw => !taskWords.some(word => kw.toLowerCase() === word.toLowerCase()));
+    .filter(kw => {
+      const kwLower = kw.toLowerCase();
+      // Exclude if keyword is exactly in task name or is too generic
+      return !taskWords.some(word => kwLower === word.toLowerCase()) &&
+             !taskNameLower.includes(kwLower) &&
+             kwLower.length > 2; // Exclude very short keywords
+    });
+    
   const uniqueVerbs = Array.from(new Set(verbs))
-    .filter(v => !taskWords.some(word => v.toLowerCase() === word.toLowerCase()));
+    .filter(v => {
+      const vLower = v.toLowerCase();
+      // Exclude if verb is exactly in task name
+      return !taskWords.some(word => vLower === word.toLowerCase()) &&
+             !taskNameLower.includes(vLower);
+    });
+    
   const uniqueNouns = Array.from(new Set(nouns))
-    .filter(n => !taskWords.some(word => n.toLowerCase() === word.toLowerCase()));
+    .filter(n => {
+      const nLower = n.toLowerCase();
+      // Exclude if noun is exactly in task name or is too generic
+      return !taskWords.some(word => nLower === word.toLowerCase()) &&
+             !taskNameLower.includes(nLower) &&
+             nLower.length > 2; // Exclude very short nouns
+    });
   
   // Build description by combining keywords and phrases intelligently
   // Strategy: Use phrases + keywords together to create richer context
