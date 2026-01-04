@@ -9,6 +9,7 @@
 import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
 import { DUCKDUCKGO_CONFIG, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { logger } from './logger';
+import { DEFAULT_TASK_DOMAIN } from './task-constants';
 
 export interface GeneratedDescription {
   description: string;
@@ -580,7 +581,7 @@ export async function generateDescription(taskName: string, accessToken?: string
   if (!taskName || taskName.trim().length === 0) {
     return {
       description: '',
-      domain: 'personal',
+      domain: DEFAULT_TASK_DOMAIN,
       confidence: 0,
     };
   }

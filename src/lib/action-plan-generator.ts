@@ -9,9 +9,9 @@ import type { Task } from '../types';
 import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
 import { analyzeTaskVerbs } from './verb-analysis';
 import { estimateTaskHours } from './daily-hours-utils';
-import { MINUTES_PER_HOUR } from './business-constants';
-import { ACTION_PLAN_TIME_DISTRIBUTION } from './ai-config';
-import { DEFAULT_TASK_STATUS } from './task-constants';
+import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from './business-constants';
+import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS } from './ai-config';
+import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY } from './task-constants';
 
 export interface ActionPlanStep {
   action: string;
@@ -44,7 +44,7 @@ export function generateActionPlan(
       steps: [],
       totalEstimatedMinutes: 0,
       suggestedSubtasks: [],
-      context: 'personal',
+      context: DEFAULT_TASK_DOMAIN,
       confidence: 0,
     };
   }
@@ -60,11 +60,11 @@ export function generateActionPlan(
     title,
     description,
     status: (task.status as any) || DEFAULT_TASK_STATUS,
-    priority: (task.priority as any) || 'medium',
+    priority: (task.priority as any) || DEFAULT_TASK_PRIORITY,
     tags: task.tags || [],
     createdAt: task.createdAt || new Date().toISOString(),
     updatedAt: task.updatedAt || new Date().toISOString(),
-    projectId: task.projectId || 'default',
+    projectId: task.projectId || DEFAULT_PROJECT_ID,
     folderId: task.folderId || null,
     dueDate: task.dueDate || null,
     scheduledDate: task.scheduledDate || null,
@@ -75,7 +75,7 @@ export function generateActionPlan(
     recurrence: task.recurrence || { type: 'none', interval: 1 },
     notes: task.notes || '',
     assignedTo: task.assignedTo || [],
-    createdBy: task.createdBy || 'local',
+    createdBy: task.createdBy || DEFAULT_CREATED_BY,
     completedAt: task.completedAt || null,
   };
 
@@ -122,13 +122,7 @@ function generateSteps(
   const text = `${title} ${description}`.toLowerCase();
 
   // Analyze for sequential indicators
-  const sequentialIndicators = [
-    'first', 'then', 'next', 'after', 'before', 'finally', 'last',
-    'step 1', 'step 2', 'step 3', 'phase 1', 'phase 2',
-    'start with', 'begin by', 'end with', 'finish by'
-  ];
-
-  const hasSequence = sequentialIndicators.some(indicator => text.includes(indicator));
+  const hasSequence = SEQUENTIAL_INDICATORS.some(indicator => text.includes(indicator));
 
   // Domain-specific step generation
   switch (domain) {

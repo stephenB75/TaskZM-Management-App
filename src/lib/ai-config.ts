@@ -407,6 +407,16 @@ export const DOMAIN_SCORING_WEIGHTS = {
 } as const;
 
 /**
+ * Sequential indicators for detecting step-by-step tasks in descriptions
+ * Used to identify tasks that have natural sequential structure
+ */
+export const SEQUENTIAL_INDICATORS = [
+  'first', 'then', 'next', 'after', 'before', 'finally', 'last',
+  'step 1', 'step 2', 'step 3', 'phase 1', 'phase 2',
+  'start with', 'begin by', 'end with', 'finish by'
+] as const;
+
+/**
  * Action plan time distribution percentages
  */
 export const ACTION_PLAN_TIME_DISTRIBUTION = {
