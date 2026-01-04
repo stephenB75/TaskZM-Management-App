@@ -30,6 +30,14 @@ async function searchDuckDuckGoInstantAnswer(query: string, accessToken?: string
     const searchQuery = encodeURIComponent(query);
     const proxyUrl = `${BASE_URL}/duckduckgo/search?q=${searchQuery}`;
     
+    // Log request details for debugging
+    logger.debug(`DuckDuckGo search request:`, { 
+      query, 
+      proxyUrl, 
+      hasAccessToken: !!accessToken,
+      timeout: DESCRIPTION_GENERATION_CONFIG.searchTimeout 
+    });
+    
     // Create abort controller for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), DESCRIPTION_GENERATION_CONFIG.searchTimeout);
@@ -44,11 +52,27 @@ async function searchDuckDuckGoInstantAnswer(query: string, accessToken?: string
         },
         signal: controller.signal,
       });
+      
+      logger.debug(`DuckDuckGo proxy response status for "${query}":`, { 
+        status: response.status, 
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
 
       clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Log response structure for debugging
+        logger.debug(`DuckDuckGo proxy response for "${query}":`, { 
+          hasSuccess: !!data.success, 
+          hasResults: !!data.results, 
+          resultsType: Array.isArray(data.results) ? 'array' : typeof data.results,
+          resultsLength: Array.isArray(data.results) ? data.results.length : 0,
+          responseKeys: Object.keys(data)
+        });
         
         if (data.success && Array.isArray(data.results)) {
           const results = data.results.filter((r: any): r is string => typeof r === 'string' && r.length > 0);
@@ -56,26 +80,39 @@ async function searchDuckDuckGoInstantAnswer(query: string, accessToken?: string
           if (results.length >= DESCRIPTION_GENERATION_CONFIG.minSearchResults) {
             logger.debug(`DuckDuckGo Instant Answer API successful (via Supabase proxy): ${results.length} results for "${query}"`);
             return results;
+          } else {
+            logger.debug(`DuckDuckGo proxy returned insufficient results: ${results.length} < ${DESCRIPTION_GENERATION_CONFIG.minSearchResults} for "${query}"`);
           }
+        } else {
+          logger.warn(`DuckDuckGo proxy response invalid structure for "${query}":`, { 
+            success: data.success, 
+            hasResults: !!data.results, 
+            resultsIsArray: Array.isArray(data.results),
+            data 
+          });
         }
       } else {
         // If proxy returns error, log it but don't throw - fall back to local terminology
         const errorData = await response.json().catch(() => ({}));
-        logger.debug('DuckDuckGo proxy API error:', errorData);
+        logger.warn(`DuckDuckGo proxy API error for "${query}":`, { 
+          status: response.status, 
+          statusText: response.statusText,
+          error: errorData 
+        });
       }
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        logger.debug('DuckDuckGo proxy API timeout:', query);
+        logger.warn(`DuckDuckGo proxy API timeout for "${query}" (${DESCRIPTION_GENERATION_CONFIG.searchTimeout}ms)`);
       } else {
-        logger.debug('DuckDuckGo proxy API failed:', error);
+        logger.warn(`DuckDuckGo proxy API failed for "${query}":`, error);
       }
     }
 
     // Return empty array if search failed (will fall back to local terminology)
     return [];
   } catch (error) {
-    logger.debug('DuckDuckGo proxy API error:', error);
+    logger.warn(`DuckDuckGo proxy API error for "${query}":`, error);
     return [];
   }
 }
@@ -183,7 +220,11 @@ async function searchDomainContext(
     resultsArray.forEach((result, index) => {
       if (result.status === 'fulfilled' && result.value.length > 0) {
         allResults.push(...result.value);
-        logger.debug(`DuckDuckGo Instant Answer API search ${index + 1} successful: "${queriesToSearch[index]}"`);
+        logger.debug(`DuckDuckGo Instant Answer API search ${index + 1} successful: "${queriesToSearch[index]}" - ${result.value.length} results`);
+      } else if (result.status === 'rejected') {
+        logger.warn(`DuckDuckGo Instant Answer API search ${index + 1} failed: "${queriesToSearch[index]}"`, result.reason);
+      } else if (result.status === 'fulfilled' && result.value.length === 0) {
+        logger.debug(`DuckDuckGo Instant Answer API search ${index + 1} returned no results: "${queriesToSearch[index]}"`);
       }
     });
     
@@ -1083,7 +1124,9 @@ export async function generateDescription(taskName: string, accessToken?: string
 
   try {
     // Search DuckDuckGo Instant Answer API for domain-specific context (keywords, verbs, scenarios)
+    logger.debug(`Starting DuckDuckGo search for task: "${taskName}", domain: ${domain}, hasAccessToken: ${!!accessToken}`);
     const searchResults = await searchDomainContext(taskName, domain, domainTerms, accessToken);
+    logger.debug(`DuckDuckGo search completed: ${searchResults.length} total results for "${taskName}"`);
     
     if (searchResults.length > 0) {
       // Extract keywords from task name, find phrases using keywords, and build context from search results

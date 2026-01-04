@@ -4888,10 +4888,25 @@ const duckduckgoSearchHandler = async (c: any) => {
     }
 
     // Verify user is authenticated (optional - can be made public if needed)
+    // Log authentication attempt for debugging
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    console.log('DuckDuckGo search request:', { 
+      hasAccessToken: !!accessToken, 
+      query,
+      url: c.req.url 
+    });
+    
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
+      console.log('DuckDuckGo search authentication failed:', { 
+        error: authError, 
+        hasUserId: !!userId,
+        hasAccessToken: !!accessToken 
+      });
+      return c.json({ error: 'Unauthorized', message: authError || 'Invalid access token' }, 401);
     }
+    
+    console.log('DuckDuckGo search authenticated:', { userId, query });
 
     // Encode query for DuckDuckGo API
     const searchQuery = encodeURIComponent(query);
