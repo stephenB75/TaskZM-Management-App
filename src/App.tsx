@@ -48,7 +48,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
@@ -751,6 +751,10 @@ function AppContent() {
                 minHeight: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
                   : 'auto',
+                // Add padding-top on mobile to ensure content is not hidden by fixed header when scrolling up
+                paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                  ? MOBILE_SCROLL_CONTAINER_PADDING_TOP
+                  : undefined,
                 // Add padding-bottom on mobile to ensure content can scroll past nav bar
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
@@ -767,15 +771,6 @@ function AppContent() {
                 backgroundAttachment: 'scroll',
               } as React.CSSProperties}
             >
-              {/* Header spacer - must be first element to push content down underneath fixed header */}
-              <div 
-                className="md:hidden flex-shrink-0 w-full"
-                style={{ 
-                  height: HEADER_MOBILE_SAFE_AREA_SPACER,
-                  minHeight: HEADER_MOBILE_SAFE_AREA_SPACER
-                }}
-                aria-hidden="true"
-              />
               {currentView === 'dashboard' && (
                 <DashboardView 
                   mobileView={mobileView}
