@@ -492,6 +492,17 @@ export const COMPONENT_DIMENSIONS = {
         },
       },
     },
+    aiButton: {
+      height: '1.75rem', // h-7 = 1.75rem (28px)
+      paddingX: '0.5rem', // px-2 = 0.5rem (8px)
+      textSize: '0.75rem', // text-xs = 0.75rem (12px)
+      iconSize: '0.75rem', // w-3 h-3 = 0.75rem (12px)
+    },
+    descriptionTextarea: {
+      rows: 3, // rows={3}
+      placeholder: 'Add a description... (Editable - AI Action Plan updates automatically as you type)',
+      focusClassName: 'focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary', // Focus styles for description textarea
+    },
   },
   todayAgenda: {
     dropZoneMinHeight: 'min-h-[400px]',

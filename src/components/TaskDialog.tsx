@@ -87,7 +87,7 @@ import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription } from "../lib/description-generator";
 import { DUCKDUCKGO_CONFIG, DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
-import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_GAP_SMALL } from "../lib/layout-constants";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import type {
   Task,
   TaskPriority,
@@ -1950,13 +1950,20 @@ export function TaskDialog({
                                 });
                               }
                             }}
-                            className="h-7 px-2 text-xs"
-                            style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
+                            style={{ 
+                              height: COMPONENT_DIMENSIONS.taskDialog.aiButton.height,
+                              paddingLeft: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
+                              paddingRight: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
+                              fontSize: COMPONENT_DIMENSIONS.taskDialog.aiButton.textSize,
+                              gap: SETTINGS_PANEL_GAP_SMALL 
+                            }}
                             title="Refresh/Regenerate description (replaces current)"
                           >
                             <RefreshCw 
-                              className="w-3 h-3" 
-                              style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }}
+                              style={{ 
+                                width: COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize, 
+                                height: COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize 
+                              }}
                             />
                             <span className="hidden sm:inline">Refresh</span>
                           </Button>
@@ -1988,13 +1995,20 @@ export function TaskDialog({
                               });
                             }
                           }}
-                          className="h-7 px-2 text-xs"
-                          style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
+                          style={{ 
+                            height: COMPONENT_DIMENSIONS.taskDialog.aiButton.height,
+                            paddingLeft: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
+                            paddingRight: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
+                            fontSize: COMPONENT_DIMENSIONS.taskDialog.aiButton.textSize,
+                            gap: SETTINGS_PANEL_GAP_SMALL 
+                          }}
                           title="Generate new description (appends to existing)"
                         >
                           <Sparkles 
-                            className="w-3 h-3" 
-                            style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }}
+                            style={{ 
+                              width: COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize, 
+                              height: COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize 
+                            }}
                           />
                           <span className="hidden sm:inline">AI Generate</span>
                         </Button>
@@ -2007,9 +2021,9 @@ export function TaskDialog({
                       // Update description - useTaskBreakdown hook automatically updates AI Action Plan when description changes
                       setDescription(newDescription);
                     }}
-                    placeholder="Add a description... (Editable - AI Action Plan updates automatically as you type)"
-                    rows={3}
-                    className="focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary"
+                    placeholder={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.placeholder}
+                    rows={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.rows}
+                    className={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.focusClassName}
                   />
                 </div>
 
