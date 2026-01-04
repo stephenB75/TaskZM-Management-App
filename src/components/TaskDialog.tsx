@@ -1922,7 +1922,7 @@ export function TaskDialog({
                                   // Replace existing description with regenerated one
                                   setDescription(generated.description);
                                   const source = generated.confidence >= DUCKDUCKGO_CONFIG.highConfidenceThreshold 
-                                    ? 'DuckDuckGo search + browser AI' 
+                                    ? 'DuckDuckGo Instant Answer API + browser AI' 
                                     : 'local terminology';
                                   toast.success('Description regenerated', {
                                     description: `Regenerated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,

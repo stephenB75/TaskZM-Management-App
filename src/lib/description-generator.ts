@@ -1,177 +1,14 @@
 /**
  * Description Generator
  * 
- * Generates task descriptions based on task name using DuckDuckGo search + browser AI
+ * Generates task descriptions based on task name using DuckDuckGo Instant Answer API + browser AI
  * with domain-specific terminology, keywords, verbs, and action words.
+ * Uses local terminology database for business, home, personal, and world scenarios as fallback.
  */
 
 import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
-import { TASK_BREAKDOWN_DEBOUNCE_MS, DUCKDUCKGO_CONFIG, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
+import { DUCKDUCKGO_CONFIG, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { logger } from './logger';
-import { supabase } from './supabase-client';
-
-/**
- * Hash query for cache key (simple hash function)
- */
-function hashQuery(query: string): string {
-  let hash = 0;
-  const normalizedQuery = query.toLowerCase().trim();
-  for (let i = 0; i < normalizedQuery.length; i++) {
-    const char = normalizedQuery.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return hash.toString(36);
-}
-
-/**
- * Get current user ID from Supabase auth
- */
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    if (!supabase) return null;
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.user?.id || null;
-  } catch (error) {
-    logger.debug('Failed to get user ID:', error);
-    return null;
-  }
-}
-
-/**
- * Database cache entry interface
- */
-interface DatabaseCacheEntry {
-  results: string[];
-  extracted_keywords: string[];
-  extracted_phrases: string[];
-  extracted_verbs: string[];
-  extracted_nouns: string[];
-  extracted_pronouns: string[];
-  domain: string | null;
-  confidence: number | null;
-}
-
-/**
- * Get cached search results from Supabase database
- */
-async function getCachedResultsFromDatabase(
-  query: string
-): Promise<DatabaseCacheEntry | null> {
-  if (!DUCKDUCKGO_CONFIG.cacheEnabled || !supabase) return null;
-  
-  try {
-    const queryHash = hashQuery(query);
-    const userId = await getCurrentUserId();
-    
-    // Query cache: user-specific first, then global (user_id IS NULL)
-    const { data, error } = await supabase
-      .from('duckduckgo_search_cache')
-      .select('results, extracted_keywords, extracted_phrases, extracted_verbs, extracted_nouns, extracted_pronouns, domain, confidence, expires_at, hit_count')
-      .eq('query_hash', queryHash)
-      .or(`user_id.eq.${userId || 'null'},user_id.is.null`)
-      .order('user_id', { ascending: false, nullsFirst: false }) // Prefer user-specific over global
-      .limit(DESCRIPTION_GENERATION_CONFIG.cacheQueryLimit)
-      .single();
-    
-    if (error || !data) {
-      return null;
-    }
-    
-    // Check if cache entry is expired
-    const expiresAt = new Date(data.expires_at);
-    if (expiresAt < new Date()) {
-      // Delete expired entry
-      await supabase
-        .from('duckduckgo_search_cache')
-        .delete()
-        .eq('query_hash', queryHash)
-        .or(`user_id.eq.${userId || 'null'},user_id.is.null`);
-      return null;
-    }
-    
-    // Update hit count
-    const newHitCount = (data.hit_count || DESCRIPTION_GENERATION_CONFIG.defaultHitCount) + 1;
-    await supabase
-      .from('duckduckgo_search_cache')
-      .update({ hit_count: newHitCount })
-      .eq('query_hash', queryHash)
-      .or(`user_id.eq.${userId || 'null'},user_id.is.null`);
-    
-    logger.debug(`DuckDuckGo database cache hit: "${query}" (hit count: ${newHitCount})`);
-    
-    return {
-      results: data.results || [],
-      extracted_keywords: data.extracted_keywords || [],
-      extracted_phrases: data.extracted_phrases || [],
-      extracted_verbs: data.extracted_verbs || [],
-      extracted_nouns: data.extracted_nouns || [],
-      extracted_pronouns: data.extracted_pronouns || [],
-      domain: data.domain || null,
-      confidence: data.confidence || null,
-    };
-  } catch (error) {
-    logger.debug('Failed to get cached results from database:', error);
-    return null;
-  }
-}
-
-/**
- * Store search results in Supabase database
- */
-async function setCachedResultsInDatabase(
-  query: string,
-  results: string[],
-  extracted: {
-    keywords: string[];
-    phrases: string[];
-    verbs: string[];
-    nouns: string[];
-    pronouns: string[];
-  },
-  domain: Domain,
-  confidence: number
-): Promise<void> {
-  if (!DUCKDUCKGO_CONFIG.cacheEnabled || !supabase || results.length === 0) return;
-  
-  try {
-    const queryHash = hashQuery(query);
-    const userId = await getCurrentUserId();
-    
-    // Calculate expiry time
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + DUCKDUCKGO_CONFIG.cacheExpiryHours);
-    
-    // Upsert cache entry (insert or update if exists)
-    const { error } = await supabase
-      .from('duckduckgo_search_cache')
-      .upsert({
-        user_id: userId,
-        query: query,
-        query_hash: queryHash,
-        results: results,
-        extracted_keywords: extracted.keywords,
-        extracted_phrases: extracted.phrases,
-        extracted_verbs: extracted.verbs,
-        extracted_nouns: extracted.nouns,
-        extracted_pronouns: extracted.pronouns,
-        domain: domain,
-        confidence: confidence,
-        expires_at: expiresAt.toISOString(),
-        hit_count: DESCRIPTION_GENERATION_CONFIG.initialHitCount,
-      }, {
-        onConflict: 'user_id,query_hash',
-      });
-    
-    if (error) {
-      logger.debug('Failed to store cache in database:', error);
-    } else {
-      logger.debug(`DuckDuckGo database cache stored: "${query}" (${results.length} results)`);
-    }
-  } catch (error) {
-    logger.debug('Failed to store cache in database:', error);
-  }
-}
 
 export interface GeneratedDescription {
   description: string;
@@ -180,13 +17,13 @@ export interface GeneratedDescription {
 }
 
 /**
- * Search DuckDuckGo for context about the task
- * Uses DuckDuckGo's Instant Answer API to get search results
- * Implements caching to speed up repeated queries
+ * Search DuckDuckGo Instant Answer API for context about the task
+ * Uses DuckDuckGo's Instant Answer API to get instant answers and related topics
  */
-async function searchDuckDuckGo(query: string): Promise<string[]> {
+async function searchDuckDuckGoInstantAnswer(query: string): Promise<string[]> {
   try {
     const searchQuery = encodeURIComponent(query);
+    // DuckDuckGo Instant Answer API endpoint
     const instantAnswerUrl = `${DUCKDUCKGO_CONFIG.instantAnswerApiUrl}?q=${searchQuery}&format=json&no_html=1&skip_disambig=1`;
     
     // Create abort controller for timeout
@@ -194,12 +31,15 @@ async function searchDuckDuckGo(query: string): Promise<string[]> {
     const timeoutId = setTimeout(() => controller.abort(), DESCRIPTION_GENERATION_CONFIG.searchTimeout);
     
     try {
+      // Try to fetch from Instant Answer API
+      // Note: This may fail due to CORS, but we'll handle it gracefully
       const response = await fetch(instantAnswerUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
         },
         signal: controller.signal,
+        mode: 'cors',
       });
 
       clearTimeout(timeoutId);
@@ -208,7 +48,7 @@ async function searchDuckDuckGo(query: string): Promise<string[]> {
         const data = await response.json();
         const results: string[] = [];
 
-        // Extract Abstract text (most relevant)
+        // Extract Abstract text (most relevant instant answer)
         if (data.AbstractText && typeof data.AbstractText === 'string') {
           results.push(data.AbstractText);
         }
@@ -238,15 +78,18 @@ async function searchDuckDuckGo(query: string): Promise<string[]> {
         }
 
         if (results.length >= DESCRIPTION_GENERATION_CONFIG.minSearchResults) {
-          logger.debug(`DuckDuckGo search successful: ${results.length} results for "${query}"`);
-          // Cache will be stored after extraction (in searchDomainContext)
+          logger.debug(`DuckDuckGo Instant Answer API successful: ${results.length} results for "${query}"`);
           return results;
         }
       }
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        logger.debug('DuckDuckGo search timeout:', query);
+        logger.debug('DuckDuckGo Instant Answer API timeout:', query);
+      } else if (error instanceof TypeError && (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
+        // CORS error - DuckDuckGo Instant Answer API may not support direct browser requests
+        // This is expected and will fall back to local terminology
+        logger.debug('DuckDuckGo Instant Answer API CORS error (expected, will use local terminology):', query);
       } else {
         logger.debug('DuckDuckGo Instant Answer API failed:', error);
       }
@@ -255,98 +98,18 @@ async function searchDuckDuckGo(query: string): Promise<string[]> {
     // Return empty array if search failed
     return [];
   } catch (error) {
-    logger.debug('DuckDuckGo search error:', error);
+    // Catch any other errors (including CORS errors that might not be caught above)
+    if (error instanceof TypeError && (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
+      logger.debug('DuckDuckGo Instant Answer API CORS error (expected, will use local terminology):', query);
+    } else {
+      logger.debug('DuckDuckGo Instant Answer API error:', error);
+    }
     return [];
   }
 }
 
 /**
- * Build contextual description using extracted phrases, verbs (action words), nouns, pronouns, keywords, and search context
- * Creates a comprehensive description based on DuckDuckGo search findings
- */
-function buildContextualDescription(
-  taskName: string,
-  keywords: string[],
-  phrases: string[],
-  verbs: string[],
-  nouns: string[],
-  pronouns: string[],
-  context: string,
-  domain: Domain,
-  domainTerms: ReturnType<typeof getDomainTerminology>
-): string {
-  let description = '';
-  
-  // Start with task name context
-  const taskWords = taskName.toLowerCase().split(/\s+/);
-  
-  // Build description using found phrases, verbs (action words), nouns, and keywords from search
-  // Prioritize phrases as they provide the most context
-  if (phrases.length > 0) {
-    const primaryPhrase = phrases[0];
-    description = `This task involves ${primaryPhrase}`;
-    
-    // Add nouns or keywords for additional context
-    if (nouns.length > 0) {
-      description += ` related to ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
-    } else if (keywords.length > 0) {
-      description += ` focusing on ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
-    }
-  } else if (verbs.length > 0) {
-    // Use action words (verbs) if no phrases found
-    const primaryVerb = verbs[0];
-    description = `This task involves ${primaryVerb}ing`;
-    
-    // Add nouns for object context
-    if (nouns.length > 0) {
-      description += ` ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
-    } else if (keywords.length > 0) {
-      description += ` ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
-    } else {
-      description += ` ${taskName.toLowerCase()}`;
-    }
-  } else if (nouns.length > 0) {
-    // Use nouns if no phrases or verbs found
-    description = `This task focuses on ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsPair).join(' and ')}`;
-    
-    if (keywords.length > 0) {
-      description += ` related to ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
-    }
-  } else if (keywords.length > 0) {
-    description = `This task focuses on ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsPair).join(' and ')}`;
-  } else {
-    description = `This task involves ${taskName.toLowerCase()}`;
-  }
-  
-  // Add contextual information from search results if available
-  if (context && context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength) {
-    // Extract a relevant sentence from context
-    const sentences = context.split(/[.!?]+/).filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength);
-    if (sentences.length > 0) {
-      const relevantSentence = sentences[0].trim();
-      if (relevantSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
-        description += `. ${relevantSentence}`;
-      }
-    }
-  }
-  
-  // Add domain-specific guidance based on scenarios
-  // Use pronouns for more natural language flow
-  const domainGuidance: Record<Domain, string> = {
-    business: 'Apply professional standards, best practices, and ensure efficiency in execution.',
-    home: 'Follow established home maintenance methods and organize your living space effectively.',
-    personal: 'Take a thoughtful and personal approach, prioritizing your well-being and preferences.',
-    world: 'Consider global perspectives, cultural contexts, and broader implications.',
-    mixed: 'Balance multiple aspects and consider different perspectives.',
-  };
-  
-  description += ` ${domainGuidance[domain]}`;
-  
-  return description;
-}
-
-/**
- * Search DuckDuckGo for domain-specific keywords, phrases, verbs (action words), nouns, pronouns, and scenarios
+ * Search DuckDuckGo Instant Answer API for domain-specific context
  * Creates multiple search queries to gather comprehensive context
  */
 async function searchDomainContext(
@@ -402,27 +165,20 @@ async function searchDomainContext(
     searchQueries.push(`${taskName} ${topKeywords[0]}`);
   }
   
-  // 3. Domain context query with pronouns for natural language context
-  const domainContextMap: Record<Domain, string> = {
-    business: 'professional work business',
-    home: 'home maintenance household',
-    personal: 'personal life self-care',
-    world: 'global international travel',
-    mixed: 'general',
-  };
-  searchQueries.push(`${taskName} ${domainContextMap[domain]}`);
+  // 3. Domain context query
+  searchQueries.push(`${taskName} ${DESCRIPTION_GENERATION_CONFIG.domainContextModifiers[domain]}`);
   
   // Search all queries in parallel (with limit to avoid too many requests)
   const queriesToSearch = searchQueries.slice(0, DESCRIPTION_GENERATION_CONFIG.maxQueriesPerSearch);
   
   try {
-    const searchPromises = queriesToSearch.map(query => searchDuckDuckGo(query));
+    const searchPromises = queriesToSearch.map(query => searchDuckDuckGoInstantAnswer(query));
     const resultsArray = await Promise.allSettled(searchPromises);
     
     resultsArray.forEach((result, index) => {
       if (result.status === 'fulfilled' && result.value.length > 0) {
         allResults.push(...result.value);
-        logger.debug(`DuckDuckGo search ${index + 1} successful: "${queriesToSearch[index]}"`);
+        logger.debug(`DuckDuckGo Instant Answer API search ${index + 1} successful: "${queriesToSearch[index]}"`);
       }
     });
     
@@ -525,8 +281,171 @@ function extractKeywordsAndVerbsFromSearch(
 }
 
 /**
- * Generates a task description based on task name using DuckDuckGo + browser AI
+ * Extract keywords, phrases, verbs, nouns, and pronouns from task name using domain terminology
+ */
+function extractTermsFromTaskName(
+  taskName: string,
+  domainTerms: ReturnType<typeof getDomainTerminology>
+): {
+  keywords: string[];
+  phrases: string[];
+  verbs: string[];
+  nouns: string[];
+  pronouns: string[];
+} {
+  const foundKeywords: string[] = [];
+  const foundPhrases: string[] = [];
+  const foundVerbs: string[] = [];
+  const foundNouns: string[] = [];
+  const foundPronouns: string[] = [];
+  
+  const taskNameLower = taskName.toLowerCase();
+  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length > DESCRIPTION_GENERATION_CONFIG.minWordLength);
+  
+  // Find matching phrases from domain terminology (check first as they're most specific)
+  domainTerms.phrases.forEach(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    if (taskNameLower.includes(phraseLower) || 
+        taskWords.some(word => phraseLower.includes(word) || word.includes(phraseLower))) {
+      foundPhrases.push(phrase);
+    }
+  });
+  
+  // Find matching verbs (action words) from domain terminology
+  domainTerms.verbs.forEach(verb => {
+    const verbLower = verb.toLowerCase();
+    // Check for verb in various forms (verb, verb+ing, verb+ed, etc.)
+    if (taskNameLower.includes(verbLower) || 
+        taskNameLower.includes(`${verbLower}ing`) ||
+        taskNameLower.includes(`${verbLower}ed`) ||
+        taskNameLower.includes(`${verbLower}s`) ||
+        taskWords.some(word => verbLower.includes(word) || word.includes(verbLower))) {
+      foundVerbs.push(verb);
+    }
+  });
+  
+  // Find matching nouns from domain terminology
+  domainTerms.nouns.forEach(noun => {
+    const nounLower = noun.toLowerCase();
+    if (taskNameLower.includes(nounLower) || 
+        taskNameLower.includes(`${nounLower}s`) ||
+        taskNameLower.includes(`${nounLower}es`) ||
+        taskWords.some(word => nounLower.includes(word) || word.includes(nounLower))) {
+      foundNouns.push(noun);
+    }
+  });
+  
+  // Find matching pronouns from domain terminology
+  domainTerms.pronouns.forEach(pronoun => {
+    if (taskNameLower.includes(pronoun.toLowerCase()) ||
+        taskWords.some(word => pronoun.toLowerCase().includes(word) || word.includes(pronoun.toLowerCase()))) {
+      foundPronouns.push(pronoun);
+    }
+  });
+  
+  // Find matching keywords from domain terminology
+  domainTerms.keywords.forEach(keyword => {
+    const keywordLower = keyword.toLowerCase();
+    if (taskNameLower.includes(keywordLower) ||
+        taskWords.some(word => keywordLower.includes(word) || word.includes(keywordLower))) {
+      foundKeywords.push(keyword);
+    }
+  });
+  
+  return {
+    keywords: foundKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: foundPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: foundVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: foundNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+    pronouns: foundPronouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
+  };
+}
+
+/**
+ * Build contextual description using extracted phrases, verbs (action words), nouns, pronouns, keywords, and search context
+ * Creates a comprehensive description based on DuckDuckGo Instant Answer API findings or local terminology
+ */
+function buildContextualDescription(
+  taskName: string,
+  keywords: string[],
+  phrases: string[],
+  verbs: string[],
+  nouns: string[],
+  pronouns: string[],
+  context: string,
+  domain: Domain,
+  domainTerms: ReturnType<typeof getDomainTerminology>
+): string {
+  let description = '';
+  
+  // Build description using found phrases, verbs (action words), nouns, and keywords
+  // Prioritize phrases as they provide the most context
+  if (phrases.length > 0) {
+    const primaryPhrase = phrases[0];
+    description = `This task involves ${primaryPhrase}`;
+    
+    // Add nouns or keywords for additional context
+    if (nouns.length > 0) {
+      description += ` related to ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
+    } else if (keywords.length > 0) {
+      description += ` focusing on ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
+    }
+  } else if (verbs.length > 0) {
+    // Use action words (verbs) if no phrases found
+    const primaryVerb = verbs[0];
+    description = `This task involves ${primaryVerb}ing`;
+    
+    // Add nouns for object context
+    if (nouns.length > 0) {
+      description += ` ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
+    } else if (keywords.length > 0) {
+      description += ` ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
+    } else {
+      description += ` ${taskName.toLowerCase()}`;
+    }
+  } else if (nouns.length > 0) {
+    // Use nouns if no phrases or verbs found
+    description = `This task focuses on ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsPair).join(' and ')}`;
+    
+    if (keywords.length > 0) {
+      description += ` related to ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
+    }
+  } else if (keywords.length > 0) {
+    description = `This task focuses on ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsPair).join(' and ')}`;
+  } else {
+    description = `This task involves ${taskName.toLowerCase()}`;
+  }
+  
+  // Add contextual information from Instant Answer API results if available
+  if (context && context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength) {
+    // Extract a relevant sentence from context
+    const sentences = context.split(/[.!?]+/).filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength);
+    if (sentences.length > 0) {
+      const relevantSentence = sentences[0].trim();
+      if (relevantSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
+        description += `. ${relevantSentence}`;
+      }
+    }
+  }
+  
+  // Add domain-specific guidance based on scenarios
+  const domainGuidance: Record<Domain, string> = {
+    business: 'Apply professional standards, best practices, and ensure efficiency in execution.',
+    home: 'Follow established home maintenance methods and organize your living space effectively.',
+    personal: 'Take a thoughtful and personal approach, prioritizing your well-being and preferences.',
+    world: 'Consider global perspectives, cultural contexts, and broader implications.',
+    mixed: 'Balance multiple aspects and consider different perspectives.',
+  };
+  
+  description += ` ${domainGuidance[domain]}`;
+  
+  return description;
+}
+
+/**
+ * Generates a task description based on task name using DuckDuckGo Instant Answer API + browser AI
  * Searches for domain-specific keywords, verbs, and scenarios as per guidelines
+ * Falls back to local terminology if Instant Answer API is unavailable
  */
 export async function generateDescription(taskName: string): Promise<GeneratedDescription> {
   if (!taskName || taskName.trim().length === 0) {
@@ -542,77 +461,19 @@ export async function generateDescription(taskName: string): Promise<GeneratedDe
   const domain = domainResult.domain;
   const domainTerms = getDomainTerminology(domain);
 
-  // Search DuckDuckGo for domain-specific context (keywords, verbs, scenarios)
+  // Try to get context from DuckDuckGo Instant Answer API
   let description = '';
   let confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   let usedSearchResults = false;
 
   try {
-    // Check database cache first for the main task query
-    const mainQueryCache = await getCachedResultsFromDatabase(taskName);
-    let searchResults: string[] = [];
-    let extracted: ReturnType<typeof extractKeywordsAndVerbsFromSearch> | null = null;
+    // Search DuckDuckGo Instant Answer API for domain-specific context (keywords, verbs, scenarios)
+    const searchResults = await searchDomainContext(taskName, domain, domainTerms);
     
-    if (mainQueryCache !== null) {
-      // Use cached extracted data if available
-      logger.debug(`Using cached extracted data for: "${taskName}"`);
-      searchResults = mainQueryCache.results;
-      extracted = {
-        keywords: mainQueryCache.extracted_keywords,
-        phrases: mainQueryCache.extracted_phrases,
-        verbs: mainQueryCache.extracted_verbs,
-        nouns: mainQueryCache.extracted_nouns,
-        pronouns: mainQueryCache.extracted_pronouns,
-        context: mainQueryCache.results.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength),
-      };
-      // Use cached domain and confidence if available
-      if (mainQueryCache.domain) {
-        domain = mainQueryCache.domain as Domain;
-        domainTerms = getDomainTerminology(domain);
-      }
-      if (mainQueryCache.confidence !== null) {
-        confidence = mainQueryCache.confidence;
-      }
-    } else {
-      // Search for domain-specific keywords, verbs, and scenarios
-      searchResults = await searchDomainContext(taskName, domain, domainTerms);
+    if (searchResults.length > 0) {
+      // Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
+      const extracted = extractKeywordsAndVerbsFromSearch(searchResults, domainTerms);
       
-      if (searchResults.length > 0) {
-        // Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
-        extracted = extractKeywordsAndVerbsFromSearch(searchResults, domainTerms);
-        
-        // Calculate confidence for storage
-        const calculatedConfidence = Math.min(
-          DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence + 
-          (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
-          (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
-          (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
-          (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
-          (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight) +
-          (searchResults.length * DESCRIPTION_GENERATION_CONFIG.resultCountWeight),
-          DESCRIPTION_GENERATION_CONFIG.maxConfidence
-        );
-        
-        // Store in database cache for future use
-        await setCachedResultsInDatabase(
-          taskName,
-          searchResults,
-          {
-            keywords: extracted.keywords,
-            phrases: extracted.phrases,
-            verbs: extracted.verbs,
-            nouns: extracted.nouns,
-            pronouns: extracted.pronouns,
-          },
-          domain,
-          calculatedConfidence
-        );
-        
-        confidence = calculatedConfidence;
-      }
-    }
-    
-    if (searchResults.length > 0 && extracted) {
       // Build contextual description using search findings
       description = buildContextualDescription(
         taskName,
@@ -628,58 +489,55 @@ export async function generateDescription(taskName: string): Promise<GeneratedDe
       
       if (description) {
         usedSearchResults = true;
+        
+        // Calculate confidence for search-based results
+        confidence = Math.min(
+          DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence + 
+          (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
+          (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+          (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
+          (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
+          (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight) +
+          (searchResults.length * DESCRIPTION_GENERATION_CONFIG.resultCountWeight),
+          DESCRIPTION_GENERATION_CONFIG.maxConfidence
+        );
       }
     }
   } catch (error) {
-    logger.debug('DuckDuckGo search error, falling back to local terminology:', error);
+    logger.debug('DuckDuckGo Instant Answer API error, falling back to local terminology:', error);
   }
 
-  // Fallback to local terminology if search didn't provide good results
+  // Fallback to local terminology if Instant Answer API didn't provide good results
   if (!usedSearchResults || !description) {
-    // Extract keywords and verbs from task name
-    const words = taskName.toLowerCase().split(/\s+/);
-    const keywords = words.filter(word => 
-      domainTerms.keywords.some(kw => kw.toLowerCase().includes(word) || word.includes(kw.toLowerCase()))
-    );
-    const verbs = words.filter(word =>
-      domainTerms.verbs.some(v => v.toLowerCase().includes(word) || word.includes(v.toLowerCase()))
-    );
-
+    // Extract terms from task name using domain terminology
+    const extracted = extractTermsFromTaskName(taskName, domainTerms);
+    
     // Build description using domain-specific terminology
-    // Start with action-oriented opening
-    if (verbs.length > 0) {
-      const primaryVerb = verbs[0];
-      description += `This task involves ${primaryVerb}ing`;
-    } else {
-      description += 'This task involves';
-    }
-
-    // Add context based on keywords
-    if (keywords.length > 0) {
-      description += ` ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopKeywords).join(' and ')}`;
-    } else {
-      description += ` ${taskName.toLowerCase()}`;
-    }
-
-    // Add domain-specific context
-    if (domain === 'business') {
-      description += '. Focus on professional standards and efficiency.';
-    } else if (domain === 'home') {
-      description += '. Organize and maintain your living space effectively.';
-    } else if (domain === 'personal') {
-      description += '. Take time to complete this thoughtfully.';
-    } else if (domain === 'world') {
-      description += '. Consider broader implications and impact.';
-    }
+    description = buildContextualDescription(
+      taskName,
+      extracted.keywords,
+      extracted.phrases,
+      extracted.verbs,
+      extracted.nouns,
+      extracted.pronouns,
+      '', // No context from search
+      domain,
+      domainTerms
+    );
 
     // Calculate confidence based on keyword/verb matches
     confidence = Math.min(
       DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
-      (keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
-      (verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight),
+      (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
+      (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+      (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight) +
+      (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
+      (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight),
       DESCRIPTION_GENERATION_CONFIG.fallbackMaxConfidence
     );
   }
+
+  logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedSearch=${usedSearchResults}`);
 
   return {
     description,
@@ -687,4 +545,3 @@ export async function generateDescription(taskName: string): Promise<GeneratedDe
     confidence,
   };
 }
-

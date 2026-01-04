@@ -95,6 +95,7 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   pronounWeight: 0.01, // Weight per pronoun in confidence calculation
   resultCountWeight: 0.02, // Weight per search result in confidence calculation
   maxConfidence: 0.95, // Maximum confidence value
+  highConfidenceThreshold: 0.7, // Confidence threshold for high-quality descriptions (used in UI to indicate source)
   // Fallback confidence weights
   fallbackKeywordWeight: 0.2, // Weight per keyword in fallback confidence
   fallbackVerbWeight: 0.15, // Weight per verb in fallback confidence
@@ -106,6 +107,14 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   // Description display limits (for UI text generation)
   maxDisplayItemsSingle: 1, // Maximum items to display when showing single item
   maxDisplayItemsPair: 2, // Maximum items to display when showing pair
+  // Domain context query modifiers for Instant Answer API searches
+  domainContextModifiers: {
+    business: 'professional work business',
+    home: 'home maintenance household',
+    personal: 'personal life self-care',
+    world: 'global international travel',
+    mixed: 'general',
+  },
 } as const;
 
 /**
