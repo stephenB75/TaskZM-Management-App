@@ -337,6 +337,10 @@ export const SETTINGS_PANEL_START_TOUR_ICON_SIZE = '0.8rem'; // 20% smaller than
 export const SETTINGS_PANEL_AVATAR_SIZE = '4rem'; // w-16 h-16 = 4rem
 export const SETTINGS_PANEL_INPUT_HEIGHT = '2.25rem'; // h-9 = 2.25rem
 export const SETTINGS_PANEL_BADGE_HEIGHT = '1rem'; // h-4 = 1rem
+export const SETTINGS_PANEL_BADGE_PADDING_LEFT = '0.375rem'; // padding-left: 0.375rem (6px)
+export const SETTINGS_PANEL_BADGE_PADDING_RIGHT = '0.375rem'; // padding-right: 0.375rem (6px)
+export const SETTINGS_PANEL_BADGE_PADDING_TOP = '0'; // padding-top: 0
+export const SETTINGS_PANEL_BADGE_PADDING_BOTTOM = '0'; // padding-bottom: 0
 export const SETTINGS_PANEL_GAP_SMALL = '0.5rem'; // gap-2 = 0.5rem
 export const SETTINGS_PANEL_GAP_MEDIUM = '0.75rem'; // gap-3 = 0.75rem
 export const SETTINGS_PANEL_GAP_LARGE = '1rem'; // gap-4 = 1rem
@@ -354,10 +358,17 @@ export const SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM = '0.75rem'; // mb-3 = 0.75rem
 export const SETTINGS_PANEL_MARGIN_RIGHT_SMALL = '0.5rem'; // mr-2 = 0.5rem
 export const SETTINGS_PANEL_MARGIN_RIGHT_XSMALL = '0.25rem'; // mr-1 = 0.25rem
 export const SETTINGS_PANEL_MARGIN_LEFT_SMALL = '0.5rem'; // ml-2 = 0.5rem
+export const SETTINGS_PANEL_MARGIN_LEFT_NONE = '0'; // margin-left: 0px
+export const SETTINGS_PANEL_MARGIN_RIGHT_NONE = '0'; // margin-right: 0px
 export const SETTINGS_PANEL_PADDING_SMALL = '0.625rem'; // p-2.5 = 0.625rem
 export const SETTINGS_PANEL_PADDING_MEDIUM = '0.75rem'; // p-3 = 0.75rem
 export const SETTINGS_PANEL_PADDING_LARGE = '1rem'; // p-4 = 1rem
+export const SETTINGS_PANEL_PADDING_LEFT_AI_SECTION = '1.75rem'; // padding-left: 28px (1.75rem)
+export const SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION = '1.75rem'; // padding-right: 28px (1.75rem)
 export const SETTINGS_PANEL_PADDING_Y_SMALL = '0.25rem'; // py-1 = 0.25rem
+export const SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION = '26px'; // line-height: 26px
+export const SETTINGS_PANEL_GAP_NONE = '0'; // gap: 0px
+export const SETTINGS_PANEL_POSITION_STATIC = 'static'; // position: static
 export const SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT = '1.6rem'; // 20% smaller than default h-8 (2rem)
 export const SETTINGS_PANEL_START_TOUR_BUTTON_PADDING_X = '0.6rem'; // 20% smaller than default px-3 (0.75rem)
 export const SETTINGS_PANEL_START_TOUR_BUTTON_GAP = '0.4rem'; // 20% smaller than default 0.5rem gap

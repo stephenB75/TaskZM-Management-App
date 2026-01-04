@@ -76,7 +76,18 @@ import {
   SETTINGS_PANEL_MARGIN_TOP_XSMALL,
   SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
   SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+  SETTINGS_PANEL_MARGIN_LEFT_NONE,
+  SETTINGS_PANEL_MARGIN_RIGHT_NONE,
   SETTINGS_PANEL_PADDING_LARGE,
+  SETTINGS_PANEL_PADDING_LEFT_AI_SECTION,
+  SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION,
+  SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION,
+  SETTINGS_PANEL_GAP_NONE,
+  SETTINGS_PANEL_POSITION_STATIC,
+  SETTINGS_PANEL_BADGE_PADDING_LEFT,
+  SETTINGS_PANEL_BADGE_PADDING_RIGHT,
+  SETTINGS_PANEL_BADGE_PADDING_TOP,
+  SETTINGS_PANEL_BADGE_PADDING_BOTTOM,
   SETTINGS_PANEL_PADDING_Y_SMALL,
   SETTINGS_PANEL_TEXT_SIZE_XSMALL,
   SETTINGS_PANEL_TEXT_SIZE_SMALL,
@@ -700,7 +711,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.aiScheduler && (
-                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -717,7 +728,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.taskHours}
                     </span>
                     {!features.taskHours && (
-                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -740,7 +751,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.analytics && (
-                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -757,7 +768,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.pomodoroTimer}
                     </span>
                     {!features.pomodoroTimer && (
-                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -774,7 +785,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.teamCollaboration}
                     </span>
                     {!features.teamFeatures && (
-                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -797,7 +808,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.calendarSync && (
-                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -820,7 +831,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       )}
                     </span>
                     {!features.recurringTasks && (
-                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -837,7 +848,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {SUBSCRIPTION_UI_TEXT.settings.features.autoTaskRollover}
                     </span>
                     {!features.taskRollover && (
-                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                      <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                         {SUBSCRIPTION_UI_TEXT.settings.features.proBadge}
                       </Badge>
                     )}
@@ -861,7 +872,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           {SUBSCRIPTION_UI_TEXT.settings.features.taskTemplates}
                         </span>
                         {!features.taskTemplates && (
-                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                             {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
                           </Badge>
                         )}
@@ -878,7 +889,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           {SUBSCRIPTION_UI_TEXT.settings.features.taskDependencies}
                         </span>
                         {!features.taskDependencies && (
-                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                             {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
                           </Badge>
                         )}
@@ -895,7 +906,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           {SUBSCRIPTION_UI_TEXT.settings.features.multipleWorkspaces}
                         </span>
                         {!features.multipleWorkspaces && (
-                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: '0.375rem', paddingRight: '0.375rem', paddingTop: '0', paddingBottom: '0', height: SETTINGS_PANEL_BADGE_HEIGHT }}>
+                          <Badge variant="outline" className={`${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground border-0 flex-shrink-0`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_BADGE_PADDING_TOP, paddingBottom: SETTINGS_PANEL_BADGE_PADDING_BOTTOM, height: SETTINGS_PANEL_BADGE_HEIGHT }}>
                             {SUBSCRIPTION_UI_TEXT.settings.features.yearlyBadge}
                           </Badge>
                         )}
@@ -1027,7 +1038,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             {!features.calendarSync ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -1428,7 +1445,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <span>Tags Management</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             <p className="text-sm text-muted-foreground">
               Create and manage custom tags for organizing tasks
             </p>
@@ -1494,7 +1517,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             {!features.aiScheduler ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -1622,8 +1651,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               className="bg-primary/5 rounded-lg border border-primary/10 flex flex-col"
               style={{ 
                 marginTop: SETTINGS_PANEL_SPACING_LARGE,
-                padding: SETTINGS_PANEL_PADDING_LARGE,
-                gap: SETTINGS_PANEL_SPACING_MEDIUM,
+                marginLeft: SETTINGS_PANEL_MARGIN_LEFT_NONE,
+                marginRight: SETTINGS_PANEL_MARGIN_RIGHT_NONE,
+                paddingLeft: SETTINGS_PANEL_PADDING_LEFT_AI_SECTION,
+                paddingRight: SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION,
+                paddingTop: SETTINGS_PANEL_PADDING_LARGE,
+                paddingBottom: SETTINGS_PANEL_PADDING_LARGE,
+                gap: SETTINGS_PANEL_GAP_NONE,
+                position: SETTINGS_PANEL_POSITION_STATIC,
               }}
             >
               <div 
@@ -1657,7 +1692,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     </p>
                     <p 
                       className="text-muted-foreground"
-                      style={{ lineHeight: '1.625' }}
+                      style={{ lineHeight: SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION }}
                     >
                       {AI_FUNCTION_EXPLANATION.DESCRIPTION}
                     </p>
@@ -1772,7 +1807,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <span>Date, Time & Theme</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             <div className="space-y-4 sm:space-y-3 md:space-y-3">
               {/* Time Format */}
               <div className="space-y-2 sm:space-y-2">
@@ -1871,7 +1912,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             {!features.taskRollover ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -1950,7 +1997,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             {!features.taskHours ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -2291,7 +2344,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </Badge>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Quietly track your achievements as you complete tasks. Awards appear as subtle notifications in the corner.
@@ -2642,7 +2701,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             <p className="text-sm text-muted-foreground">
               Take a guided tour of TaskZM's features and learn how to get the most out of your neurodivergent-friendly task manager.
             </p>
@@ -2715,7 +2780,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <span>About</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-4 pt-2 space-y-4 sm:space-y-4 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
             <div className="space-y-4 sm:space-y-3 md:space-y-3">
               <div className="flex flex-col items-center gap-1.5">
                 <img 
