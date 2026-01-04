@@ -104,10 +104,10 @@ async function searchDomainContext(
   // 2. Domain-specific queries with phrases, verbs (action words), nouns, and pronouns
   // Use domain terms that are relevant to the domain, not just ones matching task name
   // This provides better context by searching for domain-specific concepts related to the task
-  const topKeywords = domainTerms.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopKeywords * 2);
-  const topPhrases = domainTerms.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopPhrases * 2);
-  const topVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopVerbs * 2);
-  const topNouns = domainTerms.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopNouns * 2);
+  const topKeywords = domainTerms.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopKeywords * DESCRIPTION_GENERATION_CONFIG.topTermsMultiplier);
+  const topPhrases = domainTerms.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopPhrases * DESCRIPTION_GENERATION_CONFIG.topTermsMultiplier);
+  const topVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopVerbs * DESCRIPTION_GENERATION_CONFIG.topTermsMultiplier);
+  const topNouns = domainTerms.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopNouns * DESCRIPTION_GENERATION_CONFIG.topTermsMultiplier);
   
   // Prioritize domain terms that relate to task name, but also include general domain terms
   // This ensures we get both task-specific and domain-general context
@@ -518,39 +518,20 @@ function extractKeywordsAndVerbsFromSearch(
   });
   
   // STEP 5: Build context from search results using keywords and phrases
-  // Prioritize sentences that contain both keywords and found phrases
-  const contextSnippets: string[] = [];
+  // IMPORTANT: Use FULL search results as context, not just snippets
+  // The sentence extraction will handle finding the best sentences
+  let finalContext = '';
   
-  searchResults.forEach(result => {
-    if (result && result.length > 0) {
-      const resultLower = result.toLowerCase();
-      
-      // Check if result contains keywords
-      const hasKeywords = taskKeywords.some(kw => resultLower.includes(kw.toLowerCase()));
-      // Check if result contains found phrases
-      const hasPhrases = foundPhrases.some(phrase => resultLower.includes(phrase.toLowerCase()));
-      
-      // Prioritize results with both keywords and phrases
-      if (hasKeywords && hasPhrases) {
-        contextSnippets.push(result.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength));
-      } else if (hasKeywords || hasPhrases) {
-        contextSnippets.push(result.substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSnippetLength, result.length)));
-      } else if (hasKeywords || taskKeywords.length > 0) {
-        // Even if no phrases found, include results with keywords
-        contextSnippets.push(result.substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSnippetLength, result.length)));
-      }
-    }
-  });
-  
-  // If no context snippets found, use all search results (they might still have useful info)
-  let finalContext = contextSnippets.length > 0
-    ? contextSnippets.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength)
-    : searchResults
-        .slice(0, 5) // Use more results if no specific matches
-        .map(r => r && r.length > 0 ? r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength) : '')
-        .filter(r => r.length > 0)
-        .join(' ')
-        .substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength);
+  if (searchResults.length > 0) {
+    // Use all search results as context (up to max length)
+    // This gives us the full text to extract sentences from
+    finalContext = searchResults
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.maxSearchResultsForContext)
+      .map(r => r && r.length > 0 ? r.trim() : '')
+      .filter(r => r.length > 0)
+      .join(' ')
+      .substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength * DESCRIPTION_GENERATION_CONFIG.contextMultiplier);
+  }
   
   return {
     keywords: taskKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
@@ -669,41 +650,82 @@ function buildContextualDescription(
   });
   
   // STEP 1: Find the best sentence from search results that contains keywords and phrases
-  // This creates a natural description like "Take family pet for a walk to get their daily exercise"
+  // PRIORITY: Use actual complete sentences from search results, not just extracted terms
   if (context && context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength) {
-    // Try splitting by sentences first
+    // Try splitting by sentences first (periods, exclamation, question marks)
+    // This is the most reliable way to get complete sentences
     let sentences = context.split(/[.!?]+/)
       .filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength)
-      .map(s => s.trim());
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && s.length <= DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.sentenceLengthMultiplier);
     
-    // If no sentences found, try splitting by commas or newlines
+    // If no sentences found with punctuation, try splitting by newlines (paragraph breaks)
     if (sentences.length === 0) {
-      sentences = context.split(/[,;\n]+/)
+      sentences = context.split(/\n+/)
         .filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength)
-        .map(s => s.trim());
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && s.length <= DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.sentenceLengthMultiplier);
     }
     
-    // If still no sentences, use the whole context as one sentence
+    // If still no sentences, try splitting by commas (less ideal, but might work)
+    if (sentences.length === 0) {
+      sentences = context.split(/[,;]+/)
+        .filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength)
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && s.length <= DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.sentenceLengthMultiplier);
+    }
+    
+    // If still no sentences, use meaningful chunks from context
     if (sentences.length === 0 && context.trim().length > 0) {
-      sentences = [context.trim()];
+      // Try to extract a meaningful sentence-like chunk
+      const words = context.trim().split(/\s+/);
+      if (words.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.chunkMinWords) {
+        // Take first N words as a sentence
+        const chunk = words.slice(0, Math.min(DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.chunkMaxWords, words.length)).join(' ');
+        if (chunk.length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength) {
+          sentences = [chunk];
+        }
+      }
     }
     
     if (sentences.length > 0) {
       // Score sentences based on how many keywords and phrases they contain
+      // Prioritize sentences that are complete, natural, and contain task-relevant terms
       const scoredSentences = sentences.map(sentence => {
         const sentenceLower = sentence.toLowerCase();
         let score = 0;
         
-        // Check for keywords (essential - must have at least one)
-        const keywordCount = keywords.filter(kw => sentenceLower.includes(kw.toLowerCase())).length;
+        // Check for keywords (essential - must have at least one if we have keywords)
+        const keywordCount = keywords.filter(kw => {
+          const kwLower = kw.toLowerCase();
+          // Use word boundary matching for better accuracy
+          return new RegExp(`\\b${kwLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(sentenceLower);
+        }).length;
+        
         if (keywordCount === 0 && keywords.length > 0) {
           return { sentence, score: 0 }; // No keywords = not relevant (if we have keywords)
         }
         score += keywordCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.keywordWeight;
         
-        // Check for phrases (high value)
-        const phraseCount = relevantPhrases.filter(phrase => sentenceLower.includes(phrase.toLowerCase())).length;
+        // Check for phrases (high value - complete phrases are better than individual keywords)
+        const phraseCount = relevantPhrases.filter(phrase => {
+          const phraseLower = phrase.toLowerCase();
+          return sentenceLower.includes(phraseLower);
+        }).length;
         score += phraseCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.phraseWeight;
+        
+        // MAJOR BONUS: Sentences with multiple keywords are more relevant
+        if (keywordCount >= 2) {
+          score += DESCRIPTION_GENERATION_CONFIG.sentenceScoringBonuses.multipleKeywords2;
+        }
+        if (keywordCount >= 3) {
+          score += DESCRIPTION_GENERATION_CONFIG.sentenceScoringBonuses.multipleKeywords3;
+        }
+        
+        // MAJOR BONUS: Sentences with both keywords AND phrases are highly relevant
+        if (keywordCount > 0 && phraseCount > 0) {
+          score += DESCRIPTION_GENERATION_CONFIG.sentenceScoringBonuses.keywordsAndPhrases;
+        }
         
         // Check for verbs and nouns (additional context)
         const verbCount = verbs.filter(v => {
@@ -716,21 +738,57 @@ function buildContextualDescription(
         const nounCount = nouns.filter(n => sentenceLower.includes(n.toLowerCase())).length;
         score += nounCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.nounWeight;
         
+        // Prefer longer, more complete sentences (but not too long)
+        if (sentence.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.wellFormedMin && 
+            sentence.length <= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.wellFormedMax) {
+          score += DESCRIPTION_GENERATION_CONFIG.sentenceScoringBonuses.wellFormedSentence;
+        }
+        
+        // Penalize very short sentences (likely fragments)
+        if (sentence.length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.fragmentMax) {
+          score += DESCRIPTION_GENERATION_CONFIG.sentenceScoringBonuses.shortSentencePenalty;
+        }
+        
         return { sentence, score };
       });
       
-      // Get the best sentence (highest score, or first if all scores are 0)
-      scoredSentences.sort((a, b) => b.score - a.score);
+      // Get the best sentence (highest score)
+      scoredSentences.sort((a, b) => {
+        // First sort by score
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        // If scores are equal, prefer longer sentences (more complete)
+        return b.sentence.length - a.sentence.length;
+      });
+      
+      // Only use sentences with a meaningful score
       const bestSentence = scoredSentences.find(s => s.score > 0)?.sentence || 
-                          (scoredSentences.length > 0 ? scoredSentences[0].sentence : null);
+                          (scoredSentences.length > 0 && scoredSentences[0].score >= 0 ? scoredSentences[0].sentence : null);
       
       if (bestSentence && bestSentence.length > 0) {
         // Use the sentence directly as description (more natural)
-        if (bestSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
-          description = bestSentence;
+        // Clean up the sentence (remove extra spaces, ensure proper capitalization)
+        let cleanSentence = bestSentence.trim();
+        
+        // Remove extra whitespace
+        cleanSentence = cleanSentence.replace(DESCRIPTION_GENERATION_CONFIG.whitespacePattern, ' ');
+        
+        // Ensure sentence starts with capital letter
+        if (cleanSentence.length > 0) {
+          cleanSentence = cleanSentence.charAt(0).toUpperCase() + cleanSentence.slice(1);
+        }
+        
+        // Ensure sentence ends with punctuation if it doesn't already
+        if (cleanSentence.length > 0 && !DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(cleanSentence)) {
+          cleanSentence += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
+        }
+        
+        if (cleanSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
+          description = cleanSentence;
         } else {
-          // Truncate if too long
-          const truncated = bestSentence.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength);
+          // Truncate if too long, but try to end at a word boundary
+          const truncated = cleanSentence.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength);
           const lastSpace = truncated.lastIndexOf(' ');
           const threshold = DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.truncationThreshold;
           description = lastSpace > threshold 
@@ -741,18 +799,73 @@ function buildContextualDescription(
     }
   }
   
-  // STEP 2: If no good sentence found, construct description from keywords and phrases
+  // STEP 2: If no good sentence found from search results, construct description from keywords and phrases
+  // This should only happen if search results don't contain usable sentences
   if (!description || description.trim().length === 0) {
     // Try to construct a natural description using keywords, phrases, and domain terminology
-    if (relevantPhrases.length > 0 && keywords.length > 0) {
-      // Use the best phrase and expand it with keywords
+    // Priority: Use domain terminology phrases to construct natural sentences
+    
+    // First, try to use domain terminology phrases that match the task
+    // These are the most reliable source of complete, natural phrases
+    const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
+    const matchingDomainPhrases = domainTerms.phrases.filter(p => {
+      const pLower = p.toLowerCase();
+      // Check if phrase contains multiple keywords (more relevant)
+      const matchingKeywords = taskKeywordsLower.filter(kw => pLower.includes(kw)).length;
+      // Prefer phrases with 2+ keywords, or longer phrases with at least 1 keyword
+      return matchingKeywords >= DESCRIPTION_GENERATION_CONFIG.domainPhraseMatching.minKeywordsForMatch || 
+             (matchingKeywords >= 1 && pLower.length > DESCRIPTION_GENERATION_CONFIG.domainPhraseMatching.minLengthForSingleKeyword);
+    });
+    
+    if (matchingDomainPhrases.length > 0) {
+      // Sort by: 1) number of matching keywords, 2) length (longer = more complete)
+      const sortedPhrases = matchingDomainPhrases.sort((a, b) => {
+        const aKeywords = taskKeywordsLower.filter(kw => a.toLowerCase().includes(kw)).length;
+        const bKeywords = taskKeywordsLower.filter(kw => b.toLowerCase().includes(kw)).length;
+        if (bKeywords !== aKeywords) {
+          return bKeywords - aKeywords;
+        }
+        return b.length - a.length;
+      });
+      
+      const bestPhrase = sortedPhrases[0];
+      const actionWord = taskNameLower.includes(DESCRIPTION_GENERATION_CONFIG.actionWords.find) ? DESCRIPTION_GENERATION_CONFIG.actionWords.find : 
+                        taskNameLower.includes(DESCRIPTION_GENERATION_CONFIG.actionWords.search) ? DESCRIPTION_GENERATION_CONFIG.actionWords.search :
+                        taskNameLower.includes(DESCRIPTION_GENERATION_CONFIG.actionWords.buy) ? DESCRIPTION_GENERATION_CONFIG.actionWords.buy :
+                        taskNameLower.includes(DESCRIPTION_GENERATION_CONFIG.actionWords.get) ? DESCRIPTION_GENERATION_CONFIG.actionWords.get : 
+                        DESCRIPTION_GENERATION_CONFIG.actionWords.find;
+      
+      // Construct a natural sentence
+      if (bestPhrase.toLowerCase().includes(actionWord)) {
+        // Phrase already has action word, use as-is
+        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+      } else {
+        // Add action word and meaningful context (only if it adds value)
+        const contextKeywords = keywords.filter(kw => {
+          const kwLower = kw.toLowerCase();
+          const phraseLower = bestPhrase.toLowerCase();
+          // Only use context if it's not already in the phrase and is meaningful
+          return !phraseLower.includes(kwLower) && 
+                 kwLower !== actionWord &&
+                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower) &&
+                 DESCRIPTION_GENERATION_CONFIG.preferredContextWords.home.includes(kwLower);
+        });
+        
+        if (contextKeywords.length > 0) {
+          description = `${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} ${bestPhrase} for ${contextKeywords[0]}`;
+        } else {
+          // Phrase is complete enough on its own
+          description = `${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} ${bestPhrase}`;
+        }
+      }
+    } else if (relevantPhrases.length > 0 && keywords.length > 0) {
+      // Use phrases found in search results
       const bestPhrase = relevantPhrases[0];
       
-      // Check if we can create a natural sentence from the phrase
       // Look for action verbs related to the task
       const actionVerbs = verbs.filter(v => {
         const vLower = v.toLowerCase();
-        return ['find', 'search', 'research', 'compare', 'buy', 'purchase', 'get', 'locate', 'identify'].some(action => 
+        return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
           vLower.includes(action) || action.includes(vLower)
         );
       });
@@ -760,26 +873,26 @@ function buildContextualDescription(
       if (actionVerbs.length > 0) {
         // Construct: "Find [phrase] for [context]"
         const action = actionVerbs[0];
-        const context = keywords.filter(kw => !bestPhrase.toLowerCase().includes(kw.toLowerCase())).slice(0, 2).join(' ');
-        description = `${action} ${bestPhrase}${context ? ` for ${context}` : ''}`;
+        const context = keywords.filter(kw => !bestPhrase.toLowerCase().includes(kw.toLowerCase())).slice(0, DESCRIPTION_GENERATION_CONFIG.fallbackKeywordLimits.maxKeywordsForContext).join(' ');
+        description = `${action.charAt(0).toUpperCase() + action.slice(1)} ${bestPhrase}${context ? ` for ${context}` : ''}`;
       } else {
-        // Use phrase directly
-        description = bestPhrase;
+        // Use phrase directly with proper capitalization
+        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
       }
     } else if (phrases.length > 0 && keywords.length > 0) {
       // Use any phrase found, even if not filtered as "relevant"
       const bestPhrase = phrases[0];
       const actionVerbs = verbs.filter(v => {
         const vLower = v.toLowerCase();
-        return ['find', 'search', 'research', 'compare', 'buy', 'purchase', 'get'].some(action => 
+        return DESCRIPTION_GENERATION_CONFIG.actionWordList.slice(0, 7).some(action => 
           vLower.includes(action) || action.includes(vLower)
         );
       });
       
       if (actionVerbs.length > 0) {
-        description = `${actionVerbs[0]} ${bestPhrase}`;
+        description = `${actionVerbs[0].charAt(0).toUpperCase() + actionVerbs[0].slice(1)} ${bestPhrase}`;
       } else {
-        description = bestPhrase;
+        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
       }
     } else if (keywords.length > 0) {
       // Construct a natural description from keywords using domain terminology
@@ -788,7 +901,7 @@ function buildContextualDescription(
       const relatedVerbs = domainTerms.verbs.filter(v => {
         const vLower = v.toLowerCase();
         return taskKeywordsLower.some(kw => vLower.includes(kw) || kw.includes(vLower)) ||
-               ['find', 'search', 'research', 'compare', 'buy', 'purchase', 'get', 'locate', 'shop', 'select'].some(action => 
+               DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
                  vLower.includes(action) || action.includes(vLower)
                );
       });
@@ -803,10 +916,22 @@ function buildContextualDescription(
         return taskKeywordsLower.some(kw => pLower.includes(kw) || kw.includes(pLower));
       });
       
-      // Build description using domain terminology
+      // Build description using domain terminology - construct natural sentences
       if (relatedPhrases.length > 0) {
         // Use domain phrase - construct a natural sentence
-        const bestPhrase = relatedPhrases[0];
+        // Prioritize longer, more complete phrases (they're more descriptive)
+        const sortedPhrases = relatedPhrases.sort((a, b) => {
+          // First sort by length (longer = more complete)
+          if (b.length !== a.length) {
+            return b.length - a.length;
+          }
+          // Then by number of keywords contained
+          const aKeywords = taskKeywordsLower.filter(kw => a.toLowerCase().includes(kw)).length;
+          const bKeywords = taskKeywordsLower.filter(kw => b.toLowerCase().includes(kw)).length;
+          return bKeywords - aKeywords;
+        });
+        
+        const bestPhrase = sortedPhrases[0];
         const actionWord = taskNameLower.includes('find') ? 'find' : 
                           taskNameLower.includes('search') ? 'search' :
                           taskNameLower.includes('buy') ? 'buy' :
@@ -814,40 +939,107 @@ function buildContextualDescription(
         
         // Check if phrase already contains action word
         if (bestPhrase.toLowerCase().includes(actionWord)) {
-          description = bestPhrase;
+          // Phrase already has action, capitalize and use as-is
+          description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
         } else {
-          // Add action word if needed
-          const context = keywords.filter(kw => !bestPhrase.toLowerCase().includes(kw.toLowerCase())).slice(0, 1).join(' ');
-          description = `${actionWord} ${bestPhrase}${context ? ` for ${context}` : ''}`;
+          // Construct natural sentence: "Find [phrase] for [context]"
+          // Only add context if it adds value (not already in phrase)
+          const contextKeywords = keywords.filter(kw => {
+            const kwLower = kw.toLowerCase();
+            const phraseLower = bestPhrase.toLowerCase();
+            // Exclude if keyword is already in phrase or is a stop word
+            return !phraseLower.includes(kwLower) && 
+                   kwLower !== actionWord &&
+                   !['a', 'an', 'the', 'our', 'for', 'auto'].includes(kwLower);
+          });
+          
+          // Prefer "home" or other meaningful context words
+          const meaningfulContext = contextKeywords.find(kw => 
+            ['home', 'house', 'household'].includes(kw.toLowerCase())
+          ) || contextKeywords[0];
+          
+          if (meaningfulContext) {
+            description = `${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} ${bestPhrase} for ${meaningfulContext}`;
+          } else {
+            // Just use action + phrase (phrase is complete enough)
+            description = `${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} ${bestPhrase}`;
+          }
+        }
+      } else if (relatedNouns.length > 0) {
+        // Use noun with action word - construct natural sentence
+        const actionWord = taskNameLower.includes('find') ? 'find' : 
+                          taskNameLower.includes('search') ? 'search' :
+                          taskNameLower.includes('buy') ? 'buy' :
+                          taskNameLower.includes('get') ? 'get' : 'find';
+        
+        // Prioritize longer, more specific nouns
+        const bestNoun = relatedNouns.sort((a, b) => b.length - a.length)[0];
+        const contextKeywords = keywords.filter(kw => {
+          const kwLower = kw.toLowerCase();
+          return !bestNoun.toLowerCase().includes(kwLower) && 
+                 kwLower !== actionWord &&
+                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+        });
+        
+        if (contextKeywords.length > 0) {
+          const context = contextKeywords[0];
+          description = `${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} ${bestNoun} for ${context}`;
+        } else {
+          description = `${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} ${bestNoun}`;
         }
       } else if (relatedVerbs.length > 0 && relatedNouns.length > 0) {
         // Construct: "Find [noun] for [context]"
         const verb = relatedVerbs[0];
         const noun = relatedNouns[0];
-        const context = keywords.filter(kw => !noun.toLowerCase().includes(kw.toLowerCase())).slice(0, 2).join(' ');
-        description = `${verb} ${noun}${context ? ` for ${context}` : ''}`;
-      } else if (relatedNouns.length > 0) {
-        // Use noun with action word
-        const actionWord = taskNameLower.includes('find') ? 'find' : 
-                          taskNameLower.includes('search') ? 'search' :
-                          taskNameLower.includes('buy') ? 'buy' :
-                          taskNameLower.includes('get') ? 'get' : 'find';
-        const noun = relatedNouns[0];
-        const context = keywords.filter(kw => !noun.toLowerCase().includes(kw.toLowerCase())).slice(0, 1).join(' ');
-        description = `${actionWord} ${noun}${context ? ` for ${context}` : ''}`;
+        const contextKeywords = keywords.filter(kw => {
+          const kwLower = kw.toLowerCase();
+          return !noun.toLowerCase().includes(kwLower) && 
+                 kwLower !== verb.toLowerCase() &&
+                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+        });
+        
+        if (contextKeywords.length > 0) {
+          const context = contextKeywords.slice(0, 1).join(' ');
+          description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${noun} for ${context}`;
+        } else {
+          description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${noun}`;
+        }
       } else if (relatedVerbs.length > 0) {
-        // Use verb + keywords
+        // Use verb + most relevant keywords (not all keywords)
         const verb = relatedVerbs[0];
-        const keywordStr = keywords.slice(0, 2).join(' ');
-        description = `${verb} ${keywordStr}`;
+        // Only use keywords that aren't already in the verb
+        const relevantKeywords = keywords.filter(kw => {
+          const kwLower = kw.toLowerCase();
+          return !verb.toLowerCase().includes(kwLower) &&
+                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+        }).slice(0, 2);
+        
+        if (relevantKeywords.length > 0) {
+          description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${relevantKeywords.join(' ')}`;
+        } else {
+          description = verb.charAt(0).toUpperCase() + verb.slice(1);
+        }
       } else {
-        // Fallback: construct from keywords with action word
+        // Fallback: construct from keywords with action word - create proper sentence
         const actionWord = taskNameLower.includes('find') ? 'find' : 
                           taskNameLower.includes('search') ? 'search' :
                           taskNameLower.includes('buy') ? 'buy' :
                           taskNameLower.includes('get') ? 'get' : 'find';
-        const keywordStr = keywords.slice(0, 3).join(' ');
-        description = `${actionWord} ${keywordStr}`;
+        
+        // Filter out stop words and construct proper sentence
+        const relevantKeywords = keywords.filter(kw => {
+          const kwLower = kw.toLowerCase();
+          return kwLower !== actionWord &&
+                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+        });
+        
+        if (relevantKeywords.length > 0) {
+          // Use first 2-3 keywords to construct sentence
+          const keywordStr = relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.fallbackKeywordLimits.maxKeywordsForDescription).join(' ');
+          description = `${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} ${keywordStr}`;
+        } else {
+          description = `${actionWord.charAt(0).toUpperCase() + actionWord.slice(1)} ${taskName.toLowerCase()}`;
+        }
       }
     } else {
       // Ultimate fallback

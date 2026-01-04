@@ -181,6 +181,64 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     period: '. ',
     ellipsis: '...',
   },
+  // Context extraction multipliers
+  contextMultiplier: 2, // Multiplier for context length (allows more context for better sentence extraction)
+  topTermsMultiplier: 2, // Multiplier for top terms when building search queries
+  sentenceLengthMultiplier: 2, // Multiplier for max sentence length when extracting from context
+  maxSearchResultsForContext: 10, // Maximum number of search results to use for context
+  // Sentence scoring bonuses and penalties
+  sentenceScoringBonuses: {
+    multipleKeywords2: 10, // Bonus for sentences with 2+ keywords
+    multipleKeywords3: 15, // Bonus for sentences with 3+ keywords
+    keywordsAndPhrases: 20, // Bonus for sentences with both keywords and phrases
+    wellFormedSentence: 5, // Bonus for sentences 30-120 chars (well-formed)
+    shortSentencePenalty: -5, // Penalty for sentences < 20 chars (fragments)
+  },
+  // Sentence length thresholds
+  sentenceLengthThresholds: {
+    wellFormedMin: 30, // Minimum length for well-formed sentence bonus
+    wellFormedMax: 120, // Maximum length for well-formed sentence bonus
+    fragmentMax: 20, // Maximum length to be considered a fragment (penalty)
+    chunkMinWords: 5, // Minimum words for meaningful chunk extraction
+    chunkMaxWords: 20, // Maximum words to extract as chunk
+  },
+  // Action words for task descriptions
+  actionWords: {
+    find: 'find',
+    search: 'search',
+    buy: 'buy',
+    get: 'get',
+    research: 'research',
+    compare: 'compare',
+    purchase: 'purchase',
+    locate: 'locate',
+    identify: 'identify',
+    shop: 'shop',
+    select: 'select',
+  },
+  // Action word detection list (for filtering verbs)
+  actionWordList: ['find', 'search', 'research', 'compare', 'buy', 'purchase', 'get', 'locate', 'identify', 'shop', 'select'],
+  // Context filtering stop words (words to exclude when adding context)
+  contextFilterStopWords: ['a', 'an', 'the', 'our', 'for', 'auto'],
+  // Preferred context words (words that add value when used as context)
+  preferredContextWords: {
+    home: ['home', 'house', 'household'],
+    business: ['work', 'office', 'business'],
+    personal: ['personal', 'self', 'individual'],
+  },
+  // Domain phrase matching thresholds
+  domainPhraseMatching: {
+    minKeywordsForMatch: 2, // Minimum keywords a phrase must contain to match
+    minLengthForSingleKeyword: 12, // Minimum length if phrase has only 1 keyword
+  },
+  // Keyword extraction limits for fallback
+  fallbackKeywordLimits: {
+    maxKeywordsForDescription: 3, // Maximum keywords to use in fallback description
+    maxKeywordsForContext: 2, // Maximum keywords to use as context
+  },
+  // Punctuation patterns
+  sentenceEndPattern: /[.!?]$/, // Pattern to check if sentence ends with punctuation
+  whitespacePattern: /\s+/g, // Pattern to match multiple whitespace
 } as const;
 
 /**
