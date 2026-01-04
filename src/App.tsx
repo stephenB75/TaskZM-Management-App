@@ -49,6 +49,7 @@ import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
 import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth } from './lib/layout-constants';
+import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
@@ -750,9 +751,13 @@ function AppContent() {
                 minHeight: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
                   : 'auto',
+                // Add padding-bottom on mobile to ensure content can scroll past nav bar
+                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                  ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
+                  : undefined,
                 // Background gradient fills the container and extends with content - extends to nav bar
                 backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                  ? 'linear-gradient(to bottom, rgb(228, 224, 239), rgb(220, 214, 235))'
+                  ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`
                   : 'transparent',
                 // Ensure background extends fully to nav bar and beyond with content
                 backgroundSize: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
