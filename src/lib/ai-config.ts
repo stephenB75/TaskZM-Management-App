@@ -53,6 +53,9 @@ export const DUCKDUCKGO_CONFIG = {
   timeout: 5000, // 5 seconds timeout for search requests
   maxResults: 5, // Maximum number of search results to process
   minConfidenceForSearch: 0.5, // Minimum confidence to use search results
+  cacheEnabled: true, // Enable caching for search results
+  cacheExpiryHours: 24 * 7, // Cache expires after 7 days
+  maxCacheSize: 1000, // Maximum number of cached search results
 } as const;
 
 /**
@@ -62,6 +65,46 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   maxContextLength: 500, // Maximum characters from search results to use
   minSearchResults: 1, // Minimum search results needed to use search-based description
   searchTimeout: 5000, // Timeout for DuckDuckGo search (ms)
+  // Context processing thresholds
+  minContextLength: 50, // Minimum context length to use in description
+  minSentenceLength: 20, // Minimum sentence length to extract
+  maxSentenceLength: 150, // Maximum sentence length to extract
+  // Query processing
+  minWordLength: 2, // Minimum word length to consider in task name
+  maxQueriesPerSearch: 5, // Maximum number of queries to search in parallel
+  resultsMultiplier: 2, // Multiplier for max results when combining multiple queries
+  // Extraction limits
+  maxTopKeywords: 2, // Maximum top keywords to use in queries
+  maxTopPhrases: 2, // Maximum top phrases to use in queries
+  maxTopVerbs: 2, // Maximum top verbs to use in queries
+  maxTopNouns: 2, // Maximum top nouns to use in queries
+  maxExtractedKeywords: 5, // Maximum extracted keywords to return
+  maxExtractedPhrases: 3, // Maximum extracted phrases to return
+  maxExtractedVerbs: 3, // Maximum extracted verbs to return
+  maxExtractedNouns: 3, // Maximum extracted nouns to return
+  maxExtractedPronouns: 2, // Maximum extracted pronouns to return
+  maxSnippetLength: 200, // Maximum snippet length for context extraction
+  // Confidence calculation weights
+  baseConfidence: 0.3, // Base confidence for fallback descriptions
+  searchBaseConfidence: 0.6, // Base confidence for search-based descriptions
+  keywordWeight: 0.03, // Weight per keyword in confidence calculation
+  phraseWeight: 0.05, // Weight per phrase in confidence calculation (higher = more specific)
+  verbWeight: 0.04, // Weight per verb in confidence calculation
+  nounWeight: 0.03, // Weight per noun in confidence calculation
+  pronounWeight: 0.01, // Weight per pronoun in confidence calculation
+  resultCountWeight: 0.02, // Weight per search result in confidence calculation
+  maxConfidence: 0.95, // Maximum confidence value
+  // Fallback confidence weights
+  fallbackKeywordWeight: 0.2, // Weight per keyword in fallback confidence
+  fallbackVerbWeight: 0.15, // Weight per verb in fallback confidence
+  fallbackMaxConfidence: 0.9, // Maximum confidence for fallback descriptions
+  // Database cache
+  cacheQueryLimit: 1, // Limit for cache query results
+  initialHitCount: 1, // Initial hit count for new cache entries
+  defaultHitCount: 0, // Default hit count if not set
+  // Description display limits (for UI text generation)
+  maxDisplayItemsSingle: 1, // Maximum items to display when showing single item
+  maxDisplayItemsPair: 2, // Maximum items to display when showing pair
 } as const;
 
 /**

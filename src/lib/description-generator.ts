@@ -8,6 +8,170 @@
 import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
 import { TASK_BREAKDOWN_DEBOUNCE_MS, DUCKDUCKGO_CONFIG, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { logger } from './logger';
+import { supabase } from './supabase-client';
+
+/**
+ * Hash query for cache key (simple hash function)
+ */
+function hashQuery(query: string): string {
+  let hash = 0;
+  const normalizedQuery = query.toLowerCase().trim();
+  for (let i = 0; i < normalizedQuery.length; i++) {
+    const char = normalizedQuery.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return hash.toString(36);
+}
+
+/**
+ * Get current user ID from Supabase auth
+ */
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    if (!supabase) return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.id || null;
+  } catch (error) {
+    logger.debug('Failed to get user ID:', error);
+    return null;
+  }
+}
+
+/**
+ * Database cache entry interface
+ */
+interface DatabaseCacheEntry {
+  results: string[];
+  extracted_keywords: string[];
+  extracted_phrases: string[];
+  extracted_verbs: string[];
+  extracted_nouns: string[];
+  extracted_pronouns: string[];
+  domain: string | null;
+  confidence: number | null;
+}
+
+/**
+ * Get cached search results from Supabase database
+ */
+async function getCachedResultsFromDatabase(
+  query: string
+): Promise<DatabaseCacheEntry | null> {
+  if (!DUCKDUCKGO_CONFIG.cacheEnabled || !supabase) return null;
+  
+  try {
+    const queryHash = hashQuery(query);
+    const userId = await getCurrentUserId();
+    
+    // Query cache: user-specific first, then global (user_id IS NULL)
+    const { data, error } = await supabase
+      .from('duckduckgo_search_cache')
+      .select('results, extracted_keywords, extracted_phrases, extracted_verbs, extracted_nouns, extracted_pronouns, domain, confidence, expires_at, hit_count')
+      .eq('query_hash', queryHash)
+      .or(`user_id.eq.${userId || 'null'},user_id.is.null`)
+      .order('user_id', { ascending: false, nullsFirst: false }) // Prefer user-specific over global
+      .limit(DESCRIPTION_GENERATION_CONFIG.cacheQueryLimit)
+      .single();
+    
+    if (error || !data) {
+      return null;
+    }
+    
+    // Check if cache entry is expired
+    const expiresAt = new Date(data.expires_at);
+    if (expiresAt < new Date()) {
+      // Delete expired entry
+      await supabase
+        .from('duckduckgo_search_cache')
+        .delete()
+        .eq('query_hash', queryHash)
+        .or(`user_id.eq.${userId || 'null'},user_id.is.null`);
+      return null;
+    }
+    
+    // Update hit count
+    const newHitCount = (data.hit_count || DESCRIPTION_GENERATION_CONFIG.defaultHitCount) + 1;
+    await supabase
+      .from('duckduckgo_search_cache')
+      .update({ hit_count: newHitCount })
+      .eq('query_hash', queryHash)
+      .or(`user_id.eq.${userId || 'null'},user_id.is.null`);
+    
+    logger.debug(`DuckDuckGo database cache hit: "${query}" (hit count: ${newHitCount})`);
+    
+    return {
+      results: data.results || [],
+      extracted_keywords: data.extracted_keywords || [],
+      extracted_phrases: data.extracted_phrases || [],
+      extracted_verbs: data.extracted_verbs || [],
+      extracted_nouns: data.extracted_nouns || [],
+      extracted_pronouns: data.extracted_pronouns || [],
+      domain: data.domain || null,
+      confidence: data.confidence || null,
+    };
+  } catch (error) {
+    logger.debug('Failed to get cached results from database:', error);
+    return null;
+  }
+}
+
+/**
+ * Store search results in Supabase database
+ */
+async function setCachedResultsInDatabase(
+  query: string,
+  results: string[],
+  extracted: {
+    keywords: string[];
+    phrases: string[];
+    verbs: string[];
+    nouns: string[];
+    pronouns: string[];
+  },
+  domain: Domain,
+  confidence: number
+): Promise<void> {
+  if (!DUCKDUCKGO_CONFIG.cacheEnabled || !supabase || results.length === 0) return;
+  
+  try {
+    const queryHash = hashQuery(query);
+    const userId = await getCurrentUserId();
+    
+    // Calculate expiry time
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + DUCKDUCKGO_CONFIG.cacheExpiryHours);
+    
+    // Upsert cache entry (insert or update if exists)
+    const { error } = await supabase
+      .from('duckduckgo_search_cache')
+      .upsert({
+        user_id: userId,
+        query: query,
+        query_hash: queryHash,
+        results: results,
+        extracted_keywords: extracted.keywords,
+        extracted_phrases: extracted.phrases,
+        extracted_verbs: extracted.verbs,
+        extracted_nouns: extracted.nouns,
+        extracted_pronouns: extracted.pronouns,
+        domain: domain,
+        confidence: confidence,
+        expires_at: expiresAt.toISOString(),
+        hit_count: DESCRIPTION_GENERATION_CONFIG.initialHitCount,
+      }, {
+        onConflict: 'user_id,query_hash',
+      });
+    
+    if (error) {
+      logger.debug('Failed to store cache in database:', error);
+    } else {
+      logger.debug(`DuckDuckGo database cache stored: "${query}" (${results.length} results)`);
+    }
+  } catch (error) {
+    logger.debug('Failed to store cache in database:', error);
+  }
+}
 
 export interface GeneratedDescription {
   description: string;
@@ -18,6 +182,7 @@ export interface GeneratedDescription {
 /**
  * Search DuckDuckGo for context about the task
  * Uses DuckDuckGo's Instant Answer API to get search results
+ * Implements caching to speed up repeated queries
  */
 async function searchDuckDuckGo(query: string): Promise<string[]> {
   try {
@@ -74,6 +239,7 @@ async function searchDuckDuckGo(query: string): Promise<string[]> {
 
         if (results.length >= DESCRIPTION_GENERATION_CONFIG.minSearchResults) {
           logger.debug(`DuckDuckGo search successful: ${results.length} results for "${query}"`);
+          // Cache will be stored after extraction (in searchDomainContext)
           return results;
         }
       }
@@ -122,9 +288,9 @@ function buildContextualDescription(
     
     // Add nouns or keywords for additional context
     if (nouns.length > 0) {
-      description += ` related to ${nouns.slice(0, 1).join(' and ')}`;
+      description += ` related to ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
     } else if (keywords.length > 0) {
-      description += ` focusing on ${keywords.slice(0, 1).join(' and ')}`;
+      description += ` focusing on ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
     }
   } else if (verbs.length > 0) {
     // Use action words (verbs) if no phrases found
@@ -133,32 +299,32 @@ function buildContextualDescription(
     
     // Add nouns for object context
     if (nouns.length > 0) {
-      description += ` ${nouns.slice(0, 1).join(' and ')}`;
+      description += ` ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
     } else if (keywords.length > 0) {
-      description += ` ${keywords.slice(0, 1).join(' and ')}`;
+      description += ` ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
     } else {
       description += ` ${taskName.toLowerCase()}`;
     }
   } else if (nouns.length > 0) {
     // Use nouns if no phrases or verbs found
-    description = `This task focuses on ${nouns.slice(0, 2).join(' and ')}`;
+    description = `This task focuses on ${nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsPair).join(' and ')}`;
     
     if (keywords.length > 0) {
-      description += ` related to ${keywords.slice(0, 1).join(' and ')}`;
+      description += ` related to ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsSingle).join(' and ')}`;
     }
   } else if (keywords.length > 0) {
-    description = `This task focuses on ${keywords.slice(0, 2).join(' and ')}`;
+    description = `This task focuses on ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxDisplayItemsPair).join(' and ')}`;
   } else {
     description = `This task involves ${taskName.toLowerCase()}`;
   }
   
   // Add contextual information from search results if available
-  if (context && context.length > 50) {
+  if (context && context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength) {
     // Extract a relevant sentence from context
-    const sentences = context.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const sentences = context.split(/[.!?]+/).filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength);
     if (sentences.length > 0) {
       const relevantSentence = sentences[0].trim();
-      if (relevantSentence.length < 150) {
+      if (relevantSentence.length < DESCRIPTION_GENERATION_CONFIG.maxSentenceLength) {
         description += `. ${relevantSentence}`;
       }
     }
@@ -191,7 +357,7 @@ async function searchDomainContext(
   const allResults: string[] = [];
   
   // Extract key terms from task name
-  const taskWords = taskName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const taskWords = taskName.toLowerCase().split(/\s+/).filter(w => w.length > DESCRIPTION_GENERATION_CONFIG.minWordLength);
   
   // Build domain-specific search queries
   const searchQueries: string[] = [];
@@ -200,16 +366,16 @@ async function searchDomainContext(
   searchQueries.push(taskName);
   
   // 2. Domain-specific queries with phrases, verbs (action words), nouns, and pronouns
-  const topKeywords = domainTerms.keywords.slice(0, 2).filter(kw => 
+  const topKeywords = domainTerms.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopKeywords).filter(kw => 
     taskWords.some(word => kw.toLowerCase().includes(word) || word.includes(kw.toLowerCase()))
   );
-  const topPhrases = domainTerms.phrases.slice(0, 2).filter(phrase => 
+  const topPhrases = domainTerms.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopPhrases).filter(phrase => 
     taskWords.some(word => phrase.toLowerCase().includes(word) || word.includes(phrase.toLowerCase()))
   );
-  const topVerbs = domainTerms.verbs.slice(0, 2).filter(v => 
+  const topVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopVerbs).filter(v => 
     taskWords.some(word => v.toLowerCase().includes(word) || word.includes(v.toLowerCase()))
   );
-  const topNouns = domainTerms.nouns.slice(0, 2).filter(noun => 
+  const topNouns = domainTerms.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopNouns).filter(noun => 
     taskWords.some(word => noun.toLowerCase().includes(word) || word.includes(noun.toLowerCase()))
   );
   
@@ -247,7 +413,7 @@ async function searchDomainContext(
   searchQueries.push(`${taskName} ${domainContextMap[domain]}`);
   
   // Search all queries in parallel (with limit to avoid too many requests)
-  const queriesToSearch = searchQueries.slice(0, 5); // Increased to 5 queries to include phrases, verbs, nouns
+  const queriesToSearch = searchQueries.slice(0, DESCRIPTION_GENERATION_CONFIG.maxQueriesPerSearch);
   
   try {
     const searchPromises = queriesToSearch.map(query => searchDuckDuckGo(query));
@@ -262,7 +428,7 @@ async function searchDomainContext(
     
     // Remove duplicates and limit results
     const uniqueResults = Array.from(new Set(allResults));
-    return uniqueResults.slice(0, DUCKDUCKGO_CONFIG.maxResults * 2); // Allow more results from multiple queries
+    return uniqueResults.slice(0, DUCKDUCKGO_CONFIG.maxResults * DESCRIPTION_GENERATION_CONFIG.resultsMultiplier);
   } catch (error) {
     logger.debug('Domain context search error:', error);
     return [];
@@ -344,16 +510,16 @@ function extractKeywordsAndVerbsFromSearch(
     const hasKeyword = foundKeywords.some(kw => resultLower.includes(kw.toLowerCase()));
     
     if (hasPhrase || hasVerb || hasNoun || hasKeyword) {
-      contextSnippets.push(result.substring(0, 200)); // Limit snippet length
+      contextSnippets.push(result.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength));
     }
   });
   
   return {
-    keywords: foundKeywords.slice(0, 5), // Top 5 keywords
-    phrases: foundPhrases.slice(0, 3), // Top 3 phrases
-    verbs: foundVerbs.slice(0, 3), // Top 3 verbs (action words)
-    nouns: foundNouns.slice(0, 3), // Top 3 nouns
-    pronouns: foundPronouns.slice(0, 2), // Top 2 pronouns
+    keywords: foundKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: foundPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: foundVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: foundNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+    pronouns: foundPronouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
     context: contextSnippets.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength),
   };
 }
@@ -378,17 +544,75 @@ export async function generateDescription(taskName: string): Promise<GeneratedDe
 
   // Search DuckDuckGo for domain-specific context (keywords, verbs, scenarios)
   let description = '';
-  let confidence = 0.3; // Base confidence
+  let confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   let usedSearchResults = false;
 
   try {
-    // Search for domain-specific keywords, verbs, and scenarios
-    const searchResults = await searchDomainContext(taskName, domain, domainTerms);
+    // Check database cache first for the main task query
+    const mainQueryCache = await getCachedResultsFromDatabase(taskName);
+    let searchResults: string[] = [];
+    let extracted: ReturnType<typeof extractKeywordsAndVerbsFromSearch> | null = null;
     
-    if (searchResults.length > 0) {
-      // Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
-      const extracted = extractKeywordsAndVerbsFromSearch(searchResults, domainTerms);
+    if (mainQueryCache !== null) {
+      // Use cached extracted data if available
+      logger.debug(`Using cached extracted data for: "${taskName}"`);
+      searchResults = mainQueryCache.results;
+      extracted = {
+        keywords: mainQueryCache.extracted_keywords,
+        phrases: mainQueryCache.extracted_phrases,
+        verbs: mainQueryCache.extracted_verbs,
+        nouns: mainQueryCache.extracted_nouns,
+        pronouns: mainQueryCache.extracted_pronouns,
+        context: mainQueryCache.results.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength),
+      };
+      // Use cached domain and confidence if available
+      if (mainQueryCache.domain) {
+        domain = mainQueryCache.domain as Domain;
+        domainTerms = getDomainTerminology(domain);
+      }
+      if (mainQueryCache.confidence !== null) {
+        confidence = mainQueryCache.confidence;
+      }
+    } else {
+      // Search for domain-specific keywords, verbs, and scenarios
+      searchResults = await searchDomainContext(taskName, domain, domainTerms);
       
+      if (searchResults.length > 0) {
+        // Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
+        extracted = extractKeywordsAndVerbsFromSearch(searchResults, domainTerms);
+        
+        // Calculate confidence for storage
+        const calculatedConfidence = Math.min(
+          DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence + 
+          (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
+          (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+          (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
+          (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
+          (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight) +
+          (searchResults.length * DESCRIPTION_GENERATION_CONFIG.resultCountWeight),
+          DESCRIPTION_GENERATION_CONFIG.maxConfidence
+        );
+        
+        // Store in database cache for future use
+        await setCachedResultsInDatabase(
+          taskName,
+          searchResults,
+          {
+            keywords: extracted.keywords,
+            phrases: extracted.phrases,
+            verbs: extracted.verbs,
+            nouns: extracted.nouns,
+            pronouns: extracted.pronouns,
+          },
+          domain,
+          calculatedConfidence
+        );
+        
+        confidence = calculatedConfidence;
+      }
+    }
+    
+    if (searchResults.length > 0 && extracted) {
       // Build contextual description using search findings
       description = buildContextualDescription(
         taskName,
@@ -403,16 +627,6 @@ export async function generateDescription(taskName: string): Promise<GeneratedDe
       );
       
       if (description) {
-        confidence = Math.min(
-          0.6 + 
-          (extracted.keywords.length * 0.03) + 
-          (extracted.phrases.length * 0.05) + // Phrases are more specific, higher weight
-          (extracted.verbs.length * 0.04) + 
-          (extracted.nouns.length * 0.03) +
-          (extracted.pronouns.length * 0.01) + // Pronouns add natural language context
-          (searchResults.length * 0.02),
-          0.95
-        );
         usedSearchResults = true;
       }
     }
@@ -442,7 +656,7 @@ export async function generateDescription(taskName: string): Promise<GeneratedDe
 
     // Add context based on keywords
     if (keywords.length > 0) {
-      description += ` ${keywords.slice(0, 2).join(' and ')}`;
+      description += ` ${keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopKeywords).join(' and ')}`;
     } else {
       description += ` ${taskName.toLowerCase()}`;
     }
@@ -460,8 +674,10 @@ export async function generateDescription(taskName: string): Promise<GeneratedDe
 
     // Calculate confidence based on keyword/verb matches
     confidence = Math.min(
-      0.3 + (keywords.length * 0.2) + (verbs.length * 0.15),
-      0.9
+      DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
+      (keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
+      (verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight),
+      DESCRIPTION_GENERATION_CONFIG.fallbackMaxConfidence
     );
   }
 
