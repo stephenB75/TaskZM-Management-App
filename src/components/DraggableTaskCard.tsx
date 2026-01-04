@@ -722,36 +722,36 @@ export const DraggableTaskCard = React.forwardRef<
               : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800' };
             
             return (
-              <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded text-xs border", domainColors.bg)}>
+              <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded text-[12px] border", domainColors.bg)}>
                 <div className="flex items-center gap-1 mb-1">
                   <Sparkles className={cn("w-3 h-3", domainColors.text)} />
-                  <span className={cn("font-medium", domainColors.text)}>
+                  <span className={cn("font-medium text-[12px]", domainColors.text)}>
                     AI Action Plan
                   </span>
                 </div>
                 <div className="space-y-0.5">
                   {breakdown.actionPlan.steps.slice(0, 3).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
                     <div key={idx} className="flex items-start gap-1.5">
-                      <span className={cn("text-[10px] mt-0.5 flex-shrink-0", domainColors.textMuted)}>
+                      <span className={cn("text-[12px] mt-0.5 flex-shrink-0", domainColors.textMuted)}>
                         {step.order || (idx + 1)}.
                       </span>
-                      <span className={cn("text-[10px] leading-tight flex-1", domainColors.textLight)}>
+                      <span className={cn("text-[12px] leading-tight flex-1", domainColors.textLight)}>
                         {step.action}
                       </span>
                       {step.estimatedMinutes > 0 && (
-                        <span className={cn("text-[9px] flex-shrink-0", domainColors.textMuted)}>
+                        <span className={cn("text-[12px] flex-shrink-0", domainColors.textMuted)}>
                           {step.estimatedMinutes}m
                         </span>
                       )}
                     </div>
                   ))}
                   {breakdown.actionPlan.steps.length > 3 && (
-                    <div className={cn("text-[10px] mt-0.5", domainColors.textMuted)}>
+                    <div className={cn("text-[12px] mt-0.5", domainColors.textMuted)}>
                       +{breakdown.actionPlan.steps.length - 3} more steps
                     </div>
                   )}
                   {breakdown.actionPlan.totalEstimatedMinutes > 0 && (
-                    <div className={cn("text-[9px] mt-0.5 pt-0.5 border-t", domainColors.border)}>
+                    <div className={cn("text-[12px] mt-0.5 pt-0.5 border-t", domainColors.border)}>
                       Total: {Math.floor(breakdown.actionPlan.totalEstimatedMinutes / 60)}h {breakdown.actionPlan.totalEstimatedMinutes % 60}m
                     </div>
                   )}
