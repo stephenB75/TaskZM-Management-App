@@ -37,6 +37,13 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'efficiency', 'optimization', 'scalability', 'growth', 'expansion', 'merger',
     'acquisition', 'partnership', 'vendor', 'supplier', 'invoice', 'payment',
     'accounting', 'finance', 'investment', 'portfolio', 'risk', 'assessment',
+    'banking', 'loan', 'credit', 'debit', 'transaction', 'account', 'balance',
+    'deposit', 'withdraw', 'transfer', 'mortgage', 'interest', 'rate', 'apr',
+    'equity', 'liquidity', 'asset', 'liability', 'revenue', 'expense', 'profit',
+    'loss', 'tax', 'deduction', 'refund', 'audit', 'compliance', 'regulation',
+    'trading', 'stock', 'bond', 'dividend', 'yield', 'broker', 'exchange',
+    'currency', 'forex', 'crypto', 'bitcoin', 'blockchain', 'wallet', 'payment',
+    'invoice', 'receipt', 'billing', 'subscription', 'recurring', 'payment',
     'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
     'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'fix', 'bugfix',
     'feature', 'implementation', 'deployment', 'release', 'version', 'update', 'patch',
@@ -59,7 +66,12 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'software development', 'application development', 'feature development',
     'bug fix', 'bug fixing', 'code fix', 'debug code', 'code debugging',
     'pull request', 'code merge', 'git commit', 'version control', 'code repository',
-    'technical specification', 'system design', 'architecture design', 'api design'
+    'technical specification', 'system design', 'architecture design', 'api design',
+    'financial report', 'quarterly earnings', 'annual report', 'balance sheet',
+    'income statement', 'cash flow', 'budget analysis', 'financial planning',
+    'investment strategy', 'portfolio management', 'risk assessment', 'credit check',
+    'loan application', 'mortgage approval', 'tax filing', 'tax return',
+    'bank statement', 'account reconciliation', 'payment processing', 'transaction history'
   ],
   verbs: [
     'present', 'negotiate', 'strategize', 'analyze', 'forecast', 'delegate', 'coordinate',
@@ -71,7 +83,11 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'code', 'coding', 'program', 'programming', 'build', 'building', 'compile',
     'deploy', 'deploying', 'integrate', 'integrating', 'refactor', 'refactoring',
     'optimize', 'optimizing', 'validate', 'validating', 'verify', 'verifying',
-    'conduct', 'conducting', 'perform', 'performing', 'run', 'running', 'execute', 'executing'
+    'conduct', 'conducting', 'perform', 'performing', 'run', 'running', 'execute', 'executing',
+    'invest', 'investing', 'deposit', 'depositing', 'withdraw', 'withdrawing',
+    'transfer', 'transferring', 'calculate', 'calculating', 'analyze', 'analyzing',
+    'budget', 'budgeting', 'forecast', 'forecasting', 'reconcile', 'reconciling',
+    'file', 'filing', 'submit', 'submitting', 'approve', 'approving', 'process', 'processing'
   ],
   nouns: [
     'meeting', 'presentation', 'report', 'deadline', 'client', 'stakeholder', 'budget',
@@ -109,7 +125,27 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'roofing', 'siding', 'windows', 'doors', 'heating', 'cooling', 'hvac',
     'insurance', 'mortgage', 'utilities', 'bills', 'taxes', 'homeowner', 'property',
     'supplies', 'shopping', 'meal prep', 'meal planning', 'deep clean', 'spring cleaning',
-    'holiday prep', 'seasonal', 'maintenance schedule', 'home improvement', 'diy'
+    'holiday prep', 'seasonal', 'maintenance schedule', 'home improvement', 'diy',
+    'pet', 'pets', 'cat', 'cats', 'dog', 'dogs', 'animal', 'animals', 'litter', 'litter box',
+    'auto', 'automatic', 'automated', 'pet care', 'pet supplies', 'pet food', 'pet accessories',
+    'find', 'finding', 'search', 'searching', 'research', 'researching', 'compare', 'comparing',
+    'purchase', 'buy', 'buying', 'shop', 'shopping', 'select', 'selecting', 'choose', 'choosing',
+    'cooking', 'baking', 'recipe', 'ingredient', 'meal', 'dinner', 'lunch', 'breakfast',
+    'snack', 'dessert', 'appetizer', 'entree', 'beverage', 'drink', 'beverages',
+    'grocery', 'groceries', 'supermarket', 'store', 'market', 'restaurant', 'cafe',
+    'kitchen', 'stove', 'oven', 'microwave', 'refrigerator', 'freezer', 'pantry',
+    'spice', 'spices', 'herb', 'herbs', 'seasoning', 'sauce', 'marinade', 'dressing',
+    'real estate', 'property', 'house', 'home', 'apartment', 'condo', 'condominium',
+    'townhouse', 'mansion', 'villa', 'cottage', 'cabin', 'duplex', 'triplex',
+    'buying', 'selling', 'renting', 'leasing', 'mortgage', 'down payment', 'closing',
+    'inspection', 'appraisal', 'title', 'deed', 'escrow', 'agent', 'realtor', 'broker',
+    'listing', 'offer', 'counteroffer', 'negotiation', 'contract', 'closing costs',
+    'family', 'kids', 'children', 'child', 'parent', 'parents', 'sibling', 'siblings',
+    'grandparent', 'grandparents', 'aunt', 'uncle', 'cousin', 'cousins', 'nephew', 'niece',
+    'birthday', 'anniversary', 'holiday', 'vacation', 'trip', 'celebration', 'party',
+    'school', 'education', 'homework', 'study', 'learning', 'tutoring', 'lesson',
+    'activity', 'activities', 'play', 'playing', 'game', 'games', 'toy', 'toys',
+    'sport', 'sports', 'practice', 'rehearsal', 'performance', 'recital', 'concert'
   ],
   phrases: [
     'home improvement', 'deep clean', 'meal prep', 'yard work', 'garden maintenance',
@@ -118,14 +154,45 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'basement cleanup', 'exterior maintenance', 'interior decoration', 'furniture assembly',
     'light fixture installation', 'plumbing repair', 'electrical work', 'painting project',
     'flooring installation', 'window replacement', 'door repair', 'roof inspection',
-    'gutter cleaning', 'driveway repair', 'fence maintenance', 'shed organization'
+    'gutter cleaning', 'driveway repair', 'fence maintenance', 'shed organization',
+    'pet litter', 'auto pet litter', 'automatic pet litter', 'pet litter box',
+    'automatic litter box', 'self cleaning litter box', 'pet care products',
+    'pet supplies shopping', 'find pet products', 'research pet products',
+    'compare pet products', 'pet accessories', 'pet food', 'pet toys',
+    'cooking dinner', 'meal preparation', 'meal planning', 'recipe search',
+    'grocery shopping', 'food shopping', 'restaurant reservation', 'dinner party',
+    'baking project', 'cooking class', 'meal prep', 'food prep', 'kitchen organization',
+    'property search', 'house hunting', 'home buying', 'home selling', 'real estate search',
+    'property viewing', 'open house', 'home inspection', 'property appraisal',
+    'mortgage application', 'loan pre-approval', 'closing process', 'home closing',
+    'family time', 'family dinner', 'family gathering', 'family vacation', 'family trip',
+    'kids activities', 'children activities', 'play date', 'birthday party', 'school event',
+    'parent teacher conference', 'homework help', 'study session', 'tutoring session',
+    'sports practice', 'music lesson', 'art class', 'dance class', 'swimming lesson'
   ],
   verbs: [
     'clean', 'organize', 'repair', 'maintain', 'cook', 'shop', 'decorate', 'renovate',
     'remodel', 'paint', 'install', 'assemble', 'disassemble', 'fix', 'replace',
     'upgrade', 'refurbish', 'restore', 'refinish', 'polish', 'wax', 'seal',
     'caulk', 'grout', 'tile', 'sand', 'stain', 'varnish', 'prune', 'trim',
-    'mow', 'weed', 'plant', 'harvest', 'water', 'fertilize', 'mulch', 'rake'
+    'mow', 'weed', 'plant', 'harvest', 'water', 'fertilize', 'mulch', 'rake',
+    'find', 'finding', 'search', 'searching', 'research', 'researching', 'compare',
+    'comparing', 'purchase', 'buy', 'buying', 'select', 'selecting', 'choose',
+    'choosing', 'evaluate', 'evaluating', 'review', 'reviewing', 'decide', 'deciding',
+    'cook', 'cooking', 'bake', 'baking', 'roast', 'roasting', 'grill', 'grilling',
+    'fry', 'frying', 'boil', 'boiling', 'steam', 'steaming', 'sauté', 'sautéing',
+    'marinate', 'marinating', 'season', 'seasoning', 'mix', 'mixing', 'stir', 'stirring',
+    'chop', 'chopping', 'slice', 'slicing', 'dice', 'dicing', 'mince', 'mincing',
+    'peel', 'peeling', 'grate', 'grating', 'whisk', 'whisking', 'beat', 'beating',
+    'knead', 'kneading', 'roll', 'rolling', 'spread', 'spreading', 'garnish', 'garnishing',
+    'appraise', 'appraising', 'inspect', 'inspecting', 'view', 'viewing', 'tour', 'touring',
+    'list', 'listing', 'show', 'showing', 'negotiate', 'negotiating', 'close', 'closing',
+    'sign', 'signing', 'move', 'moving', 'pack', 'packing', 'unpack', 'unpacking',
+    'nurture', 'nurturing', 'care', 'caring', 'support', 'supporting', 'guide', 'guiding',
+    'teach', 'teaching', 'help', 'helping', 'assist', 'assisting', 'supervise', 'supervising',
+    'monitor', 'monitoring', 'encourage', 'encouraging', 'praise', 'praising', 'discipline',
+    'disciplining', 'celebrate', 'celebrating', 'play', 'playing', 'learn', 'learning',
+    'study', 'studying', 'practice', 'practicing', 'rehearse', 'rehearsing', 'perform', 'performing'
   ],
   nouns: [
     'groceries', 'cleaning', 'maintenance', 'repair', 'cooking', 'laundry', 'organization',
@@ -133,7 +200,20 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'decoration', 'renovation', 'remodeling', 'painting', 'flooring', 'roofing', 'siding',
     'windows', 'doors', 'heating', 'cooling', 'hvac', 'insurance', 'mortgage', 'utilities',
     'bills', 'taxes', 'homeowner', 'property', 'supplies', 'shopping', 'meal', 'prep',
-    'room', 'closet', 'garage', 'attic', 'basement', 'exterior', 'interior', 'fixture'
+    'room', 'closet', 'garage', 'attic', 'basement', 'exterior', 'interior', 'fixture',
+    'pet', 'pets', 'cat', 'cats', 'dog', 'dogs', 'animal', 'animals', 'litter', 'litter box',
+    'auto', 'automatic', 'pet care', 'pet supplies', 'pet food', 'pet accessories',
+    'product', 'products', 'item', 'items', 'option', 'options', 'choice', 'choices',
+    'dish', 'dishes', 'cuisine', 'food', 'beverage', 'beverages', 'drink', 'drinks',
+    'ingredient', 'ingredients', 'spice', 'spices', 'herb', 'herbs', 'seasoning', 'seasonings',
+    'property', 'properties', 'house', 'houses', 'home', 'homes', 'apartment', 'apartments',
+    'condo', 'condos', 'condominium', 'condominiums', 'townhouse', 'townhouses',
+    'listing', 'listings', 'offer', 'offers', 'contract', 'contracts', 'deed', 'deeds',
+    'mortgage', 'mortgages', 'loan', 'loans', 'payment', 'payments', 'deposit', 'deposits',
+    'family', 'families', 'kid', 'kids', 'child', 'children', 'parent', 'parents',
+    'sibling', 'siblings', 'relative', 'relatives', 'event', 'events', 'activity', 'activities',
+    'school', 'schools', 'education', 'homework', 'lesson', 'lessons', 'class', 'classes',
+    'game', 'games', 'toy', 'toys', 'sport', 'sports', 'hobby', 'hobbies'
   ],
   pronouns: [
     'i', 'me', 'my', 'mine', 'myself', 'we', 'us', 'our', 'ours', 'ourselves',
@@ -167,7 +247,13 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'yoga session', 'running training', 'cycling training', 'swimming practice',
     'hiking trip', 'camping trip', 'road trip', 'vacation planning', 'travel planning',
     'family time', 'date night', 'social event', 'birthday party', 'anniversary celebration',
-    'holiday celebration', 'volunteer work', 'community service', 'charity event'
+    'holiday celebration', 'volunteer work', 'community service', 'charity event',
+    'flight booking', 'hotel reservation', 'travel itinerary', 'vacation planning',
+    'trip planning', 'travel arrangements', 'packing list', 'travel documents',
+    'music composition', 'song writing', 'music production', 'recording session',
+    'music rehearsal', 'band practice', 'concert performance', 'music lesson',
+    'art exhibition', 'gallery opening', 'art studio', 'painting session', 'drawing class',
+    'sculpture workshop', 'art creation', 'artwork display', 'art collection'
   ],
   verbs: [
     'exercise', 'workout', 'train', 'practice', 'learn', 'study', 'read', 'write',
@@ -175,7 +261,13 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'play', 'perform', 'practice', 'rehearse', 'cook', 'bake', 'prepare',
     'travel', 'explore', 'visit', 'discover', 'experience', 'enjoy', 'relax',
     'meditate', 'reflect', 'journal', 'plan', 'organize', 'schedule', 'coordinate',
-    'socialize', 'connect', 'meet', 'celebrate', 'volunteer', 'help', 'support'
+    'socialize', 'connect', 'meet', 'celebrate', 'volunteer', 'help', 'support',
+    'book', 'booking', 'reserve', 'reserving', 'plan', 'planning', 'pack', 'packing',
+    'unpack', 'unpacking', 'fly', 'flying', 'drive', 'driving', 'navigate', 'navigating',
+    'tour', 'touring', 'sightsee', 'sightseeing', 'photograph', 'photographing',
+    'compose', 'composing', 'arrange', 'arranging', 'record', 'recording', 'mix', 'mixing',
+    'master', 'mastering', 'produce', 'producing', 'release', 'releasing', 'publish', 'publishing',
+    'exhibit', 'exhibiting', 'display', 'displaying', 'showcase', 'showcasing', 'curate', 'curating'
   ],
   nouns: [
     'exercise', 'workout', 'fitness', 'health', 'wellness', 'hobby', 'learning',
@@ -185,7 +277,17 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'cycling', 'swimming', 'hiking', 'camping', 'outdoor', 'adventure', 'exploration',
     'education', 'course', 'class', 'workshop', 'seminar', 'conference', 'event',
     'celebration', 'birthday', 'anniversary', 'holiday', 'vacation', 'trip',
-    'therapy', 'counseling', 'coaching', 'mentoring', 'volunteering', 'charity'
+    'therapy', 'counseling', 'coaching', 'mentoring', 'volunteering', 'charity',
+    'music', 'song', 'songs', 'album', 'albums', 'track', 'tracks', 'playlist', 'playlists',
+    'artist', 'artists', 'musician', 'musicians', 'band', 'bands', 'concert', 'concerts',
+    'performance', 'performances', 'recital', 'recitals', 'symphony', 'orchestra', 'choir',
+    'instrument', 'instruments', 'piano', 'guitar', 'violin', 'drums', 'voice', 'singing',
+    'art', 'arts', 'painting', 'paintings', 'drawing', 'drawings', 'sculpture', 'sculptures',
+    'gallery', 'galleries', 'museum', 'museums', 'exhibition', 'exhibitions', 'artwork',
+    'painter', 'painters', 'sculptor', 'sculptors', 'designer', 'designers',
+    'travel', 'trip', 'journey', 'voyage', 'excursion', 'adventure', 'expedition',
+    'destination', 'itinerary', 'booking', 'reservation', 'flight', 'hotel', 'accommodation',
+    'luggage', 'suitcase', 'passport', 'visa', 'ticket', 'boarding', 'departure', 'arrival'
   ],
   pronouns: [
     'i', 'me', 'my', 'mine', 'myself', 'we', 'us', 'our', 'ours', 'ourselves',
@@ -210,7 +312,17 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
     'cross-cultural', 'multicultural', 'diversity', 'inclusion', 'globalization',
     'international business', 'global market', 'world news', 'current events',
     'geography', 'country', 'nation', 'continent', 'region', 'climate', 'weather',
-    'time difference', 'jet lag', 'accommodation', 'hotel', 'reservation', 'booking'
+    'time difference', 'jet lag', 'accommodation', 'hotel', 'reservation', 'booking',
+    'flight', 'airline', 'airport', 'departure', 'arrival', 'boarding', 'luggage', 'suitcase',
+    'passport', 'visa', 'customs', 'immigration', 'border', 'security', 'check-in', 'check-out',
+    'itinerary', 'destination', 'sightseeing', 'tour', 'touring', 'excursion', 'adventure',
+    'vacation', 'holiday', 'trip', 'journey', 'voyage', 'expedition', 'cruise', 'cruising',
+    'airline', 'airlines', 'airport', 'airports', 'terminal', 'terminals', 'gate', 'gates',
+    'boarding pass', 'ticket', 'tickets', 'seat', 'seats', 'cabin', 'cabins',
+    'hotel', 'hotels', 'resort', 'resorts', 'hostel', 'hostels', 'airbnb', 'lodging',
+    'restaurant', 'restaurants', 'cafe', 'cafes', 'cuisine', 'cuisines', 'local food',
+    'attraction', 'attractions', 'landmark', 'landmarks', 'monument', 'monuments',
+    'museum', 'museums', 'gallery', 'galleries', 'beach', 'beaches', 'mountain', 'mountains'
   ],
   phrases: [
     'travel planning', 'cultural event', 'international call', 'time zone conversion',
@@ -220,14 +332,23 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
     'global team', 'remote collaboration', 'cross-border', 'international shipping',
     'currency exchange', 'foreign exchange', 'exchange rate', 'international payment',
     'world news', 'current events', 'global trends', 'international relations',
-    'climate change', 'environmental', 'sustainability', 'global warming'
+    'climate change', 'environmental', 'sustainability', 'global warming',
+    'flight booking', 'hotel reservation', 'travel planning', 'vacation planning',
+    'trip planning', 'travel arrangements', 'packing list', 'travel documents',
+    'airport check-in', 'boarding pass', 'luggage check', 'customs clearance',
+    'sightseeing tour', 'city tour', 'guided tour', 'adventure tour', 'cruise vacation',
+    'beach vacation', 'mountain trip', 'cultural tour', 'food tour', 'wine tour'
   ],
   verbs: [
     'travel', 'explore', 'discover', 'visit', 'tour', 'sightsee', 'experience',
     'immerse', 'adapt', 'adjust', 'acclimate', 'navigate', 'orient', 'locate',
     'translate', 'interpret', 'communicate', 'connect', 'network', 'collaborate',
     'coordinate', 'synchronize', 'schedule', 'plan', 'book', 'reserve', 'confirm',
-    'cancel', 'modify', 'update', 'track', 'monitor', 'manage', 'organize'
+    'cancel', 'modify', 'update', 'track', 'monitor', 'manage', 'organize',
+    'fly', 'flying', 'drive', 'driving', 'sail', 'sailing', 'cruise', 'cruising',
+    'pack', 'packing', 'unpack', 'unpacking', 'check-in', 'check-out', 'board', 'boarding',
+    'depart', 'departing', 'arrive', 'arriving', 'land', 'landing', 'takeoff', 'taking off',
+    'photograph', 'photographing', 'sightsee', 'sightseeing', 'explore', 'exploring'
   ],
   nouns: [
     'travel', 'trip', 'journey', 'voyage', 'expedition', 'culture', 'language',
@@ -238,7 +359,13 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
     'diversity', 'inclusion', 'globalization', 'international business', 'global market',
     'world news', 'current events', 'geography', 'country', 'nation', 'continent',
     'region', 'climate', 'weather', 'time difference', 'jet lag', 'accommodation',
-    'hotel', 'reservation', 'booking', 'flight', 'itinerary', 'sightseeing', 'tour'
+    'hotel', 'reservation', 'booking', 'flight', 'itinerary', 'sightseeing', 'tour',
+    'airline', 'airlines', 'airport', 'airports', 'terminal', 'terminals', 'gate', 'gates',
+    'boarding pass', 'ticket', 'tickets', 'seat', 'seats', 'cabin', 'cabins',
+    'hotel', 'hotels', 'resort', 'resorts', 'hostel', 'hostels', 'airbnb', 'lodging',
+    'restaurant', 'restaurants', 'cafe', 'cafes', 'cuisine', 'cuisines', 'local food',
+    'attraction', 'attractions', 'landmark', 'landmarks', 'monument', 'monuments',
+    'museum', 'museums', 'gallery', 'galleries', 'beach', 'beaches', 'mountain', 'mountains'
   ],
   pronouns: [
     'i', 'me', 'my', 'mine', 'myself', 'we', 'us', 'our', 'ours', 'ourselves',

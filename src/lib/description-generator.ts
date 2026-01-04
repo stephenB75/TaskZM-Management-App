@@ -540,30 +540,81 @@ function buildContextualDescription(
       if (taskNameLower.includes(phraseLower) || phraseLower.includes(taskNameLower)) {
         return false;
       }
+      // Exclude generic phrases that don't add value
+      const genericPhrases = ['therapy session', 'coaching session', 'personal approach', 'well-being', 'wellbeing', 'preferences', 'thoughtful approach'];
+      if (genericPhrases.some(gp => phraseLower.includes(gp))) {
+        return false;
+      }
       // Exclude if phrase only contains common words from task name
       const phraseWords = phraseLower.split(/\s+/);
       const allWordsInTaskName = phraseWords.every(w => 
         taskWords.some(tw => tw === w || w.includes(tw) || tw.includes(w)) && 
         w.length > DESCRIPTION_GENERATION_CONFIG.minWordLengthForFiltering
       );
-      return !allWordsInTaskName;
+      if (allWordsInTaskName) {
+        return false;
+      }
+      // Check if phrase is relevant to task - at least one significant word should relate
+      const significantWords = phraseWords.filter(w => w.length > 3 && !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
+      const hasRelevance = significantWords.some(pw => 
+        taskWords.some(tw => 
+          tw.includes(pw) || pw.includes(tw) || 
+          (tw.length > 3 && pw.length > 3 && 
+           (tw.substring(0, 3) === pw.substring(0, 3) || 
+            tw.substring(0, 4) === pw.substring(0, 4)))
+        )
+      );
+      // If phrase is from domain terminology, it's likely relevant
+      const isDomainTerm = domainTerms.phrases.some(dp => dp.toLowerCase() === phraseLower || phraseLower.includes(dp.toLowerCase()));
+      return hasRelevance || isDomainTerm;
     });
     
   const uniqueKeywords = Array.from(new Set(keywords))
     .filter(kw => {
       const kwLower = kw.toLowerCase();
       // Exclude if keyword is exactly in task name or is too generic
-      return !taskWords.some(word => kwLower === word.toLowerCase()) &&
-             !taskNameLower.includes(kwLower) &&
-             kwLower.length > 2; // Exclude very short keywords
+      if (taskWords.some(word => kwLower === word.toLowerCase()) ||
+          taskNameLower.includes(kwLower) ||
+          kwLower.length <= 2) {
+        return false;
+      }
+      // Exclude generic/common words that don't add value
+      const genericWords = ['course', 'performing', 'journaling', 'therapy', 'session', 'wellbeing', 'well-being', 'preferences', 'thoughtful', 'personal', 'approach'];
+      if (genericWords.includes(kwLower)) {
+        return false;
+      }
+      // Check if keyword is relevant to task - at least one word from task should relate
+      const kwWords = kwLower.split(/\s+/);
+      const hasRelevance = kwWords.some(kwWord => 
+        taskWords.some(tw => 
+          tw.includes(kwWord) || kwWord.includes(tw) || 
+          (tw.length > 3 && kwWord.length > 3 && 
+           (tw.substring(0, 3) === kwWord.substring(0, 3) || 
+            tw.substring(0, 4) === kwWord.substring(0, 4)))
+        )
+      );
+      // If keyword is from domain terminology, it's likely relevant
+      const isDomainTerm = domainTerms.keywords.some(dk => dk.toLowerCase() === kwLower) ||
+                           domainTerms.phrases.some(dp => dp.toLowerCase().includes(kwLower));
+      return hasRelevance || isDomainTerm;
     });
     
   const uniqueVerbs = Array.from(new Set(verbs))
     .filter(v => {
       const vLower = v.toLowerCase();
       // Exclude if verb is exactly in task name
-      return !taskWords.some(word => vLower === word.toLowerCase()) &&
-             !taskNameLower.includes(vLower);
+      if (taskWords.some(word => vLower === word.toLowerCase()) ||
+          taskNameLower.includes(vLower)) {
+        return false;
+      }
+      // Exclude generic verbs that don't add value
+      const genericVerbs = ['performing', 'doing', 'making', 'getting', 'having', 'being', 'going'];
+      if (genericVerbs.includes(vLower)) {
+        return false;
+      }
+      // Check if verb is relevant to task or from domain terminology
+      const isDomainTerm = domainTerms.verbs.some(dv => dv.toLowerCase() === vLower);
+      return isDomainTerm || vLower.length > 4; // Prefer longer, more specific verbs
     });
     
   const uniqueNouns = Array.from(new Set(nouns))
