@@ -39,6 +39,24 @@ export const AI_DAILY_HOUR_OPTIONS = {
 } as const;
 
 /**
+ * Daily hour option labels and descriptions for UI display
+ */
+export const AI_DAILY_HOUR_LABELS = {
+  [AI_DAILY_HOUR_OPTIONS.FIVE_HOURS]: {
+    label: '5 Hours',
+    description: 'Standard work day limit',
+  },
+  [AI_DAILY_HOUR_OPTIONS.EIGHT_HOURS]: {
+    label: '8 Hours',
+    description: 'Full work day limit',
+  },
+  [AI_DAILY_HOUR_OPTIONS.TEN_HOURS]: {
+    label: '10 Hours',
+    description: 'Extended work day limit',
+  },
+} as const;
+
+/**
  * Maximum hours per day for task scheduling
  * Default: 5 hours
  * This is now user-configurable through settings (5HR/8HR/10HR)
@@ -129,7 +147,7 @@ export const DESCRIPTION_GENERATION_CONFIG = {
  */
 export const AI_FUNCTION_EXPLANATION = {
   TITLE: "How AI Schedules Tasks:",
-  DESCRIPTION: "The AI scheduler analyzes task priority, duration, categories, and complexity to create optimal schedules. It respects your daily hour limits and category time windows (Work/Personal/Projects), separating weekday and weekend schedules. Priority-based scheduling automatically places urgent tasks first, while smart conflict detection prevents over-scheduling. Tasks are distributed across available days starting from tomorrow, with optimal time slots found within your work hours. All schedules can be manually adjusted anytime, and you'll be consulted if a day exceeds your hour limit.",
+  DESCRIPTION: "The AI scheduler uses intelligent analysis to automatically organize your tasks into optimal schedules. It begins by analyzing each task's properties—examining action verbs in the title and description to estimate effort, calculating complexity based on subtasks, dependencies, and description length, and considering priority levels. Using a sophisticated formula (Base Duration × Effort Score × Priority Multiplier × Complexity Score), the AI estimates how long each task will take, ensuring accurate time allocation. The system then sorts tasks intelligently, prioritizing urgent and high-priority items first, followed by in-progress tasks, and finally organizing remaining tasks by due dates and creation dates. When generating schedules, the AI fetches your calendar events to prevent conflicts, respects your configured category hours (Work, Personal, Projects) which can differ for weekdays and weekends, and enforces your daily hour limits to prevent over-scheduling. Tasks are distributed across available days starting from tomorrow, with the system finding optimal time slots within your configured work hours. The AI handles both regular tasks (scheduled for a single day) and recurring tasks (appearing on multiple days according to their recurrence pattern) differently, ensuring each type is properly integrated into your schedule. If a day would exceed your hour limit, you'll be consulted before proceeding, and all schedules can be manually adjusted at any time to fit your changing needs.",
   TASK_ANALYSIS_TITLE: "📊 Task Analysis:",
   SCHEDULING_RULES_TITLE: "⏰ Scheduling Rules:",
   SMART_FEATURES_TITLE: "🔄 Smart Features:",

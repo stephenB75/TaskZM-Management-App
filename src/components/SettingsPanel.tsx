@@ -42,7 +42,7 @@ import {
 import { useIsMobile } from './ui/use-mobile';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
-import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS } from '../lib/ai-config';
+import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS, AI_DAILY_HOUR_OPTIONS, AI_DAILY_HOUR_LABELS } from '../lib/ai-config';
 import taskzmLogoLight from '../assets/taskzm-logo-light.png';  // Light (purple) logo for dark backgrounds
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
 import { SETTINGS_PANEL_TEXT_SIZES } from '../lib/text-size-constants';
@@ -1562,102 +1562,44 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   Daily Work Hour Limit
                 </Label>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
-                    <div className="space-y-0.5 flex-1 min-w-0">
-                      <Label 
-                        htmlFor="ai-hours-5" 
-                        className="cursor-pointer"
-                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
-                      >
-                        5 Hours
-                      </Label>
-                      <p 
-                        className="text-muted-foreground"
-                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}
-                      >
-                        Standard work day limit
-                      </p>
-                    </div>
-                    <Switch 
-                      id="ai-hours-5" 
-                      checked={aiSettings.maxHoursPerDay === 5}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          updateSettings({ maxHoursPerDay: 5 });
-                        }
-                      }}
-                      disabled={!aiSettings.autoSchedulingEnabled}
-                      className="flex-shrink-0"
-                      style={{
-                        width: TOGGLE_SWITCH_DIMENSIONS.container.width,
-                        height: TOGGLE_SWITCH_DIMENSIONS.container.height,
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
-                    <div className="space-y-0.5 flex-1 min-w-0">
-                      <Label 
-                        htmlFor="ai-hours-8" 
-                        className="cursor-pointer"
-                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
-                      >
-                        8 Hours
-                      </Label>
-                      <p 
-                        className="text-muted-foreground"
-                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}
-                      >
-                        Full work day limit
-                      </p>
-                    </div>
-                    <Switch 
-                      id="ai-hours-8" 
-                      checked={aiSettings.maxHoursPerDay === 8}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          updateSettings({ maxHoursPerDay: 8 });
-                        }
-                      }}
-                      disabled={!aiSettings.autoSchedulingEnabled}
-                      className="flex-shrink-0"
-                      style={{
-                        width: TOGGLE_SWITCH_DIMENSIONS.container.width,
-                        height: TOGGLE_SWITCH_DIMENSIONS.container.height,
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
-                    <div className="space-y-0.5 flex-1 min-w-0">
-                      <Label 
-                        htmlFor="ai-hours-10" 
-                        className="cursor-pointer"
-                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
-                      >
-                        10 Hours
-                      </Label>
-                      <p 
-                        className="text-muted-foreground"
-                        style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}
-                      >
-                        Extended work day limit
-                      </p>
-                    </div>
-                    <Switch 
-                      id="ai-hours-10" 
-                      checked={aiSettings.maxHoursPerDay === 10}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          updateSettings({ maxHoursPerDay: 10 });
-                        }
-                      }}
-                      disabled={!aiSettings.autoSchedulingEnabled}
-                      className="flex-shrink-0"
-                      style={{
-                        width: TOGGLE_SWITCH_DIMENSIONS.container.width,
-                        height: TOGGLE_SWITCH_DIMENSIONS.container.height,
-                      }}
-                    />
-                  </div>
+                  {Object.entries(AI_DAILY_HOUR_OPTIONS).map(([key, hours]) => {
+                    const hourOption = hours as typeof AI_DAILY_HOUR_OPTIONS[keyof typeof AI_DAILY_HOUR_OPTIONS];
+                    const labels = AI_DAILY_HOUR_LABELS[hourOption];
+                    return (
+                      <div key={key} className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
+                        <div className="space-y-0.5 flex-1 min-w-0">
+                          <Label 
+                            htmlFor={`ai-hours-${hourOption}`}
+                            className="cursor-pointer"
+                            style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+                          >
+                            {labels.label}
+                          </Label>
+                          <p 
+                            className="text-muted-foreground"
+                            style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}
+                          >
+                            {labels.description}
+                          </p>
+                        </div>
+                        <Switch 
+                          id={`ai-hours-${hourOption}`}
+                          checked={aiSettings.maxHoursPerDay === hourOption}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              updateSettings({ maxHoursPerDay: hourOption });
+                            }
+                          }}
+                          disabled={!aiSettings.autoSchedulingEnabled}
+                          className="flex-shrink-0"
+                          style={{
+                            width: TOGGLE_SWITCH_DIMENSIONS.container.width,
+                            height: TOGGLE_SWITCH_DIMENSIONS.container.height,
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
