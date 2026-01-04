@@ -1043,86 +1043,88 @@ export const DraggableTaskCard = React.forwardRef<
                 fontSize: `${dropdownFontSize}px`,
               }}
             >
-              <div 
-                className="flex items-center"
-                style={{ gap: `${TASK_CARD_DROPDOWN.spacing.badgeGap}px` }}
-              >
-                {task.description && (
-                  <Badge
-                    variant="secondary"
-                    style={{
-                      height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
-                      paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                      paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                      paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                      paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                      fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                      backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.description.background,
-                      color: TASK_CARD_DROPDOWN_BADGE_COLORS.description.text,
-                    }}
-                  >
-                    <FileText 
-                      className="flex-shrink-0" 
-                      style={{ 
-                        width: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`, 
-                        height: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`,
-                        marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                      }} 
-                    />
-                    {TASK_CARD_DROPDOWN.text.description}
-                  </Badge>
-                )}
-                {task.subtasks && task.subtasks.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    style={{
-                      height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
-                      paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                      paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                      paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                      paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                      fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                      backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.background,
-                      color: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.text,
-                    }}
-                  >
-                    <ListChecks 
-                      className="flex-shrink-0" 
-                      style={{ 
-                        width: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`, 
-                        height: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`,
-                        marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                      }} 
-                    />
-                    {TASK_CARD_DROPDOWN.text.subtasks} ({task.subtasks.length})
-                  </Badge>
-                )}
-                {task.dependencies && task.dependencies.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    style={{
-                      height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
-                      paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                      paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                      paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                      paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                      fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                      backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.dependencies.background,
-                      color: TASK_CARD_DROPDOWN_BADGE_COLORS.dependencies.text,
-                    }}
-                  >
-                    <Link2 
-                      className="flex-shrink-0" 
-                      style={{ 
-                        width: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`, 
-                        height: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`,
-                        marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                      }} 
-                    />
-                    {TASK_CARD_DROPDOWN.text.dependencies} ({task.dependencies.length})
-                  </Badge>
-                )}
-              </div>
+              {!isDropdownOpen && (
+                <div 
+                  className="flex items-center"
+                  style={{ gap: `${TASK_CARD_DROPDOWN.spacing.badgeGap}px` }}
+                >
+                  {task.description && (
+                    <Badge
+                      variant="secondary"
+                      style={{
+                        height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
+                        paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
+                        paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
+                        paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
+                        paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
+                        fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
+                        backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.description.background,
+                        color: TASK_CARD_DROPDOWN_BADGE_COLORS.description.text,
+                      }}
+                    >
+                      <FileText 
+                        className="flex-shrink-0" 
+                        style={{ 
+                          width: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`, 
+                          height: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`,
+                          marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
+                        }} 
+                      />
+                      {TASK_CARD_DROPDOWN.text.description}
+                    </Badge>
+                  )}
+                  {task.subtasks && task.subtasks.length > 0 && (
+                    <Badge
+                      variant="secondary"
+                      style={{
+                        height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
+                        paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
+                        paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
+                        paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
+                        paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
+                        fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
+                        backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.background,
+                        color: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.text,
+                      }}
+                    >
+                      <ListChecks 
+                        className="flex-shrink-0" 
+                        style={{ 
+                          width: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`, 
+                          height: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`,
+                          marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
+                        }} 
+                      />
+                      {TASK_CARD_DROPDOWN.text.subtasks} ({task.subtasks.length})
+                    </Badge>
+                  )}
+                  {task.dependencies && task.dependencies.length > 0 && (
+                    <Badge
+                      variant="secondary"
+                      style={{
+                        height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
+                        paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
+                        paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
+                        paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
+                        paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
+                        fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
+                        backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.dependencies.background,
+                        color: TASK_CARD_DROPDOWN_BADGE_COLORS.dependencies.text,
+                      }}
+                    >
+                      <Link2 
+                        className="flex-shrink-0" 
+                        style={{ 
+                          width: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`, 
+                          height: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`,
+                          marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
+                        }} 
+                      />
+                      {TASK_CARD_DROPDOWN.text.dependencies} ({task.dependencies.length})
+                    </Badge>
+                  )}
+                </div>
+              )}
               {isDropdownOpen ? (
                 <ChevronUp 
                   style={{ 
