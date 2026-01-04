@@ -597,7 +597,10 @@ export function TodayAgendaView({
             }
             hideDesktopLogo
             actions={
-              <div className="flex flex-col items-end text-right">
+              <div className={cn(
+                "flex flex-col items-end text-right",
+                isMobile && "justify-center self-center" // Vertically center on mobile within header
+              )}>
                 <span 
                   className="font-bold text-foreground uppercase tracking-wide"
                   style={{ fontSize: HEADER_DATE_SIZE }}
