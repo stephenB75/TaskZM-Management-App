@@ -385,20 +385,40 @@ function extractKeywordsAndVerbsFromSearch(
   });
   
   // STEP 3: Extract relevant context snippets based on found terms
+  // Prioritize results with extracted terms, but include all results for context
   searchResults.forEach(result => {
-    const resultLower = result.toLowerCase();
-    const hasPhrase = foundPhrases.some(phrase => resultLower.includes(phrase.toLowerCase()));
-    const hasVerb = foundVerbs.some(v => resultLower.includes(v.toLowerCase()));
-    const hasNoun = foundNouns.some(n => resultLower.includes(n.toLowerCase()));
-    const hasKeyword = foundKeywords.some(kw => resultLower.includes(kw.toLowerCase()));
-    
-    if (hasPhrase || hasVerb || hasNoun || hasKeyword) {
-      contextSnippets.push(result.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength));
-    } else if (result.length > 0) {
-      // Also include results that don't match terms but provide context
-      contextSnippets.push(result.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength));
+    if (result && result.length > 0) {
+      const resultLower = result.toLowerCase();
+      const hasPhrase = foundPhrases.some(phrase => resultLower.includes(phrase.toLowerCase()));
+      const hasVerb = foundVerbs.some(v => resultLower.includes(v.toLowerCase()));
+      const hasNoun = foundNouns.some(n => resultLower.includes(n.toLowerCase()));
+      const hasKeyword = foundKeywords.some(kw => resultLower.includes(kw.toLowerCase()));
+      
+      // Always include results - prioritize those with extracted terms
+      if (hasPhrase || hasVerb || hasNoun || hasKeyword) {
+        // Results with extracted terms get full snippet length
+        contextSnippets.push(result.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength));
+      } else {
+        // Results without extracted terms still provide valuable context
+        // Use a slightly shorter snippet to prioritize term-matched results
+        contextSnippets.push(result.substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSnippetLength, result.length)));
+      }
     }
   });
+  
+  // Ensure we always have context from search results, even if no terms were extracted
+  // If contextSnippets is empty but we have search results, use them directly
+  let finalContext = contextSnippets.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength);
+  
+  if (!finalContext || finalContext.trim().length === 0) {
+    // Fallback: use search results directly as context
+    finalContext = searchResults
+      .slice(0, 3) // Use first 3 results
+      .map(r => r && r.length > 0 ? r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength) : '')
+      .filter(r => r.length > 0)
+      .join(' ')
+      .substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength);
+  }
   
   return {
     keywords: Array.from(new Set(foundKeywords)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
@@ -406,7 +426,7 @@ function extractKeywordsAndVerbsFromSearch(
     verbs: Array.from(new Set(foundVerbs)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
     nouns: Array.from(new Set(foundNouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
     pronouns: Array.from(new Set(foundPronouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
-    context: contextSnippets.join(' ').substring(0, DESCRIPTION_GENERATION_CONFIG.maxContextLength),
+    context: finalContext,
   };
 }
 
@@ -701,7 +721,11 @@ export async function generateDescription(taskName: string, accessToken?: string
       // Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
       const extracted = extractKeywordsAndVerbsFromSearch(searchResults, domainTerms);
       
+      logger.debug(`DuckDuckGo search results: ${searchResults.length} results, extracted: ${extracted.keywords.length} keywords, ${extracted.phrases.length} phrases, ${extracted.verbs.length} verbs, ${extracted.nouns.length} nouns, context length: ${extracted.context.length}`);
+      
       // Build contextual description using search findings
+      // Always use search results if we have them, even if extracted terms are minimal
+      // The context from search results is valuable even without perfect term extraction
       description = buildContextualDescription(
         taskName,
         extracted.keywords,
@@ -714,10 +738,41 @@ export async function generateDescription(taskName: string, accessToken?: string
         domainTerms
       );
       
-      if (description) {
+      // ALWAYS mark as using search results if we have any search results
+      // This ensures we prioritize search-based descriptions over local terminology
+      // Even if extracted terms are minimal, the search results provide valuable context
+      if (searchResults.length > 0) {
         usedSearchResults = true;
         
         // Calculate confidence for search-based results
+        // Boost confidence if we have context even if extracted terms are limited
+        const hasExtractedTerms = extracted.keywords.length > 0 || extracted.phrases.length > 0 || 
+                                  extracted.verbs.length > 0 || extracted.nouns.length > 0;
+        const hasContext = extracted.context.length > 0;
+        const contextBoost = extracted.context.length > DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 0;
+        
+        // If we have search results but no extracted context, use search results directly as context
+        if (!hasContext && searchResults.length > 0) {
+          // Use first few search results as context
+          const directContext = searchResults
+            .slice(0, 3)
+            .map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength))
+            .join(' ');
+          
+          // Rebuild description with direct context from search results
+          description = buildContextualDescription(
+            taskName,
+            extracted.keywords,
+            extracted.phrases,
+            extracted.verbs,
+            extracted.nouns,
+            extracted.pronouns,
+            directContext,
+            domain,
+            domainTerms
+          );
+        }
+        
         confidence = Math.min(
           DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence + 
           (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
@@ -725,17 +780,21 @@ export async function generateDescription(taskName: string, accessToken?: string
           (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
           (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
           (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight) +
-          (searchResults.length * DESCRIPTION_GENERATION_CONFIG.resultCountWeight),
+          (searchResults.length * DESCRIPTION_GENERATION_CONFIG.resultCountWeight) +
+          contextBoost,
           DESCRIPTION_GENERATION_CONFIG.maxConfidence
         );
+        
+        logger.debug(`Using search results: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasExtractedTerms=${hasExtractedTerms}, hasContext=${hasContext}, searchResults=${searchResults.length}`);
       }
     }
   } catch (error) {
     logger.debug('DuckDuckGo Instant Answer API error, falling back to local terminology:', error);
   }
 
-  // Fallback to local terminology if Instant Answer API didn't provide good results
-  if (!usedSearchResults || !description || description.trim().length === 0) {
+  // Fallback to local terminology ONLY if Instant Answer API didn't provide results
+  // Don't fallback if we successfully used search results, even if description is minimal
+  if (!usedSearchResults) {
     // Extract terms from task name using domain terminology
     const extracted = extractTermsFromTaskName(taskName, domainTerms);
     
