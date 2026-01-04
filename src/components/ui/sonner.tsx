@@ -3,7 +3,7 @@
 import { useTheme } from "../../contexts/ThemeContext";
 import { Toaster as Sonner, ToasterProps } from "sonner";
 import { useEffect, useState } from "react";
-import { TOAST_DURATION_DEFAULT_MS } from "../../lib/layout-constants";
+import { TOAST_DURATION_DEFAULT_MS, VIEWPORT_BREAKPOINTS } from "../../lib/layout-constants";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { actualTheme } = useTheme();

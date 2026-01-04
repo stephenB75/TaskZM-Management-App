@@ -81,6 +81,7 @@ if (typeof window !== 'undefined') {
         fullMessage.includes('serviceWorker.js') ||
         fullMessage.includes('service-worker.js') ||
         fullMessage.includes('contentScript') ||
+        fullMessage.includes('contentScript.bundle.js') ||
         fullMessage.includes('web-client-content-script') ||
         fullMessage.includes('ERR_FILE_NOT_FOUND') ||
         fullMessage.includes('checkoutUrls') ||
@@ -97,7 +98,8 @@ if (typeof window !== 'undefined') {
           fullMessage.includes('chrome-extension://')
         )) ||
         (fullMessage.includes('MutationObserver') && fullMessage.includes('Failed to execute')) ||
-        fullMessage.includes('asynchronous response')) {
+        fullMessage.includes('asynchronous response') ||
+        (fullMessage.includes('Error checking mobile size') && fullMessage.includes('ReferenceError'))) {
       console.debug('Suppressed browser extension error', args);
       return;
     }
