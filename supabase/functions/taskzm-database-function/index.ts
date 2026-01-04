@@ -3178,10 +3178,10 @@ app.post("/taskzm-database-function/calendar/apple/caldav/test", async (c) => {
     console.error('CalDAV test connection error:', error);
     return c.json({ 
       success: false, 
-      message: getErrorMessage(error) 
+      message: getErrorMessage(error)
     }, 500);
   }
-});
+};
 
 // Discover calendars
 app.post("/taskzm-database-function/calendar/apple/caldav/discover", async (c) => {
@@ -4878,7 +4878,8 @@ app.post("/taskzm-database-function/team/:workspaceId/invitations/decline", asyn
 
 // DuckDuckGo Instant Answer API proxy endpoint
 // This endpoint proxies requests to DuckDuckGo Instant Answer API to bypass CORS restrictions
-app.get("/taskzm-database-function/duckduckgo/search", async (c) => {
+// Register the route both with and without the prefix for compatibility
+const duckduckgoSearchHandler = async (c: any) => {
   try {
     const query = c.req.query('q');
     
@@ -4976,7 +4977,11 @@ app.get("/taskzm-database-function/duckduckgo/search", async (c) => {
       message: getErrorMessage(error)
     }, 500);
   }
-});
+};
+
+// Register the route both with and without the prefix for compatibility
+app.get("/taskzm-database-function/duckduckgo/search", duckduckgoSearchHandler);
+app.get("/duckduckgo/search", duckduckgoSearchHandler);
 
 // Catch-all route for debugging 404 errors
 app.all('*', async (c) => {
@@ -5001,6 +5006,7 @@ app.all('*', async (c) => {
       'POST /taskzm-database-function/calendar/sync-task',
       'POST /taskzm-database-function/calendar/sync-all',
       'GET /taskzm-database-function/duckduckgo/search?q=<query>',
+      'GET /duckduckgo/search?q=<query>',
     ]
   }, 404);
 });
