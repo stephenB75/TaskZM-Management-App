@@ -98,7 +98,30 @@ if (typeof window !== 'undefined') {
         )) ||
         (fullMessage.includes('MutationObserver') && fullMessage.includes('Failed to execute')) ||
         fullMessage.includes('asynchronous response')) {
-      // Silently suppress - these are browser extension errors
+      console.debug('Suppressed browser extension error', args);
+      return;
+    }
+    
+    // Suppress DuckDuckGo API CORS errors (expected - API doesn't support CORS, we fall back to local terminology)
+    if ((message.includes('CORS') || fullMessage.includes('CORS')) &&
+        (fullMessage.includes('duckduckgo.com') || fullMessage.includes('api.duckduckgo.com'))) {
+      console.debug('Suppressed DuckDuckGo API CORS error (expected, using local terminology fallback)', args);
+      return;
+    }
+    
+    // Suppress DuckDuckGo API network errors (expected - handled gracefully with fallback)
+    if ((message.includes('ERR_FAILED') || fullMessage.includes('ERR_FAILED') || 
+         message.includes('Failed to fetch') || fullMessage.includes('Failed to fetch')) &&
+        (fullMessage.includes('duckduckgo.com') || fullMessage.includes('api.duckduckgo.com'))) {
+      console.debug('Suppressed DuckDuckGo API network error (expected, using local terminology fallback)', args);
+      return;
+    }
+    
+    // Suppress service worker errors from extensions
+    if ((message.includes('Failed to convert value to') || fullMessage.includes('Failed to convert value to')) &&
+        (fullMessage.includes('service-worker.js') || fullMessage.includes('serviceWorker.js') ||
+         fullMessage.includes('chrome-extension://'))) {
+      console.debug('Suppressed extension service worker error', args);
       return;
     }
     
@@ -144,6 +167,12 @@ if (typeof window !== 'undefined') {
           (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
           (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
           (message.includes('Failed to execute \'observe\' on \'MutationObserver\'')) ||
+          // Suppress DuckDuckGo API CORS errors (expected - API doesn't support CORS, we fall back to local terminology)
+          ((message.includes('CORS') || message.includes('blocked by CORS policy')) &&
+           (message.includes('duckduckgo.com') || message.includes('api.duckduckgo.com') || filename.includes('duckduckgo'))) ||
+          // Suppress DuckDuckGo API network errors (expected - handled gracefully with fallback)
+          ((message.includes('ERR_FAILED') || message.includes('Failed to fetch')) &&
+           (message.includes('duckduckgo.com') || message.includes('api.duckduckgo.com') || filename.includes('duckduckgo'))) ||
           filename.includes('chrome-extension://') ||
           filename.includes('moz-extension://') ||
           filename.includes('safari-extension://') ||

@@ -4869,6 +4869,108 @@ app.post("/taskzm-database-function/team/:workspaceId/invitations/decline", asyn
   }
 });
 
+// DuckDuckGo Instant Answer API proxy endpoint
+// This endpoint proxies requests to DuckDuckGo Instant Answer API to bypass CORS restrictions
+app.get("/taskzm-database-function/duckduckgo/search", async (c) => {
+  try {
+    const query = c.req.query('q');
+    
+    if (!query) {
+      return c.json({ error: 'Query parameter "q" is required' }, 400);
+    }
+
+    // Verify user is authenticated (optional - can be made public if needed)
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Encode query for DuckDuckGo API
+    const searchQuery = encodeURIComponent(query);
+    const instantAnswerUrl = `https://api.duckduckgo.com/?q=${searchQuery}&format=json&no_html=1&skip_disambig=1`;
+    
+    // Create abort controller for timeout (5 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    try {
+      // Fetch from DuckDuckGo Instant Answer API
+      const response = await fetch(instantAnswerUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return c.json({ 
+          error: 'DuckDuckGo API request failed',
+          status: response.status 
+        }, response.status);
+      }
+
+      const data = await response.json();
+      const results: string[] = [];
+
+      // Extract Abstract text (most relevant instant answer)
+      if (data.AbstractText && typeof data.AbstractText === 'string') {
+        results.push(data.AbstractText);
+      }
+
+      // Extract Answer (direct answer)
+      if (data.Answer && typeof data.Answer === 'string') {
+        results.push(data.Answer);
+      }
+
+      // Extract RelatedTopics
+      if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
+        data.RelatedTopics.slice(0, 5 - results.length).forEach((topic: any) => {
+          if (topic.Text && typeof topic.Text === 'string') {
+            results.push(topic.Text);
+          }
+        });
+      }
+
+      // Extract Results
+      if (data.Results && Array.isArray(data.Results)) {
+        const remainingSlots = 5 - results.length;
+        data.Results.slice(0, remainingSlots).forEach((result: any) => {
+          if (result.Text && typeof result.Text === 'string') {
+            results.push(result.Text);
+          }
+        });
+      }
+
+      return c.json({
+        success: true,
+        query,
+        results,
+        count: results.length,
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        return c.json({ 
+          error: 'Request timeout',
+          message: 'DuckDuckGo API request timed out'
+        }, 408);
+      }
+      
+      throw fetchError;
+    }
+  } catch (error) {
+    console.log('Error in DuckDuckGo search:', error);
+    return c.json({ 
+      error: 'Internal server error',
+      message: getErrorMessage(error)
+    }, 500);
+  }
+});
+
 // Catch-all route for debugging 404 errors
 app.all('*', async (c) => {
   const path = new URL(c.req.url).pathname;
@@ -4891,6 +4993,7 @@ app.all('*', async (c) => {
       'DELETE /taskzm-database-function/calendar/:provider',
       'POST /taskzm-database-function/calendar/sync-task',
       'POST /taskzm-database-function/calendar/sync-all',
+      'GET /taskzm-database-function/duckduckgo/search?q=<query>',
     ]
   }, 404);
 });

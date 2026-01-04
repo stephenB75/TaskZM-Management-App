@@ -18,92 +18,63 @@ export interface GeneratedDescription {
 
 /**
  * Search DuckDuckGo Instant Answer API for context about the task
- * Uses DuckDuckGo's Instant Answer API to get instant answers and related topics
+ * Uses Supabase Edge Function to proxy requests to DuckDuckGo's Instant Answer API (bypasses CORS)
  */
-async function searchDuckDuckGoInstantAnswer(query: string): Promise<string[]> {
+async function searchDuckDuckGoInstantAnswer(query: string, accessToken?: string | null): Promise<string[]> {
   try {
+    // Import project info dynamically to avoid circular dependencies
+    const { projectId } = await import('../utils/supabase/info');
+    const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
+    
     const searchQuery = encodeURIComponent(query);
-    // DuckDuckGo Instant Answer API endpoint
-    const instantAnswerUrl = `${DUCKDUCKGO_CONFIG.instantAnswerApiUrl}?q=${searchQuery}&format=json&no_html=1&skip_disambig=1`;
+    const proxyUrl = `${BASE_URL}/duckduckgo/search?q=${searchQuery}`;
     
     // Create abort controller for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), DESCRIPTION_GENERATION_CONFIG.searchTimeout);
     
     try {
-      // Try to fetch from Instant Answer API
-      // Note: This may fail due to CORS, but we'll handle it gracefully
-      const response = await fetch(instantAnswerUrl, {
+      // Fetch from Supabase Edge Function (which proxies to DuckDuckGo)
+      const response = await fetch(proxyUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
+          ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
         },
         signal: controller.signal,
-        mode: 'cors',
       });
 
       clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
-        const results: string[] = [];
-
-        // Extract Abstract text (most relevant instant answer)
-        if (data.AbstractText && typeof data.AbstractText === 'string') {
-          results.push(data.AbstractText);
+        
+        if (data.success && Array.isArray(data.results)) {
+          const results = data.results.filter((r: any): r is string => typeof r === 'string' && r.length > 0);
+          
+          if (results.length >= DESCRIPTION_GENERATION_CONFIG.minSearchResults) {
+            logger.debug(`DuckDuckGo Instant Answer API successful (via Supabase proxy): ${results.length} results for "${query}"`);
+            return results;
+          }
         }
-
-        // Extract Answer (direct answer)
-        if (data.Answer && typeof data.Answer === 'string') {
-          results.push(data.Answer);
-        }
-
-        // Extract RelatedTopics
-        if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-          data.RelatedTopics.slice(0, DUCKDUCKGO_CONFIG.maxResults - results.length).forEach((topic: any) => {
-            if (topic.Text && typeof topic.Text === 'string') {
-              results.push(topic.Text);
-            }
-          });
-        }
-
-        // Extract Results
-        if (data.Results && Array.isArray(data.Results)) {
-          const remainingSlots = DUCKDUCKGO_CONFIG.maxResults - results.length;
-          data.Results.slice(0, remainingSlots).forEach((result: any) => {
-            if (result.Text && typeof result.Text === 'string') {
-              results.push(result.Text);
-            }
-          });
-        }
-
-        if (results.length >= DESCRIPTION_GENERATION_CONFIG.minSearchResults) {
-          logger.debug(`DuckDuckGo Instant Answer API successful: ${results.length} results for "${query}"`);
-          return results;
-        }
+      } else {
+        // If proxy returns error, log it but don't throw - fall back to local terminology
+        const errorData = await response.json().catch(() => ({}));
+        logger.debug('DuckDuckGo proxy API error:', errorData);
       }
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        logger.debug('DuckDuckGo Instant Answer API timeout:', query);
-      } else if (error instanceof TypeError && (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
-        // CORS error - DuckDuckGo Instant Answer API may not support direct browser requests
-        // This is expected and will fall back to local terminology
-        logger.debug('DuckDuckGo Instant Answer API CORS error (expected, will use local terminology):', query);
+        logger.debug('DuckDuckGo proxy API timeout:', query);
       } else {
-        logger.debug('DuckDuckGo Instant Answer API failed:', error);
+        logger.debug('DuckDuckGo proxy API failed:', error);
       }
     }
 
-    // Return empty array if search failed
+    // Return empty array if search failed (will fall back to local terminology)
     return [];
   } catch (error) {
-    // Catch any other errors (including CORS errors that might not be caught above)
-    if (error instanceof TypeError && (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
-      logger.debug('DuckDuckGo Instant Answer API CORS error (expected, will use local terminology):', query);
-    } else {
-      logger.debug('DuckDuckGo Instant Answer API error:', error);
-    }
+    logger.debug('DuckDuckGo proxy API error:', error);
     return [];
   }
 }
@@ -115,7 +86,8 @@ async function searchDuckDuckGoInstantAnswer(query: string): Promise<string[]> {
 async function searchDomainContext(
   taskName: string,
   domain: Domain,
-  domainTerms: ReturnType<typeof getDomainTerminology>
+  domainTerms: ReturnType<typeof getDomainTerminology>,
+  accessToken?: string | null
 ): Promise<string[]> {
   const allResults: string[] = [];
   
@@ -172,7 +144,7 @@ async function searchDomainContext(
   const queriesToSearch = searchQueries.slice(0, DESCRIPTION_GENERATION_CONFIG.maxQueriesPerSearch);
   
   try {
-    const searchPromises = queriesToSearch.map(query => searchDuckDuckGoInstantAnswer(query));
+    const searchPromises = queriesToSearch.map(query => searchDuckDuckGoInstantAnswer(query, accessToken));
     const resultsArray = await Promise.allSettled(searchPromises);
     
     resultsArray.forEach((result, index) => {
@@ -604,7 +576,7 @@ function buildContextualDescription(
  * Searches for domain-specific keywords, verbs, and scenarios as per guidelines
  * Falls back to local terminology if Instant Answer API is unavailable
  */
-export async function generateDescription(taskName: string): Promise<GeneratedDescription> {
+export async function generateDescription(taskName: string, accessToken?: string | null): Promise<GeneratedDescription> {
   if (!taskName || taskName.trim().length === 0) {
     return {
       description: '',
@@ -625,7 +597,7 @@ export async function generateDescription(taskName: string): Promise<GeneratedDe
 
   try {
     // Search DuckDuckGo Instant Answer API for domain-specific context (keywords, verbs, scenarios)
-    const searchResults = await searchDomainContext(taskName, domain, domainTerms);
+    const searchResults = await searchDomainContext(taskName, domain, domainTerms, accessToken);
     
     if (searchResults.length > 0) {
       // Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI

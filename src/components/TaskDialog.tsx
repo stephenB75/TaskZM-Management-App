@@ -74,6 +74,7 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { usePermissions } from "../hooks/usePermissions";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useAI } from "../contexts/AIContext";
+import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
@@ -554,6 +555,7 @@ export function TaskDialog({
   initialFolderId,
   onShowUpgradePrompt,
 }: TaskDialogProps) {
+  const { accessToken } = useAuth();
   const {
     addTask,
     updateTask,
@@ -1917,7 +1919,7 @@ export function TaskDialog({
                             size="sm"
                             onClick={async () => {
                               try {
-                                const generated = await generateDescription(title);
+                                const generated = await generateDescription(title, accessToken);
                                 if (generated.description) {
                                   // Replace existing description with regenerated one
                                   setDescription(generated.description);
@@ -1953,7 +1955,7 @@ export function TaskDialog({
                           size="sm"
                           onClick={async () => {
                             try {
-                              const generated = await generateDescription(title);
+                              const generated = await generateDescription(title, accessToken);
                               if (generated.description) {
                                 const newDescription = description 
                                   ? `${description}\n\n${generated.description}`
