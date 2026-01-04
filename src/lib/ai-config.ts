@@ -113,7 +113,7 @@ export const DESCRIPTION_GENERATION_CONFIG = {
  */
 export const AI_FUNCTION_EXPLANATION = {
   TITLE: "How AI Schedules Tasks:",
-  DESCRIPTION: "The AI scheduler intelligently organizes your tasks and events by analyzing multiple factors to create an optimal schedule that fits your workflow.",
+  DESCRIPTION: "The AI scheduler analyzes task priority, duration, categories, and complexity to create optimal schedules. It respects your daily hour limits and category time windows (Work/Personal/Projects), separating weekday and weekend schedules. Priority-based scheduling automatically places urgent tasks first, while smart conflict detection prevents over-scheduling. Tasks are distributed across available days starting from tomorrow, with optimal time slots found within your work hours. All schedules can be manually adjusted anytime, and you'll be consulted if a day exceeds your hour limit.",
   TASK_ANALYSIS_TITLE: "📊 Task Analysis:",
   SCHEDULING_RULES_TITLE: "⏰ Scheduling Rules:",
   SMART_FEATURES_TITLE: "🔄 Smart Features:",
