@@ -16,8 +16,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     
     const checkMobile = () => {
       try {
-        // Check if mobile (screen width < 768px)
-        if (window.innerWidth < 768) {
+        // Check if mobile (screen width < mobile breakpoint)
+        if (window.innerWidth < VIEWPORT_BREAKPOINTS.mobile) {
           setPosition("top-center");
         } else {
           setPosition("bottom-right");

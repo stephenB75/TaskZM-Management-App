@@ -140,7 +140,7 @@ export function DraggableTodayAgendaTask({
     // Estimate if badges will wrap to second line
     const badgeCount = [hasTime, hasPriority, hasTag, hasDuration, hasTracking || hasTrackedTime].filter(Boolean).length;
     const estimatedBadgeWidth = badgeCount * TASK_CARD_CALCULATIONS.badgeWidths.average;
-    const availableWidth = isMobile ? 240 : 432;
+    const availableWidth = isMobile ? TASK_CARD_CALCULATIONS.availableWidth.mobile : TASK_CARD_CALCULATIONS.availableWidth.desktop;
     const badgesWillWrap = estimatedBadgeWidth > availableWidth;
     const badgeWrapHeight = badgesWillWrap ? TASK_CARD_HEIGHT_CONFIG.componentHeights.badgeWrap : 0;
     

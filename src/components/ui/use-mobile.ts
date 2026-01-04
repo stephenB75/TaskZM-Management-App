@@ -1,6 +1,7 @@
 import * as React from "react";
+import { VIEWPORT_BREAKPOINTS } from "../../lib/layout-constants";
 
-const MOBILE_BREAKPOINT = 768;
+const MOBILE_BREAKPOINT = VIEWPORT_BREAKPOINTS.mobile;
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(

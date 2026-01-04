@@ -15,7 +15,7 @@ import {
   Download,
 } from "lucide-react";
 import { AppHeader } from "./AppHeader";
-import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -1247,7 +1247,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           </div>
         </ScrollArea>
       ) : (
-          <div className="p-4 space-y-4 pt-4 md:pt-4" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '2rem' : undefined }}>
+          <div className="p-4 space-y-4 pt-4 md:pt-4" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? MOBILE_PADDING_BOTTOM : undefined }}>
             {/* Compact KPI Metrics Row */}
             <div className="grid grid-cols-2 gap-3">
               <MetricCard

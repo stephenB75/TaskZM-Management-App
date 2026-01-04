@@ -482,8 +482,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div 
                 className="rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold"
                 style={{ 
-                  width: '2rem', 
-                  height: '2rem',
+                  width: SETTINGS_PANEL_AVATAR_SIZE_VALUE, 
+                  height: SETTINGS_PANEL_AVATAR_SIZE_VALUE,
                   fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL
                 }}
               >

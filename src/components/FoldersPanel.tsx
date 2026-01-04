@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { AppHeader } from "./AppHeader";
-import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
 import { useIsMobile } from "./ui/use-mobile";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -705,7 +705,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               style={{ 
                 padding: PANEL_PADDING,
                 paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
-                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? '2rem' : undefined,
+                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? MOBILE_PADDING_BOTTOM : undefined,
                 gap: PANEL_CONTENT_SPACING
               }}
             >

@@ -22,7 +22,7 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
@@ -647,9 +647,9 @@ export function TodayAgendaView({
               style={{
                 paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
                   ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing
-                  : '3rem',
+                  : DESKTOP_PADDING_TOP,
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                  ? '2rem' // Small visual spacing - nav bar clearance handled by spacer in App.tsx
+                  ? MOBILE_PADDING_BOTTOM // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                   : undefined,
                 // Ensure transparent background to show parent gradient
                 backgroundColor: 'transparent',
@@ -885,7 +885,7 @@ export function TodayAgendaView({
               style={{
                 paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
                   ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` 
-                    : '3rem', // 48px on desktop for better spacing from header
+                    : DESKTOP_PADDING_TOP, // 48px on desktop for better spacing from header
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? KANBAN_MOBILE.bottomPaddingCalc
                   : undefined,
@@ -1118,9 +1118,9 @@ export function TodayAgendaView({
             // On desktop (hideHeader=true), add spacing from header in sidebar panel
             paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
               ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` // Add spacing between header and first item on mobile
-              : '3rem', // 48px on desktop for proper spacing from header in sidebar panel
+              : DESKTOP_PADDING_TOP, // 48px on desktop for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-              ? '2rem' // Small visual spacing - nav bar clearance handled by spacer in App.tsx
+              ? MOBILE_PADDING_BOTTOM // Small visual spacing - nav bar clearance handled by spacer in App.tsx
               : undefined,
             // Ensure transparent background to show parent gradient
             backgroundColor: 'transparent',
