@@ -10,6 +10,7 @@ export const ANALYTICS_PDF_CONFIG = {
   fileName: "TaskZM-Analytics-Report",
   pageSize: "a4" as const,
   orientation: "portrait" as const,
+  unit: "mm" as const,
   margins: {
     top: 20,
     right: 15,
@@ -27,6 +28,37 @@ export const ANALYTICS_PDF_CONFIG = {
     text: "#1F2937",
     textSecondary: "#6B7280",
     border: "#E5E7EB",
+  },
+  spacing: {
+    afterTitle: 10,
+    afterDate: 15,
+    afterHeading: 8,
+    betweenItems: 6,
+    afterSection: 8,
+  },
+  pageBreak: {
+    threshold: 20, // Minimum space from bottom before adding new page
+  },
+  limits: {
+    maxProjects: 5,
+  },
+  labels: {
+    title: "TaskZM Analytics Report",
+    generated: "Generated:",
+    summary: "Summary",
+    timeTracking: "Time Tracking",
+    statusDistribution: "Status Distribution",
+    projectProgress: "Project Progress",
+    totalTasks: "Total Tasks:",
+    completed: "Completed:",
+    inProgress: "In Progress:",
+    completionRate: "Completion Rate:",
+    totalTime: "Total Time:",
+    thisWeek: "This Week:",
+    avgPerTask: "Avg per Task:",
+    hours: "h",
+    minutes: "m",
+    fallbackPercentage: "0.0",
   },
 } as const;
 
