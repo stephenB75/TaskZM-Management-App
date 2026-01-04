@@ -401,7 +401,10 @@ export function DraggableTodayAgendaTask({
       {/* Task Row */}
       <motion.div
         ref={setNodeRef}
-        style={style}
+        style={{
+          ...style,
+          ...(!isMobile && isDragging ? { opacity: TASK_CARD_OPACITY.dragging / 100 } : {})
+        }}
         {...attributes}
         {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
         initial={{ opacity: 0, x: -20 }}
@@ -416,7 +419,6 @@ export function DraggableTodayAgendaTask({
           !isMobile && isDragging ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.dragging}` : "",
           !isMobile && !isDragging ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hover}` : "",
         )}
-        style={!isMobile && isDragging ? { opacity: TASK_CARD_OPACITY.dragging / 100 } : undefined}
         data-task-id={task.id}
       >
         {/* Timeline Marker */}

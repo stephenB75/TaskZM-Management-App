@@ -1238,25 +1238,25 @@ export async function generateDescription(taskName: string, accessToken?: string
           );
         }
       }
-        
-        confidence = Math.min(
-          DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence + 
-          (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
-          (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
-          (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
-          (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
-          (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight) +
-          (searchResults.length * DESCRIPTION_GENERATION_CONFIG.resultCountWeight) +
-          contextBoost,
-          DESCRIPTION_GENERATION_CONFIG.maxConfidence
-        );
-        
-        logger.debug(`Using search results: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasExtractedTerms=${hasExtractedTerms}, hasContext=${hasContext}, searchResults=${searchResults.length}, description preview="${description.substring(0, 50)}..."`);
-        
-        // CRITICAL: If description is still empty after all attempts, log warning
-        if (!description || description.trim().length === 0) {
-          logger.warn(`WARNING: Search results exist but description is empty for "${taskName}". Search results:`, searchResults.slice(0, 3));
-        }
+      
+      // Calculate confidence for search-based results
+      confidence = Math.min(
+        DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence + 
+        (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
+        (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+        (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
+        (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
+        (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight) +
+        (searchResults.length * DESCRIPTION_GENERATION_CONFIG.resultCountWeight) +
+        contextBoost,
+        DESCRIPTION_GENERATION_CONFIG.maxConfidence
+      );
+      
+      logger.debug(`Using search results: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasExtractedTerms=${hasExtractedTerms}, hasContext=${hasContext}, searchResults=${searchResults.length}, description preview="${description.substring(0, 50)}..."`);
+      
+      // CRITICAL: If description is still empty after all attempts, log warning
+      if (!description || description.trim().length === 0) {
+        logger.warn(`WARNING: Search results exist but description is empty for "${taskName}". Search results:`, searchResults.slice(0, 3));
       }
     } else {
       logger.debug(`No search results for "${taskName}", will use fallback`);
