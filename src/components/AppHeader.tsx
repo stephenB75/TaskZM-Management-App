@@ -21,6 +21,7 @@ import {
   HEADER_ICON_SIZE_SMALL,
   HEADER_BUTTON_SIZE,
   HEADER_LOGO_HEIGHT,
+  HEADER_LOGO_HEIGHT_DESKTOP,
   HEADER_TITLE_SIZE_MOBILE,
   HEADER_TITLE_SIZE_DESKTOP,
   HEADER_DESCRIPTION_SIZE,
@@ -394,7 +395,7 @@ export function AppHeader({
                     isDark && "dark-logo-filter"
                   )}
                   style={{ 
-                    height: HEADER_LOGO_HEIGHT,
+                    height: HEADER_LOGO_HEIGHT_DESKTOP,
                     maxHeight: '100%',
                     backgroundColor: 'transparent',
                     display: 'block',
