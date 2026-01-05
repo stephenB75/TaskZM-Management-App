@@ -204,6 +204,13 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     fragmentMax: 20, // Maximum length to be considered a fragment (penalty)
     chunkMinWords: 5, // Minimum words for meaningful chunk extraction
     chunkMaxWords: 20, // Maximum words to extract as chunk
+    minLenFallback: 10, // Fallback minimum length when reducing minSentenceLength
+    minLenReduction: 5, // Amount to reduce minSentenceLength for lenient extraction
+    contextBoostThreshold: 20, // Minimum context length for smaller confidence boost
+    descriptionTooShortThreshold: 30, // Minimum description length to not be considered "too short"
+    directContextMinLength: 20, // Minimum length for using direct context from search results
+    contextPreviewLength: 200, // Maximum length for context preview in logging
+    searchResultPreviewLength: 100, // Maximum length for search result preview in logging
   },
   // Action words for task descriptions
   actionWords: {

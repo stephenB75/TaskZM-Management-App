@@ -31,10 +31,10 @@ export const HEADER_PADDING_Y_DESKTOP = '0.5rem'; // py-2 = 0.5rem (8px)
 export const HEADER_ICON_SIZE_SMALL = '1rem'; // w-4 h-4 = 1rem (16px)
 export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
 export const HEADER_LOGO_HEIGHT_BASE = '4rem'; // h-16 = 4rem (64px) - Base logo height
-// Calculate 30% increase: 4rem * 1.3 = 5.2rem (83.2px)
+// Calculate 35% increase for desktop: 4rem * 1.35 = 5.4rem (86.4px)
 export const HEADER_LOGO_HEIGHT = (() => {
   const baseValue = parseFloat(HEADER_LOGO_HEIGHT_BASE);
-  const increasedValue = baseValue * 1.3; // 30% increase
+  const increasedValue = baseValue * 1.35; // 35% increase for desktop
   return `${increasedValue}rem`;
 })();
 export const HEADER_TITLE_SIZE_MOBILE = '1.25rem'; // text-xl = 1.25rem (20px)

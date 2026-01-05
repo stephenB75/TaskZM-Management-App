@@ -50,6 +50,7 @@ import {
   TASK_CARD_STANDARD_HEIGHTS,
   TASK_CARD_OPACITY,
   TASK_CARD_TIMELINE,
+  TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE,
 } from "../lib/task-card-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
@@ -722,36 +723,36 @@ export const DraggableTaskCard = React.forwardRef<
               : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800' };
             
             return (
-              <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded text-[12px] border", domainColors.bg)}>
+              <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                 <div className="flex items-center gap-1 mb-1">
                   <Sparkles className={cn("w-3 h-3", domainColors.text)} />
-                  <span className={cn("font-medium text-[12px]", domainColors.text)}>
+                  <span className={cn("font-medium", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                     AI Action Plan
                   </span>
                 </div>
                 <div className="space-y-0.5">
                   {breakdown.actionPlan.steps.slice(0, 3).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
                     <div key={idx} className="flex items-start gap-1.5">
-                      <span className={cn("text-[12px] mt-0.5 flex-shrink-0", domainColors.textMuted)}>
+                      <span className={cn("mt-0.5 flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                         {step.order || (idx + 1)}.
                       </span>
-                      <span className={cn("text-[12px] leading-tight flex-1", domainColors.textLight)}>
+                      <span className={cn("leading-tight flex-1", domainColors.textLight)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                         {step.action}
                       </span>
                       {step.estimatedMinutes > 0 && (
-                        <span className={cn("text-[12px] flex-shrink-0", domainColors.textMuted)}>
+                        <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                           {step.estimatedMinutes}m
                         </span>
                       )}
                     </div>
                   ))}
                   {breakdown.actionPlan.steps.length > 3 && (
-                    <div className={cn("text-[12px] mt-0.5", domainColors.textMuted)}>
+                    <div className={cn("mt-0.5", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                       +{breakdown.actionPlan.steps.length - 3} more steps
                     </div>
                   )}
                   {breakdown.actionPlan.totalEstimatedMinutes > 0 && (
-                    <div className={cn("text-[12px] mt-0.5 pt-0.5 border-t", domainColors.border)}>
+                    <div className={cn("mt-0.5 pt-0.5 border-t", domainColors.border)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                       Total: {Math.floor(breakdown.actionPlan.totalEstimatedMinutes / 60)}h {breakdown.actionPlan.totalEstimatedMinutes % 60}m
                     </div>
                   )}
@@ -930,7 +931,7 @@ export const DraggableTaskCard = React.forwardRef<
                       <div 
                         className={cn(
                           "flex items-center rounded-full px-1.5 py-0.5 text-white whitespace-nowrap",
-                          isMobile ? "gap-0.5 text-[8px]" : "gap-1 text-[10px]"
+                          isMobile ? `gap-0.5 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile}` : `gap-1 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop}`
                         )}
                         style={{
                           background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
