@@ -33,6 +33,7 @@ import {
   KANBAN_TEXT_SIZES,
   KANBAN_SPACING,
 } from '../lib/kanban-constants';
+import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT } from '../lib/layout-constants';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
