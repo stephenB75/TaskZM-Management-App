@@ -602,7 +602,165 @@ function extractKeywordsAndVerbsFromSearch(
 }
 
 /**
+ * Validate and enhance Browser AI-extracted terms using Local Terminology as a dictionary
+ * This function:
+ * 1. Validates extracted terms are domain-appropriate
+ * 2. Adds synonyms and related terms from domain dictionary
+ * 3. Enhances terms with domain-specific context
+ * 4. Fills gaps when search results are minimal
+ */
+function validateAndEnhanceTermsWithDictionary(
+  extracted: {
+    keywords: string[];
+    phrases: string[];
+    verbs: string[];
+    nouns: string[];
+    pronouns: string[];
+  },
+  taskName: string,
+  domainTerms: ReturnType<typeof getDomainTerminology>
+): {
+  keywords: string[];
+  phrases: string[];
+  verbs: string[];
+  nouns: string[];
+  pronouns: string[];
+} {
+  const taskNameLower = taskName.toLowerCase();
+  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length > DESCRIPTION_GENERATION_CONFIG.minWordLength);
+  
+  // Start with Browser AI-extracted terms (from DuckDuckGo)
+  const validatedKeywords = [...extracted.keywords];
+  const validatedPhrases = [...extracted.phrases];
+  const validatedVerbs = [...extracted.verbs];
+  const validatedNouns = [...extracted.nouns];
+  const validatedPronouns = [...extracted.pronouns];
+  
+  // VALIDATE: Check if extracted terms match domain dictionary
+  // Add domain-appropriate synonyms and related terms
+  
+  // Validate and enhance keywords
+  extracted.keywords.forEach(keyword => {
+    const kwLower = keyword.toLowerCase();
+    // Find related domain keywords (synonyms, related terms)
+    domainTerms.keywords.forEach(dictKeyword => {
+      const dictKwLower = dictKeyword.toLowerCase();
+      // If extracted keyword relates to dictionary keyword, add dictionary version
+      if ((kwLower.includes(dictKwLower) || dictKwLower.includes(kwLower)) &&
+          !validatedKeywords.some(k => k.toLowerCase() === dictKeyword.toLowerCase())) {
+        validatedKeywords.push(dictKeyword);
+      }
+    });
+  });
+  
+  // Validate and enhance phrases
+  extracted.phrases.forEach(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    // Find related domain phrases
+    domainTerms.phrases.forEach(dictPhrase => {
+      const dictPhraseLower = dictPhrase.toLowerCase();
+      // If extracted phrase relates to dictionary phrase, add dictionary version
+      if ((phraseLower.includes(dictPhraseLower) || dictPhraseLower.includes(phraseLower)) &&
+          !validatedPhrases.some(p => p.toLowerCase() === dictPhrase.toLowerCase())) {
+        validatedPhrases.push(dictPhrase);
+      }
+    });
+  });
+  
+  // Validate and enhance verbs
+  extracted.verbs.forEach(verb => {
+    const verbLower = verb.toLowerCase();
+    const verbBase = verbLower.replace(/(ing|ed|s|es)$/, '');
+    // Find related domain verbs
+    domainTerms.verbs.forEach(dictVerb => {
+      const dictVerbLower = dictVerb.toLowerCase();
+      const dictVerbBase = dictVerbLower.replace(/(ing|ed|s|es)$/, '');
+      // If extracted verb relates to dictionary verb, add dictionary version
+      if ((verbLower.includes(dictVerbLower) || dictVerbLower.includes(verbLower) ||
+           verbBase === dictVerbBase) &&
+          !validatedVerbs.some(v => v.toLowerCase() === dictVerb.toLowerCase())) {
+        validatedVerbs.push(dictVerb);
+      }
+    });
+  });
+  
+  // Validate and enhance nouns
+  extracted.nouns.forEach(noun => {
+    const nounLower = noun.toLowerCase();
+    const nounBase = nounLower.replace(/s$|es$/, '');
+    // Find related domain nouns
+    domainTerms.nouns.forEach(dictNoun => {
+      const dictNounLower = dictNoun.toLowerCase();
+      const dictNounBase = dictNounLower.replace(/s$|es$/, '');
+      // If extracted noun relates to dictionary noun, add dictionary version
+      if ((nounLower.includes(dictNounLower) || dictNounLower.includes(nounLower) ||
+           nounBase === dictNounBase) &&
+          !validatedNouns.some(n => n.toLowerCase() === dictNoun.toLowerCase())) {
+        validatedNouns.push(dictNoun);
+      }
+    });
+  });
+  
+  // FILL GAPS: If search results are minimal, add relevant terms from dictionary based on task name
+  // This ensures we have domain-appropriate terms even when DuckDuckGo returns sparse results
+  if (extracted.keywords.length === 0 || extracted.phrases.length === 0) {
+    // Find domain phrases that match task name
+    domainTerms.phrases.forEach(phrase => {
+      const phraseLower = phrase.toLowerCase();
+      if ((taskNameLower.includes(phraseLower) || 
+           taskWords.some(word => phraseLower.includes(word) || word.includes(phraseLower))) &&
+          !validatedPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
+        validatedPhrases.push(phrase);
+      }
+    });
+    
+    // Find domain keywords that match task name
+    domainTerms.keywords.forEach(keyword => {
+      const keywordLower = keyword.toLowerCase();
+      if ((taskNameLower.includes(keywordLower) ||
+           taskWords.some(word => keywordLower.includes(word) || word.includes(keywordLower))) &&
+          !validatedKeywords.some(k => k.toLowerCase() === keyword.toLowerCase())) {
+        validatedKeywords.push(keyword);
+      }
+    });
+  }
+  
+  // FILL GAPS: Add domain verbs/nouns if missing
+  if (extracted.verbs.length === 0) {
+    domainTerms.verbs.forEach(verb => {
+      const verbLower = verb.toLowerCase();
+      if ((taskNameLower.includes(verbLower) || 
+           taskNameLower.includes(`${verbLower}ing`) ||
+           taskNameLower.includes(`${verbLower}ed`)) &&
+          !validatedVerbs.some(v => v.toLowerCase() === verb.toLowerCase())) {
+        validatedVerbs.push(verb);
+      }
+    });
+  }
+  
+  if (extracted.nouns.length === 0) {
+    domainTerms.nouns.forEach(noun => {
+      const nounLower = noun.toLowerCase();
+      if ((taskNameLower.includes(nounLower) || 
+           taskNameLower.includes(`${nounLower}s`)) &&
+          !validatedNouns.some(n => n.toLowerCase() === noun.toLowerCase())) {
+        validatedNouns.push(noun);
+      }
+    });
+  }
+  
+  return {
+    keywords: Array.from(new Set(validatedKeywords)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: Array.from(new Set(validatedPhrases)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: Array.from(new Set(validatedVerbs)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: Array.from(new Set(validatedNouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+    pronouns: Array.from(new Set(validatedPronouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
+  };
+}
+
+/**
  * Extract keywords, phrases, verbs, nouns, and pronouns from task name using domain terminology
+ * NOTE: This is now primarily used as a fallback when search results are completely unavailable
  */
 function extractTermsFromTaskName(
   taskName: string,
@@ -892,9 +1050,11 @@ function buildContextualDescription(
   }
   
   // STEP 2: If no good sentence found from search results, construct description from keywords and phrases
+  // ENHANCED: Prioritize using combined terms from all three sources (DuckDuckGo + Browser AI + Local Terminology)
   // This should only happen if search results don't contain usable sentences
   if (!description || description.trim().length === 0) {
     // Try to construct a natural description using keywords, phrases, and domain terminology
+    // ENHANCED PRIORITY: Use combined terms from all sources to build richer descriptions
     // Priority: Use domain terminology phrases to construct natural sentences
     
     // First, try to use domain terminology phrases that match the task
@@ -1162,11 +1322,15 @@ export async function generateDescription(taskName: string, accessToken?: string
   const domain = domainResult.domain;
   const domainTerms = getDomainTerminology(domain);
 
-  // INTEGRATED APPROACH: DuckDuckGo + Browser AI + Local Terminology work together
-  // 1. Always try DuckDuckGo search for real-world context
-  // 2. Extract terms from search results using browser AI
-  // 3. Also extract terms from local terminology (always, not just as fallback)
-  // 4. Combine both sets of terms to build the best description
+  // INTEGRATED APPROACH: DuckDuckGo + Browser AI + Local Terminology Dictionary
+  // 1. DuckDuckGo: Provides real-world search results
+  // 2. Browser AI: Extracts terms and creates context from search results
+  // 3. Local Terminology: Acts as DICTIONARY/VALIDATOR to:
+  //    - Validate extracted terms are domain-appropriate
+  //    - Add synonyms and related terms from domain dictionary
+  //    - Enhance terms with domain-specific context
+  //    - Fill gaps when search results are minimal
+  // Browser AI does the primary extraction, Local Terminology validates/enhances
   
   let description = '';
   let confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
@@ -1207,42 +1371,33 @@ export async function generateDescription(taskName: string, accessToken?: string
     // Continue with local terminology even if search fails
   }
 
-  // STEP 2: Always extract terms from local terminology (not just as fallback)
-  // This ensures we combine DuckDuckGo search results with local terminology
-  const localExtracted = extractTermsFromTaskName(taskName, domainTerms);
+  // STEP 2: Use Local Terminology as a DICTIONARY/VALIDATOR for Browser AI-extracted terms
+  // Browser AI extracts terms from DuckDuckGo, Local Terminology validates/enhances them
+  // This approach:
+  // 1. Validates extracted terms are domain-appropriate
+  // 2. Provides synonyms and related terms from domain dictionary
+  // 3. Enhances terms with domain-specific context
+  // 4. Fills gaps when search results are minimal
   
-  logger.debug(`Local terminology extracted: ${localExtracted.keywords.length} keywords, ${localExtracted.phrases.length} phrases, ${localExtracted.verbs.length} verbs, ${localExtracted.nouns.length} nouns`, {
-    keywords: localExtracted.keywords,
-    phrases: localExtracted.phrases,
-    verbs: localExtracted.verbs
+  const validatedTerms = validateAndEnhanceTermsWithDictionary(
+    searchExtracted,
+    taskName,
+    domainTerms
+  );
+  
+  logger.debug(`Local terminology as dictionary: validated ${validatedTerms.keywords.length} keywords, ${validatedTerms.phrases.length} phrases, ${validatedTerms.verbs.length} verbs, ${validatedTerms.nouns.length} nouns`, {
+    originalKeywords: searchExtracted.keywords.length,
+    validatedKeywords: validatedTerms.keywords.length,
+    addedFromDictionary: validatedTerms.keywords.length - searchExtracted.keywords.length,
+    validatedPhrases: validatedTerms.phrases.slice(0, 3)
   });
 
-  // STEP 3: Combine search-extracted terms with local terminology terms
-  // Merge both sources, prioritizing search results but supplementing with local terminology
-  const combinedKeywords = Array.from(new Set([
-    ...searchExtracted.keywords,  // Search results first (real-world context)
-    ...localExtracted.keywords.filter(kw => !searchExtracted.keywords.some(sk => sk.toLowerCase() === kw.toLowerCase())) // Add local terms not in search
-  ]));
-  
-  const combinedPhrases = Array.from(new Set([
-    ...searchExtracted.phrases,  // Search results first
-    ...localExtracted.phrases.filter(p => !searchExtracted.phrases.some(sp => sp.toLowerCase() === p.toLowerCase()))
-  ]));
-  
-  const combinedVerbs = Array.from(new Set([
-    ...searchExtracted.verbs,  // Search results first
-    ...localExtracted.verbs.filter(v => !searchExtracted.verbs.some(sv => sv.toLowerCase() === v.toLowerCase()))
-  ]));
-  
-  const combinedNouns = Array.from(new Set([
-    ...searchExtracted.nouns,  // Search results first
-    ...localExtracted.nouns.filter(n => !searchExtracted.nouns.some(sn => sn.toLowerCase() === n.toLowerCase()))
-  ]));
-  
-  const combinedPronouns = Array.from(new Set([
-    ...searchExtracted.pronouns,
-    ...localExtracted.pronouns.filter(p => !searchExtracted.pronouns.some(sp => sp.toLowerCase() === p.toLowerCase()))
-  ]));
+  // STEP 3: Use validated/enhanced terms (Browser AI + Dictionary validation)
+  const combinedKeywords = validatedTerms.keywords;
+  const combinedPhrases = validatedTerms.phrases;
+  const combinedVerbs = validatedTerms.verbs;
+  const combinedNouns = validatedTerms.nouns;
+  const combinedPronouns = validatedTerms.pronouns;
 
   logger.debug(`Combined terms: ${combinedKeywords.length} keywords, ${combinedPhrases.length} phrases, ${combinedVerbs.length} verbs, ${combinedNouns.length} nouns`, {
     combinedKeywords: combinedKeywords.slice(0, 5),
@@ -1328,14 +1483,76 @@ export async function generateDescription(taskName: string, accessToken?: string
   logger.debug(`Combined approach: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasSearchResults=${hasSearchResults}, hasSearchTerms=${hasSearchTerms}, hasLocalTerms=${hasLocalTerms}, searchContext=${searchContext.length}`, {
     finalDescription: description.substring(0, 100),
     searchTermsCount: searchExtracted.keywords.length + searchExtracted.phrases.length + searchExtracted.verbs.length,
-    localTermsCount: localExtracted.keywords.length + localExtracted.phrases.length + localExtracted.verbs.length
+    localTermsCount: localExtracted.keywords.length + localExtracted.phrases.length + localExtracted.verbs.length,
+    combinedKeywords: combinedKeywords.slice(0, 5),
+    combinedPhrases: combinedPhrases.slice(0, 3),
+    combinedVerbs: combinedVerbs.slice(0, 3),
+    combinedNouns: combinedNouns.slice(0, 3),
+    searchContextPreview: searchContext.substring(0, 100)
   });
+  
+  // VERIFICATION: Log which sources contributed to the final description
+  if (usedSearchResults) {
+    logger.debug(`✅ DuckDuckGo + Browser AI + Local Terminology working together:`, {
+      searchKeywords: searchExtracted.keywords.length,
+      searchPhrases: searchExtracted.phrases.length,
+      searchVerbs: searchExtracted.verbs.length,
+      searchNouns: searchExtracted.nouns.length,
+      localKeywords: localExtracted.keywords.length,
+      localPhrases: localExtracted.phrases.length,
+      localVerbs: localExtracted.verbs.length,
+      localNouns: localExtracted.nouns.length,
+      combinedTotal: combinedKeywords.length + combinedPhrases.length + combinedVerbs.length + combinedNouns.length,
+      hasContext: searchContext.length > 0
+    });
+  } else {
+    logger.debug(`⚠️ Using Local Terminology only (no search results):`, {
+      localKeywords: localExtracted.keywords.length,
+      localPhrases: localExtracted.phrases.length,
+      localVerbs: localExtracted.verbs.length,
+      localNouns: localExtracted.nouns.length
+    });
+  }
 
   // STEP 7: Ultimate fallback if still empty
+  // If search failed completely, use dictionary-only approach
   if (!description || description.trim().length === 0) {
-    logger.warn(`Combined approach produced empty description for "${taskName}", using ultimate fallback`);
-    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
-    confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
+    if (!usedSearchResults) {
+      // No search results available - use dictionary as primary source
+      logger.debug(`No search results available, using dictionary-only approach for "${taskName}"`);
+      const dictExtracted = extractTermsFromTaskName(taskName, domainTerms);
+      const dictValidated = validateAndEnhanceTermsWithDictionary(dictExtracted, taskName, domainTerms);
+      
+      description = buildContextualDescription(
+        taskName,
+        dictValidated.keywords,
+        dictValidated.phrases,
+        dictValidated.verbs,
+        dictValidated.nouns,
+        dictValidated.pronouns,
+        '', // No search context
+        domain,
+        domainTerms
+      );
+      
+      if (description && description.trim().length > 0) {
+        confidence = Math.min(
+          DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
+          (dictValidated.keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
+          (dictValidated.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+          (dictValidated.verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight) +
+          (dictValidated.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight),
+          DESCRIPTION_GENERATION_CONFIG.fallbackMaxConfidence
+        );
+      }
+    }
+    
+    // Ultimate fallback if still empty
+    if (!description || description.trim().length === 0) {
+      logger.warn(`Combined approach produced empty description for "${taskName}", using ultimate fallback`);
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
+      confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
+    }
   }
 
   // Ensure we always return a non-empty description
