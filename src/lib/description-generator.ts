@@ -926,11 +926,12 @@ function buildContextualDescription(
   if (context && context.length > 0) {
     // Try splitting by sentences first (periods, exclamation, question marks)
     // This is the most reliable way to get complete sentences
-    // BE MORE LENIENT: Lower minimum length to capture more sentences
+    // CRITICAL: Be VERY lenient with minimum length to capture more sentences from search results
+    // Search results are valuable - use them even if they're short
     const minLen = Math.max(
-      DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.minLenFallback, 
-      DESCRIPTION_GENERATION_CONFIG.minSentenceLength - DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.minLenReduction
-    ); // Allow shorter sentences
+      10, // Very lenient minimum - prioritize using search context
+      DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.minLenFallback - 5
+    ); // Allow very short sentences from search results
     let sentences = context.split(/[.!?]+/)
       .filter(s => s.trim().length >= minLen)
       .map(s => s.trim())
@@ -989,15 +990,20 @@ function buildContextualDescription(
           return new RegExp(`\\b${kwLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(sentenceLower);
         }).length;
         
-        // ENHANCED: Don't penalize sentences without keywords if we have search context
+        // CRITICAL: Don't penalize sentences without keywords if we have search context
         // Search results provide valuable context even without perfect keyword matching
-        // Only apply small penalty if we have keywords but no matches AND no phrases
-        if (keywordCount === 0 && keywords.length > 0 && relevantPhrases.length === 0) {
-          // Small penalty but don't reject - search context is valuable even without keyword matches
-          score -= 2; // Reduced penalty - prioritize using search context
-        } else if (keywordCount === 0 && context.length > 0) {
-          // If we have search context, give bonus even without keywords - context is valuable
-          score += 1; // Small bonus for having context
+        // If we have search context, prioritize using it - it's more valuable than constructed descriptions
+        if (context.length > 0) {
+          // MAJOR BONUS: If we have search context, give significant bonus to use it
+          // Search results are real-world context that's more valuable than keyword construction
+          score += 10; // Major bonus for having search context
+          if (keywordCount === 0 && keywords.length > 0 && relevantPhrases.length === 0) {
+            // Only small penalty if no keyword matches AND no phrases, but still use context
+            score -= 1; // Minimal penalty - still prioritize using search context
+          }
+        } else if (keywordCount === 0 && keywords.length > 0 && relevantPhrases.length === 0) {
+          // Only penalize if we don't have search context
+          score -= 2;
         }
         score += keywordCount * DESCRIPTION_GENERATION_CONFIG.sentenceScoring.keywordWeight;
         
@@ -1062,12 +1068,12 @@ function buildContextualDescription(
       // ENHANCED: Accept sentences even with negative scores if we have search context
       let bestSentence = scoredSentences.length > 0 ? scoredSentences[0].sentence : null;
       
-      // If we have search context but no good scored sentences, use the first sentence anyway
-      // Search context is valuable even without perfect keyword matching
+      // CRITICAL: If we have search context, ALWAYS use it, even if scoring is poor
+      // Search results are more valuable than keyword construction - use them whenever available
       if (!bestSentence && context.length > 0 && sentences.length > 0) {
-        // Use first sentence from context even if it scored poorly
+        // Use first sentence from context - search context is valuable even without perfect scoring
         bestSentence = sentences[0];
-        logger.debug(`Using first sentence from context despite low score: "${bestSentence.substring(0, 50)}..."`);
+        logger.debug(`Using first sentence from search context (prioritizing search results over keyword construction): "${bestSentence.substring(0, 50)}..."`);
       }
       
       // ENHANCED: If no scored sentences but we have context, use ANY sentence from context
@@ -1077,21 +1083,25 @@ function buildContextualDescription(
         const firstSentence = context.split(/[.!?]+/)[0]?.trim();
         if (firstSentence && firstSentence.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.minLenFallback) {
           bestSentence = firstSentence;
+          logger.debug(`Using first sentence from context: "${bestSentence.substring(0, 50)}..."`);
         } else {
           // Use first meaningful chunk from context (even if short)
           // Search results provide valuable context even as fragments
           const words = context.trim().split(/\s+/).filter(w => w.length > 0);
           if (words.length >= 3) {
-            // Take first 10-15 words as a sentence
+            // Take first 10-15 words as a sentence - be lenient with minimum length
             const chunk = words.slice(0, Math.min(15, words.length)).join(' ');
-            if (chunk.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.minLenFallback) {
+            // Use chunk even if it's shorter than minLenFallback - search context is valuable
+            if (chunk.length >= 10) { // Very lenient minimum
               bestSentence = chunk;
+              logger.debug(`Using context chunk from search results: "${bestSentence.substring(0, 50)}..."`);
             }
           }
           
-          // Last resort: use first part of context directly
-          if (!bestSentence && context.trim().length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.minLenFallback) {
+          // Last resort: use first part of context directly (very lenient)
+          if (!bestSentence && context.trim().length >= 10) { // Very lenient minimum
             bestSentence = context.trim().substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSentenceLength, context.length)).trim();
+            logger.debug(`Using direct context from search results: "${bestSentence.substring(0, 50)}..."`);
           }
         }
       }
@@ -1546,47 +1556,48 @@ export async function generateDescription(taskName: string, accessToken?: string
     // Continue with local terminology even if search fails
   }
 
-  // STEP 2: Use Local Terminology as a DICTIONARY/VALIDATOR for Browser AI-extracted terms
-  // Browser AI extracts terms from DuckDuckGo, Local Terminology validates/enhances them
-  // This approach:
-  // 1. Validates extracted terms are domain-appropriate
-  // 2. Provides synonyms and related terms from domain dictionary
-  // 3. Enhances terms with domain-specific context
-  // 4. Fills gaps when search results are minimal
+  // STEP 2: Use DuckDuckGo + Browser AI as PRIMARY source
+  // Local Terminology is ONLY used as a cache/fallback when search is unavailable
+  // DO NOT enhance or validate search results with dictionary - use search results directly
   
-  const validatedTerms = validateAndEnhanceTermsWithDictionary(
-    searchExtracted,
-    taskName,
-    domainTerms
-  );
+  let finalKeywords: string[];
+  let finalPhrases: string[];
+  let finalVerbs: string[];
+  let finalNouns: string[];
+  let finalPronouns: string[];
   
-  logger.debug(`Local terminology as dictionary: validated ${validatedTerms.keywords.length} keywords, ${validatedTerms.phrases.length} phrases, ${validatedTerms.verbs.length} verbs, ${validatedTerms.nouns.length} nouns`, {
-    originalKeywords: searchExtracted.keywords.length,
-    validatedKeywords: validatedTerms.keywords.length,
-    addedFromDictionary: validatedTerms.keywords.length - searchExtracted.keywords.length,
-    validatedPhrases: validatedTerms.phrases.slice(0, 3)
-  });
+  if (usedSearchResults && searchExtracted.keywords.length > 0) {
+    // PRIMARY: Use DuckDuckGo + Browser AI results directly (no dictionary enhancement)
+    finalKeywords = searchExtracted.keywords;
+    finalPhrases = searchExtracted.phrases;
+    finalVerbs = searchExtracted.verbs;
+    finalNouns = searchExtracted.nouns;
+    finalPronouns = searchExtracted.pronouns;
+    
+    logger.debug(`Using DuckDuckGo + Browser AI as PRIMARY source: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
+      keywords: finalKeywords.slice(0, 5),
+      phrases: finalPhrases.slice(0, 3),
+      hasSearchContext: searchContext.length > 0
+    });
+  } else {
+    // FALLBACK: Only use local terminology when search is completely unavailable
+    logger.debug(`No search results available, using local terminology as FALLBACK cache for "${taskName}"`);
+    const dictExtracted = extractTermsFromTaskName(taskName, domainTerms);
+    finalKeywords = dictExtracted.keywords;
+    finalPhrases = dictExtracted.phrases;
+    finalVerbs = dictExtracted.verbs;
+    finalNouns = dictExtracted.nouns;
+    finalPronouns = dictExtracted.pronouns;
+    
+    logger.debug(`Using local terminology cache: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`);
+  }
 
-  // STEP 3: Use validated/enhanced terms (Browser AI + Dictionary validation)
-  const combinedKeywords = validatedTerms.keywords;
-  const combinedPhrases = validatedTerms.phrases;
-  const combinedVerbs = validatedTerms.verbs;
-  const combinedNouns = validatedTerms.nouns;
-  const combinedPronouns = validatedTerms.pronouns;
-
-  logger.debug(`Combined terms: ${combinedKeywords.length} keywords, ${combinedPhrases.length} phrases, ${combinedVerbs.length} verbs, ${combinedNouns.length} nouns`, {
-    combinedKeywords: combinedKeywords.slice(0, 5),
-    combinedPhrases: combinedPhrases.slice(0, 3),
-    hasSearchContext: searchContext.length > 0
-  });
-
-  // STEP 4: Build description using combined terms from both sources
-  // CRITICAL: All three sources (DuckDuckGo + Browser AI + Dictionary) work together here
-  logger.debug(`Building description with combined terms:`, {
-    keywords: combinedKeywords.slice(0, 5),
-    phrases: combinedPhrases.slice(0, 3),
-    verbs: combinedVerbs.slice(0, 3),
-    nouns: combinedNouns.slice(0, 3),
+  // STEP 3: Build description using PRIMARY source (DuckDuckGo + Browser AI) or FALLBACK (local terminology cache)
+  logger.debug(`Building description with ${usedSearchResults ? 'DuckDuckGo + Browser AI' : 'local terminology cache'}:`, {
+    keywords: finalKeywords.slice(0, 5),
+    phrases: finalPhrases.slice(0, 3),
+    verbs: finalVerbs.slice(0, 3),
+    nouns: finalNouns.slice(0, 3),
     hasContext: searchContext.length > 0,
     contextLength: searchContext.length,
     contextPreview: searchContext.substring(0, 100)
@@ -1594,12 +1605,12 @@ export async function generateDescription(taskName: string, accessToken?: string
   
   description = buildContextualDescription(
     taskName,
-    combinedKeywords,
-    combinedPhrases,
-    combinedVerbs,
-    combinedNouns,
-    combinedPronouns,
-    searchContext, // Use search context when available
+    finalKeywords,
+    finalPhrases,
+    finalVerbs,
+    finalNouns,
+    finalPronouns,
+    searchContext, // Use search context when available (only from DuckDuckGo)
     domain,
     domainTerms
   );
@@ -1644,125 +1655,71 @@ export async function generateDescription(taskName: string, accessToken?: string
   const hasSearchResults = usedSearchResults && searchContext.length > 0;
   const hasSearchTerms = searchExtracted.keywords.length > 0 || searchExtracted.phrases.length > 0 || 
                         searchExtracted.verbs.length > 0 || searchExtracted.nouns.length > 0;
-  const hasValidatedTerms = validatedTerms.keywords.length > 0 || validatedTerms.phrases.length > 0 || 
-                           validatedTerms.verbs.length > 0 || validatedTerms.nouns.length > 0;
+  const hasFinalTerms = finalKeywords.length > 0 || finalPhrases.length > 0 || 
+                        finalVerbs.length > 0 || finalNouns.length > 0;
   
-  // Base confidence: higher if we have search results, lower if only dictionary
+  // Base confidence: higher if we have search results (PRIMARY), lower if only cache (FALLBACK)
   const baseConf = hasSearchResults ? DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence : DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   
-  // Boost for search terms (real-world context is valuable)
+  // Boost for search terms (real-world context from DuckDuckGo + Browser AI is valuable)
   const searchBoost = hasSearchTerms ? 
     (searchExtracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
     (searchExtracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
     (searchExtracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
     (searchExtracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) : 0;
   
-  // Boost for dictionary-validated terms (domain-specific knowledge from dictionary)
-  // Count only terms added by dictionary validation (not from search)
-  const dictionaryAddedTerms = {
-    keywords: validatedTerms.keywords.length - searchExtracted.keywords.length,
-    phrases: validatedTerms.phrases.length - searchExtracted.phrases.length,
-    verbs: validatedTerms.verbs.length - searchExtracted.verbs.length,
-    nouns: validatedTerms.nouns.length - searchExtracted.nouns.length
-  };
-  const localBoost = hasValidatedTerms ?
-    (Math.max(0, dictionaryAddedTerms.keywords) * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight * 0.5) + // Weighted less than search
-    (Math.max(0, dictionaryAddedTerms.phrases) * DESCRIPTION_GENERATION_CONFIG.phraseWeight * 0.5) +
-    (Math.max(0, dictionaryAddedTerms.verbs) * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight * 0.5) +
-    (Math.max(0, dictionaryAddedTerms.nouns) * DESCRIPTION_GENERATION_CONFIG.nounWeight * 0.5) : 0;
+  // Boost for cache terms (only when search is unavailable - lower weight since it's fallback)
+  const cacheBoost = !hasSearchResults && hasFinalTerms ?
+    (finalKeywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
+    (finalPhrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight * 0.7) +
+    (finalVerbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight) + 
+    (finalNouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight * 0.7) : 0;
   
-  // Context boost if we have meaningful search context
+  // Context boost if we have meaningful search context (only from DuckDuckGo)
   const contextBoost = searchContext.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
                       searchContext.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextBoostThreshold ? 0.05 : 0;
   
   confidence = Math.min(
-    baseConf + searchBoost + localBoost + contextBoost,
+    baseConf + searchBoost + cacheBoost + contextBoost,
     DESCRIPTION_GENERATION_CONFIG.maxConfidence
   );
 
-  logger.debug(`Combined approach: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasSearchResults=${hasSearchResults}, hasSearchTerms=${hasSearchTerms}, hasValidatedTerms=${hasValidatedTerms}, searchContext=${searchContext.length}`, {
+  logger.debug(`${usedSearchResults ? '✅ PRIMARY (DuckDuckGo + Browser AI)' : '⚠️ FALLBACK (local terminology cache)'}: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasSearchResults=${hasSearchResults}, hasSearchTerms=${hasSearchTerms}, hasFinalTerms=${hasFinalTerms}, searchContext=${searchContext.length}`, {
     finalDescription: description.substring(0, 100),
     searchTermsCount: searchExtracted.keywords.length + searchExtracted.phrases.length + searchExtracted.verbs.length,
-    validatedTermsCount: validatedTerms.keywords.length + validatedTerms.phrases.length + validatedTerms.verbs.length,
-    dictionaryAddedCount: (validatedTerms.keywords.length - searchExtracted.keywords.length) + 
-                         (validatedTerms.phrases.length - searchExtracted.phrases.length) +
-                         (validatedTerms.verbs.length - searchExtracted.verbs.length) +
-                         (validatedTerms.nouns.length - searchExtracted.nouns.length),
-    combinedKeywords: combinedKeywords.slice(0, 5),
-    combinedPhrases: combinedPhrases.slice(0, 3),
-    combinedVerbs: combinedVerbs.slice(0, 3),
-    combinedNouns: combinedNouns.slice(0, 3),
+    finalTermsCount: finalKeywords.length + finalPhrases.length + finalVerbs.length,
+    finalKeywords: finalKeywords.slice(0, 5),
+    finalPhrases: finalPhrases.slice(0, 3),
+    finalVerbs: finalVerbs.slice(0, 3),
+    finalNouns: finalNouns.slice(0, 3),
     searchContextPreview: searchContext.substring(0, 100)
   });
   
-  // VERIFICATION: Log which sources contributed to the final description
+  // VERIFICATION: Log which source contributed to the final description
   if (usedSearchResults) {
-    logger.debug(`✅ DuckDuckGo + Browser AI + Dictionary working together:`, {
+    logger.debug(`✅ Using DuckDuckGo + Browser AI as PRIMARY source:`, {
       searchKeywords: searchExtracted.keywords.length,
       searchPhrases: searchExtracted.phrases.length,
       searchVerbs: searchExtracted.verbs.length,
       searchNouns: searchExtracted.nouns.length,
-      validatedKeywords: validatedTerms.keywords.length,
-      validatedPhrases: validatedTerms.phrases.length,
-      validatedVerbs: validatedTerms.verbs.length,
-      validatedNouns: validatedTerms.nouns.length,
-      dictionaryAdded: {
-        keywords: validatedTerms.keywords.length - searchExtracted.keywords.length,
-        phrases: validatedTerms.phrases.length - searchExtracted.phrases.length,
-        verbs: validatedTerms.verbs.length - searchExtracted.verbs.length,
-        nouns: validatedTerms.nouns.length - searchExtracted.nouns.length
-      },
-      combinedTotal: combinedKeywords.length + combinedPhrases.length + combinedVerbs.length + combinedNouns.length,
-      hasContext: searchContext.length > 0
+      hasContext: searchContext.length > 0,
+      contextLength: searchContext.length
     });
   } else {
-    logger.debug(`⚠️ Using Dictionary only (no search results):`, {
-      validatedKeywords: validatedTerms.keywords.length,
-      validatedPhrases: validatedTerms.phrases.length,
-      validatedVerbs: validatedTerms.verbs.length,
-      validatedNouns: validatedTerms.nouns.length
+    logger.debug(`⚠️ Using local terminology cache as FALLBACK (no search results):`, {
+      cacheKeywords: finalKeywords.length,
+      cachePhrases: finalPhrases.length,
+      cacheVerbs: finalVerbs.length,
+      cacheNouns: finalNouns.length
     });
   }
 
-  // STEP 7: Ultimate fallback if still empty
-  // If search failed completely, use dictionary-only approach
+  // STEP 5: Ultimate fallback if still empty (only if both search and cache failed)
   if (!description || description.trim().length === 0) {
-    if (!usedSearchResults) {
-      // No search results available - use dictionary as primary source
-      logger.debug(`No search results available, using dictionary-only approach for "${taskName}"`);
-      const dictExtracted = extractTermsFromTaskName(taskName, domainTerms);
-      const dictValidated = validateAndEnhanceTermsWithDictionary(dictExtracted, taskName, domainTerms);
-      
-      description = buildContextualDescription(
-        taskName,
-        dictValidated.keywords,
-        dictValidated.phrases,
-        dictValidated.verbs,
-        dictValidated.nouns,
-        dictValidated.pronouns,
-        '', // No search context
-        domain,
-        domainTerms
-      );
-      
-      if (description && description.trim().length > 0) {
-        confidence = Math.min(
-          DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
-          (dictValidated.keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
-          (dictValidated.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
-          (dictValidated.verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight) +
-          (dictValidated.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight),
-          DESCRIPTION_GENERATION_CONFIG.fallbackMaxConfidence
-        );
-      }
-    }
-    
-    // Ultimate fallback if still empty
-    if (!description || description.trim().length === 0) {
-      logger.warn(`Combined approach produced empty description for "${taskName}", using ultimate fallback`);
-      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
-      confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
-    }
+    // Ultimate fallback: use hardcoded template (only when everything else fails)
+    logger.warn(`Both DuckDuckGo + Browser AI and local terminology cache failed for "${taskName}", using ultimate fallback`);
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
+    confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   }
 
   // Ensure we always return a non-empty description
