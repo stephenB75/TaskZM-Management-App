@@ -721,16 +721,38 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   }, [user, calendarStatus, syncAppleCalendarInternal]);
 
   // Automatic Apple Calendar sync on mount (if connected)
+  // Defer to idle time to avoid blocking initial render and causing performance violations
   useEffect(() => {
     if (!user || !accessToken || !calendarStatus.apple) return;
     
-    // Wait a bit after mount to avoid blocking initial render
-    const initialSyncTimer = setTimeout(() => {
+    // Use requestIdleCallback if available, otherwise use longer timeout
+    // This ensures sync happens when browser is idle, not blocking critical rendering
+    const scheduleSync = () => {
       console.debug('Auto-syncing Apple Calendar on app load...');
       syncAppleCalendarInternal(true);
-    }, 2000); // 2 second delay after mount
+    };
     
-    return () => clearTimeout(initialSyncTimer);
+    let initialSyncTimer: NodeJS.Timeout | number | null = null;
+    
+    if ('requestIdleCallback' in window) {
+      // Use idle callback to sync when browser is idle (after 5 seconds max wait)
+      const idleCallback = (window as any).requestIdleCallback(
+        scheduleSync,
+        { timeout: 5000 }
+      );
+      initialSyncTimer = idleCallback;
+    } else {
+      // Fallback: Wait 5 seconds after mount to let app fully load
+      initialSyncTimer = setTimeout(scheduleSync, 5000);
+    }
+    
+    return () => {
+      if (typeof initialSyncTimer === 'number') {
+        clearTimeout(initialSyncTimer);
+      } else if (initialSyncTimer && 'cancelIdleCallback' in window) {
+        (window as any).cancelIdleCallback(initialSyncTimer);
+      }
+    };
   }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal]);
 
   // Periodic automatic sync for Apple Calendar

@@ -998,13 +998,17 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         variant="ghost" 
                         size="sm" 
                         className="flex-1 text-muted-foreground hover:text-foreground"
-                        onClick={async () => {
-                          try {
-                            await refreshSubscription();
-                            toast.success(SUBSCRIPTION_UI_TEXT.settings.subscriptionStatusRefreshed);
-                          } catch (error) {
-                            toast.error(SUBSCRIPTION_UI_TEXT.settings.subscriptionRefreshFailed);
-                          }
+                        onClick={() => {
+                          // Defer async operation to avoid blocking click handler
+                          requestAnimationFrame(() => {
+                            refreshSubscription()
+                              .then(() => {
+                                toast.success(SUBSCRIPTION_UI_TEXT.settings.subscriptionStatusRefreshed);
+                              })
+                              .catch(() => {
+                                toast.error(SUBSCRIPTION_UI_TEXT.settings.subscriptionRefreshFailed);
+                              });
+                          });
                         }}
                         disabled={isSubscriptionLoading}
                       >
@@ -1017,18 +1021,22 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           variant="ghost" 
                           size="sm" 
                           className="flex-1 text-muted-foreground hover:text-destructive"
-                          onClick={async () => {
+                          onClick={() => {
                             if (confirm(SUBSCRIPTION_UI_TEXT.confirmations.cancel.title + '\n\n' + SUBSCRIPTION_UI_TEXT.confirmations.cancel.message)) {
-                              try {
-                                await cancelSubscription();
-                                toast.success(SUBSCRIPTION_UI_TEXT.settings.subscriptionWillCancel, {
-                                  description: SUBSCRIPTION_UI_TEXT.settings.subscriptionWillCancelDesc,
-                                });
-                              } catch (error) {
-                                toast.error(SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailed, {
-                                  description: SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailedDesc,
-                                });
-                              }
+                              // Defer async operation to avoid blocking click handler
+                              requestAnimationFrame(() => {
+                                cancelSubscription()
+                                  .then(() => {
+                                    toast.success(SUBSCRIPTION_UI_TEXT.settings.subscriptionWillCancel, {
+                                      description: SUBSCRIPTION_UI_TEXT.settings.subscriptionWillCancelDesc,
+                                    });
+                                  })
+                                  .catch(() => {
+                                    toast.error(SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailed, {
+                                      description: SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailedDesc,
+                                    });
+                                  });
+                              });
                             }
                           }}
                         >
@@ -1219,15 +1227,19 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   size="sm"
                   variant="outline"
                   className="w-full mt-2 text-xs md:text-sm"
-                  onClick={async () => {
-                    const granted = await requestPermission();
-                    if (!granted && permission === 'default') {
-                      // Permission was just denied, show instructions
-                      toast.info(NOTIFICATION_TOAST_MESSAGES.permissionDeniedInfo, {
-                        description: NOTIFICATION_TOAST_MESSAGES.permissionDeniedDescription,
-                        duration: SETTINGS_PANEL_TOAST_DURATION_MS,
+                  onClick={() => {
+                    // Defer async operation to avoid blocking click handler
+                    requestAnimationFrame(() => {
+                      requestPermission().then((granted) => {
+                        if (!granted && permission === 'default') {
+                          // Permission was just denied, show instructions
+                          toast.info(NOTIFICATION_TOAST_MESSAGES.permissionDeniedInfo, {
+                            description: NOTIFICATION_TOAST_MESSAGES.permissionDeniedDescription,
+                            duration: SETTINGS_PANEL_TOAST_DURATION_MS,
+                          });
+                        }
                       });
-                    }
+                    });
                   }}
                   disabled={permission === 'denied'}
                 >
