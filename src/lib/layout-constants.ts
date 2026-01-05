@@ -33,11 +33,13 @@ export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
 export const HEADER_LOGO_HEIGHT_BASE = '4rem'; // h-16 = 4rem (64px) - Base logo height
 // Calculate logo height for mobile (base size)
 export const HEADER_LOGO_HEIGHT_MOBILE = HEADER_LOGO_HEIGHT_BASE;
-// Calculate 45% increase for desktop: 4rem * 1.45 = 5.8rem (92.8px)
+// Calculate desktop logo height: base * 1.45 (45% increase) * 1.20 (additional 20% increase) = 4rem * 1.74 = 6.96rem (111.36px)
 export const HEADER_LOGO_HEIGHT_DESKTOP = (() => {
   const baseValue = parseFloat(HEADER_LOGO_HEIGHT_BASE);
-  const desktopIncreaseMultiplier = 1.45; // 45% increase for desktop
-  const increasedValue = baseValue * desktopIncreaseMultiplier;
+  const initialDesktopMultiplier = 1.45; // Initial 45% increase for desktop
+  const additionalIncreaseMultiplier = 1.20; // Additional 20% increase
+  const totalMultiplier = initialDesktopMultiplier * additionalIncreaseMultiplier; // Combined multiplier: 1.74
+  const increasedValue = baseValue * totalMultiplier;
   return `${increasedValue}rem`;
 })();
 // Keep HEADER_LOGO_HEIGHT for backward compatibility (defaults to mobile)
