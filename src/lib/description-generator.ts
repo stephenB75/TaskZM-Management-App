@@ -713,15 +713,17 @@ function buildContextualDescription(
   if (context && context.length > 0) {
     // Try splitting by sentences first (periods, exclamation, question marks)
     // This is the most reliable way to get complete sentences
+    // BE MORE LENIENT: Lower minimum length to capture more sentences
+    const minLen = Math.max(10, DESCRIPTION_GENERATION_CONFIG.minSentenceLength - 5); // Allow shorter sentences
     let sentences = context.split(/[.!?]+/)
-      .filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength)
+      .filter(s => s.trim().length >= minLen)
       .map(s => s.trim())
       .filter(s => s.length > 0 && s.length <= DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.sentenceLengthMultiplier);
     
     // If no sentences found with punctuation, try splitting by newlines (paragraph breaks)
     if (sentences.length === 0) {
       sentences = context.split(/\n+/)
-        .filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength)
+        .filter(s => s.trim().length >= minLen)
         .map(s => s.trim())
         .filter(s => s.length > 0 && s.length <= DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.sentenceLengthMultiplier);
     }
@@ -729,20 +731,30 @@ function buildContextualDescription(
     // If still no sentences, try splitting by commas (less ideal, but might work)
     if (sentences.length === 0) {
       sentences = context.split(/[,;]+/)
-        .filter(s => s.trim().length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength)
+        .filter(s => s.trim().length >= minLen)
         .map(s => s.trim())
         .filter(s => s.length > 0 && s.length <= DESCRIPTION_GENERATION_CONFIG.maxSentenceLength * DESCRIPTION_GENERATION_CONFIG.sentenceLengthMultiplier);
     }
     
     // If still no sentences, use meaningful chunks from context
+    // BE MORE LENIENT: Use smaller chunks if needed
     if (sentences.length === 0 && context.trim().length > 0) {
       // Try to extract a meaningful sentence-like chunk
       const words = context.trim().split(/\s+/);
-      if (words.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.chunkMinWords) {
+      const minWords = Math.max(3, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.chunkMinWords - 2); // Lower threshold
+      if (words.length >= minWords) {
         // Take first N words as a sentence
         const chunk = words.slice(0, Math.min(DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.chunkMaxWords, words.length)).join(' ');
-        if (chunk.length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength) {
+        if (chunk.length >= minLen) {
           sentences = [chunk];
+        }
+      }
+      
+      // If still no sentences, use first part of context directly (even if short)
+      if (sentences.length === 0 && context.trim().length >= 10) {
+        const firstPart = context.trim().substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength).trim();
+        if (firstPart.length >= 10) {
+          sentences = [firstPart];
         }
       }
     }
@@ -828,14 +840,18 @@ function buildContextualDescription(
       // Use the best sentence - be more lenient to allow sentences even with lower scores
       // This ensures we use search result context even if keyword matching isn't perfect
       // If we have context from search results, prioritize using it even with low scores
-      let bestSentence = scoredSentences.find(s => s.score > 0)?.sentence || 
-                        (scoredSentences.length > 0 ? scoredSentences[0].sentence : null);
+      // ACCEPT ANY SENTENCE: Even with negative scores, if we have search results, use them
+      let bestSentence = scoredSentences.length > 0 ? scoredSentences[0].sentence : null;
       
       // If no scored sentences but we have context, use first sentence from context
+      // BE MORE LENIENT: Lower minimum length requirement
       if (!bestSentence && context && context.length > 0) {
         const firstSentence = context.split(/[.!?]+/)[0]?.trim();
-        if (firstSentence && firstSentence.length >= DESCRIPTION_GENERATION_CONFIG.minSentenceLength) {
+        if (firstSentence && firstSentence.length >= 10) { // Lower threshold
           bestSentence = firstSentence;
+        } else if (context.trim().length >= 10) {
+          // If no sentence found, use first part of context
+          bestSentence = context.trim().substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength).trim();
         }
       }
       
@@ -1158,7 +1174,12 @@ export async function generateDescription(taskName: string, accessToken?: string
       // Extract keywords from task name, find phrases using keywords, and build context from search results
       const extracted = extractKeywordsAndVerbsFromSearch(taskName, searchResults, domainTerms);
       
-      logger.debug(`DuckDuckGo search results: ${searchResults.length} results, extracted: ${extracted.keywords.length} keywords, ${extracted.phrases.length} phrases, ${extracted.verbs.length} verbs, ${extracted.nouns.length} nouns, context length: ${extracted.context.length}`);
+      logger.debug(`DuckDuckGo search results: ${searchResults.length} results, extracted: ${extracted.keywords.length} keywords, ${extracted.phrases.length} phrases, ${extracted.verbs.length} verbs, ${extracted.nouns.length} nouns, context length: ${extracted.context.length}`, {
+        searchResultsPreview: searchResults.slice(0, 3).map(r => r.substring(0, 100)),
+        keywords: extracted.keywords,
+        phrases: extracted.phrases,
+        contextPreview: extracted.context.substring(0, 200)
+      });
       
       // ALWAYS mark as using search results if we have any search results
       // This ensures we prioritize search-based descriptions over local terminology
@@ -1189,70 +1210,95 @@ export async function generateDescription(taskName: string, accessToken?: string
       const contextBoost = extracted.context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
                           extracted.context.length >= 20 ? 0.05 : 0; // Smaller boost for shorter but useful contexts
       
-      // If buildContextualDescription returned empty, try using search results directly
-      if ((!description || description.trim().length === 0) && searchResults.length > 0) {
-        logger.debug(`buildContextualDescription returned empty, using search results directly for "${taskName}"`);
+      // If buildContextualDescription returned empty or too short, try using search results directly
+      // Also check if description is too generic (like "Find code testing")
+      const isDescriptionTooShort = description && description.trim().length < 30;
+      const isDescriptionTooGeneric = description && (
+        description.toLowerCase().includes('find') && description.split(' ').length <= 3
+      );
+      
+      if ((!description || description.trim().length === 0 || isDescriptionTooShort || isDescriptionTooGeneric) && searchResults.length > 0) {
+        logger.debug(`buildContextualDescription returned empty/short/generic, using search results directly for "${taskName}"`, {
+          currentDescription: description,
+          isTooShort: isDescriptionTooShort,
+          isTooGeneric: isDescriptionTooGeneric,
+          searchResultsCount: searchResults.length
+        });
         
-        // If we have extracted context but description is still empty, try direct context
-        if (hasContext) {
-          // Use the context directly as description (it's already from search results)
-          const directDescription = extracted.context
-            .substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength)
-            .trim();
+        // PRIORITY 1: Use the full context from search results (most comprehensive)
+        if (hasContext && extracted.context.length > 20) {
+          // Use a meaningful portion of context (first 200 chars or first sentence)
+          const contextToUse = extracted.context.length > 200 
+            ? extracted.context.substring(0, 200).trim()
+            : extracted.context.trim();
           
-          if (directDescription.length > 0) {
-            // Clean up and capitalize
+          // Try to get first complete sentence
+          const firstSentence = contextToUse.split(/[.!?]+/)[0]?.trim();
+          const directDescription = (firstSentence && firstSentence.length >= 20) 
+            ? firstSentence 
+            : contextToUse.substring(0, Math.min(150, contextToUse.length)).trim();
+          
+          if (directDescription.length >= 20) {
             description = directDescription.charAt(0).toUpperCase() + directDescription.slice(1);
             // Ensure it ends with punctuation
             if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
               description += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
             }
+            logger.debug(`Using direct context from search results: "${description.substring(0, 50)}..."`);
           }
         }
         
-        // If still empty, use search results directly
-        if ((!description || description.trim().length === 0) && searchResults.length > 0) {
+        // PRIORITY 2: If still empty/short, use search results directly
+        if ((!description || description.trim().length < 20) && searchResults.length > 0) {
           // Use first few search results directly as description
           const directContext = searchResults
             .slice(0, DESCRIPTION_GENERATION_CONFIG.maxDirectSearchResultsForContext)
-            .map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength))
+            .map(r => r && r.length > 0 ? r.trim() : '')
+            .filter(r => r.length > 0)
             .join(' ')
             .trim();
           
           if (directContext.length > 0) {
-            // Take first sentence or first 150 chars
-            const firstSentence = directContext.split(/[.!?]+/)[0]?.trim() || 
-                                 directContext.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSentenceLength).trim();
+            // Take first sentence or first meaningful chunk (at least 20 chars)
+            const firstSentence = directContext.split(/[.!?]+/)[0]?.trim();
+            const chunkToUse = (firstSentence && firstSentence.length >= 20)
+              ? firstSentence
+              : directContext.substring(0, Math.min(150, directContext.length)).trim();
             
-            if (firstSentence.length > 0) {
-              description = firstSentence.charAt(0).toUpperCase() + firstSentence.slice(1);
+            if (chunkToUse.length >= 20) {
+              description = chunkToUse.charAt(0).toUpperCase() + chunkToUse.slice(1);
               // Ensure it ends with punctuation
               if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
                 description += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
               }
+              logger.debug(`Using direct search results: "${description.substring(0, 50)}..."`);
             }
           }
         }
         
-        // If still empty after trying direct search results, rebuild with direct context
-        if ((!description || description.trim().length === 0) && searchResults.length > 0) {
+        // PRIORITY 3: If still empty, rebuild with direct context (more lenient)
+        if ((!description || description.trim().length < 20) && searchResults.length > 0) {
           const directContext = searchResults
             .slice(0, DESCRIPTION_GENERATION_CONFIG.maxDirectSearchResultsForContext)
-            .map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.maxSnippetLength))
+            .map(r => r && r.length > 0 ? r.trim() : '')
+            .filter(r => r.length > 0)
             .join(' ');
           
-          // Rebuild description with direct context from search results
-          description = buildContextualDescription(
-            taskName,
-            extracted.keywords,
-            extracted.phrases,
-            extracted.verbs,
-            extracted.nouns,
-            extracted.pronouns,
-            directContext,
-            domain,
-            domainTerms
-          );
+          if (directContext.length > 0) {
+            // Rebuild description with direct context from search results
+            description = buildContextualDescription(
+              taskName,
+              extracted.keywords,
+              extracted.phrases,
+              extracted.verbs,
+              extracted.nouns,
+              extracted.pronouns,
+              directContext,
+              domain,
+              domainTerms
+            );
+            logger.debug(`Rebuilt description with direct context: "${description.substring(0, 50)}..."`);
+          }
         }
       }
       
@@ -1269,12 +1315,21 @@ export async function generateDescription(taskName: string, accessToken?: string
         DESCRIPTION_GENERATION_CONFIG.maxConfidence
       );
       
-      logger.debug(`Using search results: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasExtractedTerms=${hasExtractedTerms}, hasContext=${hasContext}, searchResults=${searchResults.length}, description preview="${description.substring(0, 50)}..."`);
-      
-      // CRITICAL: If description is still empty after all attempts, log warning
-      if (!description || description.trim().length === 0) {
-        logger.warn(`WARNING: Search results exist but description is empty for "${taskName}". Search results:`, searchResults.slice(0, 3));
-      }
+        logger.debug(`Using search results: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasExtractedTerms=${hasExtractedTerms}, hasContext=${hasContext}, searchResults=${searchResults.length}, description preview="${description.substring(0, 50)}..."`, {
+          finalDescription: description,
+          searchResultsCount: searchResults.length,
+          contextLength: extracted.context.length
+        });
+        
+        // CRITICAL: If description is still empty or too short after all attempts, log warning
+        if (!description || description.trim().length === 0) {
+          logger.warn(`WARNING: Search results exist but description is empty for "${taskName}". Search results:`, searchResults.slice(0, 3));
+        } else if (description.trim().length < 20) {
+          logger.warn(`WARNING: Description is too short (${description.length} chars) for "${taskName}". Expected contextual description from search results.`, {
+            description,
+            searchResults: searchResults.slice(0, 3)
+          });
+        }
     } else {
       logger.debug(`No search results for "${taskName}", will use fallback`);
     }
