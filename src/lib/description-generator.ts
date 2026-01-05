@@ -516,6 +516,188 @@ function findPhrasesUsingKeywords(
 }
 
 /**
+ * Extract keywords, phrases, verbs, nouns, and pronouns directly from task name using Browser AI
+ * Browser AI-only approach: Analyzes user input directly without external search
+ */
+function extractTermsFromTaskNameWithBrowserAI(
+  taskName: string,
+  domainTerms: ReturnType<typeof getDomainTerminology>
+): { 
+  keywords: string[]; 
+  phrases: string[];
+  verbs: string[]; 
+  nouns: string[];
+  pronouns: string[];
+  context: string;
+} {
+  // STEP 1: Extract keywords from task name (user input)
+  const taskKeywords = extractKeywordsFromTaskName(taskName);
+  
+  // STEP 2: Extract phrases directly from task name using keywords
+  // Find phrases (2-5 words) that contain keywords from the task name itself
+  const foundPhrases: string[] = [];
+  const taskNameLower = taskName.toLowerCase();
+  const taskWords = taskNameLower.split(/\s+/)
+    .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
+    .filter(w => !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
+  
+  // Extract phrases containing keywords from task name
+  taskKeywords.forEach(keyword => {
+    const keywordLower = keyword.toLowerCase();
+    for (let i = 0; i < taskWords.length; i++) {
+      if (taskWords[i].includes(keywordLower) || keywordLower.includes(taskWords[i])) {
+        // Extract phrases of different lengths (2-5 words) starting from this position
+        for (let len = DESCRIPTION_GENERATION_CONFIG.minPhraseLength; 
+             len <= DESCRIPTION_GENERATION_CONFIG.maxPhraseLength && i + len <= taskWords.length; 
+             len++) {
+          const phrase = taskWords.slice(i, i + len).join(' ');
+          if (phrase.includes(keywordLower) && 
+              phrase.length > keywordLower.length + 2 &&
+              !foundPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
+            foundPhrases.push(phrase);
+          }
+        }
+      }
+    }
+  });
+  
+  // Also extract phrases using frequency analysis from task name
+  const phraseFreq = new Map<string, number>();
+  for (let i = 0; i < taskWords.length - 1; i++) {
+    for (let len = DESCRIPTION_GENERATION_CONFIG.minPhraseLength; 
+         len <= DESCRIPTION_GENERATION_CONFIG.maxPhraseLength && i + len <= taskWords.length; 
+         len++) {
+      const phrase = taskWords.slice(i, i + len).join(' ');
+      const containsKeyword = taskKeywords.some(kw => phrase.includes(kw.toLowerCase()));
+      if (containsKeyword && phrase.length > DESCRIPTION_GENERATION_CONFIG.minKeywordLength) {
+        phraseFreq.set(phrase, (phraseFreq.get(phrase) || 0) + 1);
+      }
+    }
+  }
+  
+  // Add top phrases by frequency
+  const sortedPhrases = Array.from(phraseFreq.entries())
+    .filter(([phrase, freq]) => freq >= DESCRIPTION_GENERATION_CONFIG.minWordFrequency)
+    .map(([phrase, freq]) => {
+      const keywordCount = taskKeywords.filter(kw => phrase.toLowerCase().includes(kw.toLowerCase())).length;
+      return { phrase, freq, keywordCount };
+    })
+    .sort((a, b) => {
+      if (b.keywordCount !== a.keywordCount) {
+        return b.keywordCount - a.keywordCount;
+      }
+      return b.freq - a.freq;
+    })
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases)
+    .map(({ phrase }) => phrase);
+  
+  sortedPhrases.forEach(phrase => {
+    if (!foundPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
+      foundPhrases.push(phrase);
+    }
+  });
+  
+  // Sort phrases by keyword count
+  const finalPhrases = foundPhrases
+    .sort((a, b) => {
+      const aKeywords = taskKeywords.filter(kw => a.toLowerCase().includes(kw.toLowerCase())).length;
+      const bKeywords = taskKeywords.filter(kw => b.toLowerCase().includes(kw.toLowerCase())).length;
+      if (bKeywords !== aKeywords) {
+        return bKeywords - aKeywords;
+      }
+      return b.length - a.length;
+    })
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
+  
+  // STEP 3: Extract verbs and nouns directly from task name using Browser AI
+  const extractedFromTask = extractTermsFromText(taskName, DESCRIPTION_GENERATION_CONFIG.stopWords);
+  
+  // Filter verbs and nouns that relate to keywords
+  const foundVerbs = extractedFromTask.verbs.filter(verb => {
+    const verbLower = verb.toLowerCase();
+    return taskKeywords.some(kw => 
+      verbLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbLower)
+    );
+  });
+  
+  const foundNouns = extractedFromTask.nouns.filter(noun => {
+    const nounLower = noun.toLowerCase();
+    return taskKeywords.some(kw => 
+      nounLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounLower)
+    );
+  });
+  
+  // STEP 4: Find matching domain terminology terms that relate to task name
+  const wordBoundaryRegex = (term: string) => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+  
+  // Match domain phrases that contain our keywords
+  domainTerms.phrases.forEach(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    const phraseRegex = wordBoundaryRegex(phrase);
+    const containsKeyword = taskKeywords.some(kw => phraseLower.includes(kw.toLowerCase()));
+    
+    if (phraseRegex.test(taskNameLower) && containsKeyword && 
+        !finalPhrases.some(p => p.toLowerCase() === phraseLower)) {
+      finalPhrases.push(phrase);
+    }
+  });
+  
+  // Match domain verbs that relate to keywords
+  domainTerms.verbs.forEach(verb => {
+    const verbLower = verb.toLowerCase();
+    const verbBase = verbLower.replace(/(ing|ed|s|es)$/, '');
+    const verbPatterns = [
+      new RegExp(`\\b${verbBase}\\b`, 'i'),
+      new RegExp(`\\b${verbBase}ing\\b`, 'i'),
+      new RegExp(`\\b${verbBase}ed\\b`, 'i'),
+      new RegExp(`\\b${verbBase}s\\b`, 'i'),
+    ];
+    
+    const relatesToKeyword = taskKeywords.some(kw => 
+      verbLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbLower) ||
+      verbBase.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbBase)
+    );
+    
+    if (verbPatterns.some(pattern => pattern.test(taskNameLower)) && relatesToKeyword &&
+        !foundVerbs.some(v => v.toLowerCase() === verbLower)) {
+      foundVerbs.push(verb);
+    }
+  });
+  
+  // Match domain nouns that relate to keywords
+  domainTerms.nouns.forEach(noun => {
+    const nounLower = noun.toLowerCase();
+    const nounBase = nounLower.replace(/s$|es$/, '');
+    const nounPatterns = [
+      new RegExp(`\\b${nounBase}\\b`, 'i'),
+      new RegExp(`\\b${nounBase}s\\b`, 'i'),
+    ];
+    
+    const relatesToKeyword = taskKeywords.some(kw => 
+      nounLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounLower) ||
+      nounBase.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounBase)
+    );
+    
+    if (nounPatterns.some(pattern => pattern.test(taskNameLower)) && relatesToKeyword &&
+        !foundNouns.some(n => n.toLowerCase() === nounLower)) {
+      foundNouns.push(noun);
+    }
+  });
+  
+  // STEP 5: Use task name as context (no external search results)
+  const taskContext = taskName.trim();
+  
+  return {
+    keywords: taskKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: foundVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: foundNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+    pronouns: [] as string[], // Pronouns not typically extracted from task name alone
+    context: taskContext,
+  };
+}
+
+/**
  * Extract phrases, verbs (action words), nouns, pronouns, and keywords from search results using browser AI
  * NEW FLOW: Uses keywords from task name to find phrases in search results
  */
@@ -1489,9 +1671,9 @@ function buildContextualDescription(
 }
 
 /**
- * Generates a task description based on task name using DuckDuckGo Instant Answer API + browser AI
- * Searches for domain-specific keywords, verbs, and scenarios as per guidelines
- * Falls back to local terminology if Instant Answer API is unavailable
+ * Generates a task description based on task name using Browser AI
+ * Browser AI extracts keywords, phrases, verbs, and nouns directly from the task name
+ * Local Terminology acts as a cache/dictionary to enhance extracted terms
  */
 export async function generateDescription(taskName: string, accessToken?: string | null): Promise<GeneratedDescription> {
   if (!taskName || taskName.trim().length === 0) {
@@ -1530,70 +1712,47 @@ export async function generateDescription(taskName: string, accessToken?: string
     context: ''
   };
 
-  // STEP 1: Try DuckDuckGo search for real-world context
-  try {
-    logger.debug(`Starting DuckDuckGo search for task: "${taskName}", domain: ${domain}, hasAccessToken: ${!!accessToken}`);
-    const searchResults = await searchDomainContext(taskName, domain, domainTerms, accessToken);
-    logger.debug(`DuckDuckGo search completed: ${searchResults.length} total results for "${taskName}"`);
-    
-    if (searchResults.length > 0) {
-      // Extract keywords from task name, find phrases using keywords, and build context from search results
-      searchExtracted = extractKeywordsAndVerbsFromSearch(taskName, searchResults, domainTerms);
-      searchContext = searchExtracted.context;
-      usedSearchResults = true;
-      
-      logger.debug(`DuckDuckGo search results: ${searchResults.length} results, extracted: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns, context length: ${searchExtracted.context.length}`, {
-        searchResultsPreview: searchResults.slice(0, 3).map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.searchResultPreviewLength)),
-        keywords: searchExtracted.keywords,
-        phrases: searchExtracted.phrases,
-        contextPreview: searchExtracted.context.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextPreviewLength)
-      });
-    } else {
-      logger.debug(`No search results for "${taskName}", will combine with local terminology`);
-    }
-  } catch (error) {
-    logger.warn('DuckDuckGo Instant Answer API error, will use local terminology:', error);
-    // Continue with local terminology even if search fails
-  }
-
-  // STEP 2: Use DuckDuckGo + Browser AI as PRIMARY source
-  // Local Terminology is ONLY used as a cache/fallback when search is unavailable
-  // DO NOT enhance or validate search results with dictionary - use search results directly
+  // STEP 1: Use Browser AI to extract terms directly from task name (no DuckDuckGo needed)
+  // Browser AI analyzes user input and extracts keywords, phrases, verbs, nouns
+  // Local Terminology acts as a cache/dictionary to enhance extracted terms
+  logger.debug(`Using Browser AI to extract terms from task name: "${taskName}", domain: ${domain}`);
   
+  // Extract terms directly from task name using Browser AI
+  searchExtracted = extractTermsFromTaskNameWithBrowserAI(taskName, domainTerms);
+  searchContext = searchExtracted.context; // Task name itself as context
+  usedSearchResults = false; // Not using external search, using Browser AI only
+  
+  logger.debug(`Browser AI extraction: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns`, {
+    keywords: searchExtracted.keywords,
+    phrases: searchExtracted.phrases,
+    verbs: searchExtracted.verbs,
+    nouns: searchExtracted.nouns
+  });
+
+  // STEP 2: Use Browser AI-extracted terms as PRIMARY source
+  // Local Terminology is used as a cache/dictionary to enhance terms
   let finalKeywords: string[];
   let finalPhrases: string[];
   let finalVerbs: string[];
   let finalNouns: string[];
   let finalPronouns: string[];
   
-  if (usedSearchResults && searchExtracted.keywords.length > 0) {
-    // PRIMARY: Use DuckDuckGo + Browser AI results directly (no dictionary enhancement)
-    finalKeywords = searchExtracted.keywords;
-    finalPhrases = searchExtracted.phrases;
-    finalVerbs = searchExtracted.verbs;
-    finalNouns = searchExtracted.nouns;
-    finalPronouns = searchExtracted.pronouns;
-    
-    logger.debug(`Using DuckDuckGo + Browser AI as PRIMARY source: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
-      keywords: finalKeywords.slice(0, 5),
-      phrases: finalPhrases.slice(0, 3),
-      hasSearchContext: searchContext.length > 0
-    });
-  } else {
-    // FALLBACK: Only use local terminology when search is completely unavailable
-    logger.debug(`No search results available, using local terminology as FALLBACK cache for "${taskName}"`);
-    const dictExtracted = extractTermsFromTaskName(taskName, domainTerms);
-    finalKeywords = dictExtracted.keywords;
-    finalPhrases = dictExtracted.phrases;
-    finalVerbs = dictExtracted.verbs;
-    finalNouns = dictExtracted.nouns;
-    finalPronouns = dictExtracted.pronouns;
-    
-    logger.debug(`Using local terminology cache: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`);
-  }
+  // PRIMARY: Use Browser AI-extracted terms directly
+  finalKeywords = searchExtracted.keywords;
+  finalPhrases = searchExtracted.phrases;
+  finalVerbs = searchExtracted.verbs;
+  finalNouns = searchExtracted.nouns;
+  finalPronouns = searchExtracted.pronouns;
+  
+  logger.debug(`Using Browser AI as PRIMARY source: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
+    keywords: finalKeywords.slice(0, 5),
+    phrases: finalPhrases.slice(0, 3),
+    verbs: finalVerbs.slice(0, 3),
+    nouns: finalNouns.slice(0, 3)
+  });
 
-  // STEP 3: Build description using PRIMARY source (DuckDuckGo + Browser AI) or FALLBACK (local terminology cache)
-  logger.debug(`Building description with ${usedSearchResults ? 'DuckDuckGo + Browser AI' : 'local terminology cache'}:`, {
+  // STEP 3: Build description using Browser AI-extracted terms
+  logger.debug(`Building description with Browser AI:`, {
     keywords: finalKeywords.slice(0, 5),
     phrases: finalPhrases.slice(0, 3),
     verbs: finalVerbs.slice(0, 3),
@@ -1610,7 +1769,7 @@ export async function generateDescription(taskName: string, accessToken?: string
     finalVerbs,
     finalNouns,
     finalPronouns,
-    searchContext, // Use search context when available (only from DuckDuckGo)
+    searchContext, // Use task name as context
     domain,
     domainTerms
   );
@@ -1651,68 +1810,48 @@ export async function generateDescription(taskName: string, accessToken?: string
     }
   }
 
-  // STEP 6: Calculate confidence based on combined sources
-  const hasSearchResults = usedSearchResults && searchContext.length > 0;
-  const hasSearchTerms = searchExtracted.keywords.length > 0 || searchExtracted.phrases.length > 0 || 
-                        searchExtracted.verbs.length > 0 || searchExtracted.nouns.length > 0;
-  const hasFinalTerms = finalKeywords.length > 0 || finalPhrases.length > 0 || 
-                        finalVerbs.length > 0 || finalNouns.length > 0;
+  // STEP 4: Calculate confidence based on Browser AI-extracted terms
+  const hasBrowserAITerms = finalKeywords.length > 0 || finalPhrases.length > 0 || 
+                             finalVerbs.length > 0 || finalNouns.length > 0;
   
-  // Base confidence: higher if we have search results (PRIMARY), lower if only cache (FALLBACK)
-  const baseConf = hasSearchResults ? DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence : DESCRIPTION_GENERATION_CONFIG.baseConfidence;
+  // Base confidence for Browser AI extraction
+  const baseConf = DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence;
   
-  // Boost for search terms (real-world context from DuckDuckGo + Browser AI is valuable)
-  const searchBoost = hasSearchTerms ? 
-    (searchExtracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
-    (searchExtracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
-    (searchExtracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
-    (searchExtracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) : 0;
+  // Boost for Browser AI-extracted terms
+  const browserAIBoost = hasBrowserAITerms ? 
+    (finalKeywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
+    (finalPhrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+    (finalVerbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
+    (finalNouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) : 0;
   
-  // Boost for cache terms (only when search is unavailable - lower weight since it's fallback)
-  const cacheBoost = !hasSearchResults && hasFinalTerms ?
-    (finalKeywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
-    (finalPhrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight * 0.7) +
-    (finalVerbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight) + 
-    (finalNouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight * 0.7) : 0;
-  
-  // Context boost if we have meaningful search context (only from DuckDuckGo)
+  // Context boost if we have meaningful task name context
   const contextBoost = searchContext.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
                       searchContext.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextBoostThreshold ? 0.05 : 0;
   
   confidence = Math.min(
-    baseConf + searchBoost + cacheBoost + contextBoost,
+    baseConf + browserAIBoost + contextBoost,
     DESCRIPTION_GENERATION_CONFIG.maxConfidence
   );
 
-  logger.debug(`${usedSearchResults ? '✅ PRIMARY (DuckDuckGo + Browser AI)' : '⚠️ FALLBACK (local terminology cache)'}: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasSearchResults=${hasSearchResults}, hasSearchTerms=${hasSearchTerms}, hasFinalTerms=${hasFinalTerms}, searchContext=${searchContext.length}`, {
+  logger.debug(`✅ Browser AI: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasBrowserAITerms=${hasBrowserAITerms}, contextLength=${searchContext.length}`, {
     finalDescription: description.substring(0, 100),
-    searchTermsCount: searchExtracted.keywords.length + searchExtracted.phrases.length + searchExtracted.verbs.length,
-    finalTermsCount: finalKeywords.length + finalPhrases.length + finalVerbs.length,
+    browserAITermsCount: finalKeywords.length + finalPhrases.length + finalVerbs.length,
     finalKeywords: finalKeywords.slice(0, 5),
     finalPhrases: finalPhrases.slice(0, 3),
     finalVerbs: finalVerbs.slice(0, 3),
     finalNouns: finalNouns.slice(0, 3),
-    searchContextPreview: searchContext.substring(0, 100)
+    contextPreview: searchContext.substring(0, 100)
   });
   
-  // VERIFICATION: Log which source contributed to the final description
-  if (usedSearchResults) {
-    logger.debug(`✅ Using DuckDuckGo + Browser AI as PRIMARY source:`, {
-      searchKeywords: searchExtracted.keywords.length,
-      searchPhrases: searchExtracted.phrases.length,
-      searchVerbs: searchExtracted.verbs.length,
-      searchNouns: searchExtracted.nouns.length,
-      hasContext: searchContext.length > 0,
-      contextLength: searchContext.length
-    });
-  } else {
-    logger.debug(`⚠️ Using local terminology cache as FALLBACK (no search results):`, {
-      cacheKeywords: finalKeywords.length,
-      cachePhrases: finalPhrases.length,
-      cacheVerbs: finalVerbs.length,
-      cacheNouns: finalNouns.length
-    });
-  }
+  // VERIFICATION: Log Browser AI extraction results
+  logger.debug(`✅ Using Browser AI to extract terms from task name:`, {
+    extractedKeywords: finalKeywords.length,
+    extractedPhrases: finalPhrases.length,
+    extractedVerbs: finalVerbs.length,
+    extractedNouns: finalNouns.length,
+    taskName: taskName,
+    contextLength: searchContext.length
+  });
 
   // STEP 5: Ultimate fallback if still empty (only if both search and cache failed)
   if (!description || description.trim().length === 0) {
@@ -1736,11 +1875,11 @@ export async function generateDescription(taskName: string, accessToken?: string
     };
   }
 
-  logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedSearch=${usedSearchResults}, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
+  logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedBrowserAI=true, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
   
-  // FINAL CHECK: If we used search results but got a fallback description, log warning
-  if (usedSearchResults && finalDescription.includes(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves)) {
-    logger.warn(`WARNING: Used search results but got fallback description for "${taskName}". This indicates search results weren't properly utilized.`);
+  // FINAL CHECK: If Browser AI extraction failed and got a fallback description, log warning
+  if (finalDescription.includes(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves)) {
+    logger.warn(`WARNING: Browser AI extraction produced fallback description for "${taskName}". This indicates extraction from task name wasn't sufficient.`);
   }
 
   return {
