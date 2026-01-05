@@ -1335,14 +1335,34 @@ export async function generateDescription(taskName: string, accessToken?: string
             searchResults: searchResults.slice(0, 3)
           });
         }
+        
+        // If search results exist but didn't produce a usable description, allow fallback to local terminology
+        // Check if description is empty, too short, or is the hardcoded fallback pattern
+        const isHardcodedFallback = description && description.trim().includes(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves);
+        const isDescriptionUnusable = !description || description.trim().length === 0 || 
+                                      description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength ||
+                                      isHardcodedFallback;
+        
+        if (isDescriptionUnusable) {
+          logger.debug(`Search results exist but didn't produce usable description for "${taskName}", allowing local terminology fallback`, {
+            description,
+            descriptionLength: description?.length || 0,
+            isHardcodedFallback
+          });
+          // Reset usedSearchResults to allow local terminology fallback
+          usedSearchResults = false;
+        }
     } else {
       logger.debug(`No search results for "${taskName}", will use fallback`);
     }
   } catch (error) {
     logger.warn('DuckDuckGo Instant Answer API error, falling back to local terminology:', error);
+    // Reset usedSearchResults on error to allow fallback
+    usedSearchResults = false;
   }
 
   // Fallback to local terminology ONLY if Instant Answer API didn't provide results
+  // OR if search results exist but didn't produce a usable description
   // Don't fallback if we successfully used search results, even if description is minimal
   if (!usedSearchResults) {
     // Extract terms from task name using domain terminology
