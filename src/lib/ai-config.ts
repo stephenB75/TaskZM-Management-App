@@ -254,6 +254,30 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     browserAI: 'browser AI',
     localTerminology: 'local terminology',
   },
+  // Description connector words
+  descriptionConnectors: {
+    involving: 'involving',
+    relatedTo: 'related to',
+    for: 'for',
+    and: 'and',
+  },
+  // Generic verbs that indicate low-quality descriptions
+  genericVerbs: ['find', 'get', 'do', 'make', 'use', 'have'],
+  // Contextual action words that add meaning to descriptions
+  contextualActionWords: ['ensure', 'maintain', 'improve', 'create', 'develop', 'achieve', 'follow', 'use', 'optimize', 'enhance', 'resolve', 'implement', 'coordinate'],
+  // Similarity detection thresholds
+  similarityThresholds: {
+    wordOverlapRatio: 0.8, // 80% word overlap indicates too similar
+    maxWordDifference: 2, // Maximum word difference when checking similarity
+    minPhraseLength: 10, // Minimum phrase length for domain phrases
+    minKeywordLength: 3, // Minimum keyword length for filtering
+    maxGenericWordCount: 3, // Maximum word count for generic descriptions
+  },
+  // Context boost values
+  contextBoost: {
+    high: 0.1, // Boost for high context length
+    medium: 0.05, // Boost for medium context length
+  },
 } as const;
 
 /**
