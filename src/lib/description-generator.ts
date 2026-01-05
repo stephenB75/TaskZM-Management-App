@@ -1240,6 +1240,43 @@ function buildElaborateContextualDescription(
     }
   }
   
+  // PRIORITY 8: If description is still empty, build using domain terminology only
+  // This ensures we always return a contextual description, never empty
+  if (!description || description.trim().length === 0) {
+    // Use domain phrases, verbs, and nouns to build a contextual sentence
+    if (elaboratingPhrases.length > 0) {
+      const bestPhrase = elaboratingPhrases[0];
+      const actionVerb = elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '';
+      const contextNouns = elaboratingNouns.slice(0, 1);
+      
+      if (actionVerb && contextNouns.length > 0) {
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} for ${contextNouns[0]}`;
+      } else if (actionVerb) {
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+      } else if (contextNouns.length > 0) {
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} involving ${contextNouns[0]}`;
+      } else {
+        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+      }
+    } else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
+      const actionVerb = elaboratingVerbs[0];
+      const contextNouns = elaboratingNouns.slice(0, 2);
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`;
+    } else if (elaboratingVerbs.length > 0) {
+      const actionVerb = elaboratingVerbs[0];
+      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
+    } else if (elaboratingNouns.length > 0) {
+      const contextNouns = elaboratingNouns.slice(0, 1);
+      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+      description = `${contextNouns[0].charAt(0).toUpperCase() + contextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
+    } else {
+      // Last resort: use domain guidance as description
+      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+      description = domainGuidance;
+    }
+  }
+  
   // Ensure description doesn't just repeat the task name
   // Check multiple similarity conditions to catch more cases
   const descriptionLower = description.toLowerCase().trim();
@@ -1495,36 +1532,84 @@ export async function generateDescription(taskName: string, accessToken?: string
     usedContext: description.length > 0 && searchContext.length > 0
   });
 
-  // STEP 5: If description is still empty/short, try direct approaches
-      const isDescriptionTooShort = description && description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.descriptionTooShortThreshold;
+  // STEP 5: Check if description is too similar to task name or needs improvement
+  const taskNameLower = taskName.toLowerCase().trim();
+  const descriptionLower = description ? description.toLowerCase().trim() : '';
+  
+  // Check if description is identical to task name
+  const isIdenticalToTaskName = descriptionLower === taskNameLower;
+  
+  // Check if description contains all task name words (too similar)
+  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= 2);
+  const descriptionWords = descriptionLower.split(/\s+/).filter(w => w.length >= 2);
+  const containsAllTaskWords = taskWords.length > 0 && 
+    taskWords.every(word => descriptionLower.includes(word));
+  
+  // Check if description is mostly task name words (80%+ overlap)
+  const commonWords = taskWords.filter(word => descriptionWords.includes(word));
+  const wordOverlapRatio = taskWords.length > 0 ? commonWords.length / taskWords.length : 0;
+  const isTooSimilarToTaskName = wordOverlapRatio >= 0.8 && descriptionWords.length <= taskWords.length + 2;
+  
+  const isDescriptionTooShort = description && description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.descriptionTooShortThreshold;
   // Check if description is too generic (very short or uses common generic verbs)
   const genericVerbs = ['find', 'get', 'do', 'make', 'use', 'have'];
-      const isDescriptionTooGeneric = description && (
+  const isDescriptionTooGeneric = description && (
     description.split(' ').length <= 3 && 
     genericVerbs.some(verb => description.toLowerCase().includes(verb))
   );
 
-  if ((!description || description.trim().length === 0 || isDescriptionTooShort || isDescriptionTooGeneric)) {
-    // Try using search context directly if available
-    if (searchContext && searchContext.length > DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextBoostThreshold) {
-          const contextPreviewLength = DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextPreviewLength;
-      const contextToUse = searchContext.length > contextPreviewLength 
-        ? searchContext.substring(0, contextPreviewLength).trim()
-        : searchContext.trim();
-      
-          const firstSentence = contextToUse.split(/[.!?]+/)[0]?.trim();
-          const directDescription = (firstSentence && firstSentence.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength) 
-            ? firstSentence 
-            : contextToUse.substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSentenceLength, contextToUse.length)).trim();
-          
-          if (directDescription.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength) {
-            description = directDescription.charAt(0).toUpperCase() + directDescription.slice(1);
-            if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
-              description += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
-            }
-        logger.debug(`Using direct search context: "${description.substring(0, 50)}..."`);
+  // Check if description needs improvement (too short, generic, identical to task name, or too similar)
+  if ((!description || description.trim().length === 0 || isDescriptionTooShort || isDescriptionTooGeneric || 
+       isIdenticalToTaskName || containsAllTaskWords || isTooSimilarToTaskName)) {
+    // Rebuild description using domain terminology to ensure it's contextual
+    // Never use task name directly - always build a contextual sentence
+    logger.debug(`Description is empty/short/generic, rebuilding with domain terminology`);
+    
+    const taskNameLower = taskName.toLowerCase();
+    const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+    
+    // Get domain phrases, verbs, and nouns for building contextual description
+    const domainPhrases = domainTerms.phrases.filter(phrase => {
+      const phraseLower = phrase.toLowerCase();
+      // Use phrases that add context, not just repeat task name
+      return !taskNameLower.includes(phraseLower) && phraseLower.length > 10;
+    }).slice(0, 3);
+    
+    const domainVerbs = domainTerms.verbs.slice(0, 3);
+    const domainNouns = domainTerms.nouns.slice(0, 3);
+    
+    // Get extracted terms
+    const actionVerb = finalVerbs.length > 0 ? finalVerbs[0] : (domainVerbs.length > 0 ? domainVerbs[0] : '');
+    const contextNouns = finalNouns.length > 0 ? finalNouns.slice(0, 1) : (domainNouns.length > 0 ? domainNouns.slice(0, 1) : []);
+    const relevantKeywords = finalKeywords.filter(kw => {
+      const kwLower = kw.toLowerCase();
+      return !taskNameLower.includes(kwLower) && kwLower.length >= 3;
+    }).slice(0, 2);
+    
+    // Build contextual sentence using available terms
+    if (domainPhrases.length > 0) {
+      const bestPhrase = domainPhrases[0];
+      if (actionVerb) {
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+      } else {
+        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
       }
+    } else if (actionVerb && contextNouns.length > 0) {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns[0]}`;
+    } else if (actionVerb && relevantKeywords.length > 0) {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(' and ')}`;
+    } else if (actionVerb) {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
+    } else if (contextNouns.length > 0) {
+      description = `${contextNouns[0].charAt(0).toUpperCase() + contextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
+    } else if (relevantKeywords.length > 0) {
+      description = `${relevantKeywords.join(' and ')} ${domainGuidance.toLowerCase()}`;
+    } else {
+      // Use domain guidance as base description
+      description = domainGuidance;
     }
+    
+    logger.debug(`Rebuilt description using domain terminology: "${description.substring(0, 50)}..."`);
   }
 
   // STEP 4: Calculate confidence based on Browser AI-extracted terms
