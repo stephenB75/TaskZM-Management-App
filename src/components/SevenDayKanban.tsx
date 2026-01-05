@@ -14,7 +14,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog } from '../lib/utils';
+import { cn, prepareTaskForDialog, getWeekStart } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
@@ -145,6 +145,9 @@ export function SevenDayKanban({
 
   const darkColumnGradient = 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)';
 
+  // Get week start setting
+  const weekStart = getWeekStart();
+  
   // Generate week columns starting from tomorrow
   const getWeekColumns = (): DayColumn[] => {
     const today = new Date();
@@ -153,19 +156,39 @@ export function SevenDayKanban({
     // Use mobileWeekOffset in mobile mode, weekOffset in desktop mode
     const currentWeekOffset = mobileMode ? mobileWeekOffset : weekOffset;
     
-    // For desktop: start from tomorrow (today is shown in Today Agenda timeline)
-    // For mobile: start from Monday of the current week
+    // Calculate start date based on weekStart setting
     let startDate: Date;
     if (mobileMode) {
-      // Mobile: Start from Monday of the current week
+      // Mobile: Start from the first day of the week based on weekStart setting
       startDate = new Date(today);
       const currentDay = startDate.getDay(); // 0 (Sun) - 6 (Sat)
-      const mondayOffset = (currentDay + 6) % 7; // Convert to Monday=0
-      startDate.setDate(startDate.getDate() - mondayOffset + currentWeekOffset * 7);
+      
+      if (weekStart === 'sunday') {
+        // Start from Sunday of the current week
+        const sundayOffset = currentDay === 0 ? 0 : currentDay; // If today is Sunday, offset is 0
+        startDate.setDate(startDate.getDate() - sundayOffset + currentWeekOffset * 7);
+      } else {
+        // Start from Monday of the current week
+        const mondayOffset = (currentDay + 6) % 7; // Convert to Monday=0
+        startDate.setDate(startDate.getDate() - mondayOffset + currentWeekOffset * 7);
+      }
     } else {
       // Desktop: Start from tomorrow (today is shown in Today Agenda timeline, so exclude it)
+      // But align to week start for proper week grouping
       startDate = new Date(today);
       startDate.setDate(startDate.getDate() + 1 + (currentWeekOffset * 7));
+      
+      // Align to week start
+      const currentDay = startDate.getDay(); // 0 (Sun) - 6 (Sat)
+      if (weekStart === 'sunday') {
+        // Align to Sunday
+        const sundayOffset = currentDay === 0 ? 0 : currentDay;
+        startDate.setDate(startDate.getDate() - sundayOffset);
+      } else {
+        // Align to Monday
+        const mondayOffset = currentDay === 0 ? 6 : currentDay - 1; // If Sunday, go back 6 days to Monday
+        startDate.setDate(startDate.getDate() - mondayOffset);
+      }
     }
 
     const totalDays = mobileMode ? 7 : KANBAN_TIME.daysInWeek;
@@ -873,18 +896,26 @@ export function SevenDayKanban({
                   : undefined,
               }}
             >
-              {weekGroups.map((group, groupIndex) => (
-                <React.Fragment key={`week-group-${groupIndex}`}>
-                  {groupIndex === 1 && (
-                    <div className="flex flex-col items-center justify-center px-4 sm:px-6 mx-2 sm:mx-4">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/80 dark:bg-card/70 border border-primary/30 dark:border-primary/40 flex items-center justify-center shadow-xl mb-2">
-                        <span className="text-4xl sm:text-5xl font-light text-primary">+</span>
+              {weekGroups.map((group, groupIndex) => {
+                // Check if this is the start of a week based on weekStart setting
+                const firstDayOfGroup = group[0];
+                const isStartOfWeek = firstDayOfGroup && (
+                  (weekStart === 'sunday' && firstDayOfGroup.date.getDay() === 0) ||
+                  (weekStart === 'monday' && firstDayOfGroup.date.getDay() === 1)
+                );
+                
+                return (
+                  <React.Fragment key={`week-group-${groupIndex}`}>
+                    {isStartOfWeek && (
+                      <div className="flex flex-col items-center justify-center px-4 sm:px-6 mx-2 sm:mx-4">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/80 dark:bg-card/70 border border-primary/30 dark:border-primary/40 flex items-center justify-center shadow-xl mb-2">
+                          <span className="text-4xl sm:text-5xl font-light text-primary">+</span>
+                        </div>
+                        <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
+                          Transition
+                        </span>
                       </div>
-                      <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
-                        Transition
-                      </span>
-                    </div>
-                  )}
+                    );
 
                   <div className="flex flex-col gap-2 min-w-max">
                     <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
@@ -1150,7 +1181,8 @@ export function SevenDayKanban({
                     </div>
                   </div>
                 </React.Fragment>
-              ))}
+                );
+              })}
             </div>
           </div>
 

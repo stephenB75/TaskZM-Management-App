@@ -1375,18 +1375,18 @@ function buildElaborateContextualDescription(
   // Ensure description doesn't just repeat the task name
   // Check multiple similarity conditions to catch more cases
   const descriptionLower = description.toLowerCase().trim();
-  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= 2);
+  const taskWordsForComparison = taskNameLower.split(/\s+/).filter(w => w.length >= 2);
   const descriptionWords = descriptionLower.split(/\s+/).filter(w => w.length >= 2);
   
   // Check if description is identical or contains all task words
   const isIdentical = descriptionLower === taskNameLower.trim();
-  const containsAllTaskWords = taskWords.length > 0 && 
-    taskWords.every(word => descriptionLower.includes(word));
+  const containsAllTaskWords = taskWordsForComparison.length > 0 && 
+    taskWordsForComparison.every(word => descriptionLower.includes(word));
   
   // Check if description is mostly task name words (80%+ overlap)
-  const commonWords = taskWords.filter(word => descriptionWords.includes(word));
-  const wordOverlapRatio = taskWords.length > 0 ? commonWords.length / taskWords.length : 0;
-  const isTooSimilar = wordOverlapRatio >= 0.8 && descriptionWords.length <= taskWords.length + 2;
+  const commonWords = taskWordsForComparison.filter(word => descriptionWords.includes(word));
+  const wordOverlapRatio = taskWordsForComparison.length > 0 ? commonWords.length / taskWordsForComparison.length : 0;
+  const isTooSimilar = wordOverlapRatio >= 0.8 && descriptionWords.length <= taskWordsForComparison.length + 2;
   
   if (isIdentical || containsAllTaskWords || isTooSimilar) {
     // If description is too similar to task name, rebuild with more elaboration

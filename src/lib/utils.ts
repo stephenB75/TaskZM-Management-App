@@ -284,6 +284,15 @@ export function clearUserLocalStorage(): void {
   }
 }
 
+/**
+ * Get week start setting from localStorage
+ * @returns 'sunday' | 'monday' - defaults to 'sunday'
+ */
+export function getWeekStart(): 'sunday' | 'monday' {
+  const stored = localStorage.getItem('week-start');
+  return (stored === 'sunday' || stored === 'monday') ? stored : 'sunday';
+}
+
 export function getFromLocalStorage<T>(key: string, defaultValue: T, userId?: string | null): T {
   try {
     // If userId is provided, check if it matches the stored user

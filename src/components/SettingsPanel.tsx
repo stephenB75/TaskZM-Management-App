@@ -172,8 +172,24 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const isMobile = useIsMobile();
   
   // Date, Time & Theme settings state
-  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>('12h');
-  const [weekStart, setWeekStart] = useState<'sunday' | 'monday'>('sunday');
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(() => {
+    const stored = localStorage.getItem('time-format');
+    return (stored === '12h' || stored === '24h') ? stored : '12h';
+  });
+  const [weekStart, setWeekStart] = useState<'sunday' | 'monday'>(() => {
+    const stored = localStorage.getItem('week-start');
+    return (stored === 'sunday' || stored === 'monday') ? stored : 'sunday';
+  });
+  
+  // Persist timeFormat to localStorage
+  useEffect(() => {
+    localStorage.setItem('time-format', timeFormat);
+  }, [timeFormat]);
+  
+  // Persist weekStart to localStorage
+  useEffect(() => {
+    localStorage.setItem('week-start', weekStart);
+  }, [weekStart]);
   
   // Pricing state (dynamically fetched from RevenueCat)
   const [currentPricing, setCurrentPricing] = useState<{

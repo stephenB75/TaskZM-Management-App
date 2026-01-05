@@ -12,7 +12,7 @@ import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { TaskDialog } from "./TaskDialog";
-import { DraggableTodayAgendaTask } from "./DraggableTodayAgendaTask";
+import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
 import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
@@ -713,24 +713,18 @@ export function TodayAgendaView({
                             marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
                           }}
                         >
-                          <DraggableTodayAgendaTask
-                            task={item.task}
-                            index={todayTasks.findIndex(t => t.id === item.task!.id)}
-                            totalTasks={todayTasks.length}
-                            onClick={handleTaskClick}
-                            getTaskHeight={getTaskHeight}
-                            getTaskTime={getTaskTime}
-                            getPriorityColor={getPriorityColor}
-                            isNextUp={item.task.id === nextUpTaskId}
-                            onComplete={() => {
-                              if (confettiTimeoutRef.current) {
-                                clearTimeout(confettiTimeoutRef.current);
-                              }
-                              if (!showConfetti) {
-                                setShowConfetti(true);
-                              }
+                          <div
+                            style={{
+                              transform: 'scale(0.9)',
+                              transformOrigin: 'top center',
                             }}
-                          />
+                          >
+                            <DraggableTaskCard
+                              task={item.task}
+                              onClick={() => handleTaskClick(item.task)}
+                              droppableId="today-agenda"
+                            />
+                          </div>
                         </div>
                       );
                     } else if (item.type === 'event' && item.event) {
@@ -948,24 +942,18 @@ export function TodayAgendaView({
                               marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
                       }}
                     >
-                      <DraggableTodayAgendaTask
-                              task={item.task}
-                              index={todayTasks.findIndex(t => t.id === item.task!.id)}
-                      totalTasks={todayTasks.length}
-                      onClick={handleTaskClick}
-                      getTaskHeight={getTaskHeight}
-                      getTaskTime={getTaskTime}
-                      getPriorityColor={getPriorityColor}
-                              isNextUp={item.task.id === nextUpTaskId}
-                      onComplete={() => {
-                        if (confettiTimeoutRef.current) {
-                          clearTimeout(confettiTimeoutRef.current);
-                        }
-                        if (!showConfetti) {
-                          setShowConfetti(true);
-                        }
-                      }}
-                    />
+                      <div
+                        style={{
+                          transform: 'scale(0.9)',
+                          transformOrigin: 'top center',
+                        }}
+                      >
+                        <DraggableTaskCard
+                          task={item.task}
+                          onClick={() => handleTaskClick(item.task)}
+                          droppableId="today-agenda"
+                        />
+                      </div>
                     </div>
                         );
                       } else if (item.type === 'event' && item.event) {
@@ -1184,24 +1172,18 @@ export function TodayAgendaView({
                       marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
                     }}
                   >
-                    <DraggableTodayAgendaTask
-                          task={item.task}
-                          index={todayTasks.findIndex(t => t.id === item.task!.id)}
-                      totalTasks={todayTasks.length}
-                      onClick={handleTaskClick}
-                      getTaskHeight={getTaskHeight}
-                      getTaskTime={getTaskTime}
-                      getPriorityColor={getPriorityColor}
-                          isNextUp={item.task.id === nextUpTaskId}
-                      onComplete={() => {
-                        if (confettiTimeoutRef.current) {
-                          clearTimeout(confettiTimeoutRef.current);
-                        }
-                        if (!showConfetti) {
-                          setShowConfetti(true);
-                        }
+                    <div
+                      style={{
+                        transform: 'scale(0.9)',
+                        transformOrigin: 'top center',
                       }}
-                    />
+                    >
+                      <DraggableTaskCard
+                        task={item.task}
+                        onClick={() => handleTaskClick(item.task)}
+                        droppableId="today-agenda"
+                      />
+                    </div>
                   </div>
                     );
                   } else if (item.type === 'event' && item.event) {
