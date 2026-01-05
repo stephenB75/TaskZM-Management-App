@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.9';
-export const VERSION_NAME = 'TypeScript & Architecture Improvements';
-export const VERSION_DATE = 'January 15, 2025';
-export const BUILD_NUMBER = '20250115-1';
+export const APP_VERSION = '1.0.10';
+export const VERSION_NAME = 'Mobile Scroll & UI Consistency Improvements';
+export const VERSION_DATE = 'January 5, 2026';
+export const BUILD_NUMBER = '20260105-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,23 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.10',
+    date: 'January 5, 2026',
+    name: 'Mobile Scroll & UI Consistency Improvements',
+    changes: [
+      'Fixed vertical scroll on mobile view - content bottom was being hidden by nav bar',
+      'Added NAV_BAR_SCROLL_BUFFER constant (16px/1rem) to prevent hardcoded values in scroll padding calculations',
+      'Updated padding-bottom calculations in App.tsx, TodayAgendaView.tsx, and SettingsPanel.tsx to use NAV_BAR_SCROLL_BUFFER_REM constant',
+      'Ensured all nav bar scroll padding uses constants with full nav bar height + safe area + buffer for proper content visibility',
+      'Fixed missing TASK_CARD_TIMELINE import in SevenDayKanban.tsx causing runtime errors',
+      'Updated task cards on Today Agenda panel to match Kanban week view using DraggableTaskCard component',
+      'Reduced magnification on Today Agenda panel for task cards using TASK_CARD_TIMELINE.scale.todayAgenda constant (0.9)',
+      'Centralized task card scale values in TASK_CARD_TIMELINE.scale constants (kanban: 0.85, todayAgenda: 0.9) to remove hardcoded values',
+      'Linked "Week Starts On" function with "Transition icon" to show icon at start of week based on user selection (Sunday or Monday)',
+      'Added localStorage persistence for weekStart setting to maintain user preference across sessions',
+    ],
+  },
   {
     version: '1.0.9',
     date: 'January 15, 2025',
