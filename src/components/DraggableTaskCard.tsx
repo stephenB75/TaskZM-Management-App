@@ -508,6 +508,7 @@ export const DraggableTaskCard = React.forwardRef<
             touchAction: isMobile ? "auto" : "none", // Allow normal touch on mobile
             zIndex: 2,
             position: 'relative',
+            ...(!isMobile && (isDragging || isSortableDragging) ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 } : {}),
           }}
           {...attributes}
           {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
@@ -520,7 +521,6 @@ export const DraggableTaskCard = React.forwardRef<
               ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hoverKanban}`
               : "",
           )}
-          style={!isMobile && (isDragging || isSortableDragging) ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 } : undefined}
           data-dnd-kit-dragging={isDragging || isSortableDragging}
           data-task-card="true"
           data-task-id={task.id}

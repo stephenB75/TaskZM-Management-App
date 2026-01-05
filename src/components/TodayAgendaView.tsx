@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
-import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS } from "../lib/task-card-constants";
+import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
@@ -715,7 +715,7 @@ export function TodayAgendaView({
                         >
                           <div
                             style={{
-                              transform: 'scale(0.9)',
+                              transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                               transformOrigin: 'top center',
                             }}
                           >
@@ -944,7 +944,7 @@ export function TodayAgendaView({
                     >
                       <div
                         style={{
-                          transform: 'scale(0.9)',
+                          transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                           transformOrigin: 'top center',
                         }}
                       >
@@ -1174,7 +1174,7 @@ export function TodayAgendaView({
                   >
                     <div
                       style={{
-                        transform: 'scale(0.9)',
+                        transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                         transformOrigin: 'top center',
                       }}
                     >

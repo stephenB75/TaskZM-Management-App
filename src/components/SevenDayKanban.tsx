@@ -783,7 +783,7 @@ export function SevenDayKanban({
                                       transition={{ duration: 0.2, delay: idx * 0.02 }}
                                       className="w-full"
                                       style={{ 
-                                        transform: 'scale(0.85)',
+                                        transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                                         transformOrigin: 'top center',
                                       }}
                                     >
@@ -803,7 +803,7 @@ export function SevenDayKanban({
                                       key={item.task.id}
                             className="w-full"
                             style={{ 
-                              transform: 'scale(0.85)',
+                              transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                               transformOrigin: 'top center',
                             }}
                           >
@@ -915,7 +915,7 @@ export function SevenDayKanban({
                           Transition
                         </span>
                       </div>
-                    );
+                    )}
 
                   <div className="flex flex-col gap-2 min-w-max">
                     <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
@@ -1134,7 +1134,7 @@ export function SevenDayKanban({
                                             transition={{ duration: 0.2, delay: idx * 0.02 }}
                                             className="w-full"
                                             style={{
-                                              transform: 'scale(0.85)',
+                                              transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                                               transformOrigin: 'top center',
                                             }}
                                           >
@@ -1154,7 +1154,7 @@ export function SevenDayKanban({
                                             key={item.task.id} 
                                     className="w-full"
                                     style={{ 
-                                      transform: 'scale(0.85)',
+                                      transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                                       transformOrigin: 'top center',
                                     }}
                                   >
