@@ -1752,6 +1752,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     }}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground pl-0.5">
+                  {timeFormat === '24h' 
+                    ? 'Times are displayed in 24-hour format (e.g., 14:00 instead of 2:00 PM)' 
+                    : 'Times are displayed in 12-hour format with AM/PM (e.g., 2:00 PM instead of 14:00)'}
+                </p>
               </div>
 
               <Separator className="my-3 sm:my-2" />
@@ -1774,6 +1779,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     }}
                   />
                 </div>
+                <p className="text-xs text-muted-foreground pl-0.5">
+                  {weekStart === 'monday' 
+                    ? 'The calendar week begins on Monday, with Sunday at the end of the week' 
+                    : 'The calendar week begins on Sunday, with Saturday at the end of the week'}
+                </p>
               </div>
 
               <Separator className="my-3 sm:my-2" />
@@ -1782,34 +1792,48 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <div className="space-y-2 sm:space-y-2">
                 <Label htmlFor="theme-select" className="text-sm">Theme</Label>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3 py-1">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Monitor className="w-4 h-4" />
-                      <Label htmlFor="system-theme-toggle" className="text-sm cursor-pointer">Use System Theme</Label>
-                    </div>
-                    <Switch 
-                      id="system-theme-toggle" 
-                      className="flex-shrink-0"
-                      checked={theme === 'system'}
-                      onCheckedChange={(checked) => {
-                        setTheme(checked ? 'system' : (actualTheme === 'dark' ? 'dark' : 'light'));
-                      }}
-                    />
-                  </div>
-                  {theme !== 'system' && (
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-3 py-1">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Moon className="w-4 h-4" />
-                        <Label htmlFor="dark-mode-toggle" className="text-sm cursor-pointer">Dark Mode</Label>
+                        <Monitor className="w-4 h-4" />
+                        <Label htmlFor="system-theme-toggle" className="text-sm cursor-pointer">Use System Theme</Label>
                       </div>
                       <Switch 
-                        id="dark-mode-toggle" 
+                        id="system-theme-toggle" 
                         className="flex-shrink-0"
-                        checked={theme === 'dark'}
+                        checked={theme === 'system'}
                         onCheckedChange={(checked) => {
-                          setTheme(checked ? 'dark' : 'light');
+                          setTheme(checked ? 'system' : (actualTheme === 'dark' ? 'dark' : 'light'));
                         }}
                       />
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-6">
+                      {theme === 'system' 
+                        ? 'The app automatically matches your device\'s theme (light or dark) and updates when your system theme changes' 
+                        : 'You can manually choose between light and dark mode below'}
+                    </p>
+                  </div>
+                  {theme !== 'system' && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-3 py-1">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Moon className="w-4 h-4" />
+                          <Label htmlFor="dark-mode-toggle" className="text-sm cursor-pointer">Dark Mode</Label>
+                        </div>
+                        <Switch 
+                          id="dark-mode-toggle" 
+                          className="flex-shrink-0"
+                          checked={theme === 'dark'}
+                          onCheckedChange={(checked) => {
+                            setTheme(checked ? 'dark' : 'light');
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground pl-6">
+                        {theme === 'dark' 
+                          ? 'Dark mode is enabled with a dark background and light text for better viewing in low-light conditions' 
+                          : 'Light mode is enabled with a light background and dark text for better viewing in bright conditions'}
+                      </p>
                     </div>
                   )}
                 </div>
