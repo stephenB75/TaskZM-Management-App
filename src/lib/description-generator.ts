@@ -199,7 +199,7 @@ function findPhrasesUsingKeywords(
             
             // Only add if phrase contains at least one keyword and is meaningful
             if (keywordCount > 0 && 
-                phrase.length > keywordLower.length + 2 && // Phrase should be longer than just the keyword
+                phrase.length > keywordLower.length + DESCRIPTION_GENERATION_CONFIG.lengthThresholds.phraseKeywordBuffer && // Phrase should be longer than just the keyword
                 !foundPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
               foundPhrases.push(phrase);
             }
@@ -905,8 +905,8 @@ function buildElaborateContextualDescription(
     
     // More lenient check: phrase should NOT be a direct substring of task name
     // Allow partial matches if they add context
-    const isDirectSubstring = taskNameLower.includes(phraseLower) && phraseLower.length > 3;
-    const isTaskNameSubstring = phraseLower.includes(taskNameLower) && taskNameLower.length > 5;
+    const isDirectSubstring = taskNameLower.includes(phraseLower) && phraseLower.length > DESCRIPTION_GENERATION_CONFIG.lengthThresholds.minDirectSubstring;
+    const isTaskNameSubstring = phraseLower.includes(taskNameLower) && taskNameLower.length > DESCRIPTION_GENERATION_CONFIG.lengthThresholds.minTaskNameSubstring;
     
     // Also check if phrase is too similar to task name (all words in phrase are in task name)
     const allWordsInTaskName = phraseWords.length > 0 && 
@@ -926,7 +926,7 @@ function buildElaborateContextualDescription(
       const newWords = phraseWords.filter(word => !taskNameLower.includes(word));
       // More lenient: accept if phrase has keywords OR adds new words OR is a contextual phrase
       const contextualActionWords = DESCRIPTION_GENERATION_CONFIG.contextualActionWords;
-      const addsContext = newWords.length > 0 || phraseWords.length > 2 || keywordCount >= 1 ||
+      const addsContext = newWords.length > 0 || phraseWords.length > DESCRIPTION_GENERATION_CONFIG.lengthThresholds.minPhraseWords || keywordCount >= 1 ||
                         // Accept contextual phrases that explain tasks
                         phraseWords.some(pw => contextualActionWords.includes(pw));
       
@@ -1032,13 +1032,13 @@ function buildElaborateContextualDescription(
       return !bestPhraseLower.includes(kwLower) && 
              !taskNameLower.includes(kwLower) &&
              taskKeywordsLower.some(tkw => bestPhraseLower.includes(tkw.toLowerCase()) || kwLower.includes(tkw.toLowerCase()));
-    }).slice(0, 2);
+    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Get context nouns that add value
     const contextNouns = elaboratingNouns.filter(n => 
       !bestPhraseLower.includes(n.toLowerCase()) &&
       !taskNameLower.includes(n.toLowerCase())
-    ).slice(0, 2);
+    ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
     
     // Build complete contextual sentence
     if (phraseHasAction) {
@@ -1084,14 +1084,14 @@ function buildElaborateContextualDescription(
   // PRIORITY 2: Build sentence using domain verbs + nouns + keywords
   else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
     const actionVerb = elaboratingVerbs[0];
-    const contextNouns = elaboratingNouns.slice(0, 2);
+    const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
     
     // Get relevant keywords that add context
     const relevantKeywords = keywords.filter(kw => {
       const kwLower = kw.toLowerCase();
       return !contextNouns.some(n => n.toLowerCase().includes(kwLower)) &&
              !taskNameLower.includes(kwLower);
-    }).slice(0, 2);
+    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Build complete sentence
     const parts: string[] = [];
@@ -1113,7 +1113,7 @@ function buildElaborateContextualDescription(
       const allWordsInTaskName = phraseWords.length > 0 && 
         phraseWords.every(word => taskNameLower.includes(word));
       // Reject if phrase is a direct substring
-      const isDirectSubstring = taskNameLower.includes(phraseLower) && phraseLower.length > 5;
+      const isDirectSubstring = taskNameLower.includes(phraseLower) && phraseLower.length > DESCRIPTION_GENERATION_CONFIG.lengthThresholds.minPhraseSubstring;
       return !allWordsInTaskName && !isDirectSubstring;
     });
     
@@ -1126,11 +1126,11 @@ function buildElaborateContextualDescription(
       const relevantKeywords = keywords.filter(kw => 
         !bestPhraseLower.includes(kw.toLowerCase()) &&
         !taskNameLower.includes(kw.toLowerCase())
-      ).slice(0, 2);
+      ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       const contextNouns = elaboratingNouns.filter(n => 
         !bestPhraseLower.includes(n.toLowerCase())
-      ).slice(0, 2);
+      ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       // Build complete sentence
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
@@ -1161,11 +1161,11 @@ function buildElaborateContextualDescription(
   // PRIORITY 4: Build sentence using extracted verbs + nouns + keywords
   else if (verbs.length > 0 && nouns.length > 0) {
     const actionVerb = verbs[0];
-    const contextNouns = nouns.slice(0, 2);
+    const contextNouns = nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
     const relevantKeywords = keywords.filter(kw => 
       !contextNouns.some(n => n.toLowerCase().includes(kw.toLowerCase())) &&
       !taskNameLower.includes(kw.toLowerCase())
-    ).slice(0, 2);
+    ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Build complete sentence
     const parts: string[] = [];
@@ -1183,7 +1183,7 @@ function buildElaborateContextualDescription(
     const relevantKeywords = keywords.filter(kw => 
       !actionVerb.toLowerCase().includes(kw.toLowerCase()) &&
       !taskNameLower.includes(kw.toLowerCase())
-    ).slice(0, 2);
+    ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     if (relevantKeywords.length > 0) {
       description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(' and ')}`;
@@ -1198,11 +1198,11 @@ function buildElaborateContextualDescription(
   }
   // PRIORITY 6: Build sentence using nouns + keywords
   else if (nouns.length > 0 && keywords.length > 0) {
-    const contextNouns = nouns.slice(0, 1);
+    const contextNouns = nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
     const relevantKeywords = keywords.filter(kw => 
       !contextNouns.some(n => n.toLowerCase().includes(kw.toLowerCase())) &&
       !taskNameLower.includes(kw.toLowerCase())
-    ).slice(0, 2);
+    ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Use action verb from extracted verbs or domain terminology
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
@@ -1223,7 +1223,7 @@ function buildElaborateContextualDescription(
   }
   // PRIORITY 7: Build sentence using keywords + domain terminology
   else if (keywords.length > 0) {
-    const relevantKeywords = keywords.filter(kw => !taskNameLower.includes(kw.toLowerCase())).slice(0, 3);
+    const relevantKeywords = keywords.filter(kw => !taskNameLower.includes(kw.toLowerCase())).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsExtended);
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
     
     if (actionVerb && relevantKeywords.length > 0) {
@@ -1247,7 +1247,7 @@ function buildElaborateContextualDescription(
     if (elaboratingPhrases.length > 0) {
       const bestPhrase = elaboratingPhrases[0];
       const actionVerb = elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '';
-      const contextNouns = elaboratingNouns.slice(0, 1);
+      const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
       
       if (actionVerb && contextNouns.length > 0) {
         description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}`;
@@ -1260,14 +1260,14 @@ function buildElaborateContextualDescription(
       }
     } else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
       const actionVerb = elaboratingVerbs[0];
-      const contextNouns = elaboratingNouns.slice(0, 2);
+      const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
       description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`;
     } else if (elaboratingVerbs.length > 0) {
       const actionVerb = elaboratingVerbs[0];
       const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
       description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
     } else if (elaboratingNouns.length > 0) {
-      const contextNouns = elaboratingNouns.slice(0, 1);
+      const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
       const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
       description = `${contextNouns[0].charAt(0).toUpperCase() + contextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
       } else {
@@ -1308,11 +1308,11 @@ function buildElaborateContextualDescription(
           const kwLower = kw.toLowerCase();
         return !bestPhraseLower.includes(kwLower) && 
                !taskNameLower.includes(kwLower);
-      }).slice(0, 2);
+      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       const contextNouns = elaboratingNouns.filter(n => 
         !bestPhraseLower.includes(n.toLowerCase())
-      ).slice(0, 2);
+      ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       // Build complete sentence
       const parts: string[] = [];
@@ -1332,11 +1332,11 @@ function buildElaborateContextualDescription(
     } else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
       // Use domain verbs and nouns with keywords
       const actionVerb = elaboratingVerbs[0];
-      const contextNouns = elaboratingNouns.slice(0, 2);
+      const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
       const relevantKeywords = keywords.filter(kw => 
         !contextNouns.some(n => n.toLowerCase().includes(kw.toLowerCase())) &&
         !taskNameLower.includes(kw.toLowerCase())
-      ).slice(0, 2);
+      ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       const parts: string[] = [];
       parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`);
@@ -1349,8 +1349,8 @@ function buildElaborateContextualDescription(
         } else {
       // Build sentence using available terms
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
-      const contextNouns = nouns.length > 0 ? nouns.slice(0, 1) : (elaboratingNouns.length > 0 ? elaboratingNouns.slice(0, 1) : []);
-      const relevantKeywords = keywords.filter(kw => !taskNameLower.includes(kw.toLowerCase())).slice(0, 2);
+      const contextNouns = nouns.length > 0 ? nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (elaboratingNouns.length > 0 ? elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
+      const relevantKeywords = keywords.filter(kw => !taskNameLower.includes(kw.toLowerCase())).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       const parts: string[] = [];
       if (actionVerb) {
@@ -1497,18 +1497,18 @@ export async function generateDescription(taskName: string, accessToken?: string
   finalPronouns = searchExtracted.pronouns;
   
   logger.debug(`Using Browser AI as PRIMARY source: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
-    keywords: finalKeywords.slice(0, 5),
-    phrases: finalPhrases.slice(0, 3),
-    verbs: finalVerbs.slice(0, 3),
-    nouns: finalNouns.slice(0, 3)
+    keywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
+    phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
+    verbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
+    nouns: finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging)
   });
 
   // STEP 3: Build description using Browser AI-extracted terms
   logger.debug(`Building description with Browser AI:`, {
-    keywords: finalKeywords.slice(0, 5),
-    phrases: finalPhrases.slice(0, 3),
-    verbs: finalVerbs.slice(0, 3),
-    nouns: finalNouns.slice(0, 3),
+    keywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
+    phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
+    verbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
+    nouns: finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging),
     hasContext: searchContext.length > 0,
     contextLength: searchContext.length,
     contextPreview: searchContext.substring(0, 100)
@@ -1575,18 +1575,18 @@ export async function generateDescription(taskName: string, accessToken?: string
       const phraseLower = phrase.toLowerCase();
       // Use phrases that add context, not just repeat task name
       return !taskNameLower.includes(phraseLower) && phraseLower.length > DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minPhraseLength;
-    }).slice(0, 3);
+    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
     
-    const domainVerbs = domainTerms.verbs.slice(0, 3);
-    const domainNouns = domainTerms.nouns.slice(0, 3);
+    const domainVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
+    const domainNouns = domainTerms.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
     
     // Get extracted terms
     const actionVerb = finalVerbs.length > 0 ? finalVerbs[0] : (domainVerbs.length > 0 ? domainVerbs[0] : '');
-    const contextNouns = finalNouns.length > 0 ? finalNouns.slice(0, 1) : (domainNouns.length > 0 ? domainNouns.slice(0, 1) : []);
+    const contextNouns = finalNouns.length > 0 ? finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (domainNouns.length > 0 ? domainNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
     const relevantKeywords = finalKeywords.filter(kw => {
       const kwLower = kw.toLowerCase();
       return !taskNameLower.includes(kwLower) && kwLower.length >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minKeywordLength;
-    }).slice(0, 2);
+    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Build contextual sentence using available terms
     if (domainPhrases.length > 0) {
@@ -1640,10 +1640,10 @@ export async function generateDescription(taskName: string, accessToken?: string
   logger.debug(`✅ Browser AI: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasBrowserAITerms=${hasBrowserAITerms}, contextLength=${searchContext.length}`, {
     finalDescription: description.substring(0, 100),
     browserAITermsCount: finalKeywords.length + finalPhrases.length + finalVerbs.length,
-    finalKeywords: finalKeywords.slice(0, 5),
-    finalPhrases: finalPhrases.slice(0, 3),
-    finalVerbs: finalVerbs.slice(0, 3),
-    finalNouns: finalNouns.slice(0, 3),
+    finalKeywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
+    finalPhrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
+    finalVerbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
+    finalNouns: finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging),
     contextPreview: searchContext.substring(0, 100)
   });
   

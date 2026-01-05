@@ -278,6 +278,28 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     high: 0.1, // Boost for high context length
     medium: 0.05, // Boost for medium context length
   },
+  // Array slice limits for description building
+  sliceLimits: {
+    keywords: 2, // Maximum keywords to use in description parts
+    keywordsExtended: 3, // Extended limit for keywords
+    keywordsLogging: 5, // Limit for logging/debugging
+    phrases: 2, // Maximum phrases to use in description parts
+    phrasesLogging: 3, // Limit for logging/debugging
+    verbs: 2, // Maximum verbs to use in description parts
+    verbsLogging: 3, // Limit for logging/debugging
+    nouns: 2, // Maximum nouns to use in description parts
+    nounsSingle: 1, // Single noun limit
+    nounsLogging: 3, // Limit for logging/debugging
+    domainTerms: 3, // Maximum domain terms to use
+  },
+  // Length thresholds for phrase/term matching
+  lengthThresholds: {
+    phraseKeywordBuffer: 2, // Buffer for phrase length vs keyword length
+    minDirectSubstring: 3, // Minimum length for direct substring check
+    minTaskNameSubstring: 5, // Minimum length for task name substring check
+    minPhraseWords: 2, // Minimum words in phrase for context
+    minPhraseSubstring: 5, // Minimum phrase length for substring check
+  },
 } as const;
 
 /**
