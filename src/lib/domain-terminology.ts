@@ -71,7 +71,17 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'income statement', 'cash flow', 'budget analysis', 'financial planning',
     'investment strategy', 'portfolio management', 'risk assessment', 'credit check',
     'loan application', 'mortgage approval', 'tax filing', 'tax return',
-    'bank statement', 'account reconciliation', 'payment processing', 'transaction history'
+    'bank statement', 'account reconciliation', 'payment processing', 'transaction history',
+    // Contextual phrases that explain tasks
+    'ensure quality and accuracy', 'maintain professional standards', 'follow best practices',
+    'meet project requirements', 'deliver on schedule', 'achieve business objectives',
+    'optimize performance', 'improve efficiency', 'enhance user experience',
+    'resolve technical issues', 'implement solutions', 'coordinate with team members',
+    'analyze data trends', 'evaluate outcomes', 'make informed decisions',
+    'communicate effectively', 'document processes', 'track progress',
+    'manage resources', 'allocate budget', 'prioritize tasks',
+    'ensure compliance', 'maintain security', 'protect data',
+    'collaborate with stakeholders', 'align with goals', 'drive results'
   ],
   verbs: [
     'present', 'negotiate', 'strategize', 'analyze', 'forecast', 'delegate', 'coordinate',
@@ -168,7 +178,16 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'family time', 'family dinner', 'family gathering', 'family vacation', 'family trip',
     'kids activities', 'children activities', 'play date', 'birthday party', 'school event',
     'parent teacher conference', 'homework help', 'study session', 'tutoring session',
-    'sports practice', 'music lesson', 'art class', 'dance class', 'swimming lesson'
+    'sports practice', 'music lesson', 'art class', 'dance class', 'swimming lesson',
+    // Contextual phrases that explain tasks
+    'create comfortable living space', 'maintain home value', 'ensure safety and functionality',
+    'organize belongings', 'create efficient storage', 'improve home aesthetics',
+    'prepare nutritious meals', 'plan balanced diet', 'ensure food safety',
+    'care for family needs', 'support children development', 'create family memories',
+    'maintain property condition', 'protect investment', 'ensure home security',
+    'research best options', 'compare quality and price', 'make informed purchase',
+    'follow proper procedures', 'use correct techniques', 'achieve desired results',
+    'save time and effort', 'improve efficiency', 'enhance daily living'
   ],
   verbs: [
     'clean', 'organize', 'repair', 'maintain', 'cook', 'shop', 'decorate', 'renovate',
@@ -253,7 +272,18 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'music composition', 'song writing', 'music production', 'recording session',
     'music rehearsal', 'band practice', 'concert performance', 'music lesson',
     'art exhibition', 'gallery opening', 'art studio', 'painting session', 'drawing class',
-    'sculpture workshop', 'art creation', 'artwork display', 'art collection'
+    'sculpture workshop', 'art creation', 'artwork display', 'art collection',
+    // Contextual phrases that explain tasks
+    'improve physical health', 'maintain wellness', 'achieve fitness goals',
+    'enhance mental wellbeing', 'reduce stress', 'increase energy levels',
+    'develop new skills', 'expand knowledge', 'pursue interests',
+    'express creativity', 'create meaningful work', 'share artistic vision',
+    'build relationships', 'strengthen connections', 'create lasting memories',
+    'explore new places', 'experience different cultures', 'broaden horizons',
+    'give back to community', 'make positive impact', 'help others',
+    'practice self-care', 'prioritize wellbeing', 'maintain work-life balance',
+    'follow proper form', 'prevent injury', 'maximize benefits',
+    'plan ahead', 'stay organized', 'enjoy the experience'
   ],
   verbs: [
     'exercise', 'workout', 'train', 'practice', 'learn', 'study', 'read', 'write',
@@ -337,7 +367,16 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
     'trip planning', 'travel arrangements', 'packing list', 'travel documents',
     'airport check-in', 'boarding pass', 'luggage check', 'customs clearance',
     'sightseeing tour', 'city tour', 'guided tour', 'adventure tour', 'cruise vacation',
-    'beach vacation', 'mountain trip', 'cultural tour', 'food tour', 'wine tour'
+    'beach vacation', 'mountain trip', 'cultural tour', 'food tour', 'wine tour',
+    // Contextual phrases that explain tasks
+    'navigate different time zones', 'coordinate across borders', 'bridge cultural differences',
+    'ensure travel compliance', 'prepare for international travel', 'adapt to local customs',
+    'manage currency conversion', 'handle international logistics', 'coordinate global schedules',
+    'respect cultural norms', 'communicate effectively', 'overcome language barriers',
+    'ensure travel safety', 'protect personal information', 'maintain security',
+    'plan for contingencies', 'stay flexible', 'enjoy cultural immersion',
+    'make informed decisions', 'research destinations', 'compare options',
+    'follow travel regulations', 'complete required documentation', 'meet entry requirements'
   ],
   verbs: [
     'travel', 'explore', 'discover', 'visit', 'tour', 'sightsee', 'experience',

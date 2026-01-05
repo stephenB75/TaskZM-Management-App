@@ -519,7 +519,7 @@ function findPhrasesUsingKeywords(
  * Extract keywords, phrases, verbs, nouns, and pronouns directly from task name using Browser AI
  * Browser AI-only approach: Analyzes user input directly without external search
  */
-function extractTermsFromTaskNameWithBrowserAI(
+export function extractTermsFromTaskNameWithBrowserAI(
   taskName: string,
   domainTerms: ReturnType<typeof getDomainTerminology>
 ): { 
@@ -630,13 +630,27 @@ function extractTermsFromTaskNameWithBrowserAI(
   // STEP 4: Find matching domain terminology terms that relate to task name
   const wordBoundaryRegex = (term: string) => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
   
-  // Match domain phrases that contain our keywords
+  // Match domain phrases that contain our keywords (improved matching)
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
-    const phraseRegex = wordBoundaryRegex(phrase);
-    const containsKeyword = taskKeywords.some(kw => phraseLower.includes(kw.toLowerCase()));
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     
-    if (phraseRegex.test(taskNameLower) && containsKeyword && 
+    // Check if phrase contains keywords (more lenient matching)
+    const containsKeyword = taskKeywords.some(kw => {
+      const kwLower = kw.toLowerCase();
+      return phraseLower.includes(kwLower) || kwLower.includes(phraseLower) ||
+             phraseWords.some(pw => pw.includes(kwLower) || kwLower.includes(pw));
+    });
+    
+    // Check if phrase relates to task name (even if not exact match)
+    const phraseRegex = wordBoundaryRegex(phrase);
+    const exactMatch = phraseRegex.test(taskNameLower);
+    
+    // Also check if any phrase words appear in task name
+    const hasOverlappingWords = phraseWords.some(pw => taskNameLower.includes(pw));
+    
+    // Accept phrase if it contains keywords and (exact match OR has overlapping words)
+    if (containsKeyword && (exactMatch || hasOverlappingWords) && 
         !finalPhrases.some(p => p.toLowerCase() === phraseLower)) {
       finalPhrases.push(phrase);
     }
@@ -1106,8 +1120,19 @@ function buildElaborateContextualDescription(
   // This ensures we get contextual information, not just repetition
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
-    // Check if phrase contains keywords
-    const containsKeywords = taskKeywordsLower.some(kw => phraseLower.includes(kw));
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+    
+    // Check if phrase contains keywords (improved matching - check word-level matches)
+    const containsKeywords = taskKeywordsLower.some(kw => {
+      const kwLower = kw.toLowerCase();
+      // Direct match
+      if (phraseLower.includes(kwLower) || kwLower.includes(phraseLower)) {
+        return true;
+      }
+      // Word-level match
+      return phraseWords.some(pw => pw.includes(kwLower) || kwLower.includes(pw)) ||
+             taskKeywordsLower.some(tkw => phraseWords.some(pw => pw.includes(tkw) || tkw.includes(pw)));
+    });
     
     // More lenient check: phrase should NOT be a direct substring of task name
     // Allow partial matches if they add context
@@ -1115,17 +1140,21 @@ function buildElaborateContextualDescription(
     const isTaskNameSubstring = phraseLower.includes(taskNameLower) && taskNameLower.length > 5;
     
     // Also check if phrase is too similar to task name (all words in phrase are in task name)
-    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     const allWordsInTaskName = phraseWords.length > 0 && 
       phraseWords.every(word => taskNameLower.includes(word));
     
     // Accept phrase if it contains keywords and adds new context
     if (containsKeywords && !isDirectSubstring && !isTaskNameSubstring && !allWordsInTaskName) {
       // Count how many keywords the phrase contains (more = more relevant)
-      const keywordCount = taskKeywordsLower.filter(kw => phraseLower.includes(kw)).length;
+      const keywordCount = taskKeywordsLower.filter(kw => {
+        const kwLower = kw.toLowerCase();
+        return phraseLower.includes(kwLower) || 
+               phraseWords.some(pw => pw.includes(kwLower) || kwLower.includes(pw));
+      }).length;
+      
       // Also check if phrase adds new words not in task name
       const newWords = phraseWords.filter(word => !taskNameLower.includes(word));
-      const addsContext = newWords.length > 0 || phraseWords.length > 2;
+      const addsContext = newWords.length > 0 || phraseWords.length > 2 || keywordCount >= 1;
       
       if (addsContext) {
         elaboratingPhrases.push(phrase);
@@ -1214,13 +1243,20 @@ function buildElaborateContextualDescription(
   if (elaboratingPhrases.length > 0) {
     const bestPhrase = elaboratingPhrases[0];
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
+    const bestPhraseLower = bestPhrase.toLowerCase();
     
     // Build sentence that explains the task using domain terminology
-    if (actionVerb && !bestPhrase.toLowerCase().includes(actionVerb.toLowerCase())) {
+    // Check if phrase is action-oriented (contains action words from domain terminology) or needs a verb
+    // Use domain terminology verbs to check if phrase already contains action words
+    const domainActionVerbs = domainTerms.verbs.map(v => v.toLowerCase());
+    const phraseHasAction = elaboratingVerbs.some(v => bestPhraseLower.includes(v.toLowerCase())) ||
+                           domainActionVerbs.some(actionVerb => bestPhraseLower.includes(actionVerb));
+    
+    if (actionVerb && !phraseHasAction && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
       // Use verb + phrase to explain what needs to be done
       // Add additional context from nouns if available
       const contextNouns = elaboratingNouns.filter(n => 
-        !bestPhrase.toLowerCase().includes(n.toLowerCase()) &&
+        !bestPhraseLower.includes(n.toLowerCase()) &&
         !taskNameLower.includes(n.toLowerCase())
       ).slice(0, 1);
       
@@ -1230,9 +1266,9 @@ function buildElaborateContextualDescription(
         description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
       }
     } else {
-      // Phrase already contains action, use it directly but add context from nouns
+      // Phrase already contains action or is contextual, use it directly but add context from nouns
       const contextNouns = elaboratingNouns.filter(n => 
-        !bestPhrase.toLowerCase().includes(n.toLowerCase()) &&
+        !bestPhraseLower.includes(n.toLowerCase()) &&
         !taskNameLower.includes(n.toLowerCase())
       ).slice(0, 2);
       
@@ -1241,13 +1277,14 @@ function buildElaborateContextualDescription(
       } else {
         // Add keywords that aren't in the phrase for additional context
         const additionalKeywords = keywords.filter(kw => 
-          !bestPhrase.toLowerCase().includes(kw.toLowerCase()) &&
+          !bestPhraseLower.includes(kw.toLowerCase()) &&
           !taskNameLower.includes(kw.toLowerCase())
         ).slice(0, 1);
         
         if (additionalKeywords.length > 0) {
           description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} related to ${additionalKeywords[0]}`;
         } else {
+          // Use the phrase as-is if it's already contextual
           description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
         }
       }
