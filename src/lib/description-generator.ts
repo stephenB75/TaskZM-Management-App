@@ -1102,16 +1102,34 @@ function buildElaborateContextualDescription(
   const elaboratingPhrases: string[] = [];
   
   // Find domain phrases that relate to keywords but add elaboration
+  // PRIORITY: Look for phrases that contain keywords but are NOT in the task name
+  // This ensures we get contextual information, not just repetition
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
-    // Check if phrase contains keywords but is NOT just the task name
+    // Check if phrase contains keywords
     const containsKeywords = taskKeywordsLower.some(kw => phraseLower.includes(kw));
-    const isNotTaskName = !taskNameLower.includes(phraseLower) && !phraseLower.includes(taskNameLower);
     
-    if (containsKeywords && isNotTaskName) {
+    // More lenient check: phrase should NOT be a direct substring of task name
+    // Allow partial matches if they add context
+    const isDirectSubstring = taskNameLower.includes(phraseLower) && phraseLower.length > 3;
+    const isTaskNameSubstring = phraseLower.includes(taskNameLower) && taskNameLower.length > 5;
+    
+    // Also check if phrase is too similar to task name (all words in phrase are in task name)
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+    const allWordsInTaskName = phraseWords.length > 0 && 
+      phraseWords.every(word => taskNameLower.includes(word));
+    
+    // Accept phrase if it contains keywords and adds new context
+    if (containsKeywords && !isDirectSubstring && !isTaskNameSubstring && !allWordsInTaskName) {
       // Count how many keywords the phrase contains (more = more relevant)
       const keywordCount = taskKeywordsLower.filter(kw => phraseLower.includes(kw)).length;
-      elaboratingPhrases.push(phrase);
+      // Also check if phrase adds new words not in task name
+      const newWords = phraseWords.filter(word => !taskNameLower.includes(word));
+      const addsContext = newWords.length > 0 || phraseWords.length > 2;
+      
+      if (addsContext) {
+        elaboratingPhrases.push(phrase);
+      }
     }
   });
   
@@ -1129,11 +1147,29 @@ function buildElaborateContextualDescription(
   const elaboratingVerbs: string[] = [];
   domainTerms.verbs.forEach(verb => {
     const verbLower = verb.toLowerCase();
-    const relatesToTask = taskKeywordsLower.some(kw => 
-      verbLower.includes(kw) || kw.includes(verbLower)
-    ) || verbs.some(v => verbLower.includes(v.toLowerCase()) || v.toLowerCase().includes(verbLower));
+    const verbBase = verbLower.replace(/(ing|ed|s|es)$/, '');
     
-    if (relatesToTask && !elaboratingVerbs.some(v => v.toLowerCase() === verbLower)) {
+    // Check if verb relates to task keywords or extracted verbs
+    const relatesToKeywords = taskKeywordsLower.some(kw => 
+      verbLower.includes(kw) || kw.includes(verbLower) ||
+      verbBase.includes(kw) || kw.includes(verbBase)
+    );
+    
+    const relatesToExtractedVerbs = verbs.some(v => {
+      const vLower = v.toLowerCase();
+      const vBase = vLower.replace(/(ing|ed|s|es)$/, '');
+      return verbLower.includes(vLower) || vLower.includes(verbLower) ||
+             verbBase.includes(vBase) || vBase.includes(verbBase);
+    });
+    
+    // Also check if verb appears in task name (even if not extracted)
+    const appearsInTaskName = taskNameLower.includes(verbLower) || 
+                             taskNameLower.includes(verbBase) ||
+                             taskNameLower.includes(`${verbBase}ing`) ||
+                             taskNameLower.includes(`${verbBase}ed`);
+    
+    if ((relatesToKeywords || relatesToExtractedVerbs || appearsInTaskName) && 
+        !elaboratingVerbs.some(v => v.toLowerCase() === verbLower)) {
       elaboratingVerbs.push(verb);
     }
   });
@@ -1142,40 +1178,78 @@ function buildElaborateContextualDescription(
   const elaboratingNouns: string[] = [];
   domainTerms.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
-    const relatesToTask = taskKeywordsLower.some(kw => 
-      nounLower.includes(kw) || kw.includes(nounLower)
-    ) || nouns.some(n => nounLower.includes(n.toLowerCase()) || n.toLowerCase().includes(nounLower));
+    const nounBase = nounLower.replace(/s$|es$/, '');
     
-    if (relatesToTask && !elaboratingNouns.some(n => n.toLowerCase() === nounLower)) {
+    // Check if noun relates to task keywords or extracted nouns
+    const relatesToKeywords = taskKeywordsLower.some(kw => 
+      nounLower.includes(kw) || kw.includes(nounLower) ||
+      nounBase.includes(kw) || kw.includes(nounBase)
+    );
+    
+    const relatesToExtractedNouns = nouns.some(n => {
+      const nLower = n.toLowerCase();
+      const nBase = nLower.replace(/s$|es$/, '');
+      return nounLower.includes(nLower) || nLower.includes(nounLower) ||
+             nounBase.includes(nBase) || nBase.includes(nounBase);
+    });
+    
+    // Also check if noun appears in task name (even if not extracted)
+    const appearsInTaskName = taskNameLower.includes(nounLower) || 
+                              taskNameLower.includes(nounBase) ||
+                              taskNameLower.includes(`${nounBase}s`);
+    
+    if ((relatesToKeywords || relatesToExtractedNouns || appearsInTaskName) && 
+        !elaboratingNouns.some(n => n.toLowerCase() === nounLower)) {
       elaboratingNouns.push(noun);
     }
   });
   
   // STEP 4: Build elaborate description using extracted terms and domain terminology
-  // Priority: Use phrases > verbs + nouns > keywords
+  // Priority: Use domain phrases > domain verbs+nouns > extracted phrases > extracted verbs+nouns > keywords
   // Goal: Explain what the task involves, not just repeat the task name
   
   let description = '';
   
-  // Try to build using elaborating phrases first (most complete context)
+  // PRIORITY 1: Try to build using elaborating phrases from domain terminology (most contextual)
   if (elaboratingPhrases.length > 0) {
     const bestPhrase = elaboratingPhrases[0];
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
     
-    // Build sentence that explains the task
+    // Build sentence that explains the task using domain terminology
     if (actionVerb && !bestPhrase.toLowerCase().includes(actionVerb.toLowerCase())) {
       // Use verb + phrase to explain what needs to be done
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
-    } else {
-      // Phrase already contains action, use it directly but add context
+      // Add additional context from nouns if available
       const contextNouns = elaboratingNouns.filter(n => 
-        !bestPhrase.toLowerCase().includes(n.toLowerCase())
+        !bestPhrase.toLowerCase().includes(n.toLowerCase()) &&
+        !taskNameLower.includes(n.toLowerCase())
+      ).slice(0, 1);
+      
+      if (contextNouns.length > 0) {
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} for ${contextNouns[0]}`;
+      } else {
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+      }
+    } else {
+      // Phrase already contains action, use it directly but add context from nouns
+      const contextNouns = elaboratingNouns.filter(n => 
+        !bestPhrase.toLowerCase().includes(n.toLowerCase()) &&
+        !taskNameLower.includes(n.toLowerCase())
       ).slice(0, 2);
       
       if (contextNouns.length > 0) {
         description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} involving ${contextNouns.join(' and ')}`;
       } else {
-        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+        // Add keywords that aren't in the phrase for additional context
+        const additionalKeywords = keywords.filter(kw => 
+          !bestPhrase.toLowerCase().includes(kw.toLowerCase()) &&
+          !taskNameLower.includes(kw.toLowerCase())
+        ).slice(0, 1);
+        
+        if (additionalKeywords.length > 0) {
+          description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} related to ${additionalKeywords[0]}`;
+        } else {
+          description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+        }
       }
     }
   } 
@@ -1193,20 +1267,45 @@ function buildElaborateContextualDescription(
       description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`;
     }
   }
-  // If we have phrases from Browser AI extraction, use those
+  // PRIORITY 3: If we have phrases from Browser AI extraction, check if they add context
+  // Only use if they're not just repeating the task name
   else if (phrases.length > 0) {
-    const bestPhrase = phrases[0];
-    const actionVerb = verbs.length > 0 ? verbs[0] : '';
+    // Filter out phrases that are too similar to task name
+    const contextualPhrases = phrases.filter(phrase => {
+      const phraseLower = phrase.toLowerCase();
+      const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+      // Reject if all words in phrase are in task name (too similar)
+      const allWordsInTaskName = phraseWords.length > 0 && 
+        phraseWords.every(word => taskNameLower.includes(word));
+      // Reject if phrase is a direct substring
+      const isDirectSubstring = taskNameLower.includes(phraseLower) && phraseLower.length > 5;
+      return !allWordsInTaskName && !isDirectSubstring;
+    });
     
-    if (actionVerb && !bestPhrase.toLowerCase().includes(actionVerb.toLowerCase())) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
-    } else {
-      // Add context from nouns or keywords
-      const contextTerms = nouns.length > 0 ? nouns.slice(0, 1) : keywords.slice(0, 1);
-      if (contextTerms.length > 0 && !bestPhrase.toLowerCase().includes(contextTerms[0].toLowerCase())) {
-        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} involving ${contextTerms[0]}`;
+    if (contextualPhrases.length > 0) {
+      const bestPhrase = contextualPhrases[0];
+      const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
+      
+      if (actionVerb && !bestPhrase.toLowerCase().includes(actionVerb.toLowerCase())) {
+        // Add domain nouns for context
+        const contextNouns = elaboratingNouns.filter(n => 
+          !bestPhrase.toLowerCase().includes(n.toLowerCase())
+        ).slice(0, 1);
+        
+        if (contextNouns.length > 0) {
+          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} for ${contextNouns[0]}`;
+        } else {
+          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+        }
       } else {
-        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+        // Add context from domain nouns or keywords
+        const contextTerms = elaboratingNouns.length > 0 ? elaboratingNouns.slice(0, 1) : 
+                            (nouns.length > 0 ? nouns.slice(0, 1) : keywords.slice(0, 1));
+        if (contextTerms.length > 0 && !bestPhrase.toLowerCase().includes(contextTerms[0].toLowerCase())) {
+          description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} involving ${contextTerms[0]}`;
+        } else {
+          description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+        }
       }
     }
   }
@@ -1274,29 +1373,69 @@ function buildElaborateContextualDescription(
   }
   
   // Ensure description doesn't just repeat the task name
-  if (description.toLowerCase().trim() === taskNameLower.trim() || 
-      taskNameLower.split(/\s+/).every(word => description.toLowerCase().includes(word))) {
-    // If description is too similar to task name, add elaboration
-    const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
-    if (domainGuidance && description.length < 100) {
-      description = `${description}. ${domainGuidance}`;
-    } else {
-      // Use extracted terms for elaboration, not hardcoded values
+  // Check multiple similarity conditions to catch more cases
+  const descriptionLower = description.toLowerCase().trim();
+  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= 2);
+  const descriptionWords = descriptionLower.split(/\s+/).filter(w => w.length >= 2);
+  
+  // Check if description is identical or contains all task words
+  const isIdentical = descriptionLower === taskNameLower.trim();
+  const containsAllTaskWords = taskWords.length > 0 && 
+    taskWords.every(word => descriptionLower.includes(word));
+  
+  // Check if description is mostly task name words (80%+ overlap)
+  const commonWords = taskWords.filter(word => descriptionWords.includes(word));
+  const wordOverlapRatio = taskWords.length > 0 ? commonWords.length / taskWords.length : 0;
+  const isTooSimilar = wordOverlapRatio >= 0.8 && descriptionWords.length <= taskWords.length + 2;
+  
+  if (isIdentical || containsAllTaskWords || isTooSimilar) {
+    // If description is too similar to task name, rebuild with more elaboration
+    // Try to use domain terminology to add context
+    if (elaboratingPhrases.length > 0) {
+      // Use best elaborating phrase with action verb
+      const bestPhrase = elaboratingPhrases[0];
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
-      const contextTerms = nouns.length > 0 ? nouns[0] : (elaboratingNouns.length > 0 ? elaboratingNouns[0] : (keywords.length > 0 ? keywords[0] : ''));
+      const contextNouns = elaboratingNouns.filter(n => 
+        !bestPhrase.toLowerCase().includes(n.toLowerCase())
+      ).slice(0, 1);
       
-      if (actionVerb && contextTerms) {
-        // Use domain terminology to add elaboration
-        const elaborationPhrase = elaboratingPhrases.length > 0 ? elaboratingPhrases[0] : '';
-        if (elaborationPhrase) {
-          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextTerms} ${elaborationPhrase}`;
-        } else {
-          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextTerms}`;
-        }
+      if (actionVerb && contextNouns.length > 0) {
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} for ${contextNouns[0]}`;
       } else if (actionVerb) {
-        description = actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
-      } else if (contextTerms) {
-        description = contextTerms.charAt(0).toUpperCase() + contextTerms.slice(1);
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+      } else {
+        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+      }
+    } else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
+      // Use domain verbs and nouns
+      const actionVerb = elaboratingVerbs[0];
+      const contextNouns = elaboratingNouns.slice(0, 2);
+      const additionalKeywords = keywords.filter(kw => 
+        !contextNouns.some(n => n.toLowerCase().includes(kw.toLowerCase()))
+      ).slice(0, 1);
+      
+      if (additionalKeywords.length > 0) {
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')} related to ${additionalKeywords[0]}`;
+      } else {
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`;
+      }
+    } else {
+      // Add domain guidance if available
+      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+      if (domainGuidance && description.length < 100) {
+        description = `${description}. ${domainGuidance}`;
+      } else {
+        // Use extracted terms for elaboration
+        const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
+        const contextTerms = nouns.length > 0 ? nouns[0] : (elaboratingNouns.length > 0 ? elaboratingNouns[0] : (keywords.length > 0 ? keywords[0] : ''));
+        
+        if (actionVerb && contextTerms) {
+          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextTerms}`;
+        } else if (actionVerb) {
+          description = actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
+        } else if (contextTerms) {
+          description = contextTerms.charAt(0).toUpperCase() + contextTerms.slice(1);
+        }
       }
     }
   }
