@@ -1078,8 +1078,215 @@ function extractTermsFromTaskName(
 }
 
 /**
+ * Build elaborate contextual description that explains the task without repeating the task name
+ * Uses Browser AI extracted terms and domain terminology to create actionable descriptions
+ * for the AI Action Plan to use when building steps
+ */
+function buildElaborateContextualDescription(
+  taskName: string,
+  keywords: string[],
+  phrases: string[],
+  verbs: string[],
+  nouns: string[],
+  pronouns: string[],
+  context: string,
+  domain: Domain,
+  domainTerms: ReturnType<typeof getDomainTerminology>
+): string {
+  const taskNameLower = taskName.toLowerCase();
+  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
+  
+  // STEP 1: Find domain phrases that elaborate on the task (not just repeat it)
+  // These provide context about what the task involves
+  const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
+  const elaboratingPhrases: string[] = [];
+  
+  // Find domain phrases that relate to keywords but add elaboration
+  domainTerms.phrases.forEach(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    // Check if phrase contains keywords but is NOT just the task name
+    const containsKeywords = taskKeywordsLower.some(kw => phraseLower.includes(kw));
+    const isNotTaskName = !taskNameLower.includes(phraseLower) && !phraseLower.includes(taskNameLower);
+    
+    if (containsKeywords && isNotTaskName) {
+      // Count how many keywords the phrase contains (more = more relevant)
+      const keywordCount = taskKeywordsLower.filter(kw => phraseLower.includes(kw)).length;
+      elaboratingPhrases.push(phrase);
+    }
+  });
+  
+  // Sort by keyword count and length (prioritize phrases with more keywords and longer phrases)
+  elaboratingPhrases.sort((a, b) => {
+    const aKeywords = taskKeywordsLower.filter(kw => a.toLowerCase().includes(kw)).length;
+    const bKeywords = taskKeywordsLower.filter(kw => b.toLowerCase().includes(kw)).length;
+    if (bKeywords !== aKeywords) {
+      return bKeywords - aKeywords;
+    }
+    return b.length - a.length;
+  });
+  
+  // STEP 2: Find domain verbs that elaborate on actions
+  const elaboratingVerbs: string[] = [];
+  domainTerms.verbs.forEach(verb => {
+    const verbLower = verb.toLowerCase();
+    const relatesToTask = taskKeywordsLower.some(kw => 
+      verbLower.includes(kw) || kw.includes(verbLower)
+    ) || verbs.some(v => verbLower.includes(v.toLowerCase()) || v.toLowerCase().includes(verbLower));
+    
+    if (relatesToTask && !elaboratingVerbs.some(v => v.toLowerCase() === verbLower)) {
+      elaboratingVerbs.push(verb);
+    }
+  });
+  
+  // STEP 3: Find domain nouns that add context
+  const elaboratingNouns: string[] = [];
+  domainTerms.nouns.forEach(noun => {
+    const nounLower = noun.toLowerCase();
+    const relatesToTask = taskKeywordsLower.some(kw => 
+      nounLower.includes(kw) || kw.includes(nounLower)
+    ) || nouns.some(n => nounLower.includes(n.toLowerCase()) || n.toLowerCase().includes(nounLower));
+    
+    if (relatesToTask && !elaboratingNouns.some(n => n.toLowerCase() === nounLower)) {
+      elaboratingNouns.push(noun);
+    }
+  });
+  
+  // STEP 4: Build elaborate description using extracted terms and domain terminology
+  // Priority: Use phrases > verbs + nouns > keywords
+  // Goal: Explain what the task involves, not just repeat the task name
+  
+  let description = '';
+  
+  // Try to build using elaborating phrases first (most complete context)
+  if (elaboratingPhrases.length > 0) {
+    const bestPhrase = elaboratingPhrases[0];
+    const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
+    
+    // Build sentence that explains the task
+    if (actionVerb && !bestPhrase.toLowerCase().includes(actionVerb.toLowerCase())) {
+      // Use verb + phrase to explain what needs to be done
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+    } else {
+      // Phrase already contains action, use it directly but add context
+      const contextNouns = elaboratingNouns.filter(n => 
+        !bestPhrase.toLowerCase().includes(n.toLowerCase())
+      ).slice(0, 2);
+      
+      if (contextNouns.length > 0) {
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} involving ${contextNouns.join(' and ')}`;
+      } else {
+        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+      }
+    }
+  } 
+  // If no elaborating phrases, use verbs + nouns to build description
+  else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
+    const actionVerb = elaboratingVerbs[0];
+    const contextNouns = elaboratingNouns.slice(0, 2);
+    const additionalContext = keywords.filter(kw => 
+      !contextNouns.some(n => n.toLowerCase().includes(kw.toLowerCase()))
+    ).slice(0, 1);
+    
+    if (additionalContext.length > 0) {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')} related to ${additionalContext[0]}`;
+    } else {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`;
+    }
+  }
+  // If we have phrases from Browser AI extraction, use those
+  else if (phrases.length > 0) {
+    const bestPhrase = phrases[0];
+    const actionVerb = verbs.length > 0 ? verbs[0] : '';
+    
+    if (actionVerb && !bestPhrase.toLowerCase().includes(actionVerb.toLowerCase())) {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+    } else {
+      // Add context from nouns or keywords
+      const contextTerms = nouns.length > 0 ? nouns.slice(0, 1) : keywords.slice(0, 1);
+      if (contextTerms.length > 0 && !bestPhrase.toLowerCase().includes(contextTerms[0].toLowerCase())) {
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} involving ${contextTerms[0]}`;
+      } else {
+        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+      }
+    }
+  }
+  // Use verbs + nouns from Browser AI
+  else if (verbs.length > 0 && nouns.length > 0) {
+    const actionVerb = verbs[0];
+    const contextNouns = nouns.slice(0, 2);
+    const additionalKeywords = keywords.filter(kw => 
+      !contextNouns.some(n => n.toLowerCase().includes(kw.toLowerCase()))
+    ).slice(0, 1);
+    
+    if (additionalKeywords.length > 0) {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')} related to ${additionalKeywords[0]}`;
+    } else {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`;
+    }
+  }
+  // Use verbs with keywords
+  else if (verbs.length > 0 && keywords.length > 0) {
+    const actionVerb = verbs[0];
+    const relevantKeywords = keywords.filter(kw => 
+      !actionVerb.toLowerCase().includes(kw.toLowerCase())
+    ).slice(0, 2);
+    
+    if (relevantKeywords.length > 0) {
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(' and ')}`;
+    } else {
+      description = actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
+    }
+  }
+  // Use nouns with keywords
+  else if (nouns.length > 0 && keywords.length > 0) {
+    const contextNouns = nouns.slice(0, 1);
+    const relevantKeywords = keywords.filter(kw => 
+      !contextNouns.some(n => n.toLowerCase().includes(kw.toLowerCase()))
+    ).slice(0, 1);
+    
+    if (relevantKeywords.length > 0) {
+      description = `Work with ${contextNouns[0]} related to ${relevantKeywords[0]}`;
+    } else {
+      description = `Work with ${contextNouns[0]}`;
+    }
+  }
+  // Last resort: use keywords to build basic description
+  else if (keywords.length > 0) {
+    const relevantKeywords = keywords.slice(0, 3);
+    description = `Complete task involving ${relevantKeywords.join(', ')}`;
+  }
+  
+  // Ensure description doesn't just repeat the task name
+  if (description.toLowerCase().trim() === taskNameLower.trim() || 
+      taskNameLower.split(/\s+/).every(word => description.toLowerCase().includes(word))) {
+    // If description is too similar to task name, add elaboration
+    const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+    if (domainGuidance && description.length < 100) {
+      description = `${description}. ${domainGuidance}`;
+    } else {
+      // Use a generic elaboration
+      const actionVerb = verbs.length > 0 ? verbs[0] : 'complete';
+      const contextTerms = nouns.length > 0 ? nouns[0] : (keywords.length > 0 ? keywords[0] : 'task');
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextTerms} with attention to detail and proper execution`;
+    }
+  }
+  
+  // Ensure proper capitalization and punctuation
+  description = description.trim();
+  if (description.length > 0) {
+    description = description.charAt(0).toUpperCase() + description.slice(1);
+    if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
+      description += '.';
+    }
+  }
+  
+  return description;
+}
+
+/**
  * Build contextual description from search results using keywords and phrases
  * NEW FLOW: Constructs natural description from search results that contain keywords and phrases
+ * UPDATED: Now uses elaborate description builder to avoid repeating task name
  */
 function buildContextualDescription(
   taskName: string,
@@ -1092,14 +1299,38 @@ function buildContextualDescription(
   domain: Domain,
   domainTerms: ReturnType<typeof getDomainTerminology>
 ): string {
-  let description = '';
-  
-  const taskNameLower = taskName.toLowerCase();
-  
-  // ENHANCED: Use ALL phrases from search results, not just those that match keywords
-  // Search results provide valuable context even if phrase-keyword matching isn't perfect
-  // Prioritize phrases from search results, but also include all phrases for better context
-  const relevantPhrases = phrases.length > 0 ? phrases : [];
+  // Use the new elaborate description builder that explains the task without repeating it
+  return buildElaborateContextualDescription(
+    taskName,
+    keywords,
+    phrases,
+    verbs,
+    nouns,
+    pronouns,
+    context,
+    domain,
+    domainTerms
+  );
+}
+
+/**
+ * Generates a task description based on task name using Browser AI
+ * Browser AI extracts keywords, phrases, verbs, and nouns directly from the task name
+ * Local Terminology acts as a cache/dictionary to enhance extracted terms
+ */
+export async function generateDescription(taskName: string, accessToken?: string | null): Promise<GeneratedDescription> {
+  if (!taskName || taskName.trim().length === 0) {
+    return {
+      description: '',
+      domain: DEFAULT_TASK_DOMAIN,
+      confidence: 0,
+    };
+  }
+
+  // Detect domain from task name
+  const domainResult = detectDomain(taskName, '');
+  const domain = domainResult.domain;
+  const domainTerms = getDomainTerminology(domain);
   // Don't filter phrases too strictly - search results provide good phrases even without perfect keyword matches
   
   // STEP 1: Find the best sentence from search results that contains keywords and phrases
