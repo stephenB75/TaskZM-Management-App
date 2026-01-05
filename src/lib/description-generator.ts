@@ -1451,10 +1451,10 @@ export async function generateDescription(taskName: string, accessToken?: string
   const hasSearchResults = usedSearchResults && searchContext.length > 0;
   const hasSearchTerms = searchExtracted.keywords.length > 0 || searchExtracted.phrases.length > 0 || 
                         searchExtracted.verbs.length > 0 || searchExtracted.nouns.length > 0;
-  const hasLocalTerms = localExtracted.keywords.length > 0 || localExtracted.phrases.length > 0 || 
-                       localExtracted.verbs.length > 0 || localExtracted.nouns.length > 0;
+  const hasValidatedTerms = validatedTerms.keywords.length > 0 || validatedTerms.phrases.length > 0 || 
+                           validatedTerms.verbs.length > 0 || validatedTerms.nouns.length > 0;
   
-  // Base confidence: higher if we have search results, lower if only local
+  // Base confidence: higher if we have search results, lower if only dictionary
   const baseConf = hasSearchResults ? DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence : DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   
   // Boost for search terms (real-world context is valuable)
@@ -1464,12 +1464,19 @@ export async function generateDescription(taskName: string, accessToken?: string
     (searchExtracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
     (searchExtracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) : 0;
   
-  // Boost for local terms (domain-specific knowledge)
-  const localBoost = hasLocalTerms ?
-    (localExtracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight * 0.5) + // Weighted less than search
-    (localExtracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight * 0.5) +
-    (localExtracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight * 0.5) +
-    (localExtracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight * 0.5) : 0;
+  // Boost for dictionary-validated terms (domain-specific knowledge from dictionary)
+  // Count only terms added by dictionary validation (not from search)
+  const dictionaryAddedTerms = {
+    keywords: validatedTerms.keywords.length - searchExtracted.keywords.length,
+    phrases: validatedTerms.phrases.length - searchExtracted.phrases.length,
+    verbs: validatedTerms.verbs.length - searchExtracted.verbs.length,
+    nouns: validatedTerms.nouns.length - searchExtracted.nouns.length
+  };
+  const localBoost = hasValidatedTerms ?
+    (Math.max(0, dictionaryAddedTerms.keywords) * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight * 0.5) + // Weighted less than search
+    (Math.max(0, dictionaryAddedTerms.phrases) * DESCRIPTION_GENERATION_CONFIG.phraseWeight * 0.5) +
+    (Math.max(0, dictionaryAddedTerms.verbs) * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight * 0.5) +
+    (Math.max(0, dictionaryAddedTerms.nouns) * DESCRIPTION_GENERATION_CONFIG.nounWeight * 0.5) : 0;
   
   // Context boost if we have meaningful search context
   const contextBoost = searchContext.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
@@ -1480,10 +1487,14 @@ export async function generateDescription(taskName: string, accessToken?: string
     DESCRIPTION_GENERATION_CONFIG.maxConfidence
   );
 
-  logger.debug(`Combined approach: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasSearchResults=${hasSearchResults}, hasSearchTerms=${hasSearchTerms}, hasLocalTerms=${hasLocalTerms}, searchContext=${searchContext.length}`, {
+  logger.debug(`Combined approach: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasSearchResults=${hasSearchResults}, hasSearchTerms=${hasSearchTerms}, hasValidatedTerms=${hasValidatedTerms}, searchContext=${searchContext.length}`, {
     finalDescription: description.substring(0, 100),
     searchTermsCount: searchExtracted.keywords.length + searchExtracted.phrases.length + searchExtracted.verbs.length,
-    localTermsCount: localExtracted.keywords.length + localExtracted.phrases.length + localExtracted.verbs.length,
+    validatedTermsCount: validatedTerms.keywords.length + validatedTerms.phrases.length + validatedTerms.verbs.length,
+    dictionaryAddedCount: (validatedTerms.keywords.length - searchExtracted.keywords.length) + 
+                         (validatedTerms.phrases.length - searchExtracted.phrases.length) +
+                         (validatedTerms.verbs.length - searchExtracted.verbs.length) +
+                         (validatedTerms.nouns.length - searchExtracted.nouns.length),
     combinedKeywords: combinedKeywords.slice(0, 5),
     combinedPhrases: combinedPhrases.slice(0, 3),
     combinedVerbs: combinedVerbs.slice(0, 3),
@@ -1493,24 +1504,30 @@ export async function generateDescription(taskName: string, accessToken?: string
   
   // VERIFICATION: Log which sources contributed to the final description
   if (usedSearchResults) {
-    logger.debug(`✅ DuckDuckGo + Browser AI + Local Terminology working together:`, {
+    logger.debug(`✅ DuckDuckGo + Browser AI + Dictionary working together:`, {
       searchKeywords: searchExtracted.keywords.length,
       searchPhrases: searchExtracted.phrases.length,
       searchVerbs: searchExtracted.verbs.length,
       searchNouns: searchExtracted.nouns.length,
-      localKeywords: localExtracted.keywords.length,
-      localPhrases: localExtracted.phrases.length,
-      localVerbs: localExtracted.verbs.length,
-      localNouns: localExtracted.nouns.length,
+      validatedKeywords: validatedTerms.keywords.length,
+      validatedPhrases: validatedTerms.phrases.length,
+      validatedVerbs: validatedTerms.verbs.length,
+      validatedNouns: validatedTerms.nouns.length,
+      dictionaryAdded: {
+        keywords: validatedTerms.keywords.length - searchExtracted.keywords.length,
+        phrases: validatedTerms.phrases.length - searchExtracted.phrases.length,
+        verbs: validatedTerms.verbs.length - searchExtracted.verbs.length,
+        nouns: validatedTerms.nouns.length - searchExtracted.nouns.length
+      },
       combinedTotal: combinedKeywords.length + combinedPhrases.length + combinedVerbs.length + combinedNouns.length,
       hasContext: searchContext.length > 0
     });
   } else {
-    logger.debug(`⚠️ Using Local Terminology only (no search results):`, {
-      localKeywords: localExtracted.keywords.length,
-      localPhrases: localExtracted.phrases.length,
-      localVerbs: localExtracted.verbs.length,
-      localNouns: localExtracted.nouns.length
+    logger.debug(`⚠️ Using Dictionary only (no search results):`, {
+      validatedKeywords: validatedTerms.keywords.length,
+      validatedPhrases: validatedTerms.phrases.length,
+      validatedVerbs: validatedTerms.verbs.length,
+      validatedNouns: validatedTerms.nouns.length
     });
   }
 
