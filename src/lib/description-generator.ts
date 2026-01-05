@@ -1162,244 +1162,180 @@ export async function generateDescription(taskName: string, accessToken?: string
   const domain = domainResult.domain;
   const domainTerms = getDomainTerminology(domain);
 
-  // Try to get context from DuckDuckGo Instant Answer API
+  // INTEGRATED APPROACH: DuckDuckGo + Browser AI + Local Terminology work together
+  // 1. Always try DuckDuckGo search for real-world context
+  // 2. Extract terms from search results using browser AI
+  // 3. Also extract terms from local terminology (always, not just as fallback)
+  // 4. Combine both sets of terms to build the best description
+  
   let description = '';
   let confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   let usedSearchResults = false;
+  let searchContext = '';
+  let searchExtracted = {
+    keywords: [] as string[],
+    phrases: [] as string[],
+    verbs: [] as string[],
+    nouns: [] as string[],
+    pronouns: [] as string[],
+    context: ''
+  };
 
+  // STEP 1: Try DuckDuckGo search for real-world context
   try {
-    // Search DuckDuckGo Instant Answer API for domain-specific context (keywords, verbs, scenarios)
     logger.debug(`Starting DuckDuckGo search for task: "${taskName}", domain: ${domain}, hasAccessToken: ${!!accessToken}`);
     const searchResults = await searchDomainContext(taskName, domain, domainTerms, accessToken);
     logger.debug(`DuckDuckGo search completed: ${searchResults.length} total results for "${taskName}"`);
     
     if (searchResults.length > 0) {
       // Extract keywords from task name, find phrases using keywords, and build context from search results
-      const extracted = extractKeywordsAndVerbsFromSearch(taskName, searchResults, domainTerms);
-      
-      logger.debug(`DuckDuckGo search results: ${searchResults.length} results, extracted: ${extracted.keywords.length} keywords, ${extracted.phrases.length} phrases, ${extracted.verbs.length} verbs, ${extracted.nouns.length} nouns, context length: ${extracted.context.length}`, {
-        searchResultsPreview: searchResults.slice(0, 3).map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.searchResultPreviewLength)),
-        keywords: extracted.keywords,
-        phrases: extracted.phrases,
-        contextPreview: extracted.context.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextPreviewLength)
-      });
-      
-      // ALWAYS mark as using search results if we have any search results
-      // This ensures we prioritize search-based descriptions over local terminology
-      // Even if extracted terms are minimal, the search results provide valuable context
+      searchExtracted = extractKeywordsAndVerbsFromSearch(taskName, searchResults, domainTerms);
+      searchContext = searchExtracted.context;
       usedSearchResults = true;
       
-      // Build contextual description using search findings
-      // Always use search results if we have them, even if extracted terms are minimal
-      // The context from search results is valuable even without perfect term extraction
-      description = buildContextualDescription(
-        taskName,
-        extracted.keywords,
-        extracted.phrases,
-        extracted.verbs,
-        extracted.nouns,
-        extracted.pronouns,
-        extracted.context,
-        domain,
-        domainTerms
-      );
-      
-      // Calculate confidence for search-based results
-      // Boost confidence if we have context even if extracted terms are limited
-      const hasExtractedTerms = extracted.keywords.length > 0 || extracted.phrases.length > 0 || 
-                                extracted.verbs.length > 0 || extracted.nouns.length > 0;
-      const hasContext = extracted.context.length > 0;
-      // Boost confidence if we have meaningful context (even if shorter than minContextLength)
-      const contextBoost = extracted.context.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
-                          extracted.context.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextBoostThreshold ? 0.05 : 0; // Smaller boost for shorter but useful contexts
-      
-      // If buildContextualDescription returned empty or too short, try using search results directly
-      // Also check if description is too generic (like "Find code testing")
-      const isDescriptionTooShort = description && description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.descriptionTooShortThreshold;
-      const isDescriptionTooGeneric = description && (
-        description.toLowerCase().includes('find') && description.split(' ').length <= 3
-      );
-      
-      if ((!description || description.trim().length === 0 || isDescriptionTooShort || isDescriptionTooGeneric) && searchResults.length > 0) {
-        logger.debug(`buildContextualDescription returned empty/short/generic, using search results directly for "${taskName}"`, {
-          currentDescription: description,
-          isTooShort: isDescriptionTooShort,
-          isTooGeneric: isDescriptionTooGeneric,
-          searchResultsCount: searchResults.length
-        });
-        
-        // PRIORITY 1: Use the full context from search results (most comprehensive)
-        if (hasContext && extracted.context.length > DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextBoostThreshold) {
-          // Use a meaningful portion of context (first N chars or first sentence)
-          const contextPreviewLength = DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextPreviewLength;
-          const contextToUse = extracted.context.length > contextPreviewLength 
-            ? extracted.context.substring(0, contextPreviewLength).trim()
-            : extracted.context.trim();
-          
-          // Try to get first complete sentence
-          const firstSentence = contextToUse.split(/[.!?]+/)[0]?.trim();
-          const directDescription = (firstSentence && firstSentence.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength) 
-            ? firstSentence 
-            : contextToUse.substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSentenceLength, contextToUse.length)).trim();
-          
-          if (directDescription.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength) {
-            description = directDescription.charAt(0).toUpperCase() + directDescription.slice(1);
-            // Ensure it ends with punctuation
-            if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
-              description += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
-            }
-            logger.debug(`Using direct context from search results: "${description.substring(0, 50)}..."`);
-          }
-        }
-        
-        // PRIORITY 2: If still empty/short, use search results directly
-        if ((!description || description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength) && searchResults.length > 0) {
-          // Use first few search results directly as description
-          const directContext = searchResults
-            .slice(0, DESCRIPTION_GENERATION_CONFIG.maxDirectSearchResultsForContext)
-            .map(r => r && r.length > 0 ? r.trim() : '')
-            .filter(r => r.length > 0)
-            .join(' ')
-            .trim();
-          
-          if (directContext.length > 0) {
-            // Take first sentence or first meaningful chunk (at least N chars)
-            const firstSentence = directContext.split(/[.!?]+/)[0]?.trim();
-            const minLength = DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength;
-            const chunkToUse = (firstSentence && firstSentence.length >= minLength)
-              ? firstSentence
-              : directContext.substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSentenceLength, directContext.length)).trim();
-            
-            if (chunkToUse.length >= minLength) {
-              description = chunkToUse.charAt(0).toUpperCase() + chunkToUse.slice(1);
-              // Ensure it ends with punctuation
-              if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
-                description += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
-              }
-              logger.debug(`Using direct search results: "${description.substring(0, 50)}..."`);
-            }
-          }
-        }
-        
-        // PRIORITY 3: If still empty, rebuild with direct context (more lenient)
-        if ((!description || description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength) && searchResults.length > 0) {
-          const directContext = searchResults
-            .slice(0, DESCRIPTION_GENERATION_CONFIG.maxDirectSearchResultsForContext)
-            .map(r => r && r.length > 0 ? r.trim() : '')
-            .filter(r => r.length > 0)
-            .join(' ');
-          
-          if (directContext.length > 0) {
-            // Rebuild description with direct context from search results
-            description = buildContextualDescription(
-              taskName,
-              extracted.keywords,
-              extracted.phrases,
-              extracted.verbs,
-              extracted.nouns,
-              extracted.pronouns,
-              directContext,
-              domain,
-              domainTerms
-            );
-            logger.debug(`Rebuilt description with direct context: "${description.substring(0, 50)}..."`);
-          }
-        }
-      }
-      
-      // Calculate confidence for search-based results
-      confidence = Math.min(
-        DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence + 
-        (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
-        (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
-        (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
-        (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
-        (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight) +
-        (searchResults.length * DESCRIPTION_GENERATION_CONFIG.resultCountWeight) +
-        contextBoost,
-        DESCRIPTION_GENERATION_CONFIG.maxConfidence
-      );
-      
-        logger.debug(`Using search results: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasExtractedTerms=${hasExtractedTerms}, hasContext=${hasContext}, searchResults=${searchResults.length}, description preview="${description.substring(0, 50)}..."`, {
-          finalDescription: description,
-          searchResultsCount: searchResults.length,
-          contextLength: extracted.context.length
-        });
-        
-        // CRITICAL: If description is still empty or too short after all attempts, log warning
-        if (!description || description.trim().length === 0) {
-          logger.warn(`WARNING: Search results exist but description is empty for "${taskName}". Search results:`, searchResults.slice(0, 3));
-        } else if (description.trim().length < 20) {
-          logger.warn(`WARNING: Description is too short (${description.length} chars) for "${taskName}". Expected contextual description from search results.`, {
-            description,
-            searchResults: searchResults.slice(0, 3)
-          });
-        }
-        
-        // If search results exist but didn't produce a usable description, allow fallback to local terminology
-        // Check if description is empty, too short, or is the hardcoded fallback pattern
-        const isHardcodedFallback = description && description.trim().includes(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves);
-        const isDescriptionUnusable = !description || description.trim().length === 0 || 
-                                      description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength ||
-                                      isHardcodedFallback;
-        
-        if (isDescriptionUnusable) {
-          logger.debug(`Search results exist but didn't produce usable description for "${taskName}", allowing local terminology fallback`, {
-            description,
-            descriptionLength: description?.length || 0,
-            isHardcodedFallback
-          });
-          // Reset usedSearchResults to allow local terminology fallback
-          usedSearchResults = false;
-        }
+      logger.debug(`DuckDuckGo search results: ${searchResults.length} results, extracted: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns, context length: ${searchExtracted.context.length}`, {
+        searchResultsPreview: searchResults.slice(0, 3).map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.searchResultPreviewLength)),
+        keywords: searchExtracted.keywords,
+        phrases: searchExtracted.phrases,
+        contextPreview: searchExtracted.context.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextPreviewLength)
+      });
     } else {
-      logger.debug(`No search results for "${taskName}", will use fallback`);
+      logger.debug(`No search results for "${taskName}", will combine with local terminology`);
     }
   } catch (error) {
-    logger.warn('DuckDuckGo Instant Answer API error, falling back to local terminology:', error);
-    // Reset usedSearchResults on error to allow fallback
-    usedSearchResults = false;
+    logger.warn('DuckDuckGo Instant Answer API error, will use local terminology:', error);
+    // Continue with local terminology even if search fails
   }
 
-  // Fallback to local terminology ONLY if Instant Answer API didn't provide results
-  // OR if search results exist but didn't produce a usable description
-  // Don't fallback if we successfully used search results, even if description is minimal
-  if (!usedSearchResults) {
-    // Extract terms from task name using domain terminology
-    const extracted = extractTermsFromTaskName(taskName, domainTerms);
-    
-    // Build description using domain-specific terminology
-    const fallbackDescription = buildContextualDescription(
-      taskName,
-      extracted.keywords,
-      extracted.phrases,
-      extracted.verbs,
-      extracted.nouns,
-      extracted.pronouns,
-      '', // No context from search
-      domain,
-      domainTerms
-    );
+  // STEP 2: Always extract terms from local terminology (not just as fallback)
+  // This ensures we combine DuckDuckGo search results with local terminology
+  const localExtracted = extractTermsFromTaskName(taskName, domainTerms);
+  
+  logger.debug(`Local terminology extracted: ${localExtracted.keywords.length} keywords, ${localExtracted.phrases.length} phrases, ${localExtracted.verbs.length} verbs, ${localExtracted.nouns.length} nouns`, {
+    keywords: localExtracted.keywords,
+    phrases: localExtracted.phrases,
+    verbs: localExtracted.verbs
+  });
 
-    // Only use fallback if we got a valid description, otherwise keep the search-based one
-    if (fallbackDescription && fallbackDescription.trim().length > 0) {
-      description = fallbackDescription;
+  // STEP 3: Combine search-extracted terms with local terminology terms
+  // Merge both sources, prioritizing search results but supplementing with local terminology
+  const combinedKeywords = Array.from(new Set([
+    ...searchExtracted.keywords,  // Search results first (real-world context)
+    ...localExtracted.keywords.filter(kw => !searchExtracted.keywords.some(sk => sk.toLowerCase() === kw.toLowerCase())) // Add local terms not in search
+  ]));
+  
+  const combinedPhrases = Array.from(new Set([
+    ...searchExtracted.phrases,  // Search results first
+    ...localExtracted.phrases.filter(p => !searchExtracted.phrases.some(sp => sp.toLowerCase() === p.toLowerCase()))
+  ]));
+  
+  const combinedVerbs = Array.from(new Set([
+    ...searchExtracted.verbs,  // Search results first
+    ...localExtracted.verbs.filter(v => !searchExtracted.verbs.some(sv => sv.toLowerCase() === v.toLowerCase()))
+  ]));
+  
+  const combinedNouns = Array.from(new Set([
+    ...searchExtracted.nouns,  // Search results first
+    ...localExtracted.nouns.filter(n => !searchExtracted.nouns.some(sn => sn.toLowerCase() === n.toLowerCase()))
+  ]));
+  
+  const combinedPronouns = Array.from(new Set([
+    ...searchExtracted.pronouns,
+    ...localExtracted.pronouns.filter(p => !searchExtracted.pronouns.some(sp => sp.toLowerCase() === p.toLowerCase()))
+  ]));
+
+  logger.debug(`Combined terms: ${combinedKeywords.length} keywords, ${combinedPhrases.length} phrases, ${combinedVerbs.length} verbs, ${combinedNouns.length} nouns`, {
+    combinedKeywords: combinedKeywords.slice(0, 5),
+    combinedPhrases: combinedPhrases.slice(0, 3),
+    hasSearchContext: searchContext.length > 0
+  });
+
+  // STEP 4: Build description using combined terms from both sources
+  description = buildContextualDescription(
+    taskName,
+    combinedKeywords,
+    combinedPhrases,
+    combinedVerbs,
+    combinedNouns,
+    combinedPronouns,
+    searchContext, // Use search context when available
+    domain,
+    domainTerms
+  );
+
+  // STEP 5: If description is still empty/short, try direct approaches
+  const isDescriptionTooShort = description && description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.descriptionTooShortThreshold;
+  const isDescriptionTooGeneric = description && (
+    description.toLowerCase().includes('find') && description.split(' ').length <= 3
+  );
+
+  if ((!description || description.trim().length === 0 || isDescriptionTooShort || isDescriptionTooGeneric)) {
+    // Try using search context directly if available
+    if (searchContext && searchContext.length > DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextBoostThreshold) {
+      const contextPreviewLength = DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextPreviewLength;
+      const contextToUse = searchContext.length > contextPreviewLength 
+        ? searchContext.substring(0, contextPreviewLength).trim()
+        : searchContext.trim();
       
-      // Calculate confidence based on keyword/verb matches
-      confidence = Math.min(
-        DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
-        (extracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight) + 
-        (extracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
-        (extracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight) +
-        (extracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) +
-        (extracted.pronouns.length * DESCRIPTION_GENERATION_CONFIG.pronounWeight),
-        DESCRIPTION_GENERATION_CONFIG.fallbackMaxConfidence
-      );
-    } else if (!description || description.trim().length === 0) {
-      // Ultimate fallback: create a basic description from task name
-      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
-      confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
+      const firstSentence = contextToUse.split(/[.!?]+/)[0]?.trim();
+      const directDescription = (firstSentence && firstSentence.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength) 
+        ? firstSentence 
+        : contextToUse.substring(0, Math.min(DESCRIPTION_GENERATION_CONFIG.maxSentenceLength, contextToUse.length)).trim();
+      
+      if (directDescription.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.directContextMinLength) {
+        description = directDescription.charAt(0).toUpperCase() + directDescription.slice(1);
+        if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
+          description += DESCRIPTION_GENERATION_CONFIG.descriptionSeparators.period.trim();
+        }
+        logger.debug(`Using direct search context: "${description.substring(0, 50)}..."`);
+      }
     }
+  }
+
+  // STEP 6: Calculate confidence based on combined sources
+  const hasSearchResults = usedSearchResults && searchContext.length > 0;
+  const hasSearchTerms = searchExtracted.keywords.length > 0 || searchExtracted.phrases.length > 0 || 
+                        searchExtracted.verbs.length > 0 || searchExtracted.nouns.length > 0;
+  const hasLocalTerms = localExtracted.keywords.length > 0 || localExtracted.phrases.length > 0 || 
+                       localExtracted.verbs.length > 0 || localExtracted.nouns.length > 0;
+  
+  // Base confidence: higher if we have search results, lower if only local
+  const baseConf = hasSearchResults ? DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence : DESCRIPTION_GENERATION_CONFIG.baseConfidence;
+  
+  // Boost for search terms (real-world context is valuable)
+  const searchBoost = hasSearchTerms ? 
+    (searchExtracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
+    (searchExtracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+    (searchExtracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
+    (searchExtracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) : 0;
+  
+  // Boost for local terms (domain-specific knowledge)
+  const localBoost = hasLocalTerms ?
+    (localExtracted.keywords.length * DESCRIPTION_GENERATION_CONFIG.fallbackKeywordWeight * 0.5) + // Weighted less than search
+    (localExtracted.phrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight * 0.5) +
+    (localExtracted.verbs.length * DESCRIPTION_GENERATION_CONFIG.fallbackVerbWeight * 0.5) +
+    (localExtracted.nouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight * 0.5) : 0;
+  
+  // Context boost if we have meaningful search context
+  const contextBoost = searchContext.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? 0.1 : 
+                      searchContext.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextBoostThreshold ? 0.05 : 0;
+  
+  confidence = Math.min(
+    baseConf + searchBoost + localBoost + contextBoost,
+    DESCRIPTION_GENERATION_CONFIG.maxConfidence
+  );
+
+  logger.debug(`Combined approach: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasSearchResults=${hasSearchResults}, hasSearchTerms=${hasSearchTerms}, hasLocalTerms=${hasLocalTerms}, searchContext=${searchContext.length}`, {
+    finalDescription: description.substring(0, 100),
+    searchTermsCount: searchExtracted.keywords.length + searchExtracted.phrases.length + searchExtracted.verbs.length,
+    localTermsCount: localExtracted.keywords.length + localExtracted.phrases.length + localExtracted.verbs.length
+  });
+
+  // STEP 7: Ultimate fallback if still empty
+  if (!description || description.trim().length === 0) {
+    logger.warn(`Combined approach produced empty description for "${taskName}", using ultimate fallback`);
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
+    confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   }
 
   // Ensure we always return a non-empty description
