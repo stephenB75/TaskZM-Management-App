@@ -392,7 +392,14 @@ export function extractTermsFromTaskNameWithBrowserAI(
   });
   
   // STEP 4: Find matching domain terminology terms that relate to task name
+  // LOCAL TERMINOLOGY: Use domain-specific phrases, verbs, and nouns to enhance extracted terms
+  logger.debug(`Using Local Terminology (domain: ${domainTerms ? 'loaded' : 'missing'}) to enhance Browser AI extracted terms`);
+  
   const wordBoundaryRegex = (term: string) => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+  
+  let matchedDomainPhrases = 0;
+  let matchedDomainVerbs = 0;
+  let matchedDomainNouns = 0;
   
   // Match domain phrases that contain our keywords (improved matching)
   domainTerms.phrases.forEach(phrase => {
@@ -417,6 +424,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
     if (containsKeyword && (exactMatch || hasOverlappingWords) && 
         !finalPhrases.some(p => p.toLowerCase() === phraseLower)) {
       finalPhrases.push(phrase);
+      matchedDomainPhrases++;
     }
   });
   
@@ -439,6 +447,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
     if (verbPatterns.some(pattern => pattern.test(taskNameLower)) && relatesToKeyword &&
         !foundVerbs.some(v => v.toLowerCase() === verbLower)) {
       foundVerbs.push(verb);
+      matchedDomainVerbs++;
     }
   });
   
@@ -459,13 +468,17 @@ export function extractTermsFromTaskNameWithBrowserAI(
     if (nounPatterns.some(pattern => pattern.test(taskNameLower)) && relatesToKeyword &&
         !foundNouns.some(n => n.toLowerCase() === nounLower)) {
       foundNouns.push(noun);
+      matchedDomainNouns++;
     }
   });
   
   // STEP 5: Use task name as context (no external search results)
   const taskContext = taskName.trim();
   
-  return {
+  // Log Local Terminology contribution
+  logger.debug(`Local Terminology matched: ${matchedDomainPhrases} phrases, ${matchedDomainVerbs} verbs, ${matchedDomainNouns} nouns from domain dictionary`);
+  
+  const browserAIResults = {
     keywords: taskKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
     phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
     verbs: foundVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
@@ -473,6 +486,18 @@ export function extractTermsFromTaskNameWithBrowserAI(
     pronouns: [] as string[], // Pronouns not typically extracted from task name alone
     context: taskContext,
   };
+  
+  logger.debug(`✅ Browser AI + Local Terminology results: ${browserAIResults.keywords.length} keywords, ${browserAIResults.phrases.length} phrases (${matchedDomainPhrases} from domain), ${browserAIResults.verbs.length} verbs (${matchedDomainVerbs} from domain), ${browserAIResults.nouns.length} nouns (${matchedDomainNouns} from domain)`, {
+    keywords: browserAIResults.keywords,
+    phrases: browserAIResults.phrases,
+    verbs: browserAIResults.verbs,
+    nouns: browserAIResults.nouns,
+    domainPhrasesMatched: matchedDomainPhrases,
+    domainVerbsMatched: matchedDomainVerbs,
+    domainNounsMatched: matchedDomainNouns,
+  });
+  
+  return browserAIResults;
 }
 
 /**
@@ -1474,12 +1499,19 @@ export async function generateDescription(taskName: string, accessToken?: string
   searchContext = searchExtracted.context; // Task name itself as context
   usedSearchResults = false; // Not using external search, using Browser AI only
   
-  logger.debug(`Browser AI extraction: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns`, {
+  logger.debug(`✅ Browser AI extraction COMPLETE: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns`, {
     keywords: searchExtracted.keywords,
     phrases: searchExtracted.phrases,
     verbs: searchExtracted.verbs,
-    nouns: searchExtracted.nouns
+    nouns: searchExtracted.nouns,
+    hasResults: searchExtracted.keywords.length > 0 || searchExtracted.phrases.length > 0 || searchExtracted.verbs.length > 0 || searchExtracted.nouns.length > 0
   });
+  
+  // Verify results are being sent
+  if (searchExtracted.keywords.length === 0 && searchExtracted.phrases.length === 0 && 
+      searchExtracted.verbs.length === 0 && searchExtracted.nouns.length === 0) {
+    logger.warn(`⚠️ WARNING: Browser AI extraction returned NO results for task: "${taskName}"`);
+  }
 
   // STEP 2: Use Browser AI-extracted terms as PRIMARY source
   // Local Terminology is used as a cache/dictionary to enhance terms
@@ -1496,11 +1528,13 @@ export async function generateDescription(taskName: string, accessToken?: string
   finalNouns = searchExtracted.nouns;
   finalPronouns = searchExtracted.pronouns;
   
-  logger.debug(`Using Browser AI as PRIMARY source: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
+  logger.debug(`✅ Using Browser AI + Local Terminology as PRIMARY source: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
     keywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
     phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
     verbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
-    nouns: finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging)
+    nouns: finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging),
+    hasResults: finalKeywords.length > 0 || finalPhrases.length > 0 || finalVerbs.length > 0 || finalNouns.length > 0,
+    domainTermsLoaded: !!domainTerms && (domainTerms.phrases.length > 0 || domainTerms.verbs.length > 0 || domainTerms.nouns.length > 0)
   });
 
   // STEP 3: Build description using Browser AI-extracted terms
