@@ -40,7 +40,7 @@ import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
-import { NAV_BAR_BOTTOM_PADDING_MOBILE } from "../lib/layout-constants";
+import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM } from "../lib/layout-constants";
 import type { Task } from "../types";
 
 interface MonthCalendarViewProps {
@@ -829,7 +829,7 @@ export function MonthCalendarView({
                     "grid grid-cols-7 gap-0 md:gap-1.5 w-full"
                   )}
                   style={{
-                    paddingBottom: '2rem', // Small visual spacing - nav bar clearance handled by spacer in App.tsx
+                    paddingBottom: MOBILE_PADDING_BOTTOM, // Small visual spacing - nav bar clearance handled by spacer in App.tsx
                   }}
                 >
               {calendarDays.map((dayData, index) => {
@@ -877,7 +877,7 @@ export function MonthCalendarView({
                   )}
                   style={{
                     // Adjust padding when scaled to maintain proper spacing
-                      paddingBottom: expandedDays.size > 0 ? '2rem' : '1rem',
+                      paddingBottom: expandedDays.size > 0 ? MOBILE_PADDING_BOTTOM : PANEL_PADDING_BOTTOM,
                   }}
                 >
               {calendarDays.map((dayData, index) => {

@@ -467,7 +467,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             paddingRight: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
             paddingTop: SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
             paddingBottom: isMobile
-              ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + 3rem)` // Full nav bar height + safe area + extra 48px to ensure last item is fully visible and scrollable
+              ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer to ensure last item is fully visible and scrollable
               : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
           }}
         >
