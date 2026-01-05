@@ -22,7 +22,7 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
@@ -649,7 +649,7 @@ export function TodayAgendaView({
                   ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing
                   : DESKTOP_PADDING_TOP,
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                  ? MOBILE_PADDING_BOTTOM // Small visual spacing - nav bar clearance handled by spacer in App.tsx
+                  ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer
                   : undefined,
                 // Ensure transparent background to show parent gradient
                 backgroundColor: 'transparent',
@@ -1108,7 +1108,7 @@ export function TodayAgendaView({
               ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` // Add spacing between header and first item on mobile
               : DESKTOP_PADDING_TOP, // 48px on desktop for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-              ? MOBILE_PADDING_BOTTOM // Small visual spacing - nav bar clearance handled by spacer in App.tsx
+              ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer
               : undefined,
             // Ensure transparent background to show parent gradient
             backgroundColor: 'transparent',

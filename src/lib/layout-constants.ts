@@ -165,6 +165,8 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
 export const NAV_BAR_SPACER_HEIGHT = 65; // Spacer height - optimized to match actual visible nav bar content area (reduces excessive spacing)
 export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`; // 65px + safe area - use this constant instead of hardcoding
+export const NAV_BAR_SCROLL_BUFFER = 16; // Extra buffer padding (1rem = 16px) to ensure last item is fully visible when scrolling past nav bar
+export const NAV_BAR_SCROLL_BUFFER_REM = '1rem'; // Extra buffer padding in rem units for CSS calc
 export const NAV_BAR_PADDING_TOP = '0.5rem'; // Balanced top padding
 export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
 export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Button top padding

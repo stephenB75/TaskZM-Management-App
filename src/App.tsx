@@ -48,7 +48,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
@@ -756,8 +756,9 @@ function AppContent() {
                   ? MOBILE_SCROLL_CONTAINER_PADDING_TOP
                   : undefined,
                 // Add padding-bottom on mobile to ensure content can scroll past nav bar
+                // Use full nav bar height + safe area + extra buffer to ensure last item is fully visible
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                  ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
+                  ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`
                   : undefined,
                 // Background gradient fills the container and extends with content - extends to nav bar
                 backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
