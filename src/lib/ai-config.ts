@@ -249,6 +249,11 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   // Punctuation patterns
   sentenceEndPattern: /[.!?]$/, // Pattern to check if sentence ends with punctuation
   whitespacePattern: /\s+/g, // Pattern to match multiple whitespace
+  // Description source labels (for UI display)
+  sourceLabels: {
+    browserAI: 'browser AI',
+    localTerminology: 'local terminology',
+  },
 } as const;
 
 /**

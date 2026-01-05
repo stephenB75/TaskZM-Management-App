@@ -1,13 +1,14 @@
 /**
  * Description Generator
  * 
- * Generates task descriptions based on task name using DuckDuckGo Instant Answer API + browser AI
+ * Generates task descriptions based on task name using Browser AI
  * with domain-specific terminology, keywords, verbs, and action words.
- * Uses local terminology database for business, home, personal, and world scenarios as fallback.
+ * Browser AI extracts terms directly from the task name.
+ * Local Terminology acts as a cache/dictionary to enhance extracted terms.
  */
 
 import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
-import { DUCKDUCKGO_CONFIG, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
+import { DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
 
@@ -15,243 +16,6 @@ export interface GeneratedDescription {
   description: string;
   domain: Domain;
   confidence: number;
-}
-
-/**
- * Search DuckDuckGo Instant Answer API for context about the task
- * Uses Supabase Edge Function to proxy requests to DuckDuckGo's Instant Answer API (bypasses CORS)
- */
-async function searchDuckDuckGoInstantAnswer(query: string, accessToken?: string | null): Promise<string[]> {
-  try {
-    // Import project info dynamically to avoid circular dependencies
-    const { projectId } = await import('../utils/supabase/info');
-    const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
-    
-    const searchQuery = encodeURIComponent(query);
-    const proxyUrl = `${BASE_URL}/duckduckgo/search?q=${searchQuery}`;
-    
-    // Log request details for debugging
-    logger.debug(`DuckDuckGo search request:`, { 
-      query, 
-      proxyUrl, 
-      hasAccessToken: !!accessToken,
-      timeout: DESCRIPTION_GENERATION_CONFIG.searchTimeout 
-    });
-    
-    // Create abort controller for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), DESCRIPTION_GENERATION_CONFIG.searchTimeout);
-    
-    try {
-      // Fetch from Supabase Edge Function (which proxies to DuckDuckGo)
-      const response = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
-        },
-        signal: controller.signal,
-      });
-      
-      logger.debug(`DuckDuckGo proxy response status for "${query}":`, { 
-        status: response.status, 
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Log response structure for debugging
-        logger.debug(`DuckDuckGo proxy response for "${query}":`, { 
-          hasSuccess: !!data.success, 
-          hasResults: !!data.results, 
-          resultsType: Array.isArray(data.results) ? 'array' : typeof data.results,
-          resultsLength: Array.isArray(data.results) ? data.results.length : 0,
-          responseKeys: Object.keys(data),
-          resultsPreview: Array.isArray(data.results) ? data.results.slice(0, 2) : 'not an array'
-        });
-        
-        if (data.success && Array.isArray(data.results)) {
-          const results = data.results.filter((r: any): r is string => typeof r === 'string' && r.length > 0);
-          
-          logger.debug(`DuckDuckGo proxy filtered results for "${query}": ${results.length} valid results (from ${data.results.length} total)`, {
-            results: results.slice(0, 3).map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.searchResultPreviewLength))
-          });
-          
-          // Use results even if they're below minSearchResults threshold
-          // This ensures we use search results when available, even if minimal
-          if (results.length > 0) {
-            logger.debug(`DuckDuckGo Instant Answer API successful (via Supabase proxy): ${results.length} results for "${query}"`);
-            return results;
-          } else {
-            logger.warn(`DuckDuckGo proxy returned empty results after filtering for "${query}". Raw results:`, data.results);
-          }
-        } else {
-          logger.warn(`DuckDuckGo proxy response invalid structure for "${query}":`, { 
-            success: data.success, 
-            hasResults: !!data.results, 
-            resultsIsArray: Array.isArray(data.results),
-            dataKeys: Object.keys(data),
-            data 
-          });
-        }
-      } else {
-        // If proxy returns error, log it but don't throw - fall back to local terminology
-        const errorData = await response.json().catch(() => ({}));
-        logger.warn(`DuckDuckGo proxy API error for "${query}":`, { 
-          status: response.status, 
-          statusText: response.statusText,
-          error: errorData 
-        });
-      }
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error && error.name === 'AbortError') {
-        logger.warn(`DuckDuckGo proxy API timeout for "${query}" (${DESCRIPTION_GENERATION_CONFIG.searchTimeout}ms)`);
-      } else {
-        logger.warn(`DuckDuckGo proxy API failed for "${query}":`, error);
-      }
-    }
-
-    // Return empty array if search failed (will fall back to local terminology)
-    return [];
-  } catch (error) {
-    logger.warn(`DuckDuckGo proxy API error for "${query}":`, error);
-    return [];
-  }
-}
-
-/**
- * Search DuckDuckGo Instant Answer API for domain-specific context
- * Creates multiple search queries to gather comprehensive context
- */
-async function searchDomainContext(
-  taskName: string,
-  domain: Domain,
-  domainTerms: ReturnType<typeof getDomainTerminology>,
-  accessToken?: string | null
-): Promise<string[]> {
-  const allResults: string[] = [];
-  
-  // Extract key terms from task name
-  const taskWords = taskName.toLowerCase().split(/\s+/).filter(w => w.length > DESCRIPTION_GENERATION_CONFIG.minWordLength);
-  
-  // Build domain-specific search queries
-  const searchQueries: string[] = [];
-  
-  // 1. Main task query
-  searchQueries.push(taskName);
-  
-  // 2. Domain-specific queries with phrases, verbs (action words), nouns, and pronouns
-  // Use domain terms that are relevant to the domain, not just ones matching task name
-  // This provides better context by searching for domain-specific concepts related to the task
-  const topKeywords = domainTerms.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopKeywords * DESCRIPTION_GENERATION_CONFIG.topTermsMultiplier);
-  const topPhrases = domainTerms.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopPhrases * DESCRIPTION_GENERATION_CONFIG.topTermsMultiplier);
-  const topVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopVerbs * DESCRIPTION_GENERATION_CONFIG.topTermsMultiplier);
-  const topNouns = domainTerms.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxTopNouns * DESCRIPTION_GENERATION_CONFIG.topTermsMultiplier);
-  
-  // Prioritize domain terms that relate to task name, but also include general domain terms
-  // This ensures we get both task-specific and domain-general context
-  const relevantPhrases = topPhrases.filter(phrase => {
-    const phraseLower = phrase.toLowerCase();
-    return taskWords.some(word => phraseLower.includes(word) || word.includes(phraseLower)) ||
-           taskName.toLowerCase().includes(phraseLower);
-  });
-  const relevantVerbs = topVerbs.filter(v => {
-    const vLower = v.toLowerCase();
-    return taskWords.some(word => vLower.includes(word) || word.includes(vLower)) ||
-           taskName.toLowerCase().includes(vLower);
-  });
-  const relevantNouns = topNouns.filter(noun => {
-    const nounLower = noun.toLowerCase();
-    return taskWords.some(word => nounLower.includes(word) || word.includes(nounLower)) ||
-           taskName.toLowerCase().includes(nounLower);
-  });
-  const relevantKeywords = topKeywords.filter(kw => {
-    const kwLower = kw.toLowerCase();
-    return taskWords.some(word => kwLower.includes(word) || word.includes(kwLower)) ||
-           taskName.toLowerCase().includes(kwLower);
-  });
-  
-  // Add queries with phrases (action phrases) - prioritize relevant ones
-  if (relevantPhrases.length > 0) {
-    searchQueries.push(`${taskName} ${relevantPhrases[0]}`);
-    if (relevantPhrases.length > 1) {
-      searchQueries.push(`${taskName} ${relevantPhrases[1]}`);
-    }
-  } else if (topPhrases.length > 0) {
-    // Fallback to general domain phrases if no relevant ones found
-    searchQueries.push(`${taskName} ${topPhrases[0]}`);
-  }
-  
-  // Add queries with verbs (action words) - prioritize relevant ones
-  if (relevantVerbs.length > 0) {
-    searchQueries.push(`${relevantVerbs[0]} ${taskName}`);
-    if (relevantVerbs.length > 1) {
-      searchQueries.push(`${taskName} ${relevantVerbs[1]}`);
-    }
-  } else if (topVerbs.length > 0) {
-    // Fallback to general domain verbs if no relevant ones found
-    searchQueries.push(`${topVerbs[0]} ${taskName}`);
-  }
-  
-  // Add queries with nouns - prioritize relevant ones
-  if (relevantNouns.length > 0) {
-    searchQueries.push(`${taskName} ${relevantNouns[0]}`);
-  } else if (topNouns.length > 0) {
-    // Fallback to general domain nouns if no relevant ones found
-    searchQueries.push(`${taskName} ${topNouns[0]}`);
-  }
-  
-  // Add queries with keywords - prioritize relevant ones
-  if (relevantKeywords.length > 0) {
-    searchQueries.push(`${taskName} ${relevantKeywords[0]}`);
-  } else if (topKeywords.length > 0) {
-    // Fallback to general domain keywords if no relevant ones found
-    searchQueries.push(`${taskName} ${topKeywords[0]}`);
-  }
-  
-  // 3. Domain context query
-  searchQueries.push(`${taskName} ${DESCRIPTION_GENERATION_CONFIG.domainContextModifiers[domain]}`);
-  
-  // Search all queries in parallel (with limit to avoid too many requests)
-  const queriesToSearch = searchQueries.slice(0, DESCRIPTION_GENERATION_CONFIG.maxQueriesPerSearch);
-  
-  try {
-    const searchPromises = queriesToSearch.map(query => searchDuckDuckGoInstantAnswer(query, accessToken));
-    const resultsArray = await Promise.allSettled(searchPromises);
-    
-    logger.debug(`DuckDuckGo searchDomainContext: ${resultsArray.length} queries executed for "${taskName}"`);
-    
-    resultsArray.forEach((result, index) => {
-      if (result.status === 'fulfilled' && result.value.length > 0) {
-        allResults.push(...result.value);
-        logger.debug(`DuckDuckGo Instant Answer API search ${index + 1} successful: "${queriesToSearch[index]}" - ${result.value.length} results`, {
-          resultsPreview: result.value.slice(0, 2).map((r: string) => r.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.searchResultPreviewLength))
-        });
-      } else if (result.status === 'rejected') {
-        logger.warn(`DuckDuckGo Instant Answer API search ${index + 1} failed: "${queriesToSearch[index]}"`, result.reason);
-      } else if (result.status === 'fulfilled' && result.value.length === 0) {
-        logger.warn(`DuckDuckGo Instant Answer API search ${index + 1} returned no results: "${queriesToSearch[index]}"`);
-      }
-    });
-    
-    logger.debug(`DuckDuckGo searchDomainContext total results for "${taskName}": ${allResults.length} results from ${queriesToSearch.length} queries`, {
-      uniqueResults: [...new Set(allResults)].length,
-      resultsPreview: allResults.slice(0, 3).map(r => r.substring(0, DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.searchResultPreviewLength))
-    });
-    
-    // Remove duplicates and limit results
-    const uniqueResults = Array.from(new Set(allResults));
-    return uniqueResults.slice(0, DUCKDUCKGO_CONFIG.maxResults * DESCRIPTION_GENERATION_CONFIG.resultsMultiplier);
-  } catch (error) {
-    logger.debug('Domain context search error:', error);
-    return [];
-  }
 }
 
 /**
@@ -880,7 +644,7 @@ function validateAndEnhanceTermsWithDictionary(
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/).filter(w => w.length > DESCRIPTION_GENERATION_CONFIG.minWordLength);
   
-  // Start with Browser AI-extracted terms (from DuckDuckGo)
+  // Start with Browser AI-extracted terms
   const validatedKeywords = [...extracted.keywords];
   const validatedPhrases = [...extracted.phrases];
   const validatedVerbs = [...extracted.verbs];
@@ -953,7 +717,7 @@ function validateAndEnhanceTermsWithDictionary(
   });
   
   // FILL GAPS: If search results are minimal, add relevant terms from dictionary based on task name
-  // This ensures we have domain-appropriate terms even when DuckDuckGo returns sparse results
+  // This ensures we have domain-appropriate terms from Browser AI extraction
   if (extracted.keywords.length === 0 || extracted.phrases.length === 0) {
     // Find domain phrases that match task name
     domainTerms.phrases.forEach(phrase => {
@@ -1641,15 +1405,13 @@ export async function generateDescription(taskName: string, accessToken?: string
   const domain = domainResult.domain;
   const domainTerms = getDomainTerminology(domain);
 
-  // INTEGRATED APPROACH: DuckDuckGo + Browser AI + Local Terminology Dictionary
-  // 1. DuckDuckGo: Provides real-world search results
-  // 2. Browser AI: Extracts terms and creates context from search results
-  // 3. Local Terminology: Acts as DICTIONARY/VALIDATOR to:
-  //    - Validate extracted terms are domain-appropriate
-  //    - Add synonyms and related terms from domain dictionary
-  //    - Enhance terms with domain-specific context
-  //    - Fill gaps when search results are minimal
-  // Browser AI does the primary extraction, Local Terminology validates/enhances
+  // BROWSER AI APPROACH: Browser AI + Local Terminology Dictionary
+  // 1. Browser AI: Extracts keywords, phrases, verbs, and nouns directly from task name
+  // 2. Local Terminology: Acts as a cache/dictionary to:
+  //    - Enhance extracted terms with domain-specific context
+  //    - Provide contextual phrases that explain tasks
+  //    - Add domain-appropriate verbs and nouns
+  //    - Build complete contextual sentences
   
   let description = '';
   let confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
@@ -1664,7 +1426,7 @@ export async function generateDescription(taskName: string, accessToken?: string
     context: ''
   };
 
-  // STEP 1: Use Browser AI to extract terms directly from task name (no DuckDuckGo needed)
+  // STEP 1: Use Browser AI to extract terms directly from task name
   // Browser AI analyzes user input and extracts keywords, phrases, verbs, nouns
   // Local Terminology acts as a cache/dictionary to enhance extracted terms
   logger.debug(`Using Browser AI to extract terms from task name: "${taskName}", domain: ${domain}`);
@@ -1808,10 +1570,10 @@ export async function generateDescription(taskName: string, accessToken?: string
     contextLength: searchContext.length
   });
 
-  // STEP 5: Ultimate fallback if still empty (only if both search and cache failed)
+  // STEP 5: Ultimate fallback if still empty (only if Browser AI and cache failed)
   if (!description || description.trim().length === 0) {
     // Ultimate fallback: use hardcoded template (only when everything else fails)
-    logger.warn(`Both DuckDuckGo + Browser AI and local terminology cache failed for "${taskName}", using ultimate fallback`);
+    logger.warn(`Browser AI and local terminology cache failed for "${taskName}", using ultimate fallback`);
       description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
       confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   }

@@ -77,7 +77,7 @@ import { useAI } from "../contexts/AIContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
-import { TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
+import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
@@ -86,7 +86,7 @@ import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription } from "../lib/description-generator";
-import { DUCKDUCKGO_CONFIG, DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
+import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import type {
   Task,
@@ -1480,7 +1480,7 @@ export function TaskDialog({
                 
                 toast.error('Daily limit exceeded', {
                   description: message,
-                  duration: 5000,
+                  duration: TOAST_DURATION_LONG_MS,
                 });
                 return;
               }
@@ -1495,7 +1495,7 @@ export function TaskDialog({
               
               toast.error('Daily limit exceeded', {
                 description: message,
-                duration: 5000,
+                duration: TOAST_DURATION_LONG_MS,
               });
               return;
             }
@@ -1931,9 +1931,9 @@ export function TaskDialog({
                                 if (generated.description && generated.description.trim().length > 0) {
                                   // Replace existing description with regenerated one
                                   setDescription(generated.description);
-                                  const source = generated.confidence >= DUCKDUCKGO_CONFIG.highConfidenceThreshold 
-                                    ? 'DuckDuckGo Instant Answer API + browser AI' 
-                                    : 'local terminology';
+                                  const source = generated.confidence >= DESCRIPTION_GENERATION_CONFIG.highConfidenceThreshold 
+                                    ? DESCRIPTION_GENERATION_CONFIG.sourceLabels.browserAI 
+                                    : DESCRIPTION_GENERATION_CONFIG.sourceLabels.localTerminology;
                                   toast.success('Description regenerated', {
                                     description: `Regenerated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,
                                   });
@@ -2008,9 +2008,9 @@ export function TaskDialog({
                                   });
                                 }, 100);
                                 
-                                const source = generated.confidence >= DUCKDUCKGO_CONFIG.highConfidenceThreshold 
-                                  ? 'DuckDuckGo search + browser AI' 
-                                  : 'local terminology';
+                                const source = generated.confidence >= DESCRIPTION_GENERATION_CONFIG.highConfidenceThreshold 
+                                  ? DESCRIPTION_GENERATION_CONFIG.sourceLabels.browserAI 
+                                  : DESCRIPTION_GENERATION_CONFIG.sourceLabels.localTerminology;
                                 toast.success('AI description generated', {
                                   description: `Generated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,
                                 });
