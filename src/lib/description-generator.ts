@@ -1154,143 +1154,33 @@ function buildContextualDescription(
     // ENHANCED PRIORITY: Use combined terms from all sources to build richer descriptions
     // Priority: Use domain terminology phrases to construct natural sentences
     if (!description || description.trim().length === 0) {
-    
-    // First, try to use domain terminology phrases that match the task
-    // These are the most reliable source of complete, natural phrases
-    const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
-    const matchingDomainPhrases = domainTerms.phrases.filter(p => {
-      const pLower = p.toLowerCase();
-      // Check if phrase contains multiple keywords (more relevant)
-      const matchingKeywords = taskKeywordsLower.filter(kw => pLower.includes(kw)).length;
-      // Prefer phrases with 2+ keywords, or longer phrases with at least 1 keyword
-      return matchingKeywords >= DESCRIPTION_GENERATION_CONFIG.domainPhraseMatching.minKeywordsForMatch || 
-             (matchingKeywords >= 1 && pLower.length > DESCRIPTION_GENERATION_CONFIG.domainPhraseMatching.minLengthForSingleKeyword);
-    });
-    
-    if (matchingDomainPhrases.length > 0) {
-      // Sort by: 1) number of matching keywords, 2) length (longer = more complete)
-      const sortedPhrases = matchingDomainPhrases.sort((a, b) => {
-        const aKeywords = taskKeywordsLower.filter(kw => a.toLowerCase().includes(kw)).length;
-        const bKeywords = taskKeywordsLower.filter(kw => b.toLowerCase().includes(kw)).length;
-        if (bKeywords !== aKeywords) {
-          return bKeywords - aKeywords;
-        }
-        return b.length - a.length;
-      });
-      
-      const bestPhrase = sortedPhrases[0];
-      
-      // ENHANCED: Use verbs from search results or task name instead of hardcoded action words
-      // Find action verb from combined verbs (search results + dictionary)
-      let actionVerb = '';
-      if (verbs.length > 0) {
-        const actionVerbs = verbs.filter(v => {
-          const vLower = v.toLowerCase();
-          return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
-            vLower.includes(action) || action.includes(vLower)
-          ) || keywords.some(kw => vLower.includes(kw.toLowerCase()));
-        });
-        actionVerb = actionVerbs.length > 0 ? actionVerbs[0] : verbs[0];
-      }
-      
-      // Construct a natural sentence using verbs from search results
-      if (bestPhrase.toLowerCase().includes(actionVerb.toLowerCase()) || !actionVerb) {
-        // Phrase already has action verb or no verb found, use phrase as-is (it's complete)
-        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
-      } else {
-        // Add action verb and meaningful context from keywords (only if it adds value)
-        const contextKeywords = keywords.filter(kw => {
-          const kwLower = kw.toLowerCase();
-          const phraseLower = bestPhrase.toLowerCase();
-          // Only use context if it's not already in the phrase and is meaningful
-          return !phraseLower.includes(kwLower) && 
-                 kwLower !== actionVerb.toLowerCase() &&
-                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
-        });
-        
-        if (contextKeywords.length > 0) {
-          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${contextKeywords[0]}`;
-        } else {
-          // Phrase is complete enough on its own
-          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
-        }
-      }
-    } else if (relevantPhrases.length > 0 && keywords.length > 0) {
-      // Use phrases found in search results
-      const bestPhrase = relevantPhrases[0];
-      
-      // Look for action verbs related to the task
-      const actionVerbs = verbs.filter(v => {
-        const vLower = v.toLowerCase();
-        return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
-          vLower.includes(action) || action.includes(vLower)
-        );
-      });
-      
-      if (actionVerbs.length > 0) {
-        // Construct: "Find [phrase] for [context]"
-        const action = actionVerbs[0];
-        const context = keywords.filter(kw => !bestPhrase.toLowerCase().includes(kw.toLowerCase())).slice(0, DESCRIPTION_GENERATION_CONFIG.fallbackKeywordLimits.maxKeywordsForContext).join(' ');
-        description = `${action.charAt(0).toUpperCase() + action.slice(1)} ${bestPhrase}${context ? ` for ${context}` : ''}`;
-      } else {
-        // Use phrase directly with proper capitalization
-        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
-      }
-    } else if (phrases.length > 0 && keywords.length > 0) {
-      // Use any phrase found, even if not filtered as "relevant"
-      const bestPhrase = phrases[0];
-      const actionVerbs = verbs.filter(v => {
-        const vLower = v.toLowerCase();
-        return DESCRIPTION_GENERATION_CONFIG.actionWordList.slice(0, DESCRIPTION_GENERATION_CONFIG.maxActionWordsForFiltering).some(action => 
-          vLower.includes(action) || action.includes(vLower)
-        );
-      });
-      
-      if (actionVerbs.length > 0) {
-        description = `${actionVerbs[0].charAt(0).toUpperCase() + actionVerbs[0].slice(1)} ${bestPhrase}`;
-      } else {
-        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
-      }
-    } else if (keywords.length > 0) {
-      // Construct a natural description from keywords using domain terminology
-      // Find action verbs from domain terminology that relate to keywords
+      // First, try to use domain terminology phrases that match the task
+      // These are the most reliable source of complete, natural phrases
       const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
-      const relatedVerbs = domainTerms.verbs.filter(v => {
-        const vLower = v.toLowerCase();
-        return taskKeywordsLower.some(kw => vLower.includes(kw) || kw.includes(vLower)) ||
-               DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
-                 vLower.includes(action) || action.includes(vLower)
-               );
-      });
-      
-      const relatedNouns = domainTerms.nouns.filter(n => {
-        const nLower = n.toLowerCase();
-        return taskKeywordsLower.some(kw => nLower.includes(kw) || kw.includes(nLower));
-      });
-      
-      const relatedPhrases = domainTerms.phrases.filter(p => {
+      const matchingDomainPhrases = domainTerms.phrases.filter(p => {
         const pLower = p.toLowerCase();
-        return taskKeywordsLower.some(kw => pLower.includes(kw) || kw.includes(pLower));
+        // Check if phrase contains multiple keywords (more relevant)
+        const matchingKeywords = taskKeywordsLower.filter(kw => pLower.includes(kw)).length;
+        // Prefer phrases with 2+ keywords, or longer phrases with at least 1 keyword
+        return matchingKeywords >= DESCRIPTION_GENERATION_CONFIG.domainPhraseMatching.minKeywordsForMatch || 
+               (matchingKeywords >= 1 && pLower.length > DESCRIPTION_GENERATION_CONFIG.domainPhraseMatching.minLengthForSingleKeyword);
       });
       
-      // Build description using domain terminology - construct natural sentences
-      if (relatedPhrases.length > 0) {
-        // Use domain phrase - construct a natural sentence
-        // Prioritize longer, more complete phrases (they're more descriptive)
-        const sortedPhrases = relatedPhrases.sort((a, b) => {
-          // First sort by length (longer = more complete)
-          if (b.length !== a.length) {
-            return b.length - a.length;
-          }
-          // Then by number of keywords contained
+      if (matchingDomainPhrases.length > 0) {
+        // Sort by: 1) number of matching keywords, 2) length (longer = more complete)
+        const sortedPhrases = matchingDomainPhrases.sort((a, b) => {
           const aKeywords = taskKeywordsLower.filter(kw => a.toLowerCase().includes(kw)).length;
           const bKeywords = taskKeywordsLower.filter(kw => b.toLowerCase().includes(kw)).length;
-          return bKeywords - aKeywords;
+          if (bKeywords !== aKeywords) {
+            return bKeywords - aKeywords;
+          }
+          return b.length - a.length;
         });
         
         const bestPhrase = sortedPhrases[0];
         
         // ENHANCED: Use verbs from search results or task name instead of hardcoded action words
+        // Find action verb from combined verbs (search results + dictionary)
         let actionVerb = '';
         if (verbs.length > 0) {
           const actionVerbs = verbs.filter(v => {
@@ -1300,28 +1190,18 @@ function buildContextualDescription(
             ) || keywords.some(kw => vLower.includes(kw.toLowerCase()));
           });
           actionVerb = actionVerbs.length > 0 ? actionVerbs[0] : verbs[0];
-        } else if (taskNameLower.includes('research') || taskNameLower.includes('conduct')) {
-          actionVerb = 'research';
-        } else {
-          // Extract verb from task name
-          const taskWords = taskNameLower.split(/\s+/);
-          const taskVerbs = taskWords.filter(word => 
-            DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => word.includes(action))
-          );
-          actionVerb = taskVerbs.length > 0 ? taskVerbs[0] : '';
         }
         
-        // Check if phrase already contains action verb
+        // Construct a natural sentence using verbs from search results
         if (bestPhrase.toLowerCase().includes(actionVerb.toLowerCase()) || !actionVerb) {
           // Phrase already has action verb or no verb found, use phrase as-is (it's complete)
           description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
         } else {
-          // Construct natural sentence using verb from search results: "[verb] [phrase] [context]"
-          // Only add context if it adds value (not already in phrase)
+          // Add action verb and meaningful context from keywords (only if it adds value)
           const contextKeywords = keywords.filter(kw => {
             const kwLower = kw.toLowerCase();
             const phraseLower = bestPhrase.toLowerCase();
-            // Exclude if keyword is already in phrase or is a stop word
+            // Only use context if it's not already in the phrase and is meaningful
             return !phraseLower.includes(kwLower) && 
                    kwLower !== actionVerb.toLowerCase() &&
                    !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
@@ -1330,147 +1210,267 @@ function buildContextualDescription(
           if (contextKeywords.length > 0) {
             description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${contextKeywords[0]}`;
           } else {
-            // Just use verb + phrase (phrase is complete enough)
+            // Phrase is complete enough on its own
             description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
           }
         }
-      } else if (relatedNouns.length > 0) {
-        // Use noun with verb from search results - construct natural sentence
-        // Prioritize verbs from search results
-        let actionVerb = '';
-        if (verbs.length > 0) {
-          actionVerb = verbs[0];
-        } else if (relatedVerbs.length > 0) {
-          actionVerb = relatedVerbs[0];
-        } else {
-          // Extract verb from task name
-          const taskWords = taskNameLower.split(/\s+/);
-          const taskVerbs = taskWords.filter(word => 
-            DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => word.includes(action))
+      } else if (relevantPhrases.length > 0 && keywords.length > 0) {
+        // Use phrases found in search results
+        const bestPhrase = relevantPhrases[0];
+        
+        // Look for action verbs related to the task
+        const actionVerbs = verbs.filter(v => {
+          const vLower = v.toLowerCase();
+          return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
+            vLower.includes(action) || action.includes(vLower)
           );
-          actionVerb = taskVerbs.length > 0 ? taskVerbs[0] : 'find';
-        }
-        
-        // Prioritize longer, more specific nouns
-        const bestNoun = relatedNouns.sort((a, b) => b.length - a.length)[0];
-        const contextKeywords = keywords.filter(kw => {
-          const kwLower = kw.toLowerCase();
-          return !bestNoun.toLowerCase().includes(kwLower) && 
-                 kwLower !== actionVerb.toLowerCase() &&
-                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
         });
         
-        if (contextKeywords.length > 0) {
-          const context = contextKeywords[0];
-          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestNoun} ${context}`;
+        if (actionVerbs.length > 0) {
+          // Construct: "Find [phrase] for [context]"
+          const action = actionVerbs[0];
+          const context = keywords.filter(kw => !bestPhrase.toLowerCase().includes(kw.toLowerCase())).slice(0, DESCRIPTION_GENERATION_CONFIG.fallbackKeywordLimits.maxKeywordsForContext).join(' ');
+          description = `${action.charAt(0).toUpperCase() + action.slice(1)} ${bestPhrase}${context ? ` for ${context}` : ''}`;
         } else {
-          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestNoun}`;
+          // Use phrase directly with proper capitalization
+          description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
         }
-      } else if (relatedVerbs.length > 0 && relatedNouns.length > 0) {
-        // Construct: "Find [noun] for [context]"
-        const verb = relatedVerbs[0];
-        const noun = relatedNouns[0];
-        const contextKeywords = keywords.filter(kw => {
-          const kwLower = kw.toLowerCase();
-          return !noun.toLowerCase().includes(kwLower) && 
-                 kwLower !== verb.toLowerCase() &&
-                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+      } else if (phrases.length > 0 && keywords.length > 0) {
+        // Use any phrase found, even if not filtered as "relevant"
+        const bestPhrase = phrases[0];
+        const actionVerbs = verbs.filter(v => {
+          const vLower = v.toLowerCase();
+          return DESCRIPTION_GENERATION_CONFIG.actionWordList.slice(0, DESCRIPTION_GENERATION_CONFIG.maxActionWordsForFiltering).some(action => 
+            vLower.includes(action) || action.includes(vLower)
+          );
         });
         
-        if (contextKeywords.length > 0) {
-          const context = contextKeywords.slice(0, 1).join(' ');
-          description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${noun} for ${context}`;
+        if (actionVerbs.length > 0) {
+          description = `${actionVerbs[0].charAt(0).toUpperCase() + actionVerbs[0].slice(1)} ${bestPhrase}`;
         } else {
-          description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${noun}`;
+          description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
         }
-      } else if (relatedVerbs.length > 0) {
-        // Use verb + most relevant keywords (not all keywords)
-        const verb = relatedVerbs[0];
-        // Only use keywords that aren't already in the verb
-        const relevantKeywords = keywords.filter(kw => {
-          const kwLower = kw.toLowerCase();
-          return !verb.toLowerCase().includes(kwLower) &&
-                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
-        }).slice(0, DESCRIPTION_GENERATION_CONFIG.maxContextKeywordsForFallback);
+      } else if (keywords.length > 0) {
+        // Construct a natural description from keywords using domain terminology
+        // Find action verbs from domain terminology that relate to keywords
+        const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
+        const relatedVerbs = domainTerms.verbs.filter(v => {
+          const vLower = v.toLowerCase();
+          return taskKeywordsLower.some(kw => vLower.includes(kw) || kw.includes(vLower)) ||
+                 DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
+                   vLower.includes(action) || action.includes(vLower)
+                 );
+        });
         
-        if (relevantKeywords.length > 0) {
-          description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${relevantKeywords.join(' ')}`;
+        const relatedNouns = domainTerms.nouns.filter(n => {
+          const nLower = n.toLowerCase();
+          return taskKeywordsLower.some(kw => nLower.includes(kw) || kw.includes(nLower));
+        });
+        
+        const relatedPhrases = domainTerms.phrases.filter(p => {
+          const pLower = p.toLowerCase();
+          return taskKeywordsLower.some(kw => pLower.includes(kw) || kw.includes(pLower));
+        });
+        
+        // Build description using domain terminology - construct natural sentences
+        if (relatedPhrases.length > 0) {
+          // Use domain phrase - construct a natural sentence
+          // Prioritize longer, more complete phrases (they're more descriptive)
+          const sortedPhrases = relatedPhrases.sort((a, b) => {
+            // First sort by length (longer = more complete)
+            if (b.length !== a.length) {
+              return b.length - a.length;
+            }
+            // Then by number of keywords contained
+            const aKeywords = taskKeywordsLower.filter(kw => a.toLowerCase().includes(kw)).length;
+            const bKeywords = taskKeywordsLower.filter(kw => b.toLowerCase().includes(kw)).length;
+            return bKeywords - aKeywords;
+          });
+          
+          const bestPhrase = sortedPhrases[0];
+          
+          // ENHANCED: Use verbs from search results or task name instead of hardcoded action words
+          let actionVerb = '';
+          if (verbs.length > 0) {
+            const actionVerbs = verbs.filter(v => {
+              const vLower = v.toLowerCase();
+              return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
+                vLower.includes(action) || action.includes(vLower)
+              ) || keywords.some(kw => vLower.includes(kw.toLowerCase()));
+            });
+            actionVerb = actionVerbs.length > 0 ? actionVerbs[0] : verbs[0];
+          } else if (taskNameLower.includes('research') || taskNameLower.includes('conduct')) {
+            actionVerb = 'research';
+          } else {
+            // Extract verb from task name
+            const taskWords = taskNameLower.split(/\s+/);
+            const taskVerbs = taskWords.filter(word => 
+              DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => word.includes(action))
+            );
+            actionVerb = taskVerbs.length > 0 ? taskVerbs[0] : '';
+          }
+          
+          // Check if phrase already contains action verb
+          if (bestPhrase.toLowerCase().includes(actionVerb.toLowerCase()) || !actionVerb) {
+            // Phrase already has action verb or no verb found, use phrase as-is (it's complete)
+            description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+          } else {
+            // Construct natural sentence using verb from search results: "[verb] [phrase] [context]"
+            // Only add context if it adds value (not already in phrase)
+            const contextKeywords = keywords.filter(kw => {
+              const kwLower = kw.toLowerCase();
+              const phraseLower = bestPhrase.toLowerCase();
+              // Exclude if keyword is already in phrase or is a stop word
+              return !phraseLower.includes(kwLower) && 
+                     kwLower !== actionVerb.toLowerCase() &&
+                     !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+            });
+            
+            if (contextKeywords.length > 0) {
+              description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${contextKeywords[0]}`;
+            } else {
+              // Just use verb + phrase (phrase is complete enough)
+              description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+            }
+          }
+        } else if (relatedNouns.length > 0) {
+          // Use noun with verb from search results - construct natural sentence
+          // Prioritize verbs from search results
+          let actionVerb = '';
+          if (verbs.length > 0) {
+            actionVerb = verbs[0];
+          } else if (relatedVerbs.length > 0) {
+            actionVerb = relatedVerbs[0];
+          } else {
+            // Extract verb from task name
+            const taskWords = taskNameLower.split(/\s+/);
+            const taskVerbs = taskWords.filter(word => 
+              DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => word.includes(action))
+            );
+            actionVerb = taskVerbs.length > 0 ? taskVerbs[0] : 'find';
+          }
+          
+          // Prioritize longer, more specific nouns
+          const bestNoun = relatedNouns.sort((a, b) => b.length - a.length)[0];
+          const contextKeywords = keywords.filter(kw => {
+            const kwLower = kw.toLowerCase();
+            return !bestNoun.toLowerCase().includes(kwLower) && 
+                   kwLower !== actionVerb.toLowerCase() &&
+                   !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+          });
+          
+          if (contextKeywords.length > 0) {
+            const context = contextKeywords[0];
+            description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestNoun} ${context}`;
+          } else {
+            description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestNoun}`;
+          }
+        } else if (relatedVerbs.length > 0 && relatedNouns.length > 0) {
+          // Construct: "Find [noun] for [context]"
+          const verb = relatedVerbs[0];
+          const noun = relatedNouns[0];
+          const contextKeywords = keywords.filter(kw => {
+            const kwLower = kw.toLowerCase();
+            return !noun.toLowerCase().includes(kwLower) && 
+                   kwLower !== verb.toLowerCase() &&
+                   !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+          });
+          
+          if (contextKeywords.length > 0) {
+            const context = contextKeywords.slice(0, 1).join(' ');
+            description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${noun} for ${context}`;
+          } else {
+            description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${noun}`;
+          }
+        } else if (relatedVerbs.length > 0) {
+          // Use verb + most relevant keywords (not all keywords)
+          const verb = relatedVerbs[0];
+          // Only use keywords that aren't already in the verb
+          const relevantKeywords = keywords.filter(kw => {
+            const kwLower = kw.toLowerCase();
+            return !verb.toLowerCase().includes(kwLower) &&
+                   !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+          }).slice(0, DESCRIPTION_GENERATION_CONFIG.maxContextKeywordsForFallback);
+          
+          if (relevantKeywords.length > 0) {
+            description = `${verb.charAt(0).toUpperCase() + verb.slice(1)} ${relevantKeywords.join(' ')}`;
+          } else {
+            description = verb.charAt(0).toUpperCase() + verb.slice(1);
+          }
         } else {
-          description = verb.charAt(0).toUpperCase() + verb.slice(1);
+          // ENHANCED: Use verbs from search results or task name instead of hardcoded action words
+          // Prioritize verbs from search results (real-world context), then from task name
+          let actionVerb = '';
+          
+          // First, try to find a verb from search results or combined verbs
+          if (verbs.length > 0) {
+            // Use first verb that's an action word or relates to the task
+            const actionVerbs = verbs.filter(v => {
+              const vLower = v.toLowerCase();
+              return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
+                vLower.includes(action) || action.includes(vLower)
+              ) || keywords.some(kw => vLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(vLower));
+            });
+            actionVerb = actionVerbs.length > 0 ? actionVerbs[0] : verbs[0];
+          } else {
+            // Extract verb from task name if available
+            const taskWords = taskNameLower.split(/\s+/);
+            const taskVerbs = taskWords.filter(word => {
+              return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
+                word.includes(action) || action.includes(word)
+              );
+            });
+            actionVerb = taskVerbs.length > 0 ? taskVerbs[0] : '';
+          }
+          
+          // If no verb found, use first keyword that's an action word, otherwise use "research" or first meaningful keyword
+          if (!actionVerb && keywords.length > 0) {
+            const actionKeywords = keywords.filter(kw => {
+              const kwLower = kw.toLowerCase();
+              return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
+                kwLower.includes(action) || action.includes(kwLower)
+              );
+            });
+            actionVerb = actionKeywords.length > 0 ? actionKeywords[0] : 
+                        (taskNameLower.includes('research') ? 'research' : keywords[0]);
+          }
+          
+          // Filter out stop words and construct proper sentence using keywords from search results
+          const relevantKeywords = keywords.filter(kw => {
+            const kwLower = kw.toLowerCase();
+            return kwLower !== actionVerb.toLowerCase() &&
+                   !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
+          });
+          
+          if (relevantKeywords.length > 0 && actionVerb) {
+            // Use keywords from search results to construct natural sentence
+            // Combine action verb with relevant keywords from search results
+            const keywordStr = relevantKeywords.slice(0, Math.min(4, relevantKeywords.length)).join(' ');
+            description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${keywordStr}`;
+          } else if (relevantKeywords.length > 0) {
+            // Use keywords directly if no action verb found
+            const keywordStr = relevantKeywords.slice(0, Math.min(4, relevantKeywords.length)).join(' ');
+            description = keywordStr.charAt(0).toUpperCase() + keywordStr.slice(1);
+          } else if (actionVerb) {
+            // Use action verb with nouns if available
+            const nounStr = nouns.length > 0 ? nouns.slice(0, 2).join(' ') : '';
+            description = nounStr 
+              ? `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${nounStr}`
+              : actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
+          } else {
+            // Last resort: use first few meaningful words from task name
+            const taskWords = taskName.split(/\s+/).filter(w => 
+              w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength &&
+              !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w.toLowerCase())
+            );
+            description = taskWords.slice(0, 4).join(' ').charAt(0).toUpperCase() + 
+                         taskWords.slice(0, 4).join(' ').slice(1);
+          }
         }
       } else {
-        // ENHANCED: Use verbs from search results or task name instead of hardcoded action words
-        // Prioritize verbs from search results (real-world context), then from task name
-        let actionVerb = '';
-        
-        // First, try to find a verb from search results or combined verbs
-        if (verbs.length > 0) {
-          // Use first verb that's an action word or relates to the task
-          const actionVerbs = verbs.filter(v => {
-            const vLower = v.toLowerCase();
-            return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
-              vLower.includes(action) || action.includes(vLower)
-            ) || keywords.some(kw => vLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(vLower));
-          });
-          actionVerb = actionVerbs.length > 0 ? actionVerbs[0] : verbs[0];
-        } else {
-          // Extract verb from task name if available
-          const taskWords = taskNameLower.split(/\s+/);
-          const taskVerbs = taskWords.filter(word => {
-            return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
-              word.includes(action) || action.includes(word)
-            );
-          });
-          actionVerb = taskVerbs.length > 0 ? taskVerbs[0] : '';
-        }
-        
-        // If no verb found, use first keyword that's an action word, otherwise use "research" or first meaningful keyword
-        if (!actionVerb && keywords.length > 0) {
-          const actionKeywords = keywords.filter(kw => {
-            const kwLower = kw.toLowerCase();
-            return DESCRIPTION_GENERATION_CONFIG.actionWordList.some(action => 
-              kwLower.includes(action) || action.includes(kwLower)
-            );
-          });
-          actionVerb = actionKeywords.length > 0 ? actionKeywords[0] : 
-                      (taskNameLower.includes('research') ? 'research' : keywords[0]);
-        }
-        
-        // Filter out stop words and construct proper sentence using keywords from search results
-        const relevantKeywords = keywords.filter(kw => {
-          const kwLower = kw.toLowerCase();
-          return kwLower !== actionVerb.toLowerCase() &&
-                 !DESCRIPTION_GENERATION_CONFIG.contextFilterStopWords.includes(kwLower);
-        });
-        
-        if (relevantKeywords.length > 0 && actionVerb) {
-          // Use keywords from search results to construct natural sentence
-          // Combine action verb with relevant keywords from search results
-          const keywordStr = relevantKeywords.slice(0, Math.min(4, relevantKeywords.length)).join(' ');
-          description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${keywordStr}`;
-        } else if (relevantKeywords.length > 0) {
-          // Use keywords directly if no action verb found
-          const keywordStr = relevantKeywords.slice(0, Math.min(4, relevantKeywords.length)).join(' ');
-          description = keywordStr.charAt(0).toUpperCase() + keywordStr.slice(1);
-        } else if (actionVerb) {
-          // Use action verb with nouns if available
-          const nounStr = nouns.length > 0 ? nouns.slice(0, 2).join(' ') : '';
-          description = nounStr 
-            ? `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${nounStr}`
-            : actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
-        } else {
-          // Last resort: use first few meaningful words from task name
-          const taskWords = taskName.split(/\s+/).filter(w => 
-            w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength &&
-            !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w.toLowerCase())
-          );
-          description = taskWords.slice(0, 4).join(' ').charAt(0).toUpperCase() + 
-                       taskWords.slice(0, 4).join(' ').slice(1);
-        }
+        // Ultimate fallback
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}`;
       }
-    } else {
-      // Ultimate fallback
-      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}`;
     }
   }
   
