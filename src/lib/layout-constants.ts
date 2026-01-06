@@ -397,12 +397,38 @@ export const APP_BACKGROUND_COLOR = '#F5F3FF'; // TaskZM light purple background
 export const APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // Text fallback color for loading screen
 
 // Loading Screen Constants
+// Base values for loading screen logo
+const LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE = '4rem'; // h-16 = 4rem (64px) - Base mobile logo height
+const LOADING_SCREEN_LOGO_BASE_HEIGHT_DESKTOP = '5rem'; // h-20 = 5rem (80px) - Base desktop logo height
+const LOADING_SCREEN_LOGO_BASE_MAX_WIDTH = 220; // Base max width in px
+// Size increase multiplier (65% increase = 1.65x)
+const LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER = 1.65;
+
 export const LOADING_SCREEN_LOGO = {
-  height: {
-    mobile: '4rem', // h-16 = 4rem (64px)
-    desktop: '5rem', // h-20 = 5rem (80px)
+  // Base sizes (for reference)
+  baseHeight: {
+    mobile: LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE,
+    desktop: LOADING_SCREEN_LOGO_BASE_HEIGHT_DESKTOP,
   },
-  maxWidth: '220px', // Maximum width for loading screen logo
+  baseMaxWidth: LOADING_SCREEN_LOGO_BASE_MAX_WIDTH,
+  sizeIncreaseMultiplier: LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER,
+  // Calculate 65% increase: base * sizeIncreaseMultiplier
+  height: {
+    mobile: (() => {
+      const baseValue = parseFloat(LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE);
+      const increasedValue = baseValue * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
+      return `${increasedValue}rem`;
+    })(),
+    desktop: (() => {
+      const baseValue = parseFloat(LOADING_SCREEN_LOGO_BASE_HEIGHT_DESKTOP);
+      const increasedValue = baseValue * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
+      return `${increasedValue}rem`;
+    })(),
+  },
+  maxWidth: (() => {
+    const increasedValue = LOADING_SCREEN_LOGO_BASE_MAX_WIDTH * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
+    return `${increasedValue}px`;
+  })(), // Maximum width for loading screen logo (65% increase from base)
 } as const;
 
 // Toast Notification Durations (in milliseconds)
