@@ -57,12 +57,14 @@ import { MINUTES_PER_HOUR } from "../lib/business-constants";
 import { COLOR_PRIMARY } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
+import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 
 interface DraggableTaskCardProps {
   task: Task;
   onClick: () => void;
   droppableId: string;
   isDragging?: boolean;
+  isNextUp?: boolean;
 }
 
 export const DraggableTaskCard = React.forwardRef<
@@ -70,7 +72,7 @@ export const DraggableTaskCard = React.forwardRef<
   DraggableTaskCardProps
 >(
   (
-    { task, onClick, droppableId, isDragging = false },
+    { task, onClick, droppableId, isDragging = false, isNextUp = false },
     forwardedRef,
   ) => {
     const { updateTask, tasks } = useTasks();
@@ -500,6 +502,20 @@ export const DraggableTaskCard = React.forwardRef<
           isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
         )}
       >
+        {/* Next Up Badge - Above the task card */}
+        {isNextUp && (
+          <div className="flex gap-3 w-full min-w-0 relative mb-1">
+            <div className="w-16 flex-shrink-0" />
+            <span 
+              className={cn(
+                TASK_CARD_FONT_SIZES.duration.desktop,
+                "font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground self-start relative"
+              )}
+            >
+              {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
+            </span>
+          </div>
+        )}
         {/* Main Card Layer */}
         <div
           ref={setNodeRef}

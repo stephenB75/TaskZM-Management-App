@@ -227,11 +227,15 @@ export function TodayAgendaView({
   const nextUpTaskId = useMemo(() => {
     if (todayTasks.length === 0) return null;
     
+    // Filter out completed tasks
+    const uncompletedTasks = todayTasks.filter(task => task.status !== 'done');
+    if (uncompletedTasks.length === 0) return null;
+    
     const now = new Date();
     const currentTimeMs = now.getTime();
     
-    // Find the first task that starts at or after current time
-    for (const task of todayTasks) {
+    // Find the first uncompleted task that starts at or after current time
+    for (const task of uncompletedTasks) {
       if (!task.scheduledDate) continue;
       const taskTime = new Date(task.scheduledDate).getTime();
       if (taskTime >= currentTimeMs) {
@@ -239,8 +243,8 @@ export function TodayAgendaView({
       }
     }
     
-    // If no task is after current time, return the first task
-    return todayTasks[0]?.id || null;
+    // If no uncompleted task is after current time, return the first uncompleted task
+    return uncompletedTasks[0]?.id || null;
   }, [todayTasks]);
 
   // Auto-scroll to "next up" task on initial load only
@@ -723,6 +727,7 @@ export function TodayAgendaView({
                               task={item.task}
                               onClick={() => handleTaskClick(item.task)}
                               droppableId="today-agenda"
+                              isNextUp={item.task.id === nextUpTaskId}
                             />
                           </div>
                         </div>
@@ -952,6 +957,7 @@ export function TodayAgendaView({
                           task={item.task}
                           onClick={() => handleTaskClick(item.task)}
                           droppableId="today-agenda"
+                          isNextUp={item.task.id === nextUpTaskId}
                         />
                       </div>
                     </div>
@@ -1182,6 +1188,7 @@ export function TodayAgendaView({
                         task={item.task}
                         onClick={() => handleTaskClick(item.task)}
                         droppableId="today-agenda"
+                        isNextUp={item.task.id === nextUpTaskId}
                       />
                     </div>
                   </div>
