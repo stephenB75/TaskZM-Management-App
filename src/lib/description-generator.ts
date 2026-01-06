@@ -19,6 +19,56 @@ export interface GeneratedDescription {
 }
 
 /**
+ * Helper function for improved fuzzy matching
+ * Calculates similarity score between two words
+ */
+function calculateWordSimilarity(word1: string, word2: string): number {
+  const w1 = word1.toLowerCase();
+  const w2 = word2.toLowerCase();
+  if (w1 === w2) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch;
+  if (w1.includes(w2) || w2.includes(w1)) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.substringMatch;
+  
+  // Check for common prefixes/suffixes
+  const minLen = Math.min(w1.length, w2.length);
+  let commonChars = 0;
+  for (let i = 0; i < minLen; i++) {
+    if (w1[i] === w2[i]) commonChars++;
+  }
+  const prefixSimilarity = commonChars / Math.max(w1.length, w2.length);
+  
+  // Check for stem similarity (remove common suffixes)
+  const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+  const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+  const stemMatch = stem1 === stem2 
+    ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactStemMatch 
+    : (stem1.includes(stem2) || stem2.includes(stem1) 
+        ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.partialStemMatch 
+        : 0);
+  
+  return Math.max(prefixSimilarity, stemMatch);
+}
+
+/**
+ * Helper function to check if words are semantically related
+ * Uses fuzzy matching to determine word relationships
+ */
+function areWordsRelated(word1: string, word2: string): boolean {
+  const w1 = word1.toLowerCase();
+  const w2 = word2.toLowerCase();
+  
+  // Exact match or substring
+  if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) return true;
+  
+  // Stem matching
+  const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+  const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+  if (stem1 === stem2 || stem1.includes(stem2) || stem2.includes(stem1)) return true;
+  
+  // Similarity threshold
+  return calculateWordSimilarity(w1, w2) >= DESCRIPTION_GENERATION_CONFIG.wordSimilarity.relationshipThreshold;
+}
+
+/**
  * Extract keywords and phrases directly from text using frequency analysis
  */
 function extractTermsFromText(
@@ -400,50 +450,6 @@ export function extractTermsFromTaskNameWithBrowserAI(
   let matchedDomainPhrases = 0;
   let matchedDomainVerbs = 0;
   let matchedDomainNouns = 0;
-  
-  // Helper function for improved fuzzy matching
-  const calculateWordSimilarity = (word1: string, word2: string): number => {
-    const w1 = word1.toLowerCase();
-    const w2 = word2.toLowerCase();
-    if (w1 === w2) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch;
-    if (w1.includes(w2) || w2.includes(w1)) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.substringMatch;
-    
-    // Check for common prefixes/suffixes
-    const minLen = Math.min(w1.length, w2.length);
-    let commonChars = 0;
-    for (let i = 0; i < minLen; i++) {
-      if (w1[i] === w2[i]) commonChars++;
-    }
-    const prefixSimilarity = commonChars / Math.max(w1.length, w2.length);
-    
-    // Check for stem similarity (remove common suffixes)
-    const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-    const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-    const stemMatch = stem1 === stem2 
-      ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactStemMatch 
-      : (stem1.includes(stem2) || stem2.includes(stem1) 
-          ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.partialStemMatch 
-          : 0);
-    
-    return Math.max(prefixSimilarity, stemMatch);
-  };
-  
-  // Helper function to check if words are semantically related
-  const areWordsRelated = (word1: string, word2: string): boolean => {
-    const w1 = word1.toLowerCase();
-    const w2 = word2.toLowerCase();
-    
-    // Exact match or substring
-    if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) return true;
-    
-    // Stem matching
-    const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-    const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-    if (stem1 === stem2 || stem1.includes(stem2) || stem2.includes(stem1)) return true;
-    
-    // Similarity threshold
-    return calculateWordSimilarity(w1, w2) >= DESCRIPTION_GENERATION_CONFIG.wordSimilarity.relationshipThreshold;
-  };
   
   // Match domain phrases that contain our keywords (improved intuitive matching)
   // ENHANCED: More lenient matching that accepts partial keyword matches and semantic relationships
@@ -1354,7 +1360,7 @@ function buildElaborateContextualDescription(
     
     // Build complete sentence
     const parts: string[] = [];
-    parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`);
+    parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
     
     if (relevantKeywords.length > 0) {
       parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
@@ -1428,7 +1434,7 @@ function buildElaborateContextualDescription(
     
     // Build complete sentence
     const parts: string[] = [];
-    parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`);
+    parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
     
     if (relevantKeywords.length > 0) {
       parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
@@ -1445,7 +1451,7 @@ function buildElaborateContextualDescription(
     ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     if (relevantKeywords.length > 0) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(' and ')}`;
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
         } else {
       // Use domain nouns if available
       if (elaboratingNouns.length > 0) {
@@ -1486,13 +1492,13 @@ function buildElaborateContextualDescription(
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
     
     if (actionVerb && relevantKeywords.length > 0) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(' and ')}`;
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
     } else if (relevantKeywords.length > 0) {
       // Try to add domain nouns for context
       if (elaboratingNouns.length > 0) {
         description = `${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${elaboratingNouns[0]}`;
         } else {
-        description = relevantKeywords.join(' and ');
+        description = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       }
     } else if (actionVerb) {
       description = actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
@@ -1520,7 +1526,7 @@ function buildElaborateContextualDescription(
     } else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
       const actionVerb = elaboratingVerbs[0];
       const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`;
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
     } else if (elaboratingVerbs.length > 0) {
       const actionVerb = elaboratingVerbs[0];
       const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
@@ -1605,7 +1611,7 @@ function buildElaborateContextualDescription(
       }
       
       description = parts.join(' ');
-    } else {
+        } else {
       // Build sentence using available terms
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
       const contextNouns = nouns.length > 0 ? nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (elaboratingNouns.length > 0 ? elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
@@ -1631,7 +1637,7 @@ function buildElaborateContextualDescription(
       
       if (parts.length > 0) {
         description = parts.join(' ');
-      } else {
+    } else {
         // Last resort: use domain guidance
         const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
         if (domainGuidance) {
@@ -1697,6 +1703,7 @@ export async function generateDescription(
   accessToken?: string | null,
   existingDescription?: string | null
 ): Promise<GeneratedDescription> {
+  try {
   if (!taskName || taskName.trim().length === 0) {
     return {
       description: '',
@@ -1705,9 +1712,9 @@ export async function generateDescription(
     };
   }
 
-  // Detect domain from task name AND description (if available) for better accuracy
-  const descriptionForDetection = existingDescription?.trim() || '';
-  const domainResult = detectDomain(taskName, descriptionForDetection);
+    // Detect domain from task name AND description (if available) for better accuracy
+    const descriptionForDetection = existingDescription?.trim() || '';
+    const domainResult = detectDomain(taskName, descriptionForDetection);
   const domain = domainResult.domain;
   const domainTerms = getDomainTerminology(domain);
 
@@ -1884,13 +1891,13 @@ export async function generateDescription(
     } else if (actionVerb && contextNouns.length > 0) {
       description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns[0]}`;
     } else if (actionVerb && relevantKeywords.length > 0) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(' and ')}`;
+      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
     } else if (actionVerb) {
       description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
     } else if (contextNouns.length > 0) {
       description = `${contextNouns[0].charAt(0).toUpperCase() + contextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
     } else if (relevantKeywords.length > 0) {
-      description = `${relevantKeywords.join(' and ')} ${domainGuidance.toLowerCase()}`;
+      description = `${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)} ${domainGuidance.toLowerCase()}`;
     } else {
       // Use domain guidance as base description
       description = domainGuidance;
@@ -1964,11 +1971,11 @@ export async function generateDescription(
     };
   }
 
-  logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedBrowserAI=true, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
-  
-  // FINAL CHECK: If Browser AI extraction failed and got a fallback description, log warning
-  if (finalDescription.includes(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves)) {
-    logger.warn(`WARNING: Browser AI extraction produced fallback description for "${taskName}". This indicates extraction from task name wasn't sufficient.`);
+    logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedBrowserAI=true, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
+    
+    // FINAL CHECK: If Browser AI extraction failed and got a fallback description, log warning
+    if (finalDescription.includes(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves)) {
+      logger.warn(`WARNING: Browser AI extraction produced fallback description for "${taskName}". This indicates extraction from task name wasn't sufficient.`);
   }
 
   return {
@@ -1976,4 +1983,18 @@ export async function generateDescription(
     domain,
     confidence,
   };
+  } catch (error) {
+    // Error handling: ensure we always return a valid result
+    logger.error(`Error generating description for "${taskName}":`, error);
+    const domainResult = detectDomain(taskName, existingDescription?.trim() || '');
+    const domain = domainResult.domain;
+    const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+    const fallbackDescription = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${domainGuidance}`;
+    
+    return {
+      description: fallbackDescription,
+      domain,
+      confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
+    };
+  }
 }
