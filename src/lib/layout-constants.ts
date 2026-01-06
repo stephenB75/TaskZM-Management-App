@@ -396,6 +396,15 @@ export const APP_THEME_COLOR_SECONDARY = '#9D87C3'; // TaskZM purple/lavender (s
 export const APP_BACKGROUND_COLOR = '#F5F3FF'; // TaskZM light purple background
 export const APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // Text fallback color for loading screen
 
+// Loading Screen Constants
+export const LOADING_SCREEN_LOGO = {
+  height: {
+    mobile: '4rem', // h-16 = 4rem (64px)
+    desktop: '5rem', // h-20 = 5rem (80px)
+  },
+  maxWidth: '220px', // Maximum width for loading screen logo
+} as const;
+
 // Toast Notification Durations (in milliseconds)
 export const TOAST_DURATION_DEFAULT_MS = 6000; // Default toast duration (6 seconds)
 export const TOAST_DURATION_SHORT_MS = 3000; // Short toast duration (3 seconds)

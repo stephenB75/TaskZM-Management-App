@@ -48,10 +48,13 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useIsMobile } from './components/ui/use-mobile';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP } from './lib/layout-constants';
+import { TIMING_CONSTANTS } from './lib/timing-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, LOADING_SCREEN_LOGO } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
+import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
+import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 
 const getTwoWeekDateRange = () => {
   const start = new Date();
@@ -522,9 +525,20 @@ function AppContent() {
     return (
       <div className="fixed inset-0 h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#E6D5F0] via-[#C9E4F7] to-[#B8E6D5] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 z-50">
         <div className="text-center px-4">
+          <div className="mb-6">
+            <img 
+              src={logoImageBlack} 
+              alt="TaskZM Logo" 
+              className="mx-auto w-auto object-contain"
+              style={{ 
+                height: isMobile ? LOADING_SCREEN_LOGO.height.mobile : LOADING_SCREEN_LOGO.height.desktop,
+                maxWidth: LOADING_SCREEN_LOGO.maxWidth 
+              }}
+            />
+          </div>
           <div className="relative mx-auto mb-4">
             <div className="animate-spin rounded-full h-12 w-12 md:h-16 md:w-16 border-4 border-[#E6D5F0] border-t-primary mx-auto"></div>
-            <div className="absolute inset-0 rounded-full h-12 w-12 md:h-16 md:w-16 border-4 border-[#C9E4F7] border-t-accent mx-auto animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            <div className="absolute inset-0 rounded-full h-12 w-12 md:h-16 md:w-16 border-4 border-[#C9E4F7] border-t-accent mx-auto animate-spin" style={{ animationDirection: 'reverse', animationDuration: `${TIMING_CONSTANTS.animations.long * 3 / 1000}s` }}></div>
           </div>
           <p className="text-foreground mt-4 text-sm md:text-base font-medium">Loading TaskZM...</p>
           <div className="flex gap-1 justify-center mt-3">
