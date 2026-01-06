@@ -451,14 +451,14 @@ export function extractTermsFromTaskNameWithBrowserAI(
   let matchedDomainVerbs = 0;
   let matchedDomainNouns = 0;
   
-  // Match domain phrases that contain our keywords (improved intuitive matching)
-  // ENHANCED: More lenient matching that accepts partial keyword matches and semantic relationships
+  // Match domain phrases that contain our keywords OR task name words (improved intuitive matching)
+  // ENHANCED: More lenient matching that checks both extracted keywords AND task name words directly
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     
-    // ENHANCED: Check if phrase contains keywords using improved fuzzy matching
-    // Accept if ANY keyword matches (even partially) or if phrase words relate to keywords
+    // ENHANCED: Check if phrase contains keywords OR task name words using improved fuzzy matching
+    // Accept if ANY keyword OR task word matches (even partially) or if phrase words relate to them
     const containsKeyword = taskKeywords.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
@@ -487,6 +487,18 @@ export function extractTermsFromTaskNameWithBrowserAI(
       return hasWordMatch || hasReverseMatch;
     });
     
+    // ENHANCED: Also check if phrase contains task name words directly (not just extracted keywords)
+    // This ensures we match phrases even if keyword extraction missed important words
+    const containsTaskWords = taskWords.some(tw => {
+      // Direct match
+      if (phraseLower.includes(tw) || tw.includes(phraseLower)) return true;
+      // Check if any phrase word relates to task word
+      return phraseWords.some(pw => {
+        if (pw.includes(tw) || tw.includes(pw)) return true;
+        return areWordsRelated(pw, tw);
+      });
+    });
+    
     // ENHANCED: More lenient check if phrase relates to task name
     // Accept if ANY phrase word appears in task name (even if not exact match)
     const phraseRegex = wordBoundaryRegex(phrase);
@@ -503,7 +515,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
       });
     });
     
-    // ENHANCED: Check if task keywords relate to phrase words (more lenient)
+    // ENHANCED: Check if task keywords OR task words relate to phrase words (more lenient)
     const hasRelatedKeywords = taskKeywords.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
@@ -515,7 +527,12 @@ export function extractTermsFromTaskNameWithBrowserAI(
           return areWordsRelated(kwWord, pw);
         })
       );
-    });
+    }) || taskWords.some(tw => 
+      phraseWords.some(pw => {
+        if (pw.includes(tw) || tw.includes(pw)) return true;
+        return areWordsRelated(pw, tw);
+      })
+    );
     
     // ENHANCED: Also check if phrase contains contextual action words that indicate elaboration
     // These phrases explain tasks even if they don't directly match keywords
@@ -523,9 +540,9 @@ export function extractTermsFromTaskNameWithBrowserAI(
     const hasContextualWords = phraseWords.some(pw => contextualActionWords.includes(pw));
     
     // ENHANCED: Accept phrase if:
-    // 1. Contains keywords AND (exact match OR has overlapping words OR has related keywords)
+    // 1. Contains keywords OR task words AND (exact match OR has overlapping words OR has related keywords/words)
     // 2. OR has contextual words that explain tasks (even without direct keyword match)
-    const shouldAccept = (containsKeyword && (exactMatch || hasOverlappingWords || hasRelatedKeywords)) ||
+    const shouldAccept = ((containsKeyword || containsTaskWords) && (exactMatch || hasOverlappingWords || hasRelatedKeywords)) ||
                         (hasContextualWords && hasOverlappingWords);
     
     if (shouldAccept && !finalPhrases.some(p => p.toLowerCase() === phraseLower)) {
@@ -534,7 +551,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
     }
   });
   
-  // Match domain verbs that relate to keywords (improved intuitive matching)
+  // Match domain verbs that relate to keywords OR task name words (improved intuitive matching)
   domainTerms.verbs.forEach(verb => {
     const verbLower = verb.toLowerCase();
     const verbBase = verbLower.replace(/(ing|ed|s|es|er|est|ly)$/, '');
@@ -565,18 +582,29 @@ export function extractTermsFromTaskNameWithBrowserAI(
       });
     });
     
+    // ENHANCED: Also check if verb relates to task name words directly (not just extracted keywords)
+    const relatesToTaskWords = taskWords.some(tw => {
+      const twStem = tw.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+      return areWordsRelated(tw, verbLower) || 
+             areWordsRelated(twStem, verbBase) ||
+             verbBase.includes(twStem) || twStem.includes(verbBase) ||
+             tw.includes(verbBase) || verbBase.includes(tw);
+    });
+    
     // IMPROVED: Check if verb appears in task name (fuzzy)
     const appearsInTask = verbPatterns.some(pattern => pattern.test(taskNameLower)) ||
       taskWords.some(tw => areWordsRelated(tw, verbLower) || areWordsRelated(tw, verbBase));
     
-    if (appearsInTask && relatesToKeyword &&
+    // ENHANCED: Accept verb if it appears in task OR relates to keywords OR relates to task words
+    // This is more lenient - doesn't require both conditions
+    if ((appearsInTask || relatesToKeyword || relatesToTaskWords) &&
         !foundVerbs.some(v => v.toLowerCase() === verbLower)) {
       foundVerbs.push(verb);
       matchedDomainVerbs++;
     }
   });
   
-  // Match domain nouns that relate to keywords (improved intuitive matching)
+  // Match domain nouns that relate to keywords OR task name words (improved intuitive matching)
   domainTerms.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
     const nounBase = nounLower.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
@@ -605,11 +633,22 @@ export function extractTermsFromTaskNameWithBrowserAI(
       });
     });
     
+    // ENHANCED: Also check if noun relates to task name words directly (not just extracted keywords)
+    const relatesToTaskWords = taskWords.some(tw => {
+      const twStem = tw.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
+      return areWordsRelated(tw, nounLower) || 
+             areWordsRelated(twStem, nounBase) ||
+             nounBase.includes(twStem) || twStem.includes(nounBase) ||
+             tw.includes(nounBase) || nounBase.includes(tw);
+    });
+    
     // IMPROVED: Check if noun appears in task name (fuzzy)
     const appearsInTask = nounPatterns.some(pattern => pattern.test(taskNameLower)) ||
       taskWords.some(tw => areWordsRelated(tw, nounLower) || areWordsRelated(tw, nounBase));
     
-    if (appearsInTask && relatesToKeyword &&
+    // ENHANCED: Accept noun if it appears in task OR relates to keywords OR relates to task words
+    // This is more lenient - doesn't require both conditions
+    if ((appearsInTask || relatesToKeyword || relatesToTaskWords) &&
         !foundNouns.some(n => n.toLowerCase() === nounLower)) {
       foundNouns.push(noun);
       matchedDomainNouns++;
@@ -1048,16 +1087,16 @@ function buildElaborateContextualDescription(
   const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
   const elaboratingPhrases: string[] = [];
   
-  // Find domain phrases that relate to keywords but add elaboration
-  // PRIORITY: Look for phrases that contain keywords but are NOT in the task name
+  // Find domain phrases that relate to keywords OR task name words but add elaboration
+  // PRIORITY: Look for phrases that contain keywords/task words but are NOT in the task name
   // This ensures we get contextual information, not just repetition
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     
-    // ENHANCED: Check if phrase contains keywords (improved matching - check word-level matches)
-    // Also check if any word in the phrase relates to any keyword (more lenient)
-    // Accept if ANY keyword matches (even partially) or if phrase words relate to keywords
+    // ENHANCED: Check if phrase contains keywords OR task name words (improved matching - check word-level matches)
+    // Also check if any word in the phrase relates to any keyword/task word (more lenient)
+    // Accept if ANY keyword OR task word matches (even partially) or if phrase words relate to them
     const containsKeywords = taskKeywordsLower.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
@@ -1095,6 +1134,18 @@ function buildElaborateContextualDescription(
       });
     });
     
+    // ENHANCED: Also check if phrase contains task name words directly (not just extracted keywords)
+    // This ensures we match phrases even if keyword extraction missed important words
+    const containsTaskWords = taskWords.some(tw => {
+      // Direct match
+      if (phraseLower.includes(tw) || tw.includes(phraseLower)) return true;
+      // Check if any phrase word relates to task word
+      return phraseWords.some(pw => {
+        if (pw.includes(tw) || tw.includes(pw)) return true;
+        return areWordsRelated(pw, tw);
+      });
+    });
+    
     // More lenient check: phrase should NOT be a direct substring of task name
     // Allow partial matches if they add context
     const isDirectSubstring = taskNameLower.includes(phraseLower) && phraseLower.length > DESCRIPTION_GENERATION_CONFIG.lengthThresholds.minDirectSubstring;
@@ -1104,9 +1155,9 @@ function buildElaborateContextualDescription(
     const allWordsInTaskName = phraseWords.length > 0 && 
       phraseWords.every(word => taskNameLower.includes(word));
     
-    // Accept phrase if it contains keywords and adds new context
-    // More lenient: accept if phrase relates to keywords even if not all words match
-    if (containsKeywords && !isDirectSubstring && !isTaskNameSubstring && !allWordsInTaskName) {
+    // Accept phrase if it contains keywords OR task words and adds new context
+    // More lenient: accept if phrase relates to keywords/task words even if not all words match
+    if ((containsKeywords || containsTaskWords) && !isDirectSubstring && !isTaskNameSubstring && !allWordsInTaskName) {
       // Count how many keywords the phrase contains (more = more relevant)
       const keywordCount = taskKeywordsLower.filter(kw => {
           const kwLower = kw.toLowerCase();
