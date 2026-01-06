@@ -131,22 +131,27 @@ function AppContent() {
     const dueTasks = tasks.filter((task: { id: string; title: string; status: string; dueDate?: string | null; scheduledDate?: string | null }) => {
       if (task.status === 'done') return false;
       
-      // CRITICAL: Exclude tasks that have been rolled over to inbox (scheduledDate === null)
-      // Rolled over tasks are unscheduled and have been moved to inbox, so they shouldn't trigger badge notifications
-      if (task.scheduledDate === null) {
+      // CRITICAL: Exclude tasks that have been rolled over to inbox
+      // Rolled over tasks have scheduledDate === null (or undefined) and have been moved to inbox
+      // They should NOT trigger badge notifications even if they have a dueDate
+      // Check for both null and undefined to be safe
+      if (task.scheduledDate === null || task.scheduledDate === undefined) {
         return false;
       }
       
       let targetDate: Date | null = null;
       let dateType: 'dueDate' | 'scheduledDate' | null = null;
       
-      // Check dueDate first, then scheduledDate
-      if (task.dueDate) {
-        targetDate = new Date(task.dueDate);
-        dateType = 'dueDate';
-      } else if (task.scheduledDate) {
+      // For badge count, only use scheduledDate (not dueDate) to avoid counting rolled-over tasks
+      // Rolled-over tasks have scheduledDate === null but may still have a dueDate
+      // Only count tasks that are actually scheduled (have a scheduledDate)
+      if (task.scheduledDate) {
         targetDate = new Date(task.scheduledDate);
         dateType = 'scheduledDate';
+      } else {
+        // If no scheduledDate, don't count it (even if it has a dueDate)
+        // This ensures rolled-over tasks are never counted
+        return false;
       }
       
       if (!targetDate || isNaN(targetDate.getTime())) return false;
@@ -193,6 +198,7 @@ function AppContent() {
           taskStatus: task.status,
           taskDueDate: task.dueDate,
           taskScheduledDate: task.scheduledDate,
+          note: 'Only tasks with scheduledDate are counted (rolled-over tasks excluded)',
         });
       } else {
         // Log why task is NOT counted (for debugging)
@@ -208,6 +214,8 @@ function AppContent() {
             timeDiffMinutes: Math.round(timeDiff * 10) / 10,
             isFutureDate,
             isTooFarInFuture,
+            taskScheduledDate: task.scheduledDate,
+            taskDueDate: task.dueDate,
           });
         }
       }
