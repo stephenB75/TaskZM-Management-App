@@ -125,9 +125,9 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'setup', 'setting up', 'set up', 'configure', 'configuring', 'arrange', 'arranging',
     'streamline', 'streamlining', 'optimize', 'optimizing', 'improve', 'improving',
     'enhance', 'enhancing', 'refine', 'refining', 'polish', 'polishing', 'perfect', 'perfecting',
-    'structure', 'structuring', 'systematize', 'systematizing', 'order', 'ordering',
-    'manage', 'managing', 'maintain', 'maintaining', 'keep', 'keeping', 'preserve', 'preserving'
-    'invest', 'investing', 'deposit', 'depositing', 'withdraw', 'withdrawing',
+      'structure', 'structuring', 'systematize', 'systematizing', 'order', 'ordering',
+      'manage', 'managing', 'maintain', 'maintaining', 'keep', 'keeping', 'preserve', 'preserving',
+      'invest', 'investing', 'deposit', 'depositing', 'withdraw', 'withdrawing',
     'transfer', 'transferring', 'calculate', 'calculating', 'analyze', 'analyzing',
     'budget', 'budgeting', 'forecast', 'forecasting', 'reconcile', 'reconciling',
     'file', 'filing', 'submit', 'submitting', 'approve', 'approving', 'process', 'processing'
