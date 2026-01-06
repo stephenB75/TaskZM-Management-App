@@ -23,6 +23,7 @@ import { Button } from './ui/button';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { UI_RICH_TEXT_COLORS } from '../lib/ui-colors';
+import { COMPONENT_DIMENSIONS } from '../lib/layout-constants';
 
 interface RichTextEditorProps {
   value: string;
@@ -109,6 +110,15 @@ export function RichTextEditor({
       
       // Ensure the editor itself has 12pt font size
       editorRef.current.style.fontSize = STANDARD_FONT_SIZE;
+      
+      // Auto-expand editor height based on content (up to max height)
+      // This allows the editor to grow with content and wrap naturally
+      const contentHeight = editorRef.current.scrollHeight;
+      const minHeight = rows * 20; // rows * 20px per row
+      const maxHeight = COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.maxHeight;
+      const newHeight = Math.max(minHeight, Math.min(contentHeight, maxHeight));
+      editorRef.current.style.height = 'auto';
+      editorRef.current.style.minHeight = `${newHeight}px`;
       
       onChange(editorRef.current.innerHTML);
     }
@@ -609,6 +619,9 @@ export function RichTextEditor({
           rows === 3 && "min-h-[60px]",
           rows === 4 && "min-h-[80px]",
           rows === 5 && "min-h-[100px]",
+          // Allow content to expand and wrap naturally
+          "overflow-y-auto",
+          "break-words whitespace-pre-wrap",
           // List styling - ensure lists are visible and properly formatted
           "[&_ul]:list-disc [&_ul]:ml-4 [&_ul]:my-1 [&_ul]:space-y-1 [&_ul]:block",
           "[&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1 [&_ol]:space-y-1 [&_ol]:block",
@@ -636,7 +649,11 @@ export function RichTextEditor({
         )}
         style={{
           minHeight: `${rows * 20}px`,
+          maxHeight: `${COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.maxHeight}px`,
           fontSize: STANDARD_FONT_SIZE,
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+          whiteSpace: 'pre-wrap',
         }}
         data-placeholder={placeholder}
         suppressContentEditableWarning
