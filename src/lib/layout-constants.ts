@@ -401,8 +401,8 @@ export const APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // Text fallback color for loa
 const LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE = '4rem'; // h-16 = 4rem (64px) - Base mobile logo height
 const LOADING_SCREEN_LOGO_BASE_HEIGHT_DESKTOP = '5rem'; // h-20 = 5rem (80px) - Base desktop logo height
 const LOADING_SCREEN_LOGO_BASE_MAX_WIDTH = 220; // Base max width in px
-// Size increase multiplier (65% increase = 1.65x)
-const LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER = 1.65;
+// Size increase multiplier (3x = 300% increase for better tagline visibility)
+const LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER = 3.0;
 
 export const LOADING_SCREEN_LOGO = {
   // Base sizes (for reference)
@@ -412,7 +412,7 @@ export const LOADING_SCREEN_LOGO = {
   },
   baseMaxWidth: LOADING_SCREEN_LOGO_BASE_MAX_WIDTH,
   sizeIncreaseMultiplier: LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER,
-  // Calculate 65% increase: base * sizeIncreaseMultiplier
+  // Calculate 3x increase: base * sizeIncreaseMultiplier
   height: {
     mobile: (() => {
       const baseValue = parseFloat(LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE);
@@ -428,7 +428,7 @@ export const LOADING_SCREEN_LOGO = {
   maxWidth: (() => {
     const increasedValue = LOADING_SCREEN_LOGO_BASE_MAX_WIDTH * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
     return `${increasedValue}px`;
-  })(), // Maximum width for loading screen logo (65% increase from base)
+  })(), // Maximum width for loading screen logo (3x increase from base)
 } as const;
 
 // Toast Notification Durations (in milliseconds)
