@@ -39,7 +39,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
@@ -571,41 +571,68 @@ export function InboxView() {
                 <Button
                   onClick={handleSelectAll}
                   variant="outline"
-                  className="rounded-full px-2 sm:px-2.5 text-xs"
+                  className="rounded-full"
+                  style={{
+                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                  }}
                   size="sm"
                 >
                   <span className="hidden md:inline">
                     {selectedTaskIds.size === sortedTasks.length ? "Deselect All" : "Select All"}
                   </span>
-                  <span className="md:hidden text-[10px]">
+                  <span className="md:hidden">
                     {selectedTaskIds.size === sortedTasks.length ? "Deselect" : "All"}
                   </span>
                 </Button>
                 <Button
                   onClick={handleScheduleSelected}
-                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2 sm:px-2.5 text-xs`}
+                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
+                  style={{
+                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                  }}
                   size="sm"
                   disabled={isScheduling}
                 >
-                  <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <Sparkles 
+                    style={{
+                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                    }}
+                  />
                   <span className="hidden md:inline">
                     Schedule ({selectedTaskIds.size})
                   </span>
-                  <span className="md:hidden text-[10px]">
+                  <span className="md:hidden">
                     {selectedTaskIds.size}
                   </span>
                 </Button>
                 <Button
                   onClick={handleUnscheduleSelected}
                   variant="outline"
-                  className="rounded-full px-2 sm:px-2.5 text-xs"
+                  className="rounded-full"
+                  style={{
+                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                  }}
                   size="sm"
                 >
-                  <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <Calendar 
+                    style={{
+                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                    }}
+                  />
                   <span className="hidden md:inline">
                     Unschedule ({selectedTaskIds.size})
                   </span>
-                  <span className="md:hidden text-[10px]">
+                  <span className="md:hidden">
                     {selectedTaskIds.size}
                   </span>
                 </Button>
@@ -621,14 +648,25 @@ export function InboxView() {
                   }}
                   disabled={!permissions.canDeleteTask}
                   variant="destructive"
-                  className="rounded-full px-2 sm:px-2.5 text-xs"
+                  className="rounded-full"
+                  style={{
+                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                  }}
                   size="sm"
                 >
-                  <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <Trash2 
+                    style={{
+                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                    }}
+                  />
                   <span className="hidden md:inline">
                     Delete ({selectedTaskIds.size})
                   </span>
-                  <span className="md:hidden text-[10px]">
+                  <span className="md:hidden">
                     {selectedTaskIds.size}
                   </span>
                 </Button>
@@ -637,15 +675,26 @@ export function InboxView() {
               <>
                 <Button
                   onClick={handleScheduleAll}
-                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className} px-2 sm:px-2.5 text-xs`}
+                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
+                  style={{
+                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                  }}
                   size="sm"
                   disabled={unscheduledTasks.length === 0}
                 >
-                  <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <Sparkles 
+                    style={{
+                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                    }}
+                  />
                   <span className="hidden md:inline">
                     Schedule All
                   </span>
-                  <span className="md:hidden text-[10px]">
+                  <span className="md:hidden">
                     All
                   </span>
                 </Button>
@@ -661,11 +710,22 @@ export function InboxView() {
                     setIsTaskDialogOpen(true);
                   }}
                   disabled={!permissions.canCreateTask}
-                  className="hidden sm:flex rounded-full px-2 sm:px-2.5 text-xs"
+                  className="hidden sm:flex rounded-full"
+                  style={{
+                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                  }}
                   size="sm"
                 >
-                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
-                  <span className="hidden md:inline ml-1">
+                  <Plus 
+                    style={{
+                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                    }}
+                  />
+                  <span className="hidden md:inline">
                     New Task
                   </span>
                 </Button>

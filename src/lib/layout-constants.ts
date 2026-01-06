@@ -520,6 +520,28 @@ export const COMPONENT_DIMENSIONS = {
     dropZoneMinHeight: 'min-h-[400px]',
     emptyStateMinHeight: 'min-h-[300px]',
   },
+  inboxHeader: {
+    button: {
+      paddingX: {
+        mobile: '0.5rem', // px-2 = 0.5rem (8px)
+        tablet: '0.625rem', // sm:px-2.5 = 0.625rem (10px)
+        desktop: '0.375rem', // Reduced for desktop to fit comfortably
+      },
+      textSize: {
+        mobile: '0.625rem', // text-[10px] = 0.625rem (10px)
+        desktop: '0.6875rem', // text-[11px] = 0.6875rem (11px) - slightly larger for desktop readability
+      },
+      iconSize: {
+        mobile: '0.75rem', // w-3 h-3 = 0.75rem (12px)
+        tablet: '0.875rem', // sm:w-3.5 sm:h-3.5 = 0.875rem (14px)
+        desktop: '0.75rem', // Reduced for desktop to fit comfortably
+      },
+      iconMargin: {
+        mobile: '0', // No margin on mobile
+        desktop: '0.375rem', // sm:mr-1.5 = 0.375rem (6px)
+      },
+    },
+  },
   appTour: {
     imageMaxHeight: {
       mobile: 'max-h-[400px]',
