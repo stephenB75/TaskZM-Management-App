@@ -174,8 +174,8 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'inventory', 'inventorizing', 'audit', 'auditing', 'check', 'checking', 'review', 'reviewing',
     'reorganize', 'reorganizing', 'restructure', 'restructuring', 'revitalize', 'revitalizing',
     'sanitize', 'sanitizing', 'disinfect', 'disinfecting', 'sterilize', 'sterilizing',
-    'dust', 'dusting', 'wipe', 'wiping', 'sweep', 'sweeping', 'mop', 'mopping', 'vacuum', 'vacuuming',
-    'inspect', 'inspecting', 'examine', 'examining', 'evaluate', 'evaluating', 'assess', 'assessing'
+      'dust', 'dusting', 'wipe', 'wiping', 'sweep', 'sweeping', 'mop', 'mopping', 'vacuum', 'vacuuming',
+      'inspect', 'inspecting', 'examine', 'examining', 'evaluate', 'evaluating', 'assess', 'assessing',
       'invest', 'investing', 'deposit', 'depositing', 'withdraw', 'withdrawing',
     'transfer', 'transferring', 'calculate', 'calculating', 'analyze', 'analyzing',
     'budget', 'budgeting', 'forecast', 'forecasting', 'reconcile', 'reconciling',
