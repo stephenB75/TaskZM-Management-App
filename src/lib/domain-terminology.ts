@@ -55,6 +55,56 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
     'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
     'technical', 'architecture', 'design', 'specification', 'requirement', 'spec',
+    // Social media and online
+    'social media', 'facebook', 'instagram', 'twitter', 'x', 'linkedin', 'tiktok', 'youtube',
+    'snapchat', 'pinterest', 'reddit', 'discord', 'telegram', 'whatsapp', 'messenger',
+    'post', 'posting', 'share', 'sharing', 'like', 'comment', 'follow', 'unfollow',
+    'engagement', 'reach', 'impressions', 'analytics', 'metrics', 'campaign', 'content',
+    'influencer', 'viral', 'trending', 'hashtag', 'story', 'reel', 'live', 'stream',
+    'online', 'internet', 'web', 'website', 'webpage', 'domain', 'hosting', 'server',
+    'cloud', 'saas', 'paas', 'iaas', 'aws', 'azure', 'gcp', 'digital', 'virtual',
+    'ecommerce', 'online store', 'shopping cart', 'payment gateway', 'checkout',
+    'email', 'newsletter', 'marketing automation', 'crm', 'seo', 'sem', 'ppc',
+    // Hardware and mobile devices
+    'hardware', 'computer', 'laptop', 'desktop', 'server', 'workstation', 'monitor',
+    'keyboard', 'mouse', 'printer', 'scanner', 'router', 'switch', 'firewall',
+    'mobile', 'smartphone', 'iphone', 'android', 'tablet', 'ipad', 'smartwatch',
+    'wearable', 'device', 'gadget', 'peripheral', 'accessory', 'cable', 'charger',
+    'battery', 'power supply', 'ups', 'backup', 'storage', 'hard drive', 'ssd',
+    'network', 'wifi', 'bluetooth', 'ethernet', 'usb', 'hdmi', 'display', 'screen',
+    'setup', 'install', 'configure', 'troubleshoot', 'repair', 'upgrade', 'replace',
+    // Standard operating procedures
+    'sop', 'standard operating procedure', 'process', 'workflow', 'procedure', 'protocol',
+    'policy', 'guideline', 'checklist', 'template', 'documentation', 'manual', 'guide',
+    'training', 'onboarding', 'compliance', 'audit', 'review', 'approval', 'sign-off',
+    'quality control', 'qc', 'qa', 'quality assurance', 'testing', 'validation',
+    'verification', 'certification', 'accreditation', 'standard', 'best practice',
+    // Medical and health
+    'medical', 'health', 'healthcare', 'doctor', 'physician', 'nurse', 'patient',
+    'appointment', 'checkup', 'examination', 'diagnosis', 'treatment', 'therapy',
+    'medication', 'prescription', 'pharmacy', 'hospital', 'clinic', 'emergency',
+    'surgery', 'procedure', 'test', 'lab', 'laboratory', 'xray', 'mri', 'ct scan',
+    'vaccination', 'immunization', 'wellness', 'fitness', 'exercise', 'workout',
+    'diet', 'nutrition', 'vitamin', 'supplement', 'mental health', 'therapy',
+    'insurance', 'health insurance', 'medical insurance', 'claim', 'coverage',
+    // Industries
+    'manufacturing', 'production', 'assembly', 'factory', 'warehouse', 'logistics',
+    'supply chain', 'distribution', 'shipping', 'receiving', 'inventory', 'stock',
+    'retail', 'wholesale', 'sales', 'customer service', 'support', 'help desk',
+    'hospitality', 'hotel', 'restaurant', 'catering', 'event', 'conference',
+    'education', 'school', 'university', 'college', 'training', 'course', 'class',
+    'construction', 'building', 'contractor', 'renovation', 'project', 'site',
+    'energy', 'utilities', 'power', 'electric', 'gas', 'water', 'solar', 'wind',
+    'agriculture', 'farming', 'crop', 'livestock', 'harvest', 'irrigation',
+    'transportation', 'logistics', 'shipping', 'freight', 'delivery', 'courier',
+    // Automobiles
+    'car', 'automobile', 'vehicle', 'truck', 'suv', 'sedan', 'coupe', 'convertible',
+    'motorcycle', 'bike', 'bicycle', 'maintenance', 'service', 'oil change', 'tire',
+    'brake', 'engine', 'transmission', 'battery', 'alternator', 'radiator',
+    'repair', 'fix', 'diagnostic', 'inspection', 'registration', 'insurance',
+    'dmv', 'license', 'registration', 'title', 'emissions', 'safety', 'inspection',
+    'gas', 'fuel', 'electric', 'hybrid', 'charging', 'station', 'parking',
+    'driving', 'road trip', 'commute', 'traffic', 'navigation', 'gps', 'map',
     // Additional business keywords for better matching
     'organize', 'organizing', 'organization', 'organize', 'organizing', 'organizational',
     'clean', 'cleaning', 'cleanup', 'clean up', 'tidy', 'tidying', 'neat', 'orderly',
@@ -144,7 +194,27 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'communicate effectively', 'document processes', 'track progress',
     'manage resources', 'allocate budget', 'prioritize tasks',
     'ensure compliance', 'maintain security', 'protect data',
-    'collaborate with stakeholders', 'align with goals', 'drive results'
+    'collaborate with stakeholders', 'align with goals', 'drive results',
+    // Additional contextual phrases for office/workspace tasks
+    'organize workspace efficiently', 'maintain clean office environment', 'remove clutter from workspace',
+    'create organized office space', 'ensure workspace cleanliness and order', 'systematically organize office area',
+    'improve workspace organization', 'establish organized work environment', 'maintain tidy workspace',
+    'create efficient workspace layout', 'optimize office space utilization', 'enhance workspace functionality',
+    'ensure workspace is well organized', 'maintain professional workspace appearance', 'create productive work environment',
+    'organize office for better productivity', 'maintain clean and organized workspace', 'ensure office space is functional',
+    'create systematic workspace organization', 'maintain organized and efficient workspace', 'ensure workspace meets professional standards',
+    // Contextual phrases for cleaning tasks
+    'thoroughly clean workspace', 'ensure workspace cleanliness', 'maintain clean work environment',
+    'create clean and organized space', 'ensure all areas are clean', 'maintain high cleanliness standards',
+    'perform comprehensive cleaning', 'ensure thorough cleaning', 'maintain clean and sanitary workspace',
+    // Contextual phrases for organization tasks
+    'systematically organize items', 'create logical organization system', 'establish efficient organization structure',
+    'organize items for easy access', 'create organized storage system', 'maintain organized structure',
+    'ensure items are properly organized', 'create systematic organization', 'maintain consistent organization',
+    // Contextual phrases for file/document tasks
+    'organize files systematically', 'create logical file structure', 'ensure files are properly categorized',
+    'maintain organized file system', 'create efficient document organization', 'ensure documents are easily accessible',
+    'organize documents by category', 'create systematic document filing', 'maintain organized document structure'
   ],
   verbs: [
     'present', 'negotiate', 'strategize', 'analyze', 'forecast', 'delegate', 'coordinate',
@@ -261,7 +331,25 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'birthday', 'anniversary', 'holiday', 'vacation', 'trip', 'celebration', 'party',
     'school', 'education', 'homework', 'study', 'learning', 'tutoring', 'lesson',
     'activity', 'activities', 'play', 'playing', 'game', 'games', 'toy', 'toys',
-    'sport', 'sports', 'practice', 'rehearsal', 'performance', 'recital', 'concert'
+    'sport', 'sports', 'practice', 'rehearsal', 'performance', 'recital', 'concert',
+    // Social media and online (home/personal)
+    'social media', 'facebook', 'instagram', 'twitter', 'x', 'linkedin', 'tiktok', 'youtube',
+    'snapchat', 'pinterest', 'reddit', 'discord', 'telegram', 'whatsapp', 'messenger',
+    'post', 'posting', 'share', 'sharing', 'like', 'comment', 'follow', 'unfollow',
+    'online', 'internet', 'web', 'website', 'webpage', 'email', 'newsletter',
+    'mobile', 'smartphone', 'iphone', 'android', 'tablet', 'ipad', 'smartwatch',
+    'device', 'gadget', 'setup', 'install', 'configure', 'troubleshoot', 'repair',
+    // Medical and health (home/personal)
+    'medical', 'health', 'healthcare', 'doctor', 'physician', 'nurse', 'patient',
+    'appointment', 'checkup', 'examination', 'diagnosis', 'treatment', 'therapy',
+    'medication', 'prescription', 'pharmacy', 'hospital', 'clinic', 'emergency',
+    'wellness', 'fitness', 'exercise', 'workout', 'diet', 'nutrition', 'vitamin',
+    'supplement', 'mental health', 'insurance', 'health insurance', 'medical insurance',
+    // Automobiles (home/personal)
+    'car', 'automobile', 'vehicle', 'truck', 'suv', 'sedan', 'motorcycle', 'bike',
+    'maintenance', 'service', 'oil change', 'tire', 'brake', 'engine', 'battery',
+    'repair', 'fix', 'inspection', 'registration', 'insurance', 'dmv', 'license',
+    'gas', 'fuel', 'electric', 'hybrid', 'charging', 'parking', 'driving', 'road trip'
   ],
   phrases: [
     'home improvement', 'deep clean', 'meal prep', 'yard work', 'garden maintenance',
@@ -305,7 +393,52 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'maintain property condition', 'protect investment', 'ensure home security',
     'research best options', 'compare quality and price', 'make informed purchase',
     'follow proper procedures', 'use correct techniques', 'achieve desired results',
-    'save time and effort', 'improve efficiency', 'enhance daily living'
+    'save time and effort', 'improve efficiency', 'enhance daily living',
+    // Additional contextual phrases for home organization tasks
+    'organize home efficiently', 'maintain clean home environment', 'remove clutter from home',
+    'create organized home space', 'ensure home cleanliness and order', 'systematically organize home area',
+    'improve home organization', 'establish organized home environment', 'maintain tidy home',
+    'create efficient home layout', 'optimize home space utilization', 'enhance home functionality',
+    'ensure home is well organized', 'maintain clean home appearance', 'create productive home environment',
+    'organize home for better living', 'maintain clean and organized home', 'ensure home space is functional',
+    'create systematic home organization', 'maintain organized and efficient home', 'ensure home meets cleanliness standards',
+    // Contextual phrases for home cleaning tasks
+    'thoroughly clean home', 'ensure home cleanliness', 'maintain clean living environment',
+    'create clean and organized home', 'ensure all home areas are clean', 'maintain high home cleanliness standards',
+    'perform comprehensive home cleaning', 'ensure thorough home cleaning', 'maintain clean and sanitary home',
+    // Contextual phrases for home organization tasks
+    'systematically organize home items', 'create logical home organization system', 'establish efficient home organization structure',
+    'organize home items for easy access', 'create organized home storage system', 'maintain organized home structure',
+    'ensure home items are properly organized', 'create systematic home organization', 'maintain consistent home organization',
+    // Contextual phrases for cooking/meal tasks
+    'prepare meals efficiently', 'create nutritious meal plan', 'ensure meal quality and safety',
+    'organize kitchen for cooking', 'maintain clean cooking environment', 'create efficient meal preparation',
+    'ensure ingredients are fresh', 'follow recipe instructions carefully', 'create delicious and healthy meals',
+    // Social media and online contextual phrases (home/personal)
+    'manage social media accounts', 'create engaging online content', 'schedule social media posts',
+    'engage with online community', 'monitor online activity', 'maintain online privacy',
+    'backup online data', 'secure online accounts', 'optimize online presence',
+    // Mobile device contextual phrases (home/personal)
+    'setup mobile device', 'configure device settings', 'troubleshoot device issues',
+    'backup mobile data', 'sync devices', 'optimize device performance',
+    'secure mobile device', 'manage device storage', 'update device software',
+    // Medical and health contextual phrases (home/personal)
+    'schedule medical appointment', 'prepare for health checkup', 'manage medication schedule',
+    'track health metrics', 'maintain wellness routine', 'coordinate healthcare services',
+    'follow treatment plan', 'maintain health records', 'ensure medication compliance',
+    // Automobile contextual phrases (home/personal)
+    'schedule vehicle maintenance', 'perform routine car service', 'coordinate vehicle repairs',
+    'manage vehicle registration', 'renew vehicle insurance', 'complete vehicle inspection',
+    'plan road trip', 'prepare vehicle for travel', 'ensure safe driving conditions',
+    'maintain vehicle performance', 'optimize fuel efficiency', 'track vehicle maintenance history',
+    // Additional contextual phrases for everyday home scenarios
+    'complete home task efficiently', 'execute home task systematically', 'follow home task workflow',
+    'ensure home task completion', 'verify home task requirements', 'validate home task outcomes',
+    'coordinate home activities', 'manage home timeline', 'track home progress',
+    'resolve home task issues', 'optimize home performance', 'improve home efficiency',
+    'document home process', 'review home results', 'finalize home deliverables',
+    'prioritize home activities', 'allocate home resources', 'manage home dependencies',
+    'ensure home quality', 'maintain home standards', 'meet home objectives'
   ],
   verbs: [
     'clean', 'cleaning', 'organize', 'organizing', 'repair', 'maintain', 'cook', 'shop', 'decorate', 'renovate',
@@ -410,7 +543,47 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'give back to community', 'make positive impact', 'help others',
     'practice self-care', 'prioritize wellbeing', 'maintain work-life balance',
     'follow proper form', 'prevent injury', 'maximize benefits',
-    'plan ahead', 'stay organized', 'enjoy the experience'
+    'plan ahead', 'stay organized', 'enjoy the experience',
+    // Social media and online contextual phrases (personal)
+    'create engaging social media content', 'increase social media engagement', 'build personal online presence',
+    'manage personal social media accounts', 'schedule social media posts', 'analyze social media performance',
+    'grow social media following', 'improve online visibility', 'optimize personal social media strategy',
+    'engage with online audience', 'respond to social media comments', 'monitor personal online reputation',
+    'create viral content', 'leverage social media trends', 'build personal brand awareness online',
+    'manage online community', 'create personal digital content', 'optimize personal website performance',
+    'improve search engine ranking', 'increase website traffic', 'enhance online user experience',
+    'manage personal email', 'automate personal online processes', 'secure personal online transactions',
+    'backup personal online data', 'migrate personal data to cloud', 'optimize personal cloud storage',
+    // Mobile device contextual phrases (personal)
+    'setup personal mobile device', 'configure personal device settings', 'troubleshoot personal device issues',
+    'backup personal mobile data', 'sync personal devices', 'optimize personal device performance',
+    'secure personal mobile device', 'manage personal device storage', 'update personal device software',
+    'organize mobile apps', 'manage device notifications', 'optimize device battery life',
+    // Medical and health contextual phrases (personal)
+    'schedule personal medical appointment', 'prepare for personal health checkup', 'manage personal medication schedule',
+    'track personal health metrics', 'maintain personal wellness routine', 'coordinate personal healthcare services',
+    'follow personal treatment plan', 'maintain personal health records', 'ensure personal medication compliance',
+    'maintain fitness routine', 'follow personal nutrition plan', 'ensure proper medication dosage',
+    'schedule personal health checkup', 'review personal medical test results', 'coordinate with personal healthcare providers',
+    'manage personal health insurance', 'submit personal insurance claims', 'track personal medical expenses',
+    // Automobile contextual phrases (personal)
+    'schedule personal vehicle maintenance', 'perform routine personal car service', 'coordinate personal vehicle repairs',
+    'manage personal vehicle registration', 'renew personal vehicle insurance', 'complete personal vehicle inspection',
+    'plan personal road trip', 'prepare personal vehicle for travel', 'ensure safe personal driving conditions',
+    'maintain personal vehicle performance', 'optimize personal fuel efficiency', 'track personal vehicle maintenance history',
+    // Additional contextual phrases for everyday personal scenarios
+    'complete personal task efficiently', 'execute personal task systematically', 'follow personal task workflow',
+    'ensure personal task completion', 'verify personal task requirements', 'validate personal task outcomes',
+    'coordinate personal activities', 'manage personal timeline', 'track personal progress',
+    'resolve personal task issues', 'optimize personal performance', 'improve personal efficiency',
+    'document personal process', 'review personal results', 'finalize personal deliverables',
+    'prioritize personal activities', 'allocate personal resources', 'manage personal dependencies',
+    'ensure personal quality', 'maintain personal standards', 'meet personal objectives',
+    // Standard operating procedures contextual phrases (personal)
+    'follow personal standard procedures', 'document personal process workflow', 'create personal procedure checklist',
+    'review personal standard procedures', 'update personal operating guidelines', 'train on personal new procedures',
+    'ensure personal procedure compliance', 'audit personal procedure adherence', 'improve personal process efficiency',
+    'standardize personal work processes', 'document personal best practices', 'create personal procedure templates'
   ],
   verbs: [
     'exercise', 'workout', 'train', 'practice', 'learn', 'study', 'read', 'write',

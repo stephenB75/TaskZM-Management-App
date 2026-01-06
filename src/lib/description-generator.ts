@@ -446,49 +446,83 @@ export function extractTermsFromTaskNameWithBrowserAI(
   };
   
   // Match domain phrases that contain our keywords (improved intuitive matching)
+  // ENHANCED: More lenient matching that accepts partial keyword matches and semantic relationships
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     
-    // IMPROVED: Check if phrase contains keywords using fuzzy matching
+    // ENHANCED: Check if phrase contains keywords using improved fuzzy matching
+    // Accept if ANY keyword matches (even partially) or if phrase words relate to keywords
     const containsKeyword = taskKeywords.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
       
-      // Check direct match
+      // Direct match (full keyword in phrase or vice versa)
       if (phraseLower.includes(kwLower) || kwLower.includes(phraseLower)) return true;
       
-      // Check word-level fuzzy matching
-      return kwWords.some(kwWord => 
-        phraseWords.some(pw => areWordsRelated(kwWord, pw))
-      ) || phraseWords.some(pw => 
-        kwWords.some(kwWord => areWordsRelated(pw, kwWord))
+      // Word-level fuzzy matching - check if any keyword word relates to any phrase word
+      const hasWordMatch = kwWords.some(kwWord => 
+        phraseWords.some(pw => {
+          // Direct word match
+          if (pw.includes(kwWord) || kwWord.includes(pw)) return true;
+          // Fuzzy word relationship
+          return areWordsRelated(kwWord, pw);
+        })
       );
+      
+      // Also check reverse: phrase words that relate to keyword words
+      const hasReverseMatch = phraseWords.some(pw => 
+        kwWords.some(kwWord => {
+          if (pw.includes(kwWord) || kwWord.includes(pw)) return true;
+          return areWordsRelated(pw, kwWord);
+        })
+      );
+      
+      return hasWordMatch || hasReverseMatch;
     });
     
-    // IMPROVED: Check if phrase relates to task name using word similarity
+    // ENHANCED: More lenient check if phrase relates to task name
+    // Accept if ANY phrase word appears in task name (even if not exact match)
     const phraseRegex = wordBoundaryRegex(phrase);
     const exactMatch = phraseRegex.test(taskNameLower);
     
     // Check if any phrase words appear in task name (fuzzy)
     const hasOverlappingWords = phraseWords.some(pw => {
+      // Direct substring match
       if (taskNameLower.includes(pw)) return true;
       // Fuzzy match: check if any task word is similar to phrase word
-      return taskWords.some(tw => areWordsRelated(pw, tw));
+      return taskWords.some(tw => {
+        if (tw.includes(pw) || pw.includes(tw)) return true;
+        return areWordsRelated(pw, tw);
+      });
     });
     
-    // IMPROVED: Also check if task keywords relate to phrase words
+    // ENHANCED: Check if task keywords relate to phrase words (more lenient)
     const hasRelatedKeywords = taskKeywords.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
       return kwWords.some(kwWord => 
-        phraseWords.some(pw => areWordsRelated(kwWord, pw))
+        phraseWords.some(pw => {
+          // Direct match
+          if (pw.includes(kwWord) || kwWord.includes(pw)) return true;
+          // Fuzzy relationship
+          return areWordsRelated(kwWord, pw);
+        })
       );
     });
     
-    // Accept phrase if it contains keywords and (exact match OR has overlapping words OR has related keywords)
-    if (containsKeyword && (exactMatch || hasOverlappingWords || hasRelatedKeywords) && 
-        !finalPhrases.some(p => p.toLowerCase() === phraseLower)) {
+    // ENHANCED: Also check if phrase contains contextual action words that indicate elaboration
+    // These phrases explain tasks even if they don't directly match keywords
+    const contextualActionWords = DESCRIPTION_GENERATION_CONFIG.contextualActionWords;
+    const hasContextualWords = phraseWords.some(pw => contextualActionWords.includes(pw));
+    
+    // ENHANCED: Accept phrase if:
+    // 1. Contains keywords AND (exact match OR has overlapping words OR has related keywords)
+    // 2. OR has contextual words that explain tasks (even without direct keyword match)
+    const shouldAccept = (containsKeyword && (exactMatch || hasOverlappingWords || hasRelatedKeywords)) ||
+                        (hasContextualWords && hasOverlappingWords);
+    
+    if (shouldAccept && !finalPhrases.some(p => p.toLowerCase() === phraseLower)) {
       finalPhrases.push(phrase);
       matchedDomainPhrases++;
     }
@@ -1015,22 +1049,45 @@ function buildElaborateContextualDescription(
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     
-    // Check if phrase contains keywords (improved matching - check word-level matches)
+    // ENHANCED: Check if phrase contains keywords (improved matching - check word-level matches)
     // Also check if any word in the phrase relates to any keyword (more lenient)
+    // Accept if ANY keyword matches (even partially) or if phrase words relate to keywords
     const containsKeywords = taskKeywordsLower.some(kw => {
       const kwLower = kw.toLowerCase();
-      // Direct match
+      const kwWords = kwLower.split(/\s+/);
+      
+      // Direct match (full keyword in phrase or vice versa)
       if (phraseLower.includes(kwLower) || kwLower.includes(phraseLower)) {
         return true;
       }
+      
       // Word-level match - check if any phrase word contains or is contained by keyword
-      return phraseWords.some(pw => pw.includes(kwLower) || kwLower.includes(pw));
-    }) || phraseWords.some(pw => 
-      taskKeywordsLower.some(tkw => {
+      const hasDirectWordMatch = phraseWords.some(pw => 
+        pw.includes(kwLower) || kwLower.includes(pw) ||
+        kwWords.some(kwWord => pw.includes(kwWord) || kwWord.includes(pw))
+      );
+      
+      // Fuzzy word relationship matching
+      const hasFuzzyMatch = phraseWords.some(pw => 
+        kwWords.some(kwWord => areWordsRelated(pw, kwWord))
+      ) || kwWords.some(kwWord =>
+        phraseWords.some(pw => areWordsRelated(kwWord, pw))
+      );
+      
+      return hasDirectWordMatch || hasFuzzyMatch;
+    }) || phraseWords.some(pw => {
+      // Reverse check: phrase words that relate to keywords
+      return taskKeywordsLower.some(tkw => {
         const tkwLower = tkw.toLowerCase();
-        return pw.includes(tkwLower) || tkwLower.includes(pw);
-      })
-    );
+        const tkwWords = tkwLower.split(/\s+/);
+        
+        // Direct match
+        if (pw.includes(tkwLower) || tkwLower.includes(pw)) return true;
+        
+        // Fuzzy match
+        return tkwWords.some(tkwWord => areWordsRelated(pw, tkwWord));
+      });
+    });
     
     // More lenient check: phrase should NOT be a direct substring of task name
     // Allow partial matches if they add context

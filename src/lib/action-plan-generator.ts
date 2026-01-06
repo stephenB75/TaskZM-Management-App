@@ -10,7 +10,7 @@ import { detectDomain, type Domain, getDomainTerminology } from './domain-termin
 import { analyzeTaskVerbs } from './verb-analysis';
 import { estimateTaskHours } from './daily-hours-utils';
 import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from './business-constants';
-import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS } from './ai-config';
+import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY } from './task-constants';
 import { extractTermsFromTaskNameWithBrowserAI } from './description-generator';
 
@@ -125,8 +125,28 @@ function generateSteps(
   const text = fullText.toLowerCase();
 
   // Use Browser AI to extract terms from task title and description
+  // Browser AI extracts keywords, phrases, verbs, and nouns from user input
+  // Local Terminology enhances extracted terms with domain-specific context
   const extractedTerms = extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
   const { keywords, phrases, verbs, nouns } = extractedTerms;
+  
+  // Log confirmation that both Browser AI and Local Terminology are being used
+  if (keywords.length > 0 || phrases.length > 0 || verbs.length > 0 || nouns.length > 0) {
+    console.debug(`✅ AI Action Plan: Using Browser AI + Local Terminology`, {
+      domain,
+      keywordsCount: keywords.length,
+      phrasesCount: phrases.length,
+      verbsCount: verbs.length,
+      nounsCount: nouns.length,
+      terminologyPhrasesCount: terminology.phrases.length,
+      terminologyVerbsCount: terminology.verbs.length,
+      terminologyNounsCount: terminology.nouns.length,
+      sampleKeywords: keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
+      samplePhrases: phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
+      sampleVerbs: verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
+      sampleNouns: nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging),
+    });
+  }
 
   // Analyze for sequential indicators using extracted terms
   const hasSequence = SEQUENTIAL_INDICATORS.some(indicator => text.includes(indicator)) ||
@@ -558,6 +578,8 @@ function generateSubtasks(
   const text = fullText.toLowerCase();
 
   // Use Browser AI to extract terms from task title and description
+  // Browser AI extracts keywords, phrases, verbs, and nouns from user input
+  // Local Terminology enhances extracted terms with domain-specific context
   const extractedTerms = extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
   const { keywords, phrases, verbs, nouns } = extractedTerms;
 
