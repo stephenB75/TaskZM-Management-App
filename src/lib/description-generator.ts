@@ -1598,14 +1598,14 @@ function buildElaborateContextualDescription(
       ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       const parts: string[] = [];
-      parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(' and ')}`);
+      parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
         
         if (relevantKeywords.length > 0) {
         parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
       }
       
       description = parts.join(' ');
-        } else {
+    } else {
       // Build sentence using available terms
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
       const contextNouns = nouns.length > 0 ? nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (elaboratingNouns.length > 0 ? elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
@@ -1616,7 +1616,7 @@ function buildElaborateContextualDescription(
         if (contextNouns.length > 0) {
           parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns[0]}`);
         } else if (relevantKeywords.length > 0) {
-          parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(' and ')}`);
+          parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
         } else {
           parts.push(actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1));
         }
@@ -1626,12 +1626,12 @@ function buildElaborateContextualDescription(
           parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
         }
       } else if (relevantKeywords.length > 0) {
-        parts.push(relevantKeywords.join(' and '));
+        parts.push(relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `));
       }
       
       if (parts.length > 0) {
         description = parts.join(' ');
-    } else {
+      } else {
         // Last resort: use domain guidance
         const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
         if (domainGuidance) {
