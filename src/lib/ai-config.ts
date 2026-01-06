@@ -292,6 +292,16 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     nounsLogging: 3, // Limit for logging/debugging
     domainTerms: 3, // Maximum domain terms to use
   },
+  // Research task detection and phrase combination
+  researchTask: {
+    keywords: ['research', 'find', 'search', 'compare', 'purchase', 'buy', 'select', 'choose'], // Keywords that indicate research/comparison tasks
+    phraseIndicators: ['research', 'compare', 'purchase', 'best options', 'quality and price', 'informed'], // Phrases that indicate research-related contextual phrases
+    phraseConnectors: {
+      researchCompare: ['research', 'compare'], // Phrases that connect research + compare
+      comparePurchase: ['compare', 'purchase'], // Phrases that connect compare + purchase
+    },
+    minPhrasesForCombination: 2, // Minimum number of research phrases needed to combine
+  },
   // Length thresholds for phrase/term matching
   lengthThresholds: {
     phraseKeywordBuffer: 2, // Buffer for phrase length vs keyword length

@@ -1041,22 +1041,22 @@ function buildElaborateContextualDescription(
   // PRIORITY 1: Build complete contextual sentence using domain phrases + keywords + verbs/nouns
   if (elaboratingPhrases.length > 0) {
     // For research/comparison tasks, try to combine multiple related phrases for more elaborate descriptions
-    const researchKeywords = ['research', 'find', 'search', 'compare', 'compare', 'purchase', 'buy', 'select', 'choose'];
+    const researchKeywords = DESCRIPTION_GENERATION_CONFIG.researchTask.keywords;
     const isResearchTask = taskKeywordsLower.some(kw => researchKeywords.some(rk => kw.includes(rk) || rk.includes(kw)));
     
     let bestPhrase = elaboratingPhrases[0];
     let bestPhraseLower = bestPhrase.toLowerCase();
     
     // If this is a research task, try to combine multiple contextual phrases
-    if (isResearchTask && elaboratingPhrases.length > 1) {
+    if (isResearchTask && elaboratingPhrases.length >= DESCRIPTION_GENERATION_CONFIG.researchTask.minPhrasesForCombination) {
       // Find phrases that work well together (research + compare + purchase)
+      const phraseIndicators = DESCRIPTION_GENERATION_CONFIG.researchTask.phraseIndicators;
       const researchPhrases = elaboratingPhrases.filter(p => {
         const pLower = p.toLowerCase();
-        return pLower.includes('research') || pLower.includes('compare') || pLower.includes('purchase') || 
-               pLower.includes('best options') || pLower.includes('quality and price') || pLower.includes('informed');
+        return phraseIndicators.some(indicator => pLower.includes(indicator));
       });
       
-      if (researchPhrases.length >= 2) {
+      if (researchPhrases.length >= DESCRIPTION_GENERATION_CONFIG.researchTask.minPhrasesForCombination) {
         // Combine first two research-related phrases
         const phrase1 = researchPhrases[0];
         const phrase2 = researchPhrases[1];
@@ -1071,10 +1071,14 @@ function buildElaborateContextualDescription(
         
         // Add second phrase if it adds new information
         if (!phrase1Lower.includes(phrase2Lower) && !phrase2Lower.includes(phrase1Lower)) {
-          // Check if we need a connector
-          if (phrase1Lower.includes('research') && phrase2Lower.includes('compare')) {
-            parts.push(phrase2);
-          } else if (phrase1Lower.includes('compare') && phrase2Lower.includes('purchase')) {
+          // Check if we need a connector using config values
+          const researchCompare = DESCRIPTION_GENERATION_CONFIG.researchTask.phraseConnectors.researchCompare;
+          const comparePurchase = DESCRIPTION_GENERATION_CONFIG.researchTask.phraseConnectors.comparePurchase;
+          
+          const hasResearchCompare = researchCompare.every(conn => phrase1Lower.includes(conn) || phrase2Lower.includes(conn));
+          const hasComparePurchase = comparePurchase.every(conn => phrase1Lower.includes(conn) || phrase2Lower.includes(conn));
+          
+          if (hasResearchCompare || hasComparePurchase) {
             parts.push(phrase2);
           } else {
             parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} ${phrase2}`);
