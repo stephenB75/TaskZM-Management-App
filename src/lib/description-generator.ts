@@ -401,71 +401,171 @@ export function extractTermsFromTaskNameWithBrowserAI(
   let matchedDomainVerbs = 0;
   let matchedDomainNouns = 0;
   
-  // Match domain phrases that contain our keywords (improved matching)
+  // Helper function for improved fuzzy matching
+  const calculateWordSimilarity = (word1: string, word2: string): number => {
+    const w1 = word1.toLowerCase();
+    const w2 = word2.toLowerCase();
+    if (w1 === w2) return 1.0;
+    if (w1.includes(w2) || w2.includes(w1)) return 0.8;
+    
+    // Check for common prefixes/suffixes
+    const minLen = Math.min(w1.length, w2.length);
+    let commonChars = 0;
+    for (let i = 0; i < minLen; i++) {
+      if (w1[i] === w2[i]) commonChars++;
+    }
+    const prefixSimilarity = commonChars / Math.max(w1.length, w2.length);
+    
+    // Check for stem similarity (remove common suffixes)
+    const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+    const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+    const stemMatch = stem1 === stem2 ? 0.7 : (stem1.includes(stem2) || stem2.includes(stem1) ? 0.5 : 0);
+    
+    return Math.max(prefixSimilarity, stemMatch);
+  };
+  
+  // Helper function to check if words are semantically related
+  const areWordsRelated = (word1: string, word2: string): boolean => {
+    const w1 = word1.toLowerCase();
+    const w2 = word2.toLowerCase();
+    
+    // Exact match or substring
+    if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) return true;
+    
+    // Stem matching
+    const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+    const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+    if (stem1 === stem2 || stem1.includes(stem2) || stem2.includes(stem1)) return true;
+    
+    // Similarity threshold
+    return calculateWordSimilarity(w1, w2) >= 0.6;
+  };
+  
+  // Match domain phrases that contain our keywords (improved intuitive matching)
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     
-    // Check if phrase contains keywords (more lenient matching)
+    // IMPROVED: Check if phrase contains keywords using fuzzy matching
     const containsKeyword = taskKeywords.some(kw => {
       const kwLower = kw.toLowerCase();
-      return phraseLower.includes(kwLower) || kwLower.includes(phraseLower) ||
-             phraseWords.some(pw => pw.includes(kwLower) || kwLower.includes(pw));
+      const kwWords = kwLower.split(/\s+/);
+      
+      // Check direct match
+      if (phraseLower.includes(kwLower) || kwLower.includes(phraseLower)) return true;
+      
+      // Check word-level fuzzy matching
+      return kwWords.some(kwWord => 
+        phraseWords.some(pw => areWordsRelated(kwWord, pw))
+      ) || phraseWords.some(pw => 
+        kwWords.some(kwWord => areWordsRelated(pw, kwWord))
+      );
     });
     
-    // Check if phrase relates to task name (even if not exact match)
+    // IMPROVED: Check if phrase relates to task name using word similarity
     const phraseRegex = wordBoundaryRegex(phrase);
     const exactMatch = phraseRegex.test(taskNameLower);
     
-    // Also check if any phrase words appear in task name
-    const hasOverlappingWords = phraseWords.some(pw => taskNameLower.includes(pw));
+    // Check if any phrase words appear in task name (fuzzy)
+    const hasOverlappingWords = phraseWords.some(pw => {
+      if (taskNameLower.includes(pw)) return true;
+      // Fuzzy match: check if any task word is similar to phrase word
+      return taskWords.some(tw => areWordsRelated(pw, tw));
+    });
     
-    // Accept phrase if it contains keywords and (exact match OR has overlapping words)
-    if (containsKeyword && (exactMatch || hasOverlappingWords) && 
+    // IMPROVED: Also check if task keywords relate to phrase words
+    const hasRelatedKeywords = taskKeywords.some(kw => {
+      const kwLower = kw.toLowerCase();
+      const kwWords = kwLower.split(/\s+/);
+      return kwWords.some(kwWord => 
+        phraseWords.some(pw => areWordsRelated(kwWord, pw))
+      );
+    });
+    
+    // Accept phrase if it contains keywords and (exact match OR has overlapping words OR has related keywords)
+    if (containsKeyword && (exactMatch || hasOverlappingWords || hasRelatedKeywords) && 
         !finalPhrases.some(p => p.toLowerCase() === phraseLower)) {
       finalPhrases.push(phrase);
       matchedDomainPhrases++;
     }
   });
   
-  // Match domain verbs that relate to keywords
+  // Match domain verbs that relate to keywords (improved intuitive matching)
   domainTerms.verbs.forEach(verb => {
     const verbLower = verb.toLowerCase();
-    const verbBase = verbLower.replace(/(ing|ed|s|es)$/, '');
+    const verbBase = verbLower.replace(/(ing|ed|s|es|er|est|ly)$/, '');
     const verbPatterns = [
       new RegExp(`\\b${verbBase}\\b`, 'i'),
       new RegExp(`\\b${verbBase}ing\\b`, 'i'),
       new RegExp(`\\b${verbBase}ed\\b`, 'i'),
       new RegExp(`\\b${verbBase}s\\b`, 'i'),
+      new RegExp(`\\b${verbBase}er\\b`, 'i'),
+      new RegExp(`\\b${verbBase}est\\b`, 'i'),
     ];
     
-    const relatesToKeyword = taskKeywords.some(kw => 
-      verbLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbLower) ||
-      verbBase.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbBase)
-    );
+    // IMPROVED: Check if verb relates to keywords using fuzzy matching
+    const relatesToKeyword = taskKeywords.some(kw => {
+      const kwLower = kw.toLowerCase();
+      const kwWords = kwLower.split(/\s+/);
+      
+      // Direct match
+      if (verbLower.includes(kwLower) || kwLower.includes(verbLower)) return true;
+      if (verbBase.includes(kwLower) || kwLower.includes(verbBase)) return true;
+      
+      // Fuzzy word-level matching
+      return kwWords.some(kwWord => {
+        const kwStem = kwWord.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+        return areWordsRelated(kwWord, verbLower) || 
+               areWordsRelated(kwStem, verbBase) ||
+               verbBase.includes(kwStem) || kwStem.includes(verbBase);
+      });
+    });
     
-    if (verbPatterns.some(pattern => pattern.test(taskNameLower)) && relatesToKeyword &&
+    // IMPROVED: Check if verb appears in task name (fuzzy)
+    const appearsInTask = verbPatterns.some(pattern => pattern.test(taskNameLower)) ||
+      taskWords.some(tw => areWordsRelated(tw, verbLower) || areWordsRelated(tw, verbBase));
+    
+    if (appearsInTask && relatesToKeyword &&
         !foundVerbs.some(v => v.toLowerCase() === verbLower)) {
       foundVerbs.push(verb);
       matchedDomainVerbs++;
     }
   });
   
-  // Match domain nouns that relate to keywords
+  // Match domain nouns that relate to keywords (improved intuitive matching)
   domainTerms.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
-    const nounBase = nounLower.replace(/s$|es$/, '');
+    const nounBase = nounLower.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
     const nounPatterns = [
       new RegExp(`\\b${nounBase}\\b`, 'i'),
       new RegExp(`\\b${nounBase}s\\b`, 'i'),
+      new RegExp(`\\b${nounBase}es\\b`, 'i'),
+      new RegExp(`\\b${nounBase}ies\\b`, 'i'),
     ];
     
-    const relatesToKeyword = taskKeywords.some(kw => 
-      nounLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounLower) ||
-      nounBase.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounBase)
-    );
+    // IMPROVED: Check if noun relates to keywords using fuzzy matching
+    const relatesToKeyword = taskKeywords.some(kw => {
+      const kwLower = kw.toLowerCase();
+      const kwWords = kwLower.split(/\s+/);
+      
+      // Direct match
+      if (nounLower.includes(kwLower) || kwLower.includes(nounLower)) return true;
+      if (nounBase.includes(kwLower) || kwLower.includes(nounBase)) return true;
+      
+      // Fuzzy word-level matching
+      return kwWords.some(kwWord => {
+        const kwStem = kwWord.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
+        return areWordsRelated(kwWord, nounLower) || 
+               areWordsRelated(kwStem, nounBase) ||
+               nounBase.includes(kwStem) || kwStem.includes(nounBase);
+      });
+    });
     
-    if (nounPatterns.some(pattern => pattern.test(taskNameLower)) && relatesToKeyword &&
+    // IMPROVED: Check if noun appears in task name (fuzzy)
+    const appearsInTask = nounPatterns.some(pattern => pattern.test(taskNameLower)) ||
+      taskWords.some(tw => areWordsRelated(tw, nounLower) || areWordsRelated(tw, nounBase));
+    
+    if (appearsInTask && relatesToKeyword &&
         !foundNouns.some(n => n.toLowerCase() === nounLower)) {
       foundNouns.push(noun);
       matchedDomainNouns++;

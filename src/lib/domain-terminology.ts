@@ -54,7 +54,16 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
     'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
     'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
-    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
+    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec',
+    // Additional business keywords for better matching
+    'organize', 'organizing', 'organization', 'organize', 'organizing', 'organizational',
+    'clean', 'cleaning', 'cleanup', 'clean up', 'tidy', 'tidying', 'neat', 'orderly',
+    'office', 'workspace', 'work space', 'desk', 'desktop', 'workspace', 'cubicle',
+    'space', 'area', 'room', 'environment', 'setup', 'arrange', 'arranging', 'arrangement',
+    'systematize', 'systematizing', 'system', 'systematic', 'structure', 'structured',
+    'streamline', 'streamlining', 'optimize', 'optimizing', 'efficient', 'efficiency',
+    'improve', 'improving', 'improvement', 'enhance', 'enhancing', 'enhancement',
+    'refine', 'refining', 'refinement', 'polish', 'polishing', 'perfect', 'perfecting'
   ],
   phrases: [
     'quarterly review', 'client call', 'project milestone', 'stakeholder update',
@@ -71,6 +80,18 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'bug fix', 'bug fixing', 'code fix', 'debug code', 'code debugging',
     'pull request', 'code merge', 'git commit', 'version control', 'code repository',
     'technical specification', 'system design', 'architecture design', 'api design',
+    // Additional business phrases for better matching
+    'organize workspace', 'organize office', 'organize work space', 'organize desk',
+    'clean office', 'clean workspace', 'clean work space', 'clean desk', 'clean area',
+    'office organization', 'workspace organization', 'desk organization', 'space organization',
+    'office cleanup', 'workspace cleanup', 'desk cleanup', 'area cleanup',
+    'organize files', 'organize documents', 'organize papers', 'organize materials',
+    'office setup', 'workspace setup', 'desk setup', 'work area setup',
+    'improve organization', 'enhance organization', 'streamline organization',
+    'create organized space', 'maintain organized workspace', 'keep workspace organized',
+    'systematic organization', 'structured workspace', 'efficient organization',
+    'professional organization', 'workplace organization', 'office management',
+    'workspace management', 'desk management', 'space management', 'area management'
     'financial report', 'quarterly earnings', 'annual report', 'balance sheet',
     'income statement', 'cash flow', 'budget analysis', 'financial planning',
     'investment strategy', 'portfolio management', 'risk assessment', 'credit check',
@@ -98,6 +119,14 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'deploy', 'deploying', 'integrate', 'integrating', 'refactor', 'refactoring',
     'optimize', 'optimizing', 'validate', 'validating', 'verify', 'verifying',
     'conduct', 'conducting', 'perform', 'performing', 'run', 'running', 'execute', 'executing',
+    // Additional business verbs for better matching
+    'organize', 'organizing', 'arrange', 'arranging', 'systematize', 'systematizing',
+    'clean', 'cleaning', 'cleanup', 'tidy', 'tidying', 'neaten', 'neatening',
+    'setup', 'setting up', 'set up', 'configure', 'configuring', 'arrange', 'arranging',
+    'streamline', 'streamlining', 'optimize', 'optimizing', 'improve', 'improving',
+    'enhance', 'enhancing', 'refine', 'refining', 'polish', 'polishing', 'perfect', 'perfecting',
+    'structure', 'structuring', 'systematize', 'systematizing', 'order', 'ordering',
+    'manage', 'managing', 'maintain', 'maintaining', 'keep', 'keeping', 'preserve', 'preserving'
     'invest', 'investing', 'deposit', 'depositing', 'withdraw', 'withdrawing',
     'transfer', 'transferring', 'calculate', 'calculating', 'analyze', 'analyzing',
     'budget', 'budgeting', 'forecast', 'forecasting', 'reconcile', 'reconciling',
@@ -117,7 +146,14 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
     'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
     'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
-    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
+    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec',
+    // Additional business nouns for better matching
+    'organization', 'organizing', 'arrangement', 'arranging', 'systematization',
+    'cleanup', 'cleaning', 'tidying', 'neatness', 'order', 'orderliness',
+    'workspace', 'work space', 'office', 'desk', 'desktop', 'area', 'space', 'room',
+    'environment', 'setup', 'configuration', 'arrangement', 'structure', 'system',
+    'files', 'documents', 'papers', 'materials', 'items', 'belongings', 'supplies',
+    'efficiency', 'organization', 'structure', 'system', 'order', 'neatness', 'tidiness'
   ],
   pronouns: [
     'we', 'us', 'our', 'ours', 'ourselves', 'they', 'them', 'their', 'theirs', 'themselves',
@@ -175,6 +211,18 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'automatic litter box', 'self cleaning litter box', 'pet care products',
     'pet supplies shopping', 'find pet products', 'research pet products',
     'compare pet products', 'pet accessories', 'pet food', 'pet toys',
+    // Additional home phrases for better matching
+    'organize space', 'organize area', 'organize room', 'organize home', 'organize house',
+    'clean space', 'clean area', 'clean room', 'clean home', 'clean house',
+    'home organization', 'house organization', 'space organization', 'area organization',
+    'home cleanup', 'house cleanup', 'space cleanup', 'area cleanup',
+    'organize belongings', 'organize items', 'organize supplies', 'organize materials',
+    'home setup', 'house setup', 'space setup', 'area setup', 'room setup',
+    'improve organization', 'enhance organization', 'streamline organization',
+    'create organized space', 'maintain organized home', 'keep home organized',
+    'systematic organization', 'structured space', 'efficient organization',
+    'home management', 'house management', 'space management', 'area management',
+    'home maintenance', 'house maintenance', 'space maintenance', 'area maintenance',
     'cooking dinner', 'meal preparation', 'meal planning', 'recipe search',
     'grocery shopping', 'food shopping', 'restaurant reservation', 'dinner party',
     'baking project', 'cooking class', 'meal prep', 'food prep', 'kitchen organization',
@@ -196,7 +244,7 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'save time and effort', 'improve efficiency', 'enhance daily living'
   ],
   verbs: [
-    'clean', 'organize', 'repair', 'maintain', 'cook', 'shop', 'decorate', 'renovate',
+    'clean', 'cleaning', 'organize', 'organizing', 'repair', 'maintain', 'cook', 'shop', 'decorate', 'renovate',
     'remodel', 'paint', 'install', 'assemble', 'disassemble', 'fix', 'replace',
     'upgrade', 'refurbish', 'restore', 'refinish', 'polish', 'wax', 'seal',
     'caulk', 'grout', 'tile', 'sand', 'stain', 'varnish', 'prune', 'trim',
@@ -204,6 +252,13 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'find', 'finding', 'search', 'searching', 'research', 'researching', 'compare',
     'comparing', 'purchase', 'buy', 'buying', 'select', 'selecting', 'choose',
     'choosing', 'evaluate', 'evaluating', 'review', 'reviewing', 'decide', 'deciding',
+    // Additional home verbs for better matching
+    'arrange', 'arranging', 'systematize', 'systematizing', 'setup', 'setting up', 'set up',
+    'tidy', 'tidying', 'neaten', 'neatening', 'order', 'ordering', 'structure', 'structuring',
+    'streamline', 'streamlining', 'optimize', 'optimizing', 'improve', 'improving',
+    'enhance', 'enhancing', 'refine', 'refining', 'polish', 'polishing', 'perfect', 'perfecting',
+    'manage', 'managing', 'maintain', 'maintaining', 'keep', 'keeping', 'preserve', 'preserving',
+    'handle', 'handling', 'care', 'caring', 'tend', 'tending', 'look after', 'looking after',
     'cook', 'cooking', 'bake', 'baking', 'roast', 'roasting', 'grill', 'grilling',
     'fry', 'frying', 'boil', 'boiling', 'steam', 'steaming', 'sauté', 'sautéing',
     'marinate', 'marinating', 'season', 'seasoning', 'mix', 'mixing', 'stir', 'stirring',
