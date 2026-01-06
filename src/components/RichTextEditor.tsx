@@ -112,13 +112,16 @@ export function RichTextEditor({
       editorRef.current.style.fontSize = STANDARD_FONT_SIZE;
       
       // Auto-expand editor height based on content (up to max height)
-      // This allows the editor to grow with content and wrap naturally
-      const contentHeight = editorRef.current.scrollHeight;
-      const minHeight = rows * 20; // rows * 20px per row
-      const maxHeight = COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.maxHeight;
-      const newHeight = Math.max(minHeight, Math.min(contentHeight, maxHeight));
-      editorRef.current.style.height = 'auto';
-      editorRef.current.style.minHeight = `${newHeight}px`;
+      // Defer scrollHeight read to prevent forced reflow
+      requestAnimationFrame(() => {
+        if (!editorRef.current) return;
+        const contentHeight = editorRef.current.scrollHeight;
+        const minHeight = rows * 20; // rows * 20px per row
+        const maxHeight = COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.maxHeight;
+        const newHeight = Math.max(minHeight, Math.min(contentHeight, maxHeight));
+        editorRef.current.style.height = 'auto';
+        editorRef.current.style.minHeight = `${newHeight}px`;
+      });
       
       onChange(editorRef.current.innerHTML);
     }

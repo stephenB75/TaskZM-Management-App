@@ -24,6 +24,7 @@ import {
   PRIORITY_TIME_SLOTS,
   HIGH_PRIORITY_DISTRIBUTION_DAYS,
   DEFAULT_CATEGORY_HOURS,
+  DEFAULT_TASK_CATEGORY,
   PRIORITY_WEIGHTS,
   STATUS_WEIGHTS,
   getCategoryFromTags,
@@ -287,7 +288,12 @@ export function useAIScheduler() {
     // When forceCategoryHours is true, always use category hours regardless of respectHours setting
     if (!forceCategoryHours && !hoursSettings.respectHours) return null;
 
-    const category = getTaskCategory(task);
+    let category = getTaskCategory(task);
+    // CRITICAL FIX: If forceCategoryHours is true but task has no category, use default category
+    // This ensures recurring tasks always get a valid time slot even without category tags
+    if (!category && forceCategoryHours) {
+      category = DEFAULT_TASK_CATEGORY; // Default category for recurring tasks without category tags
+    }
     if (!category) return null;
 
     const isWeekendDate = isWeekend(scheduleDate);
@@ -321,7 +327,7 @@ export function useAIScheduler() {
       // If forcing category hours but category is disabled, use default work hours as fallback
       if (forceCategoryHours) {
         // Use default category hours as the time window (e.g., 9:00-17:00 for work)
-        const defaultStartHour = DEFAULT_CATEGORY_HOURS[category] || DEFAULT_CATEGORY_HOURS.work;
+        const defaultStartHour = DEFAULT_CATEGORY_HOURS[category] || DEFAULT_CATEGORY_HOURS[DEFAULT_TASK_CATEGORY];
         // Default to 8-hour window from start hour (e.g., 9:00-17:00)
         const defaultEndHour = Math.min(defaultStartHour + 8, 23);
         const defaultTotalHours = defaultEndHour - defaultStartHour;

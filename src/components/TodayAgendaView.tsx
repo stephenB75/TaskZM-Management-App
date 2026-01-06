@@ -321,21 +321,24 @@ export function TodayAgendaView({
     }
 
     const handleScroll = () => {
-      const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
-      
-      // Only mark as user scroll if the scroll position actually changed
-      // This prevents false positives from programmatic scrolling
-      if (Math.abs(currentScrollTop - lastScrollTop) > 1) {
-        // Clear any pending auto-scroll
-        if (scrollTimeout) {
-          clearTimeout(scrollTimeout);
-          scrollTimeout = null;
-        }
+      // Defer scrollTop read to prevent forced reflow
+      requestAnimationFrame(() => {
+        const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
         
-        // Mark that user has scrolled
-        userHasScrolledRef.current = true;
-        lastScrollTop = currentScrollTop;
-      }
+        // Only mark as user scroll if the scroll position actually changed
+        // This prevents false positives from programmatic scrolling
+        if (Math.abs(currentScrollTop - lastScrollTop) > 1) {
+          // Clear any pending auto-scroll
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = null;
+          }
+          
+          // Mark that user has scrolled
+          userHasScrolledRef.current = true;
+          lastScrollTop = currentScrollTop;
+        }
+      });
     };
 
     // Use a small delay to detect user-initiated scroll vs programmatic scroll

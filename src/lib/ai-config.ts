@@ -440,6 +440,12 @@ export const DEFAULT_CATEGORY_HOURS = {
   projects: parseTimeToHour(DEFAULT_WEEKDAY_PROJECTS_START),    // Projects start hour
 } as const;
 
+/**
+ * Default category for tasks when category cannot be determined
+ * Used as fallback when forceCategoryHours is true but task has no category tags
+ */
+export const DEFAULT_TASK_CATEGORY: 'work' | 'personal' | 'projects' = 'work';
+
 // ============================================================================
 // Priority Weights (for sorting)
 // ============================================================================
