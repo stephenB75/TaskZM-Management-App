@@ -91,7 +91,7 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'create organized space', 'maintain organized workspace', 'keep workspace organized',
     'systematic organization', 'structured workspace', 'efficient organization',
     'professional organization', 'workplace organization', 'office management',
-    'workspace management', 'desk management', 'space management', 'area management'
+    'workspace management', 'desk management', 'space management', 'area management',
     'financial report', 'quarterly earnings', 'annual report', 'balance sheet',
     'income statement', 'cash flow', 'budget analysis', 'financial planning',
     'investment strategy', 'portfolio management', 'risk assessment', 'credit check',
