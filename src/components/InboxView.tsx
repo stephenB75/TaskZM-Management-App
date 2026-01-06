@@ -39,7 +39,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
@@ -559,15 +559,34 @@ export function InboxView() {
         title="Inbox"
         panelOpen={true}
         isSidePanelHeader={true}
-        description={showScheduled 
-          ? `${unscheduledTasks.length} scheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
-          : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
+        description={selectedTaskIds.size > 0 
+          ? undefined 
+          : (showScheduled 
+            ? `${unscheduledTasks.length} scheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
+            : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
+          )
         }
         hideDesktopLogo
         actions={
-          <div className="flex items-center flex-wrap" style={{ gap: HEADER_GAP_SMALL }}>
+          <div className={cn(
+            "flex",
+            selectedTaskIds.size > 0 ? "flex-col items-end" : "items-center flex-wrap"
+          )} style={{ gap: HEADER_GAP_SMALL }}>
             {selectedTaskIds.size > 0 ? (
               <>
+                <p 
+                  className="text-muted-foreground text-right"
+                  style={{ 
+                    fontSize: HEADER_DESCRIPTION_SIZE,
+                    marginBottom: HEADER_DESCRIPTION_MARGIN_TOP,
+                  }}
+                >
+                  {showScheduled 
+                    ? `${unscheduledTasks.length} scheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
+                    : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
+                  }
+                </p>
+                <div className="flex items-center flex-wrap" style={{ gap: HEADER_GAP_SMALL }}>
                 <Button
                   onClick={handleSelectAll}
                   variant="outline"
@@ -674,6 +693,7 @@ export function InboxView() {
                     {selectedTaskIds.size}
                   </span>
                 </Button>
+                </div>
               </>
             ) : (
               <>
