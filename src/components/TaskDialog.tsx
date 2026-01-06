@@ -1920,12 +1920,16 @@ export function TaskDialog({
                             size="sm"
                             onClick={async () => {
                               try {
-                                const generated = await generateDescription(title, accessToken, description);
+                                // Force regeneration by passing empty description to get fresh result
+                                // This ensures we get a new/modified description rather than reusing the existing one
+                                const generated = await generateDescription(title, accessToken, '');
                                 logger.debug('AI Refresh description result:', { 
                                   hasDescription: !!generated.description, 
                                   descriptionLength: generated.description?.length || 0,
                                   confidence: generated.confidence,
-                                  domain: generated.domain
+                                  domain: generated.domain,
+                                  previousDescription: description.substring(0, 50),
+                                  newDescription: generated.description?.substring(0, 50)
                                 });
                                 
                                 if (generated.description && generated.description.trim().length > 0) {
