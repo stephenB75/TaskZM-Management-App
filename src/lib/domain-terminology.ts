@@ -128,9 +128,9 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'inventory items', 'audit supplies', 'check materials', 'review belongings',
     'label items', 'tag files', 'mark containers', 'identify objects',
     'remove old items', 'discard unused', 'dispose waste', 'clear out',
-    'create storage', 'set up storage', 'organize storage', 'manage storage',
-    'improve efficiency', 'enhance productivity', 'optimize workspace', 'streamline workflow'
-    'financial report', 'quarterly earnings', 'annual report', 'balance sheet',
+      'create storage', 'set up storage', 'organize storage', 'manage storage',
+      'improve efficiency', 'enhance productivity', 'optimize workspace', 'streamline workflow',
+      'financial report', 'quarterly earnings', 'annual report', 'balance sheet',
     'income statement', 'cash flow', 'budget analysis', 'financial planning',
     'investment strategy', 'portfolio management', 'risk assessment', 'credit check',
     'loan application', 'mortgage approval', 'tax filing', 'tax return',
