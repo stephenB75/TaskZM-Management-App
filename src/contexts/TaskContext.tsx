@@ -2879,16 +2879,41 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
 
     const checkAndRolloverTasks = () => {
-      // Find incomplete tasks scheduled for yesterday or earlier
+      // Find incomplete tasks that should roll over to inbox
+      // Tasks roll over if:
+      // 1. They have a scheduledDate that is before today, OR
+      // 2. They have a dueDate that is before today (even if no scheduledDate)
+      // 3. They are not completed (status !== 'done')
+      // 4. They are not already in inbox (scheduledDate === null means already in inbox)
       const tasksToRollover = tasks.filter(task => {
-        if (task.status === 'done' || !task.scheduledDate) return false;
+        // Skip completed tasks
+        if (task.status === 'done') return false;
         
-        const taskDate = new Date(task.scheduledDate);
-        taskDate.setHours(0, 0, 0, 0);
-        const taskDateString = taskDate.toISOString().split('T')[0];
+        // Skip tasks already in inbox (scheduledDate === null means already in inbox)
+        // Tasks already in inbox don't need to be rolled over again
+        if (task.scheduledDate === null) return false;
         
-        // Task is from a previous day
-        return taskDateString < todayString;
+        // Check if task has a scheduledDate or dueDate that has passed
+        let hasPassedDate = false;
+        
+        // Priority 1: Check scheduledDate if it exists
+        if (task.scheduledDate) {
+          const taskDate = new Date(task.scheduledDate);
+          taskDate.setHours(0, 0, 0, 0);
+          const taskDateString = taskDate.toISOString().split('T')[0];
+          hasPassedDate = taskDateString < todayString;
+        }
+        
+        // Priority 2: If scheduledDate hasn't passed or doesn't exist, check dueDate
+        if (!hasPassedDate && task.dueDate) {
+          const dueDate = new Date(task.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          const dueDateString = dueDate.toISOString().split('T')[0];
+          hasPassedDate = dueDateString < todayString;
+        }
+        
+        // Task should roll over if it has a passed date
+        return hasPassedDate;
       });
 
       if (tasksToRollover.length > 0) {
@@ -2952,7 +2977,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Run rollover check after a short delay (to allow UI to load)
     const timer = setTimeout(() => {
       checkAndRolloverTasks();
-    }, 3000);
+    }, TIMING_CONSTANTS.delays.rolloverCheck);
     
     return () => clearTimeout(timer);
   }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask]);

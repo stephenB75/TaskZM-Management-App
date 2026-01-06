@@ -24,6 +24,7 @@ export const TIMING_CONSTANTS = {
     throttle: 1000, // Throttle delay for activity tracking
     calendarPopup: 100, // Calendar popup delay
     calendarCheck: 1000, // Calendar check interval delay
+    rolloverCheck: 3000, // Rollover check delay to allow UI to load
   },
   
   // Timeouts (in milliseconds)
