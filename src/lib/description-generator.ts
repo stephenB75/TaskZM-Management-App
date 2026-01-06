@@ -405,8 +405,8 @@ export function extractTermsFromTaskNameWithBrowserAI(
   const calculateWordSimilarity = (word1: string, word2: string): number => {
     const w1 = word1.toLowerCase();
     const w2 = word2.toLowerCase();
-    if (w1 === w2) return 1.0;
-    if (w1.includes(w2) || w2.includes(w1)) return 0.8;
+    if (w1 === w2) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch;
+    if (w1.includes(w2) || w2.includes(w1)) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.substringMatch;
     
     // Check for common prefixes/suffixes
     const minLen = Math.min(w1.length, w2.length);
@@ -419,7 +419,11 @@ export function extractTermsFromTaskNameWithBrowserAI(
     // Check for stem similarity (remove common suffixes)
     const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
     const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-    const stemMatch = stem1 === stem2 ? 0.7 : (stem1.includes(stem2) || stem2.includes(stem1) ? 0.5 : 0);
+    const stemMatch = stem1 === stem2 
+      ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactStemMatch 
+      : (stem1.includes(stem2) || stem2.includes(stem1) 
+          ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.partialStemMatch 
+          : 0);
     
     return Math.max(prefixSimilarity, stemMatch);
   };
@@ -438,7 +442,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
     if (stem1 === stem2 || stem1.includes(stem2) || stem2.includes(stem1)) return true;
     
     // Similarity threshold
-    return calculateWordSimilarity(w1, w2) >= 0.6;
+    return calculateWordSimilarity(w1, w2) >= DESCRIPTION_GENERATION_CONFIG.wordSimilarity.relationshipThreshold;
   };
   
   // Match domain phrases that contain our keywords (improved intuitive matching)
@@ -1206,7 +1210,7 @@ function buildElaborateContextualDescription(
         }
         
         description = parts.join(' ');
-      } else {
+        } else {
         // Use single phrase but make it more elaborate
         bestPhrase = elaboratingPhrases[0];
         bestPhraseLower = bestPhrase.toLowerCase();
@@ -1286,7 +1290,7 @@ function buildElaborateContextualDescription(
     
     // Get relevant keywords that add context
     const relevantKeywords = keywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
+          const kwLower = kw.toLowerCase();
       return !contextNouns.some(n => n.toLowerCase().includes(kwLower)) &&
              !taskNameLower.includes(kwLower);
     }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
@@ -1649,7 +1653,7 @@ export async function generateDescription(
   const domainResult = detectDomain(taskName, descriptionForDetection);
   const domain = domainResult.domain;
   const domainTerms = getDomainTerminology(domain);
-  
+
   logger.debug(`📝 Description Generation: Using domain detection with description`, {
     taskName,
     hasDescription: !!descriptionForDetection,

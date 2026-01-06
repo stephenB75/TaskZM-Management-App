@@ -85,9 +85,9 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   minSearchResults: 1, // Minimum search results needed to use search-based description
   searchTimeout: 5000, // Timeout for DuckDuckGo search (ms)
   // Context processing thresholds
-  minContextLength: 30, // Minimum context length to use in description (reduced to allow shorter but useful contexts)
-  minSentenceLength: 15, // Minimum sentence length to extract (reduced to allow shorter useful sentences)
-  maxSentenceLength: 150, // Maximum sentence length to extract
+  minContextLength: 20, // Minimum context length to use in description (reduced to allow shorter but useful contexts)
+  minSentenceLength: 10, // Minimum sentence length to extract (reduced to allow shorter useful sentences)
+  maxSentenceLength: 500, // Maximum sentence length to extract (increased from 150 to allow longer, more complete descriptions)
   // Query processing
   minWordLength: 2, // Minimum word length to consider in task name
   maxQueriesPerSearch: 5, // Maximum number of queries to search in parallel
@@ -97,11 +97,11 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   maxTopPhrases: 2, // Maximum top phrases to use in queries
   maxTopVerbs: 2, // Maximum top verbs to use in queries
   maxTopNouns: 2, // Maximum top nouns to use in queries
-  maxExtractedKeywords: 8, // Maximum extracted keywords to return (increased for better context)
-  maxExtractedPhrases: 5, // Maximum extracted phrases to return (increased for better context)
-  maxExtractedVerbs: 5, // Maximum extracted verbs to return (increased for better context)
-  maxExtractedNouns: 5, // Maximum extracted nouns to return (increased for better context)
-  maxExtractedPronouns: 2, // Maximum extracted pronouns to return
+  maxExtractedKeywords: 15, // Maximum extracted keywords to return (increased for better context and more comprehensive matching)
+  maxExtractedPhrases: 10, // Maximum extracted phrases to return (increased for better context and more comprehensive matching)
+  maxExtractedVerbs: 10, // Maximum extracted verbs to return (increased for better context and more comprehensive matching)
+  maxExtractedNouns: 10, // Maximum extracted nouns to return (increased for better context and more comprehensive matching)
+  maxExtractedPronouns: 5, // Maximum extracted pronouns to return (increased for better context)
   maxSnippetLength: 200, // Maximum snippet length for context extraction
   // Confidence calculation weights
   baseConfidence: 0.3, // Base confidence for fallback descriptions
@@ -207,7 +207,7 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     minLenFallback: 10, // Fallback minimum length when reducing minSentenceLength
     minLenReduction: 5, // Amount to reduce minSentenceLength for lenient extraction
     contextBoostThreshold: 20, // Minimum context length for smaller confidence boost
-    descriptionTooShortThreshold: 30, // Minimum description length to not be considered "too short"
+    descriptionTooShortThreshold: 15, // Minimum description length to not be considered "too short" (reduced to allow concise but effective descriptions)
     directContextMinLength: 20, // Minimum length for using direct context from search results
     contextPreviewLength: 200, // Maximum length for context preview in logging
     searchResultPreviewLength: 100, // Maximum length for search result preview in logging
@@ -278,19 +278,19 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     high: 0.1, // Boost for high context length
     medium: 0.05, // Boost for medium context length
   },
-  // Array slice limits for description building
+  // Array slice limits for description building (increased to allow richer, more comprehensive descriptions)
   sliceLimits: {
-    keywords: 2, // Maximum keywords to use in description parts
-    keywordsExtended: 3, // Extended limit for keywords
-    keywordsLogging: 5, // Limit for logging/debugging
-    phrases: 2, // Maximum phrases to use in description parts
-    phrasesLogging: 3, // Limit for logging/debugging
-    verbs: 2, // Maximum verbs to use in description parts
-    verbsLogging: 3, // Limit for logging/debugging
-    nouns: 2, // Maximum nouns to use in description parts
-    nounsSingle: 1, // Single noun limit
-    nounsLogging: 3, // Limit for logging/debugging
-    domainTerms: 3, // Maximum domain terms to use
+    keywords: 5, // Maximum keywords to use in description parts (increased from 2 for richer context)
+    keywordsExtended: 6, // Extended limit for keywords (increased from 3)
+    keywordsLogging: 10, // Limit for logging/debugging (increased from 5)
+    phrases: 4, // Maximum phrases to use in description parts (increased from 2 for richer context)
+    phrasesLogging: 6, // Limit for logging/debugging (increased from 3)
+    verbs: 4, // Maximum verbs to use in description parts (increased from 2 for richer context)
+    verbsLogging: 6, // Limit for logging/debugging (increased from 3)
+    nouns: 4, // Maximum nouns to use in description parts (increased from 2 for richer context)
+    nounsSingle: 2, // Single noun limit (increased from 1)
+    nounsLogging: 6, // Limit for logging/debugging (increased from 3)
+    domainTerms: 6, // Maximum domain terms to use (increased from 3 for richer context)
   },
   // Research task detection and phrase combination
   researchTask: {
@@ -309,6 +309,14 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     minTaskNameSubstring: 5, // Minimum length for task name substring check
     minPhraseWords: 2, // Minimum words in phrase for context
     minPhraseSubstring: 5, // Minimum phrase length for substring check
+  },
+  // Word similarity thresholds for fuzzy matching
+  wordSimilarity: {
+    exactMatch: 1.0, // Exact word match similarity
+    substringMatch: 0.8, // Substring match similarity (word contains another)
+    exactStemMatch: 0.7, // Exact stem match similarity (same base word)
+    partialStemMatch: 0.5, // Partial stem match similarity (stem contains another)
+    relationshipThreshold: 0.6, // Minimum similarity threshold for word relationship
   },
 } as const;
 
