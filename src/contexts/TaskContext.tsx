@@ -2926,7 +2926,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const taskTitles = tasksToRollover.slice(0, 3).map(t => t.title).join(', ');
           const more = tasksToRollover.length > 3 ? ` and ${tasksToRollover.length - 3} more` : '';
           
-          toast('🔄 Task Rollover', {
+          toast.info('🔄 Task Rollover', {
             description: `Move ${tasksToRollover.length} incomplete task(s) to inbox? (${taskTitles}${more})`,
             action: {
               label: 'Move to Inbox',
@@ -2953,6 +2953,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     const performRollover = async (tasksToRollover: Task[], todayString: string) => {
       let movedCount = 0;
+      let failedCount = 0;
+      const failedTasks: string[] = [];
       
       // Move tasks to inbox by setting scheduledDate to null
       for (const task of tasksToRollover) {
@@ -2962,11 +2964,32 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           movedCount++;
         } catch (error) {
           logger.error('Failed to move task to inbox:', task.id, error);
+          failedCount++;
+          failedTasks.push(task.title);
         }
       }
       
-      if (movedCount > 0) {
-        toast.success(`✅ Moved ${movedCount} task(s) to inbox`);
+      // Show appropriate alert based on results
+      if (movedCount > 0 && failedCount === 0) {
+        // All tasks moved successfully
+        toast.success(`✅ Moved ${movedCount} task${movedCount !== 1 ? 's' : ''} to inbox`, {
+          description: movedCount === 1 
+            ? 'The task has been moved to your inbox'
+            : 'All tasks have been moved to your inbox',
+          duration: TOAST_DURATION_MEDIUM_MS,
+        });
+      } else if (movedCount > 0 && failedCount > 0) {
+        // Some tasks moved, some failed
+        toast.warning(`⚠️ Moved ${movedCount} task${movedCount !== 1 ? 's' : ''} to inbox`, {
+          description: `Failed to move ${failedCount} task${failedCount !== 1 ? 's' : ''}: ${failedTasks.slice(0, 3).join(', ')}${failedTasks.length > 3 ? '...' : ''}`,
+          duration: TOAST_DURATION_LONG_MS,
+        });
+      } else if (failedCount > 0) {
+        // All tasks failed
+        toast.error(`❌ Failed to move tasks to inbox`, {
+          description: `Could not move ${failedCount} task${failedCount !== 1 ? 's' : ''} to inbox. Please try again.`,
+          duration: TOAST_DURATION_LONG_MS,
+        });
       }
       
       // Ensure we're marked as checked (should already be set, but double-check)
