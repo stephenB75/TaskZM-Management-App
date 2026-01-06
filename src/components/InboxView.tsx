@@ -569,7 +569,7 @@ export function InboxView() {
         hideDesktopLogo
         actions={
           <div className={cn(
-            "flex",
+            "flex flex-shrink-0 max-w-full",
             selectedTaskIds.size > 0 ? "flex-col items-end" : "items-center flex-wrap"
           )} style={{ gap: HEADER_GAP_SMALL }}>
             {selectedTaskIds.size > 0 ? (
@@ -586,7 +586,7 @@ export function InboxView() {
                     : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
                   }
                 </p>
-                <div className="flex items-center flex-wrap" style={{ gap: HEADER_GAP_SMALL }}>
+                <div className="flex items-center flex-wrap flex-shrink-0" style={{ gap: HEADER_GAP_SMALL }}>
                 <Button
                   onClick={handleSelectAll}
                   variant="outline"
