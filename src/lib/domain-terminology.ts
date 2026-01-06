@@ -9,6 +9,7 @@ import {
   DOMAIN_DETECTION_THRESHOLDS,
   DOMAIN_SCORING_WEIGHTS,
 } from './ai-config';
+import { logger } from './logger';
 
 export type Domain = 'business' | 'home' | 'personal' | 'world' | 'mixed';
 
@@ -28,6 +29,9 @@ export interface DomainTerminology {
  */
 export const BUSINESS_TERMINOLOGY: DomainTerminology = {
   keywords: [
+    // Context-specific keywords (unique to business)
+    'work', 'office', 'professional', 'corporate', 'workplace', 'colleague', 'coworker',
+    'workplace', 'business', 'company', 'organization', 'enterprise', 'firm',
     'meeting', 'presentation', 'report', 'deadline', 'client', 'stakeholder', 'budget',
     'revenue', 'roi', 'kpi', 'quarterly', 'annual', 'project', 'milestone', 'deliverable',
     'strategy', 'analysis', 'forecast', 'proposal', 'contract', 'negotiation', 'deal',
@@ -129,6 +133,8 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
  */
 export const HOME_TERMINOLOGY: DomainTerminology = {
   keywords: [
+    // Context-specific keywords (unique to home)
+    'household', 'residential', 'domestic', 'homeowner', 'home', 'house', 'residence',
     'groceries', 'cleaning', 'maintenance', 'repair', 'cooking', 'laundry', 'organizing',
     'decluttering', 'yard', 'garden', 'landscaping', 'plumbing', 'electrical', 'appliance',
     'furniture', 'decoration', 'renovation', 'remodeling', 'painting', 'flooring',
@@ -248,6 +254,8 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
  */
 export const PERSONAL_TERMINOLOGY: DomainTerminology = {
   keywords: [
+    // Context-specific keywords (unique to personal)
+    'self', 'individual', 'myself', 'personal', 'private', 'self-care', 'wellbeing',
     'exercise', 'workout', 'fitness', 'health', 'wellness', 'hobby', 'learning',
     'travel', 'family', 'friends', 'social', 'self-care', 'meditation', 'yoga',
     'reading', 'writing', 'creative', 'art', 'music', 'photography', 'cooking',
@@ -334,6 +342,8 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
  */
 export const WORLD_TERMINOLOGY: DomainTerminology = {
   keywords: [
+    // Context-specific keywords (unique to world)
+    'international', 'global', 'overseas', 'abroad', 'foreign', 'cross-border',
     'travel', 'trip', 'journey', 'voyage', 'expedition', 'culture', 'cultural',
     'language', 'translation', 'international', 'global', 'worldwide', 'overseas',
     'abroad', 'foreign', 'immigration', 'visa', 'passport', 'customs', 'border',
@@ -435,8 +445,64 @@ export const DOMAIN_TERMINOLOGIES: Record<Domain, DomainTerminology> = {
 };
 
 /**
+ * Context-specific keywords that are unique to each domain (higher priority)
+ */
+const CONTEXT_KEYWORDS: Record<Domain, string[]> = {
+  business: ['work', 'office', 'professional', 'corporate', 'workplace', 'colleague', 'coworker', 'business', 'company', 'organization', 'enterprise', 'firm'],
+  home: ['household', 'residential', 'domestic', 'homeowner', 'home', 'house', 'residence'],
+  personal: ['self', 'individual', 'myself', 'personal', 'private', 'self-care', 'wellbeing'],
+  world: ['international', 'global', 'overseas', 'abroad', 'foreign', 'cross-border'],
+  mixed: [],
+};
+
+/**
+ * Negative keywords that exclude certain domains when present
+ */
+const NEGATIVE_KEYWORDS: Record<Domain, string[]> = {
+  business: ['family dinner', 'home cooking', 'personal time', 'vacation', 'holiday'],
+  home: ['work meeting', 'office', 'business', 'professional', 'corporate'],
+  personal: ['work', 'office', 'business', 'corporate', 'professional'],
+  world: [],
+  mixed: [],
+};
+
+/**
+ * Calculate context bonus for keywords that appear near each other
+ */
+function calculateContextBonus(
+  text: string,
+  words: string[],
+  proximity: number = DOMAIN_DETECTION_THRESHOLDS.CONTEXT_PROXIMITY
+): number {
+  const textWords = text.toLowerCase().split(/\s+/);
+  let bonus = 0;
+  
+  for (let i = 0; i < words.length; i++) {
+    const word1 = words[i].toLowerCase();
+    const index1 = textWords.findIndex(w => w.includes(word1) || word1.includes(w));
+    
+    if (index1 === -1) continue;
+    
+    for (let j = i + 1; j < words.length; j++) {
+      const word2 = words[j].toLowerCase();
+      const index2 = textWords.findIndex(w => w.includes(word2) || word2.includes(w));
+      
+      if (index2 === -1) continue;
+      
+      const distance = Math.abs(index1 - index2);
+      if (distance <= proximity) {
+        bonus += DOMAIN_DETECTION_THRESHOLDS.CONTEXT_BONUS;
+      }
+    }
+  }
+  
+  return bonus;
+}
+
+/**
  * Detect domain from text by matching keywords, phrases, and verbs
  * Returns the domain with highest confidence score
+ * IMPROVED: Now includes context-aware scoring, negative keywords, and comprehensive logging
  */
 export function detectDomain(
   title: string,
@@ -454,7 +520,14 @@ export function detectDomain(
 } {
   const text = `${title} ${description}`.toLowerCase().trim();
   
+  logger.debug(`🔍 Domain Detection: Analyzing text="${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`, {
+    titleLength: title.length,
+    descriptionLength: description.length,
+    totalLength: text.length,
+  });
+  
   if (!text || text.length === 0) {
+    logger.debug('⚠️ Domain Detection: Empty text, defaulting to personal');
     return {
       domain: 'personal',
       confidence: 0,
@@ -471,15 +544,52 @@ export function detectDomain(
   };
 
   const foundKeywords: string[] = [];
+  const contextKeywords: Record<Domain, string[]> = {
+    business: [],
+    home: [],
+    personal: [],
+    world: [],
+  };
 
   // Check each domain
   for (const [domainKey, terminology] of Object.entries(DOMAIN_TERMINOLOGIES)) {
     if (domainKey === 'mixed') continue;
 
     const domain = domainKey as Exclude<Domain, 'mixed'>;
+    
+    // Check for negative keywords first (exclude domain if negative keyword found)
+    const negativeKeywords = NEGATIVE_KEYWORDS[domain];
+    let hasNegativeKeyword = false;
+    for (const negativeKw of negativeKeywords) {
+      const regex = new RegExp(negativeKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      if (regex.test(text)) {
+        logger.debug(`🚫 Domain Detection: Negative keyword "${negativeKw}" found for ${domain}, excluding domain`);
+        hasNegativeKeyword = true;
+        break;
+      }
+    }
+    if (hasNegativeKeyword) continue;
 
-    // Check keywords (weight: 1 point each)
+    // Check context-specific keywords (higher weight)
+    const contextKws = CONTEXT_KEYWORDS[domain];
+    for (const keyword of contextKws) {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+      if (regex.test(text)) {
+        const weight = DOMAIN_SCORING_WEIGHTS.CONTEXT_KEYWORD;
+        matchedTerms[domain] += weight;
+        contextKeywords[domain].push(keyword);
+        if (!foundKeywords.includes(keyword)) {
+          foundKeywords.push(keyword);
+        }
+        logger.debug(`✅ Domain Detection: Context keyword "${keyword}" matched for ${domain} (+${weight} points)`);
+      }
+    }
+
+    // Check regular keywords (weight: 1 point each)
     for (const keyword of terminology.keywords) {
+      // Skip if already matched as context keyword
+      if (contextKeywords[domain].includes(keyword)) continue;
+      
       const regex = new RegExp(`\\b${keyword}\\b`, 'i');
       if (regex.test(text)) {
         matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD;
@@ -490,13 +600,18 @@ export function detectDomain(
     }
 
     // Check phrases (weight: 2 points each - more specific)
+    // Context-specific phrases get higher weight
     for (const phrase of terminology.phrases) {
       const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       if (regex.test(text)) {
-        matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.PHRASE;
+        // Check if phrase contains context keywords
+        const hasContextKeyword = contextKeywords[domain].some(ck => phrase.toLowerCase().includes(ck.toLowerCase()));
+        const weight = hasContextKeyword ? DOMAIN_SCORING_WEIGHTS.CONTEXT_PHRASE : DOMAIN_SCORING_WEIGHTS.PHRASE;
+        matchedTerms[domain] += weight;
         if (!foundKeywords.includes(phrase)) {
           foundKeywords.push(phrase);
         }
+        logger.debug(`✅ Domain Detection: Phrase "${phrase}" matched for ${domain} (+${weight} points${hasContextKeyword ? ', context-enhanced' : ''})`);
       }
     }
 
@@ -510,6 +625,15 @@ export function detectDomain(
         }
       }
     }
+    
+    // Apply context bonus for keywords that appear near each other
+    if (contextKeywords[domain].length > 1) {
+      const contextBonus = calculateContextBonus(text, contextKeywords[domain]);
+      if (contextBonus > 0) {
+        matchedTerms[domain] += contextBonus;
+        logger.debug(`🎯 Domain Detection: Context bonus for ${domain}: +${contextBonus.toFixed(2)} (keywords appear near each other)`);
+      }
+    }
   }
 
   // Find domain with highest score
@@ -517,8 +641,16 @@ export function detectDomain(
   const maxScore = Math.max(...scores.map(([, score]) => score));
   const totalScore = scores.reduce((sum, [, score]) => sum + score, 0);
 
+  logger.debug(`📊 Domain Detection: Scores - Business: ${matchedTerms.business}, Home: ${matchedTerms.home}, Personal: ${matchedTerms.personal}, World: ${matchedTerms.world}`, {
+    scores: matchedTerms,
+    maxScore,
+    totalScore,
+    contextKeywords,
+  });
+
   // If no matches or very low scores, default to personal
   if (maxScore === 0 || totalScore < 1) {
+    logger.debug(`⚠️ Domain Detection: No matches found (maxScore=${maxScore}, totalScore=${totalScore}), defaulting to personal`);
     return {
       domain: 'personal',
       confidence: DOMAIN_DETECTION_THRESHOLDS.MIN_CONFIDENCE,
@@ -534,7 +666,7 @@ export function detectDomain(
   // Higher confidence if one domain clearly dominates
   const confidence = totalScore > 0 ? maxScore / totalScore : DOMAIN_DETECTION_THRESHOLDS.MIN_CONFIDENCE;
 
-  // If confidence is low (<0.4) and multiple domains have similar scores, mark as mixed
+  // If confidence is low (<0.5) and multiple domains have similar scores, mark as mixed
   const secondHighest = scores
     .filter(([domain]) => domain !== winningDomain)
     .sort(([, a], [, b]) => b - a)[0]?.[1] || 0;
@@ -544,6 +676,16 @@ export function detectDomain(
     secondHighest > maxScore * DOMAIN_DETECTION_THRESHOLDS.MIXED_SIMILARITY
       ? 'mixed'
       : (winningDomain as Domain);
+
+  logger.debug(`🏆 Domain Detection: Final result - Domain: ${finalDomain}, Confidence: ${(confidence * 100).toFixed(1)}%`, {
+    winningDomain,
+    finalDomain,
+    confidence,
+    secondHighest,
+    maxScore,
+    isMixed: finalDomain === 'mixed',
+    matchedKeywords: foundKeywords.slice(0, 10), // Log first 10 keywords
+  });
 
   return {
     domain: finalDomain,

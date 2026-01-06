@@ -1453,8 +1453,16 @@ function buildContextualDescription(
  * Generates a task description based on task name using Browser AI
  * Browser AI extracts keywords, phrases, verbs, and nouns directly from the task name
  * Local Terminology acts as a cache/dictionary to enhance extracted terms
+ * 
+ * @param taskName - The task title/name
+ * @param accessToken - Optional access token for API calls
+ * @param existingDescription - Optional existing description to use for domain detection
  */
-export async function generateDescription(taskName: string, accessToken?: string | null): Promise<GeneratedDescription> {
+export async function generateDescription(
+  taskName: string, 
+  accessToken?: string | null,
+  existingDescription?: string | null
+): Promise<GeneratedDescription> {
   if (!taskName || taskName.trim().length === 0) {
     return {
       description: '',
@@ -1463,10 +1471,19 @@ export async function generateDescription(taskName: string, accessToken?: string
     };
   }
 
-  // Detect domain from task name
-  const domainResult = detectDomain(taskName, '');
+  // Detect domain from task name AND description (if available) for better accuracy
+  const descriptionForDetection = existingDescription?.trim() || '';
+  const domainResult = detectDomain(taskName, descriptionForDetection);
   const domain = domainResult.domain;
   const domainTerms = getDomainTerminology(domain);
+  
+  logger.debug(`📝 Description Generation: Using domain detection with description`, {
+    taskName,
+    hasDescription: !!descriptionForDetection,
+    descriptionLength: descriptionForDetection.length,
+    detectedDomain: domain,
+    confidence: domainResult.confidence,
+  });
 
   // BROWSER AI APPROACH: Browser AI + Local Terminology Dictionary
   // 1. Browser AI: Extracts keywords, phrases, verbs, and nouns directly from task name

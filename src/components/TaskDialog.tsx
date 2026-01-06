@@ -1920,7 +1920,7 @@ export function TaskDialog({
                             size="sm"
                             onClick={async () => {
                               try {
-                                const generated = await generateDescription(title, accessToken);
+                                const generated = await generateDescription(title, accessToken, description);
                                 logger.debug('AI Refresh description result:', { 
                                   hasDescription: !!generated.description, 
                                   descriptionLength: generated.description?.length || 0,
@@ -1973,11 +1973,11 @@ export function TaskDialog({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={async () => {
-                            try {
-                              logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken });
-                              const generated = await generateDescription(title, accessToken);
-                              logger.debug('AI Generate result received:', { 
+                            onClick={async () => {
+                              try {
+                                logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken });
+                                const generated = await generateDescription(title, accessToken, description);
+                                logger.debug('AI Generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,
                                 descriptionPreview: generated.description?.substring(0, 50) || 'empty',

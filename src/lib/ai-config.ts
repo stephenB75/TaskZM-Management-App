@@ -558,8 +558,10 @@ export const TASK_BREAKDOWN_CACHE_SIZE = 100;
  */
 export const DOMAIN_DETECTION_THRESHOLDS = {
   MIN_CONFIDENCE: 0.1, // Minimum confidence to return a domain
-  MIXED_THRESHOLD: 0.4, // Below this, mark as mixed if multiple domains are close
+  MIXED_THRESHOLD: 0.5, // Below this, mark as mixed if multiple domains are close (increased from 0.4)
   MIXED_SIMILARITY: 0.7, // Second domain must be at least this % of top domain to be mixed
+  CONTEXT_PROXIMITY: 3, // Maximum word distance for context scoring (words within 3 positions get bonus)
+  CONTEXT_BONUS: 0.5, // Bonus multiplier for context-aware matches
 } as const;
 
 /**
@@ -569,6 +571,8 @@ export const DOMAIN_SCORING_WEIGHTS = {
   KEYWORD: 1.0, // Weight for keyword matches
   PHRASE: 2.0, // Weight for phrase matches (more specific)
   VERB: 1.5, // Weight for verb matches (action-oriented)
+  CONTEXT_KEYWORD: 1.5, // Weight for context-specific keywords (higher priority)
+  CONTEXT_PHRASE: 3.0, // Weight for context-specific phrases (highest priority)
 } as const;
 
 /**
