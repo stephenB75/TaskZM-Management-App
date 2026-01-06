@@ -571,11 +571,12 @@ export function InboxView() {
                 <Button
                   onClick={handleSelectAll}
                   variant="outline"
-                  className="rounded-full"
+                  className="rounded-full whitespace-nowrap"
                   style={{
                     paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    whiteSpace: 'nowrap',
                   }}
                   size="sm"
                 >
@@ -588,11 +589,12 @@ export function InboxView() {
                 </Button>
                 <Button
                   onClick={handleScheduleSelected}
-                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
+                  className={`rounded-full whitespace-nowrap ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
                   style={{
                     paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    whiteSpace: 'nowrap',
                   }}
                   size="sm"
                   disabled={isScheduling}
@@ -614,11 +616,12 @@ export function InboxView() {
                 <Button
                   onClick={handleUnscheduleSelected}
                   variant="outline"
-                  className="rounded-full"
+                  className="rounded-full whitespace-nowrap"
                   style={{
                     paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    whiteSpace: 'nowrap',
                   }}
                   size="sm"
                 >
@@ -648,11 +651,12 @@ export function InboxView() {
                   }}
                   disabled={!permissions.canDeleteTask}
                   variant="destructive"
-                  className="rounded-full"
+                  className="rounded-full whitespace-nowrap"
                   style={{
                     paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    whiteSpace: 'nowrap',
                   }}
                   size="sm"
                 >
@@ -675,11 +679,12 @@ export function InboxView() {
               <>
                 <Button
                   onClick={handleScheduleAll}
-                  className={`rounded-full ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
+                  className={`rounded-full whitespace-nowrap ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
                   style={{
                     paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    whiteSpace: 'nowrap',
                   }}
                   size="sm"
                   disabled={unscheduledTasks.length === 0}
@@ -710,11 +715,12 @@ export function InboxView() {
                     setIsTaskDialogOpen(true);
                   }}
                   disabled={!permissions.canCreateTask}
-                  className="hidden sm:flex rounded-full"
+                  className="hidden sm:flex rounded-full whitespace-nowrap"
                   style={{
                     paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
                     fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    whiteSpace: 'nowrap',
                   }}
                   size="sm"
                 >
