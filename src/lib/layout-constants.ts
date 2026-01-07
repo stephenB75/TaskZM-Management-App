@@ -96,7 +96,11 @@ export const VIEWPORT_BREAKPOINTS = {
 export const TIMELINE_PADDING = {
   mobile: 27.6, // Timeline padding on mobile
   desktop: 16, // Timeline padding on desktop
+  minMobilePadding: 8, // Minimum padding for mobile (8px) - ensures spacing between header and first item
 } as const;
+
+// Today Agenda minimum height for drop zone accessibility
+export const TODAY_AGENDA_MIN_HEIGHT = 400; // Minimum height in pixels to ensure drop zone is always accessible
 
 // Mobile Text Sizes (increased by 1 point for better readability)
 export const MOBILE_TEXT_SIZES = {

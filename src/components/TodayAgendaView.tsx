@@ -22,7 +22,7 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
@@ -607,20 +607,20 @@ export function TodayAgendaView({
         data-today-agenda="true"
         className={cn(
           // On mobile, remove gradient background to show parent gradient from App.tsx
-          // On desktop, keep the gradient background
+          // On desktop, gradient is applied to ScrollArea content instead
           `flex flex-col transition-all duration-300`,
-          !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
           isMobile ? "w-full" : "h-full min-h-0", // min-h-0 needed for flex child to properly constrain ScrollArea
-          !isMobile && "min-h-[400px]", // Ensure drop zone is always accessible
+          !isMobile && `min-h-[${TODAY_AGENDA_MIN_HEIGHT}px]`, // Ensure drop zone is always accessible
         )}
         style={{
           position: 'relative',
           zIndex: isOver ? Z_INDEX.DROP_ZONE : Z_INDEX.TIMELINE_LINE, // Ensure drop zone is above other elements when dragging over
           // On mobile, ensure transparent background to show parent gradient
-          backgroundColor: isMobile ? 'transparent' : undefined,
-          background: isMobile ? 'transparent' : undefined,
+          // On desktop, background is handled by ScrollArea content
+          backgroundColor: 'transparent',
+          background: 'transparent',
         } as React.CSSProperties}
         data-tour="today-panel"
       >
@@ -919,18 +919,24 @@ export function TodayAgendaView({
         ) : (
           <div className={cn("flex-1 w-full relative min-h-0", "overflow-hidden")}>
           <ScrollArea 
-            className="h-full w-full min-h-0" 
+            className="h-full w-full min-h-0"
           >
             <div 
               ref={timelineContainerRef}
-                className="px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative"
+                className={cn(
+                  "px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative",
+                  // Apply gradient background to content so it extends with scroll
+                  !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`
+                )}
               style={{
                 paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
-                  ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` 
-                    : DESKTOP_PADDING_TOP, // 48px on desktop for better spacing from header
+                  ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` 
+                    : DESKTOP_PADDING_TOP, // Desktop padding for better spacing from header
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? KANBAN_MOBILE.bottomPaddingCalc
                   : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`, // Desktop: Add padding to ensure content scrolls past bottom (nav bar + safe area + buffer)
+                // Ensure background extends to bottom of content by making content at least viewport height
+                minHeight: '100%',
               }}
             >
               {combinedItems.length === 0 ? (
@@ -1154,8 +1160,8 @@ export function TodayAgendaView({
             // On mobile (hideHeader=false), add spacing between header and first item to match desktop
             // On desktop (hideHeader=true), add spacing from header in sidebar panel
             paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
-              ? `${Math.max(TIMELINE_PADDING.mobile, 8)}px` // Add spacing between header and first item on mobile
-              : DESKTOP_PADDING_TOP, // 48px on desktop for proper spacing from header in sidebar panel
+              ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` // Add spacing between header and first item on mobile
+              : DESKTOP_PADDING_TOP, // Desktop padding for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
               ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer
               : undefined,
