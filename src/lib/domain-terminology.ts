@@ -79,14 +79,8 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'training', 'onboarding', 'compliance', 'audit', 'review', 'approval', 'sign-off',
     'quality control', 'qc', 'qa', 'quality assurance', 'testing', 'validation',
     'verification', 'certification', 'accreditation', 'standard', 'best practice',
-    // Medical and health
-    'medical', 'health', 'healthcare', 'doctor', 'physician', 'nurse', 'patient',
-    'appointment', 'checkup', 'examination', 'diagnosis', 'treatment', 'therapy',
-    'medication', 'prescription', 'pharmacy', 'hospital', 'clinic', 'emergency',
-    'surgery', 'procedure', 'test', 'lab', 'laboratory', 'xray', 'mri', 'ct scan',
-    'vaccination', 'immunization', 'wellness', 'fitness', 'exercise', 'workout',
-    'diet', 'nutrition', 'vitamin', 'supplement', 'mental health', 'therapy',
-    'insurance', 'health insurance', 'medical insurance', 'claim', 'coverage',
+    // Note: Medical/health terms removed - these belong in Personal domain to prevent miscategorization
+    // Medical appointments and health checkups are personal, not business tasks
     // Industries
     'manufacturing', 'production', 'assembly', 'factory', 'warehouse', 'logistics',
     'supply chain', 'distribution', 'shipping', 'receiving', 'inventory', 'stock',
@@ -180,7 +174,7 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'remove old items', 'discard unused', 'dispose waste', 'clear out',
       'create storage', 'set up storage', 'organize storage', 'manage storage',
       'improve efficiency', 'enhance productivity', 'optimize workspace', 'streamline workflow',
-      'financial report', 'quarterly earnings', 'annual report', 'balance sheet',
+    'financial report', 'quarterly earnings', 'annual report', 'balance sheet',
     'income statement', 'cash flow', 'budget analysis', 'financial planning',
     'investment strategy', 'portfolio management', 'risk assessment', 'credit check',
     'loan application', 'mortgage approval', 'tax filing', 'tax return',
@@ -246,7 +240,7 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'sanitize', 'sanitizing', 'disinfect', 'disinfecting', 'sterilize', 'sterilizing',
       'dust', 'dusting', 'wipe', 'wiping', 'sweep', 'sweeping', 'mop', 'mopping', 'vacuum', 'vacuuming',
       'inspect', 'inspecting', 'examine', 'examining', 'evaluate', 'evaluating', 'assess', 'assessing',
-      'invest', 'investing', 'deposit', 'depositing', 'withdraw', 'withdrawing',
+    'invest', 'investing', 'deposit', 'depositing', 'withdraw', 'withdrawing',
     'transfer', 'transferring', 'calculate', 'calculating', 'analyze', 'analyzing',
     'budget', 'budgeting', 'forecast', 'forecasting', 'reconcile', 'reconciling',
     'file', 'filing', 'submit', 'submitting', 'approve', 'approving', 'process', 'processing'
@@ -515,11 +509,28 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'cycling', 'swimming', 'hiking', 'camping', 'outdoor', 'adventure', 'exploration',
     'education', 'course', 'class', 'workshop', 'seminar', 'conference', 'event',
     'celebration', 'birthday', 'anniversary', 'holiday', 'vacation', 'trip',
-    'therapy', 'counseling', 'coaching', 'mentoring', 'volunteering', 'charity'
+    'therapy', 'counseling', 'coaching', 'mentoring', 'volunteering', 'charity',
+    // Medical and health keywords (HIGH PRIORITY - moved from business to prevent miscategorization)
+    'medical', 'health', 'healthcare', 'doctor', 'physician', 'nurse', 'patient',
+    'appointment', 'appt', 'checkup', 'examination', 'diagnosis', 'treatment', 'therapy',
+    'medication', 'prescription', 'pharmacy', 'hospital', 'clinic', 'emergency',
+    'surgery', 'procedure', 'test', 'lab', 'laboratory', 'xray', 'mri', 'ct scan',
+    'vaccination', 'immunization', 'diet', 'nutrition', 'vitamin', 'supplement',
+    'mental health', 'insurance', 'health insurance', 'medical insurance', 'claim', 'coverage',
+    // Medical conditions and body parts (for better matching)
+    'thyroid', 'diabetes', 'blood pressure', 'cholesterol', 'heart', 'lung', 'liver',
+    'kidney', 'stomach', 'intestine', 'bone', 'muscle', 'joint', 'skin', 'eye', 'ear',
+    'nose', 'throat', 'dental', 'oral', 'vision', 'hearing', 'allergy', 'asthma',
+    'arthritis', 'migraine', 'headache', 'pain', 'injury', 'wound', 'infection'
   ],
   phrases: [
     'workout routine', 'personal project', 'self-care', 'skill development',
-    'fitness goal', 'health checkup', 'doctor appointment', 'dental cleaning',
+    'fitness goal', 'health checkup', 'doctor appointment', 'medical appointment',
+    'appointment with doctor', 'appointment with physician', 'make appointment',
+    'schedule appointment', 'book appointment', 'health examination', 'medical examination',
+    'thyroid check', 'thyroid examination', 'thyroid test', 'medical checkup',
+    'dental cleaning', 'dental appointment', 'dental checkup', 'eye exam', 'vision test',
+    'hearing test', 'lab test', 'medical test', 'blood test', 'health screening',
     'therapy session', 'coaching session', 'learning course', 'online class',
     'book club', 'hobby project', 'creative project', 'art project', 'music practice',
     'exercise routine', 'meal planning', 'nutrition planning', 'meditation practice',
@@ -742,7 +753,11 @@ export const DOMAIN_TERMINOLOGIES: Record<Domain, DomainTerminology> = {
 const CONTEXT_KEYWORDS: Record<Domain, string[]> = {
   business: ['work', 'office', 'professional', 'corporate', 'workplace', 'colleague', 'coworker', 'business', 'company', 'organization', 'enterprise', 'firm'],
   home: ['household', 'residential', 'domestic', 'homeowner', 'home', 'house', 'residence'],
-  personal: ['self', 'individual', 'myself', 'personal', 'private', 'self-care', 'wellbeing'],
+  personal: [
+    'self', 'individual', 'myself', 'personal', 'private', 'self-care', 'wellbeing',
+    // Medical/health context keywords (HIGH PRIORITY)
+    'doctor', 'physician', 'medical', 'health', 'appointment', 'appt', 'checkup', 'healthcare'
+  ],
   world: ['international', 'global', 'overseas', 'abroad', 'foreign', 'cross-border'],
   mixed: [],
 };
@@ -751,7 +766,15 @@ const CONTEXT_KEYWORDS: Record<Domain, string[]> = {
  * Negative keywords that exclude certain domains when present
  */
 const NEGATIVE_KEYWORDS: Record<Domain, string[]> = {
-  business: ['family dinner', 'home cooking', 'personal time', 'vacation', 'holiday'],
+  business: [
+    'family dinner', 'home cooking', 'personal time', 'vacation', 'holiday',
+    // Medical/health terms - these should NOT be categorized as business
+    'doctor appointment', 'medical appointment', 'health checkup', 'thyroid check',
+    'doctor visit', 'physician appointment', 'medical checkup', 'health examination',
+    'medical test', 'health test', 'lab test', 'medical procedure', 'surgery',
+    'prescription', 'medication', 'pharmacy', 'hospital visit', 'clinic visit',
+    'dental appointment', 'dental checkup', 'eye exam', 'vision test', 'hearing test'
+  ],
   home: ['work meeting', 'office', 'business', 'professional', 'corporate'],
   personal: ['work', 'office', 'business', 'corporate', 'professional'],
   world: [],
@@ -937,22 +960,43 @@ export function detectDomain(
     if (domainKey === 'mixed') continue;
 
     const domain = domainKey as Exclude<Domain, 'mixed'>;
-    
-    // IMPROVED: Check for negative keywords with fuzzy matching
+
+    // IMPROVED: Check for negative keywords with fuzzy matching and abbreviation handling
     const negativeKeywords = NEGATIVE_KEYWORDS[domain];
     let hasNegativeKeyword = false;
     for (const negativeKw of negativeKeywords) {
+      // Normalize text for better matching (handle abbreviations)
+      const normalizedText = text
+        .replace(/\bappt\b/gi, 'appointment')
+        .replace(/\bdr\./gi, 'doctor')
+        .replace(/\bphys\./gi, 'physician');
+      
       // Try exact match first
       const exactRegex = new RegExp(negativeKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      if (exactRegex.test(text)) {
+      if (exactRegex.test(normalizedText)) {
         logger.debug(`🚫 Domain Detection: Negative keyword "${negativeKw}" found for ${domain}, excluding domain`);
         hasNegativeKeyword = true;
         break;
       }
       // Try fuzzy phrase matching for multi-word negative keywords
       if (negativeKw.split(/\s+/).length > 1) {
-        if (matchesPhraseFuzzy(text, negativeKw)) {
+        if (matchesPhraseFuzzy(normalizedText, negativeKw)) {
           logger.debug(`🚫 Domain Detection: Negative phrase "${negativeKw}" found (fuzzy) for ${domain}, excluding domain`);
+          hasNegativeKeyword = true;
+          break;
+        }
+      }
+      // Also check individual words from negative keyword phrase
+      const negativeWords = negativeKw.split(/\s+/);
+      if (negativeWords.length > 1) {
+        // Check if all significant words from negative phrase appear in text
+        const significantWords = negativeWords.filter(w => w.length > 2);
+        const allWordsFound = significantWords.every(word => {
+          const wordRegex = new RegExp(`\\b${word}\\b`, 'i');
+          return wordRegex.test(normalizedText) || textWords.some(tw => areWordsRelated(tw, word));
+        });
+        if (allWordsFound && significantWords.length >= 2) {
+          logger.debug(`🚫 Domain Detection: Negative phrase words "${negativeKw}" found for ${domain}, excluding domain`);
           hasNegativeKeyword = true;
           break;
         }
