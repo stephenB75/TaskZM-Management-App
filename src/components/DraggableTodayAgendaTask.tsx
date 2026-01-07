@@ -83,12 +83,17 @@ export function DraggableTodayAgendaTask({
     canViewAnalytics: true,
     role: 'admin' as const,
   };
-  const { getTimerState } = usePomodoro();
+  const { getTimerState, timers: pomodoroTimers } = usePomodoro();
   const { actualTheme } = useTheme();
   const isMobile = useIsMobile();
   const timerState = getTimerState(task.id);
   const isDark = actualTheme === 'dark';
   const canUsePomodoro = hasFeature("pomodoroTimer");
+  
+  // Subscribe to timer state changes to ensure re-render when timer is activated in other components
+  React.useEffect(() => {
+    // Accessing pomodoroTimers[task.id] ensures re-render when that timer changes
+  }, [pomodoroTimers[task.id]]);
   
   // Memoize key values that affect height to create stable dependencies
   const assignedToKey = React.useMemo(() => 

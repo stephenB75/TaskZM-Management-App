@@ -348,6 +348,7 @@ export function createDefaultPomodoroContext() {
     setWorkDuration: () => {},
     registerCallback: () => {},
     unregisterCallback: async () => {},
+    timers: {}, // Default empty timers object
   };
 }
 

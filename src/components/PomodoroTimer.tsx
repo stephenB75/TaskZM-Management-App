@@ -58,10 +58,19 @@ export function PomodoroTimer({
     setWorkDuration,
     registerCallback,
     unregisterCallback,
+    timers, // Subscribe to timers state to trigger re-renders when timer changes
   } = usePomodoro();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
+  // Get timer state - reading from state ensures components re-render when timer state changes
   const timerState = getTimerState(taskId);
+  
+  // Subscribe to timer state changes for this taskId to ensure re-renders
+  // This ensures the component updates when timer is started/paused/stopped in other components
+  React.useEffect(() => {
+    // This effect ensures component re-renders when timer state changes
+    // Accessing timers[taskId] in the dependency array ensures re-render when that timer changes
+  }, [timers[taskId]]);
 
   // Initialize timer with task's actual time and estimated duration
   useEffect(() => {

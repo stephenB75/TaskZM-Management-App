@@ -30,6 +30,7 @@ interface PomodoroContextType {
   setWorkDuration: (taskId: string, durationMinutes: number) => void;
   registerCallback: (taskId: string, callback: (minutes: number) => void | Promise<void>, taskTitle: string) => void;
   unregisterCallback: (taskId: string) => Promise<void>;
+  timers: Record<string, TimerState>; // Expose timers state for subscription
 }
 
 const PomodoroContext = createContext<PomodoroContextType | null>(null);
@@ -86,7 +87,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   }, [timers]);
 
   const getTimerState = (taskId: string): TimerState => {
-    return timersRef.current[taskId] || DEFAULT_TIMER_STATE;
+    // Read from state (not ref) to ensure components re-render when timer state changes
+    // This ensures timer sync across all components
+    return timers[taskId] || DEFAULT_TIMER_STATE;
   };
 
   const getWorkDuration = (taskId: string): number => {
@@ -640,6 +643,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     setWorkDuration,
     registerCallback,
     unregisterCallback,
+    timers, // Expose timers state so components can subscribe to changes
   };
 
   return (

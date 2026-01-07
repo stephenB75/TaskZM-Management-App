@@ -88,7 +88,7 @@ export const DraggableTaskCard = React.forwardRef<
       canViewAnalytics: true,
       role: 'admin' as const,
     };
-    const { getTimerState } = usePomodoro();
+    const { getTimerState, timers: pomodoroTimers } = usePomodoro();
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
     const isMobile = useIsMobile();
