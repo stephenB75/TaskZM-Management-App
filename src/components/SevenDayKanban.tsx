@@ -311,50 +311,72 @@ export function SevenDayKanban({
       
       if (!container || !columns) return;
       
-      // Batch all layout reads to prevent forced reflows
-      // Use requestAnimationFrame to defer calculation until after layout
+      // OPTIMIZED: Use requestAnimationFrame only for critical layout reads
+      // Then defer heavy processing to requestIdleCallback to avoid blocking
       requestAnimationFrame(() => {
         // Get viewport height - use the actual visible height of the scroll container
         const containerRect = container.getBoundingClientRect();
         const viewportHeight = containerRect.height;
         
-        // Find the tallest column by checking all child divs (the motion.div column elements)
-        let maxColumnHeight = 0;
-        const columnElements = columns.children;
-        
-        // Batch all getBoundingClientRect and scrollHeight reads
-        const measurements: Array<{ height: number; scrollHeight: number }> = [];
-        Array.from(columnElements).forEach((col) => {
-          if (col instanceof HTMLElement) {
-            measurements.push({
-              height: col.getBoundingClientRect().height,
-              scrollHeight: col.scrollHeight,
-            });
-          }
-        });
-        
-        // Process measurements after all reads are complete
-        measurements.forEach(({ height, scrollHeight }) => {
-          const columnHeight = Math.max(height, scrollHeight);
-          maxColumnHeight = Math.max(maxColumnHeight, columnHeight);
-        });
-        
-        // If no columns found or height is 0, reset zoom
-        if (maxColumnHeight === 0 || viewportHeight === 0) {
+        if (viewportHeight === 0) {
           setZoomScale(1);
           return;
         }
         
-        // Calculate zoom scale if tallest column exceeds viewport
-        // Add padding to prevent edge clipping
-        if (maxColumnHeight > viewportHeight) {
-          const scale = (viewportHeight - KANBAN_ZOOM.padding) / maxColumnHeight;
-          // Clamp scale between min and max
-          const clampedScale = Math.max(KANBAN_ZOOM.minScale, Math.min(KANBAN_ZOOM.maxScale, scale));
-          setZoomScale(clampedScale);
+        // Defer heavy DOM measurements to idle callback to avoid blocking animation frame
+        const processMeasurements = () => {
+          // Find the tallest column by checking all child divs (the motion.div column elements)
+          let maxColumnHeight = 0;
+          const columnElements = columns.children;
+          
+          // OPTIMIZED: Limit the number of columns checked and batch reads efficiently
+          // Only check visible columns or a reasonable subset
+          const maxColumnsToCheck = 14; // 14 days max
+          const columnsToCheck = Array.from(columnElements).slice(0, maxColumnsToCheck);
+          
+          // Batch all getBoundingClientRect and scrollHeight reads
+          const measurements: Array<{ height: number; scrollHeight: number }> = [];
+          for (const col of columnsToCheck) {
+            if (col instanceof HTMLElement) {
+              // Use a single read per element
+              const rect = col.getBoundingClientRect();
+              measurements.push({
+                height: rect.height,
+                scrollHeight: col.scrollHeight,
+              });
+            }
+          }
+          
+          // Process measurements after all reads are complete
+          for (const { height, scrollHeight } of measurements) {
+            const columnHeight = Math.max(height, scrollHeight);
+            maxColumnHeight = Math.max(maxColumnHeight, columnHeight);
+          }
+          
+          // If no columns found or height is 0, reset zoom
+          if (maxColumnHeight === 0) {
+            setZoomScale(1);
+            return;
+          }
+          
+          // Calculate zoom scale if tallest column exceeds viewport
+          // Add padding to prevent edge clipping
+          if (maxColumnHeight > viewportHeight) {
+            const scale = (viewportHeight - KANBAN_ZOOM.padding) / maxColumnHeight;
+            // Clamp scale between min and max
+            const clampedScale = Math.max(KANBAN_ZOOM.minScale, Math.min(KANBAN_ZOOM.maxScale, scale));
+            setZoomScale(clampedScale);
+          } else {
+            // No zoom needed if content fits
+            setZoomScale(1);
+          }
+        };
+        
+        // Use requestIdleCallback if available, otherwise use setTimeout with small delay
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(processMeasurements, { timeout: 100 });
         } else {
-          // No zoom needed if content fits
-          setZoomScale(1);
+          setTimeout(processMeasurements, 0);
         }
       });
     };

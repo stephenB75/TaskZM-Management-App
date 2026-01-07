@@ -291,35 +291,47 @@ export function TodayAgendaView({
       // Check again before scrolling (user might have scrolled in the meantime)
       if (userHasScrolledRef.current && !nextUpChanged) return;
       
-      // Find the next up task element
-      const nextUpElement = timelineContainerRef.current?.querySelector(`[data-task-id="${nextUpTaskId}"]`) as HTMLElement;
-      
-      if (nextUpElement) {
-        if (hideHeader) {
-          // Desktop: Scroll within ScrollArea viewport
-          const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
-          if (scrollViewport) {
-            // Get the container that holds the scrollable content
-            const scrollContainer = timelineContainerRef.current;
-            if (scrollContainer) {
-              // Calculate position relative to scroll container
-              const containerRect = scrollContainer.getBoundingClientRect();
-              const elementRect = nextUpElement.getBoundingClientRect();
-              const relativeTop = elementRect.top - containerRect.top + scrollViewport.scrollTop;
-              
-              // Scroll to center the next up task in the viewport
-              scrollViewport.scrollTo({
-                top: relativeTop - (scrollViewport.clientHeight / 2) + (elementRect.height / 2),
-                behavior: 'smooth',
-              });
+      // OPTIMIZED: Defer DOM queries to requestAnimationFrame to avoid blocking
+      requestAnimationFrame(() => {
+        // Find the next up task element
+        const nextUpElement = timelineContainerRef.current?.querySelector(`[data-task-id="${nextUpTaskId}"]`) as HTMLElement;
+        
+        if (nextUpElement) {
+          if (hideHeader) {
+            // Desktop: Scroll within ScrollArea viewport
+            const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
+            if (scrollViewport) {
+              // Get the container that holds the scrollable content
+              const scrollContainer = timelineContainerRef.current;
+              if (scrollContainer) {
+                // OPTIMIZED: Batch all layout reads together
+                const containerRect = scrollContainer.getBoundingClientRect();
+                const elementRect = nextUpElement.getBoundingClientRect();
+                const viewportHeight = scrollViewport.clientHeight;
+                const relativeTop = elementRect.top - containerRect.top + scrollViewport.scrollTop;
+                
+                // Calculate scroll position
+                const scrollTop = relativeTop - (viewportHeight / 2) + (elementRect.height / 2);
+                
+                // Defer scroll operation to avoid blocking
+                requestAnimationFrame(() => {
+                  scrollViewport.scrollTo({
+                    top: scrollTop,
+                    behavior: 'smooth',
+                  });
+                });
+              }
             }
+          } else {
+            // Mobile: Use scrollIntoView on the parent scroll container
+            // Defer to avoid blocking
+            requestAnimationFrame(() => {
+              nextUpElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
           }
-        } else {
-          // Mobile: Use scrollIntoView on the parent scroll container
-          nextUpElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          hasAutoScrolledRef.current = true;
         }
-        hasAutoScrolledRef.current = true;
-      }
+      });
     };
 
     // Small delay to ensure DOM is ready

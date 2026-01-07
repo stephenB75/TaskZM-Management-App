@@ -95,36 +95,66 @@ export function Confetti({ trigger, onComplete }: ConfettiProps) {
     const duration = 2000; // 2 seconds
     let isComplete = false;
 
+    // OPTIMIZED: Pre-filter visible particles and batch canvas operations
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
 
-      // Clear canvas
+      // OPTIMIZED: Clear canvas once
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Update and draw particles
-      particlesRef.current = particlesRef.current.filter((particle) => {
+      // OPTIMIZED: Pre-filter visible particles and batch canvas operations
+      const visibleParticles: Particle[] = [];
+      
+      // Update all particles first (cheap operations)
+      for (const particle of particlesRef.current) {
         // Update position
         particle.x += particle.vx;
         particle.y += particle.vy;
         particle.vy += 0.1; // Gravity
         particle.rotation += particle.rotationSpeed;
 
-        // Draw particle
-        ctx.save();
-        ctx.translate(particle.x, particle.y);
-        ctx.rotate(particle.rotation);
-        ctx.fillStyle = particle.color;
-        ctx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
-        ctx.restore();
-
-        // Keep particles that are still on screen
-        return (
+        // Check if particle is still visible
+        if (
           particle.x > -10 &&
           particle.x < canvas.width + 10 &&
           particle.y < canvas.height + 10
-        );
-      });
+        ) {
+          visibleParticles.push(particle);
+        }
+      }
+      
+      // OPTIMIZED: Batch draw operations - group by color to reduce fillStyle changes
+      const particlesByColor = new Map<string, Particle[]>();
+      for (const particle of visibleParticles) {
+        const color = particle.color;
+        if (!particlesByColor.has(color)) {
+          particlesByColor.set(color, []);
+        }
+        particlesByColor.get(color)!.push(particle);
+      }
+      
+      // Draw particles grouped by color (reduces fillStyle changes)
+      for (const [color, particles] of particlesByColor) {
+        ctx.fillStyle = color;
+        for (const particle of particles) {
+          // OPTIMIZED: Use simpler drawing without rotation for better performance
+          // Only use rotation for particles that are still early in animation
+          if (elapsed < duration * 0.5) {
+            ctx.save();
+            ctx.translate(particle.x, particle.y);
+            ctx.rotate(particle.rotation);
+            ctx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
+            ctx.restore();
+          } else {
+            // Skip rotation for later particles to improve performance
+            ctx.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
+          }
+        }
+      }
+      
+      // Update particles array
+      particlesRef.current = visibleParticles;
 
       // Continue animation if there are particles or time hasn't elapsed
       if (particlesRef.current.length > 0 && elapsed < duration) {
