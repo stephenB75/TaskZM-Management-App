@@ -494,8 +494,8 @@ export const AUTH_SCREEN = {
   mobile: {
     padding: {
       horizontal: '1rem', // px-4 = 1rem (16px) - comfortable side padding
-      vertical: '0.5rem', // py-2 = 0.5rem (8px) - minimal top padding
-      bottom: '1rem', // pb-4 = 1rem (16px) - bottom padding
+      vertical: '0.25rem', // py-1 = 0.25rem (4px) - reduced top padding to move dialog up
+      bottom: '0.75rem', // pb-3 = 0.75rem (12px) - reduced bottom padding
     },
     logo: {
       width: '120px', // w-[120px] - smaller for mobile to fit viewport
@@ -514,7 +514,9 @@ export const AUTH_SCREEN = {
       fontSize: '0.875rem', // text-sm = 0.875rem (14px)
     },
     spacing: {
-      brandingMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - reduced for mobile
+      brandingMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - reduced to move dialog up
+      logoMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - spacing below logo
+      badgeMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below badge
       formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px)
       cardHeaderSpacing: '0.5rem', // space-y-2 = 0.5rem (8px)
     },
@@ -522,8 +524,8 @@ export const AUTH_SCREEN = {
   tablet: {
     padding: {
       horizontal: '1.5rem', // px-6 = 1.5rem (24px)
-      vertical: '1rem', // py-4 = 1rem (16px)
-      bottom: '1.5rem', // pb-6 = 1.5rem (24px)
+      vertical: '0.75rem', // py-3 = 0.75rem (12px) - reduced to move dialog up
+      bottom: '1rem', // pb-4 = 1rem (16px) - reduced bottom padding
     },
     logo: {
       width: '180px', // w-[180px] - medium size for tablets
@@ -534,13 +536,15 @@ export const AUTH_SCREEN = {
       maxHeight: 'calc(100vh - 12rem)', // Account for logo + padding
     },
     spacing: {
-      brandingMarginBottom: '1rem', // mb-4 = 1rem (16px)
+      brandingMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - reduced to move dialog up
+      logoMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below logo
+      badgeMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below badge
     },
   },
   desktop: {
     padding: {
       horizontal: '1.5rem', // px-6 = 1.5rem (24px)
-      vertical: '1.5rem', // py-6 = 1.5rem (24px)
+      vertical: '1rem', // py-4 = 1rem (16px) - reduced to move dialog up
     },
     logo: {
       width: '220px', // w-[220px] - optimized for desktop

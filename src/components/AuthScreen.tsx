@@ -507,7 +507,10 @@ export function AuthScreen() {
           >
             <motion.div className="flex flex-col items-center w-full" variants={logoVariants}>
               <motion.div
-                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-border mb-2 sm:mb-3"
+                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-border"
+                style={{
+                  marginBottom: spacing.badgeMarginBottom,
+                } as React.CSSProperties}
                 whileHover={{ scale: 1.05 }}
               >
                 <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
@@ -518,11 +521,12 @@ export function AuthScreen() {
               <motion.img
                 src={taskzmLogo}
                 alt="TaskZM Logo"
-                className="object-contain mb-1.5 sm:mb-2"
+                className="object-contain"
                 style={{
                   width: logo.width,
                   maxWidth: logo.maxWidth || '100%',
                   height: 'auto',
+                  marginBottom: spacing.logoMarginBottom,
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.02 }}
               />
@@ -540,10 +544,10 @@ export function AuthScreen() {
             className="w-full flex flex-col"
             style={{
               maxHeight: screenSize === 'mobile' 
-                ? 'calc(100vh - 8rem)' // Logo (~3rem) + padding (2rem) + margins (3rem)
+                ? 'calc(100vh - 6.5rem)' // Logo (~3rem) + padding (1.5rem) + margins (2rem) - reduced spacing
                 : screenSize === 'tablet'
-                ? 'calc(100vh - 10rem)' // Logo (~4rem) + padding (3rem) + margins (3rem)
-                : 'calc(100vh - 10rem)', // Logo (~4rem) + padding (3rem) + margins (3rem)
+                ? 'calc(100vh - 8rem)' // Logo (~4rem) + padding (2.5rem) + margins (1.5rem) - reduced spacing
+                : 'calc(100vh - 8rem)', // Logo (~4rem) + padding (2.5rem) + margins (1.5rem) - reduced spacing
               overflow: 'hidden',
             } as React.CSSProperties}
           >
@@ -594,10 +598,10 @@ export function AuthScreen() {
                   className="pb-3 sm:pb-4 md:pb-6 pt-2 sm:pt-3 md:pt-4 overflow-y-auto px-3 sm:px-4 md:px-6"
                   style={{
                     maxHeight: screenSize === 'mobile'
-                      ? 'calc(100vh - 16rem)' // Account for logo, header, footer, padding
+                      ? 'calc(100vh - 14rem)' // Account for logo, header, footer, padding - reduced spacing
                       : screenSize === 'tablet'
-                      ? 'calc(100vh - 18rem)' // Account for logo, header, footer, padding
-                      : 'calc(100vh - 18rem)', // Account for logo, header, footer, padding
+                      ? 'calc(100vh - 15rem)' // Account for logo, header, footer, padding - reduced spacing
+                      : 'calc(100vh - 15rem)', // Account for logo, header, footer, padding - reduced spacing
                   } as React.CSSProperties}
                 >
                   <TabsContent value="signin" className="mt-0">
