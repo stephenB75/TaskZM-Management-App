@@ -178,6 +178,7 @@ export const KANBAN_ZOOM = {
 // Scroll Constants
 export const KANBAN_SCROLL = {
   speedMultiplier: 0.8,
+  initialScrollDelay: 300, // ms - Delay to wait for zoom calculation and column rendering to complete
 } as const;
 
 // Time Constants

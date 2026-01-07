@@ -416,6 +416,7 @@ export function SevenDayKanban({
   }, [tasks, mobileMode, viewMode, weekOffset]);
 
   // Scroll to next day (tomorrow) on mount for desktop view
+  // FIXED: Accounts for column resizing and zoom scaling
   React.useEffect(() => {
     // Only for desktop view, not mobile
     if (mobileMode || viewMode === 'month') return;
@@ -446,36 +447,66 @@ export function SevenDayKanban({
     const tomorrowIndex = weekColumns.findIndex(col => col.dateString === tomorrowColumn.dateString);
     if (tomorrowIndex === -1) return;
     
-    // Calculate scroll position using actual DOM measurements
-    // Use requestAnimationFrame to ensure DOM is ready
-    requestAnimationFrame(() => {
-      // Get all column elements
-      const columnElements = columns.querySelectorAll('[data-column-date]');
-      if (columnElements.length === 0) return;
-      
-      // Find tomorrow's column element
-      const tomorrowElement = Array.from(columnElements).find(el => {
-        const dateAttr = el.getAttribute('data-column-date');
-        return dateAttr === tomorrowColumn.dateString;
-      }) as HTMLElement | undefined;
-      
-      if (!tomorrowElement) return;
-      
-      // Calculate scroll position to show tomorrow's column
-      // Get the left offset of tomorrow's column relative to the columns container
-      const columnLeft = tomorrowElement.offsetLeft;
-      
-      // Get the container's padding (p-2.5 = 10px, p-3 = 12px on lg)
-      const containerPadding = 10; // Base padding
-      
-      // Scroll to position where tomorrow's column is visible
-      // Subtract a bit to account for container padding and show some context
-      container.scrollLeft = columnLeft - containerPadding;
-      
-      // Mark as scrolled
-      hasScrolledToNextDayRef.current = true;
-    });
-  }, [weekColumns, mobileMode, viewMode]);
+    // Wait for zoom calculation and column rendering to complete
+    // This ensures columns are properly sized before calculating scroll position
+    const scrollToNextDay = () => {
+      // Use requestAnimationFrame to ensure DOM is ready and zoom has been applied
+      requestAnimationFrame(() => {
+        // Get all column elements
+        const columnElements = columns.querySelectorAll('[data-column-date]');
+        if (columnElements.length === 0) return;
+        
+        // Find tomorrow's column element
+        const tomorrowElement = Array.from(columnElements).find(el => {
+          const dateAttr = el.getAttribute('data-column-date');
+          return dateAttr === tomorrowColumn.dateString;
+        }) as HTMLElement | undefined;
+        
+        if (!tomorrowElement) return;
+        
+        // FIXED: Use getBoundingClientRect() which accounts for transforms and zoom scaling
+        // This is more accurate than offsetLeft when columns are scaled/zoomed
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = tomorrowElement.getBoundingClientRect();
+        
+        // Calculate the relative position accounting for zoom/scale
+        // Get the actual left position relative to the container's scroll position
+        const relativeLeft = elementRect.left - containerRect.left + container.scrollLeft;
+        
+        // Account for container padding - use constants from KANBAN_SPACING
+        // Container has padding: p-2 (8px) on mobile, p-2.5 (10px) on sm/md, p-3 (12px) on lg+
+        // Match the actual padding values: p-2 sm:p-2.5 md:p-2.5 lg:p-3
+        const containerPadding = typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.desktop
+          ? KANBAN_SPACING.padding.desktop // p-3 = 12px on desktop (lg+)
+          : typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile
+          ? KANBAN_SPACING.padding.tablet // p-2.5 = 10px on sm/md (tablet)
+          : KANBAN_SPACING.padding.mobile; // p-2 = 8px on mobile
+        
+        // Calculate scroll position to center tomorrow's column in viewport
+        // Account for zoom scale if applied
+        const viewportWidth = containerRect.width;
+        const elementWidth = elementRect.width;
+        const scrollPosition = relativeLeft - containerPadding - (viewportWidth / 2) + (elementWidth / 2);
+        
+        // Scroll to position where tomorrow's column is centered
+        container.scrollTo({
+          left: Math.max(0, scrollPosition),
+          behavior: 'smooth',
+        });
+        
+        // Mark as scrolled
+        hasScrolledToNextDayRef.current = true;
+      });
+    };
+    
+    // Wait for zoom calculation to complete before scrolling
+    // This ensures columns are properly sized/resized before calculating scroll position
+    const scrollTimeout = setTimeout(scrollToNextDay, KANBAN_SCROLL.initialScrollDelay);
+    
+    return () => {
+      clearTimeout(scrollTimeout);
+    };
+  }, [weekColumns, mobileMode, viewMode, zoomScale]); // Include zoomScale to recalculate when zoom changes
 
   // Get tasks for a specific day
   const getTasksForDay = (dateString: string) => {
