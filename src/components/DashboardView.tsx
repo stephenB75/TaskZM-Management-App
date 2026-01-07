@@ -1379,7 +1379,7 @@ export function DashboardView({
         {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false (hidden on tablets to save space) */}
         {!hideAgenda && (
           <motion.div
-            className="hidden xl:flex flex-col w-64 border-r border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm"
+            className="hidden xl:flex flex-col w-64 h-full min-h-0 border-r border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}

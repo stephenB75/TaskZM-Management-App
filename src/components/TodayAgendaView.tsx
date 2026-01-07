@@ -946,7 +946,7 @@ export function TodayAgendaView({
           // Desktop view with header - use ScrollArea for vertical scrolling
           // FIXED: Ensure ScrollArea gets proper height by using flex-1 and min-h-0
           <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
-          <ScrollArea className="flex-1 min-h-0 w-full">
+          <ScrollArea className="flex-1 min-h-0 w-full h-full">
             <div 
               ref={timelineContainerRef}
               className={cn(
