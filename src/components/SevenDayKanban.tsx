@@ -422,12 +422,17 @@ export function SevenDayKanban({
     // Only for desktop view, not mobile
     if (mobileMode || viewMode === 'month') return;
     
-    // Only scroll once per mount (ref resets on component unmount/remount, including page refresh)
-    if (hasScrolledToNextDayRef.current) return;
-    
     const container = scrollContainerRef.current;
     const columns = columnsContainerRef.current;
     if (!container || !columns) return;
+    
+    // CRITICAL: Reset ref at the beginning to ensure scroll happens on every mount (including page refresh)
+    // This prevents the ref from blocking scroll on page refresh
+    hasScrolledToNextDayRef.current = false;
+    
+    // Immediately reset scroll position to 0 to prevent browser scroll restoration from interfering
+    // This must happen synchronously before any async operations
+    container.scrollLeft = 0;
     
     // Calculate tomorrow's date
     const today = new Date();
@@ -451,14 +456,25 @@ export function SevenDayKanban({
     // Wait for zoom calculation and column rendering to complete
     // This ensures columns are properly sized before calculating scroll position
     const scrollToNextDay = () => {
+      // Double-check that scroll is still at 0 (browser might have restored it)
+      // Force reset again to ensure we start from a known position
+      if (container.scrollLeft !== 0) {
+        container.scrollLeft = 0;
+      }
+      
       // Use requestAnimationFrame to ensure DOM is ready and zoom has been applied
       requestAnimationFrame(() => {
-        // Reset scroll position to 0 first to prevent browser scroll restoration from interfering
-        // This ensures we calculate from a known starting point on page refresh
-        container.scrollLeft = 0;
+        // Triple-check scroll position and reset if needed (browser restoration can happen asynchronously)
+        if (container.scrollLeft !== 0) {
+          container.scrollLeft = 0;
+        }
         
         // Wait one more frame after resetting scroll to ensure layout is stable
         requestAnimationFrame(() => {
+          // Final check and reset before calculation
+          if (container.scrollLeft !== 0) {
+            container.scrollLeft = 0;
+          }
           // Get all column elements
           const columnElements = columns.querySelectorAll('[data-column-date]');
           if (columnElements.length === 0) return;
@@ -514,8 +530,9 @@ export function SevenDayKanban({
     // Wait for zoom calculation to complete before scrolling
     // This ensures columns are properly sized/resized before calculating scroll position
     // Use a delay that accounts for zoom calculation delay (KANBAN_ZOOM.calculateDelay = 200ms)
-    // plus additional time for DOM rendering and transform application
-    const scrollTimeout = setTimeout(scrollToNextDay, Math.max(KANBAN_SCROLL.initialScrollDelay, KANBAN_ZOOM.calculateDelay + 100));
+    // plus additional time for DOM rendering, transform application, and browser scroll restoration
+    // Increased delay to ensure browser scroll restoration completes before we calculate
+    const scrollTimeout = setTimeout(scrollToNextDay, Math.max(KANBAN_SCROLL.initialScrollDelay, KANBAN_ZOOM.calculateDelay + 200));
     
     return () => {
       clearTimeout(scrollTimeout);
