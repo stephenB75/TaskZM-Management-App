@@ -557,14 +557,20 @@ export const COMPONENT_DIMENSIONS = {
   },
   inboxHeader: {
     button: {
+      borderRadius: '9999px', // Pill shape (rounded-full equivalent)
       paddingX: {
-        mobile: '0.5rem', // px-2 = 0.5rem (8px)
-        tablet: '0.625rem', // sm:px-2.5 = 0.625rem (10px)
-        desktop: '0.25rem', // Further reduced for desktop to prevent overlap
+        mobile: '0.75rem', // px-3 = 0.75rem (12px) - increased for better text fit
+        tablet: '0.875rem', // sm:px-3.5 = 0.875rem (14px)
+        desktop: '0.625rem', // px-2.5 = 0.625rem (10px) - increased for better text fit
+      },
+      paddingY: {
+        mobile: '0.375rem', // py-1.5 = 0.375rem (6px) - ensures pill shape
+        tablet: '0.375rem', // py-1.5 = 0.375rem (6px)
+        desktop: '0.375rem', // py-1.5 = 0.375rem (6px) - consistent height for pill shape
       },
       textSize: {
         mobile: '0.625rem', // text-[10px] = 0.625rem (10px)
-        desktop: '0.625rem', // text-[10px] = 0.625rem (10px) - reduced for smaller buttons
+        desktop: '0.625rem', // text-[10px] = 0.625rem (10px)
       },
       iconSize: {
         mobile: '0.75rem', // w-3 h-3 = 0.75rem (12px)
@@ -572,8 +578,8 @@ export const COMPONENT_DIMENSIONS = {
         desktop: '0.625rem', // Further reduced for desktop to prevent overlap
       },
       iconMargin: {
-        mobile: '0', // No margin on mobile
-        desktop: '0.25rem', // Reduced margin for smaller buttons
+        mobile: '0.25rem', // mr-1 = 0.25rem (4px) - spacing between icon and text
+        desktop: '0.25rem', // mr-1 = 0.25rem (4px) - spacing between icon and text
       },
     },
   },
