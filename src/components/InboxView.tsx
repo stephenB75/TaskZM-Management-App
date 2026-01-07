@@ -570,8 +570,12 @@ export function InboxView() {
         actions={
           <div className={cn(
             "flex flex-shrink-0 max-w-full",
-            selectedTaskIds.size > 0 ? "flex-col items-end" : "items-center flex-wrap"
-          )} style={{ gap: HEADER_GAP_SMALL }}>
+            selectedTaskIds.size > 0 ? "flex-col items-end" : "items-center flex-wrap gap-1"
+          )} style={{ 
+            gap: typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet 
+              ? '0.25rem' // Reduced gap for desktop to prevent overlap (4px)
+              : HEADER_GAP_SMALL 
+          }}>
             {selectedTaskIds.size > 0 ? (
               <>
                 <p 

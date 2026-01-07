@@ -650,25 +650,25 @@ export const COMPONENT_DIMENSIONS = {
       paddingX: {
         mobile: '0.75rem', // px-3 = 0.75rem (12px) - increased for better text fit
         tablet: '0.875rem', // sm:px-3.5 = 0.875rem (14px)
-        desktop: '0.625rem', // px-2.5 = 0.625rem (10px) - increased for better text fit
+        desktop: '0.5rem', // px-2 = 0.5rem (8px) - reduced to prevent overlap with headline
       },
       paddingY: {
         mobile: '0.375rem', // py-1.5 = 0.375rem (6px) - ensures pill shape
         tablet: '0.375rem', // py-1.5 = 0.375rem (6px)
-        desktop: '0.375rem', // py-1.5 = 0.375rem (6px) - consistent height for pill shape
+        desktop: '0.25rem', // py-1 = 0.25rem (4px) - reduced to prevent overlap with headline
       },
       textSize: {
         mobile: '0.625rem', // text-[10px] = 0.625rem (10px)
-        desktop: '0.625rem', // text-[10px] = 0.625rem (10px)
+        desktop: '0.5625rem', // text-[9px] = 0.5625rem (9px) - reduced to prevent overlap
       },
       iconSize: {
         mobile: '0.75rem', // w-3 h-3 = 0.75rem (12px)
         tablet: '0.875rem', // sm:w-3.5 sm:h-3.5 = 0.875rem (14px)
-        desktop: '0.625rem', // Further reduced for desktop to prevent overlap
+        desktop: '0.5rem', // w-2 h-2 = 0.5rem (8px) - reduced to prevent overlap
       },
       iconMargin: {
         mobile: '0.25rem', // mr-1 = 0.25rem (4px) - spacing between icon and text
-        desktop: '0.25rem', // mr-1 = 0.25rem (4px) - spacing between icon and text
+        desktop: '0.1875rem', // mr-0.75 = 0.1875rem (3px) - reduced spacing for compact buttons
       },
     },
   },
