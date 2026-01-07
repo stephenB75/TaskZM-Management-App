@@ -9,13 +9,6 @@ import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
 import * as appleCaldavSync from "./apple-caldav-sync.tsx";
 
-// DuckDuckGo API Configuration Constants
-const DUCKDUCKGO_CONFIG = {
-  instantAnswerApiUrl: 'https://api.duckduckgo.com/',
-  timeout: 5000, // 5 seconds timeout for search requests
-  maxResults: 5, // Maximum number of search results to process
-} as const;
-
 // Helper function to safely extract error messages
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -4876,151 +4869,6 @@ app.post("/taskzm-database-function/team/:workspaceId/invitations/decline", asyn
   }
 });
 
-// DuckDuckGo Instant Answer API proxy endpoint
-// This endpoint proxies requests to DuckDuckGo Instant Answer API to bypass CORS restrictions
-// Register the route both with and without the prefix for compatibility
-const duckduckgoSearchHandler = async (c: any) => {
-  try {
-    const query = c.req.query('q');
-    
-    if (!query) {
-      return c.json({ error: 'Query parameter "q" is required' }, 400);
-    }
-
-    // Verify user is authenticated (optional - can be made public if needed)
-    // Log authentication attempt for debugging
-    const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    console.log('DuckDuckGo search request:', { 
-      hasAccessToken: !!accessToken, 
-      query,
-      url: c.req.url 
-    });
-    
-    const { userId, error: authError } = await verifyUser(c.req.raw);
-    if (authError || !userId) {
-      console.log('DuckDuckGo search authentication failed:', { 
-        error: authError, 
-        hasUserId: !!userId,
-        hasAccessToken: !!accessToken 
-      });
-      return c.json({ error: 'Unauthorized', message: authError || 'Invalid access token' }, 401);
-    }
-    
-    console.log('DuckDuckGo search authenticated:', { userId, query });
-
-    // Encode query for DuckDuckGo API
-    const searchQuery = encodeURIComponent(query);
-    const instantAnswerUrl = `${DUCKDUCKGO_CONFIG.instantAnswerApiUrl}?q=${searchQuery}&format=json&no_html=1&skip_disambig=1`;
-    
-    // Create abort controller for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), DUCKDUCKGO_CONFIG.timeout);
-    
-    try {
-      // Fetch from DuckDuckGo Instant Answer API
-      const response = await fetch(instantAnswerUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        return c.json({ 
-          error: 'DuckDuckGo API request failed',
-          status: response.status 
-        }, response.status);
-      }
-
-      const data = await response.json();
-      const results: string[] = [];
-
-      console.log('DuckDuckGo API response structure:', {
-        hasAbstractText: !!data.AbstractText,
-        hasAnswer: !!data.Answer,
-        hasRelatedTopics: !!data.RelatedTopics,
-        hasResults: !!data.Results,
-        relatedTopicsCount: Array.isArray(data.RelatedTopics) ? data.RelatedTopics.length : 0,
-        resultsCount: Array.isArray(data.Results) ? data.Results.length : 0,
-        dataKeys: Object.keys(data)
-      });
-
-      // Extract Abstract text (most relevant instant answer)
-      if (data.AbstractText && typeof data.AbstractText === 'string' && data.AbstractText.trim().length > 0) {
-        results.push(data.AbstractText.trim());
-        console.log('Added AbstractText:', data.AbstractText.substring(0, 100));
-      }
-
-      // Extract Answer (direct answer)
-      if (data.Answer && typeof data.Answer === 'string' && data.Answer.trim().length > 0) {
-        results.push(data.Answer.trim());
-        console.log('Added Answer:', data.Answer.substring(0, 100));
-      }
-
-      // Extract RelatedTopics
-      if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-        data.RelatedTopics.slice(0, DUCKDUCKGO_CONFIG.maxResults - results.length).forEach((topic: any, index: number) => {
-          if (topic.Text && typeof topic.Text === 'string' && topic.Text.trim().length > 0) {
-            results.push(topic.Text.trim());
-            console.log(`Added RelatedTopic ${index + 1}:`, topic.Text.substring(0, 100));
-          } else if (topic.FirstURL && typeof topic.FirstURL === 'string') {
-            // Sometimes RelatedTopics have FirstURL but no Text - use URL as context
-            const urlText = topic.FirstURL.split('/').pop()?.replace(/_/g, ' ') || '';
-            if (urlText.length > 0) {
-              results.push(urlText);
-              console.log(`Added RelatedTopic URL ${index + 1}:`, urlText);
-            }
-          }
-        });
-      }
-
-      // Extract Results
-      if (data.Results && Array.isArray(data.Results)) {
-        const remainingSlots = DUCKDUCKGO_CONFIG.maxResults - results.length;
-        data.Results.slice(0, remainingSlots).forEach((result: any, index: number) => {
-          if (result.Text && typeof result.Text === 'string' && result.Text.trim().length > 0) {
-            results.push(result.Text.trim());
-            console.log(`Added Result ${index + 1}:`, result.Text.substring(0, 100));
-          }
-        });
-      }
-
-      console.log(`DuckDuckGo search completed for "${query}": ${results.length} results extracted`);
-
-      return c.json({
-        success: true,
-        query,
-        results,
-        count: results.length,
-      });
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        return c.json({ 
-          error: 'Request timeout',
-          message: 'DuckDuckGo API request timed out'
-        }, 408);
-      }
-      
-      throw fetchError;
-    }
-  } catch (error) {
-    console.log('Error in DuckDuckGo search:', error);
-    return c.json({ 
-      error: 'Internal server error',
-      message: getErrorMessage(error)
-    }, 500);
-  }
-};
-
-// Register the route both with and without the prefix for compatibility
-app.get("/taskzm-database-function/duckduckgo/search", duckduckgoSearchHandler);
-app.get("/duckduckgo/search", duckduckgoSearchHandler);
-
 // Catch-all route for debugging 404 errors
 app.all('*', async (c) => {
   const path = new URL(c.req.url).pathname;
@@ -5043,8 +4891,6 @@ app.all('*', async (c) => {
       'DELETE /taskzm-database-function/calendar/:provider',
       'POST /taskzm-database-function/calendar/sync-task',
       'POST /taskzm-database-function/calendar/sync-all',
-      'GET /taskzm-database-function/duckduckgo/search?q=<query>',
-      'GET /duckduckgo/search?q=<query>',
     ]
   }, 404);
 });
