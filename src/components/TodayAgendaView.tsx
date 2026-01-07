@@ -920,9 +920,6 @@ export function TodayAgendaView({
           <div className={cn("flex-1 w-full relative min-h-0", "overflow-hidden")}>
           <ScrollArea 
             className="h-full w-full min-h-0" 
-            style={{ 
-              paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` 
-            } as React.CSSProperties}
           >
             <div 
               ref={timelineContainerRef}
@@ -933,7 +930,7 @@ export function TodayAgendaView({
                     : DESKTOP_PADDING_TOP, // 48px on desktop for better spacing from header
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? KANBAN_MOBILE.bottomPaddingCalc
-                  : undefined,
+                  : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`, // Desktop: Add padding to ensure content scrolls past bottom (nav bar + safe area + buffer)
               }}
             >
               {combinedItems.length === 0 ? (
