@@ -634,7 +634,6 @@ export function TodayAgendaView({
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
           isMobile ? "w-full" : "h-full min-h-0 flex-1", // min-h-0 and flex-1 needed for flex child to properly constrain ScrollArea
-          !isMobile && `min-h-[${TODAY_AGENDA_MIN_HEIGHT}px]`, // Ensure drop zone is always accessible
           // On desktop, apply gradient background to root container (like Folders Panel)
           !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
         )}
@@ -646,7 +645,9 @@ export function TodayAgendaView({
           ...(isMobile ? {
             backgroundColor: 'transparent',
             background: 'transparent',
-          } : {}),
+          } : {
+            minHeight: `${TODAY_AGENDA_MIN_HEIGHT}px`, // Ensure drop zone is always accessible - use constant instead of hardcoded
+          }),
         } as React.CSSProperties}
         data-tour="today-panel"
       >
@@ -946,7 +947,7 @@ export function TodayAgendaView({
           // Desktop view with header - use ScrollArea for vertical scrolling
           // FIXED: Ensure ScrollArea gets proper height by using flex-1 and min-h-0
           <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
-          <ScrollArea className="h-full w-full">
+          <ScrollArea className="flex-1 min-h-0">
             <div 
               ref={timelineContainerRef}
               className={cn(
