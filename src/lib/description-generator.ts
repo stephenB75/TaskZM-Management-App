@@ -1188,15 +1188,87 @@ function buildElaborateContextualDescription(
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
   
+  // STEP 0: Extract primary topic from task name to filter irrelevant keywords
+  // This helps identify the main subject (e.g., "vehicles", "research", "price range")
+  // and filter out keywords that don't relate to this topic
+  const primaryTopics: string[] = [];
+  const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
+  
+  // Identify primary topics from task name (longer, more specific words)
+  const taskWordsByLength = taskWords
+    .filter(w => w.length >= 4) // Focus on longer, more specific words
+    .sort((a, b) => b.length - a.length)
+    .slice(0, 5); // Top 5 longest words as primary topics
+  
+  primaryTopics.push(...taskWordsByLength);
+  
+  // Also add compound keywords and research/vehicle keywords as primary topics
+  keywords.forEach(kw => {
+    const kwLower = kw.toLowerCase();
+    // Include compound terms, research keywords, vehicle keywords
+    if (kwLower.includes('-') || kwLower.includes(' or ') || kwLower.includes(' and ') ||
+        ['research', 'compare', 'evaluate', 'find', 'search', 'purchase', 'buy', 'suv', 'car', 'vehicle', 'truck', 'automobile'].some(topic => kwLower.includes(topic))) {
+      if (!primaryTopics.some(t => t.toLowerCase() === kwLower)) {
+        primaryTopics.push(kw);
+      }
+    }
+  });
+  
+  // Helper function to check if a keyword/noun is semantically relevant to the task
+  const isSemanticallyRelevant = (term: string): boolean => {
+    const termLower = term.toLowerCase();
+    const termWords = termLower.split(/\s+/);
+    
+    // Check if term relates to primary topics
+    const relatesToPrimaryTopic = primaryTopics.some(topic => {
+      const topicLower = topic.toLowerCase();
+      // Direct match
+      if (termLower.includes(topicLower) || topicLower.includes(termLower)) return true;
+      // Word-level match
+      return termWords.some(tw => topicLower.includes(tw) || tw.includes(topicLower)) ||
+             topicLower.split(/\s+/).some(tw => termWords.some(termWord => areWordsRelated(tw, termWord)));
+    });
+    
+    // Check if term relates to task keywords
+    const relatesToTaskKeywords = taskKeywordsLower.some(tkw => {
+      const tkwLower = tkw.toLowerCase();
+      // Direct match
+      if (termLower.includes(tkwLower) || tkwLower.includes(termLower)) return true;
+      // Word-level match
+      return termWords.some(tw => tkwLower.includes(tw) || tw.includes(tkwLower)) ||
+             areWordsRelated(termLower, tkwLower);
+    });
+    
+    // Check if term relates to task name words
+    const relatesToTaskWords = taskWords.some(tw => {
+      if (termLower.includes(tw) || tw.includes(termLower)) return true;
+      return termWords.some(termWord => areWordsRelated(termWord, tw));
+    });
+    
+    // Check if term is in domain terminology (domain-specific relevance)
+    const isInDomainTerminology = domainTerms.keywords.some(dk => {
+      const dkLower = dk.toLowerCase();
+      return termLower.includes(dkLower) || dkLower.includes(termLower) ||
+             termWords.some(tw => dkLower.includes(tw) || tw.includes(dkLower));
+    }) || domainTerms.nouns.some(dn => {
+      const dnLower = dn.toLowerCase();
+      return termLower.includes(dnLower) || dnLower.includes(termLower) ||
+             termWords.some(tw => dnLower.includes(tw) || tw.includes(dnLower));
+    });
+    
+    // Term is relevant if it relates to primary topics OR task keywords OR task words OR is in domain terminology
+    // BUT must relate to at least one primary topic or task keyword (not just domain terminology alone)
+    return (relatesToPrimaryTopic || relatesToTaskKeywords || relatesToTaskWords) && isInDomainTerminology;
+  };
+  
   // STEP 1: Find domain phrases that elaborate on the task (not just repeat it)
   // These provide context about what the task involves
   // IMPROVED: Uses fuzzy matching for better phrase detection
-  const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
   const elaboratingPhrases: string[] = [];
   
   // Helper function for improved phrase matching with fuzzy word-level matching
   const matchesPhraseContextual = (phrase: string, keywords: string[], taskWords: string[]): boolean => {
-    const phraseLower = phrase.toLowerCase();
+          const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     
     // Check if phrase contains keywords with fuzzy matching
@@ -1302,14 +1374,14 @@ function buildElaborateContextualDescription(
   
   // Sort by keyword count and length (prioritize phrases with more keywords and longer phrases)
   elaboratingPhrases.sort((a, b) => {
-    const aKeywords = taskKeywordsLower.filter(kw => a.toLowerCase().includes(kw)).length;
-    const bKeywords = taskKeywordsLower.filter(kw => b.toLowerCase().includes(kw)).length;
-    if (bKeywords !== aKeywords) {
-      return bKeywords - aKeywords;
-    }
-    return b.length - a.length;
-  });
-  
+        const aKeywords = taskKeywordsLower.filter(kw => a.toLowerCase().includes(kw)).length;
+        const bKeywords = taskKeywordsLower.filter(kw => b.toLowerCase().includes(kw)).length;
+        if (bKeywords !== aKeywords) {
+          return bKeywords - aKeywords;
+        }
+        return b.length - a.length;
+      });
+      
   // STEP 2: Find domain verbs that elaborate on actions
   // IMPROVED: Uses fuzzy matching for better verb detection
   const elaboratingVerbs: string[] = [];
@@ -1319,7 +1391,7 @@ function buildElaborateContextualDescription(
     
     // IMPROVED: Check if verb relates to task keywords with fuzzy matching
     const relatesToKeywords = taskKeywordsLower.some(kw => {
-      const kwLower = kw.toLowerCase();
+          const kwLower = kw.toLowerCase();
       // Direct match
       if (verbLower.includes(kwLower) || kwLower.includes(verbLower) ||
           verbBase.includes(kwLower) || kwLower.includes(verbBase)) {
@@ -1379,7 +1451,7 @@ function buildElaborateContextualDescription(
     
     // IMPROVED: Check if noun relates to extracted nouns with fuzzy matching
     const relatesToExtractedNouns = nouns.some(n => {
-      const nLower = n.toLowerCase();
+        const nLower = n.toLowerCase();
       const nBase = nLower.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
       // Direct match
       if (nounLower.includes(nLower) || nLower.includes(nounLower) ||
@@ -1497,18 +1569,31 @@ function buildElaborateContextualDescription(
                              domainActionVerbs.some(av => bestPhraseLower.includes(av));
       
       // Get relevant keywords that relate to the phrase but aren't already in it
+      // IMPROVED: Only include semantically relevant keywords
       const relevantKeywords = keywords.filter(kw => {
         const kwLower = kw.toLowerCase();
-        return !bestPhraseLower.includes(kwLower) && 
-               !taskNameLower.includes(kwLower) &&
-               taskKeywordsLower.some(tkw => bestPhraseLower.includes(tkw.toLowerCase()) || kwLower.includes(tkw.toLowerCase()));
+        // Must not be in phrase or task name
+        if (bestPhraseLower.includes(kwLower) || taskNameLower.includes(kwLower)) {
+          return false;
+        }
+        // Must relate to phrase keywords
+        if (!taskKeywordsLower.some(tkw => bestPhraseLower.includes(tkw.toLowerCase()) || kwLower.includes(tkw.toLowerCase()))) {
+          return false;
+        }
+        // Must be semantically relevant to the task
+        return isSemanticallyRelevant(kw);
       }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
-      // Get context nouns that add value
-      const contextNouns = elaboratingNouns.filter(n => 
-        !bestPhraseLower.includes(n.toLowerCase()) &&
-        !taskNameLower.includes(n.toLowerCase())
-      ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
+      // Get context nouns that add value - IMPROVED: Only include semantically relevant nouns
+      const contextNouns = elaboratingNouns.filter(n => {
+        const nLower = n.toLowerCase();
+        // Must not be in phrase or task name
+        if (bestPhraseLower.includes(nLower) || taskNameLower.includes(nLower)) {
+          return false;
+        }
+        // Must be semantically relevant to the task
+        return isSemanticallyRelevant(n);
+      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
       
       // Build complete contextual sentence
       if (phraseHasAction) {
@@ -1537,7 +1622,7 @@ function buildElaborateContextualDescription(
         }
         
         description = parts.join(' ');
-      } else {
+        } else {
         // No action verb available - use phrase with context
         const parts: string[] = [];
         parts.push(bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1));
@@ -1555,20 +1640,27 @@ function buildElaborateContextualDescription(
   // PRIORITY 2: Build sentence using domain verbs + nouns + keywords
   else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
     const actionVerb = elaboratingVerbs[0];
-    const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
+    // IMPROVED: Filter nouns by semantic relevance
+    const contextNouns = elaboratingNouns
+      .filter(n => isSemanticallyRelevant(n))
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
     
-    // Get relevant keywords that add context
+    // Get relevant keywords that add context - IMPROVED: Only include semantically relevant keywords
     const relevantKeywords = keywords.filter(kw => {
-          const kwLower = kw.toLowerCase();
-      return !contextNouns.some(n => n.toLowerCase().includes(kwLower)) &&
-             !taskNameLower.includes(kwLower);
+      const kwLower = kw.toLowerCase();
+      // Must not be in context nouns or task name
+      if (contextNouns.some(n => n.toLowerCase().includes(kwLower)) || taskNameLower.includes(kwLower)) {
+        return false;
+      }
+      // Must be semantically relevant to the task
+      return isSemanticallyRelevant(kw);
     }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Build complete sentence
     const parts: string[] = [];
     parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-    
-    if (relevantKeywords.length > 0) {
+        
+        if (relevantKeywords.length > 0) {
       parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
     }
     
@@ -1593,15 +1685,26 @@ function buildElaborateContextualDescription(
       const bestPhraseLower = bestPhrase.toLowerCase();
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
       
-      // Get relevant keywords and domain nouns
-      const relevantKeywords = keywords.filter(kw => 
-        !bestPhraseLower.includes(kw.toLowerCase()) &&
-        !taskNameLower.includes(kw.toLowerCase())
-      ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
+      // Get relevant keywords and domain nouns - IMPROVED: Only include semantically relevant terms
+      const relevantKeywords = keywords.filter(kw => {
+        const kwLower = kw.toLowerCase();
+        // Must not be in phrase or task name
+        if (bestPhraseLower.includes(kwLower) || taskNameLower.includes(kwLower)) {
+          return false;
+        }
+        // Must be semantically relevant to the task
+        return isSemanticallyRelevant(kw);
+      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
-      const contextNouns = elaboratingNouns.filter(n => 
-        !bestPhraseLower.includes(n.toLowerCase())
-      ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
+      const contextNouns = elaboratingNouns.filter(n => {
+        const nLower = n.toLowerCase();
+        // Must not be in phrase
+        if (bestPhraseLower.includes(nLower)) {
+          return false;
+        }
+        // Must be semantically relevant to the task
+        return isSemanticallyRelevant(n);
+      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       // Build complete sentence
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
@@ -1615,7 +1718,7 @@ function buildElaborateContextualDescription(
         }
         
         description = parts.join(' ');
-      } else {
+        } else {
         const parts: string[] = [];
         parts.push(bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1));
         
@@ -1651,14 +1754,20 @@ function buildElaborateContextualDescription(
   // PRIORITY 5: Build sentence using verbs + keywords
   else if (verbs.length > 0 && keywords.length > 0) {
     const actionVerb = verbs[0];
-    const relevantKeywords = keywords.filter(kw => 
-      !actionVerb.toLowerCase().includes(kw.toLowerCase()) &&
-      !taskNameLower.includes(kw.toLowerCase())
-    ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
+    // IMPROVED: Only include semantically relevant keywords
+    const relevantKeywords = keywords.filter(kw => {
+      const kwLower = kw.toLowerCase();
+      // Must not be in action verb or task name
+      if (actionVerb.toLowerCase().includes(kwLower) || taskNameLower.includes(kwLower)) {
+        return false;
+      }
+      // Must be semantically relevant to the task
+      return isSemanticallyRelevant(kw);
+    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     if (relevantKeywords.length > 0) {
       description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
-        } else {
+      } else {
       // Use domain nouns if available
       if (elaboratingNouns.length > 0) {
         description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${elaboratingNouns[0]}`;
@@ -1669,11 +1778,20 @@ function buildElaborateContextualDescription(
   }
   // PRIORITY 6: Build sentence using nouns + keywords
   else if (nouns.length > 0 && keywords.length > 0) {
-    const contextNouns = nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
-    const relevantKeywords = keywords.filter(kw => 
-      !contextNouns.some(n => n.toLowerCase().includes(kw.toLowerCase())) &&
-      !taskNameLower.includes(kw.toLowerCase())
-    ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
+    // IMPROVED: Filter nouns by semantic relevance
+    const contextNouns = nouns
+      .filter(n => isSemanticallyRelevant(n))
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
+    // IMPROVED: Only include semantically relevant keywords
+    const relevantKeywords = keywords.filter(kw => {
+      const kwLower = kw.toLowerCase();
+      // Must not be in context nouns or task name
+      if (contextNouns.some(n => n.toLowerCase().includes(kwLower)) || taskNameLower.includes(kwLower)) {
+        return false;
+      }
+      // Must be semantically relevant to the task
+      return isSemanticallyRelevant(kw);
+    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Use action verb from extracted verbs or domain terminology
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
@@ -1694,7 +1812,18 @@ function buildElaborateContextualDescription(
   }
   // PRIORITY 7: Build sentence using keywords + domain terminology
   else if (keywords.length > 0) {
-    const relevantKeywords = keywords.filter(kw => !taskNameLower.includes(kw.toLowerCase())).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsExtended);
+    // IMPROVED: Only include semantically relevant keywords
+    const relevantKeywords = keywords
+      .filter(kw => {
+        const kwLower = kw.toLowerCase();
+        // Must not be in task name
+        if (taskNameLower.includes(kwLower)) {
+          return false;
+        }
+        // Must be semantically relevant to the task
+        return isSemanticallyRelevant(kw);
+      })
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsExtended);
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
     
     if (actionVerb && relevantKeywords.length > 0) {
@@ -1774,16 +1903,26 @@ function buildElaborateContextualDescription(
       const bestPhraseLower = bestPhrase.toLowerCase();
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
       
-      // Get relevant keywords and nouns that add context
+      // Get relevant keywords and nouns that add context - IMPROVED: Only include semantically relevant terms
         const relevantKeywords = keywords.filter(kw => {
           const kwLower = kw.toLowerCase();
-        return !bestPhraseLower.includes(kwLower) && 
-               !taskNameLower.includes(kwLower);
+        // Must not be in phrase or task name
+        if (bestPhraseLower.includes(kwLower) || taskNameLower.includes(kwLower)) {
+          return false;
+        }
+        // Must be semantically relevant to the task
+        return isSemanticallyRelevant(kw);
       }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
-      const contextNouns = elaboratingNouns.filter(n => 
-        !bestPhraseLower.includes(n.toLowerCase())
-      ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
+      const contextNouns = elaboratingNouns.filter(n => {
+        const nLower = n.toLowerCase();
+        // Must not be in phrase
+        if (bestPhraseLower.includes(nLower)) {
+          return false;
+        }
+        // Must be semantically relevant to the task
+        return isSemanticallyRelevant(n);
+      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
       // Build complete sentence
       const parts: string[] = [];
