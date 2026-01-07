@@ -606,21 +606,23 @@ export function TodayAgendaView({
         data-droppable-id="today-agenda"
         data-today-agenda="true"
         className={cn(
-          // On mobile, remove gradient background to show parent gradient from App.tsx
-          // On desktop, gradient is applied to ScrollArea content instead
           `flex flex-col transition-all duration-300`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
           isMobile ? "w-full" : "h-full min-h-0 flex-1", // min-h-0 and flex-1 needed for flex child to properly constrain ScrollArea
           !isMobile && `min-h-[${TODAY_AGENDA_MIN_HEIGHT}px]`, // Ensure drop zone is always accessible
+          // On desktop, apply gradient background to root container (like Folders Panel)
+          !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
         )}
         style={{
           position: 'relative',
           zIndex: isOver ? Z_INDEX.DROP_ZONE : Z_INDEX.TIMELINE_LINE, // Ensure drop zone is above other elements when dragging over
           // On mobile, ensure transparent background to show parent gradient
-          // On desktop, background is handled by ScrollArea content
-          backgroundColor: 'transparent',
-          background: 'transparent',
+          // On desktop, background gradient is applied via className above
+          ...(isMobile ? {
+            backgroundColor: 'transparent',
+            background: 'transparent',
+          } : {}),
         } as React.CSSProperties}
         data-tour="today-panel"
       >
@@ -917,17 +919,14 @@ export function TodayAgendaView({
             </div>
           </div>
         ) : (
-          <div className={cn("flex-1 w-full relative min-h-0 h-full", "overflow-hidden")}>
-          <ScrollArea 
-            className="h-full w-full flex-1"
-          >
+          <div className={cn("flex-1 w-full relative min-h-0 h-full overflow-hidden")}>
+          <ScrollArea className="h-full">
             <div 
               ref={timelineContainerRef}
-                className={cn(
-                  "px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative",
-                  // Apply gradient background to content so it extends with scroll
-                  !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`
-                )}
+              className={cn(
+                "px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative",
+                // Background is now on root container, content just needs to extend
+              )}
               style={{
                 paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
                   ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` 
@@ -935,7 +934,7 @@ export function TodayAgendaView({
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? KANBAN_MOBILE.bottomPaddingCalc
                   : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`, // Desktop: Add padding to ensure content scrolls past bottom (nav bar + safe area + buffer)
-                // Ensure background extends to bottom of content by making content at least viewport height
+                // Ensure content extends to bottom for proper scrolling
                 minHeight: '100%',
               }}
             >
