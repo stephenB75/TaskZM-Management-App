@@ -34,7 +34,7 @@ import {
   KANBAN_SPACING,
 } from '../lib/kanban-constants';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
-import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT } from '../lib/layout-constants';
+import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM } from '../lib/layout-constants';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
 
@@ -723,6 +723,11 @@ export function SevenDayKanban({
             minHeight: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
               ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
               : 'auto',
+            // Add bottom padding to ensure content is not hidden by nav bar
+            // Use the same calculation as App.tsx scroll container for consistency
+            paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+              ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`
+              : undefined,
           } as React.CSSProperties}
         >
           <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full"}>
