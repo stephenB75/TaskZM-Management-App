@@ -714,7 +714,7 @@ export function TodayAgendaView({
       {/* On desktop (when hideHeader is true), use ScrollArea for standalone scrolling */}
       {hideHeader ? (
         isMobile ? (
-          <div className="w-full relative">
+          <div className="w-full relative flex-1 min-h-0">
             <div 
               ref={timelineContainerRef}
               className="px-5 w-full relative"
@@ -943,8 +943,10 @@ export function TodayAgendaView({
             </div>
           </div>
         ) : (
-          <div className={cn("flex-1 w-full relative min-h-0 h-full overflow-hidden")}>
-          <ScrollArea className="h-full w-full">
+          // Desktop view with header - use ScrollArea for vertical scrolling
+          // FIXED: Ensure ScrollArea gets proper height by using flex-1 and min-h-0
+          <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
+          <ScrollArea className="flex-1 min-h-0 w-full">
             <div 
               ref={timelineContainerRef}
               className={cn(
