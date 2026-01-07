@@ -1084,20 +1084,17 @@ function buildElaborateContextualDescription(
   
   // STEP 1: Find domain phrases that elaborate on the task (not just repeat it)
   // These provide context about what the task involves
+  // IMPROVED: Uses fuzzy matching for better phrase detection
   const taskKeywordsLower = keywords.map(kw => kw.toLowerCase());
   const elaboratingPhrases: string[] = [];
   
-  // Find domain phrases that relate to keywords OR task name words but add elaboration
-  // PRIORITY: Look for phrases that contain keywords/task words but are NOT in the task name
-  // This ensures we get contextual information, not just repetition
-  domainTerms.phrases.forEach(phrase => {
+  // Helper function for improved phrase matching with fuzzy word-level matching
+  const matchesPhraseContextual = (phrase: string, keywords: string[], taskWords: string[]): boolean => {
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
     
-    // ENHANCED: Check if phrase contains keywords OR task name words (improved matching - check word-level matches)
-    // Also check if any word in the phrase relates to any keyword/task word (more lenient)
-    // Accept if ANY keyword OR task word matches (even partially) or if phrase words relate to them
-    const containsKeywords = taskKeywordsLower.some(kw => {
+    // Check if phrase contains keywords with fuzzy matching
+    const containsKeywords = keywords.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
       
@@ -1122,7 +1119,7 @@ function buildElaborateContextualDescription(
       return hasDirectWordMatch || hasFuzzyMatch;
     }) || phraseWords.some(pw => {
       // Reverse check: phrase words that relate to keywords
-      return taskKeywordsLower.some(tkw => {
+      return keywords.some(tkw => {
         const tkwLower = tkw.toLowerCase();
         const tkwWords = tkwLower.split(/\s+/);
         
@@ -1134,17 +1131,29 @@ function buildElaborateContextualDescription(
       });
     });
     
-    // ENHANCED: Also check if phrase contains task name words directly (not just extracted keywords)
-    // This ensures we match phrases even if keyword extraction missed important words
+    // Check if phrase contains task name words directly with fuzzy matching
     const containsTaskWords = taskWords.some(tw => {
       // Direct match
       if (phraseLower.includes(tw) || tw.includes(phraseLower)) return true;
-      // Check if any phrase word relates to task word
+      // Check if any phrase word relates to task word (fuzzy)
       return phraseWords.some(pw => {
         if (pw.includes(tw) || tw.includes(pw)) return true;
         return areWordsRelated(pw, tw);
       });
     });
+    
+    return containsKeywords || containsTaskWords;
+  };
+  
+  // Find domain phrases that relate to keywords OR task name words but add elaboration
+  // PRIORITY: Look for phrases that contain keywords/task words but are NOT in the task name
+  // This ensures we get contextual information, not just repetition
+  domainTerms.phrases.forEach(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+    
+    // IMPROVED: Use contextual phrase matching function
+    const matchesContext = matchesPhraseContextual(phrase, taskKeywordsLower, taskWords);
     
     // More lenient check: phrase should NOT be a direct substring of task name
     // Allow partial matches if they add context
@@ -1152,12 +1161,18 @@ function buildElaborateContextualDescription(
     const isTaskNameSubstring = phraseLower.includes(taskNameLower) && taskNameLower.length > DESCRIPTION_GENERATION_CONFIG.lengthThresholds.minTaskNameSubstring;
     
     // Also check if phrase is too similar to task name (all words in phrase are in task name)
+    // IMPROVED: Use fuzzy matching to check if words are in task name
     const allWordsInTaskName = phraseWords.length > 0 && 
-      phraseWords.every(word => taskNameLower.includes(word));
+      phraseWords.every(word => {
+        // Direct match
+        if (taskNameLower.includes(word)) return true;
+        // Fuzzy match: check if any task word relates to phrase word
+        return taskWords.some(tw => areWordsRelated(tw, word));
+      });
     
-    // Accept phrase if it contains keywords OR task words and adds new context
+    // Accept phrase if it matches contextually and adds new context
     // More lenient: accept if phrase relates to keywords/task words even if not all words match
-    if ((containsKeywords || containsTaskWords) && !isDirectSubstring && !isTaskNameSubstring && !allWordsInTaskName) {
+    if (matchesContext && !isDirectSubstring && !isTaskNameSubstring && !allWordsInTaskName) {
       // Count how many keywords the phrase contains (more = more relevant)
       const keywordCount = taskKeywordsLower.filter(kw => {
           const kwLower = kw.toLowerCase();
@@ -1190,29 +1205,46 @@ function buildElaborateContextualDescription(
   });
   
   // STEP 2: Find domain verbs that elaborate on actions
+  // IMPROVED: Uses fuzzy matching for better verb detection
   const elaboratingVerbs: string[] = [];
   domainTerms.verbs.forEach(verb => {
     const verbLower = verb.toLowerCase();
-    const verbBase = verbLower.replace(/(ing|ed|s|es)$/, '');
+    const verbBase = verbLower.replace(/(ing|ed|s|es|er|est|ly)$/, '');
     
-    // Check if verb relates to task keywords or extracted verbs
-    const relatesToKeywords = taskKeywordsLower.some(kw => 
-      verbLower.includes(kw) || kw.includes(verbLower) ||
-      verbBase.includes(kw) || kw.includes(verbBase)
-    );
-    
-    const relatesToExtractedVerbs = verbs.some(v => {
-          const vLower = v.toLowerCase();
-          const vBase = vLower.replace(/(ing|ed|s|es)$/, '');
-      return verbLower.includes(vLower) || vLower.includes(verbLower) ||
-             verbBase.includes(vBase) || vBase.includes(verbBase);
+    // IMPROVED: Check if verb relates to task keywords with fuzzy matching
+    const relatesToKeywords = taskKeywordsLower.some(kw => {
+      const kwLower = kw.toLowerCase();
+      // Direct match
+      if (verbLower.includes(kwLower) || kwLower.includes(verbLower) ||
+          verbBase.includes(kwLower) || kwLower.includes(verbBase)) {
+        return true;
+      }
+      // Fuzzy match
+      return areWordsRelated(verbLower, kwLower) || areWordsRelated(verbBase, kwLower);
     });
     
-    // Also check if verb appears in task name (even if not extracted)
+    // IMPROVED: Check if verb relates to extracted verbs with fuzzy matching
+    const relatesToExtractedVerbs = verbs.some(v => {
+      const vLower = v.toLowerCase();
+      const vBase = vLower.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+      // Direct match
+      if (verbLower.includes(vLower) || vLower.includes(verbLower) ||
+          verbBase.includes(vBase) || vBase.includes(verbBase)) {
+        return true;
+      }
+      // Fuzzy match
+      return areWordsRelated(verbLower, vLower) || areWordsRelated(verbBase, vBase);
+    });
+    
+    // IMPROVED: Check if verb appears in task name with fuzzy matching
     const appearsInTaskName = taskNameLower.includes(verbLower) || 
                              taskNameLower.includes(verbBase) ||
                              taskNameLower.includes(`${verbBase}ing`) ||
-                             taskNameLower.includes(`${verbBase}ed`);
+                             taskNameLower.includes(`${verbBase}ed`) ||
+                             taskWords.some(tw => {
+                               const twBase = tw.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+                               return areWordsRelated(tw, verbLower) || areWordsRelated(twBase, verbBase);
+                             });
     
     if ((relatesToKeywords || relatesToExtractedVerbs || appearsInTaskName) && 
         !elaboratingVerbs.some(v => v.toLowerCase() === verbLower)) {
@@ -1221,28 +1253,45 @@ function buildElaborateContextualDescription(
   });
   
   // STEP 3: Find domain nouns that add context
+  // IMPROVED: Uses fuzzy matching for better noun detection
   const elaboratingNouns: string[] = [];
   domainTerms.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
-    const nounBase = nounLower.replace(/s$|es$/, '');
+    const nounBase = nounLower.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
     
-    // Check if noun relates to task keywords or extracted nouns
-    const relatesToKeywords = taskKeywordsLower.some(kw => 
-      nounLower.includes(kw) || kw.includes(nounLower) ||
-      nounBase.includes(kw) || kw.includes(nounBase)
-    );
-    
-    const relatesToExtractedNouns = nouns.some(n => {
-      const nLower = n.toLowerCase();
-      const nBase = nLower.replace(/s$|es$/, '');
-      return nounLower.includes(nLower) || nLower.includes(nounLower) ||
-             nounBase.includes(nBase) || nBase.includes(nounBase);
+    // IMPROVED: Check if noun relates to task keywords with fuzzy matching
+    const relatesToKeywords = taskKeywordsLower.some(kw => {
+      const kwLower = kw.toLowerCase();
+      // Direct match
+      if (nounLower.includes(kwLower) || kwLower.includes(nounLower) ||
+          nounBase.includes(kwLower) || kwLower.includes(nounBase)) {
+        return true;
+      }
+      // Fuzzy match
+      return areWordsRelated(nounLower, kwLower) || areWordsRelated(nounBase, kwLower);
     });
     
-    // Also check if noun appears in task name (even if not extracted)
+    // IMPROVED: Check if noun relates to extracted nouns with fuzzy matching
+    const relatesToExtractedNouns = nouns.some(n => {
+      const nLower = n.toLowerCase();
+      const nBase = nLower.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
+      // Direct match
+      if (nounLower.includes(nLower) || nLower.includes(nounLower) ||
+          nounBase.includes(nBase) || nBase.includes(nounBase)) {
+        return true;
+      }
+      // Fuzzy match
+      return areWordsRelated(nounLower, nLower) || areWordsRelated(nounBase, nBase);
+    });
+    
+    // IMPROVED: Check if noun appears in task name with fuzzy matching
     const appearsInTaskName = taskNameLower.includes(nounLower) || 
                               taskNameLower.includes(nounBase) ||
-                              taskNameLower.includes(`${nounBase}s`);
+                              taskNameLower.includes(`${nounBase}s`) ||
+                              taskWords.some(tw => {
+                                const twBase = tw.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
+                                return areWordsRelated(tw, nounLower) || areWordsRelated(twBase, nounBase);
+                              });
     
     if ((relatesToKeywords || relatesToExtractedNouns || appearsInTaskName) && 
         !elaboratingNouns.some(n => n.toLowerCase() === nounLower)) {
