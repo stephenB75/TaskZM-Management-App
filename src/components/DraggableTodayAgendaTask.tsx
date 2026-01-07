@@ -389,7 +389,7 @@ export function DraggableTodayAgendaTask({
     <div className="flex flex-col gap-1 w-full min-w-0 relative" style={{ overflow: 'visible' }}>
       {/* Next Up Badge - Above the task card */}
       {isNextUp && (
-        <div className="flex gap-3 w-full min-w-0 relative mb-1">
+        <div className="flex gap-3 w-full min-w-0 relative mb-3">
           <div className="w-16 flex-shrink-0" />
           <span 
             className={cn(
