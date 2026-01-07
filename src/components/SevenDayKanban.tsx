@@ -121,6 +121,9 @@ export function SevenDayKanban({
   // Auto-zoom state for desktop view
   const columnsContainerRef = React.useRef<HTMLDivElement>(null);
   const [zoomScale, setZoomScale] = useState(1);
+  
+  // Track if we've scrolled to next day on mount (only once)
+  const hasScrolledToNextDayRef = React.useRef(false);
 
   // Helpers for subtle gradients to avoid blending into backgrounds
   const toAlphaHex = (hex: string, percent: number) => {
@@ -389,6 +392,68 @@ export function SevenDayKanban({
       if (resizeTimeoutId) clearTimeout(resizeTimeoutId);
     };
   }, [tasks, mobileMode, viewMode, weekOffset]);
+
+  // Scroll to next day (tomorrow) on mount for desktop view
+  React.useEffect(() => {
+    // Only for desktop view, not mobile
+    if (mobileMode || viewMode === 'month') return;
+    
+    // Only scroll once on mount
+    if (hasScrolledToNextDayRef.current) return;
+    
+    const container = scrollContainerRef.current;
+    const columns = columnsContainerRef.current;
+    if (!container || !columns) return;
+    
+    // Calculate tomorrow's date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    
+    // Find tomorrow's column in weekColumns
+    const tomorrowColumn = weekColumns.find(col => {
+      const colDate = new Date(col.date);
+      colDate.setHours(0, 0, 0, 0);
+      return colDate.getTime() === tomorrow.getTime();
+    });
+    
+    if (!tomorrowColumn) return;
+    
+    // Find the index of tomorrow's column
+    const tomorrowIndex = weekColumns.findIndex(col => col.dateString === tomorrowColumn.dateString);
+    if (tomorrowIndex === -1) return;
+    
+    // Calculate scroll position using actual DOM measurements
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      // Get all column elements
+      const columnElements = columns.querySelectorAll('[data-column-date]');
+      if (columnElements.length === 0) return;
+      
+      // Find tomorrow's column element
+      const tomorrowElement = Array.from(columnElements).find(el => {
+        const dateAttr = el.getAttribute('data-column-date');
+        return dateAttr === tomorrowColumn.dateString;
+      }) as HTMLElement | undefined;
+      
+      if (!tomorrowElement) return;
+      
+      // Calculate scroll position to show tomorrow's column
+      // Get the left offset of tomorrow's column relative to the columns container
+      const columnLeft = tomorrowElement.offsetLeft;
+      
+      // Get the container's padding (p-2.5 = 10px, p-3 = 12px on lg)
+      const containerPadding = 10; // Base padding
+      
+      // Scroll to position where tomorrow's column is visible
+      // Subtract a bit to account for container padding and show some context
+      container.scrollLeft = columnLeft - containerPadding;
+      
+      // Mark as scrolled
+      hasScrolledToNextDayRef.current = true;
+    });
+  }, [weekColumns, mobileMode, viewMode]);
 
   // Get tasks for a specific day
   const getTasksForDay = (dateString: string) => {
@@ -956,6 +1021,7 @@ export function SevenDayKanban({
                 return (
                   <motion.div
                     key={column.dateString}
+                    data-column-date={column.dateString}
                     className={cn(
                       'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
                       !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-transparent'),
