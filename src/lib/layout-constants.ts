@@ -488,6 +488,61 @@ export const DIALOG_DIMENSIONS = {
   },
 } as const;
 
+// Auth Screen Constants
+export const AUTH_SCREEN = {
+  mobile: {
+    padding: {
+      horizontal: '1rem', // px-4 = 1rem (16px) - comfortable side padding
+      vertical: '1rem', // py-4 = 1rem (16px) - top padding
+      bottom: '2rem', // pb-8 = 2rem (32px) - bottom padding to avoid nav bar
+    },
+    logo: {
+      width: '160px', // w-[160px] - smaller for mobile viewport
+      maxWidth: '85%', // max-w-[85%] - ensure logo doesn't exceed viewport
+    },
+    card: {
+      maxHeight: 'calc(100vh - 8rem)', // Account for logo + padding
+      padding: {
+        horizontal: '1rem', // px-4 = 1rem (16px)
+        vertical: '1rem', // py-4 = 1rem (16px)
+      },
+    },
+    button: {
+      height: '2.75rem', // h-11 = 2.75rem (44px) - standard mobile touch target
+      fontSize: '0.875rem', // text-sm = 0.875rem (14px)
+    },
+  },
+  desktop: {
+    padding: {
+      horizontal: '1.5rem', // px-6 = 1.5rem (24px)
+      vertical: '1.5rem', // py-6 = 1.5rem (24px)
+    },
+    logo: {
+      width: '260px', // w-[260px] - larger for desktop
+    },
+    card: {
+      maxHeight: 'calc(100vh - 10rem)',
+    },
+  },
+} as const;
+
+// Dialog Close Button Constants
+export const DIALOG_CLOSE_BUTTON = {
+  mobile: {
+    size: '1.5rem', // w-6 h-6 = 1.5rem (24px) - smaller for mobile
+    iconSize: '0.875rem', // w-3.5 h-3.5 = 0.875rem (14px)
+    top: '0.5rem', // top-2 = 0.5rem (8px)
+    right: '0.5rem', // right-2 = 0.5rem (8px)
+    padding: '0', // No padding - just the icon
+  },
+  desktop: {
+    size: '2rem', // w-8 h-8 = 2rem (32px)
+    iconSize: '1rem', // w-4 h-4 = 1rem (16px)
+    top: '1rem', // top-4 = 1rem (16px)
+    right: '1rem', // right-4 = 1rem (16px)
+  },
+} as const;
+
 // Component Dimensions
 export const COMPONENT_DIMENSIONS = {
   settingsPanel: {

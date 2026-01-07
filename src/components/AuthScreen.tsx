@@ -62,6 +62,8 @@ import {
   AUTH_BACKGROUND_IMAGE 
 } from '../lib/auth-constants';
 import { getUserFriendlyErrorMessage } from '../lib/error-utils';
+import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
+import { useIsMobile } from './ui/use-mobile';
 
 // Password strength calculation
 function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 'strong'; score: number; feedback: string[] } {
@@ -93,6 +95,7 @@ function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 
 
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
+  const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
   const [rememberMe, setRememberMe] = useState(false);
@@ -370,7 +373,15 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden overflow-y-auto relative flex items-start lg:items-center justify-center py-4 sm:py-6 lg:py-0 pb-8 sm:pb-12 lg:pb-0">
+    <div 
+      className="min-h-screen w-full overflow-x-hidden overflow-y-auto relative flex items-start lg:items-center justify-center"
+      style={{
+        paddingTop: isMobile ? AUTH_SCREEN.mobile.padding.vertical : AUTH_SCREEN.desktop.padding.vertical,
+        paddingBottom: isMobile ? AUTH_SCREEN.mobile.padding.bottom : AUTH_SCREEN.desktop.padding.vertical,
+        paddingLeft: isMobile ? AUTH_SCREEN.mobile.padding.horizontal : AUTH_SCREEN.desktop.padding.horizontal,
+        paddingRight: isMobile ? AUTH_SCREEN.mobile.padding.horizontal : AUTH_SCREEN.desktop.padding.horizontal,
+      } as React.CSSProperties}
+    >
       {/* Background Image with Overlay - Full viewport coverage */}
       <div className="fixed inset-0 z-0 w-screen h-screen">
         <ImageWithFallback
@@ -410,16 +421,28 @@ export function AuthScreen() {
 
       {/* Main Content */}
       <motion.div
-        className="relative z-10 w-full max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:py-6 pb-8 sm:pb-6 lg:pb-6"
+        className="relative z-10 w-full max-w-7xl mx-auto"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
+        style={{
+          maxWidth: '100%',
+        } as React.CSSProperties}
       >
-        <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto pb-4">
+        <div 
+          className="flex flex-col items-center justify-center w-full max-w-md mx-auto"
+          style={{
+            paddingLeft: isMobile ? '0' : undefined,
+            paddingRight: isMobile ? '0' : undefined,
+          } as React.CSSProperties}
+        >
           {/* Branding Section - Above form */}
           <motion.div
-            className="text-center w-full flex flex-col items-center mb-6 sm:mb-8"
+            className="text-center w-full flex flex-col items-center"
             variants={itemVariants}
+            style={{
+              marginBottom: isMobile ? '1.5rem' : '2rem',
+            } as React.CSSProperties}
           >
             <motion.div className="flex flex-col items-center" variants={logoVariants}>
               <motion.div
@@ -434,10 +457,20 @@ export function AuthScreen() {
               <motion.img
                 src={taskzmLogo}
                 alt="TaskZM Logo"
-                className="w-[180px] sm:w-[220px] md:w-[260px] object-contain mb-3"
+                className="object-contain mb-3"
+                style={{
+                  width: isMobile ? AUTH_SCREEN.mobile.logo.width : AUTH_SCREEN.desktop.logo.width,
+                  maxWidth: isMobile ? AUTH_SCREEN.mobile.logo.maxWidth : '100%',
+                } as React.CSSProperties}
                 whileHover={{ scale: 1.02 }}
               />
-              <p className="text-sm sm:text-base text-muted-foreground text-center px-4 max-w-sm">
+              <p 
+                className="text-sm sm:text-base text-muted-foreground text-center max-w-sm"
+                style={{
+                  paddingLeft: isMobile ? '1rem' : '1rem',
+                  paddingRight: isMobile ? '1rem' : '1rem',
+                } as React.CSSProperties}
+              >
                 {AUTH_UI_TEXT.subtitle}
               </p>
             </motion.div>
@@ -453,9 +486,22 @@ export function AuthScreen() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <Card className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card max-h-[calc(100vh-12rem)] sm:max-h-[calc(100vh-10rem)] overflow-y-auto">
+              <Card 
+                className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card overflow-y-auto"
+                style={{
+                  maxHeight: isMobile ? AUTH_SCREEN.mobile.card.maxHeight : AUTH_SCREEN.desktop.card.maxHeight,
+                  paddingLeft: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : undefined,
+                  paddingRight: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : undefined,
+                } as React.CSSProperties}
+              >
                 {/* Card Header with Tabs - Same for mobile and desktop */}
-                <CardHeader className="space-y-2 pb-3 px-4 pt-4">
+                <CardHeader 
+                  className="space-y-2 pb-3 pt-4"
+                  style={{
+                    paddingLeft: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1rem',
+                    paddingRight: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1rem',
+                  } as React.CSSProperties}
+                >
                   <CardTitle className="text-center text-base sm:text-lg font-semibold text-foreground">
                     {AUTH_UI_TEXT.welcomeMessage}
                   </CardTitle>
@@ -482,7 +528,13 @@ export function AuthScreen() {
                   </TabsList>
                 </CardHeader>
 
-                <CardContent className="pb-4 sm:pb-6 pt-3 sm:pt-4 px-4 sm:px-6">
+                <CardContent 
+                  className="pb-4 sm:pb-6 pt-3 sm:pt-4"
+                  style={{
+                    paddingLeft: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1.5rem',
+                    paddingRight: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1.5rem',
+                  } as React.CSSProperties}
+                >
                   <TabsContent value="signin" className="mt-0">
                     <motion.form
                       onSubmit={handleSignIn}
@@ -563,7 +615,11 @@ export function AuthScreen() {
                       <div className="pt-1">
                         <Button
                           type="submit"
-                          className="w-full h-10 sm:h-9 bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg text-sm border-0"
+                          className="w-full bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg border-0"
+                          style={{
+                            height: isMobile ? AUTH_SCREEN.mobile.button.height : undefined,
+                            fontSize: isMobile ? AUTH_SCREEN.mobile.button.fontSize : undefined,
+                          } as React.CSSProperties}
                           disabled={isLoading}
                         >
                           {isLoading ? (
@@ -600,7 +656,11 @@ export function AuthScreen() {
                         type="button"
                         onClick={handleDemoSignIn}
                         variant="outline"
-                          className="w-full h-10 sm:h-9 border-2 border-primary text-primary hover:bg-primary/10 text-sm"
+                        className="w-full border-2 border-primary text-primary hover:bg-primary/10"
+                        style={{
+                          height: isMobile ? AUTH_SCREEN.mobile.button.height : undefined,
+                          fontSize: isMobile ? AUTH_SCREEN.mobile.button.fontSize : undefined,
+                        } as React.CSSProperties}
                         disabled={isLoading}
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
@@ -828,7 +888,11 @@ export function AuthScreen() {
                       <div className="pt-0.5">
                         <Button
                           type="submit"
-                          className="w-full h-10 sm:h-9 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg text-sm border-0"
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg border-0"
+                          style={{
+                            height: isMobile ? AUTH_SCREEN.mobile.button.height : undefined,
+                            fontSize: isMobile ? AUTH_SCREEN.mobile.button.fontSize : undefined,
+                          } as React.CSSProperties}
                           disabled={isLoading}
                           >
                             {isLoading ? (
@@ -859,7 +923,13 @@ export function AuthScreen() {
                   </TabsContent>
                   </CardContent>
                 {/* App Store Badges */}
-                <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-2 sm:pt-3 border-t border-gray-200/50 dark:border-border/50">
+                <div 
+                  className="pb-4 sm:pb-5 pt-2 sm:pt-3 border-t border-gray-200/50 dark:border-border/50"
+                  style={{
+                    paddingLeft: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1.5rem',
+                    paddingRight: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1.5rem',
+                  } as React.CSSProperties}
+                >
                 <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-muted-foreground mb-2 sm:mb-3">
                   {AUTH_UI_TEXT.mobileApps.comingSoon}
                 </p>
