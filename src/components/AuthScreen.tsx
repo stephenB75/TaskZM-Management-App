@@ -59,7 +59,8 @@ import {
   DEMO_ACCOUNT_CONFIG, 
   AUTH_UI_TEXT, 
   AUTH_CONFIG,
-  AUTH_BACKGROUND_IMAGE 
+  AUTH_BACKGROUND_IMAGE,
+  AUTH_COLORS
 } from '../lib/auth-constants';
 import { getUserFriendlyErrorMessage } from '../lib/error-utils';
 import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
@@ -374,7 +375,7 @@ export function AuthScreen() {
 
   return (
     <div 
-      className="min-h-screen w-full overflow-x-hidden overflow-y-auto relative flex items-start lg:items-center justify-center"
+      className="min-h-screen w-full overflow-x-hidden relative flex items-start sm:items-center justify-center"
       style={{
         paddingTop: isMobile ? AUTH_SCREEN.mobile.padding.vertical : AUTH_SCREEN.desktop.padding.vertical,
         paddingBottom: isMobile ? AUTH_SCREEN.mobile.padding.bottom : AUTH_SCREEN.desktop.padding.vertical,
@@ -421,32 +422,31 @@ export function AuthScreen() {
 
       {/* Main Content */}
       <motion.div
-        className="relative z-10 w-full max-w-7xl mx-auto"
+        className="relative z-10 w-full max-w-md mx-auto"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         style={{
           maxWidth: '100%',
+          height: isMobile ? '100%' : 'auto',
+          display: 'flex',
+          flexDirection: 'column',
         } as React.CSSProperties}
       >
         <div 
-          className="flex flex-col items-center justify-center w-full max-w-md mx-auto"
-          style={{
-            paddingLeft: isMobile ? '0' : undefined,
-            paddingRight: isMobile ? '0' : undefined,
-          } as React.CSSProperties}
+          className="flex flex-col items-center justify-center w-full flex-1 min-h-0"
         >
           {/* Branding Section - Above form */}
           <motion.div
-            className="text-center w-full flex flex-col items-center"
+            className="text-center w-full flex flex-col items-center flex-shrink-0"
             variants={itemVariants}
             style={{
-              marginBottom: isMobile ? '1.5rem' : '2rem',
+              marginBottom: isMobile ? AUTH_SCREEN.mobile.spacing.brandingMarginBottom : AUTH_SCREEN.desktop.spacing.brandingMarginBottom,
             } as React.CSSProperties}
           >
-            <motion.div className="flex flex-col items-center" variants={logoVariants}>
+            <motion.div className="flex flex-col items-center w-full" variants={logoVariants}>
               <motion.div
-                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-border mb-4"
+                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-border mb-3 sm:mb-4"
                 whileHover={{ scale: 1.05 }}
               >
                 <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
@@ -457,19 +457,16 @@ export function AuthScreen() {
               <motion.img
                 src={taskzmLogo}
                 alt="TaskZM Logo"
-                className="object-contain mb-3"
+                className="object-contain mb-2 sm:mb-3"
                 style={{
                   width: isMobile ? AUTH_SCREEN.mobile.logo.width : AUTH_SCREEN.desktop.logo.width,
                   maxWidth: isMobile ? AUTH_SCREEN.mobile.logo.maxWidth : '100%',
+                  height: 'auto',
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.02 }}
               />
               <p 
-                className="text-sm sm:text-base text-muted-foreground text-center max-w-sm"
-                style={{
-                  paddingLeft: isMobile ? '1rem' : '1rem',
-                  paddingRight: isMobile ? '1rem' : '1rem',
-                } as React.CSSProperties}
+                className="text-xs sm:text-sm md:text-base text-muted-foreground text-center max-w-sm px-2 sm:px-4"
               >
                 {AUTH_UI_TEXT.subtitle}
               </p>
@@ -479,49 +476,43 @@ export function AuthScreen() {
           {/* Auth Card - Below logo */}
           <motion.div
             variants={cardVariants}
-            className="w-full"
+            className="w-full flex-1 min-h-0 flex flex-col"
           >
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
-              className="w-full"
+              className="w-full h-full flex flex-col"
             >
               <Card 
-                className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card overflow-y-auto"
+                className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card flex flex-col flex-1 min-h-0 overflow-hidden"
                 style={{
                   maxHeight: isMobile ? AUTH_SCREEN.mobile.card.maxHeight : AUTH_SCREEN.desktop.card.maxHeight,
-                  paddingLeft: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : undefined,
-                  paddingRight: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : undefined,
                 } as React.CSSProperties}
               >
                 {/* Card Header with Tabs - Same for mobile and desktop */}
                 <CardHeader 
-                  className="space-y-2 pb-3 pt-4"
-                  style={{
-                    paddingLeft: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1rem',
-                    paddingRight: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1rem',
-                  } as React.CSSProperties}
+                  className="space-y-2 pb-2 sm:pb-3 pt-3 sm:pt-4 flex-shrink-0 px-3 sm:px-4 md:px-6"
                 >
-                  <CardTitle className="text-center text-base sm:text-lg font-semibold text-foreground">
+                  <CardTitle className="text-center text-sm sm:text-base md:text-lg font-semibold text-foreground">
                     {AUTH_UI_TEXT.welcomeMessage}
                   </CardTitle>
-                  <CardDescription className="text-center text-xs sm:text-sm text-muted-foreground">
+                  <CardDescription className="text-center text-[11px] sm:text-xs md:text-sm text-muted-foreground">
                     {activeTab === "signin" ? (
                       AUTH_UI_TEXT.signIn.description
                     ) : (
                       AUTH_UI_TEXT.signUp.description
                     )}
                   </CardDescription>
-                  <TabsList className="w-full h-9 sm:h-10 p-1 gap-1 bg-muted rounded-lg flex items-center">
+                  <TabsList className="w-full h-8 sm:h-9 md:h-10 p-1 gap-1 bg-muted rounded-lg flex items-center">
                     <TabsTrigger
                       value="signin"
-                      className="flex-1 h-7 sm:h-8 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                      className="flex-1 h-6 sm:h-7 md:h-8 px-2 sm:px-3 md:px-4 text-[11px] sm:text-xs md:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signIn.title}
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="flex-1 h-7 sm:h-8 px-3 sm:px-4 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                      className="flex-1 h-6 sm:h-7 md:h-8 px-2 sm:px-3 md:px-4 text-[11px] sm:text-xs md:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                     >
                       {AUTH_UI_TEXT.signUp.title}
                     </TabsTrigger>
@@ -529,16 +520,12 @@ export function AuthScreen() {
                 </CardHeader>
 
                 <CardContent 
-                  className="pb-4 sm:pb-6 pt-3 sm:pt-4"
-                  style={{
-                    paddingLeft: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1.5rem',
-                    paddingRight: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1.5rem',
-                  } as React.CSSProperties}
+                  className="pb-3 sm:pb-4 md:pb-6 pt-2 sm:pt-3 md:pt-4 flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 md:px-6"
                 >
                   <TabsContent value="signin" className="mt-0">
                     <motion.form
                       onSubmit={handleSignIn}
-                      className="space-y-3 sm:space-y-2"
+                      className="space-y-2.5 sm:space-y-3"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
@@ -558,7 +545,7 @@ export function AuthScreen() {
                             }
                           }}
                           required
-                          className="border-2 focus:border-primary transition-colors h-10 sm:h-9 text-sm bg-background dark:bg-card shadow-sm"
+                          className="border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm"
                         />
                       </div>
 
@@ -573,7 +560,7 @@ export function AuthScreen() {
                               setSignInPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm pr-10"
+                            className="border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm pr-10"
                           />
                           <button
                             type="button"
@@ -588,8 +575,8 @@ export function AuthScreen() {
                             )}
                           </button>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
                             <Switch
                               id="remember-me"
                               checked={rememberMe}
@@ -597,7 +584,7 @@ export function AuthScreen() {
                             />
                             <Label
                               htmlFor="remember-me"
-                              className="text-xs text-gray-600 dark:text-muted-foreground cursor-pointer"
+                              className="text-[11px] sm:text-xs text-gray-600 dark:text-muted-foreground cursor-pointer"
                             >
                               {AUTH_UI_TEXT.signIn.rememberMe}
                             </Label>
@@ -605,7 +592,16 @@ export function AuthScreen() {
                           <button
                             type="button"
                             onClick={() => setShowForgotPasswordDialog(true)}
-                            className="text-xs text-[#7B68EE] hover:text-[#6A5ACD] transition-colors"
+                            className="text-[11px] sm:text-xs transition-colors whitespace-nowrap"
+                            style={{
+                              color: AUTH_COLORS.primary,
+                            } as React.CSSProperties}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = AUTH_COLORS.primaryHover;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = AUTH_COLORS.primary;
+                            }}
                           >
                             {AUTH_UI_TEXT.signIn.forgotPassword}
                           </button>
@@ -615,11 +611,20 @@ export function AuthScreen() {
                       <div className="pt-1">
                         <Button
                           type="submit"
-                          className="w-full bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6] shadow-lg border-0"
+                          className="w-full shadow-lg border-0 h-9 sm:h-10 md:h-11 text-xs sm:text-sm"
                           style={{
-                            height: isMobile ? AUTH_SCREEN.mobile.button.height : undefined,
-                            fontSize: isMobile ? AUTH_SCREEN.mobile.button.fontSize : undefined,
+                            background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
+                            backgroundSize: '100% 100%',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                            color: 'white',
                           } as React.CSSProperties}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primaryHover}, ${AUTH_COLORS.secondaryHover})`;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`;
+                          }}
                           disabled={isLoading}
                         >
                           {isLoading ? (
@@ -640,11 +645,11 @@ export function AuthScreen() {
                       </div>
 
                       {/* Divider */}
-                      <div className="relative py-2">
+                      <div className="relative py-1.5 sm:py-2">
                         <div className="absolute inset-0 flex items-center">
                           <span className="w-full border-t border-gray-300 dark:border-border" />
                         </div>
-                        <div className="relative flex justify-center text-xs uppercase">
+                        <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
                           <span className="bg-card dark:bg-background px-2 text-muted-foreground">
                             {AUTH_UI_TEXT.or}
                           </span>
@@ -656,14 +661,10 @@ export function AuthScreen() {
                         type="button"
                         onClick={handleDemoSignIn}
                         variant="outline"
-                        className="w-full border-2 border-primary text-primary hover:bg-primary/10"
-                        style={{
-                          height: isMobile ? AUTH_SCREEN.mobile.button.height : undefined,
-                          fontSize: isMobile ? AUTH_SCREEN.mobile.button.fontSize : undefined,
-                        } as React.CSSProperties}
+                        className="w-full border-2 border-primary text-primary hover:bg-primary/10 h-9 sm:h-10 md:h-11 text-xs sm:text-sm"
                         disabled={isLoading}
                       >
-                        <Sparkles className="mr-2 h-4 w-4" />
+                        <Sparkles className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         {AUTH_UI_TEXT.demo.button}
                       </Button>
                     </motion.form>
@@ -672,7 +673,7 @@ export function AuthScreen() {
                   <TabsContent value="signup" className="mt-0">
                     <motion.form
                       onSubmit={handleSignUp}
-                      className="space-y-3"
+                      className="space-y-2.5 sm:space-y-3"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
@@ -687,7 +688,7 @@ export function AuthScreen() {
                             setSignUpName(e.target.value)
                           }
                           required
-                            className="border-2 focus:border-primary transition-colors h-10 sm:h-9 text-sm bg-background dark:bg-card shadow-sm"
+                          className="border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm"
                         />
                       </div>
 
@@ -712,7 +713,7 @@ export function AuthScreen() {
                               }
                             }}
                             required
-                            className={`border-2 focus:border-primary transition-colors h-10 sm:h-9 text-sm bg-background dark:bg-card shadow-sm pr-10 ${
+                            className={`border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm pr-10 ${
                               emailError ? 'border-red-500' : ''
                             }`}
                           />
@@ -727,7 +728,7 @@ export function AuthScreen() {
                           </div>
                         </div>
                         {emailError && (
-                          <p className="text-xs text-red-500 flex items-center gap-1">
+                          <p className="text-[11px] sm:text-xs text-red-500 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
                             {emailError}
                           </p>
@@ -745,7 +746,7 @@ export function AuthScreen() {
                               setSignUpPassword(e.target.value)
                             }
                             required
-                            className="border-2 focus:border-[#7B68EE] transition-colors h-10 sm:h-9 text-sm bg-white dark:bg-card shadow-sm pr-10"
+                            className="border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm pr-10"
                           />
                           <button
                             type="button"
@@ -775,7 +776,7 @@ export function AuthScreen() {
                                   }`}
                                 />
                               </div>
-                              <span className={`text-xs font-medium ${
+                              <span className={`text-[10px] sm:text-xs font-medium ${
                                 passwordStrength.strength === 'weak'
                                   ? 'text-red-500'
                                   : passwordStrength.strength === 'medium'
@@ -790,7 +791,7 @@ export function AuthScreen() {
                               </span>
                             </div>
                             {passwordStrength.feedback.length > 0 && passwordStrength.strength !== 'strong' && (
-                              <ul className="text-xs text-gray-600 dark:text-muted-foreground space-y-0.5">
+                              <ul className="text-[11px] sm:text-xs text-gray-600 dark:text-muted-foreground space-y-0.5">
                                 {passwordStrength.feedback.slice(0, 2).map((item, idx) => (
                                   <li key={idx} className="flex items-center gap-1">
                                     <span className="text-red-500">•</span>
@@ -816,7 +817,7 @@ export function AuthScreen() {
                               )
                             }
                             required
-                            className={`border-2 focus:border-primary transition-colors h-10 sm:h-9 text-sm bg-background dark:bg-card shadow-sm pr-10 ${
+                            className={`border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm pr-10 ${
                               signUpConfirmPassword && !passwordsMatch ? 'border-red-500' : ''
                             } ${
                               signUpConfirmPassword && passwordsMatch ? 'border-green-500' : ''
@@ -836,7 +837,7 @@ export function AuthScreen() {
                           </button>
                         </div>
                         {signUpConfirmPassword && (
-                          <p className={`text-xs flex items-center gap-1 ${
+                          <p className={`text-[11px] sm:text-xs flex items-center gap-1 ${
                             passwordsMatch ? 'text-green-500' : 'text-red-500'
                           }`}>
                             {passwordsMatch ? (
@@ -860,11 +861,11 @@ export function AuthScreen() {
                           id="accept-terms"
                           checked={acceptedTerms}
                           onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                          className="mt-0.5 !h-4 !w-4"
+                          className="mt-0.5 !h-3.5 !w-3.5 sm:!h-4 sm:!w-4 flex-shrink-0"
                         />
                         <Label
                           htmlFor="accept-terms"
-                          className="text-xs text-gray-600 dark:text-muted-foreground cursor-pointer leading-tight"
+                          className="text-[11px] sm:text-xs text-gray-600 dark:text-muted-foreground cursor-pointer leading-tight"
                         >
                           {AUTH_UI_TEXT.signUp.acceptTerms.split('Terms of Service')[0]}
                           <button
@@ -888,11 +889,20 @@ export function AuthScreen() {
                       <div className="pt-0.5">
                         <Button
                           type="submit"
-                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg border-0"
+                          className="w-full shadow-lg border-0 h-9 sm:h-10 md:h-11 text-xs sm:text-sm"
                           style={{
-                            height: isMobile ? AUTH_SCREEN.mobile.button.height : undefined,
-                            fontSize: isMobile ? AUTH_SCREEN.mobile.button.fontSize : undefined,
+                            background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
+                            backgroundSize: '100% 100%',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                            color: 'white',
                           } as React.CSSProperties}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primaryHover}, ${AUTH_COLORS.secondaryHover})`;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`;
+                          }}
                           disabled={isLoading}
                           >
                             {isLoading ? (
@@ -913,9 +923,16 @@ export function AuthScreen() {
                       </div>
 
                       {/* Info message */}
-                      <div className="text-center text-[10px] sm:text-xs md:text-sm text-gray-600 dark:text-muted-foreground bg-[#E8F5F1] dark:bg-card rounded-lg p-2 sm:p-3">
+                      <div className="text-center text-[10px] sm:text-xs md:text-sm text-gray-600 dark:text-muted-foreground rounded-lg p-2 sm:p-3"
+                        style={{
+                          backgroundColor: AUTH_COLORS.card.tabs.from,
+                        } as React.CSSProperties}
+                      >
                         <span className="inline-flex items-center gap-1 flex-wrap justify-center">
-                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-[#7B68EE] flex-shrink-0" />
+                          <Sparkles 
+                            className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" 
+                            style={{ color: AUTH_COLORS.primary } as React.CSSProperties}
+                          />
                           <span>Free forever • Pro features available • No credit card required</span>
                         </span>
                       </div>
@@ -924,16 +941,12 @@ export function AuthScreen() {
                   </CardContent>
                 {/* App Store Badges */}
                 <div 
-                  className="pb-4 sm:pb-5 pt-2 sm:pt-3 border-t border-gray-200/50 dark:border-border/50"
-                  style={{
-                    paddingLeft: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1.5rem',
-                    paddingRight: isMobile ? AUTH_SCREEN.mobile.card.padding.horizontal : '1.5rem',
-                  } as React.CSSProperties}
+                  className="pb-3 sm:pb-4 md:pb-5 pt-2 sm:pt-3 border-t border-gray-200/50 dark:border-border/50 flex-shrink-0 px-3 sm:px-4 md:px-6"
                 >
                 <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-muted-foreground mb-2 sm:mb-3">
                   {AUTH_UI_TEXT.mobileApps.comingSoon}
                 </p>
-                <div className="flex items-center justify-center gap-3 sm:gap-4">
+                <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
                   {/* App Store Badge */}
                   <motion.div
                     className="cursor-not-allowed opacity-70 hover:opacity-80 transition-opacity"
@@ -945,7 +958,7 @@ export function AuthScreen() {
                       width="120"
                       height="40"
                       viewBox="0 0 119.66407 40"
-                      className="h-8 sm:h-10 w-auto"
+                      className="h-7 sm:h-8 md:h-10 w-auto"
                     >
                       <g>
                         <g>
@@ -1079,7 +1092,7 @@ export function AuthScreen() {
                       width="155"
                       height="40"
                       viewBox="0 0 155 40"
-                      className="h-8 sm:h-10 w-auto"
+                      className="h-7 sm:h-8 md:h-10 w-auto"
                     >
                       {/* Outer border */}
                       <rect width="155" height="40" rx="6" fill="#a6a6a6" />
@@ -1136,7 +1149,10 @@ export function AuthScreen() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Lock className="w-5 h-5 text-[#7B68EE]" />
+              <Lock 
+                className="w-5 h-5" 
+                style={{ color: AUTH_COLORS.primary } as React.CSSProperties}
+              />
               {AUTH_UI_TEXT.forgotPassword.title}
             </DialogTitle>
             <DialogDescription>
@@ -1174,7 +1190,17 @@ export function AuthScreen() {
               <Button
                 type="submit"
                 disabled={isSendingReset || !forgotPasswordEmail}
-                className="bg-gradient-to-r from-[#7B68EE] to-[#DDA0DD] hover:from-[#6A5ACD] hover:to-[#DA70D6]"
+                style={{
+                  background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
+                } as React.CSSProperties}
+                onMouseEnter={(e) => {
+                  if (!isSendingReset && forgotPasswordEmail) {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primaryHover}, ${AUTH_COLORS.secondaryHover})`;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`;
+                }}
               >
                 {isSendingReset ? AUTH_UI_TEXT.loading : AUTH_UI_TEXT.forgotPassword.button}
               </Button>

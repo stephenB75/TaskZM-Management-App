@@ -492,24 +492,29 @@ export const DIALOG_DIMENSIONS = {
 export const AUTH_SCREEN = {
   mobile: {
     padding: {
-      horizontal: '1rem', // px-4 = 1rem (16px) - comfortable side padding
-      vertical: '1rem', // py-4 = 1rem (16px) - top padding
-      bottom: '2rem', // pb-8 = 2rem (32px) - bottom padding to avoid nav bar
+      horizontal: '0.75rem', // px-3 = 0.75rem (12px) - reduced for better fit
+      vertical: '0.75rem', // py-3 = 0.75rem (12px) - reduced top padding
+      bottom: '1rem', // pb-4 = 1rem (16px) - bottom padding
     },
     logo: {
-      width: '160px', // w-[160px] - smaller for mobile viewport
+      width: '140px', // w-[140px] - optimized for mobile viewport
       maxWidth: '85%', // max-w-[85%] - ensure logo doesn't exceed viewport
     },
     card: {
-      maxHeight: 'calc(100vh - 8rem)', // Account for logo + padding
+      maxHeight: 'calc(100vh - 12rem)', // Account for logo + padding + safe margins
       padding: {
-        horizontal: '1rem', // px-4 = 1rem (16px)
-        vertical: '1rem', // py-4 = 1rem (16px)
+        horizontal: '0.75rem', // px-3 = 0.75rem (12px) - reduced for better fit
+        vertical: '0.75rem', // py-3 = 0.75rem (12px)
       },
     },
     button: {
-      height: '2.75rem', // h-11 = 2.75rem (44px) - standard mobile touch target
-      fontSize: '0.875rem', // text-sm = 0.875rem (14px)
+      height: '2.25rem', // h-9 = 2.25rem (36px) - standard mobile touch target
+      fontSize: '0.75rem', // text-xs = 0.75rem (12px)
+    },
+    spacing: {
+      brandingMarginBottom: '1rem', // mb-4 = 1rem (16px)
+      formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px)
+      cardHeaderSpacing: '0.5rem', // space-y-2 = 0.5rem (8px)
     },
   },
   desktop: {
@@ -521,7 +526,12 @@ export const AUTH_SCREEN = {
       width: '260px', // w-[260px] - larger for desktop
     },
     card: {
-      maxHeight: 'calc(100vh - 10rem)',
+      maxHeight: 'calc(100vh - 8rem)', // Account for logo + padding
+    },
+    spacing: {
+      brandingMarginBottom: '1.5rem', // mb-6 = 1.5rem (24px)
+      formSpacing: '0.75rem', // space-y-3 = 0.75rem (12px)
+      cardHeaderSpacing: '0.5rem', // space-y-2 = 0.5rem (8px)
     },
   },
 } as const;

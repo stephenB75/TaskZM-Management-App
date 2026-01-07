@@ -121,11 +121,11 @@ export function PomodoroTimer({
   const getModeColor = () => {
     switch (timerState.mode) {
       case "work":
-        return "bg-[#7B68EE]";
+        return "bg-primary";
       case "shortBreak":
-        return "bg-[#50C878]";
+        return "bg-green-500";
       case "longBreak":
-        return "bg-[#4A90E2]";
+        return "bg-blue-500";
     }
   };
 
@@ -213,12 +213,12 @@ export function PomodoroTimer({
                 size="icon"
                 variant="ghost"
                 className={cn(
-                  "rounded-full text-[#7B68EE] dark:text-[#9B87E8]",
-                  timerState.sessionsCompleted > 0 && "text-[#50C878] dark:text-[#5AC888]",
+                  "rounded-full text-primary",
+                  timerState.sessionsCompleted > 0 && "text-green-500 dark:text-green-400",
                   isMobile 
                     ? "h-2.5 w-2.5 bg-transparent hover:bg-transparent border-0" 
-                    : "h-5 w-5 border-[#7B68EE]/30 dark:border-[#9B87E8]/40 hover:bg-[#7B68EE]/10 dark:hover:bg-[#9B87E8]/20",
-                  timerState.sessionsCompleted > 0 && !isMobile && "border-[#50C878]/30 dark:border-[#5AC888]/40 hover:bg-[#50C878]/10 dark:hover:bg-[#5AC888]/20",
+                    : "h-5 w-5 border-primary/30 dark:border-primary/40 hover:bg-primary/10 dark:hover:bg-primary/20",
+                  timerState.sessionsCompleted > 0 && !isMobile && "border-green-500/30 dark:border-green-400/40 hover:bg-green-500/10 dark:hover:bg-green-400/20",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -229,7 +229,7 @@ export function PomodoroTimer({
               </Button>
               {timerState.sessionsCompleted > 0 && (
                 <span className={cn(
-                  "text-[#50C878] dark:text-[#5AC888] font-medium",
+                  "text-green-500 dark:text-green-400 font-medium",
                   isMobile ? "text-[6px]" : "text-[10px]"
                 )}>
                   {timerState.sessionsCompleted} 🍅
@@ -243,7 +243,7 @@ export function PomodoroTimer({
   }
 
   return (
-    <div className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-white/50 dark:from-gray-800/50 to-[#F3E8FF]/30 dark:to-purple-900/30 border border-[#7B68EE]/20 dark:border-[#9B87E8]/30">
+    <div className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-background/50 dark:from-card/50 to-accent/30 dark:to-accent/30 border border-primary/20 dark:border-primary/30">
       {/* Mode Indicator */}
       <div className="flex items-center justify-between">
         <div
@@ -281,7 +281,7 @@ export function PomodoroTimer({
           className={cn(
             "rounded-full",
             !timerState.isRunning &&
-              "bg-[#7B68EE] dark:bg-[#9B87E8] hover:bg-[#6A5ACD] dark:hover:bg-[#8A77D8] text-white",
+              "bg-primary hover:bg-primary/90 dark:hover:bg-primary/80 text-primary-foreground",
           )}
           onClick={(e) => {
             e.preventDefault();

@@ -388,6 +388,20 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// PWA Verification (development only)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  // Delay verification to ensure service worker has time to register
+  setTimeout(async () => {
+    try {
+      const { logPWAStatus } = await import('./lib/pwa-verification');
+      await logPWAStatus();
+    } catch (error) {
+      // Silently fail if verification module has issues
+      console.debug('PWA verification skipped:', error);
+    }
+  }, 2000);
+}
+
 // Platform-specific initialization
 if (isNative) {
   // NATIVE PLATFORM (iOS/Android)
