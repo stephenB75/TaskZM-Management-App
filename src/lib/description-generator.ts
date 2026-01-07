@@ -183,33 +183,106 @@ function extractTermsFromText(
 
 /**
  * Extract keywords from task name (user input)
- * Returns significant words that are not stop words
+ * ENHANCED: Better identification of compound terms, numbers, research keywords, and phrases
  */
 function extractKeywordsFromTaskName(taskName: string): string[] {
-  // ENHANCED: Extract meaningful keywords from task name, prioritizing longer words
-  const taskWords = taskName.toLowerCase()
+  const keywords: string[] = [];
+  
+  // Step 1: Extract compound terms and phrases first (before splitting)
+  // Look for common patterns: "10K-15K", "SUV or car", "best X", "within X", etc.
+  const compoundPatterns = [
+    // Price ranges: "10K-15K", "$10K-$15K", "10K to 15K", "10-15K"
+    /\b(\d+[Kk]?\s*[-–—]\s*\d+[Kk]?)\b/g,
+    // Research patterns: "best X", "top X", "find best X", "research best X"
+    /\b(best|top|find|research|compare|evaluate|review)\s+(\w+(?:\s+\w+){0,3})\b/gi,
+      // Vehicle types: "SUV or car", "truck and SUV", etc.
+      /\b(suv|car|truck|vehicle|automobile|sedan|coupe|convertible|motorcycle|bike)\s*(or|and|\/)\s*(suv|car|truck|vehicle|automobile|sedan|coupe|convertible|motorcycle|bike)\b/gi,
+    // Within/under/over patterns: "within 10K", "under $15K", "over 10K"
+    /\b(within|under|over|below|above|up to|less than|more than)\s+(\d+[Kk]?|\$\d+[Kk]?)\b/gi,
+  ];
+  
+  compoundPatterns.forEach(pattern => {
+    const matches = taskName.matchAll(pattern);
+    for (const match of matches) {
+      if (match[0]) {
+        const compoundTerm = match[0].toLowerCase().trim();
+        if (compoundTerm.length >= DESCRIPTION_GENERATION_CONFIG.minKeywordLength) {
+          keywords.push(compoundTerm);
+        }
+      }
+    }
+  });
+  
+  // Step 2: Extract individual words (enhanced)
+  const normalizedText = taskName
+    .replace(/[^\w\s\-–—/]/g, ' ') // Keep hyphens, en-dash, em-dash, slashes
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  const taskWords = normalizedText.toLowerCase()
     .split(/\s+/)
     .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
     .filter(w => !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
   
-  // Prioritize longer words (more specific) and words that appear multiple times
+  // Step 3: Extract numbers with units (10K, $15K, etc.)
+  const numberPattern = /\b(\d+[KkMm]?|\$\d+[KkMm]?)\b/g;
+  const numberMatches = taskName.matchAll(numberPattern);
+  for (const match of numberMatches) {
+    if (match[0]) {
+      const numberTerm = match[0].toLowerCase().trim();
+      keywords.push(numberTerm);
+    }
+  }
+  
+  // Step 4: Prioritize words by frequency and length
   const wordFreq = new Map<string, number>();
   taskWords.forEach(word => {
-    wordFreq.set(word, (wordFreq.get(word) || 0) + 1);
+    // Skip if already captured as part of compound term
+    const isPartOfCompound = keywords.some(kw => kw.includes(word) && kw !== word);
+    if (!isPartOfCompound) {
+      wordFreq.set(word, (wordFreq.get(word) || 0) + 1);
+    }
   });
   
-  // Sort by: 1) frequency, 2) length (longer = more specific)
+  // Step 5: Add research/action keywords with higher priority
+  const researchKeywords = ['research', 'find', 'search', 'compare', 'evaluate', 'review', 'analyze', 'study', 'investigate', 'explore', 'examine', 'assess', 'purchase', 'buy', 'shop', 'select', 'choose', 'decide'];
+  researchKeywords.forEach(rk => {
+    if (taskWords.includes(rk)) {
+      wordFreq.set(rk, (wordFreq.get(rk) || 0) + 2); // Boost research keywords
+    }
+  });
+  
+  // Step 6: Add vehicle/automobile keywords with higher priority
+  const vehicleKeywords = ['suv', 'car', 'truck', 'vehicle', 'automobile', 'sedan', 'coupe', 'convertible', 'motorcycle', 'bike', 'bicycle'];
+  vehicleKeywords.forEach(vk => {
+    if (taskWords.includes(vk)) {
+      wordFreq.set(vk, (wordFreq.get(vk) || 0) + 2); // Boost vehicle keywords
+    }
+  });
+  
+  // Step 7: Sort by: 1) frequency, 2) length (longer = more specific), 3) research/vehicle keywords first
   const sortedKeywords = Array.from(wordFreq.entries())
     .sort((a, b) => {
+      // Research/vehicle keywords get priority
+      const aIsPriority = researchKeywords.includes(a[0]) || vehicleKeywords.includes(a[0]);
+      const bIsPriority = researchKeywords.includes(b[0]) || vehicleKeywords.includes(b[0]);
+      if (aIsPriority && !bIsPriority) return -1;
+      if (!aIsPriority && bIsPriority) return 1;
+      
+      // Then by frequency
       if (b[1] !== a[1]) {
-        return b[1] - a[1]; // Higher frequency first
+        return b[1] - a[1];
       }
-      return b[0].length - a[0].length; // Longer words first
+      // Then by length
+      return b[0].length - a[0].length;
     })
     .map(([word]) => word);
   
-  // Remove duplicates and return (already sorted by importance)
-  return Array.from(new Set(sortedKeywords));
+  // Step 8: Combine compound terms, numbers, and sorted words
+  const allKeywords = [...keywords, ...sortedKeywords];
+  
+  // Remove duplicates and return (prioritize compound terms and numbers first)
+  return Array.from(new Set(allKeywords));
 }
 
 /**
@@ -453,6 +526,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
   
   // Match domain phrases that contain our keywords OR task name words (improved intuitive matching)
   // ENHANCED: More lenient matching that checks both extracted keywords AND task name words directly
+  // IMPROVED: Better phrase matching with research keywords and compound terms
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
@@ -465,6 +539,19 @@ export function extractTermsFromTaskNameWithBrowserAI(
       
       // Direct match (full keyword in phrase or vice versa)
       if (phraseLower.includes(kwLower) || kwLower.includes(phraseLower)) return true;
+      
+      // IMPROVED: Handle compound keywords (e.g., "10k-15k", "suv or car")
+      // Check if any part of compound keyword matches phrase
+      if (kwLower.includes('-') || kwLower.includes(' or ') || kwLower.includes(' and ')) {
+        const compoundParts = kwLower.split(/[-–—\s]+/);
+        const hasCompoundMatch = compoundParts.some(part => {
+          if (part.length < 2) return false;
+          return phraseLower.includes(part) || phraseWords.some(pw => 
+            pw.includes(part) || part.includes(pw) || areWordsRelated(part, pw)
+          );
+        });
+        if (hasCompoundMatch) return true;
+      }
       
       // Word-level fuzzy matching - check if any keyword word relates to any phrase word
       const hasWordMatch = kwWords.some(kwWord => 
@@ -498,6 +585,15 @@ export function extractTermsFromTaskNameWithBrowserAI(
         return areWordsRelated(pw, tw);
       });
     });
+    
+    // IMPROVED: Check if phrase is a research/purchase contextual phrase that matches task intent
+    // Research phrases should match research tasks even if keywords don't directly match
+    const researchPhrases = ['research', 'compare', 'evaluate', 'analyze', 'find', 'purchase', 'buy', 'select', 'choose'];
+    const isResearchPhrase = researchPhrases.some(rp => phraseLower.includes(rp));
+    const taskHasResearchIntent = taskKeywords.some(kw => 
+      researchPhrases.some(rp => kw.toLowerCase().includes(rp) || rp.includes(kw.toLowerCase()))
+    );
+    const matchesResearchIntent = isResearchPhrase && taskHasResearchIntent;
     
     // ENHANCED: More lenient check if phrase relates to task name
     // Accept if ANY phrase word appears in task name (even if not exact match)
@@ -542,8 +638,10 @@ export function extractTermsFromTaskNameWithBrowserAI(
     // ENHANCED: Accept phrase if:
     // 1. Contains keywords OR task words AND (exact match OR has overlapping words OR has related keywords/words)
     // 2. OR has contextual words that explain tasks (even without direct keyword match)
-    const shouldAccept = ((containsKeyword || containsTaskWords) && (exactMatch || hasOverlappingWords || hasRelatedKeywords)) ||
-                        (hasContextualWords && hasOverlappingWords);
+    // 3. OR matches research intent (research phrases for research tasks)
+    const shouldAccept = ((containsKeyword || containsTaskWords || matchesResearchIntent) && (exactMatch || hasOverlappingWords || hasRelatedKeywords)) ||
+                        (hasContextualWords && hasOverlappingWords) ||
+                        (matchesResearchIntent && hasOverlappingWords);
     
     if (shouldAccept && !finalPhrases.some(p => p.toLowerCase() === phraseLower)) {
       finalPhrases.push(phrase);
@@ -595,9 +693,17 @@ export function extractTermsFromTaskNameWithBrowserAI(
     const appearsInTask = verbPatterns.some(pattern => pattern.test(taskNameLower)) ||
       taskWords.some(tw => areWordsRelated(tw, verbLower) || areWordsRelated(tw, verbBase));
     
-    // ENHANCED: Accept verb if it appears in task OR relates to keywords OR relates to task words
+    // IMPROVED: Check if verb is a research/purchase verb that matches task intent
+    const researchVerbs = ['research', 'compare', 'evaluate', 'analyze', 'find', 'search', 'purchase', 'buy', 'select', 'choose', 'review', 'study', 'investigate', 'explore', 'examine', 'assess'];
+    const isResearchVerb = researchVerbs.some(rv => verbLower.includes(rv) || rv.includes(verbLower));
+    const taskHasResearchIntent = taskKeywords.some(kw => 
+      researchVerbs.some(rv => kw.toLowerCase().includes(rv) || rv.includes(kw.toLowerCase()))
+    );
+    const matchesResearchVerbIntent = isResearchVerb && taskHasResearchIntent;
+    
+    // ENHANCED: Accept verb if it appears in task OR relates to keywords OR relates to task words OR matches research intent
     // This is more lenient - doesn't require both conditions
-    if ((appearsInTask || relatesToKeyword || relatesToTaskWords) &&
+    if ((appearsInTask || relatesToKeyword || relatesToTaskWords || matchesResearchVerbIntent) &&
         !foundVerbs.some(v => v.toLowerCase() === verbLower)) {
       foundVerbs.push(verb);
       matchedDomainVerbs++;
