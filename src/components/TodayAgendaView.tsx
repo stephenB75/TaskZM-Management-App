@@ -263,15 +263,17 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks]);
 
-  // Auto-scroll to "next up" task - works on initial load and after user scrolls
+  // Auto-scroll to "next up" task - only on initial load or when next up task changes
+  // User can always scroll freely - auto-scroll only happens when appropriate
   // On mobile (hideHeader=false), scroll the parent container in App.tsx
   // On desktop (hideHeader=true), scroll the ScrollArea viewport
-  // Resets scroll tracking after inactivity to allow next up to work again
   useEffect(() => {
     if (combinedItems.length === 0 || !nextUpTaskId) return;
 
     // If next up task changed, allow auto-scroll again
     const nextUpChanged = lastNextUpTaskIdRef.current !== nextUpTaskId;
+    const isInitialLoad = !initialScrollAttemptedRef.current;
+    
     if (nextUpChanged) {
       lastNextUpTaskIdRef.current = nextUpTaskId;
       // Reset scroll tracking when next up task changes
@@ -279,17 +281,19 @@ export function TodayAgendaView({
       hasAutoScrolledRef.current = false;
     }
 
-    // Don't auto-scroll if user has recently scrolled manually (unless next up changed)
-    if (userHasScrolledRef.current && !nextUpChanged) return;
+    // Only auto-scroll on initial load or when next up task changes
+    // User can always scroll freely - we don't prevent user scrolling
+    if (!isInitialLoad && !nextUpChanged) return;
     
     // Mark that we've attempted initial scroll (only on first load)
-    if (!initialScrollAttemptedRef.current) {
+    if (isInitialLoad) {
       initialScrollAttemptedRef.current = true;
     }
 
     const scrollToNextUpTask = () => {
-      // Check again before scrolling (user might have scrolled in the meantime)
-      if (userHasScrolledRef.current && !nextUpChanged) return;
+      // Don't auto-scroll if user has manually scrolled (unless it's initial load or next up changed)
+      // This allows user to scroll freely while still enabling next up on initial load
+      if (userHasScrolledRef.current && !isInitialLoad && !nextUpChanged) return;
       
       // OPTIMIZED: Defer DOM queries to requestAnimationFrame to avoid blocking
       requestAnimationFrame(() => {
@@ -339,12 +343,15 @@ export function TodayAgendaView({
     return () => clearTimeout(timer);
   }, [combinedItems.length, nextUpTaskId, hideHeader]); // Only depend on length, not full array
 
-  // Track user scroll to prevent auto-scroll after user interaction (both desktop and mobile)
+  // Track user scroll to detect manual scrolling (does NOT prevent user scrolling)
+  // This only tracks scroll to prevent auto-scroll from interfering with user's manual scroll
+  // User can always scroll freely - this just prevents auto-scroll after user interaction
   useEffect(() => {
     let scrollViewport: HTMLElement | null = null;
     let scrollContainer: HTMLElement | null = null;
     let lastScrollTop = 0;
     let scrollTimeout: NodeJS.Timeout | null = null;
+    let isProgrammaticScroll = false; // Track if scroll is from our auto-scroll
 
     if (hideHeader) {
       // Desktop: Track ScrollArea viewport
@@ -366,15 +373,16 @@ export function TodayAgendaView({
         const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
         
         // Only mark as user scroll if the scroll position actually changed
+        // AND it's not from our programmatic scroll
         // This prevents false positives from programmatic scrolling
-        if (Math.abs(currentScrollTop - lastScrollTop) > 1) {
+        if (Math.abs(currentScrollTop - lastScrollTop) > 1 && !isProgrammaticScroll) {
           // Clear any pending auto-scroll
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
             scrollTimeout = null;
           }
           
-          // Mark that user has scrolled
+          // Mark that user has scrolled (this only prevents auto-scroll, NOT user scrolling)
           userHasScrolledRef.current = true;
           lastScrollTop = currentScrollTop;
           
@@ -388,6 +396,10 @@ export function TodayAgendaView({
             hasAutoScrolledRef.current = false;
             scrollResetTimeoutRef.current = null;
           }, TIMING_CONSTANTS.delays.nextUpScrollReset);
+        } else if (isProgrammaticScroll) {
+          // Reset flag after programmatic scroll completes
+          isProgrammaticScroll = false;
+          lastScrollTop = currentScrollTop;
         }
       });
     };
@@ -932,7 +944,7 @@ export function TodayAgendaView({
           </div>
         ) : (
           <div className={cn("flex-1 w-full relative min-h-0 h-full overflow-hidden")}>
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full w-full">
             <div 
               ref={timelineContainerRef}
               className={cn(
@@ -946,7 +958,7 @@ export function TodayAgendaView({
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? KANBAN_MOBILE.bottomPaddingCalc
                   : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`, // Desktop: Add padding to ensure content scrolls past bottom (nav bar + safe area + buffer)
-                // Ensure content extends to bottom for proper scrolling
+                // Ensure content extends to bottom for proper scrolling - user can scroll freely
                 minHeight: '100%',
               }}
             >
