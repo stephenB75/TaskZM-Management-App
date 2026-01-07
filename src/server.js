@@ -40,6 +40,10 @@ const MIME_TYPES = {
 // Static files that should be served directly (not through SPA routing)
 const STATIC_PATHS = [
   '/manifest.json',
+  '/favicon.ico',
+  '/icon-16.png',
+  '/icon-32.png',
+  '/icon-180.png',
   '/icon-192.png',
   '/icon-512.png',
   '/service-worker.js',

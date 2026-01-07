@@ -26,12 +26,20 @@ export function DocumentHead() {
       document.head.appendChild(faviconLink);
       
       // Add PNG favicons with proper sizes for different use cases
-      // Small size for browser tabs (16x16 or 32x32)
+      // Small size for browser tabs (16x16)
+      const link16 = document.createElement("link");
+      link16.rel = "icon";
+      link16.type = "image/png";
+      link16.sizes = "16x16";
+      link16.href = "/icon-16.png";
+      document.head.appendChild(link16);
+      
+      // Small size for browser tabs (32x32)
       const link32 = document.createElement("link");
       link32.rel = "icon";
       link32.type = "image/png";
       link32.sizes = "32x32";
-      link32.href = "/icon-192.png"; // Browser will scale down automatically
+      link32.href = "/icon-32.png";
       document.head.appendChild(link32);
       
       // Medium size for browser bookmarks
@@ -59,12 +67,11 @@ export function DocumentHead() {
         existing.remove();
       }
       
-      // Use appIcon directly without cache busting to avoid service worker issues
-      const iconUrl = appIcon;
-      
+      // Use 180x180 icon for Apple devices (standard size)
       const link = document.createElement("link");
       link.rel = "apple-touch-icon";
-      link.href = iconUrl;
+      link.sizes = "180x180";
+      link.href = "/icon-180.png";
       document.head.appendChild(link);
     };
 
