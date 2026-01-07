@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.10';
-export const VERSION_NAME = 'Mobile Scroll & UI Consistency Improvements';
-export const VERSION_DATE = 'January 5, 2026';
-export const BUILD_NUMBER = '20260105-1';
+export const APP_VERSION = '1.0.11';
+export const VERSION_NAME = 'AI Description & Task Rollover Improvements';
+export const VERSION_DATE = 'January 6, 2026';
+export const BUILD_NUMBER = '20260106-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,23 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.11',
+    date: 'January 6, 2026',
+    name: 'AI Description & Task Rollover Improvements',
+    changes: [
+      'Fixed Browser AI and local terminology context mismatch - descriptions now properly match user input with keywords and phrases',
+      'Enhanced domain terminology matching to check both extracted keywords AND task name words directly for better context alignment',
+      'Improved phrase, verb, and noun matching to be more lenient - accepts terms if they appear in task name OR relate to keywords',
+      'Fixed rollover task alerts - improved toast notifications with proper success/warning/error messages based on rollover results',
+      'Enhanced rollover alert messaging - shows detailed feedback when tasks are moved, including failed task names and counts',
+      'Fixed today agenda badge showing rollover tasks - badge now only counts tasks with scheduledDate (excludes rolled-over tasks)',
+      'Updated badge count logic to exclude tasks with scheduledDate === null or undefined to prevent counting rolled-over tasks',
+      'Changed badge calculation to only use scheduledDate (not dueDate) to ensure rolled-over tasks are never counted',
+      'Added comprehensive error handling for rollover operations with proper task failure tracking and user feedback',
+      'Improved logging for badge calculation to help debug rollover task exclusion',
+    ],
+  },
   {
     version: '1.0.10',
     date: 'January 5, 2026',
