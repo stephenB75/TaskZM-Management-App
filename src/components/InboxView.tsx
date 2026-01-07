@@ -39,7 +39,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
@@ -573,7 +573,7 @@ export function InboxView() {
             selectedTaskIds.size > 0 ? "flex-col items-end" : "items-center flex-wrap gap-1"
           )} style={{ 
             gap: typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet 
-              ? '0.25rem' // Reduced gap for desktop to prevent overlap (4px)
+              ? HEADER_GAP_XSMALL // Reduced gap for desktop to prevent overlap (4px)
               : HEADER_GAP_SMALL 
           }}>
             {selectedTaskIds.size > 0 ? (
@@ -787,7 +787,7 @@ export function InboxView() {
         {/* Quick Add and Filters Section */}
         <div 
           className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0"
-          style={isMobile ? { paddingTop: '1.5rem' } : undefined} // App.tsx header spacer handles top spacing
+          style={isMobile ? { paddingTop: PANEL_PADDING_TOP_MOBILE } : undefined} // App.tsx header spacer handles top spacing
         >
           <div className="flex flex-col gap-4">
             {/* Quick Add */}

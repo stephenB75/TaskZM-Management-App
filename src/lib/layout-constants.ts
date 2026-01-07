@@ -54,6 +54,7 @@ export const HEADER_DATE_NUMBER_SIZE = '1.5rem'; // text-2xl = 1.5rem (24px) - L
 export const HEADER_DATE_NUMBER_SIZE_MOBILE = '1.125rem'; // text-lg = 1.125rem (18px) - Smaller number display for mobile
 export const HEADER_DATE_MARGIN_TOP = '0'; // No margin - Minimal spacing between day name and number
 export const HEADER_GAP_SMALL = '0.375rem'; // gap-1.5 = 0.375rem (6px)
+export const HEADER_GAP_XSMALL = '0.25rem'; // gap-1 = 0.25rem (4px) - for compact button spacing
 export const HEADER_GAP_MEDIUM = '0.5rem'; // gap-2 = 0.5rem (8px)
 export const HEADER_GAP_LARGE = '0.75rem'; // gap-3 = 0.75rem (12px)
 export const HEADER_GAP_XLARGE = '1rem'; // gap-4 = 1rem (16px)

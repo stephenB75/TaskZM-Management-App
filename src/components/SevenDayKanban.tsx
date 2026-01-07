@@ -422,7 +422,7 @@ export function SevenDayKanban({
     // Only for desktop view, not mobile
     if (mobileMode || viewMode === 'month') return;
     
-    // Only scroll once on mount
+    // Only scroll once per mount (ref resets on component unmount/remount, including page refresh)
     if (hasScrolledToNextDayRef.current) return;
     
     const container = scrollContainerRef.current;
@@ -453,54 +453,61 @@ export function SevenDayKanban({
     const scrollToNextDay = () => {
       // Use requestAnimationFrame to ensure DOM is ready and zoom has been applied
       requestAnimationFrame(() => {
-        // Get all column elements
-        const columnElements = columns.querySelectorAll('[data-column-date]');
-        if (columnElements.length === 0) return;
+        // Reset scroll position to 0 first to prevent browser scroll restoration from interfering
+        // This ensures we calculate from a known starting point on page refresh
+        container.scrollLeft = 0;
         
-        // Find tomorrow's column element
-        const tomorrowElement = Array.from(columnElements).find(el => {
-          const dateAttr = el.getAttribute('data-column-date');
-          return dateAttr === tomorrowColumn.dateString;
-        }) as HTMLElement | undefined;
-        
-        if (!tomorrowElement) return;
-        
-        // FIXED: Use getBoundingClientRect() which accounts for transforms and zoom scaling
-        // This is more accurate than offsetLeft when columns are scaled/zoomed
-        // getBoundingClientRect() returns positions after CSS transforms (including scale) are applied
-        const containerRect = container.getBoundingClientRect();
-        const elementRect = tomorrowElement.getBoundingClientRect();
-        
-        // Calculate the relative position accounting for zoom/scale
-        // getBoundingClientRect() already accounts for the transform scale, so we get the actual rendered position
-        // Get the actual left position relative to the container's scroll position
-        const relativeLeft = elementRect.left - containerRect.left + container.scrollLeft;
-        
-        // Account for container padding - use constants from KANBAN_COLUMN_DIMENSIONS
-        // Container has padding: p-2 (8px) on mobile, p-2.5 (10px) on sm/md, p-3 (12px) on lg+
-        // Match the actual padding values: p-2 sm:p-2.5 md:p-2.5 lg:p-3
-        const containerPadding = typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.desktop
-          ? KANBAN_COLUMN_DIMENSIONS.padding.desktop // p-3 = 12px on desktop (lg+)
-          : typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile
-          ? KANBAN_COLUMN_DIMENSIONS.padding.tablet // p-2.5 = 10px on sm/md (tablet)
-          : KANBAN_COLUMN_DIMENSIONS.padding.mobile; // p-2 = 8px on mobile
-        
-        // Calculate scroll position to position tomorrow's column at the left edge of viewport
-        // This hides previous days while still allowing horizontal scroll to see week one and week two
-        // getBoundingClientRect() already accounts for zoom scale, so elementRect.width is the scaled width
-        // This ensures accurate positioning regardless of zoom level
-        // Position tomorrow at the left edge with container padding for visual spacing
-        const scrollPosition = relativeLeft - containerPadding;
-        
-        // Scroll to position where tomorrow's column is at the left edge (previous days hidden)
-        // Users can still scroll left to see week one and right to see week two
-        container.scrollTo({
-          left: Math.max(0, scrollPosition),
-          behavior: 'smooth',
+        // Wait one more frame after resetting scroll to ensure layout is stable
+        requestAnimationFrame(() => {
+          // Get all column elements
+          const columnElements = columns.querySelectorAll('[data-column-date]');
+          if (columnElements.length === 0) return;
+          
+          // Find tomorrow's column element
+          const tomorrowElement = Array.from(columnElements).find(el => {
+            const dateAttr = el.getAttribute('data-column-date');
+            return dateAttr === tomorrowColumn.dateString;
+          }) as HTMLElement | undefined;
+          
+          if (!tomorrowElement) return;
+          
+          // FIXED: Use getBoundingClientRect() which accounts for transforms and zoom scaling
+          // This is more accurate than offsetLeft when columns are scaled/zoomed
+          // getBoundingClientRect() returns positions after CSS transforms (including scale) are applied
+          const containerRect = container.getBoundingClientRect();
+          const elementRect = tomorrowElement.getBoundingClientRect();
+          
+          // Calculate the relative position accounting for zoom/scale
+          // getBoundingClientRect() already accounts for the transform scale, so we get the actual rendered position
+          // Get the actual left position relative to the container's scroll position (now at 0)
+          const relativeLeft = elementRect.left - containerRect.left + container.scrollLeft;
+          
+          // Account for container padding - use constants from KANBAN_COLUMN_DIMENSIONS
+          // Container has padding: p-2 (8px) on mobile, p-2.5 (10px) on sm/md, p-3 (12px) on lg+
+          // Match the actual padding values: p-2 sm:p-2.5 md:p-2.5 lg:p-3
+          const containerPadding = typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.desktop
+            ? KANBAN_COLUMN_DIMENSIONS.padding.desktop // p-3 = 12px on desktop (lg+)
+            : typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile
+            ? KANBAN_COLUMN_DIMENSIONS.padding.tablet // p-2.5 = 10px on sm/md (tablet)
+            : KANBAN_COLUMN_DIMENSIONS.padding.mobile; // p-2 = 8px on mobile
+          
+          // Calculate scroll position to position tomorrow's column at the left edge of viewport
+          // This hides previous days while still allowing horizontal scroll to see week one and week two
+          // getBoundingClientRect() already accounts for zoom scale, so elementRect.width is the scaled width
+          // This ensures accurate positioning regardless of zoom level
+          // Position tomorrow at the left edge with container padding for visual spacing
+          const scrollPosition = relativeLeft - containerPadding;
+          
+          // Scroll to position where tomorrow's column is at the left edge (previous days hidden)
+          // Users can still scroll left to see week one and right to see week two
+          container.scrollTo({
+            left: Math.max(0, scrollPosition),
+            behavior: 'smooth',
+          });
+          
+          // Mark as scrolled
+          hasScrolledToNextDayRef.current = true;
         });
-        
-        // Mark as scrolled
-        hasScrolledToNextDayRef.current = true;
       });
     };
     
