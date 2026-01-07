@@ -416,6 +416,7 @@ export function SevenDayKanban({
   }, [tasks, mobileMode, viewMode, weekOffset]);
 
   // Scroll to next day (tomorrow) on mount for desktop view
+  // Positions tomorrow at the left edge to hide previous days, but allows horizontal scroll
   // FIXED: Accounts for column resizing and zoom scaling
   React.useEffect(() => {
     // Only for desktop view, not mobile
@@ -484,14 +485,15 @@ export function SevenDayKanban({
           ? KANBAN_COLUMN_DIMENSIONS.padding.tablet // p-2.5 = 10px on sm/md (tablet)
           : KANBAN_COLUMN_DIMENSIONS.padding.mobile; // p-2 = 8px on mobile
         
-        // Calculate scroll position to center tomorrow's column in viewport
+        // Calculate scroll position to position tomorrow's column at the left edge of viewport
+        // This hides previous days while still allowing horizontal scroll to see week one and week two
         // getBoundingClientRect() already accounts for zoom scale, so elementRect.width is the scaled width
         // This ensures accurate positioning regardless of zoom level
-        const viewportWidth = containerRect.width;
-        const elementWidth = elementRect.width; // Already accounts for zoom scale via getBoundingClientRect()
-        const scrollPosition = relativeLeft - containerPadding - (viewportWidth / 2) + (elementWidth / 2);
+        // Position tomorrow at the left edge with container padding for visual spacing
+        const scrollPosition = relativeLeft - containerPadding;
         
-        // Scroll to position where tomorrow's column is centered
+        // Scroll to position where tomorrow's column is at the left edge (previous days hidden)
+        // Users can still scroll left to see week one and right to see week two
         container.scrollTo({
           left: Math.max(0, scrollPosition),
           behavior: 'smooth',
