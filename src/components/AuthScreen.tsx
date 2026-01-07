@@ -544,10 +544,10 @@ export function AuthScreen() {
             className="w-full flex flex-col"
             style={{
               maxHeight: screenSize === 'mobile' 
-                ? 'calc(100vh - 6.5rem)' // Logo (~3rem) + padding (1.5rem) + margins (2rem) - reduced spacing
+                ? 'calc(100vh - 8rem)' // Logo (~3rem) + padding (1.5rem) + bottom margin (3.5rem) - increased bottom space
                 : screenSize === 'tablet'
-                ? 'calc(100vh - 8rem)' // Logo (~4rem) + padding (2.5rem) + margins (1.5rem) - reduced spacing
-                : 'calc(100vh - 8rem)', // Logo (~4rem) + padding (2.5rem) + margins (1.5rem) - reduced spacing
+                ? 'calc(100vh - 10rem)' // Logo (~4rem) + padding (2rem) + bottom margin (4rem) - increased bottom space
+                : 'calc(100vh - 10rem)', // Logo (~4rem) + padding (2rem) + bottom margin (4rem) - increased bottom space
               overflow: 'hidden',
             } as React.CSSProperties}
           >
@@ -566,7 +566,12 @@ export function AuthScreen() {
               >
                 {/* Card Header with Tabs - Same for mobile and desktop */}
                 <CardHeader 
-                  className="space-y-2 pb-2 sm:pb-3 pt-3 sm:pt-4 flex-shrink-0 px-3 sm:px-4 md:px-6"
+                  className="flex-shrink-0 px-3 sm:px-4 md:px-6"
+                  style={{
+                    paddingTop: card.headerPadding?.top || (screenSize === 'mobile' ? '0.75rem' : '1rem'),
+                    paddingBottom: card.headerPadding?.bottom || (screenSize === 'mobile' ? '0.5rem' : '0.75rem'),
+                    gap: spacing.cardHeaderSpacing,
+                  } as React.CSSProperties}
                 >
                   <CardTitle className="text-center text-sm sm:text-base md:text-lg font-semibold text-foreground">
                     {AUTH_UI_TEXT.welcomeMessage}
@@ -595,13 +600,23 @@ export function AuthScreen() {
                 </CardHeader>
 
                 <CardContent 
-                  className="pb-3 sm:pb-4 md:pb-6 pt-2 sm:pt-3 md:pt-4 overflow-y-auto px-3 sm:px-4 md:px-6"
+                  className="overflow-y-auto px-3 sm:px-4 md:px-6"
                   style={{
-                    maxHeight: screenSize === 'mobile'
-                      ? 'calc(100vh - 14rem)' // Account for logo, header, footer, padding - reduced spacing
+                    paddingTop: screenSize === 'mobile' 
+                      ? card.contentPadding?.top || '0.5rem'
                       : screenSize === 'tablet'
-                      ? 'calc(100vh - 15rem)' // Account for logo, header, footer, padding - reduced spacing
-                      : 'calc(100vh - 15rem)', // Account for logo, header, footer, padding - reduced spacing
+                      ? card.contentPadding?.top || '0.75rem'
+                      : card.contentPadding?.top || '0.75rem',
+                    paddingBottom: screenSize === 'mobile'
+                      ? card.contentPadding?.bottom || '0.75rem'
+                      : screenSize === 'tablet'
+                      ? card.contentPadding?.bottom || '1rem'
+                      : card.contentPadding?.bottom || '1rem',
+                    maxHeight: screenSize === 'mobile'
+                      ? 'calc(100vh - 16rem)' // Account for logo, header, footer, padding - increased bottom space
+                      : screenSize === 'tablet'
+                      ? 'calc(100vh - 17rem)' // Account for logo, header, footer, padding - increased bottom space
+                      : 'calc(100vh - 17rem)', // Account for logo, header, footer, padding - increased bottom space
                   } as React.CSSProperties}
                 >
                   <TabsContent value="signin" className="mt-0">

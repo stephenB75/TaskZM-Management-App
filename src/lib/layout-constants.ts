@@ -495,7 +495,7 @@ export const AUTH_SCREEN = {
     padding: {
       horizontal: '1rem', // px-4 = 1rem (16px) - comfortable side padding
       vertical: '0.25rem', // py-1 = 0.25rem (4px) - reduced top padding to move dialog up
-      bottom: '0.75rem', // pb-3 = 0.75rem (12px) - reduced bottom padding
+      bottom: '1.5rem', // pb-6 = 1.5rem (24px) - increased bottom padding to prevent touching screen
     },
     logo: {
       width: '120px', // w-[120px] - smaller for mobile to fit viewport
@@ -503,10 +503,18 @@ export const AUTH_SCREEN = {
     },
     card: {
       maxWidth: '100%', // Full width on mobile
-      maxHeight: 'calc(100vh - 10rem)', // Account for logo (~4rem) + padding (2rem) + safe margins (4rem)
+      maxHeight: 'calc(100vh - 12rem)', // Account for logo (~3rem) + padding (1.5rem) + bottom margin (7.5rem) - increased bottom space
       padding: {
         horizontal: '1rem', // px-4 = 1rem (16px)
-        vertical: '0.75rem', // py-3 = 0.75rem (12px)
+        vertical: '0.5rem', // py-2 = 0.5rem (8px) - reduced for smaller dialog
+      },
+      contentPadding: {
+        bottom: '0.75rem', // pb-3 = 0.75rem (12px) - reduced bottom padding
+        top: '0.5rem', // pt-2 = 0.5rem (8px) - reduced top padding
+      },
+      headerPadding: {
+        top: '0.75rem', // pt-3 = 0.75rem (12px) - reduced top padding
+        bottom: '0.5rem', // pb-2 = 0.5rem (8px) - reduced bottom padding
       },
     },
     button: {
@@ -514,18 +522,18 @@ export const AUTH_SCREEN = {
       fontSize: '0.875rem', // text-sm = 0.875rem (14px)
     },
     spacing: {
-      brandingMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - reduced to move dialog up
-      logoMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - spacing below logo
-      badgeMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below badge
-      formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px)
-      cardHeaderSpacing: '0.5rem', // space-y-2 = 0.5rem (8px)
+      brandingMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - further reduced to move dialog up
+      logoMarginBottom: '0.25rem', // mb-1 = 0.25rem (4px) - reduced spacing below logo
+      badgeMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - reduced spacing below badge
+      formSpacing: '0.5rem', // space-y-2 = 0.5rem (8px) - reduced form spacing
+      cardHeaderSpacing: '0.375rem', // space-y-1.5 = 0.375rem (6px) - reduced header spacing
     },
   },
   tablet: {
     padding: {
       horizontal: '1.5rem', // px-6 = 1.5rem (24px)
-      vertical: '0.75rem', // py-3 = 0.75rem (12px) - reduced to move dialog up
-      bottom: '1rem', // pb-4 = 1rem (16px) - reduced bottom padding
+      vertical: '0.5rem', // py-2 = 0.5rem (8px) - further reduced to move dialog up
+      bottom: '2rem', // pb-8 = 2rem (32px) - increased bottom padding to prevent touching screen
     },
     logo: {
       width: '180px', // w-[180px] - medium size for tablets
@@ -533,30 +541,49 @@ export const AUTH_SCREEN = {
     },
     card: {
       maxWidth: '28rem', // max-w-md = 28rem (448px) - comfortable width for tablets
-      maxHeight: 'calc(100vh - 12rem)', // Account for logo + padding
+      maxHeight: 'calc(100vh - 14rem)', // Account for logo (~4rem) + padding (2rem) + bottom margin (8rem) - increased bottom space
+      contentPadding: {
+        bottom: '1rem', // pb-4 = 1rem (16px) - reduced bottom padding
+        top: '0.75rem', // pt-3 = 0.75rem (12px) - reduced top padding
+      },
+      headerPadding: {
+        top: '1rem', // pt-4 = 1rem (16px) - reduced top padding
+        bottom: '0.75rem', // pb-3 = 0.75rem (12px) - reduced bottom padding
+      },
     },
     spacing: {
-      brandingMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - reduced to move dialog up
-      logoMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below logo
-      badgeMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below badge
+      brandingMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - further reduced to move dialog up
+      logoMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - reduced spacing below logo
+      badgeMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - reduced spacing below badge
     },
   },
   desktop: {
     padding: {
       horizontal: '1.5rem', // px-6 = 1.5rem (24px)
-      vertical: '1rem', // py-4 = 1rem (16px) - reduced to move dialog up
+      vertical: '0.75rem', // py-3 = 0.75rem (12px) - further reduced to move dialog up
+      bottom: '2rem', // pb-8 = 2rem (32px) - increased bottom padding to prevent touching screen
     },
     logo: {
       width: '220px', // w-[220px] - optimized for desktop
     },
     card: {
       maxWidth: '28rem', // max-w-md = 28rem (448px) - standard dialog width
-      maxHeight: 'calc(100vh - 10rem)', // Account for logo + padding
+      maxHeight: 'calc(100vh - 14rem)', // Account for logo (~4rem) + padding (2rem) + bottom margin (8rem) - increased bottom space
+      contentPadding: {
+        bottom: '1rem', // pb-4 = 1rem (16px) - reduced bottom padding
+        top: '0.75rem', // pt-3 = 0.75rem (12px) - reduced top padding
+      },
+      headerPadding: {
+        top: '1rem', // pt-4 = 1rem (16px) - reduced top padding
+        bottom: '0.75rem', // pb-3 = 0.75rem (12px) - reduced bottom padding
+      },
     },
     spacing: {
-      brandingMarginBottom: '1.5rem', // mb-6 = 1.5rem (24px)
-      formSpacing: '0.75rem', // space-y-3 = 0.75rem (12px)
-      cardHeaderSpacing: '0.5rem', // space-y-2 = 0.5rem (8px)
+      brandingMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - further reduced to move dialog up
+      logoMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below logo
+      badgeMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below badge
+      formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px) - reduced form spacing
+      cardHeaderSpacing: '0.375rem', // space-y-1.5 = 0.375rem (6px) - reduced header spacing
     },
   },
 } as const;
