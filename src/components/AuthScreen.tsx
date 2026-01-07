@@ -97,6 +97,32 @@ function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
   const isMobile = useIsMobile();
+  
+  // Determine screen size category with state for reactivity
+  const [screenSize, setScreenSize] = React.useState<'mobile' | 'tablet' | 'desktop'>(() => {
+    if (typeof window === 'undefined') return 'desktop';
+    const width = window.innerWidth;
+    if (width < VIEWPORT_BREAKPOINTS.mobile) return 'mobile';
+    if (width < VIEWPORT_BREAKPOINTS.tablet) return 'tablet';
+    return 'desktop';
+  });
+  
+  React.useEffect(() => {
+    const updateScreenSize = () => {
+      const width = window.innerWidth;
+      if (width < VIEWPORT_BREAKPOINTS.mobile) {
+        setScreenSize('mobile');
+      } else if (width < VIEWPORT_BREAKPOINTS.tablet) {
+        setScreenSize('tablet');
+      } else {
+        setScreenSize('desktop');
+      }
+    };
+    
+    updateScreenSize();
+    window.addEventListener('resize', updateScreenSize);
+    return () => window.removeEventListener('resize', updateScreenSize);
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
   const [rememberMe, setRememberMe] = useState(false);
@@ -373,14 +399,44 @@ export function AuthScreen() {
     },
   };
 
+  // Get responsive values based on screen size
+  const getPadding = () => {
+    if (screenSize === 'mobile') return AUTH_SCREEN.mobile.padding;
+    if (screenSize === 'tablet') return AUTH_SCREEN.tablet.padding;
+    return AUTH_SCREEN.desktop.padding;
+  };
+  
+  const getLogo = () => {
+    if (screenSize === 'mobile') return AUTH_SCREEN.mobile.logo;
+    if (screenSize === 'tablet') return AUTH_SCREEN.tablet.logo;
+    return AUTH_SCREEN.desktop.logo;
+  };
+  
+  const getCard = () => {
+    if (screenSize === 'mobile') return AUTH_SCREEN.mobile.card;
+    if (screenSize === 'tablet') return AUTH_SCREEN.tablet.card;
+    return AUTH_SCREEN.desktop.card;
+  };
+  
+  const getSpacing = () => {
+    if (screenSize === 'mobile') return AUTH_SCREEN.mobile.spacing;
+    if (screenSize === 'tablet') return AUTH_SCREEN.tablet.spacing;
+    return AUTH_SCREEN.desktop.spacing;
+  };
+  
+  const padding = getPadding();
+  const logo = getLogo();
+  const card = getCard();
+  const spacing = getSpacing();
+
   return (
     <div 
       className="min-h-screen w-full overflow-x-hidden relative flex items-start sm:items-center justify-center"
       style={{
-        paddingTop: isMobile ? AUTH_SCREEN.mobile.padding.vertical : AUTH_SCREEN.desktop.padding.vertical,
-        paddingBottom: isMobile ? AUTH_SCREEN.mobile.padding.bottom : AUTH_SCREEN.desktop.padding.vertical,
-        paddingLeft: isMobile ? AUTH_SCREEN.mobile.padding.horizontal : AUTH_SCREEN.desktop.padding.horizontal,
-        paddingRight: isMobile ? AUTH_SCREEN.mobile.padding.horizontal : AUTH_SCREEN.desktop.padding.horizontal,
+        paddingTop: padding.vertical,
+        paddingBottom: padding.bottom,
+        paddingLeft: padding.horizontal,
+        paddingRight: padding.horizontal,
       } as React.CSSProperties}
     >
       {/* Background Image with Overlay - Full viewport coverage */}
@@ -422,31 +478,36 @@ export function AuthScreen() {
 
       {/* Main Content */}
       <motion.div
-        className="relative z-10 w-full max-w-md mx-auto"
+        className="relative z-10 w-full mx-auto"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         style={{
-          maxWidth: '100%',
-          height: isMobile ? '100%' : 'auto',
+          maxWidth: card.maxWidth || '100%',
+          width: '100%',
           display: 'flex',
           flexDirection: 'column',
+          maxHeight: '100vh',
         } as React.CSSProperties}
       >
         <div 
-          className="flex flex-col items-center justify-center w-full flex-1 min-h-0"
+          className="flex flex-col items-center justify-center w-full"
+          style={{
+            maxHeight: '100vh',
+            overflow: 'hidden',
+          } as React.CSSProperties}
         >
           {/* Branding Section - Above form */}
           <motion.div
             className="text-center w-full flex flex-col items-center flex-shrink-0"
             variants={itemVariants}
             style={{
-              marginBottom: isMobile ? AUTH_SCREEN.mobile.spacing.brandingMarginBottom : AUTH_SCREEN.desktop.spacing.brandingMarginBottom,
+              marginBottom: spacing.brandingMarginBottom,
             } as React.CSSProperties}
           >
             <motion.div className="flex flex-col items-center w-full" variants={logoVariants}>
               <motion.div
-                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-border mb-3 sm:mb-4"
+                className="inline-flex items-center gap-1 bg-card/70 dark:bg-background/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-border mb-2 sm:mb-3"
                 whileHover={{ scale: 1.05 }}
               >
                 <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
@@ -457,16 +518,16 @@ export function AuthScreen() {
               <motion.img
                 src={taskzmLogo}
                 alt="TaskZM Logo"
-                className="object-contain mb-2 sm:mb-3"
+                className="object-contain mb-1.5 sm:mb-2"
                 style={{
-                  width: isMobile ? AUTH_SCREEN.mobile.logo.width : AUTH_SCREEN.desktop.logo.width,
-                  maxWidth: isMobile ? AUTH_SCREEN.mobile.logo.maxWidth : '100%',
+                  width: logo.width,
+                  maxWidth: logo.maxWidth || '100%',
                   height: 'auto',
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.02 }}
               />
               <p 
-                className="text-xs sm:text-sm md:text-base text-muted-foreground text-center max-w-sm px-2 sm:px-4"
+                className="text-xs sm:text-sm text-muted-foreground text-center max-w-sm px-2 sm:px-4"
               >
                 {AUTH_UI_TEXT.subtitle}
               </p>
@@ -476,17 +537,27 @@ export function AuthScreen() {
           {/* Auth Card - Below logo */}
           <motion.div
             variants={cardVariants}
-            className="w-full flex-1 min-h-0 flex flex-col"
+            className="w-full flex flex-col"
+            style={{
+              maxHeight: screenSize === 'mobile' 
+                ? 'calc(100vh - 8rem)' // Logo (~3rem) + padding (2rem) + margins (3rem)
+                : screenSize === 'tablet'
+                ? 'calc(100vh - 10rem)' // Logo (~4rem) + padding (3rem) + margins (3rem)
+                : 'calc(100vh - 10rem)', // Logo (~4rem) + padding (3rem) + margins (3rem)
+              overflow: 'hidden',
+            } as React.CSSProperties}
           >
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
-              className="w-full h-full flex flex-col"
+              className="w-full flex flex-col"
             >
               <Card 
-                className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card flex flex-col flex-1 min-h-0 overflow-hidden"
+                className="w-full shadow-lg border border-primary/20 bg-card dark:bg-card flex flex-col overflow-hidden"
                 style={{
-                  maxHeight: isMobile ? AUTH_SCREEN.mobile.card.maxHeight : AUTH_SCREEN.desktop.card.maxHeight,
+                  maxHeight: card.maxHeight,
+                  maxWidth: card.maxWidth || '100%',
+                  width: '100%',
                 } as React.CSSProperties}
               >
                 {/* Card Header with Tabs - Same for mobile and desktop */}
@@ -520,7 +591,14 @@ export function AuthScreen() {
                 </CardHeader>
 
                 <CardContent 
-                  className="pb-3 sm:pb-4 md:pb-6 pt-2 sm:pt-3 md:pt-4 flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 md:px-6"
+                  className="pb-3 sm:pb-4 md:pb-6 pt-2 sm:pt-3 md:pt-4 overflow-y-auto px-3 sm:px-4 md:px-6"
+                  style={{
+                    maxHeight: screenSize === 'mobile'
+                      ? 'calc(100vh - 16rem)' // Account for logo, header, footer, padding
+                      : screenSize === 'tablet'
+                      ? 'calc(100vh - 18rem)' // Account for logo, header, footer, padding
+                      : 'calc(100vh - 18rem)', // Account for logo, header, footer, padding
+                  } as React.CSSProperties}
                 >
                   <TabsContent value="signin" className="mt-0">
                     <motion.form
@@ -611,13 +689,19 @@ export function AuthScreen() {
                       <div className="pt-1">
                         <Button
                           type="submit"
-                          className="w-full shadow-lg border-0 h-9 sm:h-10 md:h-11 text-xs sm:text-sm"
+                          className="w-full shadow-lg border-0 text-xs sm:text-sm"
                           style={{
+                            height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                            minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
                             background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
-                            backgroundSize: '100% 100%',
+                            backgroundSize: 'cover',
                             backgroundRepeat: 'no-repeat',
                             backgroundPosition: 'center',
                             color: 'white',
+                            padding: '0.5rem 1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           } as React.CSSProperties}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primaryHover}, ${AUTH_COLORS.secondaryHover})`;
@@ -661,7 +745,11 @@ export function AuthScreen() {
                         type="button"
                         onClick={handleDemoSignIn}
                         variant="outline"
-                        className="w-full border-2 border-primary text-primary hover:bg-primary/10 h-9 sm:h-10 md:h-11 text-xs sm:text-sm"
+                        className="w-full border-2 border-primary text-primary hover:bg-primary/10 text-xs sm:text-sm"
+                        style={{
+                          height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                          minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                        } as React.CSSProperties}
                         disabled={isLoading}
                       >
                         <Sparkles className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -889,13 +977,19 @@ export function AuthScreen() {
                       <div className="pt-0.5">
                         <Button
                           type="submit"
-                          className="w-full shadow-lg border-0 h-9 sm:h-10 md:h-11 text-xs sm:text-sm"
+                          className="w-full shadow-lg border-0 text-xs sm:text-sm"
                           style={{
+                            height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                            minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
                             background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
-                            backgroundSize: '100% 100%',
+                            backgroundSize: 'cover',
                             backgroundRepeat: 'no-repeat',
                             backgroundPosition: 'center',
                             color: 'white',
+                            padding: '0.5rem 1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           } as React.CSSProperties}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primaryHover}, ${AUTH_COLORS.secondaryHover})`;
@@ -1191,7 +1285,17 @@ export function AuthScreen() {
                 type="submit"
                 disabled={isSendingReset || !forgotPasswordEmail}
                 style={{
+                  height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                  minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
                   background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
+                  backgroundSize: 'cover',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 } as React.CSSProperties}
                 onMouseEnter={(e) => {
                   if (!isSendingReset && forgotPasswordEmail) {

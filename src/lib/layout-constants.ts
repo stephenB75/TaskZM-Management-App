@@ -492,29 +492,48 @@ export const DIALOG_DIMENSIONS = {
 export const AUTH_SCREEN = {
   mobile: {
     padding: {
-      horizontal: '0.75rem', // px-3 = 0.75rem (12px) - reduced for better fit
-      vertical: '0.75rem', // py-3 = 0.75rem (12px) - reduced top padding
+      horizontal: '1rem', // px-4 = 1rem (16px) - comfortable side padding
+      vertical: '0.5rem', // py-2 = 0.5rem (8px) - minimal top padding
       bottom: '1rem', // pb-4 = 1rem (16px) - bottom padding
     },
     logo: {
-      width: '140px', // w-[140px] - optimized for mobile viewport
-      maxWidth: '85%', // max-w-[85%] - ensure logo doesn't exceed viewport
+      width: '120px', // w-[120px] - smaller for mobile to fit viewport
+      maxWidth: '90%', // max-w-[90%] - ensure logo doesn't exceed viewport
     },
     card: {
-      maxHeight: 'calc(100vh - 12rem)', // Account for logo + padding + safe margins
+      maxWidth: '100%', // Full width on mobile
+      maxHeight: 'calc(100vh - 10rem)', // Account for logo (~4rem) + padding (2rem) + safe margins (4rem)
       padding: {
-        horizontal: '0.75rem', // px-3 = 0.75rem (12px) - reduced for better fit
+        horizontal: '1rem', // px-4 = 1rem (16px)
         vertical: '0.75rem', // py-3 = 0.75rem (12px)
       },
     },
     button: {
-      height: '2.25rem', // h-9 = 2.25rem (36px) - standard mobile touch target
-      fontSize: '0.75rem', // text-xs = 0.75rem (12px)
+      height: '2.5rem', // h-10 = 2.5rem (40px) - standard mobile touch target
+      fontSize: '0.875rem', // text-sm = 0.875rem (14px)
+    },
+    spacing: {
+      brandingMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - reduced for mobile
+      formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px)
+      cardHeaderSpacing: '0.5rem', // space-y-2 = 0.5rem (8px)
+    },
+  },
+  tablet: {
+    padding: {
+      horizontal: '1.5rem', // px-6 = 1.5rem (24px)
+      vertical: '1rem', // py-4 = 1rem (16px)
+      bottom: '1.5rem', // pb-6 = 1.5rem (24px)
+    },
+    logo: {
+      width: '180px', // w-[180px] - medium size for tablets
+      maxWidth: '100%',
+    },
+    card: {
+      maxWidth: '28rem', // max-w-md = 28rem (448px) - comfortable width for tablets
+      maxHeight: 'calc(100vh - 12rem)', // Account for logo + padding
     },
     spacing: {
       brandingMarginBottom: '1rem', // mb-4 = 1rem (16px)
-      formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px)
-      cardHeaderSpacing: '0.5rem', // space-y-2 = 0.5rem (8px)
     },
   },
   desktop: {
@@ -523,10 +542,11 @@ export const AUTH_SCREEN = {
       vertical: '1.5rem', // py-6 = 1.5rem (24px)
     },
     logo: {
-      width: '260px', // w-[260px] - larger for desktop
+      width: '220px', // w-[220px] - optimized for desktop
     },
     card: {
-      maxHeight: 'calc(100vh - 8rem)', // Account for logo + padding
+      maxWidth: '28rem', // max-w-md = 28rem (448px) - standard dialog width
+      maxHeight: 'calc(100vh - 10rem)', // Account for logo + padding
     },
     spacing: {
       brandingMarginBottom: '1.5rem', // mb-6 = 1.5rem (24px)

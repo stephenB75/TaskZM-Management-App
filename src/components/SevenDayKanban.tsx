@@ -466,26 +466,29 @@ export function SevenDayKanban({
         
         // FIXED: Use getBoundingClientRect() which accounts for transforms and zoom scaling
         // This is more accurate than offsetLeft when columns are scaled/zoomed
+        // getBoundingClientRect() returns positions after CSS transforms (including scale) are applied
         const containerRect = container.getBoundingClientRect();
         const elementRect = tomorrowElement.getBoundingClientRect();
         
         // Calculate the relative position accounting for zoom/scale
+        // getBoundingClientRect() already accounts for the transform scale, so we get the actual rendered position
         // Get the actual left position relative to the container's scroll position
         const relativeLeft = elementRect.left - containerRect.left + container.scrollLeft;
         
-        // Account for container padding - use constants from KANBAN_SPACING
+        // Account for container padding - use constants from KANBAN_COLUMN_DIMENSIONS
         // Container has padding: p-2 (8px) on mobile, p-2.5 (10px) on sm/md, p-3 (12px) on lg+
         // Match the actual padding values: p-2 sm:p-2.5 md:p-2.5 lg:p-3
         const containerPadding = typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.desktop
-          ? KANBAN_SPACING.padding.desktop // p-3 = 12px on desktop (lg+)
+          ? KANBAN_COLUMN_DIMENSIONS.padding.desktop // p-3 = 12px on desktop (lg+)
           : typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile
-          ? KANBAN_SPACING.padding.tablet // p-2.5 = 10px on sm/md (tablet)
-          : KANBAN_SPACING.padding.mobile; // p-2 = 8px on mobile
+          ? KANBAN_COLUMN_DIMENSIONS.padding.tablet // p-2.5 = 10px on sm/md (tablet)
+          : KANBAN_COLUMN_DIMENSIONS.padding.mobile; // p-2 = 8px on mobile
         
         // Calculate scroll position to center tomorrow's column in viewport
-        // Account for zoom scale if applied
+        // getBoundingClientRect() already accounts for zoom scale, so elementRect.width is the scaled width
+        // This ensures accurate positioning regardless of zoom level
         const viewportWidth = containerRect.width;
-        const elementWidth = elementRect.width;
+        const elementWidth = elementRect.width; // Already accounts for zoom scale via getBoundingClientRect()
         const scrollPosition = relativeLeft - containerPadding - (viewportWidth / 2) + (elementWidth / 2);
         
         // Scroll to position where tomorrow's column is centered
@@ -501,7 +504,9 @@ export function SevenDayKanban({
     
     // Wait for zoom calculation to complete before scrolling
     // This ensures columns are properly sized/resized before calculating scroll position
-    const scrollTimeout = setTimeout(scrollToNextDay, KANBAN_SCROLL.initialScrollDelay);
+    // Use a delay that accounts for zoom calculation delay (KANBAN_ZOOM.calculateDelay = 200ms)
+    // plus additional time for DOM rendering and transform application
+    const scrollTimeout = setTimeout(scrollToNextDay, Math.max(KANBAN_SCROLL.initialScrollDelay, KANBAN_ZOOM.calculateDelay + 100));
     
     return () => {
       clearTimeout(scrollTimeout);
