@@ -53,6 +53,8 @@ export function TodayAgendaView({
   const hasAutoScrolledRef = useRef(false); // Track if we've auto-scrolled on initial load
   const userHasScrolledRef = useRef(false); // Track if user has manually scrolled
   const initialScrollAttemptedRef = useRef(false); // Track if we've attempted initial scroll
+  const scrollResetTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout to reset scroll tracking
+  const lastNextUpTaskIdRef = useRef<string | null>(null); // Track last next up task ID
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
   const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }>>([]);
@@ -102,9 +104,23 @@ export function TodayAgendaView({
       hasAutoScrolledRef.current = false;
       userHasScrolledRef.current = false;
       initialScrollAttemptedRef.current = false;
+      lastNextUpTaskIdRef.current = null;
+      if (scrollResetTimeoutRef.current) {
+        clearTimeout(scrollResetTimeoutRef.current);
+        scrollResetTimeoutRef.current = null;
+      }
     }
     prevDateStringRef.current = todayDateString;
   }, [todayDateString]);
+  
+  // Cleanup scroll reset timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollResetTimeoutRef.current) {
+        clearTimeout(scrollResetTimeoutRef.current);
+      }
+    };
+  }, []);
   const allTodayTasks = Array.isArray(tasks) ? tasks.filter((task) => {
     // Defensive check: ensure task is valid
     if (!task || typeof task !== 'object') {
@@ -247,21 +263,33 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks]);
 
-  // Auto-scroll to "next up" task on initial load only
+  // Auto-scroll to "next up" task - works on initial load and after user scrolls
   // On mobile (hideHeader=false), scroll the parent container in App.tsx
   // On desktop (hideHeader=true), scroll the ScrollArea viewport
-  // Only scroll once on initial load, then allow user to scroll freely
+  // Resets scroll tracking after inactivity to allow next up to work again
   useEffect(() => {
-    // Don't auto-scroll if user has already scrolled manually, we've already auto-scrolled, or we've already attempted
-    if (userHasScrolledRef.current || hasAutoScrolledRef.current || initialScrollAttemptedRef.current) return;
     if (combinedItems.length === 0 || !nextUpTaskId) return;
 
-    // Mark that we've attempted initial scroll
-    initialScrollAttemptedRef.current = true;
+    // If next up task changed, allow auto-scroll again
+    const nextUpChanged = lastNextUpTaskIdRef.current !== nextUpTaskId;
+    if (nextUpChanged) {
+      lastNextUpTaskIdRef.current = nextUpTaskId;
+      // Reset scroll tracking when next up task changes
+      userHasScrolledRef.current = false;
+      hasAutoScrolledRef.current = false;
+    }
+
+    // Don't auto-scroll if user has recently scrolled manually (unless next up changed)
+    if (userHasScrolledRef.current && !nextUpChanged) return;
+    
+    // Mark that we've attempted initial scroll (only on first load)
+    if (!initialScrollAttemptedRef.current) {
+      initialScrollAttemptedRef.current = true;
+    }
 
     const scrollToNextUpTask = () => {
       // Check again before scrolling (user might have scrolled in the meantime)
-      if (userHasScrolledRef.current) return;
+      if (userHasScrolledRef.current && !nextUpChanged) return;
       
       // Find the next up task element
       const nextUpElement = timelineContainerRef.current?.querySelector(`[data-task-id="${nextUpTaskId}"]`) as HTMLElement;
@@ -337,6 +365,17 @@ export function TodayAgendaView({
           // Mark that user has scrolled
           userHasScrolledRef.current = true;
           lastScrollTop = currentScrollTop;
+          
+          // Reset scroll tracking after period of inactivity to allow next up to work again
+          // This makes next up the default behavior after user scrolls
+          if (scrollResetTimeoutRef.current) {
+            clearTimeout(scrollResetTimeoutRef.current);
+          }
+          scrollResetTimeoutRef.current = setTimeout(() => {
+            userHasScrolledRef.current = false;
+            hasAutoScrolledRef.current = false;
+            scrollResetTimeoutRef.current = null;
+          }, TIMING_CONSTANTS.delays.nextUpScrollReset);
         }
       });
     };
@@ -347,20 +386,22 @@ export function TodayAgendaView({
       scrollTimeout = setTimeout(handleScroll, 50);
     };
 
-    if (scrollViewport) {
-      scrollViewport.addEventListener('scroll', handleScrollWithDelay, { passive: true });
-      return () => {
-        scrollViewport?.removeEventListener('scroll', handleScrollWithDelay);
-        if (scrollTimeout) clearTimeout(scrollTimeout);
-      };
-    } else if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScrollWithDelay, { passive: true });
-      return () => {
-        scrollContainer?.removeEventListener('scroll', handleScrollWithDelay);
-        if (scrollTimeout) clearTimeout(scrollTimeout);
-      };
-    }
-  }, [hideHeader]);
+      if (scrollViewport) {
+        scrollViewport.addEventListener('scroll', handleScrollWithDelay, { passive: true });
+        return () => {
+          scrollViewport?.removeEventListener('scroll', handleScrollWithDelay);
+          if (scrollTimeout) clearTimeout(scrollTimeout);
+          if (scrollResetTimeoutRef.current) clearTimeout(scrollResetTimeoutRef.current);
+        };
+      } else if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', handleScrollWithDelay, { passive: true });
+        return () => {
+          scrollContainer?.removeEventListener('scroll', handleScrollWithDelay);
+          if (scrollTimeout) clearTimeout(scrollTimeout);
+          if (scrollResetTimeoutRef.current) clearTimeout(scrollResetTimeoutRef.current);
+        };
+      }
+    }, [hideHeader]);
 
   const handleTaskClick = (task: Task) => {
     if (!task?.id) {
@@ -879,7 +920,9 @@ export function TodayAgendaView({
           <div className={cn("flex-1 w-full relative min-h-0", "overflow-hidden")}>
           <ScrollArea 
             className="h-full w-full min-h-0" 
-            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' } as React.CSSProperties}
+            style={{ 
+              paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` 
+            } as React.CSSProperties}
           >
             <div 
               ref={timelineContainerRef}

@@ -25,6 +25,7 @@ export const TIMING_CONSTANTS = {
     calendarPopup: 100, // Calendar popup delay
     calendarCheck: 1000, // Calendar check interval delay
     rolloverCheck: 3000, // Rollover check delay to allow UI to load
+    nextUpScrollReset: 5000, // Reset scroll tracking after 5 seconds of inactivity to allow next up to work again
   },
   
   // Timeouts (in milliseconds)
