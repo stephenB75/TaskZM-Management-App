@@ -90,6 +90,7 @@ if (typeof window !== 'undefined') {
         fullMessage.includes('contentScript.bundle.js') ||
         fullMessage.includes('web-client-content-script') ||
         fullMessage.includes('ERR_FILE_NOT_FOUND') ||
+        fullMessage.includes('userReportLinkedCandidate') ||
         fullMessage.includes('checkoutUrls') ||
         fullMessage.includes('No tab with id') ||
         fullMessage.includes('Frame with ID') ||
@@ -275,32 +276,21 @@ if (typeof window !== 'undefined') {
       }
       
       // Suppress extension-related promise rejections
-      if (message.includes('message channel closed before a response was received') ||
+      // Check for async message channel errors (common from extensions)
+      const isAsyncMessageError = message.includes('message channel closed before a response was received') ||
           message.includes('listener indicated an asynchronous response') ||
           message.includes('asynchronous response by returning true') ||
-          message.includes('checkoutUrls') ||
-          message.includes('No tab with id') ||
-          message.includes('Frame with ID') ||
-          message.includes('was removed') ||
-          message.includes('chrome-extension://') ||
-          message.includes('moz-extension://') ||
-          message.includes('safari-extension://') ||
-          message.includes('ERR_FILE_NOT_FOUND') ||
-          (message.includes('Cannot read properties of undefined') && (
-            message.includes('checkoutUrls') ||
-            message.includes('length') ||
-            stack.includes('content.js') ||
-            stack.includes('background.js') ||
-            stack.includes('serviceWorker.js') ||
-            stack.includes('service-worker.js') ||
-            stack.includes('contentScript')
-          )) ||
-          (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
+          message.includes('A listener indicated an asynchronous response');
+      
+      // Check for MutationObserver errors from extensions
+      const isMutationObserverError = (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
           (message.includes('observe') && message.includes('MutationObserver')) ||
           (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
           (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
-          (message.includes('Failed to execute \'observe\' on \'MutationObserver\'')) ||
-          stack.includes('content.js') ||
+          (message.includes('Failed to execute \'observe\' on \'MutationObserver\''));
+      
+      // Check if error is from browser extension files
+      const isExtensionFile = stack.includes('content.js') ||
           stack.includes('background.js') ||
           stack.includes('serviceWorker.js') ||
           stack.includes('service-worker.js') ||
@@ -308,7 +298,24 @@ if (typeof window !== 'undefined') {
           stack.includes('contentScript.bundle.js') ||
           stack.includes('web-client-content-script') ||
           stack.includes('web-client-content-script.js') ||
-          stack.includes('userReportLinkedCandidate')) {
+          stack.includes('userReportLinkedCandidate') ||
+          message.includes('chrome-extension://') ||
+          message.includes('moz-extension://') ||
+          message.includes('safari-extension://');
+      
+      if (isAsyncMessageError ||
+          isMutationObserverError ||
+          message.includes('checkoutUrls') ||
+          message.includes('No tab with id') ||
+          message.includes('Frame with ID') ||
+          message.includes('was removed') ||
+          message.includes('ERR_FILE_NOT_FOUND') ||
+          (message.includes('Cannot read properties of undefined') && (
+            message.includes('checkoutUrls') ||
+            message.includes('length') ||
+            isExtensionFile
+          )) ||
+          isExtensionFile) {
         event.preventDefault();
         // Completely silent - these are browser extension errors, not app errors
         return false;
