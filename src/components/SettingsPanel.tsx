@@ -152,9 +152,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { theme, setTheme, actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const { syncWithServer, isSyncing, lastSync, hoursSettings, updateHoursSettings, rolloverSettings, updateRolloverSettings, availableTags, addAvailableTag, removeAvailableTag } = useTasks();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SettingsPanel.tsx:123',message:'SettingsPanel accessing rolloverSettings',data:{hasRolloverSettings:!!rolloverSettings,hasAutoRollover:'autoRollover' in (rolloverSettings||{}),hasEnabled:'enabled' in (rolloverSettings||{}),rolloverSettingsKeys:rolloverSettings?Object.keys(rolloverSettings):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
   const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks, updateSettings } = useAI();
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
   const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
