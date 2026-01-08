@@ -3071,6 +3071,155 @@ export function TaskDialog({
 
                 <Separator className="bg-primary/20" />
 
+                {/* Task Dependencies - Pro Yearly Feature */}
+                <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-primary" />
+                    <Label className="text-sm font-semibold">Dependencies</Label>
+                    {!hasFeature('taskDependencies') && (
+                      <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
+                        PRO YEARLY
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {hasFeature('taskDependencies') 
+                      ? 'Select tasks that must be completed before this task can be started'
+                      : 'Upgrade to Pro Yearly to use task dependencies'}
+                  </p>
+
+                  {hasFeature('taskDependencies') ? (
+                    <>
+                      <Select
+                        value={selectedDependencyValue || undefined}
+                        onValueChange={(value) => {
+                          if (value && !dependencies.includes(value)) {
+                            addDependency(value);
+                            setSelectedDependencyValue("");
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                          <SelectValue placeholder="Add dependency..." />
+                        </SelectTrigger>
+                        <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                          {availableTasksForDependencies
+                            .filter((t) => !dependencies.includes(t.id))
+                            .map((t) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn(
+                                    "text-xs px-2 py-0.5 rounded",
+                                    t.status === 'in-progress' && "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
+                                    t.status === 'todo' && "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
+                                    t.status === 'on-hold' && "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                  )}>
+                                    {t.status}
+                                  </span>
+                                  <span>{t.title}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+
+                      {dependencies.length > 0 && (
+                        <div className="space-y-2 mt-3">
+                          {dependencies.map((depId) => {
+                            const depTask = tasks.find((t) => t?.id === depId);
+                            if (!depTask) return null;
+                            const incompleteDeps = getIncompleteDependencies(depTask, tasks);
+                            const isBlocked = incompleteDeps.length > 0;
+                            const isComplete = depTask.status === "done";
+
+                            return (
+                              <div
+                                key={depId}
+                                className={cn(
+                                  "flex items-start gap-2 p-2 rounded-lg border-2",
+                                  isComplete
+                                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                                    : isBlocked
+                                    ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                                    : "bg-primary/5 dark:bg-card border-primary/20"
+                                )}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <Link2 className={cn(
+                                      "w-3 h-3 flex-shrink-0",
+                                      isComplete ? "text-green-600 dark:text-green-400" : "text-primary"
+                                    )} />
+                                    <span
+                                      className={cn(
+                                        "text-sm font-medium",
+                                        isComplete && "line-through text-muted-foreground"
+                                      )}
+                                    >
+                                      {depTask.title}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge
+                                      variant="secondary"
+                                      className={cn(
+                                        "text-xs",
+                                        depTask.status === 'done' && "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300",
+                                        depTask.status === 'in-progress' && "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300",
+                                        depTask.status === 'todo' && "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
+                                        depTask.status === 'on-hold' && "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                                      )}
+                                    >
+                                      {depTask.status}
+                                    </Badge>
+                                    {isBlocked && (
+                                      <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                        Blocked by {incompleteDeps.length} dependency{incompleteDeps.length > 1 ? 'ies' : 'y'}
+                                      </span>
+                                    )}
+                                    {isComplete && (
+                                      <span className="text-xs text-green-600 dark:text-green-400">
+                                        Complete
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeDependency(depId)}
+                                  className="h-7 w-7 p-0 flex-shrink-0"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+                          detail: { feature: 'taskDependencies' } 
+                        }));
+                        if (onShowUpgradePrompt) {
+                          onShowUpgradePrompt('taskDependencies');
+                        }
+                      }}
+                      className="w-full border-2 border-primary/30 hover:border-primary hover:bg-primary/10"
+                    >
+                      Upgrade to Pro Yearly
+                    </Button>
+                  )}
+                </div>
+
+                <Separator className="bg-primary/20" />
+
                 {/* Team Assignment - Moved from Advanced */}
                 {teamMembers.length > 0 && (
                   <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
