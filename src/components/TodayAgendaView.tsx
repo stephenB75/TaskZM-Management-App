@@ -1250,6 +1250,7 @@ export function TodayAgendaView({
                 className="flex flex-col w-full relative z-10"
                 style={{ 
                   overflow: 'visible',
+                  minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
                 }}
               >
                 {combinedItems.map((item, index) => {
