@@ -142,13 +142,14 @@ export const DraggableTaskCard = React.forwardRef<
     // AI Task Breakdown
     const { breakdown } = useTaskBreakdown(task.title || '', task.description || '', { enabled: true });
     
-    // For recurring tasks, use a date-specific timer ID so Pomodoro only affects
-    // the individual occurrence, not the entire series
-    const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
-    const pomodoroTimerId = isRecurringTask ? `${task.id}_${droppableId}` : task.id;
+    // Use task.id for all tasks to ensure timer sync across all components
+    // (TaskDialog, TaskCard, TodayAgenda) - when timer is activated in one location,
+    // it activates in all locations
+    const pomodoroTimerId = task.id;
     const timerState = getTimerState(pomodoroTimerId);
     
     // For recurring tasks, use unique sortable ID per date occurrence to maintain chronological order
+    const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
     const sortableId = isRecurringTask ? `${task.id}__${droppableId}` : task.id;
     
     const {
