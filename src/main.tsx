@@ -38,15 +38,21 @@ if (typeof window !== 'undefined') {
       console.debug('Suppressed extension preload warning', args);
       return;
     }
-    // Suppress performance violation warnings from browser extensions
+    // Suppress performance violation warnings from browser extensions and app animations
+    // These are expected from animation libraries (Framer Motion, etc.) and heavy initial renders
+    // Pattern: [Violation] 'requestAnimationFrame' handler took XXXms
     if (message.includes('[Violation]') ||
         message.includes('handler took') ||
+        message.includes("'requestAnimationFrame'") ||
         fullMessage.includes('[Violation]') ||
         fullMessage.includes('handler took') ||
+        fullMessage.includes("'requestAnimationFrame'") ||
+        fullMessage.includes('requestAnimationFrame') ||
         fullMessage.includes('vendor-CC_ZIGTP') ||
         fullMessage.includes('web-client-content-script') ||
-        fullMessage.includes('inner.html')) {
-      console.debug('Suppressed extension performance violation warning', args);
+        fullMessage.includes('inner.html') ||
+        (fullMessage.includes('index-') && fullMessage.includes('handler took'))) {
+      console.debug('Suppressed performance violation warning (expected from animations)', args);
       return;
     }
     originalWarn.apply(console, args);
