@@ -301,8 +301,8 @@ export function TodayAgendaView({
         const nextUpElement = timelineContainerRef.current?.querySelector(`[data-task-id="${nextUpTaskId}"]`) as HTMLElement;
         
         if (nextUpElement) {
-          if (hideHeader) {
-            // Desktop: Scroll within ScrollArea viewport
+          // Desktop: Scroll within ScrollArea viewport (both hideHeader=true and hideHeader=false on desktop)
+          if (hideHeader || (!isMobile && !hideHeader)) {
             const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
             if (scrollViewport) {
               // Get the container that holds the scrollable content
@@ -358,8 +358,8 @@ export function TodayAgendaView({
     let lastScrollTop = 0;
     let scrollTimeout: NodeJS.Timeout | null = null;
 
-    if (hideHeader) {
-      // Desktop: Track ScrollArea viewport
+    // Desktop: Track ScrollArea viewport (both hideHeader=true and hideHeader=false on desktop)
+    if (hideHeader || (!isMobile && !hideHeader)) {
       scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
       if (scrollViewport) {
         lastScrollTop = scrollViewport.scrollTop;
