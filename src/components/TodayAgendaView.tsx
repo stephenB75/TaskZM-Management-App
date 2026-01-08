@@ -322,34 +322,21 @@ export function TodayAgendaView({
                   // Calculate scroll position
                   const scrollTop = relativeTop - (viewportHeight / 2) + (elementRect.height / 2);
                   
-                  // Mark as programmatic scroll BEFORE scrolling to ensure scroll events are properly identified
-                  isProgrammaticScrollRef.current = true;
-                  
                   // Defer scroll operation to avoid blocking
                   requestAnimationFrame(() => {
                     scrollViewport.scrollTo({
                       top: scrollTop,
                       behavior: 'smooth',
                     });
-                    // Reset flag after scroll completes (smooth scroll takes ~500ms)
-                    setTimeout(() => {
-                      isProgrammaticScrollRef.current = false;
-                    }, TIMING_CONSTANTS.delays.programmaticScrollComplete);
                   });
                 }
               }
             }
           } else {
             // Mobile: Use scrollIntoView on the parent scroll container
-            // Mark as programmatic scroll BEFORE scrolling to ensure scroll events are properly identified
-            isProgrammaticScrollRef.current = true;
             // Defer to avoid blocking
             requestAnimationFrame(() => {
               nextUpElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              // Reset flag after scroll completes (smooth scroll takes ~500ms)
-              setTimeout(() => {
-                isProgrammaticScrollRef.current = false;
-              }, TIMING_CONSTANTS.delays.programmaticScrollComplete);
             });
           }
           hasAutoScrolledRef.current = true;
@@ -362,11 +349,9 @@ export function TodayAgendaView({
     return () => clearTimeout(timer);
   }, [combinedItems.length, nextUpTaskId, hideHeader]); // Only depend on length, not full array
 
-  // Track user scroll to detect manual scrolling (does NOT prevent user scrolling)
+  // Track user scroll to prevent auto-scroll after user interaction (both desktop and mobile)
   // This only tracks scroll to prevent auto-scroll from interfering with user's manual scroll
   // User can always scroll freely - this just prevents auto-scroll after user interaction
-  const isProgrammaticScrollRef = useRef(false); // Track if scroll is from our auto-scroll (use ref so it's accessible across functions)
-  
   useEffect(() => {
     let scrollViewport: HTMLElement | null = null;
     let scrollContainer: HTMLElement | null = null;
@@ -388,18 +373,13 @@ export function TodayAgendaView({
     }
 
     const handleScroll = () => {
-      // Capture the programmatic scroll flag synchronously at the start
-      // This ensures we check the flag value at the time the scroll event fires
-      const isProgrammatic = isProgrammaticScrollRef.current;
-      
       // Defer scrollTop read to prevent forced reflow
       requestAnimationFrame(() => {
         const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
         
         // Only mark as user scroll if the scroll position actually changed
-        // AND it's not from our programmatic scroll
-        // This prevents false positives from programmatic scrolling
-        if (Math.abs(currentScrollTop - lastScrollTop) > 1 && !isProgrammatic) {
+        // The debounce delay helps distinguish user scrolls from programmatic scrolls
+        if (Math.abs(currentScrollTop - lastScrollTop) > 1) {
           // Clear any pending auto-scroll
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
@@ -420,15 +400,12 @@ export function TodayAgendaView({
             hasAutoScrolledRef.current = false;
             scrollResetTimeoutRef.current = null;
           }, TIMING_CONSTANTS.delays.nextUpScrollReset);
-        } else if (isProgrammatic) {
-          // Update last scroll position for programmatic scrolls but don't mark as user scroll
-          // Don't reset the flag here - it will be reset by the timeout in the scroll function
-          lastScrollTop = currentScrollTop;
         }
       });
     };
 
-    // Use a small delay to detect user-initiated scroll vs programmatic scroll
+    // Use a small delay to help distinguish user-initiated scroll from programmatic scroll
+    // The debounce naturally filters out rapid programmatic scrolls
     const handleScrollWithDelay = () => {
       if (scrollTimeout) clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(handleScroll, TIMING_CONSTANTS.delays.scrollDetectionDebounce);
