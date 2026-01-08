@@ -373,55 +373,49 @@ export function TodayAgendaView({
     }
 
     const handleScroll = () => {
-      // Defer scrollTop read to prevent forced reflow
-      requestAnimationFrame(() => {
-        const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
-        
-        // Only mark as user scroll if the scroll position actually changed
-        // The debounce delay helps distinguish user scrolls from programmatic scrolls
-        if (Math.abs(currentScrollTop - lastScrollTop) > 1) {
-          // Clear any pending auto-scroll
-          if (scrollTimeout) {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = null;
-          }
-          
-          // Mark that user has scrolled (this only prevents auto-scroll, NOT user scrolling)
-          userHasScrolledRef.current = true;
-          lastScrollTop = currentScrollTop;
-          
-          // Reset scroll tracking after period of inactivity to allow next up to work again
-          // This makes next up the default behavior after user scrolls
-          if (scrollResetTimeoutRef.current) {
-            clearTimeout(scrollResetTimeoutRef.current);
-          }
-          scrollResetTimeoutRef.current = setTimeout(() => {
-            userHasScrolledRef.current = false;
-            hasAutoScrolledRef.current = false;
-            scrollResetTimeoutRef.current = null;
-          }, TIMING_CONSTANTS.delays.nextUpScrollReset);
+      // Read scroll position immediately (synchronous) to avoid timing issues
+      const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
+      
+      // Only mark as user scroll if the scroll position actually changed
+      // Use a larger threshold to avoid false positives from programmatic scrolls
+      if (Math.abs(currentScrollTop - lastScrollTop) > 5) {
+        // Clear any pending auto-scroll
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+          scrollTimeout = null;
         }
-      });
-    };
-
-    // Use a small delay to help distinguish user-initiated scroll from programmatic scroll
-    // The debounce naturally filters out rapid programmatic scrolls
-    const handleScrollWithDelay = () => {
-      if (scrollTimeout) clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(handleScroll, TIMING_CONSTANTS.delays.scrollDetectionDebounce);
+        
+        // Mark that user has scrolled (this only prevents auto-scroll, NOT user scrolling)
+        userHasScrolledRef.current = true;
+        lastScrollTop = currentScrollTop;
+        
+        // Reset scroll tracking after period of inactivity to allow next up to work again
+        // This makes next up the default behavior after user scrolls
+        if (scrollResetTimeoutRef.current) {
+          clearTimeout(scrollResetTimeoutRef.current);
+        }
+        scrollResetTimeoutRef.current = setTimeout(() => {
+          userHasScrolledRef.current = false;
+          hasAutoScrolledRef.current = false;
+          scrollResetTimeoutRef.current = null;
+        }, TIMING_CONSTANTS.delays.nextUpScrollReset);
+      } else {
+        // Update last scroll position even for small changes
+        lastScrollTop = currentScrollTop;
+      }
     };
 
       if (scrollViewport) {
-        scrollViewport.addEventListener('scroll', handleScrollWithDelay, { passive: true });
+        scrollViewport.addEventListener('scroll', handleScroll, { passive: true });
         return () => {
-          scrollViewport?.removeEventListener('scroll', handleScrollWithDelay);
+          scrollViewport?.removeEventListener('scroll', handleScroll);
           if (scrollTimeout) clearTimeout(scrollTimeout);
           if (scrollResetTimeoutRef.current) clearTimeout(scrollResetTimeoutRef.current);
         };
       } else if (scrollContainer) {
-        scrollContainer.addEventListener('scroll', handleScrollWithDelay, { passive: true });
+        scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
         return () => {
-          scrollContainer?.removeEventListener('scroll', handleScrollWithDelay);
+          scrollContainer?.removeEventListener('scroll', handleScroll);
           if (scrollTimeout) clearTimeout(scrollTimeout);
           if (scrollResetTimeoutRef.current) clearTimeout(scrollResetTimeoutRef.current);
         };
@@ -951,7 +945,7 @@ export function TodayAgendaView({
           // Desktop view with header - use ScrollArea for vertical scrolling
           // CRITICAL: Wrapper must have explicit height constraint for ScrollArea to work
           <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
-          <ScrollArea className="flex-1 w-full min-h-0">
+          <ScrollArea className="h-full w-full">
             <div 
               ref={timelineContainerRef}
               className={cn(
