@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from './TaskContext';
 // DraggableTaskCard import removed - using lightweight drag overlay instead
-import { isTaskBlocked, getIncompleteDependencies, cn } from '../lib/utils';
+import { isTaskBlocked, getIncompleteDependencies, cn, getDateString } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from '../lib/daily-hours-utils';
 import { useAI } from './AIContext';
@@ -764,7 +764,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           try {
             const date = new Date(overTask.scheduledDate);
             if (!isNaN(date.getTime())) {
-              targetDateString = date.toISOString().split('T')[0];
+              targetDateString = getDateString(date);
             }
           } catch (error) {
             // Silently handle date extraction errors
@@ -779,7 +779,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         try {
           const date = new Date(overTask.scheduledDate);
           if (!isNaN(date.getTime())) {
-            targetDateString = date.toISOString().split('T')[0];
+            targetDateString = getDateString(date);
           }
         } catch (error) {
           // Silently handle date extraction errors

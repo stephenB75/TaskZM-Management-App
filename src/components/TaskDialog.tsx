@@ -286,7 +286,7 @@ function FixedMiniCalendar({
       {/* Date grid - showing 35 days (5 weeks) - Fixed alignment */}
       <div className="grid grid-cols-7 gap-1">
         {days.map((date, index) => {
-          const dateStr = date.toISOString().split('T')[0];
+          const dateStr = getDateString(date);
           const day = date.getDate();
           const isTodayDate = isToday(date);
           const isSelectedScheduled = isSelected(date, "scheduled");
@@ -488,7 +488,7 @@ function SingleDateMiniCalendar({
       {/* Date grid - showing 35 days (5 weeks) - Fixed alignment */}
       <div className="grid grid-cols-7 gap-1">
         {days.map((date, index) => {
-          const dateStr = date.toISOString().split('T')[0];
+          const dateStr = getDateString(date);
           const day = date.getDate();
           const isTodayDate = isToday(date);
           const isSelectedDate = isSelected(date);

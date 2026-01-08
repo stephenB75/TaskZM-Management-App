@@ -7,7 +7,7 @@ import { useSubscription } from './SubscriptionContext';
 // Use useTeam hook in components that need team member info instead
 import { useDemoActivity } from '../hooks/useDemoActivity';
 import * as api from '../lib/api';
-import { generateId, getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
+import { generateId, getFromLocalStorage, saveToLocalStorage, getDateString } from '../lib/utils';
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
 import { findNextAvailableSlot } from '../lib/time-conflict';
@@ -1802,7 +1802,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const scheduledDate = new Date(currentTask.scheduledDate);
           scheduledDate.setHours(0, 0, 0, 0); // Normalize to start of day
           const completedAt = new Date().toISOString();
-          const scheduledDateKey = scheduledDate.toISOString().split('T')[0];
+          const scheduledDateKey = getDateString(scheduledDate);
           const completedOccurrenceId = `${currentTask.id}_completed_${scheduledDateKey}`;
           
           // Check if completed occurrence already exists (prevent duplicates)
@@ -1832,7 +1832,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           let shouldCreateNextOccurrence = true;
           if (nextDate) {
             nextDate.setHours(0, 0, 0, 0); // Normalize to start of day
-            const nextDateKey = nextDate.toISOString().split('T')[0];
+            const nextDateKey = getDateString(nextDate);
             const currentDateKey = scheduledDateKey;
             
             // Check if task is already at the next occurrence date (from a previous completion)
@@ -1855,7 +1855,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 try {
                   const tDate = new Date(t.scheduledDate);
                   tDate.setHours(0, 0, 0, 0);
-                  const tDateKey = tDate.toISOString().split('T')[0];
+                  const tDateKey = getDateString(tDate);
                   return tDateKey === nextDateKey && t.status !== 'done'; // Same date and not completed
                 } catch {
                   return false;
@@ -1981,8 +1981,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // We created a next occurrence - always save it
           // For recurring tasks, only update if the scheduled date actually changed
           if (isRecurringTask) {
-            const currentScheduledDate = currentTask.scheduledDate ? new Date(currentTask.scheduledDate).toISOString().split('T')[0] : null;
-            const newScheduledDate = nextOccurrenceTask.scheduledDate ? new Date(nextOccurrenceTask.scheduledDate).toISOString().split('T')[0] : null;
+            const currentScheduledDate = currentTask.scheduledDate ? getDateString(new Date(currentTask.scheduledDate)) : null;
+            const newScheduledDate = nextOccurrenceTask.scheduledDate ? getDateString(new Date(nextOccurrenceTask.scheduledDate)) : null;
             if (currentScheduledDate === newScheduledDate) {
               logger.debug('Task scheduled date unchanged, skipping save to prevent duplicate', { 
                 taskId, 
@@ -2868,7 +2868,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayString = today.toISOString().split('T')[0];
+    const todayString = getDateString(today);
 
     // Check if we've already run rollover today (check both localStorage and ref)
     const lastCheck = getFromLocalStorage<string>('lastRolloverCheck', '');
@@ -2913,7 +2913,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               return false;
             }
             taskDate.setHours(0, 0, 0, 0);
-            const taskDateString = taskDate.toISOString().split('T')[0];
+            const taskDateString = getDateString(taskDate);
             // Only roll over if date is BEFORE today (not today or future)
             hasPassedDate = taskDateString < todayString;
           } catch (error) {
@@ -2933,7 +2933,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               return false;
             }
             dueDate.setHours(0, 0, 0, 0);
-            const dueDateString = dueDate.toISOString().split('T')[0];
+            const dueDateString = getDateString(dueDate);
             // Only roll over if date is BEFORE today (not today or future)
             hasPassedDate = dueDateString < todayString;
           } catch (error) {

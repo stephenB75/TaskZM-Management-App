@@ -54,7 +54,7 @@ import { useCalendar } from "../contexts/CalendarContext";
 import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { useCalendarEventCounts } from "../hooks/useCalendarEvents";
-import { cn, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { cn, sanitizeHTML, hasHTMLTags, getDateString } from "../lib/utils";
 import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
 import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
@@ -415,7 +415,7 @@ function RescheduleMiniCalendar({
       {/* Date grid - showing 35 days (5 weeks) */}
       <div className="grid grid-cols-7 gap-1">
         {days.map((date, index) => {
-          const dateStr = date.toISOString().split('T')[0];
+          const dateStr = getDateString(date);
           const day = date.getDate();
           const isTodayDate = isToday(date);
           const isSelectedDate = isSelected(date);

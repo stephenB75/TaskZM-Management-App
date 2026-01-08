@@ -3,7 +3,7 @@ import { useTasks } from '../contexts/TaskContext';
 import { useAI } from '../contexts/AIContext';
 import { useCalendar } from '../contexts/CalendarContext';
 import { useAuth } from '../contexts/AuthContext';
-import { isTaskBlocked, calculateDependencyDepth } from '../lib/utils';
+import { isTaskBlocked, calculateDependencyDepth, getDateString } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
@@ -146,9 +146,10 @@ export function useAIScheduler() {
     return filtered;
   };
 
-  // Helper: Get date key for tracking (YYYY-MM-DD)
+  // Helper: Get date key for tracking (YYYY-MM-DD) using LOCAL timezone
+  // This ensures tasks are assigned to the correct day based on user's local time
   const getDateKey = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+    return getDateString(date);
   };
 
   // Helper: Calculate the first occurrence date for a recurring task
@@ -254,7 +255,7 @@ export function useAIScheduler() {
 
     logger.debug('Calculated first occurrence date', {
       taskId: task.id,
-      firstOccurrence: firstDate.toISOString().split('T')[0],
+      firstOccurrence: getDateString(firstDate),
     });
     
     return firstDate;
@@ -921,7 +922,7 @@ export function useAIScheduler() {
     const calendarEvents = await fetchCalendarEvents(startDate, endDate);
     logger.debug('Fetched calendar events for AI scheduling', {
       eventCount: calendarEvents.length,
-      dateRange: `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`,
+      dateRange: `${getDateString(startDate)} to ${getDateString(endDate)}`,
     });
     
     // Helper: Shuffle array using Fisher-Yates algorithm
@@ -1396,7 +1397,7 @@ export function useAIScheduler() {
                   logger.debug('Recurring task would exceed limit on occurrence day', {
                     taskId: task.id,
                     taskTitle: task.title,
-                    occurrenceDay: checkDate.toISOString().split('T')[0],
+                    occurrenceDay: getDateString(checkDate),
                     taskHours,
                     currentHours: dailyHours.get(getDateKey(checkDate)) || 0,
                   });
@@ -1413,10 +1414,10 @@ export function useAIScheduler() {
             const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
             daysToAdd = daysDiff;
             foundDay = true;
-            reason = `Recurring task - scheduled to first occurrence (${recurringFirstOccurrence.toISOString().split('T')[0]})`;
+            reason = `Recurring task - scheduled to first occurrence (${getDateString(recurringFirstOccurrence)})`;
             logger.debug('Recurring task scheduled to first occurrence', {
               taskId: task.id,
-              firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+              firstOccurrence: getDateString(recurringFirstOccurrence),
             });
           }
         }
@@ -1548,7 +1549,7 @@ export function useAIScheduler() {
           logger.debug('Recurring task exceeds daily limit on one or more occurrence days', {
             taskId: task.id,
             taskTitle: task.title,
-            firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+            firstOccurrence: getDateString(recurringFirstOccurrence),
             taskHours,
           });
         }
@@ -1602,12 +1603,12 @@ export function useAIScheduler() {
             logger.debug('Recurring task occurrence days to check', {
               taskId: task.id,
               taskTitle: task.title,
-              firstOccurrence: recurringFirstOccurrence.toISOString().split('T')[0],
+              firstOccurrence: getDateString(recurringFirstOccurrence),
               occurrenceDaysCount: allOccurrenceDays.length,
-              occurrenceDays: allOccurrenceDays.map(d => d.toISOString().split('T')[0]),
+              occurrenceDays: allOccurrenceDays.map(d => getDateString(d)),
               dateRange: {
-                start: startDate.toISOString().split('T')[0],
-                end: endDate.toISOString().split('T')[0],
+                start: getDateString(startDate),
+                end: getDateString(endDate),
               },
             });
           }
@@ -2178,7 +2179,7 @@ export function useAIScheduler() {
                     logger.debug('Recurring task conflict found on occurrence day - using conflict-free slot', {
                       taskId: task.id,
                       taskTitle: task.title,
-                      occurrenceDay: occurrenceDay.toISOString().split('T')[0],
+                      occurrenceDay: getDateString(occurrenceDay),
                       originalCandidateTime: testTime.toLocaleTimeString(),
                       conflictCheckResult: conflictCheckResult.toLocaleTimeString(),
                       newCandidateTime: candidateTime.toLocaleTimeString(),
@@ -3595,7 +3596,7 @@ export function useAIScheduler() {
           await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
           logger.debug('Task scheduled successfully', {
             taskId: task.id,
-            scheduledDate: scheduledDate.toISOString().split('T')[0],
+            scheduledDate: getDateString(scheduledDate),
           });
         } catch (taskError) {
           console.error(`❌ Error updating task ${task.id}:`, taskError);
@@ -3707,12 +3708,12 @@ export function useAIScheduler() {
     }
   };
 
-  // Helper: Get tasks scheduled for a specific day
+  // Helper: Get tasks scheduled for a specific day (using LOCAL timezone)
   const getScheduledTasksForDay = (date: Date): Task[] => {
-    const dateKey = date.toISOString().split('T')[0];
+    const dateKey = getDateString(date);
     return tasks.filter(task => {
       if (!task.scheduledDate || task.status === 'done') return false;
-      const taskDate = new Date(task.scheduledDate).toISOString().split('T')[0];
+      const taskDate = getDateString(new Date(task.scheduledDate));
       return taskDate === dateKey;
     });
   };
