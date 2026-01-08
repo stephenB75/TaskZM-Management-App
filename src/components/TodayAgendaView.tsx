@@ -946,8 +946,8 @@ export function TodayAgendaView({
         ) : (
           // Desktop view with header - use ScrollArea for vertical scrolling
           // FIXED: Ensure ScrollArea gets proper height by using flex-1 and min-h-0
-          <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
-          <ScrollArea className="flex-1 min-h-0">
+          <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")} style={{ height: '100%' } as React.CSSProperties}>
+          <ScrollArea className="h-full w-full">
             <div 
               ref={timelineContainerRef}
               className={cn(
@@ -961,8 +961,9 @@ export function TodayAgendaView({
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? KANBAN_MOBILE.bottomPaddingCalc
                   : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`, // Desktop: Add padding to ensure content scrolls past bottom (nav bar + safe area + buffer)
-                // Ensure content extends to bottom for proper scrolling - user can scroll freely
-                minHeight: '100%',
+                // CRITICAL: Content must be taller than viewport for scrolling to work
+                // Use minHeight to ensure content extends beyond viewport when needed
+                minHeight: 'calc(100% + 1px)', // Add 1px to ensure content is always scrollable
               }}
             >
               {combinedItems.length === 0 ? (

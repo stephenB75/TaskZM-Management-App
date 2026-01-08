@@ -19,7 +19,9 @@ function ScrollArea({
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
         className="focus-visible:ring-ring/50 h-full w-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
-        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+        } as React.CSSProperties}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
