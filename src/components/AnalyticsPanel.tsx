@@ -594,19 +594,63 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         }
       };
       
-      // Helper function to add chart image to PDF
+      // Helper function to add a visual separator line
+      const addSeparator = () => {
+        if (yPos + 5 > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom) {
+          doc.addPage();
+          yPos = ANALYTICS_PDF_CONFIG.margins.top;
+        }
+        const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.border);
+        doc.setDrawColor(r, g, b);
+        doc.setLineWidth(0.5);
+        doc.line(
+          ANALYTICS_PDF_CONFIG.margins.left,
+          yPos,
+          pageWidth - ANALYTICS_PDF_CONFIG.margins.right,
+          yPos
+        );
+        yPos += 8;
+      };
+
+      // Helper function to add a metric box
+      const addMetricBox = (label: string, value: string, x: number, width: number) => {
+        const boxHeight = 15;
+        const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.border);
+        const [rPrimary, gPrimary, bPrimary] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
+        
+        // Draw box border
+        doc.setDrawColor(r, g, b);
+        doc.setLineWidth(0.5);
+        doc.rect(x, yPos, width, boxHeight);
+        
+        // Add label
+        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
+        doc.setTextColor(r, g, b);
+        doc.text(label, x + 2, yPos + 5);
+        
+        // Add value
+        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
+        doc.setTextColor(rPrimary, gPrimary, bPrimary);
+        doc.text(value, x + 2, yPos + 11);
+      };
+
+      // Helper function to add chart image to PDF with visual styling
       const addChartToPDF = (imageData: string, title: string) => {
         if (!imageData) return;
         
         // Check if we need a new page
-        if (yPos + ANALYTICS_PDF_CONFIG.chart.height > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom) {
+        const chartBoxHeight = ANALYTICS_PDF_CONFIG.chart.height + 15; // Chart + title + padding
+        if (yPos + chartBoxHeight > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom) {
           doc.addPage();
           yPos = ANALYTICS_PDF_CONFIG.margins.top;
         }
         
-        // Add chart title
+        // Add visual separator before chart
+        addSeparator();
+        
+        // Add chart title with styling
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
-        const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.text);
+        const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
         doc.setTextColor(r, g, b);
         doc.text(title, ANALYTICS_PDF_CONFIG.margins.left, yPos);
         yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading;
@@ -615,6 +659,17 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         const maxWidth = pageWidth - ANALYTICS_PDF_CONFIG.margins.left - ANALYTICS_PDF_CONFIG.margins.right;
         const chartWidth = ANALYTICS_PDF_CONFIG.chart.width;
         const chartHeight = ANALYTICS_PDF_CONFIG.chart.height;
+        
+        // Draw border around chart area
+        const [rBorder, gBorder, bBorder] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.border);
+        doc.setDrawColor(rBorder, gBorder, bBorder);
+        doc.setLineWidth(0.5);
+        doc.rect(
+          ANALYTICS_PDF_CONFIG.margins.left - 2,
+          yPos - 2,
+          chartWidth + 4,
+          chartHeight + 4
+        );
         
         // Add chart image
         doc.addImage(
@@ -625,15 +680,15 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           chartWidth,
           chartHeight
         );
-        yPos += chartHeight + ANALYTICS_PDF_CONFIG.chart.spacing;
+        yPos += chartHeight + ANALYTICS_PDF_CONFIG.chart.spacing + 4;
       };
 
-      // Title
-      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title);
+      // Title with visual styling
+      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title + 2);
       const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
       doc.setTextColor(r, g, b);
       doc.text(ANALYTICS_PDF_CONFIG.labels.title, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-      yPos += ANALYTICS_PDF_CONFIG.spacing.afterTitle;
+      yPos += ANALYTICS_PDF_CONFIG.spacing.afterTitle + 2;
 
       // Date
       doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
@@ -644,74 +699,89 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         ANALYTICS_PDF_CONFIG.margins.left,
         yPos
       );
-      yPos += ANALYTICS_PDF_CONFIG.spacing.afterDate;
+      yPos += ANALYTICS_PDF_CONFIG.spacing.afterDate + 5;
 
-      // Summary Statistics
+      // Summary Statistics - Visual Metric Boxes
       if (analytics) {
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
         const [r3, g3, b3] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.text);
         doc.setTextColor(r3, g3, b3);
         doc.text(ANALYTICS_PDF_CONFIG.labels.summary, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading;
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 3;
 
-        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
-        doc.text(
-          `${ANALYTICS_PDF_CONFIG.labels.totalTasks} ${analytics.totalTasks || 0}`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
+        // Create metric boxes in a 2x2 grid
+        const boxWidth = (pageWidth - ANALYTICS_PDF_CONFIG.margins.left - ANALYTICS_PDF_CONFIG.margins.right - 5) / 2;
+        const boxSpacing = 5;
+        const startX = ANALYTICS_PDF_CONFIG.margins.left;
+        
+        // Row 1: Total Tasks and Completed
+        addMetricBox(
+          ANALYTICS_PDF_CONFIG.labels.totalTasks,
+          String(analytics.totalTasks || 0),
+          startX,
+          boxWidth
         );
-        yPos += ANALYTICS_PDF_CONFIG.spacing.betweenItems;
-        doc.text(
-          `${ANALYTICS_PDF_CONFIG.labels.completed} ${analytics.completedTasks || 0}`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
+        addMetricBox(
+          ANALYTICS_PDF_CONFIG.labels.completed,
+          String(analytics.completedTasks || 0),
+          startX + boxWidth + boxSpacing,
+          boxWidth
         );
-        yPos += ANALYTICS_PDF_CONFIG.spacing.betweenItems;
-        doc.text(
-          `${ANALYTICS_PDF_CONFIG.labels.inProgress} ${analytics.inProgressTasks || 0}`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
-        );
-        yPos += ANALYTICS_PDF_CONFIG.spacing.betweenItems;
-        doc.text(
-          `${ANALYTICS_PDF_CONFIG.labels.completionRate} ${analytics.completionRate?.toFixed(1) || 0}%`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
-        );
-        yPos += ANALYTICS_PDF_CONFIG.spacing.afterSection;
+        yPos += 18;
 
-        // Time Tracking
+        // Row 2: In Progress and Completion Rate
+        addMetricBox(
+          ANALYTICS_PDF_CONFIG.labels.inProgress,
+          String(analytics.inProgressTasks || 0),
+          startX,
+          boxWidth
+        );
+        addMetricBox(
+          ANALYTICS_PDF_CONFIG.labels.completionRate,
+          `${analytics.completionRate?.toFixed(1) || 0}%`,
+          startX + boxWidth + boxSpacing,
+          boxWidth
+        );
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterSection + 5;
+
+        // Time Tracking - Visual Metric Boxes
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
         doc.text(ANALYTICS_PDF_CONFIG.labels.timeTracking, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading;
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 3;
 
-        doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
         const totalHours = Math.floor(analytics.totalTimeTracked / MINUTES_PER_HOUR);
         const totalMinutes = Math.round(analytics.totalTimeTracked % MINUTES_PER_HOUR);
-        doc.text(
-          `${ANALYTICS_PDF_CONFIG.labels.totalTime} ${totalHours}${ANALYTICS_PDF_CONFIG.labels.hours} ${totalMinutes}${ANALYTICS_PDF_CONFIG.labels.minutes}`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
-        );
-        yPos += ANALYTICS_PDF_CONFIG.spacing.betweenItems;
         const weeklyHours = Math.floor(analytics.weeklyTimeTracked / MINUTES_PER_HOUR);
         const weeklyMinutes = Math.round(analytics.weeklyTimeTracked % MINUTES_PER_HOUR);
-        doc.text(
-          `${ANALYTICS_PDF_CONFIG.labels.thisWeek} ${weeklyHours}${ANALYTICS_PDF_CONFIG.labels.hours} ${weeklyMinutes}${ANALYTICS_PDF_CONFIG.labels.minutes}`,
-          ANALYTICS_PDF_CONFIG.margins.left,
-          yPos
+        
+        // Row 1: Total Time and This Week
+        addMetricBox(
+          ANALYTICS_PDF_CONFIG.labels.totalTime,
+          `${totalHours}${ANALYTICS_PDF_CONFIG.labels.hours} ${totalMinutes}${ANALYTICS_PDF_CONFIG.labels.minutes}`,
+          startX,
+          boxWidth
         );
-        yPos += ANALYTICS_PDF_CONFIG.spacing.betweenItems;
+        addMetricBox(
+          ANALYTICS_PDF_CONFIG.labels.thisWeek,
+          `${weeklyHours}${ANALYTICS_PDF_CONFIG.labels.hours} ${weeklyMinutes}${ANALYTICS_PDF_CONFIG.labels.minutes}`,
+          startX + boxWidth + boxSpacing,
+          boxWidth
+        );
+        yPos += 18;
+
+        // Row 2: Avg per Task (if available)
         if (analytics.avgTimePerTask > 0) {
           const avgHours = Math.floor(analytics.avgTimePerTask / MINUTES_PER_HOUR);
           const avgMinutes = Math.round(analytics.avgTimePerTask % MINUTES_PER_HOUR);
-          doc.text(
-            `${ANALYTICS_PDF_CONFIG.labels.avgPerTask} ${avgHours}${ANALYTICS_PDF_CONFIG.labels.hours} ${avgMinutes}${ANALYTICS_PDF_CONFIG.labels.minutes}`,
-            ANALYTICS_PDF_CONFIG.margins.left,
-            yPos
+          addMetricBox(
+            ANALYTICS_PDF_CONFIG.labels.avgPerTask,
+            `${avgHours}${ANALYTICS_PDF_CONFIG.labels.hours} ${avgMinutes}${ANALYTICS_PDF_CONFIG.labels.minutes}`,
+            startX,
+            boxWidth
           );
-          yPos += ANALYTICS_PDF_CONFIG.spacing.afterSection;
+          yPos += 18;
         }
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterSection;
 
         // Status Distribution Chart
         if (analytics.statusDistribution && analytics.statusDistribution.length > 0 && statusChartRef.current) {
@@ -753,24 +823,70 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           }
         }
 
-        // Project Progress
+        // Project Progress - Visual Table
         if (analytics.projectProgress && analytics.projectProgress.length > 0) {
+          addSeparator();
           doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
+          const [r4, g4, b4] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
+          doc.setTextColor(r4, g4, b4);
           doc.text(ANALYTICS_PDF_CONFIG.labels.projectProgress, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-          yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading;
+          yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 3;
 
-          doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
-          analytics.projectProgress.slice(0, ANALYTICS_PDF_CONFIG.limits.maxProjects).forEach((project) => {
+          const [rBorder, gBorder, bBorder] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.border);
+          doc.setDrawColor(rBorder, gBorder, bBorder);
+          doc.setLineWidth(0.5);
+          
+          analytics.projectProgress.slice(0, ANALYTICS_PDF_CONFIG.limits.maxProjects).forEach((project, index) => {
             if (yPos > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom - ANALYTICS_PDF_CONFIG.pageBreak.threshold) {
               doc.addPage();
               yPos = ANALYTICS_PDF_CONFIG.margins.top;
             }
-            doc.text(
-              `${project.name}: ${project.completed}/${project.total} (${project.completionRate.toFixed(1)}%)`,
+            
+            const rowHeight = 10;
+            const tableWidth = pageWidth - ANALYTICS_PDF_CONFIG.margins.left - ANALYTICS_PDF_CONFIG.margins.right;
+            
+            // Draw row border
+            doc.rect(
               ANALYTICS_PDF_CONFIG.margins.left,
-              yPos
+              yPos - rowHeight + 2,
+              tableWidth,
+              rowHeight
             );
-            yPos += ANALYTICS_PDF_CONFIG.spacing.betweenItems;
+            
+            // Project name
+            doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
+            const [rText, gText, bText] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.text);
+            doc.setTextColor(rText, gText, bText);
+            doc.text(
+              project.name,
+              ANALYTICS_PDF_CONFIG.margins.left + 2,
+              yPos - 2
+            );
+            
+            // Progress info
+            const progressText = `${project.completed}/${project.total} tasks`;
+            doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
+            const [rSecondary, gSecondary, bSecondary] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.textSecondary);
+            doc.setTextColor(rSecondary, gSecondary, bSecondary);
+            doc.text(
+              progressText,
+              ANALYTICS_PDF_CONFIG.margins.left + 2,
+              yPos + 3
+            );
+            
+            // Completion rate (right aligned)
+            const [rSuccess, gSuccess, bSuccess] = hexToRgb(COLOR_SUCCESS);
+            doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
+            doc.setTextColor(rSuccess, gSuccess, bSuccess);
+            const rateText = `${project.completionRate.toFixed(0)}%`;
+            const textWidth = doc.getTextWidth(rateText);
+            doc.text(
+              rateText,
+              pageWidth - ANALYTICS_PDF_CONFIG.margins.right - textWidth - 2,
+              yPos - 2
+            );
+            
+            yPos += rowHeight + 2;
           });
         }
       }
@@ -994,7 +1110,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-3 pb-3">
-                    <div className="h-56" style={{ minHeight: '224px' }}>
+                    <div ref={statusChartRef} className="h-56" style={{ minHeight: '224px' }}>
                       {(() => {
                         try {
                           const validData = analytics?.statusDistribution?.filter(
@@ -1208,7 +1324,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="h-40">
+                  <div ref={timeOfDayChartRef} className="h-40">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analytics.timePatterns.blocks.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
@@ -1254,7 +1370,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="h-40">
+                  <div ref={topTagsChartRef} className="h-40">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={analytics.taskTypes.filter(item => item && typeof item === 'object')}
@@ -1376,7 +1492,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-3 pb-3">
-                    <div className="h-56" style={{ minHeight: '224px' }}>
+                    <div ref={statusChartRef} className="h-56" style={{ minHeight: '224px' }}>
                       {(() => {
                         try {
                           const validData = analytics?.statusDistribution?.filter(
@@ -1489,7 +1605,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
-                <div className="h-40">
+                <div ref={timeTrendChartRef} className="h-40">
                   {analytics?.timeTrackingTrend && Array.isArray(analytics.timeTrackingTrend) && analytics.timeTrackingTrend.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={analytics.timeTrackingTrend.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -1536,7 +1652,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
-                <div className="h-40">
+                <div ref={tasksCreatedCompletedChartRef} className="h-40">
                   {analytics?.taskPerDayProgress && Array.isArray(analytics.taskPerDayProgress) && analytics.taskPerDayProgress.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={analytics.taskPerDayProgress.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -1589,7 +1705,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="h-40">
+                  <div ref={timeOfDayChartRef} className="h-40">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analytics.timePatterns.blocks.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
@@ -1635,7 +1751,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div className="h-40">
+                  <div ref={topTagsChartRef} className="h-40">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={analytics.taskTypes.filter(item => item && typeof item === 'object')}
