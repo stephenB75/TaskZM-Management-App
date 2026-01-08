@@ -43,7 +43,7 @@ import { useIsMobile } from './ui/use-mobile';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS, AI_DAILY_HOUR_OPTIONS, AI_DAILY_HOUR_LABELS } from '../lib/ai-config';
-import taskzmLogoLight from '../assets/taskzm-logo-light.png';  // Light (purple) logo for dark backgrounds
+import taskzmLogoGray from '../assets/taskzm-logo-gray.png';  // Gray logo for about section
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
 import { SETTINGS_PANEL_TEXT_SIZES } from '../lib/text-size-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
@@ -2759,7 +2759,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <div className="space-y-4 sm:space-y-3 md:space-y-3">
               <div className="flex flex-col items-center gap-1.5">
                 <img 
-                  src={taskzmLogoLight} 
+                  src={taskzmLogoGray} 
                   alt="TaskZM Logo"
                   className="w-[140px] object-contain"
                 />
