@@ -650,11 +650,11 @@ export function TodayAgendaView({
       {/* Header */}
       {!hideHeader && (
         <>
-          {/* Header wrapper - no minHeight on mobile since AppHeader is fixed and spacer in App.tsx handles spacing */}
+          {/* Header wrapper - fixed height to prevent shifting */}
           <div 
-            className="relative"
+            className="relative flex-shrink-0"
             style={{ 
-              minHeight: isMobile ? 0 : `${HEADER_HEIGHT}px`, // No minHeight on mobile since header is fixed
+              height: isMobile ? 'auto' : `${HEADER_HEIGHT}px`, // Fixed height on desktop to prevent shifting
             }}
           >
           <AppHeader
@@ -944,8 +944,8 @@ export function TodayAgendaView({
         ) : (
           // Desktop view with header - use ScrollArea for vertical scrolling
           // CRITICAL: Wrapper must have explicit height constraint for ScrollArea to work
-          <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
-          <ScrollArea className="h-full w-full">
+          <div className={cn("flex-1 w-full relative min-h-0 overflow-hidden flex flex-col")}>
+          <ScrollArea className="flex-1 w-full min-h-0">
             <div 
               ref={timelineContainerRef}
               className={cn(
