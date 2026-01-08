@@ -4317,7 +4317,7 @@ app.post("/taskzm-database-function/team/:workspaceId/invite", async (c) => {
     }
 
     // Get workspace name if available
-    const workspaceName = await kv.get(`workspace_${workspaceId}_name`) || undefined;
+    const workspaceName = await kv.get(`workspace_${workspaceId}_name`);
 
     // Send invitation email
     const inviteLink = `https://taskzm.com/invite?token=${invitationToken}`;
@@ -4697,7 +4697,7 @@ app.post("/taskzm-database-function/team/invitations/accept", async (c) => {
     try {
       const { data: inviterUser } = await supabase.auth.admin.getUserById(invitation.invitedBy);
       if (inviterUser?.user?.email) {
-        const workspaceName = await kv.get(`workspace_${workspaceId}_name`) || undefined;
+        const workspaceName = await kv.get(`workspace_${workspaceId}_name`);
         await emailService.sendInvitationAcceptedNotification(
           inviterUser.user.email,
           invitation.name,
@@ -4777,7 +4777,7 @@ app.post("/taskzm-database-function/team/:workspaceId/invitations/resend", async
     }
 
     // Get workspace name if available
-    const workspaceName = await kv.get(`workspace_${workspaceId}_name`) || undefined;
+    const workspaceName = await kv.get(`workspace_${workspaceId}_name`);
 
     // Send invitation email
     const inviteLink = `https://taskzm.com/invite?token=${token}`;
@@ -4881,20 +4881,7 @@ app.all('*', async (c) => {
     error: 'Route not found',
     method: c.req.method,
     path,
-    availableRoutes: [
-      'GET /taskzm-database-function/calendar/status',
-      'POST /taskzm-database-function/calendar/apple/setup',
-      'GET /taskzm-database-function/calendar/google/auth',
-      'GET /taskzm-database-function/calendar/google/callback',
-      'GET /taskzm-database-function/calendar/outlook/auth',
-      'GET /taskzm-database-function/calendar/outlook/callback',
-      'DELETE /taskzm-database-function/calendar/:provider',
-      'POST /taskzm-database-function/calendar/sync-task',
-      'POST /taskzm-database-function/calendar/sync-all',
-    ]
   }, 404);
 });
 
 Deno.serve(app.fetch);
-
-
