@@ -151,25 +151,49 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       today.setHours(0, 0, 0, 0);
 
       // Check tasks with dueDate OR scheduledDate
+      // CRITICAL: Exclude rolled-over tasks (scheduledDate === null/undefined)
+      // Rolled-over tasks have been moved to inbox and should not trigger notifications
       const overdueTasks = tasks.filter(task => {
         if (task.status === 'done') return false;
+        
+        // CRITICAL: Exclude rolled-over tasks - they have scheduledDate === null/undefined
+        // Rolled-over tasks should not trigger badge notifications even if they have a dueDate
+        if (task.scheduledDate === null || task.scheduledDate === undefined) {
+          return false;
+        }
+        
+        // CRITICAL: Exclude recurring tasks - they have their own scheduling mechanism
+        if (task.recurrence && task.recurrence.type !== 'none') return false;
         
         // Check if notification for this task was dismissed
         const notificationId = `overdue_${task.id}`;
         if (dismissedNotifications.has(notificationId)) return false;
         
-        // Check dueDate first
-        if (task.dueDate) {
-          const dueDate = new Date(task.dueDate);
-          dueDate.setHours(0, 0, 0, 0);
-          if (dueDate < today) return true;
+        // For badge count, prioritize scheduledDate over dueDate
+        // Only count tasks that are actually scheduled (have a scheduledDate)
+        if (task.scheduledDate) {
+          try {
+            const scheduledDate = new Date(task.scheduledDate);
+            if (isNaN(scheduledDate.getTime())) return false;
+            scheduledDate.setHours(0, 0, 0, 0);
+            if (scheduledDate < today) return true;
+          } catch (error) {
+            logger.warn('Error parsing scheduledDate for notification badge:', task.id, error);
+            return false;
+          }
         }
         
-        // Check scheduledDate if no dueDate
-        if (task.scheduledDate && !task.dueDate) {
-          const scheduledDate = new Date(task.scheduledDate);
-          scheduledDate.setHours(0, 0, 0, 0);
-          if (scheduledDate < today) return true;
+        // Only check dueDate if there's no scheduledDate (shouldn't happen after rollover fix, but safety check)
+        if (!task.scheduledDate && task.dueDate) {
+          try {
+            const dueDate = new Date(task.dueDate);
+            if (isNaN(dueDate.getTime())) return false;
+            dueDate.setHours(0, 0, 0, 0);
+            if (dueDate < today) return true;
+          } catch (error) {
+            logger.warn('Error parsing dueDate for notification badge:', task.id, error);
+            return false;
+          }
         }
         
         return false;
@@ -178,22 +202,44 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const dueSoonTasks = tasks.filter(task => {
         if (task.status === 'done') return false;
         
+        // CRITICAL: Exclude rolled-over tasks - they have scheduledDate === null/undefined
+        // Rolled-over tasks should not trigger badge notifications even if they have a dueDate
+        if (task.scheduledDate === null || task.scheduledDate === undefined) {
+          return false;
+        }
+        
+        // CRITICAL: Exclude recurring tasks - they have their own scheduling mechanism
+        if (task.recurrence && task.recurrence.type !== 'none') return false;
+        
         // Check if notification for this task was dismissed
         const notificationId = `due-soon_${task.id}`;
         if (dismissedNotifications.has(notificationId)) return false;
         
         const reminderTime = new Date(now.getTime() + settings.reminderTime * 60 * 1000);
         
-        // Check dueDate first
-        if (task.dueDate) {
-          const dueDate = new Date(task.dueDate);
-          return dueDate >= now && dueDate <= reminderTime;
+        // For badge count, prioritize scheduledDate over dueDate
+        // Only count tasks that are actually scheduled (have a scheduledDate)
+        if (task.scheduledDate) {
+          try {
+            const scheduledDate = new Date(task.scheduledDate);
+            if (isNaN(scheduledDate.getTime())) return false;
+            return scheduledDate >= now && scheduledDate <= reminderTime;
+          } catch (error) {
+            logger.warn('Error parsing scheduledDate for due-soon notification:', task.id, error);
+            return false;
+          }
         }
         
-        // Check scheduledDate if no dueDate
-        if (task.scheduledDate && !task.dueDate) {
-          const scheduledDate = new Date(task.scheduledDate);
-          return scheduledDate >= now && scheduledDate <= reminderTime;
+        // Only check dueDate if there's no scheduledDate (shouldn't happen after rollover fix, but safety check)
+        if (!task.scheduledDate && task.dueDate) {
+          try {
+            const dueDate = new Date(task.dueDate);
+            if (isNaN(dueDate.getTime())) return false;
+            return dueDate >= now && dueDate <= reminderTime;
+          } catch (error) {
+            logger.warn('Error parsing dueDate for due-soon notification:', task.id, error);
+            return false;
+          }
         }
         
         return false;

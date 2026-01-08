@@ -2902,6 +2902,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         let hasPassedDate = false;
         
         // Priority 1: Check scheduledDate if it exists
+        // CRITICAL: Only roll over tasks from PAST dates (before today), not today
+        // Tasks scheduled for today should remain scheduled for today
         if (task.scheduledDate) {
           try {
             const taskDate = new Date(task.scheduledDate);
@@ -2912,6 +2914,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             }
             taskDate.setHours(0, 0, 0, 0);
             const taskDateString = taskDate.toISOString().split('T')[0];
+            // Only roll over if date is BEFORE today (not today or future)
             hasPassedDate = taskDateString < todayString;
           } catch (error) {
             logger.error('Error parsing scheduledDate:', task.id, task.scheduledDate, error);
@@ -2920,6 +2923,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
         
         // Priority 2: If scheduledDate hasn't passed or doesn't exist, check dueDate
+        // CRITICAL: Only roll over if dueDate is BEFORE today (not today or future)
         if (!hasPassedDate && task.dueDate) {
           try {
             const dueDate = new Date(task.dueDate);
@@ -2930,6 +2934,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             }
             dueDate.setHours(0, 0, 0, 0);
             const dueDateString = dueDate.toISOString().split('T')[0];
+            // Only roll over if date is BEFORE today (not today or future)
             hasPassedDate = dueDateString < todayString;
           } catch (error) {
             logger.error('Error parsing dueDate:', task.id, task.dueDate, error);

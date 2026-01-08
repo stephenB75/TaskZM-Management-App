@@ -127,7 +127,7 @@ function AppContent() {
     // Enhanced logging to debug badge count
     const allTasksWithDates = tasks.filter((t: { dueDate?: string | null; scheduledDate?: string | null; status: string }) => (t.dueDate || t.scheduledDate) && t.status !== 'done');
     
-    const dueTasks = tasks.filter((task: { id: string; title: string; status: string; dueDate?: string | null; scheduledDate?: string | null }) => {
+    const dueTasks = tasks.filter((task: { id: string; title: string; status: string; dueDate?: string | null; scheduledDate?: string | null; recurrence?: { type: string } }) => {
       if (task.status === 'done') return false;
       
       // CRITICAL: Exclude tasks that have been rolled over to inbox
@@ -137,6 +137,9 @@ function AppContent() {
       if (task.scheduledDate === null || task.scheduledDate === undefined) {
         return false;
       }
+      
+      // CRITICAL: Exclude recurring tasks - they have their own scheduling mechanism
+      if (task.recurrence && task.recurrence.type !== 'none') return false;
       
       let targetDate: Date | null = null;
       let dateType: 'dueDate' | 'scheduledDate' | null = null;
