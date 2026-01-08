@@ -308,22 +308,28 @@ export function TodayAgendaView({
               // Get the container that holds the scrollable content
               const scrollContainer = timelineContainerRef.current;
               if (scrollContainer) {
-                // OPTIMIZED: Batch all layout reads together
-                const containerRect = scrollContainer.getBoundingClientRect();
-                const elementRect = nextUpElement.getBoundingClientRect();
+                // Check if content is actually scrollable before attempting to scroll
+                const containerHeight = scrollContainer.scrollHeight;
                 const viewportHeight = scrollViewport.clientHeight;
-                const relativeTop = elementRect.top - containerRect.top + scrollViewport.scrollTop;
                 
-                // Calculate scroll position
-                const scrollTop = relativeTop - (viewportHeight / 2) + (elementRect.height / 2);
-                
-                // Defer scroll operation to avoid blocking
-                requestAnimationFrame(() => {
-                  scrollViewport.scrollTo({
-                    top: scrollTop,
-                    behavior: 'smooth',
+                // Only scroll if content is actually taller than viewport
+                if (containerHeight > viewportHeight) {
+                  // OPTIMIZED: Batch all layout reads together
+                  const containerRect = scrollContainer.getBoundingClientRect();
+                  const elementRect = nextUpElement.getBoundingClientRect();
+                  const relativeTop = elementRect.top - containerRect.top + scrollViewport.scrollTop;
+                  
+                  // Calculate scroll position
+                  const scrollTop = relativeTop - (viewportHeight / 2) + (elementRect.height / 2);
+                  
+                  // Defer scroll operation to avoid blocking
+                  requestAnimationFrame(() => {
+                    scrollViewport.scrollTo({
+                      top: scrollTop,
+                      behavior: 'smooth',
+                    });
                   });
-                });
+                }
               }
             }
           } else {
@@ -773,7 +779,10 @@ export function TodayAgendaView({
               <>
                 <div 
                   className="flex flex-col w-full relative z-10"
-                  style={{ overflow: 'visible' }}
+                  style={{ 
+                    overflow: 'visible',
+                    minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
+                  }}
                 >
                   {combinedItems.map((item, index) => {
                     if (item.type === 'task' && item.task) {
@@ -782,61 +791,61 @@ export function TodayAgendaView({
                       const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
                       
                       return (
-                        <div
-                          key={`task-${item.task.id}`}
-                          data-task-id={item.task.id}
-                          style={{
-                            marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
-                          }}
-                        >
+                    <div
+                            key={`task-${item.task.id}`}
+                            data-task-id={item.task.id}
+                      style={{
+                              marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                          transformOrigin: 'top center',
+                        }}
+                      >
+                        <DraggableTaskCard
+                          task={item.task}
+                          onClick={() => handleTaskClick(item.task)}
+                          droppableId="today-agenda"
+                          isNextUp={item.task.id === nextUpTaskId}
+                        />
+                      </div>
+                    </div>
+                        );
+                      } else if (item.type === 'event' && item.event) {
+                        // Calculate margin for events based on previous item
+                        const prevItem = index > 0 ? combinedItems[index - 1] : null;
+                        let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                        
+                        if (index === 0) {
+                          marginTop = 0;
+                        } else if (prevItem) {
+                          // Use fixed spacing between items
+                          marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                        }
+                        
+                        return (
                           <div
+                            key={`event-${item.event.id}`}
+                            data-event-id={item.event.id}
                             style={{
-                              transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                              transformOrigin: 'top center',
+                              marginTop: `${marginTop}px`,
                             }}
                           >
-                            <DraggableTaskCard
-                              task={item.task}
-                              onClick={() => handleTaskClick(item.task)}
-                              droppableId="today-agenda"
-                              isNextUp={item.task.id === nextUpTaskId}
+                            <CalendarEventCard
+                              title={item.event.title}
+                              start={item.event.start}
+                              end={item.event.end}
+                              location={item.event.location}
+                              provider={item.event.provider}
+                              calendarColor={item.event.calendarColor}
                             />
                           </div>
-                        </div>
-                      );
-                    } else if (item.type === 'event' && item.event) {
-                      // Calculate margin for events based on previous item
-                      const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                      let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                      
-                      if (index === 0) {
-                        marginTop = 0;
-                      } else if (prevItem) {
-                        // Use fixed spacing between items
-                        marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                        );
                       }
-                      
-                      return (
-                        <div
-                          key={`event-${item.event.id}`}
-                          data-event-id={item.event.id}
-                          style={{
-                            marginTop: `${marginTop}px`,
-                          }}
-                        >
-                          <CalendarEventCard
-                            title={item.event.title}
-                            start={item.event.start}
-                            end={item.event.end}
-                            location={item.event.location}
-                            provider={item.event.provider}
-                            calendarColor={item.event.calendarColor}
-                          />
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
+                      return null;
+                    })}
                 </div>
 
                 {/* Next Up Task Details - Shows notes for the next uncompleted task */}
@@ -1007,7 +1016,10 @@ export function TodayAgendaView({
               <>
                 <div 
                   className="flex flex-col w-full relative z-10"
-                  style={{ overflow: 'visible' }}
+                  style={{ 
+                    overflow: 'visible',
+                    minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
+                  }}
                 >
                     {combinedItems.map((item, index) => {
                       if (item.type === 'task' && item.task) {
@@ -1238,7 +1250,10 @@ export function TodayAgendaView({
             <>
               <div 
                 className="flex flex-col w-full relative z-10"
-                style={{ overflow: 'visible' }}
+                style={{ 
+                  overflow: 'visible',
+                  minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
+                }}
               >
                 {combinedItems.map((item, index) => {
                   if (item.type === 'task' && item.task) {
