@@ -184,7 +184,7 @@ export function TodayAgendaView({
 
   const { events: todayCalendarEventsData } = useCalendarEvents(todayStart, todayEnd, {
     enabled: !!accessToken,
-    debounceMs: 200, // Slightly faster for today view
+    debounceMs: TIMING_CONSTANTS.delays.calendarEventsDebounce, // Slightly faster for today view
   });
 
   // Update state when events change
@@ -323,11 +323,17 @@ export function TodayAgendaView({
                   const scrollTop = relativeTop - (viewportHeight / 2) + (elementRect.height / 2);
                   
                   // Defer scroll operation to avoid blocking
+                  // Mark as programmatic scroll before scrolling
+                  isProgrammaticScrollRef.current = true;
                   requestAnimationFrame(() => {
                     scrollViewport.scrollTo({
                       top: scrollTop,
                       behavior: 'smooth',
                     });
+                    // Reset flag after scroll completes (smooth scroll takes ~500ms)
+                    setTimeout(() => {
+                      isProgrammaticScrollRef.current = false;
+                    }, TIMING_CONSTANTS.delays.programmaticScrollComplete);
                   });
                 }
               }
@@ -335,8 +341,14 @@ export function TodayAgendaView({
           } else {
             // Mobile: Use scrollIntoView on the parent scroll container
             // Defer to avoid blocking
+            // Mark as programmatic scroll before scrolling
+            isProgrammaticScrollRef.current = true;
             requestAnimationFrame(() => {
               nextUpElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // Reset flag after scroll completes (smooth scroll takes ~500ms)
+              setTimeout(() => {
+                isProgrammaticScrollRef.current = false;
+              }, TIMING_CONSTANTS.delays.programmaticScrollComplete);
             });
           }
           hasAutoScrolledRef.current = true;
@@ -352,12 +364,13 @@ export function TodayAgendaView({
   // Track user scroll to detect manual scrolling (does NOT prevent user scrolling)
   // This only tracks scroll to prevent auto-scroll from interfering with user's manual scroll
   // User can always scroll freely - this just prevents auto-scroll after user interaction
+  const isProgrammaticScrollRef = useRef(false); // Track if scroll is from our auto-scroll (use ref so it's accessible across functions)
+  
   useEffect(() => {
     let scrollViewport: HTMLElement | null = null;
     let scrollContainer: HTMLElement | null = null;
     let lastScrollTop = 0;
     let scrollTimeout: NodeJS.Timeout | null = null;
-    let isProgrammaticScroll = false; // Track if scroll is from our auto-scroll
 
     if (hideHeader) {
       // Desktop: Track ScrollArea viewport
@@ -381,7 +394,7 @@ export function TodayAgendaView({
         // Only mark as user scroll if the scroll position actually changed
         // AND it's not from our programmatic scroll
         // This prevents false positives from programmatic scrolling
-        if (Math.abs(currentScrollTop - lastScrollTop) > 1 && !isProgrammaticScroll) {
+        if (Math.abs(currentScrollTop - lastScrollTop) > 1 && !isProgrammaticScrollRef.current) {
           // Clear any pending auto-scroll
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
@@ -402,9 +415,9 @@ export function TodayAgendaView({
             hasAutoScrolledRef.current = false;
             scrollResetTimeoutRef.current = null;
           }, TIMING_CONSTANTS.delays.nextUpScrollReset);
-        } else if (isProgrammaticScroll) {
+        } else if (isProgrammaticScrollRef.current) {
           // Reset flag after programmatic scroll completes
-          isProgrammaticScroll = false;
+          isProgrammaticScrollRef.current = false;
           lastScrollTop = currentScrollTop;
         }
       });
@@ -413,7 +426,7 @@ export function TodayAgendaView({
     // Use a small delay to detect user-initiated scroll vs programmatic scroll
     const handleScrollWithDelay = () => {
       if (scrollTimeout) clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(handleScroll, 50);
+      scrollTimeout = setTimeout(handleScroll, TIMING_CONSTANTS.delays.scrollDetectionDebounce);
     };
 
       if (scrollViewport) {

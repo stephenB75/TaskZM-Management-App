@@ -26,6 +26,9 @@ export const TIMING_CONSTANTS = {
     calendarCheck: 1000, // Calendar check interval delay
     rolloverCheck: 3000, // Rollover check delay to allow UI to load
     nextUpScrollReset: 5000, // Reset scroll tracking after 5 seconds of inactivity to allow next up to work again
+    programmaticScrollComplete: 600, // Timeout for programmatic scroll completion (smooth scroll ~500ms + buffer)
+    scrollDetectionDebounce: 50, // Debounce delay for detecting user-initiated scroll vs programmatic scroll
+    calendarEventsDebounce: 200, // Debounce delay for calendar events fetch (faster for today view)
   },
   
   // Timeouts (in milliseconds)
