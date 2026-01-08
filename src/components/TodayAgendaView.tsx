@@ -646,7 +646,8 @@ export function TodayAgendaView({
             backgroundColor: 'transparent',
             background: 'transparent',
           } : {
-            minHeight: `${TODAY_AGENDA_MIN_HEIGHT}px`, // Ensure drop zone is always accessible - use constant instead of hardcoded
+            // Remove minHeight on desktop - it conflicts with ScrollArea height constraints
+            // Drop zone accessibility is handled by ScrollArea viewport
           }),
         } as React.CSSProperties}
         data-tour="today-panel"
@@ -945,8 +946,8 @@ export function TodayAgendaView({
           </div>
         ) : (
           // Desktop view with header - use ScrollArea for vertical scrolling
-          // FIXED: Ensure ScrollArea gets proper height by using flex-1 and min-h-0
-          <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")} style={{ height: '100%' } as React.CSSProperties}>
+          // CRITICAL: Wrapper must have explicit height constraint for ScrollArea to work
+          <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
           <ScrollArea className="h-full w-full">
             <div 
               ref={timelineContainerRef}
@@ -961,9 +962,8 @@ export function TodayAgendaView({
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
                   ? KANBAN_MOBILE.bottomPaddingCalc
                   : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`, // Desktop: Add padding to ensure content scrolls past bottom (nav bar + safe area + buffer)
-                // CRITICAL: Content must be taller than viewport for scrolling to work
-                // Use minHeight to ensure content extends beyond viewport when needed
-                minHeight: 'calc(100% + 1px)', // Add 1px to ensure content is always scrollable
+                // Content will naturally extend based on tasks/events
+                // Radix UI ScrollArea handles overflow automatically when content exceeds viewport
               }}
             >
               {combinedItems.length === 0 ? (
