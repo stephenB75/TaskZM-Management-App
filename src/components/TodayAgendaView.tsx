@@ -22,7 +22,7 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
@@ -654,7 +654,9 @@ export function TodayAgendaView({
           <div 
             className="relative flex-shrink-0"
             style={{ 
-              height: isMobile ? 'auto' : `${HEADER_HEIGHT}px`, // Fixed height on desktop to prevent shifting
+              // Use fixed height on both mobile and desktop to prevent shifting
+              // On mobile, header is fixed at top, so height should be consistent
+              height: `${HEADER_HEIGHT}px`,
             }}
           >
           <AppHeader
@@ -692,7 +694,14 @@ export function TodayAgendaView({
           />
             {/* Current Time Indicator - Desktop only (bottom right corner of header) */}
             <div 
-              className={`hidden md:block absolute bottom-2 right-6 z-[${Z_INDEX.TIME_INDICATOR}] pointer-events-none`}
+              className={cn(
+                "hidden md:block absolute pointer-events-none",
+                `z-[${Z_INDEX.TIME_INDICATOR}]`
+              )}
+              style={{
+                bottom: HEADER_GAP_SMALL, // 0.5rem (8px) - matches bottom-2
+                right: HEADER_GAP_LARGE, // 0.75rem (12px) - close to right-6 (1.5rem), using available constant
+              }}
             >
               <span className="text-xs font-medium text-primary bg-background/90 dark:bg-card/90 px-2 py-1 rounded shadow-sm border border-primary/20 backdrop-blur-sm">
                 {currentTime.toLocaleTimeString("en-US", {
@@ -770,6 +779,7 @@ export function TodayAgendaView({
                   className="flex flex-col w-full relative z-10"
                   style={{ 
                     overflow: 'visible',
+                    minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
                   }}
                 >
                   {combinedItems.map((item, index) => {
@@ -794,7 +804,7 @@ export function TodayAgendaView({
                       >
                         <DraggableTaskCard
                           task={item.task}
-                          onClick={() => handleTaskClick(item.task)}
+                          onClick={() => item.task && handleTaskClick(item.task)}
                           droppableId="today-agenda"
                           isNextUp={item.task.id === nextUpTaskId}
                         />
@@ -944,8 +954,8 @@ export function TodayAgendaView({
         ) : (
           // Desktop view with header - use ScrollArea for vertical scrolling
           // CRITICAL: Wrapper must have explicit height constraint for ScrollArea to work
-          <div className={cn("flex-1 w-full relative min-h-0 overflow-hidden flex flex-col")}>
-          <ScrollArea className="flex-1 w-full min-h-0">
+          <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
+          <ScrollArea className="h-full w-full">
             <div 
               ref={timelineContainerRef}
               className={cn(
@@ -1006,6 +1016,7 @@ export function TodayAgendaView({
                   className="flex flex-col w-full relative z-10"
                   style={{ 
                     overflow: 'visible',
+                    minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
                   }}
                 >
                     {combinedItems.map((item, index) => {
@@ -1030,7 +1041,7 @@ export function TodayAgendaView({
                       >
                         <DraggableTaskCard
                           task={item.task}
-                          onClick={() => handleTaskClick(item.task)}
+                          onClick={() => item.task && handleTaskClick(item.task)}
                           droppableId="today-agenda"
                           isNextUp={item.task.id === nextUpTaskId}
                         />
@@ -1263,7 +1274,7 @@ export function TodayAgendaView({
                     >
                       <DraggableTaskCard
                         task={item.task}
-                        onClick={() => handleTaskClick(item.task)}
+                        onClick={() => item.task && handleTaskClick(item.task)}
                         droppableId="today-agenda"
                         isNextUp={item.task.id === nextUpTaskId}
                       />
