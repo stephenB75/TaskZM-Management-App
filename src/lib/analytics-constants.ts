@@ -25,9 +25,11 @@ export const ANALYTICS_PDF_CONFIG = {
   },
   colors: {
     primary: "#9B87E8",
-    text: "#1F2937",
-    textSecondary: "#6B7280",
-    border: "#E5E7EB",
+    text: "#111827", // Darker for better contrast
+    textSecondary: "#4B5563", // Darker for better readability
+    border: "#9CA3AF", // Medium gray - more visible than light gray
+    boxBackground: "#F9FAFB", // Light background for metric boxes
+    boxBorder: "#9B87E8", // Primary color for box borders - more visible
   },
   spacing: {
     afterTitle: 10,
@@ -44,15 +46,16 @@ export const ANALYTICS_PDF_CONFIG = {
   },
   chart: {
     width: 170, // Chart width in mm (fits A4 with margins)
-    height: 80, // Chart height in mm
-    spacing: 10, // Spacing between charts in mm
-    quality: 1.5, // Image quality multiplier for html2canvas
+    height: 100, // Increased height for better visibility
+    spacing: 12, // Spacing between charts in mm
+    quality: 3, // Increased quality multiplier for html2canvas (prevents warping)
     backgroundColor: {
       dark: '#1a1a1a', // Dark theme background color for chart capture
       light: '#ffffff', // Light theme background color for chart capture
     },
     imageFormat: 'image/png', // Image format for chart capture
     pdfImageFormat: 'PNG', // Image format for PDF (jsPDF format)
+    waitForRender: 500, // Wait time in ms for charts to render before capture
   },
   labels: {
     title: "TaskZM Analytics Report",
