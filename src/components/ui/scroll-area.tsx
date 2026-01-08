@@ -21,8 +21,6 @@ function ScrollArea({
         className="focus-visible:ring-ring/50 h-full w-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          overflowY: 'auto',
-          overflowX: 'hidden',
         } as React.CSSProperties}
       >
         {children}

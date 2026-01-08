@@ -781,7 +781,6 @@ export function TodayAgendaView({
                   className="flex flex-col w-full relative z-10"
                   style={{ 
                     overflow: 'visible',
-                    minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
                   }}
                 >
                   {combinedItems.map((item, index) => {
@@ -957,7 +956,7 @@ export function TodayAgendaView({
           // Desktop view with header - use ScrollArea for vertical scrolling
           // CRITICAL: Wrapper must have explicit height constraint for ScrollArea to work
           <div className={cn("flex-1 w-full relative min-h-0 flex flex-col overflow-hidden")}>
-          <ScrollArea className="h-full w-full">
+          <ScrollArea className="flex-1 w-full min-h-0">
             <div 
               ref={timelineContainerRef}
               className={cn(
@@ -1018,7 +1017,6 @@ export function TodayAgendaView({
                   className="flex flex-col w-full relative z-10"
                   style={{ 
                     overflow: 'visible',
-                    minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
                   }}
                 >
                     {combinedItems.map((item, index) => {
@@ -1252,7 +1250,6 @@ export function TodayAgendaView({
                 className="flex flex-col w-full relative z-10"
                 style={{ 
                   overflow: 'visible',
-                  minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
                 }}
               >
                 {combinedItems.map((item, index) => {
