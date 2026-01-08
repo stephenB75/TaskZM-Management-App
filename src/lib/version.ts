@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.11';
-export const VERSION_NAME = 'AI Description & Task Rollover Improvements';
-export const VERSION_DATE = 'January 6, 2026';
-export const BUILD_NUMBER = '20260106-1';
+export const APP_VERSION = '1.0.12';
+export const VERSION_NAME = 'AI Context Enhancement & Rollover Fixes';
+export const VERSION_DATE = 'January 7, 2026';
+export const BUILD_NUMBER = '20260107-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,27 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.12',
+    date: 'January 7, 2026',
+    name: 'AI Context Enhancement & Rollover Fixes',
+    changes: [
+      'Enhanced AI analyzer with conceptual relationship mapping - added synonym and related concept detection for better context understanding',
+      'Improved word similarity calculation using Levenshtein distance algorithm for more accurate fuzzy matching',
+      'Added CONCEPTUAL_RELATIONSHIPS dictionary mapping synonyms (car↔vehicle, research↔study, purchase↔buy, organize↔arrange, etc.)',
+      'Enhanced semantic relevance checking with conceptual relationships - terms now match even with different wording',
+      'Improved phrase, verb, and noun matching to use conceptual relationships for better domain terminology integration',
+      'Fixed task rollover function to exclude recurring tasks - recurring tasks have their own scheduling mechanism and should not be rolled over',
+      'Enhanced rollover function with better error handling for invalid dates and improved logging for debugging',
+      'Fixed rollover to only affect tasks from past dates (before today), not tasks scheduled for today',
+      'Fixed notification badge to exclude rolled-over tasks - prevents false notifications for tasks moved to inbox',
+      'Fixed notification badge to exclude recurring tasks - prevents incorrect badge counts for recurring tasks',
+      'Enhanced notification badge logic to prioritize scheduledDate over dueDate for more accurate counts',
+      'Updated Today Agenda badge to exclude recurring tasks for consistency with notification logic',
+      'Added comprehensive error handling and validation for date parsing in rollover and notification functions',
+      'Improved rollover safety checks with double-validation to prevent recurring tasks from being rolled over',
+    ],
+  },
   {
     version: '1.0.11',
     date: 'January 6, 2026',
