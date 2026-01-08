@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import appIcon from "../assets/app-icon.png";
+// App icon is now in public directory - use public path for OG image
 import {
   APP_THEME_COLOR_PRIMARY,
   APP_TITLE,
@@ -139,7 +139,7 @@ export function DocumentHead() {
           content: APP_DESCRIPTION,
         },
         { property: "og:type", content: "website" },
-        { property: "og:image", content: appIcon },
+        { property: "og:image", content: "/icon-512.png" },
       ];
 
       ogTags.forEach(({ property, content }) => {
