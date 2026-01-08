@@ -322,9 +322,10 @@ export function TodayAgendaView({
                   // Calculate scroll position
                   const scrollTop = relativeTop - (viewportHeight / 2) + (elementRect.height / 2);
                   
-                  // Defer scroll operation to avoid blocking
-                  // Mark as programmatic scroll before scrolling
+                  // Mark as programmatic scroll BEFORE scrolling to ensure scroll events are properly identified
                   isProgrammaticScrollRef.current = true;
+                  
+                  // Defer scroll operation to avoid blocking
                   requestAnimationFrame(() => {
                     scrollViewport.scrollTo({
                       top: scrollTop,
@@ -340,9 +341,9 @@ export function TodayAgendaView({
             }
           } else {
             // Mobile: Use scrollIntoView on the parent scroll container
-            // Defer to avoid blocking
-            // Mark as programmatic scroll before scrolling
+            // Mark as programmatic scroll BEFORE scrolling to ensure scroll events are properly identified
             isProgrammaticScrollRef.current = true;
+            // Defer to avoid blocking
             requestAnimationFrame(() => {
               nextUpElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
               // Reset flag after scroll completes (smooth scroll takes ~500ms)
@@ -387,6 +388,10 @@ export function TodayAgendaView({
     }
 
     const handleScroll = () => {
+      // Capture the programmatic scroll flag synchronously at the start
+      // This ensures we check the flag value at the time the scroll event fires
+      const isProgrammatic = isProgrammaticScrollRef.current;
+      
       // Defer scrollTop read to prevent forced reflow
       requestAnimationFrame(() => {
         const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
@@ -394,7 +399,7 @@ export function TodayAgendaView({
         // Only mark as user scroll if the scroll position actually changed
         // AND it's not from our programmatic scroll
         // This prevents false positives from programmatic scrolling
-        if (Math.abs(currentScrollTop - lastScrollTop) > 1 && !isProgrammaticScrollRef.current) {
+        if (Math.abs(currentScrollTop - lastScrollTop) > 1 && !isProgrammatic) {
           // Clear any pending auto-scroll
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
@@ -415,9 +420,9 @@ export function TodayAgendaView({
             hasAutoScrolledRef.current = false;
             scrollResetTimeoutRef.current = null;
           }, TIMING_CONSTANTS.delays.nextUpScrollReset);
-        } else if (isProgrammaticScrollRef.current) {
-          // Reset flag after programmatic scroll completes
-          isProgrammaticScrollRef.current = false;
+        } else if (isProgrammatic) {
+          // Update last scroll position for programmatic scrolls but don't mark as user scroll
+          // Don't reset the flag here - it will be reset by the timeout in the scroll function
           lastScrollTop = currentScrollTop;
         }
       });
