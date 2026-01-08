@@ -19,14 +19,116 @@ export interface GeneratedDescription {
 }
 
 /**
+ * Calculate Levenshtein distance between two strings
+ * Used for better fuzzy matching
+ */
+function levenshteinDistance(str1: string, str2: string): number {
+  const m = str1.length;
+  const n = str2.length;
+  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,     // deletion
+          dp[i][j - 1] + 1,     // insertion
+          dp[i - 1][j - 1] + 1  // substitution
+        );
+      }
+    }
+  }
+  
+  return dp[m][n];
+}
+
+/**
+ * Enhanced word similarity with conceptual relationships
+ * Maps common synonyms and related concepts for better context matching
+ */
+const CONCEPTUAL_RELATIONSHIPS: Record<string, string[]> = {
+  // Vehicle concepts
+  'car': ['vehicle', 'automobile', 'auto', 'sedan', 'coupe', 'suv', 'truck', 'van'],
+  'vehicle': ['car', 'automobile', 'auto', 'sedan', 'coupe', 'suv', 'truck', 'van', 'motorcycle'],
+  'automobile': ['car', 'vehicle', 'auto', 'sedan', 'coupe', 'suv', 'truck'],
+  'suv': ['vehicle', 'car', 'automobile', 'truck'],
+  'truck': ['vehicle', 'car', 'automobile', 'suv'],
+  // Research concepts
+  'research': ['study', 'investigate', 'explore', 'examine', 'analyze', 'review', 'evaluate'],
+  'compare': ['evaluate', 'analyze', 'review', 'examine', 'assess', 'contrast'],
+  'evaluate': ['compare', 'analyze', 'review', 'assess', 'examine', 'judge'],
+  'analyze': ['evaluate', 'examine', 'review', 'study', 'investigate'],
+  // Purchase concepts
+  'purchase': ['buy', 'acquire', 'obtain', 'get', 'shop', 'select', 'choose'],
+  'buy': ['purchase', 'acquire', 'obtain', 'get', 'shop', 'select', 'choose'],
+  'shop': ['purchase', 'buy', 'browse', 'select', 'choose'],
+  // Organization concepts
+  'organize': ['arrange', 'sort', 'order', 'systematize', 'structure', 'tidy', 'clean'],
+  'clean': ['organize', 'tidy', 'clear', 'sanitize', 'disinfect', 'maintain'],
+  'tidy': ['organize', 'clean', 'arrange', 'order', 'neat'],
+  // Work concepts
+  'work': ['office', 'professional', 'business', 'job', 'task', 'project'],
+  'office': ['work', 'workspace', 'professional', 'business', 'workplace'],
+  'workspace': ['office', 'work', 'desk', 'area', 'environment'],
+  // Technology concepts
+  'code': ['programming', 'development', 'software', 'application', 'program'],
+  'software': ['code', 'application', 'program', 'system', 'platform'],
+  'application': ['software', 'app', 'program', 'system', 'platform'],
+};
+
+/**
+ * Check if two words are conceptually related (synonyms or related concepts)
+ */
+function areConceptsRelated(word1: string, word2: string): boolean {
+  const w1 = word1.toLowerCase();
+  const w2 = word2.toLowerCase();
+  
+  // Direct match
+  if (w1 === w2) return true;
+  
+  // Check conceptual relationships
+  const w1Concepts = CONCEPTUAL_RELATIONSHIPS[w1] || [];
+  const w2Concepts = CONCEPTUAL_RELATIONSHIPS[w2] || [];
+  
+  // Check if one word is in the other's concept list
+  if (w1Concepts.includes(w2) || w2Concepts.includes(w1)) return true;
+  
+  // Check if they share common concepts
+  const sharedConcepts = w1Concepts.filter(c => w2Concepts.includes(c));
+  if (sharedConcepts.length > 0) return true;
+  
+  // Check if one word contains a concept from the other's list
+  if (w1Concepts.some(c => w2.includes(c) || c.includes(w2))) return true;
+  if (w2Concepts.some(c => w1.includes(c) || c.includes(w1))) return true;
+  
+  return false;
+}
+
+/**
  * Helper function for improved fuzzy matching
- * Calculates similarity score between two words
+ * Calculates similarity score between two words using multiple algorithms
  */
 function calculateWordSimilarity(word1: string, word2: string): number {
   const w1 = word1.toLowerCase();
   const w2 = word2.toLowerCase();
   if (w1 === w2) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch;
   if (w1.includes(w2) || w2.includes(w1)) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.substringMatch;
+  
+  // Check conceptual relationships (synonyms, related concepts)
+  if (areConceptsRelated(w1, w2)) {
+    return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch * 0.9; // High similarity for related concepts
+  }
+  
+  // Levenshtein distance-based similarity
+  const maxLen = Math.max(w1.length, w2.length);
+  if (maxLen === 0) return 0;
+  const distance = levenshteinDistance(w1, w2);
+  const levenshteinSimilarity = 1 - (distance / maxLen);
   
   // Check for common prefixes/suffixes
   const minLen = Math.min(w1.length, w2.length);
@@ -36,21 +138,22 @@ function calculateWordSimilarity(word1: string, word2: string): number {
   }
   const prefixSimilarity = commonChars / Math.max(w1.length, w2.length);
   
-  // Check for stem similarity (remove common suffixes)
-  const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-  const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+  // Enhanced stem similarity (remove common suffixes and check)
+  const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly|tion|sion|ment|ness|ity|able|ible)$/, '');
+  const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly|tion|sion|ment|ness|ity|able|ible)$/, '');
   const stemMatch = stem1 === stem2 
     ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactStemMatch 
     : (stem1.includes(stem2) || stem2.includes(stem1) 
         ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.partialStemMatch 
         : 0);
   
-  return Math.max(prefixSimilarity, stemMatch);
+  // Return the maximum similarity from all methods
+  return Math.max(levenshteinSimilarity, prefixSimilarity, stemMatch);
 }
 
 /**
  * Helper function to check if words are semantically related
- * Uses fuzzy matching to determine word relationships
+ * Uses fuzzy matching, conceptual relationships, and similarity algorithms
  */
 function areWordsRelated(word1: string, word2: string): boolean {
   const w1 = word1.toLowerCase();
@@ -59,12 +162,20 @@ function areWordsRelated(word1: string, word2: string): boolean {
   // Exact match or substring
   if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) return true;
   
-  // Stem matching
-  const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-  const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+  // Check conceptual relationships (synonyms, related concepts)
+  if (areConceptsRelated(w1, w2)) return true;
+  
+  // Enhanced stem matching (more suffix patterns)
+  const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly|tion|sion|ment|ness|ity|able|ible)$/, '');
+  const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly|tion|sion|ment|ness|ity|able|ible)$/, '');
   if (stem1 === stem2 || stem1.includes(stem2) || stem2.includes(stem1)) return true;
   
-  // Similarity threshold
+  // Check if stems are conceptually related
+  if (stem1 !== w1 || stem2 !== w2) {
+    if (areConceptsRelated(stem1, stem2)) return true;
+  }
+  
+  // Similarity threshold (now with improved algorithm)
   return calculateWordSimilarity(w1, w2) >= DESCRIPTION_GENERATION_CONFIG.wordSimilarity.relationshipThreshold;
 }
 
@@ -222,7 +333,7 @@ function extractKeywordsFromTaskName(taskName: string): string[] {
   const taskWords = normalizedText.toLowerCase()
     .split(/\s+/)
     .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
-    .filter(w => !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
+    .filter(w => !(DESCRIPTION_GENERATION_CONFIG.stopWords as readonly string[]).includes(w));
   
   // Step 3: Extract numbers with units (10K, $15K, etc.)
   const numberPattern = /\b(\d+[KkMm]?|\$\d+[KkMm]?)\b/g;
@@ -345,7 +456,7 @@ function findPhrasesUsingKeywords(
   // Also extract phrases from combined text using frequency analysis
   const words = combinedText.split(/\s+/)
     .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
-    .filter(w => !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
+    .filter(w => !(DESCRIPTION_GENERATION_CONFIG.stopWords as readonly string[]).includes(w));
   
   const phraseFreq = new Map<string, number>();
   
@@ -426,7 +537,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/)
     .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
-    .filter(w => !DESCRIPTION_GENERATION_CONFIG.stopWords.includes(w));
+    .filter(w => !(DESCRIPTION_GENERATION_CONFIG.stopWords as readonly string[]).includes(w));
   
   // Extract phrases containing keywords from task name
   taskKeywords.forEach(keyword => {
@@ -497,7 +608,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
     .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
   
   // STEP 3: Extract verbs and nouns directly from task name using Browser AI
-  const extractedFromTask = extractTermsFromText(taskName, DESCRIPTION_GENERATION_CONFIG.stopWords);
+  const extractedFromTask = extractTermsFromText(taskName, [...DESCRIPTION_GENERATION_CONFIG.stopWords]);
   
   // Filter verbs and nouns that relate to keywords
   const foundVerbs = extractedFromTask.verbs.filter(verb => {
@@ -554,19 +665,25 @@ export function extractTermsFromTaskNameWithBrowserAI(
       }
       
       // Word-level fuzzy matching - check if any keyword word relates to any phrase word
+      // ENHANCED: Now includes conceptual relationships
       const hasWordMatch = kwWords.some(kwWord => 
         phraseWords.some(pw => {
           // Direct word match
           if (pw.includes(kwWord) || kwWord.includes(pw)) return true;
+          // Conceptual relationship (synonyms, related concepts)
+          if (areConceptsRelated(kwWord, pw)) return true;
           // Fuzzy word relationship
           return areWordsRelated(kwWord, pw);
         })
       );
       
       // Also check reverse: phrase words that relate to keyword words
+      // ENHANCED: Now includes conceptual relationships
       const hasReverseMatch = phraseWords.some(pw => 
         kwWords.some(kwWord => {
           if (pw.includes(kwWord) || kwWord.includes(pw)) return true;
+          // Conceptual relationship
+          if (areConceptsRelated(pw, kwWord)) return true;
           return areWordsRelated(pw, kwWord);
         })
       );
@@ -576,12 +693,17 @@ export function extractTermsFromTaskNameWithBrowserAI(
     
     // ENHANCED: Also check if phrase contains task name words directly (not just extracted keywords)
     // This ensures we match phrases even if keyword extraction missed important words
+    // IMPROVED: Now includes conceptual relationships
     const containsTaskWords = taskWords.some(tw => {
       // Direct match
       if (phraseLower.includes(tw) || tw.includes(phraseLower)) return true;
+      // Conceptual relationship
+      if (areConceptsRelated(tw, phraseLower)) return true;
       // Check if any phrase word relates to task word
       return phraseWords.some(pw => {
         if (pw.includes(tw) || tw.includes(pw)) return true;
+        // Conceptual relationship
+        if (areConceptsRelated(pw, tw)) return true;
         return areWordsRelated(pw, tw);
       });
     });
@@ -601,17 +723,23 @@ export function extractTermsFromTaskNameWithBrowserAI(
     const exactMatch = phraseRegex.test(taskNameLower);
     
     // Check if any phrase words appear in task name (fuzzy)
+    // ENHANCED: Now includes conceptual relationships
     const hasOverlappingWords = phraseWords.some(pw => {
       // Direct substring match
       if (taskNameLower.includes(pw)) return true;
+      // Conceptual relationship
+      if (areConceptsRelated(pw, taskNameLower)) return true;
       // Fuzzy match: check if any task word is similar to phrase word
       return taskWords.some(tw => {
         if (tw.includes(pw) || pw.includes(tw)) return true;
+        // Conceptual relationship
+        if (areConceptsRelated(pw, tw)) return true;
         return areWordsRelated(pw, tw);
       });
     });
     
     // ENHANCED: Check if task keywords OR task words relate to phrase words (more lenient)
+    // IMPROVED: Now includes conceptual relationships
     const hasRelatedKeywords = taskKeywords.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
@@ -619,6 +747,8 @@ export function extractTermsFromTaskNameWithBrowserAI(
         phraseWords.some(pw => {
           // Direct match
           if (pw.includes(kwWord) || kwWord.includes(pw)) return true;
+          // Conceptual relationship
+          if (areConceptsRelated(kwWord, pw)) return true;
           // Fuzzy relationship
           return areWordsRelated(kwWord, pw);
         })
@@ -626,13 +756,15 @@ export function extractTermsFromTaskNameWithBrowserAI(
     }) || taskWords.some(tw => 
       phraseWords.some(pw => {
         if (pw.includes(tw) || tw.includes(pw)) return true;
+        // Conceptual relationship
+        if (areConceptsRelated(pw, tw)) return true;
         return areWordsRelated(pw, tw);
       })
     );
     
     // ENHANCED: Also check if phrase contains contextual action words that indicate elaboration
     // These phrases explain tasks even if they don't directly match keywords
-    const contextualActionWords = DESCRIPTION_GENERATION_CONFIG.contextualActionWords;
+    const contextualActionWords = DESCRIPTION_GENERATION_CONFIG.contextualActionWords as readonly string[];
     const hasContextualWords = phraseWords.some(pw => contextualActionWords.includes(pw));
     
     // ENHANCED: Accept phrase if:
@@ -663,6 +795,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
     ];
     
     // IMPROVED: Check if verb relates to keywords using fuzzy matching
+    // ENHANCED: Now includes conceptual relationships
     const relatesToKeyword = taskKeywords.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
@@ -671,9 +804,14 @@ export function extractTermsFromTaskNameWithBrowserAI(
       if (verbLower.includes(kwLower) || kwLower.includes(verbLower)) return true;
       if (verbBase.includes(kwLower) || kwLower.includes(verbBase)) return true;
       
+      // Conceptual relationship
+      if (areConceptsRelated(verbLower, kwLower) || areConceptsRelated(verbBase, kwLower)) return true;
+      
       // Fuzzy word-level matching
       return kwWords.some(kwWord => {
         const kwStem = kwWord.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+        // Conceptual relationship
+        if (areConceptsRelated(kwWord, verbLower) || areConceptsRelated(kwStem, verbBase)) return true;
         return areWordsRelated(kwWord, verbLower) || 
                areWordsRelated(kwStem, verbBase) ||
                verbBase.includes(kwStem) || kwStem.includes(verbBase);
@@ -681,8 +819,11 @@ export function extractTermsFromTaskNameWithBrowserAI(
     });
     
     // ENHANCED: Also check if verb relates to task name words directly (not just extracted keywords)
+    // IMPROVED: Now includes conceptual relationships
     const relatesToTaskWords = taskWords.some(tw => {
       const twStem = tw.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+      // Conceptual relationship
+      if (areConceptsRelated(tw, verbLower) || areConceptsRelated(twStem, verbBase)) return true;
       return areWordsRelated(tw, verbLower) || 
              areWordsRelated(twStem, verbBase) ||
              verbBase.includes(twStem) || twStem.includes(verbBase) ||
@@ -722,6 +863,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
     ];
     
     // IMPROVED: Check if noun relates to keywords using fuzzy matching
+    // ENHANCED: Now includes conceptual relationships
     const relatesToKeyword = taskKeywords.some(kw => {
       const kwLower = kw.toLowerCase();
       const kwWords = kwLower.split(/\s+/);
@@ -730,9 +872,14 @@ export function extractTermsFromTaskNameWithBrowserAI(
       if (nounLower.includes(kwLower) || kwLower.includes(nounLower)) return true;
       if (nounBase.includes(kwLower) || kwLower.includes(nounBase)) return true;
       
+      // Conceptual relationship
+      if (areConceptsRelated(nounLower, kwLower) || areConceptsRelated(nounBase, kwLower)) return true;
+      
       // Fuzzy word-level matching
       return kwWords.some(kwWord => {
         const kwStem = kwWord.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
+        // Conceptual relationship
+        if (areConceptsRelated(kwWord, nounLower) || areConceptsRelated(kwStem, nounBase)) return true;
         return areWordsRelated(kwWord, nounLower) || 
                areWordsRelated(kwStem, nounBase) ||
                nounBase.includes(kwStem) || kwStem.includes(nounBase);
@@ -740,8 +887,11 @@ export function extractTermsFromTaskNameWithBrowserAI(
     });
     
     // ENHANCED: Also check if noun relates to task name words directly (not just extracted keywords)
+    // IMPROVED: Now includes conceptual relationships
     const relatesToTaskWords = taskWords.some(tw => {
       const twStem = tw.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
+      // Conceptual relationship
+      if (areConceptsRelated(tw, nounLower) || areConceptsRelated(twStem, nounBase)) return true;
       return areWordsRelated(tw, nounLower) || 
              areWordsRelated(twStem, nounBase) ||
              nounBase.includes(twStem) || twStem.includes(nounBase) ||
@@ -822,7 +972,7 @@ function extractKeywordsAndVerbsFromSearch(
   searchResults.forEach(result => {
     const extractedFromResult = extractTermsFromText(
       result,
-      DESCRIPTION_GENERATION_CONFIG.stopWords
+      [...DESCRIPTION_GENERATION_CONFIG.stopWords]
     );
     
     // Only add verbs/nouns that relate to our keywords
@@ -1215,50 +1365,79 @@ function buildElaborateContextualDescription(
   });
   
   // Helper function to check if a keyword/noun is semantically relevant to the task
+  // ENHANCED: Better context understanding with conceptual relationships
   const isSemanticallyRelevant = (term: string): boolean => {
     const termLower = term.toLowerCase();
     const termWords = termLower.split(/\s+/);
     
-    // Check if term relates to primary topics
+    // Check if term relates to primary topics (with conceptual relationships)
     const relatesToPrimaryTopic = primaryTopics.some(topic => {
       const topicLower = topic.toLowerCase();
       // Direct match
       if (termLower.includes(topicLower) || topicLower.includes(termLower)) return true;
-      // Word-level match
-      return termWords.some(tw => topicLower.includes(tw) || tw.includes(topicLower)) ||
-             topicLower.split(/\s+/).some(tw => termWords.some(termWord => areWordsRelated(tw, termWord)));
+      // Conceptual relationship (synonyms, related concepts)
+      if (areConceptsRelated(termLower, topicLower)) return true;
+      // Word-level match with conceptual relationships
+      return termWords.some(tw => {
+        if (topicLower.includes(tw) || tw.includes(topicLower)) return true;
+        return areConceptsRelated(tw, topicLower) || areWordsRelated(tw, topicLower);
+      }) || topicLower.split(/\s+/).some(tw => 
+        termWords.some(termWord => areConceptsRelated(termWord, tw) || areWordsRelated(termWord, tw))
+      );
     });
     
-    // Check if term relates to task keywords
+    // Check if term relates to task keywords (with conceptual relationships)
     const relatesToTaskKeywords = taskKeywordsLower.some(tkw => {
       const tkwLower = tkw.toLowerCase();
       // Direct match
       if (termLower.includes(tkwLower) || tkwLower.includes(termLower)) return true;
-      // Word-level match
-      return termWords.some(tw => tkwLower.includes(tw) || tw.includes(tkwLower)) ||
-             areWordsRelated(termLower, tkwLower);
+      // Conceptual relationship
+      if (areConceptsRelated(termLower, tkwLower)) return true;
+      // Word-level match with conceptual relationships
+      return termWords.some(tw => {
+        if (tkwLower.includes(tw) || tw.includes(tkwLower)) return true;
+        return areConceptsRelated(tw, tkwLower) || areWordsRelated(tw, tkwLower);
+      }) || areConceptsRelated(termLower, tkwLower) || areWordsRelated(termLower, tkwLower);
     });
     
-    // Check if term relates to task name words
+    // Check if term relates to task name words (with conceptual relationships)
     const relatesToTaskWords = taskWords.some(tw => {
       if (termLower.includes(tw) || tw.includes(termLower)) return true;
-      return termWords.some(termWord => areWordsRelated(termWord, tw));
+      // Conceptual relationship
+      if (areConceptsRelated(termLower, tw)) return true;
+      return termWords.some(termWord => areConceptsRelated(termWord, tw) || areWordsRelated(termWord, tw));
     });
     
     // Check if term is in domain terminology (domain-specific relevance)
+    // ENHANCED: Also check conceptual relationships with domain terms
     const isInDomainTerminology = domainTerms.keywords.some(dk => {
       const dkLower = dk.toLowerCase();
-      return termLower.includes(dkLower) || dkLower.includes(termLower) ||
-             termWords.some(tw => dkLower.includes(tw) || tw.includes(dkLower));
+      if (termLower.includes(dkLower) || dkLower.includes(termLower)) return true;
+      if (areConceptsRelated(termLower, dkLower)) return true;
+      return termWords.some(tw => {
+        if (dkLower.includes(tw) || tw.includes(dkLower)) return true;
+        return areConceptsRelated(tw, dkLower) || areWordsRelated(tw, dkLower);
+      });
     }) || domainTerms.nouns.some(dn => {
       const dnLower = dn.toLowerCase();
-      return termLower.includes(dnLower) || dnLower.includes(termLower) ||
-             termWords.some(tw => dnLower.includes(tw) || tw.includes(dnLower));
+      if (termLower.includes(dnLower) || dnLower.includes(termLower)) return true;
+      if (areConceptsRelated(termLower, dnLower)) return true;
+      return termWords.some(tw => {
+        if (dnLower.includes(tw) || tw.includes(dnLower)) return true;
+        return areConceptsRelated(tw, dnLower) || areWordsRelated(tw, dnLower);
+      });
     });
     
-    // Term is relevant if it relates to primary topics OR task keywords OR task words OR is in domain terminology
-    // BUT must relate to at least one primary topic or task keyword (not just domain terminology alone)
-    return (relatesToPrimaryTopic || relatesToTaskKeywords || relatesToTaskWords) && isInDomainTerminology;
+    // ENHANCED: More lenient relevance check
+    // Term is relevant if it relates to primary topics OR task keywords OR task words
+    // AND (is in domain terminology OR relates conceptually to domain terms)
+    const hasTaskRelevance = relatesToPrimaryTopic || relatesToTaskKeywords || relatesToTaskWords;
+    const hasDomainRelevance = isInDomainTerminology || 
+      domainTerms.keywords.some(dk => areConceptsRelated(termLower, dk.toLowerCase())) ||
+      domainTerms.nouns.some(dn => areConceptsRelated(termLower, dn.toLowerCase()));
+    
+    // Accept if it has task relevance AND (domain relevance OR strong conceptual match)
+    return hasTaskRelevance && (hasDomainRelevance || relatesToPrimaryTopic || relatesToTaskKeywords);
   };
   
   // STEP 1: Find domain phrases that elaborate on the task (not just repeat it)
@@ -1361,7 +1540,7 @@ function buildElaborateContextualDescription(
       // Also check if phrase adds new words not in task name
       const newWords = phraseWords.filter(word => !taskNameLower.includes(word));
       // More lenient: accept if phrase has keywords OR adds new words OR is a contextual phrase
-      const contextualActionWords = DESCRIPTION_GENERATION_CONFIG.contextualActionWords;
+      const contextualActionWords = DESCRIPTION_GENERATION_CONFIG.contextualActionWords as readonly string[];
       const addsContext = newWords.length > 0 || phraseWords.length > DESCRIPTION_GENERATION_CONFIG.lengthThresholds.minPhraseWords || keywordCount >= 1 ||
                         // Accept contextual phrases that explain tasks
                         phraseWords.some(pw => contextualActionWords.includes(pw));
@@ -2080,7 +2259,7 @@ export async function generateDescription(
   //    - Build complete contextual sentences
   
   let description = '';
-  let confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
+  let confidence: number = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   let usedSearchResults = false;
   let searchContext = '';
   let searchExtracted = {
@@ -2256,23 +2435,23 @@ export async function generateDescription(
                              finalVerbs.length > 0 || finalNouns.length > 0;
   
   // Base confidence for Browser AI extraction
-  const baseConf = DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence;
+  const baseConf: number = DESCRIPTION_GENERATION_CONFIG.searchBaseConfidence;
   
   // Boost for Browser AI-extracted terms
-  const browserAIBoost = hasBrowserAITerms ? 
+  const browserAIBoost: number = hasBrowserAITerms ? 
     (finalKeywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) + 
     (finalPhrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
     (finalVerbs.length * DESCRIPTION_GENERATION_CONFIG.verbWeight) + 
     (finalNouns.length * DESCRIPTION_GENERATION_CONFIG.nounWeight) : 0;
   
   // Context boost if we have meaningful task name context
-  const contextBoost = searchContext.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? DESCRIPTION_GENERATION_CONFIG.contextBoost.high : 
+  const contextBoost: number = searchContext.length >= DESCRIPTION_GENERATION_CONFIG.minContextLength ? DESCRIPTION_GENERATION_CONFIG.contextBoost.high : 
                       searchContext.length >= DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.contextBoostThreshold ? DESCRIPTION_GENERATION_CONFIG.contextBoost.medium : 0;
   
       confidence = Math.min(
     baseConf + browserAIBoost + contextBoost,
         DESCRIPTION_GENERATION_CONFIG.maxConfidence
-      );
+      ) as number;
       
   logger.debug(`✅ Browser AI: description length=${description.length}, confidence=${confidence.toFixed(2)}, hasBrowserAITerms=${hasBrowserAITerms}, contextLength=${searchContext.length}`, {
     finalDescription: description.substring(0, 100),
