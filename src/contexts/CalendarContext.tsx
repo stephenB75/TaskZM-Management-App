@@ -47,21 +47,9 @@ const CalendarContext = createContext<CalendarContextType | undefined>(undefined
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CalendarContext.tsx:49',message:'CalendarProvider entry - accessing dependencies',data:{step:'before-useAuth'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const { user, accessToken } = useAuth();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CalendarContext.tsx:52',message:'CalendarProvider - useAuth result',data:{hasUser:!!user,hasAccessToken:!!accessToken,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const { hasFeature, features } = useSubscription();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CalendarContext.tsx:55',message:'CalendarProvider - useSubscription result',data:{hasHasFeature:typeof hasFeature==='function',hasFeatures:!!features},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const { tasks, workspaceId } = useTasks();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CalendarContext.tsx:58',message:'CalendarProvider - useTasks result',data:{tasksCount:tasks?.length,hasWorkspaceId:!!workspaceId,workspaceId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const [calendarStatus, setCalendarStatus] = useState<CalendarStatus>({
     google: false,
     outlook: false,

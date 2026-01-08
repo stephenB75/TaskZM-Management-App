@@ -74,13 +74,7 @@ const getFeatures = (tier: SubscriptionTier, billingPeriod?: 'monthly' | 'yearly
 };
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SubscriptionContext.tsx:75',message:'SubscriptionProvider entry',data:{step:'before-useAuth'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   const { user, accessToken } = useAuth();
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/85c90fa8-930b-4fcf-a079-2d6d7391cfb2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SubscriptionContext.tsx:77',message:'SubscriptionProvider - useAuth result',data:{hasUser:!!user,hasAccessToken:!!accessToken,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   
   // Initial state: Default to free tier (safe default)
   // NOTE: Actual subscription data comes from backend database (source of truth)
