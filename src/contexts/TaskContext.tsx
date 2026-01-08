@@ -2884,32 +2884,57 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       // 1. They have a scheduledDate that is before today, OR
       // 2. They have a dueDate that is before today (even if no scheduledDate)
       // 3. They are not completed (status !== 'done')
-      // 4. They are not already in inbox (scheduledDate === null means already in inbox)
+      // 4. They are not already in inbox (scheduledDate === null/undefined means already in inbox)
+      // 5. They are NOT recurring tasks (recurring tasks have their own scheduling mechanism)
       const tasksToRollover = tasks.filter(task => {
         // Skip completed tasks
         if (task.status === 'done') return false;
         
-        // Skip tasks already in inbox (scheduledDate === null means already in inbox)
+        // CRITICAL: Skip recurring tasks - they have their own scheduling mechanism
+        // Recurring tasks should not be rolled over as they appear on multiple days
+        if (task.recurrence && task.recurrence.type !== 'none') return false;
+        
+        // Skip tasks already in inbox (scheduledDate === null/undefined means already in inbox)
         // Tasks already in inbox don't need to be rolled over again
-        if (task.scheduledDate === null) return false;
+        if (task.scheduledDate === null || task.scheduledDate === undefined) return false;
         
         // Check if task has a scheduledDate or dueDate that has passed
         let hasPassedDate = false;
         
         // Priority 1: Check scheduledDate if it exists
         if (task.scheduledDate) {
-          const taskDate = new Date(task.scheduledDate);
-          taskDate.setHours(0, 0, 0, 0);
-          const taskDateString = taskDate.toISOString().split('T')[0];
-          hasPassedDate = taskDateString < todayString;
+          try {
+            const taskDate = new Date(task.scheduledDate);
+            // Validate date is not invalid
+            if (isNaN(taskDate.getTime())) {
+              logger.warn('Invalid scheduledDate in task:', task.id, task.scheduledDate);
+              return false;
+            }
+            taskDate.setHours(0, 0, 0, 0);
+            const taskDateString = taskDate.toISOString().split('T')[0];
+            hasPassedDate = taskDateString < todayString;
+          } catch (error) {
+            logger.error('Error parsing scheduledDate:', task.id, task.scheduledDate, error);
+            return false;
+          }
         }
         
         // Priority 2: If scheduledDate hasn't passed or doesn't exist, check dueDate
         if (!hasPassedDate && task.dueDate) {
-          const dueDate = new Date(task.dueDate);
-          dueDate.setHours(0, 0, 0, 0);
-          const dueDateString = dueDate.toISOString().split('T')[0];
-          hasPassedDate = dueDateString < todayString;
+          try {
+            const dueDate = new Date(task.dueDate);
+            // Validate date is not invalid
+            if (isNaN(dueDate.getTime())) {
+              logger.warn('Invalid dueDate in task:', task.id, task.dueDate);
+              return false;
+            }
+            dueDate.setHours(0, 0, 0, 0);
+            const dueDateString = dueDate.toISOString().split('T')[0];
+            hasPassedDate = dueDateString < todayString;
+          } catch (error) {
+            logger.error('Error parsing dueDate:', task.id, task.dueDate, error);
+            return false;
+          }
         }
         
         // Task should roll over if it has a passed date
@@ -2957,13 +2982,25 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const failedTasks: string[] = [];
       
       // Move tasks to inbox by setting scheduledDate to null
-      for (const task of tasksToRollover) {
+      // CRITICAL: Only roll over non-recurring tasks
+      const validTasksToRollover = tasksToRollover.filter(task => {
+        // Double-check: exclude recurring tasks (should already be filtered, but safety check)
+        if (task.recurrence && task.recurrence.type !== 'none') {
+          logger.warn('Attempted to roll over recurring task, skipping:', task.id, task.title);
+          return false;
+        }
+        return true;
+      });
+      
+      for (const task of validTasksToRollover) {
         try {
           // Set scheduledDate to null to make it unscheduled (moves to inbox)
+          // This preserves the task's other properties (dueDate, priority, etc.)
           await updateTask(task.id, { scheduledDate: null });
           movedCount++;
+          logger.debug('Task rolled over to inbox:', task.id, task.title);
         } catch (error) {
-          logger.error('Failed to move task to inbox:', task.id, error);
+          logger.error('Failed to move task to inbox:', task.id, task.title, error);
           failedCount++;
           failedTasks.push(task.title);
         }
@@ -2998,12 +3035,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     };
 
     // Run rollover check after a short delay (to allow UI to load)
+    // Also re-run when tasks change (but only if we haven't checked today)
     const timer = setTimeout(() => {
       checkAndRolloverTasks();
     }, TIMING_CONSTANTS.delays.rolloverCheck);
     
     return () => clearTimeout(timer);
-  }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask]);
+  }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask, tasks.length]);
 
   return (
     <TaskContext.Provider
