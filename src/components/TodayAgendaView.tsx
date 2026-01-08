@@ -1201,7 +1201,7 @@ export function TodayAgendaView({
               : DESKTOP_PADDING_TOP, // Desktop padding for proper spacing from header in sidebar panel
             paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
               ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer
-              : undefined,
+              : NAV_BAR_SCROLL_BUFFER_REM, // Desktop sidebar: Add bottom padding to ensure content isn't cut off when scrolling
             // Ensure transparent background to show parent gradient
             backgroundColor: 'transparent',
             background: 'transparent',
