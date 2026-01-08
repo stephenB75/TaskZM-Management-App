@@ -73,6 +73,7 @@
     "dev": "vite",
     "build": "vite build",
     "screenshots": "playwright test --config=playwright.config.ts",
-    "deploy-functions": "./scripts/deploy-functions.sh"
+    "deploy-functions": "./scripts/deploy-functions.sh",
+    "generate-icons": "node scripts/generate-icons-with-padding.js"
   }
 }
