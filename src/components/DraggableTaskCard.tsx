@@ -65,6 +65,7 @@ interface DraggableTaskCardProps {
   droppableId: string;
   isDragging?: boolean;
   isNextUp?: boolean;
+  onComplete?: () => void;
 }
 
 export const DraggableTaskCard = React.forwardRef<
@@ -72,7 +73,7 @@ export const DraggableTaskCard = React.forwardRef<
   DraggableTaskCardProps
 >(
   (
-    { task, onClick, droppableId, isDragging = false, isNextUp = false },
+    { task, onClick, droppableId, isDragging = false, isNextUp = false, onComplete },
     forwardedRef,
   ) => {
     const { updateTask, tasks } = useTasks();
@@ -184,13 +185,18 @@ export const DraggableTaskCard = React.forwardRef<
         return;
       }
       
+      const wasDone = task.status === "done";
+      const willBeDone = !wasDone;
+      
       updateTask(task.id, {
-        status: task.status === "done" ? "todo" : "done",
-        completedAt:
-          task.status === "done"
-            ? null
-            : new Date().toISOString(),
+        status: willBeDone ? "done" : "todo",
+        completedAt: willBeDone ? new Date().toISOString() : null,
       });
+
+      // Trigger confetti when marking as complete
+      if (willBeDone && onComplete) {
+        onComplete();
+      }
     };
 
     const handlePomodoroTimeUpdate = async (

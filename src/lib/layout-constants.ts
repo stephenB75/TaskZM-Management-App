@@ -102,6 +102,7 @@ export const TIMELINE_PADDING = {
 
 // Today Agenda minimum height for drop zone accessibility
 export const TODAY_AGENDA_MIN_HEIGHT = 400; // Minimum height in pixels to ensure drop zone is always accessible
+export const TODAY_AGENDA_CONTENT_MIN_HEIGHT = 'calc(100% + 1px)'; // Minimum height to ensure content extends beyond viewport for scrolling
 
 // Mobile Text Sizes (increased by 1 point for better readability)
 export const MOBILE_TEXT_SIZES = {

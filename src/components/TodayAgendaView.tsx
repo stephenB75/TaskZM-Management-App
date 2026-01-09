@@ -22,7 +22,7 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, TODAY_AGENDA_CONTENT_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
@@ -256,6 +256,11 @@ export function TodayAgendaView({
       setDialogOpen(true);
     });
   };
+
+  // Handle task completion - trigger confetti animation
+  const handleTaskComplete = useCallback(() => {
+    setShowConfetti(true);
+  }, []);
 
   const handleAddTask = () => {
     setSelectedTask(null);
@@ -591,11 +596,12 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
+                {/* LAYER 1: Content container - extends naturally to enable scrolling */}
                 <div 
                   className="flex flex-col w-full relative z-10"
                   style={{ 
                     overflow: 'visible',
-                    minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
+                    minHeight: combinedItems.length > 0 ? TODAY_AGENDA_CONTENT_MIN_HEIGHT : 'auto',
                   }}
                 >
                   {combinedItems.map((item, index) => {
@@ -623,6 +629,7 @@ export function TodayAgendaView({
                           onClick={() => item.task && handleTaskClick(item.task)}
                           droppableId="today-agenda"
                           isNextUp={item.task.id === nextUpTaskId}
+                          onComplete={handleTaskComplete}
                         />
                       </div>
                     </div>
@@ -772,6 +779,7 @@ export function TodayAgendaView({
           // Wrapper: flex container with height constraints for ScrollArea
           <div className={cn("flex-1 w-full relative min-h-0 flex flex-col")}>
             {/* ScrollArea: handles vertical scrolling when content exceeds viewport */}
+            {/* CRITICAL: flex-1 and min-h-0 ensure ScrollArea gets proper height from flex parent */}
             <ScrollArea className="flex-1 w-full min-h-0">
               <div 
                 ref={timelineContainerRef}
@@ -824,11 +832,12 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
+                {/* LAYER 1: Content container - extends naturally to enable scrolling */}
                 <div 
                   className="flex flex-col w-full relative z-10"
                   style={{ 
                     overflow: 'visible',
-                    minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
+                    minHeight: combinedItems.length > 0 ? TODAY_AGENDA_CONTENT_MIN_HEIGHT : 'auto',
                   }}
                 >
                     {combinedItems.map((item, index) => {
@@ -856,6 +865,7 @@ export function TodayAgendaView({
                           onClick={() => item.task && handleTaskClick(item.task)}
                           droppableId="today-agenda"
                           isNextUp={item.task.id === nextUpTaskId}
+                          onComplete={handleTaskComplete}
                         />
                       </div>
                     </div>
@@ -1058,11 +1068,12 @@ export function TodayAgendaView({
             </div>
           ) : (
             <>
+              {/* LAYER 1: Content container - extends naturally to enable scrolling */}
               <div 
                 className="flex flex-col w-full relative z-10"
                 style={{ 
                   overflow: 'visible',
-                  minHeight: combinedItems.length > 0 ? 'calc(100% + 1px)' : 'auto',
+                  minHeight: combinedItems.length > 0 ? TODAY_AGENDA_CONTENT_MIN_HEIGHT : 'auto',
                 }}
               >
                 {combinedItems.map((item, index) => {
