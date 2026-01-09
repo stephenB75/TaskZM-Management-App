@@ -156,10 +156,27 @@ export function TodayAgendaView({
     debounceMs: TIMING_CONSTANTS.delays.calendarEventsDebounce, // Slightly faster for today view
   });
 
-  // Update state when events change
+  // Filter calendar events to only include those on today's date (using local timezone)
+  // This prevents timezone conversion issues where events appear on wrong dates
+  const todayString = useMemo(() => getDateString(today), [today]);
+
+  // Update state when events change, filtering by local date
   useEffect(() => {
-    setTodayCalendarEvents(todayCalendarEventsData);
-  }, [todayCalendarEventsData]);
+    const filteredEvents = todayCalendarEventsData.filter((event) => {
+      if (!event?.start) return false;
+      try {
+        const eventDate = new Date(event.start);
+        if (isNaN(eventDate.getTime())) return false;
+        // Compare using local date string to avoid timezone issues
+        const eventDateString = getDateString(eventDate);
+        return eventDateString === todayString;
+      } catch (error) {
+        logger.warn('Error filtering calendar event by date:', error, event);
+        return false;
+      }
+    });
+    setTodayCalendarEvents(filteredEvents);
+  }, [todayCalendarEventsData, todayString]);
 
   // Combine tasks and events, sort chronologically
   interface CombinedItem {
