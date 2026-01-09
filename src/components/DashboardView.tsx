@@ -54,7 +54,7 @@ import { useCalendar } from "../contexts/CalendarContext";
 import { logger } from "../lib/logger";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { useCalendarEventCounts } from "../hooks/useCalendarEvents";
-import { cn, sanitizeHTML, hasHTMLTags, getDateString } from "../lib/utils";
+import { cn, sanitizeHTML, hasHTMLTags, getDateString, getWeekStart } from "../lib/utils";
 import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
 import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
@@ -570,15 +570,26 @@ export function DashboardView({
   const [isRescheduling, setIsRescheduling] = useState(false);
 
   // Generate week columns for mobile day selector with week offset
+  // Use getWeekStart() to respect user's week start preference (Sunday or Monday)
   const getWeekColumns = (weekOffset = 0) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Start from Monday of the current week
+    // Start from the first day of the week based on weekStart setting
+    const weekStart = getWeekStart();
     const startOfWeek = new Date(today);
     const dayOfWeek = startOfWeek.getDay(); // 0 (Sun) - 6 (Sat)
-    const mondayOffset = (dayOfWeek + 6) % 7;
-    startOfWeek.setDate(startOfWeek.getDate() - mondayOffset + weekOffset * 7);
+    
+    let weekStartOffset: number;
+    if (weekStart === 'sunday') {
+      // Start from Sunday of the current week
+      weekStartOffset = dayOfWeek === 0 ? 0 : dayOfWeek; // If today is Sunday, offset is 0
+    } else {
+      // Start from Monday of the current week
+      weekStartOffset = (dayOfWeek + 6) % 7; // Convert to Monday=0
+    }
+    
+    startOfWeek.setDate(startOfWeek.getDate() - weekStartOffset + weekOffset * 7);
 
     const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 
@@ -592,11 +603,9 @@ export function DashboardView({
 
       // Normalize date to local midnight to ensure consistent date string format
       // This prevents timezone issues when comparing dates
+      // Use getDateString() for consistency with calendar event grouping
       const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const year = normalizedDate.getFullYear();
-      const month = String(normalizedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(normalizedDate.getDate()).padStart(2, '0');
-      const dateString = `${year}-${month}-${day}`;
+      const dateString = getDateString(normalizedDate);
 
       return {
         date,

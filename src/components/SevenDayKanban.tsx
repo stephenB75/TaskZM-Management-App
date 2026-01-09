@@ -211,11 +211,9 @@ export function SevenDayKanban({
 
       // Normalize date to local midnight to ensure consistent date string format
       // This prevents timezone issues when comparing dates
+      // Use getDateString() for consistency with calendar event grouping
       const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const year = normalizedDate.getFullYear();
-      const month = String(normalizedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(normalizedDate.getDate()).padStart(2, '0');
-      const dateString = `${year}-${month}-${day}`;
+      const dateString = getDateString(normalizedDate);
 
       return {
         date,
@@ -1137,21 +1135,30 @@ export function SevenDayKanban({
                     <div 
                       className={cn(
                         'p-1.5 sm:p-2 border-b backdrop-blur-sm',
-                        column.isToday && 'ring-2 ring-inset',
-                        isDark 
-                          ? 'bg-card/50 border-border' 
-                          : hasHeader(getDayColors(column.dayName)) && 'bg-transparent'
+                        // Remove ring and border for today - only show brighter gradient
+                        !column.isToday && isDark && 'bg-card/50 border-border',
+                        !column.isToday && !isDark && hasHeader(getDayColors(column.dayName)) && 'bg-transparent'
                       )}
                       style={(() => {
-                        const baseStyle: React.CSSProperties & { '--ring-color'?: string } = {};
-                        if (column.isToday) {
-                          baseStyle['--ring-color'] = `${KANBAN_DAY_COLORS.today.ring}${Math.round(KANBAN_DAY_COLORS.today.ringOpacity * 2.55).toString(16).padStart(2, '0')}`;
-                        }
+                        const baseStyle: React.CSSProperties = {};
                         if (!isDark) {
                           const dayColors = getDayColors(column.dayName);
                           if (hasHeader(dayColors)) {
-                            baseStyle.backgroundImage = `linear-gradient(to right, ${dayColors.header.from}${Math.round(dayColors.header.opacity * 2.55).toString(16).padStart(2, '0')}, ${dayColors.header.via}${Math.round(70 * 2.55).toString(16).padStart(2, '0')}, ${dayColors.header.to}${Math.round(dayColors.header.opacity * 2.55).toString(16).padStart(2, '0')})`;
-                            baseStyle.borderColor = `${dayColors.header.border}${Math.round(dayColors.header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                            // For today, increase opacity to make colors brighter/deeper while keeping gradient
+                            const headerOpacity = column.isToday 
+                              ? Math.min(100, dayColors.header.opacity + 20) // Increase opacity by 20 (max 100)
+                              : dayColors.header.opacity;
+                            const viaOpacity = column.isToday ? 90 : 70; // Brighter middle color for today
+                            
+                            baseStyle.backgroundImage = `linear-gradient(to right, ${dayColors.header.from}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${dayColors.header.via}${Math.round(viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${dayColors.header.to}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
+                            
+                            // Only set border color for non-today days
+                            if (!column.isToday) {
+                              baseStyle.borderColor = `${dayColors.header.border}${Math.round(dayColors.header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                            } else {
+                              // Remove border for today
+                              baseStyle.borderColor = 'transparent';
+                            }
                           }
                         }
                         return baseStyle;
