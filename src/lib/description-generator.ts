@@ -7,7 +7,7 @@
  * Local Terminology acts as a cache/dictionary to enhance extracted terms.
  */
 
-import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
+import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, saveNewTerminologyToLibrary, DOMAIN_TERMINOLOGIES } from './domain-terminology';
 import { DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
@@ -514,8 +514,11 @@ function findPhrasesUsingKeywords(
 }
 
 /**
- * Extract keywords, phrases, verbs, nouns, and pronouns directly from task name using Browser AI
- * Browser AI-only approach: Analyzes user input directly without external search
+ * Extract keywords, phrases, verbs, nouns, and pronouns from task name
+ * FLOW: Local Terminology extracts terms first, then provides them to Browser AI
+ * 1. Local Terminology extracts keywords/phrases from task name using domain dictionary
+ * 2. Local Terminology provides extracted terms to Browser AI
+ * 3. Browser AI uses those terms to build contextual sentences
  */
 export function extractTermsFromTaskNameWithBrowserAI(
   taskName: string,
@@ -528,12 +531,43 @@ export function extractTermsFromTaskNameWithBrowserAI(
   pronouns: string[];
   context: string;
 } {
-  // STEP 1: Extract keywords from task name (user input)
+  // STEP 1: LOCAL TERMINOLOGY extracts keywords and phrases from task name
+  // Local Terminology uses domain dictionary to extract relevant terms
+  logger.debug(`🔍 Local Terminology: Extracting keywords and phrases from task name: "${taskName}"`);
+  
+  const localTerminologyExtracted = extractTermsFromTaskName(taskName, domainTerms);
+  
+  logger.debug(`✅ Local Terminology extraction COMPLETE: ${localTerminologyExtracted.keywords.length} keywords, ${localTerminologyExtracted.phrases.length} phrases, ${localTerminologyExtracted.verbs.length} verbs, ${localTerminologyExtracted.nouns.length} nouns`, {
+    keywords: localTerminologyExtracted.keywords.slice(0, 10),
+    phrases: localTerminologyExtracted.phrases.slice(0, 10),
+    verbs: localTerminologyExtracted.verbs.slice(0, 10),
+    nouns: localTerminologyExtracted.nouns.slice(0, 10),
+  });
+  
+  // STEP 2: Browser AI receives extracted terms from Local Terminology
+  // Browser AI will use these terms to build contextual sentences
+  // Also extract additional keywords from task name for Browser AI context
   const taskKeywords = extractKeywordsFromTaskName(taskName);
   
-  // STEP 2: Extract phrases directly from task name using keywords
-  // Find phrases (2-5 words) that contain keywords from the task name itself
-  const foundPhrases: string[] = [];
+  // STEP 3: Browser AI receives and uses Local Terminology extracted terms
+  // Combine Local Terminology extracted terms with additional task name analysis
+  // Browser AI will use these terms to build contextual sentences
+  
+  // Start with Local Terminology extracted terms (primary source)
+  let foundKeywords = [...localTerminologyExtracted.keywords];
+  let foundPhrases = [...localTerminologyExtracted.phrases];
+  let foundVerbs = [...localTerminologyExtracted.verbs];
+  let foundNouns = [...localTerminologyExtracted.nouns];
+  let foundPronouns = [...localTerminologyExtracted.pronouns];
+  
+  // Add task name keywords that aren't already in Local Terminology results
+  taskKeywords.forEach(keyword => {
+    if (!foundKeywords.some(k => k.toLowerCase() === keyword.toLowerCase())) {
+      foundKeywords.push(keyword);
+    }
+  });
+  
+  // Extract additional phrases from task name that complement Local Terminology phrases
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/)
     .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
@@ -559,83 +593,97 @@ export function extractTermsFromTaskNameWithBrowserAI(
     }
   });
   
-  // Also extract phrases using frequency analysis from task name
-  const phraseFreq = new Map<string, number>();
-  for (let i = 0; i < taskWords.length - 1; i++) {
-    for (let len = DESCRIPTION_GENERATION_CONFIG.minPhraseLength; 
-         len <= DESCRIPTION_GENERATION_CONFIG.maxPhraseLength && i + len <= taskWords.length; 
-         len++) {
-      const phrase = taskWords.slice(i, i + len).join(' ');
-      const containsKeyword = taskKeywords.some(kw => phrase.includes(kw.toLowerCase()));
-      if (containsKeyword && phrase.length > DESCRIPTION_GENERATION_CONFIG.minKeywordLength) {
-        phraseFreq.set(phrase, (phraseFreq.get(phrase) || 0) + 1);
-      }
-    }
-  }
-  
-  // Add top phrases by frequency
-  const sortedPhrases = Array.from(phraseFreq.entries())
-    .filter(([phrase, freq]) => freq >= DESCRIPTION_GENERATION_CONFIG.minWordFrequency)
-    .map(([phrase, freq]) => {
-      const keywordCount = taskKeywords.filter(kw => phrase.toLowerCase().includes(kw.toLowerCase())).length;
-      return { phrase, freq, keywordCount };
-    })
-    .sort((a, b) => {
-      if (b.keywordCount !== a.keywordCount) {
-        return b.keywordCount - a.keywordCount;
-      }
-      return b.freq - a.freq;
-    })
-    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases)
-    .map(({ phrase }) => phrase);
-  
-  sortedPhrases.forEach(phrase => {
-    if (!foundPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
-      foundPhrases.push(phrase);
-    }
-  });
-  
-  // Sort phrases by keyword count
-  const finalPhrases = foundPhrases
-    .sort((a, b) => {
-      const aKeywords = taskKeywords.filter(kw => a.toLowerCase().includes(kw.toLowerCase())).length;
-      const bKeywords = taskKeywords.filter(kw => b.toLowerCase().includes(kw.toLowerCase())).length;
-      if (bKeywords !== aKeywords) {
-        return bKeywords - aKeywords;
-      }
-      return b.length - a.length;
-    })
-    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
-  
-  // STEP 3: Extract verbs and nouns directly from task name using Browser AI
+  // Extract additional verbs and nouns from task name
   const extractedFromTask = extractTermsFromText(taskName, [...DESCRIPTION_GENERATION_CONFIG.stopWords]);
   
-  // Filter verbs and nouns that relate to keywords
-  const foundVerbs = extractedFromTask.verbs.filter(verb => {
+  // Add verbs and nouns that relate to keywords
+  extractedFromTask.verbs.forEach(verb => {
     const verbLower = verb.toLowerCase();
-    return taskKeywords.some(kw => 
+    if (taskKeywords.some(kw => 
       verbLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(verbLower)
-    );
+    ) && !foundVerbs.some(v => v.toLowerCase() === verb.toLowerCase())) {
+      foundVerbs.push(verb);
+    }
   });
   
-  const foundNouns = extractedFromTask.nouns.filter(noun => {
+  extractedFromTask.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
-    return taskKeywords.some(kw => 
+    if (taskKeywords.some(kw => 
       nounLower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(nounLower)
-    );
+    ) && !foundNouns.some(n => n.toLowerCase() === noun.toLowerCase())) {
+      foundNouns.push(noun);
+    }
   });
   
-  // STEP 4: Find matching domain terminology terms that relate to task name
-  // LOCAL TERMINOLOGY: Use domain-specific phrases, verbs, and nouns to enhance extracted terms
-  logger.debug(`Using Local Terminology (domain: ${domainTerms ? 'loaded' : 'missing'}) to enhance Browser AI extracted terms`);
+  logger.debug(`✅ Browser AI: Received ${foundKeywords.length} keywords, ${foundPhrases.length} phrases, ${foundVerbs.length} verbs, ${foundNouns.length} nouns from Local Terminology`);
   
-  const wordBoundaryRegex = (term: string) => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+  // STEP 4: Browser AI now has all extracted terms from Local Terminology
+  // Browser AI will use these terms to build contextual sentences in buildContextualDescription()
   
-  let matchedDomainPhrases = 0;
-  let matchedDomainVerbs = 0;
-  let matchedDomainNouns = 0;
+  // Return the extracted terms for Browser AI to use in sentence building
+  const finalKeywords = foundKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords);
+  const finalPhrases = foundPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
+  const finalVerbs = foundVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs);
+  const finalNouns = foundNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns);
+  const finalPronouns = foundPronouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns);
   
-  // Match domain phrases that contain our keywords OR task name words (improved intuitive matching)
+  logger.debug(`✅ Browser AI: Ready to build contextual sentences with ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`);
+  
+  // STEP 5: Save new keywords and phrases to Local Terminology library
+  // Get domain from domainTerms (it has a 'context' property that is the domain)
+  const detectedDomain = domainTerms.context;
+  
+  // Extract new terms that aren't in the library
+  // Compare extracted terms with BASE terminology (not including user-learned terms) to find new ones
+  const baseTerminology = DOMAIN_TERMINOLOGIES[detectedDomain] || DOMAIN_TERMINOLOGIES.personal;
+  
+  // Find new keywords (from task name keywords that aren't in library)
+  const newKeywords = taskKeywords.filter(kw => {
+    const kwLower = kw.toLowerCase();
+    return !baseTerminology.keywords.some(bk => bk.toLowerCase() === kwLower);
+  });
+  
+  // Find new phrases (from task name phrases that aren't in library)
+  const newPhrases = foundPhrases.filter(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    return !baseTerminology.phrases.some(bp => bp.toLowerCase() === phraseLower);
+  });
+  
+  // Find new verbs (from extracted verbs that aren't in library)
+  const newVerbs = foundVerbs.filter(verb => {
+    const verbLower = verb.toLowerCase();
+    return !baseTerminology.verbs.some(bv => bv.toLowerCase() === verbLower);
+  });
+  
+  // Find new nouns (from extracted nouns that aren't in library)
+  const newNouns = foundNouns.filter(noun => {
+    const nounLower = noun.toLowerCase();
+    return !baseTerminology.nouns.some(bn => bn.toLowerCase() === nounLower);
+  });
+  
+  // Save new terms to library if any were found
+  if (newKeywords.length > 0 || newPhrases.length > 0 || newVerbs.length > 0 || newNouns.length > 0) {
+    saveNewTerminologyToLibrary(
+      detectedDomain,
+      newKeywords,
+      newPhrases,
+      newVerbs,
+      newNouns
+    );
+  }
+  
+  return {
+    keywords: finalKeywords,
+    phrases: finalPhrases,
+    verbs: finalVerbs,
+    nouns: finalNouns,
+    pronouns: finalPronouns,
+    context: taskName, // Task name as context for Browser AI
+  };
+}
+
+  // Note: The old complex matching logic has been replaced with the simpler flow above
+  // where Local Terminology extracts first, then Browser AI builds sentences
   // ENHANCED: More lenient matching that checks both extracted keywords AND task name words directly
   // IMPROVED: Better phrase matching with research keywords and compound terms
   domainTerms.phrases.forEach(phrase => {
@@ -1340,6 +1388,63 @@ function extractTermsFromTaskName(
       foundKeywords.push(keyword);
     }
   });
+  
+  // Extract new keywords and phrases from task name that aren't in the library
+  // These will be saved to the library for future use
+  const extractedKeywords = extractKeywordsFromTaskName(taskName);
+  const newKeywords: string[] = [];
+  const newPhrases: string[] = [];
+  
+  // Check for new keywords (from task name that aren't in library)
+  extractedKeywords.forEach(keyword => {
+    const keywordLower = keyword.toLowerCase();
+    const existsInLibrary = foundKeywords.some(fk => fk.toLowerCase() === keywordLower);
+    if (!existsInLibrary && keywordLower.length >= 2) {
+      newKeywords.push(keyword);
+    }
+  });
+  
+  // Extract phrases from task name (2-5 words)
+  const taskWordsArray = taskNameLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
+  for (let i = 0; i < taskWordsArray.length - 1; i++) {
+    for (let len = DESCRIPTION_GENERATION_CONFIG.minPhraseLength; 
+         len <= DESCRIPTION_GENERATION_CONFIG.maxPhraseLength && i + len <= taskWordsArray.length; 
+         len++) {
+      const phrase = taskWordsArray.slice(i, i + len).join(' ');
+      const phraseLower = phrase.toLowerCase();
+      
+      // Check if phrase already exists in library
+      const existsInLibrary = foundPhrases.some(fp => fp.toLowerCase() === phraseLower);
+      if (!existsInLibrary && phraseLower.length >= 3) {
+        newPhrases.push(phrase);
+      }
+    }
+  }
+  
+  // Get domain from domainTerms (it has a 'context' property that is the domain)
+  const detectedDomain = domainTerms.context;
+  
+  // Save new keywords and phrases to library
+  if (newKeywords.length > 0 || newPhrases.length > 0) {
+    // Extract verbs and nouns from task name for saving
+    const extractedFromTask = extractTermsFromText(taskName, [...DESCRIPTION_GENERATION_CONFIG.stopWords]);
+    const newVerbs = extractedFromTask.verbs.filter(verb => {
+      const verbLower = verb.toLowerCase();
+      return !foundVerbs.some(fv => fv.toLowerCase() === verbLower);
+    });
+    const newNouns = extractedFromTask.nouns.filter(noun => {
+      const nounLower = noun.toLowerCase();
+      return !foundNouns.some(fn => fn.toLowerCase() === nounLower);
+    });
+    
+    saveNewTerminologyToLibrary(
+      detectedDomain,
+      newKeywords,
+      newPhrases,
+      newVerbs,
+      newNouns
+    );
+  }
   
   return {
     keywords: foundKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
@@ -2366,8 +2471,9 @@ export async function generateDescription(
     // Detect domain from task name AND description (if available) for better accuracy
     const descriptionForDetection = existingDescription?.trim() || '';
     const domainResult = detectDomain(taskName, descriptionForDetection);
-  const domain = domainResult.domain;
-  const domainTerms = getDomainTerminology(domain);
+    const domain = domainResult.domain;
+    // Use async version to fetch shared terminology from database
+    const domainTerms = await getDomainTerminologyAsync(domain);
 
   logger.debug(`📝 Description Generation: Using domain detection with description`, {
     taskName,
@@ -2408,7 +2514,7 @@ export async function generateDescription(
   searchContext = searchExtracted.context; // Task name itself as context
   usedSearchResults = false; // Not using external search, using Browser AI only
   
-  logger.debug(`✅ Browser AI extraction COMPLETE: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns`, {
+  logger.debug(`✅ Local Terminology extraction COMPLETE: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns`, {
     keywords: searchExtracted.keywords,
     phrases: searchExtracted.phrases,
     verbs: searchExtracted.verbs,
@@ -2419,25 +2525,25 @@ export async function generateDescription(
   // Verify results are being sent
   if (searchExtracted.keywords.length === 0 && searchExtracted.phrases.length === 0 && 
       searchExtracted.verbs.length === 0 && searchExtracted.nouns.length === 0) {
-    logger.warn(`⚠️ WARNING: Browser AI extraction returned NO results for task: "${taskName}"`);
+    logger.warn(`⚠️ WARNING: Local Terminology extraction returned NO results for task: "${taskName}"`);
   }
 
-  // STEP 2: Use Browser AI-extracted terms as PRIMARY source
-  // Local Terminology is used as a cache/dictionary to enhance terms
+  // STEP 2: Browser AI receives extracted terms from Local Terminology
+  // Browser AI will use these terms to build contextual sentences
   let finalKeywords: string[];
   let finalPhrases: string[];
   let finalVerbs: string[];
   let finalNouns: string[];
   let finalPronouns: string[];
   
-  // PRIMARY: Use Browser AI-extracted terms directly
+  // Browser AI uses terms provided by Local Terminology
   finalKeywords = searchExtracted.keywords;
   finalPhrases = searchExtracted.phrases;
   finalVerbs = searchExtracted.verbs;
   finalNouns = searchExtracted.nouns;
   finalPronouns = searchExtracted.pronouns;
   
-  logger.debug(`✅ Using Browser AI + Local Terminology as PRIMARY source: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
+  logger.debug(`✅ Browser AI: Received terms from Local Terminology: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
     keywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
     phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
     verbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
@@ -2446,8 +2552,8 @@ export async function generateDescription(
     domainTermsLoaded: !!domainTerms && (domainTerms.phrases.length > 0 || domainTerms.verbs.length > 0 || domainTerms.nouns.length > 0)
   });
 
-  // STEP 3: Build description using Browser AI-extracted terms
-  logger.debug(`Building description with Browser AI:`, {
+  // STEP 3: Browser AI builds contextual sentences using terms from Local Terminology
+  logger.debug(`🤖 Browser AI: Building contextual sentences with terms from Local Terminology:`, {
     keywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
     phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
     verbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),

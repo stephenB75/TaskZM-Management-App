@@ -370,7 +370,7 @@ export function useAIScheduler() {
             const currentTaskStart = typeof currentTask.scheduledDate === 'string'
               ? new Date(currentTask.scheduledDate)
               : new Date(currentTask.scheduledDate);
-            const currentTaskDuration = getTaskMinutes(currentTask);
+            const currentTaskDuration = getTaskMinutes(currentTask, { useCachedAIAnalysis: true });
             const currentTaskEnd = new Date(currentTaskStart);
             currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
             
@@ -383,7 +383,7 @@ export function useAIScheduler() {
               const prevTaskStart = typeof prevTask.scheduledDate === 'string'
                 ? new Date(prevTask.scheduledDate)
                 : new Date(prevTask.scheduledDate);
-              const prevTaskDuration = getTaskMinutes(prevTask);
+              const prevTaskDuration = getTaskMinutes(prevTask, { useCachedAIAnalysis: true });
               gapStart = new Date(prevTaskStart);
               gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
             }
@@ -393,7 +393,7 @@ export function useAIScheduler() {
             }
             
             const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
-            const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
+            const taskDuration = taskDurationMinutes ?? getTaskMinutes(task, { useCachedAIAnalysis: true });
             
             if (gapDuration >= taskDuration) {
               return {
@@ -410,7 +410,7 @@ export function useAIScheduler() {
             const lastTaskStart = typeof lastTask.scheduledDate === 'string' 
               ? new Date(lastTask.scheduledDate)
               : new Date(lastTask.scheduledDate);
-            const lastTaskDuration = getTaskMinutes(lastTask);
+            const lastTaskDuration = getTaskMinutes(lastTask, { useCachedAIAnalysis: true });
             const nextAvailableTime = new Date(lastTaskStart);
             nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
             
@@ -575,7 +575,8 @@ export function useAIScheduler() {
         // Calculate gap duration in minutes
         const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
         // Use provided duration if available, otherwise use AI estimator
-        const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
+        // Uses cached AI Analysis results for consistency
+        const taskDuration = taskDurationMinutes ?? getTaskMinutes(task, { useCachedAIAnalysis: true });
         
         // If gap is large enough for this task, use it
         if (gapDuration >= taskDuration) {
@@ -601,7 +602,8 @@ export function useAIScheduler() {
         // Even though we're placing after the last task, there might be tasks in the plan
         // that were scheduled after this last task but before we calculated nextAvailableTime
         const nextAvailableTimeMs = nextAvailableTime.getTime();
-        const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
+        // Uses cached AI Analysis results for consistency
+        const taskDuration = taskDurationMinutes ?? getTaskMinutes(task, { useCachedAIAnalysis: true });
         const nextAvailableEndMs = nextAvailableTimeMs + (taskDuration * MILLISECONDS_PER_MINUTE);
         
         // Check all tasks in existingTasksForDay (which includes tasks from the plan) for conflicts
@@ -622,7 +624,7 @@ export function useAIScheduler() {
           if (!hasValidTime) continue;
           
           const existingTaskStart = existingTaskScheduledDate.getTime();
-          const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE;
+          const existingTaskDuration = getTaskMinutes(existingTask, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
           const existingTaskEnd = existingTaskStart + existingTaskDuration;
           
           // Check for exact same start time or overlap
@@ -697,7 +699,8 @@ export function useAIScheduler() {
     const calculatedTime = new Date(scheduleDate);
     calculatedTime.setHours(adjustedFinalHours, adjustedFinalMinutes, 0, 0);
     const calculatedTimeMs = calculatedTime.getTime();
-    const taskDuration = taskDurationMinutes ?? getTaskMinutes(task);
+    // Uses cached AI Analysis results for consistency
+    const taskDuration = taskDurationMinutes ?? getTaskMinutes(task, { useCachedAIAnalysis: true });
     const calculatedEndMs = calculatedTimeMs + (taskDuration * MILLISECONDS_PER_MINUTE);
     
     // BUG FIX 1: Sort tasks by scheduled time before checking conflicts
@@ -725,7 +728,7 @@ export function useAIScheduler() {
         const existingTaskStart = typeof t.scheduledDate === 'string'
           ? new Date(t.scheduledDate).getTime()
           : new Date(t.scheduledDate).getTime();
-        const existingTaskDuration = getTaskMinutes(t) * MILLISECONDS_PER_MINUTE;
+        const existingTaskDuration = getTaskMinutes(t, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
         const existingTaskEnd = existingTaskStart + existingTaskDuration;
         return {
           task: t,
@@ -984,7 +987,7 @@ export function useAIScheduler() {
         // Check if this task applies to this date (works for both recurring and non-recurring)
         // Use isDateInRecurrence which handles both cases correctly
         if (isDateInRecurrence(task, currentDate)) {
-          const taskHours = getTaskHours(task);
+          const taskHours = getTaskHours(task, { useCachedAIAnalysis: true });
           const currentHours = dailyHours.get(dateKey) || 0;
           dailyHours.set(dateKey, currentHours + taskHours);
           
@@ -1357,7 +1360,8 @@ export function useAIScheduler() {
       
       // Get task hours using AI Duration Estimator
       // This integrates with all AI scheduling functions (scheduleAllTasks, generateSchedulePlan, rescheduleDay/Week/Month)
-      const taskHours = getTaskHours(task);
+      // Uses cached AI Analysis results for consistency
+      const taskHours = getTaskHours(task, { useCachedAIAnalysis: true });
       
       // Log AI estimator usage for debugging (only in dev mode)
       if (import.meta.env.DEV) {
@@ -1881,7 +1885,8 @@ export function useAIScheduler() {
         }
         
         // Use consistent duration calculation for all scheduling operations
-        const taskHours = getTaskHours(task);
+        // Uses cached AI Analysis results for consistency
+        const taskHours = getTaskHours(task, { useCachedAIAnalysis: true });
         const taskDurationMinutes = Math.round(taskHours * MINUTES_PER_HOUR); // Convert hours to minutes
         
           // CRITICAL FIX FOR RECURRING TASKS: Always force category hours for recurring tasks
@@ -2519,7 +2524,7 @@ export function useAIScheduler() {
               forceCategoryHours: options?.forceCategoryHours,
             });
           }
-          const taskHours = getTaskHours(task);
+          const taskHours = getTaskHours(task, { useCachedAIAnalysis: true });
           const taskDurationMinutes = Math.round(taskHours * MINUTES_PER_HOUR); // Convert hours back to minutes
           
           // Determine default hours based on task category
@@ -2688,7 +2693,7 @@ export function useAIScheduler() {
               const currentTask = sortedTasks[i];
               
               const prevTaskStart = new Date(prevTask.scheduledDate!);
-              const prevTaskDuration = getTaskMinutes(prevTask); // Use AI estimator for existing tasks
+              const prevTaskDuration = getTaskMinutes(prevTask, { useCachedAIAnalysis: true }); // Use AI estimator for existing tasks
               const prevTaskEnd = new Date(prevTaskStart);
               prevTaskEnd.setMinutes(prevTaskEnd.getMinutes() + prevTaskDuration);
               
@@ -2712,7 +2717,7 @@ export function useAIScheduler() {
             if (sortedTasks.length > 0) {
               const lastTask = sortedTasks[sortedTasks.length - 1];
               const lastTaskStart = new Date(lastTask.scheduledDate!);
-              const lastTaskDuration = getTaskMinutes(lastTask); // Use AI estimator for existing tasks
+              const lastTaskDuration = getTaskMinutes(lastTask, { useCachedAIAnalysis: true }); // Use AI estimator for existing tasks
               const lastTaskEnd = new Date(lastTaskStart);
               lastTaskEnd.setMinutes(lastTaskEnd.getMinutes() + lastTaskDuration);
               
@@ -2783,7 +2788,7 @@ export function useAIScheduler() {
             if (sortedTasks.length > 0) {
               const lastTask = sortedTasks[sortedTasks.length - 1];
               const lastTaskStart = new Date(lastTask.scheduledDate!);
-              const lastTaskDuration = getTaskMinutes(lastTask); // Use AI estimator for existing tasks
+              const lastTaskDuration = getTaskMinutes(lastTask, { useCachedAIAnalysis: true }); // Use AI estimator for existing tasks
               const nextAvailableTime = new Date(lastTaskStart);
               nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
               
@@ -3267,7 +3272,7 @@ export function useAIScheduler() {
             // For regular tasks, use the exact scheduledDate
             planTimeMs = planScheduledDate.getTime();
           }
-          const planTaskDuration = getTaskMinutes(planItem.task) * MILLISECONDS_PER_MINUTE;
+          const planTaskDuration = getTaskMinutes(planItem.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
           const planEndMs = planTimeMs + planTaskDuration;
           
           // Check for exact same start time or overlap
@@ -3353,7 +3358,7 @@ export function useAIScheduler() {
               planTimeMs = planScheduledDate.getTime();
             }
             
-            const planTaskDuration = getTaskMinutes(planItem.task) * MILLISECONDS_PER_MINUTE;
+            const planTaskDuration = getTaskMinutes(planItem.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
             const planEndMs = planTimeMs + planTaskDuration;
             
             const sameStartTime = Math.abs(planTimeMs - adjustedTimeMs) < MILLISECONDS_PER_MINUTE;
@@ -3425,7 +3430,8 @@ export function useAIScheduler() {
         
         // FINAL SAFEGUARD: Check if this time conflicts with any task already in the plan
         // This ensures no two tasks are scheduled at the exact same time even if earlier detection failed
-        const safeguardTaskHours = getTaskHours(task);
+        // Uses cached AI Analysis results for consistency
+        const safeguardTaskHours = getTaskHours(task, { useCachedAIAnalysis: true });
         const safeguardTaskDuration = Math.round(safeguardTaskHours * MINUTES_PER_HOUR);
         const safeguardScheduleTimeMs = scheduleDate.getTime();
         const safeguardScheduleEndMs = safeguardScheduleTimeMs + (safeguardTaskDuration * MILLISECONDS_PER_MINUTE);
@@ -3449,7 +3455,7 @@ export function useAIScheduler() {
           }
           
           const planTaskStart = planDate.getTime();
-          const planTaskDuration = getTaskMinutes(planItem.task) * MILLISECONDS_PER_MINUTE;
+          const planTaskDuration = getTaskMinutes(planItem.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
           const planTaskEnd = planTaskStart + planTaskDuration;
           
           // Check for overlap (including exact same start time)

@@ -10,8 +10,22 @@ import {
   DOMAIN_SCORING_WEIGHTS,
 } from './ai-config';
 import { logger } from './logger';
+import { getFromLocalStorage, saveToLocalStorage } from './utils';
+import { getSharedTerminology, saveSharedTerminology } from './api';
 
 export type Domain = 'business' | 'home' | 'personal' | 'world' | 'mixed';
+
+/**
+ * Terminology configuration constants
+ */
+const TERMINOLOGY_CONFIG = {
+  minKeywordLength: 2, // Minimum length for keywords
+  minPhraseLength: 3, // Minimum length for phrases
+  minVerbLength: 2, // Minimum length for verbs
+  minNounLength: 2, // Minimum length for nouns
+  sharedTerminologyCacheTTL: 1000 * 60 * 60, // 1 hour cache TTL in milliseconds
+  maxSharedTermsPerDomain: 1000, // Maximum number of shared terms to fetch per domain
+} as const;
 
 export interface DomainTerminology {
   keywords: string[];
@@ -1254,11 +1268,195 @@ export function detectDomain(
 }
 
 /**
- * Get domain-specific terminology
+ * Storage key for user-learned terminology
  */
-export function getDomainTerminology(domain: Domain): DomainTerminology {
-  return DOMAIN_TERMINOLOGIES[domain] || DOMAIN_TERMINOLOGIES.personal;
+const USER_TERMINOLOGY_STORAGE_KEY = 'taskzm_user_terminology';
+
+/**
+ * Interface for user-learned terminology (stored in localStorage)
+ */
+interface UserLearnedTerminology {
+  [domain: string]: {
+    keywords: string[];
+    phrases: string[];
+    verbs: string[];
+    nouns: string[];
+  };
 }
+
+/**
+ * Load user-learned terminology from localStorage
+ */
+function loadUserTerminology(): UserLearnedTerminology {
+  try {
+    return getFromLocalStorage<UserLearnedTerminology>(USER_TERMINOLOGY_STORAGE_KEY, {});
+  } catch (error) {
+    logger.warn('Failed to load user terminology from localStorage:', error);
+    return {};
+  }
+}
+
+/**
+ * Save user-learned terminology to localStorage
+ */
+function saveUserTerminology(userTerminology: UserLearnedTerminology): void {
+  try {
+    saveToLocalStorage(USER_TERMINOLOGY_STORAGE_KEY, userTerminology);
+    logger.debug('Saved user-learned terminology to localStorage', {
+      domains: Object.keys(userTerminology),
+      totalKeywords: Object.values(userTerminology).reduce((sum, domain) => sum + domain.keywords.length, 0),
+      totalPhrases: Object.values(userTerminology).reduce((sum, domain) => sum + domain.phrases.length, 0),
+    });
+  } catch (error) {
+    logger.error('Failed to save user terminology to localStorage:', error);
+  }
+}
+
+/**
+ * Add new keywords and phrases to user-learned terminology
+ * @param domain - The domain to add terms to
+ * @param newKeywords - New keywords to add (if not already in library)
+ * @param newPhrases - New phrases to add (if not already in library)
+ * @param newVerbs - New verbs to add (if not already in library)
+ * @param newNouns - New nouns to add (if not already in library)
+ */
+export function saveNewTerminologyToLibrary(
+  domain: Domain,
+  newKeywords: string[] = [],
+  newPhrases: string[] = [],
+  newVerbs: string[] = [],
+  newNouns: string[] = []
+): void {
+  if (domain === 'mixed') {
+    // Don't save to mixed domain
+    return;
+  }
+
+  // Load existing user terminology
+  const userTerminology = loadUserTerminology();
+  
+  // Get base terminology to check against
+  const baseTerminology = DOMAIN_TERMINOLOGIES[domain];
+  if (!baseTerminology) {
+    logger.warn(`Cannot save terminology for unknown domain: ${domain}`);
+    return;
+  }
+
+  // Initialize domain if it doesn't exist
+  if (!userTerminology[domain]) {
+    userTerminology[domain] = {
+      keywords: [],
+      phrases: [],
+      verbs: [],
+      nouns: [],
+    };
+  }
+
+  const domainTerminology = userTerminology[domain];
+  let addedCount = 0;
+
+  // Add new keywords (case-insensitive check)
+  newKeywords.forEach(keyword => {
+    const keywordLower = keyword.toLowerCase().trim();
+    if (keywordLower.length < TERMINOLOGY_CONFIG.minKeywordLength) return;
+    
+    // Check if keyword already exists in base terminology
+    const existsInBase = baseTerminology.keywords.some(kw => kw.toLowerCase() === keywordLower);
+    // Check if keyword already exists in user terminology
+    const existsInUser = domainTerminology.keywords.some(kw => kw.toLowerCase() === keywordLower);
+    
+    if (!existsInBase && !existsInUser) {
+      domainTerminology.keywords.push(keyword.trim());
+      addedCount++;
+      logger.debug(`Added new keyword to ${domain} terminology: "${keyword}"`);
+    }
+  });
+
+  // Add new phrases (case-insensitive check)
+  newPhrases.forEach(phrase => {
+    const phraseLower = phrase.toLowerCase().trim();
+    if (phraseLower.length < TERMINOLOGY_CONFIG.minPhraseLength) return;
+    
+    // Check if phrase already exists in base terminology
+    const existsInBase = baseTerminology.phrases.some(p => p.toLowerCase() === phraseLower);
+    // Check if phrase already exists in user terminology
+    const existsInUser = domainTerminology.phrases.some(p => p.toLowerCase() === phraseLower);
+    
+    if (!existsInBase && !existsInUser) {
+      domainTerminology.phrases.push(phrase.trim());
+      addedCount++;
+      logger.debug(`Added new phrase to ${domain} terminology: "${phrase}"`);
+    }
+  });
+
+  // Add new verbs (case-insensitive check)
+  newVerbs.forEach(verb => {
+    const verbLower = verb.toLowerCase().trim();
+    if (verbLower.length < TERMINOLOGY_CONFIG.minVerbLength) return;
+    
+    const existsInBase = baseTerminology.verbs.some(v => v.toLowerCase() === verbLower);
+    const existsInUser = domainTerminology.verbs.some(v => v.toLowerCase() === verbLower);
+    
+    if (!existsInBase && !existsInUser) {
+      domainTerminology.verbs.push(verb.trim());
+      addedCount++;
+      logger.debug(`Added new verb to ${domain} terminology: "${verb}"`);
+    }
+  });
+
+  // Add new nouns (case-insensitive check)
+  newNouns.forEach(noun => {
+    const nounLower = noun.toLowerCase().trim();
+    if (nounLower.length < TERMINOLOGY_CONFIG.minNounLength) return;
+    
+    const existsInBase = baseTerminology.nouns.some(n => n.toLowerCase() === nounLower);
+    const existsInUser = domainTerminology.nouns.some(n => n.toLowerCase() === nounLower);
+    
+    if (!existsInBase && !existsInUser) {
+      domainTerminology.nouns.push(noun.trim());
+      addedCount++;
+      logger.debug(`Added new noun to ${domain} terminology: "${noun}"`);
+    }
+  });
+
+  // Save updated terminology if any new terms were added
+  if (addedCount > 0) {
+    // Save to localStorage (user-specific)
+    saveUserTerminology(userTerminology);
+    
+    // Save to shared database (for all users)
+    // This happens asynchronously and doesn't block
+    saveSharedTerminology(domain, newKeywords, newPhrases, newVerbs, newNouns)
+      .then(result => {
+        if (result.success) {
+          logger.info(`✅ Saved ${result.saved} new terms to shared ${domain} terminology (${result.skipped} skipped)`, {
+            domain,
+            saved: result.saved,
+            skipped: result.skipped,
+          });
+          
+          // Invalidate cache for this domain to force refresh on next fetch
+          sharedTerminologyCache.delete(domain);
+        } else {
+          logger.warn(`⚠️ Failed to save some terms to shared terminology: ${result.skipped} skipped`);
+        }
+      })
+      .catch(error => {
+        logger.warn('Error saving to shared terminology (non-blocking):', error);
+        // Non-blocking: continue even if shared save fails
+      });
+    
+    logger.info(`✅ Saved ${addedCount} new terms to ${domain} terminology library`, {
+      domain,
+      keywords: newKeywords.length,
+      phrases: newPhrases.length,
+      verbs: newVerbs.length,
+      nouns: newNouns.length,
+      addedCount,
+    });
+  }
+}
+
 
 /**
  * Check if a word/phrase matches any domain terminology

@@ -15,6 +15,49 @@ import {
 import { MINUTES_PER_HOUR } from './business-constants';
 
 /**
+ * AI Analysis cache for storing effort scores and time estimates
+ * Key: task title + description hash, Value: { effortScore, estimatedMinutes }
+ */
+const aiAnalysisCache = new Map<string, { effortScore: number; estimatedMinutes: number; primaryVerb: string }>();
+
+/**
+ * Store AI Analysis results in cache for use by scheduler
+ * @param taskTitle - Task title
+ * @param taskDescription - Task description
+ * @param effortScore - Effort score from AI Analysis (1-5)
+ * @param estimatedMinutes - Estimated minutes from AI Analysis
+ * @param primaryVerb - Primary verb from AI Analysis
+ */
+export function cacheAIAnalysis(
+  taskTitle: string,
+  taskDescription: string,
+  effortScore: number,
+  estimatedMinutes: number,
+  primaryVerb: string
+): void {
+  const cacheKey = `${taskTitle.trim()}_${taskDescription.trim()}`;
+  aiAnalysisCache.set(cacheKey, { effortScore, estimatedMinutes, primaryVerb });
+  
+  // Limit cache size to prevent memory issues
+  if (aiAnalysisCache.size > 1000) {
+    const firstKey = aiAnalysisCache.keys().next().value;
+    if (firstKey) {
+      aiAnalysisCache.delete(firstKey);
+    }
+  }
+}
+
+/**
+ * Get cached AI Analysis results for a task
+ * @param task - The task to get cached results for
+ * @returns Cached AI Analysis results or null if not found
+ */
+export function getCachedAIAnalysis(task: Task): { effortScore: number; estimatedMinutes: number; primaryVerb: string } | null {
+  const cacheKey = `${task.title.trim()}_${task.description.trim()}`;
+  return aiAnalysisCache.get(cacheKey) || null;
+}
+
+/**
  * Estimate task duration in hours
  * 
  * This is the core AI Duration Estimator that works with all AI scheduling functions.
@@ -27,10 +70,19 @@ import { MINUTES_PER_HOUR } from './business-constants';
  * - calculateDailyHours: Uses estimateTaskHours() for hour tracking
  * - time-conflict.ts: Uses getTaskMinutes() for conflict detection
  * 
+ * Now integrates with AI Analysis: If AI Analysis results are cached, uses the effort score
+ * from AI Analysis instead of recalculating. This ensures consistency between the AI Analysis
+ * suggestions shown to users and the scheduling calculations.
+ * 
  * @param task - The task to estimate duration for
+ * @param options - Optional parameters for estimation
+ * @param options.useCachedAIAnalysis - If true, use cached AI Analysis effort score if available
  * @returns Estimated duration in hours
  */
-export function estimateTaskHours(task: Task): number {
+export function estimateTaskHours(
+  task: Task,
+  options?: { useCachedAIAnalysis?: boolean }
+): number {
   // Validate task input
   if (!task || typeof task !== 'object') {
     console.warn('⚠️ estimateTaskHours: Invalid task provided', task);
@@ -54,15 +106,47 @@ export function estimateTaskHours(task: Task): number {
   }
   
   // Priority 2: Formula-based estimation using AI analysis
-  // Get effort score from verb analysis (1-5 scale)
-  const verbAnalysis = analyzeTaskVerbs(task);
-  let effortScore = verbAnalysis.effortScore;
-  let primaryVerb = verbAnalysis.primaryVerb || '';
+  // Check for cached AI Analysis results first (if enabled)
+  let effortScore: number;
+  let primaryVerb: string;
+  
+  if (options?.useCachedAIAnalysis) {
+    const cachedAnalysis = getCachedAIAnalysis(task);
+    if (cachedAnalysis) {
+      // Use effort score from AI Analysis for consistency
+      effortScore = cachedAnalysis.effortScore;
+      primaryVerb = cachedAnalysis.primaryVerb;
+      
+      if (import.meta.env.DEV) {
+        console.log('✅ estimateTaskHours: Using cached AI Analysis effort score', {
+          taskId: task.id,
+          taskTitle: task.title,
+          cachedEffortScore: effortScore,
+          cachedPrimaryVerb: primaryVerb,
+        });
+      }
+    } else {
+      // Fall back to verb analysis if no cached results
+      const verbAnalysis = analyzeTaskVerbs(task);
+      effortScore = verbAnalysis.effortScore;
+      primaryVerb = verbAnalysis.primaryVerb || '';
+    }
+  } else {
+    // Default behavior: Get effort score from verb analysis (1-5 scale)
+    const verbAnalysis = analyzeTaskVerbs(task);
+    effortScore = verbAnalysis.effortScore;
+    primaryVerb = verbAnalysis.primaryVerb || '';
+  }
   
   // Validate effort score
   if (typeof effortScore !== 'number' || isNaN(effortScore) || !isFinite(effortScore)) {
-    console.warn('⚠️ estimateTaskHours: Invalid effort score, using default', { effortScore, verbAnalysis });
+    console.warn('⚠️ estimateTaskHours: Invalid effort score, using default', { effortScore });
     effortScore = 2.5;
+  }
+  
+  // Validate primary verb
+  if (!primaryVerb) {
+    primaryVerb = '';
   }
   
   // Get complexity score from task properties (1-5 scale)
@@ -262,16 +346,23 @@ export { MAX_HOURS_PER_DAY };
  * - rescheduleDay/Week/Month: For rescheduling tasks
  * - All AI scheduling operations
  * 
+ * Now supports using cached AI Analysis results for consistency.
+ * 
  * @param task - The task to get duration for
+ * @param options - Optional parameters
+ * @param options.useCachedAIAnalysis - If true, use cached AI Analysis effort score if available
  * @returns Duration in hours
  */
-export function getTaskHours(task: Task): number {
+export function getTaskHours(
+  task: Task,
+  options?: { useCachedAIAnalysis?: boolean }
+): number {
   if (!task) {
     console.warn('⚠️ getTaskHours: No task provided');
     return BASE_TASK_DURATION_MINUTES / MINUTES_PER_HOUR;
   }
   
-  return estimateTaskHours(task);
+  return estimateTaskHours(task, options);
 }
 
 /**
@@ -286,15 +377,39 @@ export function getTaskHours(task: Task): number {
  * - Display components: For height calculations
  * - All duration-related operations
  * 
+ * Now supports using cached AI Analysis results for consistency.
+ * 
  * @param task - The task to get duration for
+ * @param options - Optional parameters
+ * @param options.useCachedAIAnalysis - If true, use cached AI Analysis effort score if available
  * @returns Duration in minutes (rounded)
  */
-export function getTaskMinutes(task: Task): number {
+export function getTaskMinutes(
+  task: Task,
+  options?: { useCachedAIAnalysis?: boolean }
+): number {
   if (!task) {
     console.warn('⚠️ getTaskMinutes: No task provided');
     return BASE_TASK_DURATION_MINUTES;
   }
   
-  const hours = estimateTaskHours(task);
+  // Check for cached AI Analysis results first (if enabled)
+  if (options?.useCachedAIAnalysis) {
+    const cachedAnalysis = getCachedAIAnalysis(task);
+    if (cachedAnalysis && cachedAnalysis.estimatedMinutes > 0) {
+      // Use cached estimated minutes directly from AI Analysis
+      if (import.meta.env.DEV) {
+        console.log('✅ getTaskMinutes: Using cached AI Analysis estimated minutes', {
+          taskId: task.id,
+          taskTitle: task.title,
+          cachedEstimatedMinutes: cachedAnalysis.estimatedMinutes,
+        });
+      }
+      return cachedAnalysis.estimatedMinutes;
+    }
+  }
+  
+  // Fall back to calculating from hours
+  const hours = estimateTaskHours(task, options);
   return Math.round(hours * MINUTES_PER_HOUR); // Convert hours to minutes, rounded
 }

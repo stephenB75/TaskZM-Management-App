@@ -10,7 +10,7 @@ import type { Task } from '../types';
 import { detectDomain, type Domain } from '../lib/domain-terminology';
 import { analyzeDescription, type DescriptionAnalysis } from '../lib/description-analyzer';
 import { generateActionPlan, type ActionPlan } from '../lib/action-plan-generator';
-import { estimateTaskHours } from '../lib/daily-hours-utils';
+import { estimateTaskHours, cacheAIAnalysis } from '../lib/daily-hours-utils';
 import { analyzeTaskVerbs } from '../lib/verb-analysis';
 import { MINUTES_PER_HOUR } from '../lib/business-constants';
 import {
@@ -202,6 +202,17 @@ export function useTaskBreakdown(
               }
             }
           }
+
+          // Cache AI Analysis results for use by scheduler
+          // This ensures the scheduler uses the same effort score and time estimate
+          // that was shown to the user in the AI Analysis suggestions
+          cacheAIAnalysis(
+            title,
+            description,
+            verbAnalysis.effortScore,
+            estimatedMinutes,
+            verbAnalysis.primaryVerb
+          );
 
           setBreakdown(result);
           setIsLoading(false);

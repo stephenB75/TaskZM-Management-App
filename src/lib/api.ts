@@ -1,6 +1,17 @@
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import type { Task, TimeTrackingSession, Activity, Folder } from '../types';
 import { logger } from './logger';
+import type { Domain } from './domain-terminology';
+
+/**
+ * Terminology validation constants
+ */
+const TERMINOLOGY_VALIDATION = {
+  minKeywordLength: 2,
+  minPhraseLength: 3,
+  minVerbLength: 2,
+  minNounLength: 2,
+} as const;
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
 
@@ -1079,4 +1090,83 @@ export async function declineInvitation(workspaceId: string, invitationToken: st
   }
 
   return response.json();
+}
+
+// Shared Terminology API
+export interface SharedTerminology {
+  keywords: string[];
+  phrases: string[];
+  verbs: string[];
+  nouns: string[];
+}
+
+/**
+ * Fetch shared terminology for a domain from the database
+ * This includes all user-learned terms that have been shared
+ */
+export async function getSharedTerminology(domain: Domain): Promise<SharedTerminology> {
+  try {
+    if (domain === 'mixed') {
+      // Mixed domain doesn't have shared terminology
+      return { keywords: [], phrases: [], verbs: [], nouns: [] };
+    }
+
+    const response = await fetch(`${API_BASE}/shared-terminology/${domain}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      logger.warn(`Failed to fetch shared terminology for domain ${domain}:`, response.status);
+      return { keywords: [], phrases: [], verbs: [], nouns: [] };
+    }
+
+    const data = await response.json();
+    return data.terminology || { keywords: [], phrases: [], verbs: [], nouns: [] };
+  } catch (error) {
+    logger.warn('Error fetching shared terminology:', error);
+    return { keywords: [], phrases: [], verbs: [], nouns: [] };
+  }
+}
+
+/**
+ * Save new terminology to the shared database
+ * This allows all users to benefit from learned terms
+ */
+export async function saveSharedTerminology(
+  domain: Domain,
+  keywords: string[] = [],
+  phrases: string[] = [],
+  verbs: string[] = [],
+  nouns: string[] = []
+): Promise<{ success: boolean; saved: number; skipped: number }> {
+  try {
+    if (domain === 'mixed') {
+      return { success: false, saved: 0, skipped: keywords.length + phrases.length + verbs.length + nouns.length };
+    }
+
+    const response = await fetch(`${API_BASE}/shared-terminology`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        domain,
+        keywords: keywords.filter(k => k && k.trim().length >= TERMINOLOGY_VALIDATION.minKeywordLength),
+        phrases: phrases.filter(p => p && p.trim().length >= TERMINOLOGY_VALIDATION.minPhraseLength),
+        verbs: verbs.filter(v => v && v.trim().length >= TERMINOLOGY_VALIDATION.minVerbLength),
+        nouns: nouns.filter(n => n && n.trim().length >= TERMINOLOGY_VALIDATION.minNounLength),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      logger.warn('Failed to save shared terminology:', error);
+      return { success: false, saved: 0, skipped: keywords.length + phrases.length + verbs.length + nouns.length };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    logger.warn('Error saving shared terminology:', error);
+    return { success: false, saved: 0, skipped: keywords.length + phrases.length + verbs.length + nouns.length };
+  }
 }

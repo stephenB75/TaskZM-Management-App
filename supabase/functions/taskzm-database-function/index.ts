@@ -9,6 +9,219 @@ import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
 import * as appleCaldavSync from "./apple-caldav-sync.tsx";
 
+// ============================================================================
+// SHARED TERMINOLOGY
+// ============================================================================
+
+// Terminology configuration constants
+const TERMINOLOGY_CONFIG = {
+  minKeywordLength: 2,
+  minPhraseLength: 3,
+  minVerbLength: 2,
+  minNounLength: 2,
+  maxTermsPerDomain: 1000,
+  validDomains: ['business', 'home', 'personal', 'world'] as const,
+  validTermTypes: ['keyword', 'phrase', 'verb', 'noun'] as const,
+} as const;
+
+// Get shared terminology for a domain
+app.get("/taskzm-database-function/shared-terminology/:domain", async (c) => {
+  try {
+    const domain = c.req.param('domain');
+    
+    // Validate domain
+    if (!TERMINOLOGY_CONFIG.validDomains.includes(domain as any)) {
+      return c.json({ error: 'Invalid domain' }, 400);
+    }
+
+    const supabase = getSupabaseClient();
+    
+    // Get all shared terminology for this domain, ordered by usage count (most used first)
+    const { data: terminology, error } = await supabase
+      .from('shared_terminology')
+      .select('term_type, term, usage_count')
+      .eq('domain', domain)
+      .order('usage_count', { ascending: false })
+      .limit(TERMINOLOGY_CONFIG.maxTermsPerDomain);
+    
+    if (error) {
+      console.error('Error fetching shared terminology:', error);
+      return c.json({ error: getErrorMessage(error) }, 500);
+    }
+
+    // Group by term type
+    const grouped: {
+      keywords: string[];
+      phrases: string[];
+      verbs: string[];
+      nouns: string[];
+    } = {
+      keywords: [],
+      phrases: [],
+      verbs: [],
+      nouns: [],
+    };
+
+    terminology?.forEach(item => {
+      if (item.term_type === 'keyword') {
+        grouped.keywords.push(item.term);
+      } else if (item.term_type === 'phrase') {
+        grouped.phrases.push(item.term);
+      } else if (item.term_type === 'verb') {
+        grouped.verbs.push(item.term);
+      } else if (item.term_type === 'noun') {
+        grouped.nouns.push(item.term);
+      }
+    });
+
+    return c.json({ terminology: grouped });
+  } catch (error) {
+    console.error('Error in shared-terminology GET:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Save new terminology to shared library
+app.post("/taskzm-database-function/shared-terminology", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const body = await c.req.json();
+    const { domain, keywords = [], phrases = [], verbs = [], nouns = [] } = body;
+
+    // Validate domain
+    if (!domain || !TERMINOLOGY_CONFIG.validDomains.includes(domain as any)) {
+      return c.json({ error: 'Invalid domain' }, 400);
+    }
+
+    const supabase = getSupabaseClient();
+    let savedCount = 0;
+    let skippedCount = 0;
+
+    // Save keywords
+    for (const keyword of keywords) {
+      if (!keyword || typeof keyword !== 'string' || keyword.trim().length < TERMINOLOGY_CONFIG.minKeywordLength) {
+        skippedCount++;
+        continue;
+      }
+      
+      try {
+        const { error: upsertError } = await supabase.rpc('upsert_shared_terminology', {
+          p_domain: domain,
+          p_term_type: 'keyword',
+          p_term: keyword.trim(),
+          p_user_id: userId,
+        });
+        
+        if (upsertError) {
+          console.warn(`Failed to save keyword "${keyword}":`, upsertError);
+          skippedCount++;
+        } else {
+          savedCount++;
+        }
+      } catch (err) {
+        console.warn(`Error saving keyword "${keyword}":`, err);
+        skippedCount++;
+      }
+    }
+
+    // Save phrases
+    for (const phrase of phrases) {
+      if (!phrase || typeof phrase !== 'string' || phrase.trim().length < TERMINOLOGY_CONFIG.minPhraseLength) {
+        skippedCount++;
+        continue;
+      }
+      
+      try {
+        const { error: upsertError } = await supabase.rpc('upsert_shared_terminology', {
+          p_domain: domain,
+          p_term_type: 'phrase',
+          p_term: phrase.trim(),
+          p_user_id: userId,
+        });
+        
+        if (upsertError) {
+          console.warn(`Failed to save phrase "${phrase}":`, upsertError);
+          skippedCount++;
+        } else {
+          savedCount++;
+        }
+      } catch (err) {
+        console.warn(`Error saving phrase "${phrase}":`, err);
+        skippedCount++;
+      }
+    }
+
+    // Save verbs
+    for (const verb of verbs) {
+      if (!verb || typeof verb !== 'string' || verb.trim().length < TERMINOLOGY_CONFIG.minVerbLength) {
+        skippedCount++;
+        continue;
+      }
+      
+      try {
+        const { error: upsertError } = await supabase.rpc('upsert_shared_terminology', {
+          p_domain: domain,
+          p_term_type: 'verb',
+          p_term: verb.trim(),
+          p_user_id: userId,
+        });
+        
+        if (upsertError) {
+          console.warn(`Failed to save verb "${verb}":`, upsertError);
+          skippedCount++;
+        } else {
+          savedCount++;
+        }
+      } catch (err) {
+        console.warn(`Error saving verb "${verb}":`, err);
+        skippedCount++;
+      }
+    }
+
+    // Save nouns
+    for (const noun of nouns) {
+      if (!noun || typeof noun !== 'string' || noun.trim().length < TERMINOLOGY_CONFIG.minNounLength) {
+        skippedCount++;
+        continue;
+      }
+      
+      try {
+        const { error: upsertError } = await supabase.rpc('upsert_shared_terminology', {
+          p_domain: domain,
+          p_term_type: 'noun',
+          p_term: noun.trim(),
+          p_user_id: userId,
+        });
+        
+        if (upsertError) {
+          console.warn(`Failed to save noun "${noun}":`, upsertError);
+          skippedCount++;
+        } else {
+          savedCount++;
+        }
+      } catch (err) {
+        console.warn(`Error saving noun "${noun}":`, err);
+        skippedCount++;
+      }
+    }
+
+    console.log(`✅ Saved ${savedCount} new terms to shared terminology (${skippedCount} skipped)`);
+
+    return c.json({ 
+      success: true,
+      saved: savedCount,
+      skipped: skippedCount,
+    });
+  } catch (error) {
+    console.error('Error in shared-terminology POST:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
 // Helper function to safely extract error messages
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
