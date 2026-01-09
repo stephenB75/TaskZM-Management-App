@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.12';
-export const VERSION_NAME = 'AI Context Enhancement & Rollover Fixes';
-export const VERSION_DATE = 'January 7, 2026';
-export const BUILD_NUMBER = '20260107-1';
+export const APP_VERSION = '1.0.13';
+export const VERSION_NAME = 'AI Generator Enhancement & Description Improvements';
+export const VERSION_DATE = 'January 9, 2026';
+export const BUILD_NUMBER = '20260109-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,32 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.13',
+    date: 'January 9, 2026',
+    name: 'AI Generator Enhancement & Description Improvements',
+    changes: [
+      'Enhanced AI Generator to construct complete sentences from keywords and phrases - added sentence templates for natural, contextual descriptions',
+      'Improved Browser AI to write complete sentences using keywords and phrases from user input with proper grammar and punctuation',
+      'Enhanced context understanding in description generation - improved semantic relevance checks and conceptual relationship mapping',
+      'Improved Local Terminology to proactively provide additional keywords to assist Browser AI - now adds domain keywords that relate to extracted terms',
+      'Enhanced validateAndEnhanceTermsWithDictionary to use conceptual relationships for better keyword and phrase matching',
+      'Added AI Analysis function (getSuggestivePhrases) to provide suggestive phrases, keywords, verbs, and nouns for manual description writing',
+      'Added variation mechanism to AI Generator - descriptions now change each time button is pressed using shuffleArray and random selection',
+      'Implemented Fisher-Yates shuffle algorithm for term variation to ensure different descriptions on each generation',
+      'Enhanced buildElaborateContextualDescription to use complete sentence structures with proper capitalization and punctuation',
+      'Added multiple sentence templates for different term combinations (Verb+Noun+Keywords, Phrase+Context, etc.)',
+      'Improved sentence construction to use keywords and phrases in complete, natural sentences rather than fragments',
+      'Enhanced Local Terminology matching to check both task name words AND extracted keywords for better context alignment',
+      'Fixed mobile task card dropdown - removed overlapping box background when dropdown is closed (badges only visible)',
+      'Fixed analytics PDF report chart rendering - improved html2canvas configuration for better SVG capture and chart display',
+      'Enhanced chart capture function with better SVG element handling, viewBox attributes, and ResponsiveContainer sizing',
+      'Fixed data-chart-ref attribute matching to use ANALYTICS_PDF_CONFIG.labels constants for proper chart identification',
+      'Improved chart rendering with multiple wait periods, force reflow, and better element visibility checks',
+      'Fixed current day tab border removal in Kanban week view - removed ring and border styling for cleaner appearance',
+      'Updated task card action plan display - 15-minute tasks now show only first action plan step for consistency across mobile and desktop',
+    ],
+  },
   {
     version: '1.0.12',
     date: 'January 7, 2026',
