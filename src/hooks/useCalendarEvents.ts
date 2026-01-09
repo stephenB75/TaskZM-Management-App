@@ -4,6 +4,7 @@ import { useCalendar } from '../contexts/CalendarContext';
 import { projectId } from '../utils/supabase/info';
 import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests } from '../lib/calendar-events-cache';
+import { getDateString } from '../lib/utils';
 
 export interface CalendarEvent {
   id: string;
@@ -307,16 +308,14 @@ export function useCalendarEventsByDate(
       const eventStart = new Date(event.start);
       if (isNaN(eventStart.getTime())) continue;
 
-      // Normalize to local date string (YYYY-MM-DD)
+      // Normalize to local date string (YYYY-MM-DD) using getDateString for consistency
+      // This ensures the same date formatting is used across desktop and mobile views
       const normalizedDate = new Date(
         eventStart.getFullYear(),
         eventStart.getMonth(),
         eventStart.getDate()
       );
-      const year = normalizedDate.getFullYear();
-      const month = String(normalizedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(normalizedDate.getDate()).padStart(2, '0');
-      const dateKey = `${year}-${month}-${day}`;
+      const dateKey = getDateString(normalizedDate);
 
       if (!grouped[dateKey]) {
         grouped[dateKey] = [];

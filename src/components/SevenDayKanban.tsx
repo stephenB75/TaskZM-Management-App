@@ -794,22 +794,9 @@ export function SevenDayKanban({
 
                     {(() => {
                       // Get calendar events for this day (mobile)
-                      // Filter events to only include those on the selected day (using local timezone)
-                      // This prevents timezone conversion issues where events appear on wrong dates
-                      const rawCalEvents = calendarEventsByDate[currentColumn.dateString] || [];
-                      const calEvents = rawCalEvents.filter((event) => {
-                        if (!event?.start) return false;
-                        try {
-                          const eventDate = new Date(event.start);
-                          if (isNaN(eventDate.getTime())) return false;
-                          // Compare using local date string to avoid timezone issues
-                          const eventDateString = getDateString(eventDate);
-                          return eventDateString === currentColumn.dateString;
-                        } catch (error) {
-                          logger.warn('Error filtering calendar event by date:', error, event);
-                          return false;
-                        }
-                      });
+                      // useCalendarEventsByDate already groups events by local date string using getDateString
+                      // This ensures consistency with desktop view
+                      const calEvents = calendarEventsByDate[currentColumn.dateString] || [];
                       
                       // Create combined items (tasks + calendar events) sorted by time
                       type MobileCombinedItem = 

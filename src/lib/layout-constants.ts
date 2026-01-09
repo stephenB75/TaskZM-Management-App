@@ -311,7 +311,7 @@ export const PANEL_EMPTY_STATE_TEXT_SIZE = '0.875rem'; // text-sm = 0.875rem
 
 // Workspace constants (for workspace creation, loading, and management)
 export const WORKSPACE_MAX_RETRIES = 3; // Maximum number of retry attempts for workspace loading
-export const WORKSPACE_RETRY_DELAY_BASE_MS = 1000; // Base delay in milliseconds for exponential backoff (1 second)
+export const WORKSPACE_RETRY_DELAY_BASE_MS = 500; // Base delay in milliseconds for exponential backoff (reduced from 1000ms to 500ms for faster loading)
 export const WORKSPACE_TOAST_DURATION_MS = 5000; // Toast notification duration in milliseconds (5 seconds)
 export const WORKSPACE_NAME_FALLBACK = 'User'; // Fallback name when user name is not available
 export const WORKSPACE_NAME_SUFFIX = "'s Workspace"; // Suffix appended to user name for workspace name

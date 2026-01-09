@@ -178,7 +178,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     syncIntervalRef.current = syncInterval;
   }, [syncInterval]);
 
-  // Load from Supabase FIRST when authenticated, localStorage only as offline fallback
+  // Optimistic loading: Load from localStorage immediately, then sync with server in background
   useEffect(() => {
     if (!user || !accessToken) {
       // Not authenticated - use localStorage as fallback only (no userId check needed)
@@ -197,8 +197,27 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Authenticated - load from Supabase first
-    // localStorage will be checked with userId in getFromLocalStorage calls
+    // Authenticated - OPTIMISTIC LOADING: Load from localStorage immediately for instant UI
+    // Then sync with server in background to get latest data
+    const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user.id);
+    const savedProjects = getFromLocalStorage<Project[]>('projects', [], user.id);
+    const savedFolders = getFromLocalStorage<Folder[]>('folders', [], user.id);
+    const savedTags = getFromLocalStorage<string[]>('availableTags', DEFAULT_TAGS, user.id);
+    
+    // Set cached data immediately for instant UI rendering
+    if (savedTasks.length > 0) {
+      setTasks(savedTasks);
+    }
+    if (savedProjects.length > 0) {
+      setProjects(savedProjects);
+    }
+    if (savedFolders.length > 0) {
+      setFolders(savedFolders);
+    }
+    setAvailableTags(savedTags);
+    
+    // Then load from server in background (non-blocking)
+    // This ensures UI appears immediately while fresh data loads
     loadWorkspace();
   }, [user, accessToken]);
 

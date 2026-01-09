@@ -496,16 +496,16 @@ if (isNative) {
         if (splashEl.parentNode) {
           splashEl.remove();
         }
-      }, 500);
+      }, TIMING_CONSTANTS.delays.splashScreenRemoval);
     }
   };
   
   // Wait for React to mount and content to load before hiding splash
-  // Increased timing to give content more time to load
+  // Optimized: Reduced delays for faster perceived load time
   const hideWhenReady = () => {
     // Wait for React to render
     requestAnimationFrame(() => {
-      // Give extra time for content to load (increased from 400ms to 2500ms)
+      // Reduced delay: Show UI faster (optimistic loading means data is already available)
       setTimeout(hideSplashScreen, TIMING_CONSTANTS.delays.splashScreen[2]);
     });
   };
@@ -516,10 +516,10 @@ if (isNative) {
     hideWhenReady();
   }
   
-  // Fallback: Hide splash after React renders (increased from 1000ms to 3000ms)
+  // Fallback: Hide splash after React renders
   setTimeout(() => {
     hideSplashScreen();
-  }, 3000);
+  }, TIMING_CONSTANTS.delays.splashScreenFallback);
 }
 
 // Safe root element access with error handling
@@ -568,8 +568,8 @@ try {
     );
     // Ensure splash is hidden immediately and after rendering
     ensureSplashHidden();
-    setTimeout(ensureSplashHidden, 100);
-    setTimeout(ensureSplashHidden, 500);
+    setTimeout(ensureSplashHidden, TIMING_CONSTANTS.delays.splashScreenImmediate);
+    setTimeout(ensureSplashHidden, TIMING_CONSTANTS.delays.splashScreenRemoval);
   } else {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
@@ -579,8 +579,8 @@ try {
     );
     // Ensure splash is hidden immediately and after rendering
     ensureSplashHidden();
-    setTimeout(ensureSplashHidden, 100);
-    setTimeout(ensureSplashHidden, 500);
+    setTimeout(ensureSplashHidden, TIMING_CONSTANTS.delays.splashScreenImmediate);
+    setTimeout(ensureSplashHidden, TIMING_CONSTANTS.delays.splashScreenRemoval);
   }
 } catch (error) {
   console.error('Fatal error during app initialization:', error);
@@ -611,7 +611,7 @@ try {
 // Additional fallback: Hide splash after React renders (web only)
 // This ensures splash is always hidden even if React fails to render
 if (!isNative) {
-  // Use a longer timeout as final fallback (increased from 2000ms to 3500ms)
+  // Reduced timeout for faster perceived load time
   setTimeout(() => {
     const splashEl = document.getElementById('initial-splash');
     if (splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden')) {
@@ -621,11 +621,11 @@ if (!isNative) {
         if (splashEl.parentNode) {
           splashEl.remove();
         }
-      }, 500);
+      }, TIMING_CONSTANTS.animations.default);
     }
-  }, 3500);
+  }, TIMING_CONSTANTS.delays.splashScreenFinal);
   
-  // Aggressive fallback: Force hide splash and enable body scrolling after 5 seconds
+  // Aggressive fallback: Force hide splash and enable body scrolling
   // This ensures components are always visible even if something goes wrong
   setTimeout(() => {
     const splashEl = document.getElementById('initial-splash');
@@ -641,5 +641,5 @@ if (!isNative) {
     }
     document.body.classList.add('loaded');
     document.body.style.overflow = 'auto';
-  }, 5000);
+  }, TIMING_CONSTANTS.delays.splashScreenAggressive);
 }
