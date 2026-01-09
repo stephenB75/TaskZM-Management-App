@@ -766,8 +766,15 @@ export function TodayAgendaView({
           </div>
         ) : (
           // LAYER 1: Desktop view with header - basic vertical scroll structure
-          // Wrapper: provides height constraint for ScrollArea (matches InboxView pattern)
-          <div className="flex-1 w-full relative min-h-0">
+          // Wrapper: provides height constraint for ScrollArea
+          // When header is present, use calc to get remaining height after header
+          <div 
+            className="w-full relative min-h-0"
+            style={{
+              // Use calc to get remaining height after header when header is visible
+              height: !hideHeader ? `calc(100% - ${HEADER_HEIGHT}px)` : '100%',
+            }}
+          >
             {/* ScrollArea: handles vertical scrolling when content exceeds viewport */}
             {/* CRITICAL: h-full ensures ScrollArea viewport gets proper height from parent */}
             <ScrollArea className="h-full w-full">
