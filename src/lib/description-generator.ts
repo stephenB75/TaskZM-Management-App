@@ -1180,29 +1180,60 @@ function validateAndEnhanceTermsWithDictionary(
     });
   });
   
-  // FILL GAPS: If search results are minimal, add relevant terms from dictionary based on task name
-  // This ensures we have domain-appropriate terms from Browser AI extraction
-  if (extracted.keywords.length === 0 || extracted.phrases.length === 0) {
-    // Find domain phrases that match task name
-    domainTerms.phrases.forEach(phrase => {
-      const phraseLower = phrase.toLowerCase();
-      if ((taskNameLower.includes(phraseLower) || 
-           taskWords.some(word => phraseLower.includes(word) || word.includes(phraseLower))) &&
-          !validatedPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
-        validatedPhrases.push(phrase);
-      }
+  // ENHANCED: Local Terminology proactively provides additional keywords to assist Browser AI
+  // This ensures Browser AI has a rich set of contextual terms to work with
+  // Find domain phrases that match task name OR relate to extracted keywords
+  domainTerms.phrases.forEach(phrase => {
+    const phraseLower = phrase.toLowerCase();
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+    
+    // Check if phrase matches task name
+    const matchesTaskName = taskNameLower.includes(phraseLower) || 
+           taskWords.some(word => phraseLower.includes(word) || word.includes(phraseLower));
+    
+    // Check if phrase relates to extracted keywords (conceptual relationships)
+    const relatesToKeywords = extracted.keywords.some(kw => {
+      const kwLower = kw.toLowerCase();
+      if (phraseLower.includes(kwLower) || kwLower.includes(phraseLower)) return true;
+      // Check conceptual relationships
+      return phraseWords.some(pw => areConceptsRelated(pw, kwLower) || areWordsRelated(pw, kwLower));
     });
     
-    // Find domain keywords that match task name
-    domainTerms.keywords.forEach(keyword => {
-      const keywordLower = keyword.toLowerCase();
-      if ((taskNameLower.includes(keywordLower) ||
-           taskWords.some(word => keywordLower.includes(word) || word.includes(keywordLower))) &&
-          !validatedKeywords.some(k => k.toLowerCase() === keyword.toLowerCase())) {
-        validatedKeywords.push(keyword);
-      }
+    if ((matchesTaskName || relatesToKeywords) &&
+        !validatedPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
+      validatedPhrases.push(phrase);
+    }
+  });
+  
+  // ENHANCED: Proactively add domain keywords that relate to task or extracted terms
+  domainTerms.keywords.forEach(keyword => {
+    const keywordLower = keyword.toLowerCase();
+    const keywordWords = keywordLower.split(/\s+/);
+    
+    // Check if keyword matches task name
+    const matchesTaskName = taskNameLower.includes(keywordLower) ||
+           taskWords.some(word => keywordLower.includes(word) || word.includes(keywordLower));
+    
+    // Check if keyword relates to extracted keywords (conceptual relationships)
+    const relatesToExtracted = extracted.keywords.some(ekw => {
+      const ekwLower = ekw.toLowerCase();
+      if (keywordLower.includes(ekwLower) || ekwLower.includes(keywordLower)) return true;
+      // Check conceptual relationships
+      return keywordWords.some(kw => areConceptsRelated(kw, ekwLower) || areWordsRelated(kw, ekwLower));
     });
-  }
+    
+    // Check if keyword relates to extracted phrases
+    const relatesToPhrases = extracted.phrases.some(phrase => {
+      const phraseLower = phrase.toLowerCase();
+      return phraseLower.includes(keywordLower) || keywordLower.includes(phraseLower) ||
+             keywordWords.some(kw => phraseLower.includes(kw) || areConceptsRelated(kw, phraseLower));
+    });
+    
+    if ((matchesTaskName || relatesToExtracted || relatesToPhrases) &&
+        !validatedKeywords.some(k => k.toLowerCase() === keyword.toLowerCase())) {
+      validatedKeywords.push(keyword);
+    }
+  });
   
   // FILL GAPS: Add domain verbs/nouns if missing
   if (extracted.verbs.length === 0) {
@@ -1659,8 +1690,14 @@ function buildElaborateContextualDescription(
   // STEP 4: Build elaborate description using extracted terms and domain terminology
   // Priority: Use domain phrases > domain verbs+nouns > extracted phrases > extracted verbs+nouns > keywords
   // Goal: Build complete contextual sentences that explain what the task involves
+  // ENHANCED: Adds variation by randomly selecting different sentence structures and term combinations
   
   let description = '';
+  
+  // ENHANCED: Add variation - randomly select which priority to start with (for different results each time)
+  // This ensures descriptions change each time the button is pressed
+  const variationSeed = Math.random();
+  const useVariation = variationSeed > 0.3; // 70% chance to use variation
   
   // PRIORITY 1: Build complete contextual sentence using domain phrases + keywords + verbs/nouns
   if (elaboratingPhrases.length > 0) {
@@ -1739,6 +1776,9 @@ function buildElaborateContextualDescription(
     
     // If description not built yet, build it with single phrase
     if (!description) {
+      // ENHANCED: Build complete sentences from keywords and phrases
+      // Use sentence templates to construct natural, contextual descriptions
+      
       // Get action verb (prefer extracted, fallback to domain)
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
       
@@ -1774,45 +1814,35 @@ function buildElaborateContextualDescription(
         return isSemanticallyRelevant(n);
       }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
       
-      // Build complete contextual sentence
-      if (phraseHasAction) {
-        // Phrase already has action - build sentence around it with keywords and nouns
-        const parts: string[] = [];
-        parts.push(bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1));
-        
-        if (contextNouns.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-        }
-        
-        if (relevantKeywords.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-        }
-        
-        description = parts.join(' ');
+      // ENHANCED: Build complete contextual sentences using sentence templates
+      // This ensures we write complete sentences from keywords and phrases, not just fragments
+      if (phraseHasAction && contextNouns.length > 0) {
+        // Complete sentence: Phrase (with action) + involving + nouns
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+      } else if (phraseHasAction && relevantKeywords.length > 0) {
+        // Complete sentence: Phrase (with action) + related to + keywords
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+      } else if (actionVerb && contextNouns.length > 0) {
+        // Complete sentence: Verb + phrase + for + nouns
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
+      } else if (actionVerb && relevantKeywords.length > 0) {
+        // Complete sentence: Verb + phrase + related to + keywords
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}.`;
+      } else if (phraseHasAction) {
+        // Complete sentence: Phrase (with action) as standalone sentence
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)}.`;
       } else if (actionVerb) {
-        // Need to add action verb - build sentence with verb + phrase + context
-        const parts: string[] = [];
-        parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`);
-        
-        if (contextNouns.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}`);
-        } else if (relevantKeywords.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}`);
-        }
-        
-        description = parts.join(' ');
-        } else {
-        // No action verb available - use phrase with context
-        const parts: string[] = [];
-        parts.push(bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1));
-        
-        if (contextNouns.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-        } else if (relevantKeywords.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-        }
-        
-        description = parts.join(' ');
+        // Complete sentence: Verb + phrase
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}.`;
+      } else if (contextNouns.length > 0) {
+        // Complete sentence: Phrase + involving + nouns
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+      } else if (relevantKeywords.length > 0) {
+        // Complete sentence: Phrase + related to + keywords
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+      } else {
+        // Fallback: Phrase as standalone sentence
+        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)}.`;
       }
     }
   } 
@@ -2184,9 +2214,100 @@ function buildElaborateContextualDescription(
 }
 
 /**
+ * Shuffle array using Fisher-Yates algorithm for variation
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
+ * Build complete sentences from keywords and phrases
+ * Uses sentence templates to construct natural, contextual descriptions
+ */
+function buildCompleteSentences(
+  keywords: string[],
+  phrases: string[],
+  verbs: string[],
+  nouns: string[],
+  domainTerms: ReturnType<typeof getDomainTerminology>,
+  taskName: string
+): string[] {
+  const sentences: string[] = [];
+  const taskNameLower = taskName.toLowerCase();
+  
+  // Sentence templates for different combinations
+  const sentenceTemplates = [
+    // Template 1: Verb + Noun + Context
+    (v: string, n: string, k: string) => 
+      `${v.charAt(0).toUpperCase() + v.slice(1)} ${n} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${k}.`,
+    // Template 2: Phrase + Context
+    (p: string, k: string) => 
+      `${p.charAt(0).toUpperCase() + p.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${k}.`,
+    // Template 3: Verb + Keywords
+    (v: string, k: string[]) => 
+      `${v.charAt(0).toUpperCase() + v.slice(1)} ${k.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`,
+    // Template 4: Phrase + Keywords
+    (p: string, k: string[]) => 
+      `${p.charAt(0).toUpperCase() + p.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${k.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`,
+    // Template 5: Complete contextual sentence
+    (v: string, n: string, k: string[]) => 
+      `${v.charAt(0).toUpperCase() + v.slice(1)} ${n} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${k.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`,
+  ];
+  
+  // Build sentences using available terms
+  if (verbs.length > 0 && nouns.length > 0 && keywords.length > 0) {
+    const verb = verbs[0];
+    const noun = nouns[0];
+    const keyword = keywords[0];
+    if (!taskNameLower.includes(verb.toLowerCase()) && 
+        !taskNameLower.includes(noun.toLowerCase()) && 
+        !taskNameLower.includes(keyword.toLowerCase())) {
+      sentences.push(sentenceTemplates[0](verb, noun, keyword));
+    }
+  }
+  
+  if (phrases.length > 0 && keywords.length > 0) {
+    const phrase = phrases[0];
+    const keyword = keywords[0];
+    if (!taskNameLower.includes(phrase.toLowerCase()) && 
+        !taskNameLower.includes(keyword.toLowerCase())) {
+      sentences.push(sentenceTemplates[1](phrase, keyword));
+    }
+  }
+  
+  if (verbs.length > 0 && keywords.length > 1) {
+    const verb = verbs[0];
+    const relevantKeywords = keywords
+      .filter(k => !taskNameLower.includes(k.toLowerCase()))
+      .slice(0, 2);
+    if (relevantKeywords.length > 0 && !taskNameLower.includes(verb.toLowerCase())) {
+      sentences.push(sentenceTemplates[2](verb, relevantKeywords));
+    }
+  }
+  
+  if (phrases.length > 0 && keywords.length > 1) {
+    const phrase = phrases[0];
+    const relevantKeywords = keywords
+      .filter(k => !taskNameLower.includes(k.toLowerCase()))
+      .slice(0, 2);
+    if (relevantKeywords.length > 0 && !taskNameLower.includes(phrase.toLowerCase())) {
+      sentences.push(sentenceTemplates[3](phrase, relevantKeywords));
+    }
+  }
+  
+  return sentences;
+}
+
+/**
  * Build contextual description from search results using keywords and phrases
  * NEW FLOW: Constructs natural description from search results that contain keywords and phrases
  * UPDATED: Now uses elaborate description builder to avoid repeating task name
+ * ENHANCED: Adds variation by shuffling terms and using different sentence structures
  */
 function buildContextualDescription(
   taskName: string,
@@ -2199,13 +2320,19 @@ function buildContextualDescription(
   domain: Domain,
   domainTerms: ReturnType<typeof getDomainTerminology>
 ): string {
-  // Use the new elaborate description builder that explains the task without repeating it
+  // Add variation: shuffle terms to get different results each time
+  const shuffledKeywords = shuffleArray(keywords);
+  const shuffledPhrases = shuffleArray(phrases);
+  const shuffledVerbs = shuffleArray(verbs);
+  const shuffledNouns = shuffleArray(nouns);
+  
+  // Use the elaborate description builder with shuffled terms for variation
   return buildElaborateContextualDescription(
     taskName,
-    keywords,
-    phrases,
-    verbs,
-    nouns,
+    shuffledKeywords,
+    shuffledPhrases,
+    shuffledVerbs,
+    shuffledNouns,
     pronouns,
     context,
     domain,
@@ -2519,6 +2646,67 @@ export async function generateDescription(
       description: fallbackDescription,
       domain,
       confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
+    };
+  }
+}
+
+/**
+ * AI Analysis: Provides suggestive phrases for manual description writing
+ * Returns contextual phrases, keywords, verbs, and nouns that users can use to write their own descriptions
+ * This function is called when users want to manually write descriptions with AI assistance
+ * 
+ * @param taskName - The task title/name
+ * @param existingDescription - Optional existing description
+ */
+export function getSuggestivePhrases(
+  taskName: string,
+  existingDescription?: string | null
+): {
+  phrases: string[];
+  keywords: string[];
+  verbs: string[];
+  nouns: string[];
+  domain: Domain;
+} {
+  try {
+    if (!taskName || taskName.trim().length === 0) {
+      return {
+        phrases: [],
+        keywords: [],
+        verbs: [],
+        nouns: [],
+        domain: DEFAULT_TASK_DOMAIN,
+      };
+    }
+
+    // Detect domain
+    const descriptionForDetection = existingDescription?.trim() || '';
+    const domainResult = detectDomain(taskName, descriptionForDetection);
+    const domain = domainResult.domain;
+    const domainTerms = getDomainTerminology(domain);
+
+    // Extract terms using Browser AI
+    const extracted = extractTermsFromTaskNameWithBrowserAI(taskName, domainTerms);
+    
+    // Enhance with Local Terminology (proactively provides additional keywords)
+    const enhanced = validateAndEnhanceTermsWithDictionary(extracted, taskName, domainTerms);
+    
+    // Return suggestive phrases, keywords, verbs, and nouns for manual writing
+    return {
+      phrases: enhanced.phrases.slice(0, 10), // Top 10 phrases
+      keywords: enhanced.keywords.slice(0, 15), // Top 15 keywords
+      verbs: enhanced.verbs.slice(0, 10), // Top 10 verbs
+      nouns: enhanced.nouns.slice(0, 10), // Top 10 nouns
+      domain,
+    };
+  } catch (error) {
+    logger.error(`Error getting suggestive phrases for "${taskName}":`, error);
+    return {
+      phrases: [],
+      keywords: [],
+      verbs: [],
+      nouns: [],
+      domain: DEFAULT_TASK_DOMAIN,
     };
   }
 }
