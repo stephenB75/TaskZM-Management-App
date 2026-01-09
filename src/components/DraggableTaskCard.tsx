@@ -1054,13 +1054,20 @@ export const DraggableTaskCard = React.forwardRef<
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={cn(
-                "w-full flex items-center justify-between font-medium transition-colors rounded-b-lg"
+                "w-full flex items-center justify-between font-medium transition-colors rounded-b-lg",
+                "border-0 outline-none focus:outline-none focus:ring-0",
+                // Remove default button styles that might create visible box
+                "bg-transparent"
               )}
               onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = `${1 - TASK_CARD_DROPDOWN_COLORS.hover.opacity}`;
+                if (isDropdownOpen) {
+                  e.currentTarget.style.opacity = `${1 - TASK_CARD_DROPDOWN_COLORS.hover.opacity}`;
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '1';
+                if (isDropdownOpen) {
+                  e.currentTarget.style.opacity = '1';
+                }
               }}
               style={{
                 paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.header.paddingX}px`,
@@ -1069,7 +1076,8 @@ export const DraggableTaskCard = React.forwardRef<
                 paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.header.paddingY}px`,
                 transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
                 color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
-                backgroundColor: isDark ? domainColors.dark : domainColors.light,
+                // Only show background when dropdown is open (tabs visible), transparent when closed (badges only)
+                backgroundColor: isDropdownOpen ? (isDark ? domainColors.dark : domainColors.light) : 'transparent',
                 fontSize: `${dropdownFontSize}px`,
               }}
             >

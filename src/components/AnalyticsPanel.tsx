@@ -579,13 +579,44 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       
       // Helper function to capture chart as image with proper aspect ratio
       const captureChart = async (ref: React.RefObject<HTMLDivElement>, title: string): Promise<string | null> => {
-        if (!ref.current) return null;
+        if (!ref.current) {
+          console.warn(`Chart ref not available for: ${title}`);
+          return null;
+        }
+        
         try {
-          // Wait for chart to fully render before capture
+          const element = ref.current;
+          
+          // Ensure element is visible and has dimensions
+          if (element.offsetWidth === 0 || element.offsetHeight === 0) {
+            console.warn(`Chart element has zero dimensions for: ${title}`);
+            return null;
+          }
+          
+          // Wait for chart to fully render - multiple checks for SVG rendering
           await new Promise(resolve => setTimeout(resolve, ANALYTICS_PDF_CONFIG.chart.waitForRender || 500));
           
-          const element = ref.current;
+          // Force a reflow to ensure charts are rendered
+          void element.offsetHeight;
+          
+          // Additional wait for SVG rendering (Recharts uses SVG)
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Check if SVG elements are present (Recharts renders as SVG)
+          const svgElements = element.querySelectorAll('svg');
+          if (svgElements.length === 0) {
+            console.warn(`No SVG elements found in chart: ${title}`);
+            // Wait a bit more and try again
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          
           const rect = element.getBoundingClientRect();
+          
+          // Ensure we have valid dimensions
+          if (rect.width === 0 || rect.height === 0) {
+            console.warn(`Chart has invalid dimensions for: ${title}`);
+            return null;
+          }
           
           // Calculate aspect ratio to prevent warping
           const aspectRatio = rect.width / rect.height;
@@ -598,21 +629,92 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             allowTaint: true,
             width: rect.width,
             height: rect.height,
-            windowWidth: rect.width,
-            windowHeight: rect.height,
-            // Preserve aspect ratio
+            windowWidth: window.innerWidth,
+            windowHeight: window.innerHeight,
+            // Better SVG handling
+            foreignObjectRendering: true,
+            // Preserve aspect ratio and ensure proper rendering
             onclone: (clonedDoc) => {
-              // Ensure cloned element maintains dimensions
-              const clonedElement = clonedDoc.querySelector(`[data-chart-ref="${title}"]`) || 
-                                   Array.from(clonedDoc.querySelectorAll('div')).find(el => 
-                                     el.contains(element.cloneNode(true))
-                                   );
+              // Find the cloned element by data attribute
+              const dataAttr = element.getAttribute('data-chart-ref');
+              let clonedElement: HTMLElement | null = null;
+              
+              if (dataAttr) {
+                // Try exact match first
+                clonedElement = clonedDoc.querySelector(`[data-chart-ref="${dataAttr}"]`) as HTMLElement;
+                
+                // Fallback: search all elements with data-chart-ref
+                if (!clonedElement) {
+                  const allElements = clonedDoc.querySelectorAll('[data-chart-ref]');
+                  for (const el of Array.from(allElements)) {
+                    if (el.getAttribute('data-chart-ref') === dataAttr) {
+                      clonedElement = el as HTMLElement;
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              // If still not found, try to find by structure (last resort)
+              if (!clonedElement) {
+                // Find element at same position in cloned document
+                const allDivs = clonedDoc.querySelectorAll('div');
+                for (const div of Array.from(allDivs)) {
+                  const divRect = (div as HTMLElement).getBoundingClientRect();
+                  // Match by approximate position and size
+                  if (Math.abs(divRect.width - rect.width) < 10 && 
+                      Math.abs(divRect.height - rect.height) < 10) {
+                    const divSvg = div.querySelector('svg');
+                    if (divSvg) {
+                      clonedElement = div as HTMLElement;
+                      break;
+                    }
+                  }
+                }
+              }
+              
               if (clonedElement) {
-                (clonedElement as HTMLElement).style.width = `${rect.width}px`;
-                (clonedElement as HTMLElement).style.height = `${rect.height}px`;
+                // Ensure dimensions are maintained
+                clonedElement.style.width = `${rect.width}px`;
+                clonedElement.style.height = `${rect.height}px`;
+                clonedElement.style.position = 'relative';
+                clonedElement.style.overflow = 'visible';
+                clonedElement.style.display = 'block';
+                clonedElement.style.visibility = 'visible';
+                
+                // Ensure all SVG elements are visible and properly sized
+                const svgs = clonedElement.querySelectorAll('svg');
+                svgs.forEach((svg) => {
+                  const svgEl = svg as SVGSVGElement;
+                  svgEl.setAttribute('width', String(rect.width));
+                  svgEl.setAttribute('height', String(rect.height));
+                  svgEl.style.width = `${rect.width}px`;
+                  svgEl.style.height = `${rect.height}px`;
+                  svgEl.style.display = 'block';
+                  svgEl.style.visibility = 'visible';
+                  svgEl.style.position = 'relative';
+                  
+                  // Ensure SVG viewBox is set correctly
+                  if (!svgEl.getAttribute('viewBox')) {
+                    svgEl.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+                  }
+                });
+                
+                // Also ensure ResponsiveContainer wrapper is properly sized
+                const responsiveContainers = clonedElement.querySelectorAll('.recharts-responsive-container');
+                responsiveContainers.forEach((container) => {
+                  (container as HTMLElement).style.width = `${rect.width}px`;
+                  (container as HTMLElement).style.height = `${rect.height}px`;
+                });
               }
             },
           });
+          
+          // Verify canvas has content
+          if (canvas.width === 0 || canvas.height === 0) {
+            console.warn(`Canvas has zero dimensions for: ${title}`);
+            return null;
+          }
           
           return canvas.toDataURL(ANALYTICS_PDF_CONFIG.chart.imageFormat, 1.0);
         } catch (error) {
@@ -1174,7 +1276,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-3 pb-3">
-                    <div ref={statusChartRef} className="h-56" style={{ minHeight: '224px', width: '100%' }} data-chart-ref="Status Distribution">
+                    <div ref={statusChartRef} className="h-56" style={{ minHeight: '224px', width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.statusDistribution}>
                       {(() => {
                         try {
                           const validData = analytics?.statusDistribution?.filter(
@@ -1288,7 +1390,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
-                <div ref={timeTrendChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref="Time Tracked">
+                <div ref={timeTrendChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTimeTracked}>
                   {analytics?.timeTrackingTrend && Array.isArray(analytics.timeTrackingTrend) && analytics.timeTrackingTrend.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={analytics.timeTrackingTrend.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -1335,7 +1437,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
-                <div ref={tasksCreatedCompletedChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref="Tasks Created vs Completed">
+                <div ref={tasksCreatedCompletedChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTasksCreatedCompleted}>
                   {analytics?.taskPerDayProgress && Array.isArray(analytics.taskPerDayProgress) && analytics.taskPerDayProgress.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={analytics.taskPerDayProgress.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -1388,7 +1490,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div ref={timeOfDayChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref="Completion by Time of Day">
+                  <div ref={timeOfDayChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analytics.timePatterns.blocks.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
@@ -1434,7 +1536,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div ref={topTagsChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref="Top Task Tags">
+                  <div ref={topTagsChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTopTaskTags}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={analytics.taskTypes.filter(item => item && typeof item === 'object')}
@@ -1556,7 +1658,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-3 pb-3">
-                    <div ref={statusChartRef} className="h-56" style={{ minHeight: '224px', width: '100%' }} data-chart-ref="Status Distribution">
+                    <div ref={statusChartRef} className="h-56" style={{ minHeight: '224px', width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.statusDistribution}>
                       {(() => {
                         try {
                           const validData = analytics?.statusDistribution?.filter(
@@ -1669,7 +1771,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
-                <div ref={timeTrendChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref="Time Tracked">
+                <div ref={timeTrendChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTimeTracked}>
                   {analytics?.timeTrackingTrend && Array.isArray(analytics.timeTrackingTrend) && analytics.timeTrackingTrend.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={analytics.timeTrackingTrend.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -1716,7 +1818,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
-                <div ref={tasksCreatedCompletedChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref="Tasks Created vs Completed">
+                <div ref={tasksCreatedCompletedChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTasksCreatedCompleted}>
                   {analytics?.taskPerDayProgress && Array.isArray(analytics.taskPerDayProgress) && analytics.taskPerDayProgress.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={analytics.taskPerDayProgress.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -1769,7 +1871,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div ref={timeOfDayChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref="Completion by Time of Day">
+                  <div ref={timeOfDayChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={analytics.timePatterns.blocks.filter(item => item && typeof item === 'object')} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={borderColor} vertical={false} />
@@ -1815,7 +1917,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-3 pb-3">
-                  <div ref={topTagsChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref="Top Task Tags">
+                  <div ref={topTagsChartRef} className="h-40" style={{ width: '100%' }} data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTopTaskTags}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={analytics.taskTypes.filter(item => item && typeof item === 'object')}
