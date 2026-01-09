@@ -14,7 +14,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
-import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML } from "../lib/utils";
+import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "sonner";
 import type { Task } from "../types";
@@ -1437,7 +1437,7 @@ export function TodayAgendaView({
           setSelectedTask(null);
         }}
         task={selectedTask}
-        initialDate={today.toISOString()}
+        initialDate={getDateString(today)}
       />
       </div>
     </>
