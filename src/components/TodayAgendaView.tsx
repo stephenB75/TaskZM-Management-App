@@ -445,7 +445,7 @@ export function TodayAgendaView({
           `flex flex-col transition-all duration-300`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
-          isMobile ? "w-full" : "flex-1 min-h-0", // flex-1 and min-h-0 needed for flex child to properly constrain ScrollArea (removed h-full to avoid conflict)
+          isMobile ? "w-full" : "h-full min-h-0", // h-full ensures proper height chain for ScrollArea (matches InboxView pattern)
           // On desktop, apply gradient background to root container (like Folders Panel)
           !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
         )}
