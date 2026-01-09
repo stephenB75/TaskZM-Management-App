@@ -72,6 +72,7 @@ interface TaskContextType {
   hoursSettings: HoursSettings;
   rolloverSettings: RolloverSettings;
   workspaceId: string | null;
+  isLoading: boolean;
   isSyncing: boolean;
   lastSync: Date | null;
   addTask: (task: Partial<Task>) => Promise<void>;
@@ -126,6 +127,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     sortOrder: 'asc',
     showCompleted: true,
   });
+  const [isLoading, setIsLoading] = useState(true); // Track workspace loading state
   const [hoursSettings, setHoursSettings] = useState<HoursSettings>({
     weekdayHours: {
       work: { start: DEFAULT_WEEKDAY_WORK_START, end: DEFAULT_WEEKDAY_WORK_END, enabled: true },
@@ -194,6 +196,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       if (savedFolders.length > 0) {
         setFolders(savedFolders);
       }
+      setIsLoading(false); // Not loading if no user
       return;
     }
 
@@ -318,6 +321,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               logger.error('Error loading workspace data:', loadError);
               // Continue anyway - partial data is better than no data
             }
+            setIsLoading(false); // Loading complete
             return;
           } else {
             logger.warn('Workspace ID is empty in response');
@@ -371,6 +375,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     if (savedFolders.length > 0) {
       setFolders(savedFolders);
     }
+    setIsLoading(false); // Mark as loaded even with fallback
   }
 
   const createWorkspaceIfNeeded = useCallback(async () => {
@@ -3079,6 +3084,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         hoursSettings,
         rolloverSettings,
         workspaceId,
+        isLoading,
         isSyncing,
         lastSync,
         addTask,

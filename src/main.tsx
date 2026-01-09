@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './styles/globals.css';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
+import { logger } from './lib/logger';
 
 // Suppress browser extension errors that are not from our code
 if (typeof window !== 'undefined') {
@@ -486,7 +487,7 @@ if (isNative) {
   setTimeout(hideCapacitorSplash, TIMING_CONSTANTS.delays.splashScreen[1]);
   setTimeout(hideCapacitorSplash, TIMING_CONSTANTS.delays.splashScreen[1]);
   
-  // Hide HTML splash when React app is ready (with longer delay for content to load)
+  // Hide HTML splash when app is ready (all critical data loaded)
   const hideSplashScreen = () => {
     const splashEl = document.getElementById('initial-splash');
     if (splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden')) {
@@ -500,26 +501,23 @@ if (isNative) {
     }
   };
   
-  // Wait for React to mount and content to load before hiding splash
-  // Optimized: Reduced delays for faster perceived load time
-  const hideWhenReady = () => {
-    // Wait for React to render
+  // Listen for app-ready event from LoadingContext
+  // This ensures splash stays visible until all critical data is loaded
+  window.addEventListener('app-ready', () => {
+    if (import.meta.env.DEV) {
+      console.log('✅ App ready event received, hiding splash screen');
+    }
+    // Small delay to ensure smooth transition
     requestAnimationFrame(() => {
-      // Reduced delay: Show UI faster (optimistic loading means data is already available)
-      setTimeout(hideSplashScreen, TIMING_CONSTANTS.delays.splashScreen[2]);
+      setTimeout(hideSplashScreen, 100);
     });
-  };
+  }, { once: true });
   
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hideWhenReady);
-  } else {
-    hideWhenReady();
-  }
-  
-  // Fallback: Hide splash after React renders
+  // Fallback: Hide splash after maximum wait time (safety net)
+  // This ensures splash doesn't stay forever if something goes wrong
   setTimeout(() => {
     hideSplashScreen();
-  }, TIMING_CONSTANTS.delays.splashScreenFallback);
+  }, TIMING_CONSTANTS.delays.splashScreenAggressive);
 }
 
 // Safe root element access with error handling

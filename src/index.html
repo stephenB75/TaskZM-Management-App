@@ -28,8 +28,11 @@
     <meta name="application-name" content="TaskZM - GTD in its simplest form." />
     <!-- Icons will be set by DocumentHead.tsx to ensure proper app icon is used -->
     
-    <!-- Preload splash logo for faster loading -->
+    <!-- Preload critical resources for faster loading -->
     <link rel="preload" as="image" href="/taskzm-logo.png" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-var.woff2" crossorigin="anonymous" />
+    <link rel="dns-prefetch" href="https://gflesnyfpxqhaunfskrw.supabase.co" />
+    <link rel="preconnect" href="https://gflesnyfpxqhaunfskrw.supabase.co" crossorigin />
 
     <style>
       body {

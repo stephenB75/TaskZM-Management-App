@@ -1459,6 +1459,87 @@ export function saveNewTerminologyToLibrary(
 
 
 /**
+ * Cache for shared terminology fetched from the database
+ * Stores { terminology: DomainTerminology, timestamp: number }
+ */
+const sharedTerminologyCache = new Map<Domain, { terminology: DomainTerminology; timestamp: number }>();
+
+/**
+ * Get domain-specific terminology (synchronous version, uses cached shared terms)
+ * Merges base terminology with user-learned terminology from localStorage and cached shared terms.
+ */
+export function getDomainTerminology(domain: Domain): DomainTerminology {
+  const baseTerminology = DOMAIN_TERMINOLOGIES[domain] || DOMAIN_TERMINOLOGIES.personal;
+  const userTerminology = loadUserTerminology();
+  const userDomainTerms = userTerminology[domain];
+  const cachedShared = sharedTerminologyCache.get(domain);
+
+  // Merge base, cached shared (if available), and user-learned
+  return {
+    keywords: [...baseTerminology.keywords, ...(cachedShared?.terminology.keywords || []), ...(userDomainTerms?.keywords || [])],
+    phrases: [...baseTerminology.phrases, ...(cachedShared?.terminology.phrases || []), ...(userDomainTerms?.phrases || [])],
+    verbs: [...baseTerminology.verbs, ...(cachedShared?.terminology.verbs || []), ...(userDomainTerms?.verbs || [])],
+    nouns: [...baseTerminology.nouns, ...(cachedShared?.terminology.nouns || []), ...(userDomainTerms?.nouns || [])],
+    pronouns: baseTerminology.pronouns,
+    context: baseTerminology.context,
+    effortMultiplier: baseTerminology.effortMultiplier,
+  };
+}
+
+/**
+ * Get domain-specific terminology asynchronously, merging base, shared, and user-learned terms.
+ * Uses caching for shared terms.
+ */
+export async function getDomainTerminologyAsync(domain: Domain): Promise<DomainTerminology> {
+  const baseTerminology = DOMAIN_TERMINOLOGIES[domain] || DOMAIN_TERMINOLOGIES.personal;
+  const userTerminology = loadUserTerminology();
+  const userDomainTerms = userTerminology[domain];
+
+  // Check cache for shared terminology
+  const cached = sharedTerminologyCache.get(domain);
+  if (cached && Date.now() - cached.timestamp < TERMINOLOGY_CONFIG.sharedTerminologyCacheTTL) {
+    logger.debug(`Using cached shared terminology for domain: ${domain}`);
+    // Merge base, cached shared, and user-learned
+    return {
+      keywords: [...baseTerminology.keywords, ...cached.terminology.keywords, ...(userDomainTerms?.keywords || [])],
+      phrases: [...baseTerminology.phrases, ...cached.terminology.phrases, ...(userDomainTerms?.phrases || [])],
+      verbs: [...baseTerminology.verbs, ...cached.terminology.verbs, ...(userDomainTerms?.verbs || [])],
+      nouns: [...baseTerminology.nouns, ...cached.terminology.nouns, ...(userDomainTerms?.nouns || [])],
+      pronouns: baseTerminology.pronouns,
+      context: baseTerminology.context,
+      effortMultiplier: baseTerminology.effortMultiplier,
+    };
+  }
+
+  // Fetch shared terminology from API
+  let sharedTerms: { keywords: string[]; phrases: string[]; verbs: string[]; nouns: string[]; } = {
+    keywords: [], phrases: [], verbs: [], nouns: []
+  };
+  try {
+    const response = await getSharedTerminology(domain);
+    if (response.terminology) {
+      sharedTerms = response.terminology;
+      // Update cache
+      sharedTerminologyCache.set(domain, { terminology: sharedTerms, timestamp: Date.now() });
+      logger.debug(`Fetched and cached shared terminology for domain: ${domain}`);
+    }
+  } catch (error) {
+    logger.warn(`Failed to fetch shared terminology for domain ${domain}, using only local:`, error);
+  }
+
+  // Merge base, fetched shared, and user-learned
+  return {
+    keywords: [...baseTerminology.keywords, ...sharedTerms.keywords, ...(userDomainTerms?.keywords || [])],
+    phrases: [...baseTerminology.phrases, ...sharedTerms.phrases, ...(userDomainTerms?.phrases || [])],
+    verbs: [...baseTerminology.verbs, ...sharedTerms.verbs, ...(userDomainTerms?.verbs || [])],
+    nouns: [...baseTerminology.nouns, ...sharedTerms.nouns, ...(userDomainTerms?.nouns || [])],
+    pronouns: baseTerminology.pronouns,
+    context: baseTerminology.context,
+    effortMultiplier: baseTerminology.effortMultiplier,
+  };
+}
+
+/**
  * Check if a word/phrase matches any domain terminology
  */
 export function matchesDomainTerminology(

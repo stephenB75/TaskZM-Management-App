@@ -13,6 +13,8 @@ import { Button } from './components/ui/button';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
 import { TaskProvider, useTasks } from './contexts/TaskContext';
+import { LoadingProvider, useLoading } from './contexts/LoadingContext';
+import { LoadingProvider, useLoading } from './contexts/LoadingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { AIProvider, useAI } from './contexts/AIContext';
@@ -68,7 +70,8 @@ const getTwoWeekDateRange = () => {
 };
 
 function AppContent() {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
+  const { isLoading, loadingMessage } = useLoading();
   useDemoActivity(); // Track demo user activity on app interactions
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { settings: aiSettings } = useAI();
@@ -550,7 +553,7 @@ function AppContent() {
             <div className="animate-spin rounded-full h-12 w-12 md:h-16 md:w-16 border-4 border-[#E6D5F0] border-t-primary mx-auto"></div>
             <div className="absolute inset-0 rounded-full h-12 w-12 md:h-16 md:w-16 border-4 border-[#C9E4F7] border-t-accent mx-auto animate-spin" style={{ animationDirection: 'reverse', animationDuration: `${TIMING_CONSTANTS.animations.long * 3 / 1000}s` }}></div>
           </div>
-          <p className="text-foreground mt-4 text-sm md:text-base font-medium">Loading TaskZM...</p>
+          <p className="text-foreground mt-4 text-sm md:text-base font-medium">{loadingMessage || 'Loading TaskZM...'}</p>
           <div className="flex gap-1 justify-center mt-3">
             <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
             <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -935,7 +938,8 @@ export default function App() {
         <AuthProvider>
           <SubscriptionProvider>
             <TaskProvider>
-              <TeamProvider>
+              <LoadingProvider>
+                <TeamProvider>
                 <AwardProvider>
                   <CalendarProvider>
                     <AIProvider>
@@ -953,7 +957,8 @@ export default function App() {
                     </AIProvider>
                   </CalendarProvider>
                 </AwardProvider>
-              </TeamProvider>
+                </TeamProvider>
+              </LoadingProvider>
             </TaskProvider>
           </SubscriptionProvider>
         </AuthProvider>

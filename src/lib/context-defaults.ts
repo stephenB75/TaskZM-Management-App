@@ -296,6 +296,7 @@ export function createDefaultTaskContext() {
     hoursSettings: createDefaultHoursSettings(),
     rolloverSettings: createDefaultRolloverSettings(),
     workspaceId: null,
+    isLoading: true,
     isSyncing: false,
     lastSync: null,
     addTask: async () => {},
