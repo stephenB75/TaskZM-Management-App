@@ -22,7 +22,7 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, TODAY_AGENDA_CONTENT_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
@@ -766,10 +766,10 @@ export function TodayAgendaView({
           </div>
         ) : (
           // LAYER 1: Desktop view with header - basic vertical scroll structure
-          // Wrapper: flex container with height constraints for ScrollArea
-          <div className={cn("flex-1 w-full relative min-h-0 flex flex-col")}>
+          // Wrapper: provides height constraint for ScrollArea (matches InboxView pattern)
+          <div className="flex-1 w-full relative min-h-0">
             {/* ScrollArea: handles vertical scrolling when content exceeds viewport */}
-            {/* CRITICAL: h-full ensures ScrollArea viewport gets proper height from flex parent */}
+            {/* CRITICAL: h-full ensures ScrollArea viewport gets proper height from parent */}
             <ScrollArea className="h-full w-full">
               <div 
                 ref={timelineContainerRef}
@@ -1052,14 +1052,8 @@ export function TodayAgendaView({
             </div>
           ) : (
             <>
-              {/* LAYER 1: Content container - extends naturally to enable scrolling */}
-              <div 
-                className="flex flex-col w-full relative z-10"
-                style={{ 
-                  overflow: 'visible',
-                  minHeight: combinedItems.length > 0 ? TODAY_AGENDA_CONTENT_MIN_HEIGHT : 'auto',
-                }}
-              >
+              {/* LAYER 1: Content container - extends naturally based on content */}
+              <div className="flex flex-col w-full relative z-10">
                 {combinedItems.map((item, index) => {
                   if (item.type === 'task' && item.task) {
                     // Find the layout for this task
