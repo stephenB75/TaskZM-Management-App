@@ -766,15 +766,9 @@ export function TodayAgendaView({
           </div>
         ) : (
           // LAYER 1: Desktop view with header - basic vertical scroll structure
-          // Wrapper: provides height constraint for ScrollArea
-          // When header is present, use calc to get remaining height after header
-          <div 
-            className="w-full relative min-h-0"
-            style={{
-              // Use calc to get remaining height after header when header is visible
-              height: !hideHeader ? `calc(100% - ${HEADER_HEIGHT}px)` : '100%',
-            }}
-          >
+          // Wrapper: flex-1 to take remaining space after header (matches InboxView pattern exactly)
+          // When hideHeader is true, this is the only child, so flex-1 should take all space
+          <div className={cn("flex-1 min-h-0", !hideHeader && "w-full relative")}>
             {/* ScrollArea: handles vertical scrolling when content exceeds viewport */}
             {/* CRITICAL: h-full ensures ScrollArea viewport gets proper height from parent */}
             <ScrollArea className="h-full w-full">
@@ -1003,23 +997,21 @@ export function TodayAgendaView({
         </div>
         )
       ) : (
-        <div 
-          ref={timelineContainerRef}
-          className="px-5 w-full relative"
-          style={{
-            // On mobile (hideHeader=false), add spacing between header and first item to match desktop
-            // On desktop (hideHeader=true), add spacing from header in sidebar panel
-            paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
-              ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` // Add spacing between header and first item on mobile
-              : DESKTOP_PADDING_TOP, // Desktop padding for proper spacing from header in sidebar panel
-            paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-              ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer
-              : NAV_BAR_SCROLL_BUFFER_REM, // Desktop sidebar: Add bottom padding to ensure content isn't cut off when scrolling
-            // Ensure transparent background to show parent gradient
-            backgroundColor: 'transparent',
-            background: 'transparent',
-          } as React.CSSProperties}
-        >
+        // LAYER 1: When hideHeader=false (header IS visible)
+        typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet ? (
+          // Desktop: Use ScrollArea when header is visible (matches the pattern from line 767)
+          <div className="flex-1 min-h-0">
+            <ScrollArea className="h-full w-full">
+              <div 
+                ref={timelineContainerRef}
+                className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative")}
+                style={{
+                  paddingTop: DESKTOP_PADDING_TOP,
+                  paddingBottom: `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
+                  backgroundColor: 'transparent',
+                  background: 'transparent',
+                } as React.CSSProperties}
+              >
           {combinedItems.length === 0 ? (
             <div className={cn(
               `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
@@ -1228,7 +1220,213 @@ export function TodayAgendaView({
               })()}
             </>
           )}
-        </div>
+              </div>
+            </ScrollArea>
+          </div>
+        ) : (
+          // Mobile: No ScrollArea, rely on parent scroll
+          <div 
+            ref={timelineContainerRef}
+            className="px-5 w-full relative"
+            style={{
+              paddingTop: `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px`,
+              paddingBottom: `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
+              backgroundColor: 'transparent',
+              background: 'transparent',
+            } as React.CSSProperties}
+          >
+            {combinedItems.length === 0 ? (
+              <div className={cn(
+                `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
+                isOver && "scale-105"
+              )}>
+                <motion.div 
+                  className={cn(
+                    "w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none transition-all duration-300",
+                    isOver && "bg-primary/20 scale-110 ring-4 ring-primary/30"
+                  )}
+                  animate={isOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Calendar className={cn(
+                    "w-6 h-6 text-primary/40 transition-colors duration-300",
+                    isOver && "text-primary/60"
+                  )} />
+                </motion.div>
+                <p className={cn(
+                  "text-sm text-muted-foreground mb-3 pointer-events-none transition-colors duration-300",
+                  isOver && "text-primary/80 font-medium"
+                )}>
+                  {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddTask}
+                  className={cn(
+                    "!rounded-full pointer-events-auto transition-all duration-300",
+                    isOver && "ring-2 ring-primary/50 scale-105"
+                  )}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {TODAY_AGENDA_TEXT.emptyState.addTask}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col w-full relative z-10">
+                  {combinedItems.map((item, index) => {
+                    if (item.type === 'task' && item.task) {
+                      const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
+                      const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      return (
+                        <div
+                          key={`task-${item.task.id}`}
+                          data-task-id={item.task.id}
+                          style={{
+                            marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
+                          }}
+                        >
+                          <div
+                            style={{
+                              transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                              transformOrigin: 'top center',
+                            }}
+                          >
+                            <DraggableTaskCard
+                              task={item.task}
+                              onClick={() => item.task && handleTaskClick(item.task)}
+                              droppableId="today-agenda"
+                              isNextUp={item.task.id === nextUpTaskId}
+                              onComplete={handleTaskComplete}
+                            />
+                          </div>
+                        </div>
+                      );
+                    } else if (item.type === 'event' && item.event) {
+                      const prevItem = index > 0 ? combinedItems[index - 1] : null;
+                      let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                      if (index === 0) {
+                        marginTop = 0;
+                      } else if (prevItem) {
+                        marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                      }
+                      return (
+                        <div
+                          key={`event-${item.event.id}`}
+                          data-event-id={item.event.id}
+                          style={{
+                            marginTop: `${marginTop}px`,
+                          }}
+                        >
+                          <CalendarEventCard
+                            title={item.event.title}
+                            start={item.event.start}
+                            end={item.event.end}
+                            location={item.event.location}
+                            provider={item.event.provider}
+                            calendarColor={item.event.calendarColor}
+                          />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+                {(() => {
+                  const nextUpTask = todayTasks.find((task) => task.id === nextUpTaskId);
+                  if (!nextUpTask || !nextUpTask.notes) return null;
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="mt-6 pt-4 border-t border-primary/20"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <StickyNote className="w-4 h-4 text-primary" />
+                        <h3 className="text-xs uppercase tracking-wide text-muted-foreground">
+                          Next Up Details
+                        </h3>
+                      </div>
+                      <motion.div
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="p-3 rounded-lg bg-gradient-to-r cursor-pointer transition-all"
+                        style={{
+                          background: `linear-gradient(to right, ${UI_GRADIENT_COLORS.status.success.from}10, ${UI_GRADIENT_COLORS.status.success.to}10, transparent)`,
+                          borderLeftColor: UI_GRADIENT_COLORS.status.success.from,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(to right, ${UI_GRADIENT_COLORS.status.success.from}20, ${UI_GRADIENT_COLORS.status.success.to}15, transparent)`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(to right, ${UI_GRADIENT_COLORS.status.success.from}10, ${UI_GRADIENT_COLORS.status.success.to}10, transparent)`;
+                        }}
+                        onClick={() => handleTaskClick(nextUpTask)}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div
+                            className={cn(
+                              "w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0",
+                              getPriorityColor(nextUpTask.priority),
+                            )}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="text-xs line-clamp-1 flex-1 font-semibold">
+                                {nextUpTask.title}
+                              </h4>
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                {nextUpTask.scheduledDate && (
+                                  <span className={cn(TEXT_SIZES.xs9, "text-muted-foreground")}>
+                                    {getTaskTime(nextUpTask)}
+                                  </span>
+                                )}
+                                <span 
+                                  className={cn(TEXT_SIZES.xs9, "px-1.5 py-0.5 rounded-full uppercase tracking-wider")}
+                                  style={{
+                                    backgroundColor: UI_GRADIENT_COLORS.status.success.from,
+                                    color: actualTheme === 'dark' ? UI_TODAY_AGENDA_STATUS_COLORS.success.text.light : UI_TODAY_AGENDA_STATUS_COLORS.success.text.dark,
+                                  }}
+                                >
+                                  {TODAY_AGENDA_TEXT.nextUp}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-1.5 mt-1.5">
+                              <StickyNote className="w-3 h-3 text-primary/60 mt-0.5 flex-shrink-0" />
+                              <div 
+                                className={cn(
+                                  "text-xs text-muted-foreground leading-relaxed flex-1",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_strong]:font-bold [&_b]:font-bold",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_em]:italic [&_i]:italic",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_u]:underline",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_s]:line-through [&_strike]:line-through",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800 [&_mark]:px-0.5 [&_mark]:rounded",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5 [&_ul]:space-y-1",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5 [&_ol]:space-y-1",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_li]:ml-1 [&_li]:leading-relaxed",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_p]:my-1 [&_p]:leading-relaxed [&_p]:block [&_p:empty]:hidden",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_p+p]:mt-2",
+                                  hasHTMLTags(nextUpTask.notes) && "[&_code]:bg-muted [&_code]:dark:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:inline-block"
+                                )}
+                                {...(hasHTMLTags(nextUpTask.notes) 
+                                  ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(nextUpTask.notes) } }
+                                  : { children: nextUpTask.notes }
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+        )
       )}
 
       {/* Task Dialog */}
