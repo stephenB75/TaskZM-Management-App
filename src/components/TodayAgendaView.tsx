@@ -449,7 +449,7 @@ export function TodayAgendaView({
           `flex flex-col transition-all duration-300`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
-          isMobile ? "w-full" : "h-full min-h-0 flex-1", // min-h-0 and flex-1 needed for flex child to properly constrain ScrollArea
+          isMobile ? "w-full" : "flex-1 min-h-0", // flex-1 and min-h-0 needed for flex child to properly constrain ScrollArea (removed h-full to avoid conflict)
           // On desktop, apply gradient background to root container (like Folders Panel)
           !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
         )}
@@ -779,8 +779,8 @@ export function TodayAgendaView({
           // Wrapper: flex container with height constraints for ScrollArea
           <div className={cn("flex-1 w-full relative min-h-0 flex flex-col")}>
             {/* ScrollArea: handles vertical scrolling when content exceeds viewport */}
-            {/* CRITICAL: flex-1 and min-h-0 ensure ScrollArea gets proper height from flex parent */}
-            <ScrollArea className="flex-1 w-full min-h-0">
+            {/* CRITICAL: h-full ensures ScrollArea viewport gets proper height from flex parent */}
+            <ScrollArea className="h-full w-full">
               <div 
                 ref={timelineContainerRef}
                 className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative")}
@@ -1101,6 +1101,7 @@ export function TodayAgendaView({
                         onClick={() => item.task && handleTaskClick(item.task)}
                         droppableId="today-agenda"
                         isNextUp={item.task.id === nextUpTaskId}
+                        onComplete={handleTaskComplete}
                       />
                     </div>
                   </div>
