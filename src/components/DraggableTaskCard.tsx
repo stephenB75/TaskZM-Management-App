@@ -744,6 +744,10 @@ export const DraggableTaskCard = React.forwardRef<
               ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800' }
               : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800' };
             
+            // For 15-minute tasks, show only the first step (consistent with desktop view)
+            const is15MinuteTask = estimatedTimeValue !== null && estimatedTimeValue <= 15;
+            const maxStepsToShow = is15MinuteTask ? 1 : 3;
+            
             return (
               <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                 <div className="flex items-center gap-1 mb-1">
@@ -753,7 +757,7 @@ export const DraggableTaskCard = React.forwardRef<
                   </span>
                 </div>
                 <div className="space-y-0.5">
-                  {breakdown.actionPlan.steps.slice(0, 3).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
+                  {breakdown.actionPlan.steps.slice(0, maxStepsToShow).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
                     <div key={idx} className="flex items-start gap-1.5">
                       <span className={cn("mt-0.5 flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                         {step.order || (idx + 1)}.
@@ -768,9 +772,9 @@ export const DraggableTaskCard = React.forwardRef<
                       )}
                     </div>
                   ))}
-                  {breakdown.actionPlan.steps.length > 3 && (
+                  {breakdown.actionPlan.steps.length > maxStepsToShow && (
                     <div className={cn("mt-0.5", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                      +{breakdown.actionPlan.steps.length - 3} more steps
+                      +{breakdown.actionPlan.steps.length - maxStepsToShow} more steps
                     </div>
                   )}
                   {breakdown.actionPlan.totalEstimatedMinutes > 0 && (
