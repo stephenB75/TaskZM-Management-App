@@ -50,11 +50,8 @@ export function TodayAgendaView({
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
-  const hasAutoScrolledRef = useRef(false); // Track if we've auto-scrolled on initial load
-  const userHasScrolledRef = useRef(false); // Track if user has manually scrolled
-  const initialScrollAttemptedRef = useRef(false); // Track if we've attempted initial scroll
-  const scrollResetTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout to reset scroll tracking
-  const lastNextUpTaskIdRef = useRef<string | null>(null); // Track last next up task ID
+  // ScrollArea ref for programmatic scrolling (Layer 3 - optional)
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
   const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }>>([]);
@@ -94,33 +91,7 @@ export function TodayAgendaView({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // Track date to reset scroll flags when day changes
-  const todayDateString = today.toDateString();
-  const prevDateStringRef = useRef<string | null>(null);
-  
-  useEffect(() => {
-    if (prevDateStringRef.current !== null && prevDateStringRef.current !== todayDateString) {
-      // Day has changed, reset scroll flags to allow auto-scroll again
-      hasAutoScrolledRef.current = false;
-      userHasScrolledRef.current = false;
-      initialScrollAttemptedRef.current = false;
-      lastNextUpTaskIdRef.current = null;
-      if (scrollResetTimeoutRef.current) {
-        clearTimeout(scrollResetTimeoutRef.current);
-        scrollResetTimeoutRef.current = null;
-      }
-    }
-    prevDateStringRef.current = todayDateString;
-  }, [todayDateString]);
-  
-  // Cleanup scroll reset timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollResetTimeoutRef.current) {
-        clearTimeout(scrollResetTimeoutRef.current);
-      }
-    };
-  }, []);
+  // Layer 1: Basic structure - no scroll tracking needed for now
   const allTodayTasks = Array.isArray(tasks) ? tasks.filter((task) => {
     // Defensive check: ensure task is valid
     if (!task || typeof task !== 'object') {
@@ -263,164 +234,9 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks]);
 
-  // Auto-scroll to "next up" task - only on initial load or when next up task changes
-  // User can always scroll freely - auto-scroll only happens when appropriate
-  // On mobile (hideHeader=false), scroll the parent container in App.tsx
-  // On desktop (hideHeader=true), scroll the ScrollArea viewport
-  useEffect(() => {
-    if (combinedItems.length === 0 || !nextUpTaskId) return;
-
-    // If next up task changed, allow auto-scroll again
-    const nextUpChanged = lastNextUpTaskIdRef.current !== nextUpTaskId;
-    const isInitialLoad = !initialScrollAttemptedRef.current;
-    
-    if (nextUpChanged) {
-      lastNextUpTaskIdRef.current = nextUpTaskId;
-      // Reset scroll tracking when next up task changes
-      userHasScrolledRef.current = false;
-      hasAutoScrolledRef.current = false;
-    }
-
-    // Only auto-scroll on initial load or when next up task changes
-    // User can always scroll freely - we don't prevent user scrolling
-    if (!isInitialLoad && !nextUpChanged) return;
-    
-    // Mark that we've attempted initial scroll (only on first load)
-    if (isInitialLoad) {
-      initialScrollAttemptedRef.current = true;
-    }
-
-    const scrollToNextUpTask = () => {
-      // Don't auto-scroll if user has manually scrolled (unless it's initial load or next up changed)
-      // This allows user to scroll freely while still enabling next up on initial load
-      if (userHasScrolledRef.current && !isInitialLoad && !nextUpChanged) return;
-      
-      // OPTIMIZED: Defer DOM queries to requestAnimationFrame to avoid blocking
-      requestAnimationFrame(() => {
-        // Find the next up task element
-        const nextUpElement = timelineContainerRef.current?.querySelector(`[data-task-id="${nextUpTaskId}"]`) as HTMLElement;
-        
-        if (nextUpElement) {
-          // Desktop: Scroll within ScrollArea viewport (both hideHeader=true and hideHeader=false on desktop)
-          if (hideHeader || (!isMobile && !hideHeader)) {
-            const scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
-            if (scrollViewport) {
-              // Get the container that holds the scrollable content
-              const scrollContainer = timelineContainerRef.current;
-              if (scrollContainer) {
-                // Check if content is actually scrollable before attempting to scroll
-                const containerHeight = scrollContainer.scrollHeight;
-                const viewportHeight = scrollViewport.clientHeight;
-                
-                // Only scroll if content is actually taller than viewport
-                if (containerHeight > viewportHeight) {
-                  // OPTIMIZED: Batch all layout reads together
-                  const containerRect = scrollContainer.getBoundingClientRect();
-                  const elementRect = nextUpElement.getBoundingClientRect();
-                  const relativeTop = elementRect.top - containerRect.top + scrollViewport.scrollTop;
-                  
-                  // Calculate scroll position
-                  const scrollTop = relativeTop - (viewportHeight / 2) + (elementRect.height / 2);
-                  
-                  // Defer scroll operation to avoid blocking
-                  requestAnimationFrame(() => {
-                    scrollViewport.scrollTo({
-                      top: scrollTop,
-                      behavior: 'smooth',
-                    });
-                  });
-                }
-              }
-            }
-          } else {
-            // Mobile: Use scrollIntoView on the parent scroll container
-            // Defer to avoid blocking
-            requestAnimationFrame(() => {
-              nextUpElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            });
-          }
-          hasAutoScrolledRef.current = true;
-        }
-      });
-    };
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(scrollToNextUpTask, TIMING_CONSTANTS.delays.scroll);
-    return () => clearTimeout(timer);
-  }, [combinedItems.length, nextUpTaskId, hideHeader]); // Only depend on length, not full array
-
-  // Track user scroll to prevent auto-scroll after user interaction (both desktop and mobile)
-  // This only tracks scroll to prevent auto-scroll from interfering with user's manual scroll
-  // User can always scroll freely - this just prevents auto-scroll after user interaction
-  useEffect(() => {
-    let scrollViewport: HTMLElement | null = null;
-    let scrollContainer: HTMLElement | null = null;
-    let lastScrollTop = 0;
-    let scrollTimeout: NodeJS.Timeout | null = null;
-
-    // Desktop: Track ScrollArea viewport (both hideHeader=true and hideHeader=false on desktop)
-    if (hideHeader || (!isMobile && !hideHeader)) {
-      scrollViewport = timelineContainerRef.current?.closest('[data-slot="scroll-area"]')?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement;
-      if (scrollViewport) {
-        lastScrollTop = scrollViewport.scrollTop;
-      }
-    } else {
-      // Mobile: Track parent scroll container in App.tsx
-      scrollContainer = timelineContainerRef.current?.closest('[class*="overflow-y-auto"]') as HTMLElement;
-      if (scrollContainer) {
-        lastScrollTop = scrollContainer.scrollTop;
-      }
-    }
-
-    const handleScroll = () => {
-      // Read scroll position immediately (synchronous) to avoid timing issues
-      const currentScrollTop = scrollViewport?.scrollTop ?? scrollContainer?.scrollTop ?? 0;
-      
-      // Only mark as user scroll if the scroll position actually changed
-      // Use a larger threshold to avoid false positives from programmatic scrolls
-      if (Math.abs(currentScrollTop - lastScrollTop) > 5) {
-        // Clear any pending auto-scroll
-        if (scrollTimeout) {
-          clearTimeout(scrollTimeout);
-          scrollTimeout = null;
-        }
-        
-        // Mark that user has scrolled (this only prevents auto-scroll, NOT user scrolling)
-        userHasScrolledRef.current = true;
-        lastScrollTop = currentScrollTop;
-        
-        // Reset scroll tracking after period of inactivity to allow next up to work again
-        // This makes next up the default behavior after user scrolls
-        if (scrollResetTimeoutRef.current) {
-          clearTimeout(scrollResetTimeoutRef.current);
-        }
-        scrollResetTimeoutRef.current = setTimeout(() => {
-          userHasScrolledRef.current = false;
-          hasAutoScrolledRef.current = false;
-          scrollResetTimeoutRef.current = null;
-        }, TIMING_CONSTANTS.delays.nextUpScrollReset);
-      } else {
-        // Update last scroll position even for small changes
-        lastScrollTop = currentScrollTop;
-      }
-    };
-
-      if (scrollViewport) {
-        scrollViewport.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-          scrollViewport?.removeEventListener('scroll', handleScroll);
-          if (scrollTimeout) clearTimeout(scrollTimeout);
-          if (scrollResetTimeoutRef.current) clearTimeout(scrollResetTimeoutRef.current);
-        };
-      } else if (scrollContainer) {
-        scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-          scrollContainer?.removeEventListener('scroll', handleScroll);
-          if (scrollTimeout) clearTimeout(scrollTimeout);
-          if (scrollResetTimeoutRef.current) clearTimeout(scrollResetTimeoutRef.current);
-        };
-      }
-    }, [hideHeader]);
+  // LAYER 1: Basic vertical scroll - ScrollArea handles scrolling automatically
+  // LAYER 2: Next up badge is implemented via nextUpTaskId and isNextUp prop (see below)
+  // LAYER 3: Optional auto-scroll can be added later if needed
 
   const handleTaskClick = (task: Task) => {
     if (!task?.id) {
@@ -952,28 +768,23 @@ export function TodayAgendaView({
             </div>
           </div>
         ) : (
-          // Desktop view with header - use ScrollArea for vertical scrolling
-          // CRITICAL: Wrapper must have explicit height constraint for ScrollArea to work
-          // NOTE: overflow-hidden removed to allow ScrollArea to manage scrolling internally
+          // LAYER 1: Desktop view with header - basic vertical scroll structure
+          // Wrapper: flex container with height constraints for ScrollArea
           <div className={cn("flex-1 w-full relative min-h-0 flex flex-col")}>
-          <ScrollArea className="h-full w-full">
-            <div 
-              ref={timelineContainerRef}
-              className={cn(
-                "px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative",
-                // Background is now on root container, content just needs to extend
-              )}
-              style={{
-                paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
-                  ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` 
-                    : DESKTOP_PADDING_TOP, // Desktop padding for better spacing from header
-                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
-                  ? KANBAN_MOBILE.bottomPaddingCalc
-                  : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`, // Desktop: Add padding to ensure content scrolls past bottom (nav bar + safe area + buffer)
-                // Content will naturally extend based on tasks/events
-                // Radix UI ScrollArea handles overflow automatically when content exceeds viewport
-              }}
-            >
+            {/* ScrollArea: handles vertical scrolling when content exceeds viewport */}
+            <ScrollArea className="flex-1 w-full min-h-0">
+              <div 
+                ref={timelineContainerRef}
+                className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative")}
+                style={{
+                  paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
+                    ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` 
+                    : DESKTOP_PADDING_TOP,
+                  paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                    ? KANBAN_MOBILE.bottomPaddingCalc
+                    : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
+                }}
+              >
               {combinedItems.length === 0 ? (
               <div className={cn(
                 `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
