@@ -23,6 +23,7 @@ import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, TODAY_AGENDA_CONTENT_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE } from "../lib/layout-constants";
+import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
@@ -112,16 +113,13 @@ export function TodayAgendaView({
 
   // Sort tasks by time - use useMemo to prevent recreation on every render
   // This prevents infinite loops in useEffect dependencies
-  // Completed tasks are sorted to the end
+  // Completed tasks stay in chronological order (not moved to bottom)
   const todayTasks = useMemo(() => {
     return [...incompleteTasks].sort((a, b) => {
-      // Sort completed tasks to the end
-      if (a.status === "done" && b.status !== "done") return 1;
-      if (a.status !== "done" && b.status === "done") return -1;
-      
       try {
         // Sort by TIME OF DAY only (hours and minutes), not full timestamp
         // This is important for recurring tasks where scheduledDate is the base date
+        // Completed tasks stay in their chronological position
         const dateA = a.scheduledDate ? new Date(a.scheduledDate) : null;
         const dateB = b.scheduledDate ? new Date(b.scheduledDate) : null;
         
@@ -195,10 +193,8 @@ export function TodayAgendaView({
     }
     
     // Sort by time (earliest first, items without time go to end)
+    // Completed tasks stay in chronological order (not moved to bottom)
     items.sort((a, b) => {
-      // Completed tasks go to end
-      if (a.type === 'task' && a.task?.status === 'done' && b.type === 'task' && b.task?.status !== 'done') return 1;
-      if (a.type === 'task' && a.task?.status !== 'done' && b.type === 'task' && b.task?.status === 'done') return -1;
       return a.sortTime - b.sortTime;
     });
     
@@ -596,14 +592,8 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                {/* LAYER 1: Content container - extends naturally to enable scrolling */}
-                <div 
-                  className="flex flex-col w-full relative z-10"
-                  style={{ 
-                    overflow: 'visible',
-                    minHeight: combinedItems.length > 0 ? TODAY_AGENDA_CONTENT_MIN_HEIGHT : 'auto',
-                  }}
-                >
+                {/* LAYER 1: Content container - extends naturally based on content */}
+                <div className="flex flex-col w-full relative z-10">
                   {combinedItems.map((item, index) => {
                     if (item.type === 'task' && item.task) {
                       // Find the layout for this task
@@ -725,12 +715,12 @@ export function TodayAgendaView({
                               </h4>
                               <div className="flex items-center gap-1.5 flex-shrink-0">
                                 {nextUpTask.scheduledDate && (
-                                  <span className="text-[9px] text-muted-foreground">
+                                  <span className={cn(TEXT_SIZES.xs9, "text-muted-foreground")}>
                                     {getTaskTime(nextUpTask)}
                                   </span>
                                 )}
                                 <span 
-                                  className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
+                                  className={cn(TEXT_SIZES.xs9, "px-1.5 py-0.5 rounded-full uppercase tracking-wider")}
                                   style={{
                                     backgroundColor: UI_GRADIENT_COLORS.status.success.from,
                                     color: actualTheme === 'dark' ? UI_TODAY_AGENDA_STATUS_COLORS.success.text.light : UI_TODAY_AGENDA_STATUS_COLORS.success.text.dark,
@@ -832,14 +822,8 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                {/* LAYER 1: Content container - extends naturally to enable scrolling */}
-                <div 
-                  className="flex flex-col w-full relative z-10"
-                  style={{ 
-                    overflow: 'visible',
-                    minHeight: combinedItems.length > 0 ? TODAY_AGENDA_CONTENT_MIN_HEIGHT : 'auto',
-                  }}
-                >
+                {/* LAYER 1: Content container - extends naturally based on content */}
+                <div className="flex flex-col w-full relative z-10">
                     {combinedItems.map((item, index) => {
                       if (item.type === 'task' && item.task) {
                         // Find the layout for this task
@@ -961,12 +945,12 @@ export function TodayAgendaView({
                               </h4>
                               <div className="flex items-center gap-1.5 flex-shrink-0">
                                 {nextUpTask.scheduledDate && (
-                                  <span className="text-[9px] text-muted-foreground">
+                                  <span className={cn(TEXT_SIZES.xs9, "text-muted-foreground")}>
                                     {getTaskTime(nextUpTask)}
                                   </span>
                                 )}
                                 <span 
-                                  className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
+                                  className={cn(TEXT_SIZES.xs9, "px-1.5 py-0.5 rounded-full uppercase tracking-wider")}
                                   style={{
                                     backgroundColor: UI_GRADIENT_COLORS.status.success.from,
                                     color: actualTheme === 'dark' ? UI_TODAY_AGENDA_STATUS_COLORS.success.text.light : UI_TODAY_AGENDA_STATUS_COLORS.success.text.dark,
@@ -1197,12 +1181,12 @@ export function TodayAgendaView({
                             </h4>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               {nextUpTask.scheduledDate && (
-                                <span className="text-[9px] text-muted-foreground">
+                                <span className={cn(TEXT_SIZES.xs9, "text-muted-foreground")}>
                                   {getTaskTime(nextUpTask)}
                                 </span>
                               )}
                               <span 
-                                className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
+                                className={cn(TEXT_SIZES.xs9, "px-1.5 py-0.5 rounded-full uppercase tracking-wider")}
                                 style={{
                                   backgroundColor: UI_GRADIENT_COLORS.status.success.from,
                                   color: actualTheme === 'dark' ? UI_TODAY_AGENDA_STATUS_COLORS.success.text.light : UI_TODAY_AGENDA_STATUS_COLORS.success.text.dark,
