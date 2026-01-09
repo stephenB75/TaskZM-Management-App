@@ -928,7 +928,7 @@ function validateAndEnhanceTermsWithDictionary(
   // Find domain phrases that match task name OR relate to extracted keywords
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
-    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
     
     // Check if phrase matches task name
     const matchesTaskName = taskNameLower.includes(phraseLower) || 
@@ -1035,52 +1035,86 @@ function extractTermsFromTaskName(
   const taskWords = taskNameLower.split(/\s+/).filter(w => w.length > DESCRIPTION_GENERATION_CONFIG.minWordLength);
   
   // Find matching phrases from domain terminology (check first as they're most specific)
+  // ENHANCED: Require word boundary matching to prevent false matches (e.g., "part" matching "partnership")
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
-    if (taskNameLower.includes(phraseLower) || 
-        taskWords.some(word => phraseLower.includes(word) || word.includes(phraseLower))) {
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
+    
+    // Require exact phrase match OR all phrase words appear in task name with word boundaries
+    const exactMatch = taskNameLower.includes(phraseLower);
+    const allWordsMatch = phraseWords.length > 0 && phraseWords.every(pw => {
+      // Use word boundary regex for accurate matching
+      const wordBoundaryRegex = new RegExp(`\\b${pw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      return wordBoundaryRegex.test(taskNameLower);
+    });
+    
+    if (exactMatch || allWordsMatch) {
       foundPhrases.push(phrase);
     }
   });
   
   // Find matching verbs (action words) from domain terminology
+  // ENHANCED: Require word boundary matching to prevent false matches
   domainTerms.verbs.forEach(verb => {
     const verbLower = verb.toLowerCase();
-    // Check for verb in various forms (verb, verb+ing, verb+ed, etc.)
-    if (taskNameLower.includes(verbLower) || 
-        taskNameLower.includes(`${verbLower}ing`) ||
-        taskNameLower.includes(`${verbLower}ed`) ||
-        taskNameLower.includes(`${verbLower}s`) ||
-        taskWords.some(word => verbLower.includes(word) || word.includes(verbLower))) {
+    const verbBase = verbLower.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+    
+    // Use word boundary regex for accurate matching
+    const verbRegex = new RegExp(`\\b${verbBase}\\w*\\b`, 'i');
+    const verbBaseRegex = new RegExp(`\\b${verbBase}\\b`, 'i');
+    
+    // Check for verb in various forms with word boundaries
+    if (verbRegex.test(taskNameLower) || verbBaseRegex.test(taskNameLower)) {
       foundVerbs.push(verb);
     }
   });
   
   // Find matching nouns from domain terminology
+  // ENHANCED: Require word boundary matching to prevent false matches
   domainTerms.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
-    if (taskNameLower.includes(nounLower) || 
-        taskNameLower.includes(`${nounLower}s`) ||
-        taskNameLower.includes(`${nounLower}es`) ||
-        taskWords.some(word => nounLower.includes(word) || word.includes(nounLower))) {
+    const nounBase = nounLower.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
+    
+    // Use word boundary regex for accurate matching
+    const nounRegex = new RegExp(`\\b${nounBase}\\w*\\b`, 'i');
+    const nounBaseRegex = new RegExp(`\\b${nounBase}\\b`, 'i');
+    
+    if (nounRegex.test(taskNameLower) || nounBaseRegex.test(taskNameLower)) {
       foundNouns.push(noun);
     }
   });
   
   // Find matching pronouns from domain terminology
+  // ENHANCED: Require word boundary matching
   domainTerms.pronouns.forEach(pronoun => {
-    if (taskNameLower.includes(pronoun.toLowerCase()) ||
-        taskWords.some(word => pronoun.toLowerCase().includes(word) || word.includes(pronoun.toLowerCase()))) {
+    const pronounLower = pronoun.toLowerCase();
+    const pronounRegex = new RegExp(`\\b${pronounLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    if (pronounRegex.test(taskNameLower)) {
       foundPronouns.push(pronoun);
     }
   });
   
   // Find matching keywords from domain terminology
+  // ENHANCED: Require word boundary matching to prevent false matches (e.g., "part" matching "partnership")
   domainTerms.keywords.forEach(keyword => {
     const keywordLower = keyword.toLowerCase();
-    if (taskNameLower.includes(keywordLower) ||
-        taskWords.some(word => keywordLower.includes(word) || word.includes(keywordLower))) {
-      foundKeywords.push(keyword);
+    const keywordWords = keywordLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
+    
+    // For single-word keywords, use word boundary regex
+    if (keywordWords.length === 1) {
+      const keywordRegex = new RegExp(`\\b${keywordWords[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      if (keywordRegex.test(taskNameLower)) {
+        foundKeywords.push(keyword);
+      }
+    } else {
+      // For multi-word keywords, require all words to match with word boundaries
+      const allWordsMatch = keywordWords.every(kw => {
+        const wordRegex = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        return wordRegex.test(taskNameLower);
+      });
+      if (allWordsMatch) {
+        foundKeywords.push(keyword);
+      }
     }
   });
   
@@ -1094,7 +1128,7 @@ function extractTermsFromTaskName(
   extractedKeywords.forEach(keyword => {
     const keywordLower = keyword.toLowerCase();
     const existsInLibrary = foundKeywords.some(fk => fk.toLowerCase() === keywordLower);
-    if (!existsInLibrary && keywordLower.length >= 2) {
+    if (!existsInLibrary && keywordLower.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength) {
       newKeywords.push(keyword);
     }
   });
@@ -1110,7 +1144,7 @@ function extractTermsFromTaskName(
       
       // Check if phrase already exists in library
       const existsInLibrary = foundPhrases.some(fp => fp.toLowerCase() === phraseLower);
-      if (!existsInLibrary && phraseLower.length >= 3) {
+      if (!existsInLibrary && phraseLower.length >= DESCRIPTION_GENERATION_CONFIG.minKeywordLength) {
         newPhrases.push(phrase);
       }
     }
@@ -1259,7 +1293,7 @@ function buildElaborateContextualDescription(
       });
     });
     
-    // ENHANCED: More lenient relevance check
+    // ENHANCED: Stricter relevance check - prioritize task-specific terms
     // Term is relevant if it relates to primary topics OR task keywords OR task words
     // AND (is in domain terminology OR relates conceptually to domain terms)
     const hasTaskRelevance = relatesToPrimaryTopic || relatesToTaskKeywords || relatesToTaskWords;
@@ -1267,8 +1301,15 @@ function buildElaborateContextualDescription(
       domainTerms.keywords.some(dk => areConceptsRelated(termLower, dk.toLowerCase())) ||
       domainTerms.nouns.some(dn => areConceptsRelated(termLower, dn.toLowerCase()));
     
-    // Accept if it has task relevance AND (domain relevance OR strong conceptual match)
-    return hasTaskRelevance && (hasDomainRelevance || relatesToPrimaryTopic || relatesToTaskKeywords);
+    // STRICTER: Require BOTH task relevance AND domain relevance
+    // This prevents generic domain terms from being used when they don't match the task
+    // Only allow conceptual matches if there's strong task relevance
+    const hasStrongTaskRelevance = relatesToPrimaryTopic || (relatesToTaskKeywords && relatesToTaskWords);
+    
+    // Accept if:
+    // 1. Has task relevance AND domain relevance (both required)
+    // 2. OR has strong task relevance with conceptual domain match
+    return (hasTaskRelevance && hasDomainRelevance) || (hasStrongTaskRelevance && (isInDomainTerminology || relatesToPrimaryTopic));
   };
   
   // STEP 1: Find domain phrases that elaborate on the task (not just repeat it)
@@ -1279,7 +1320,7 @@ function buildElaborateContextualDescription(
   // Helper function for improved phrase matching with fuzzy word-level matching
   const matchesPhraseContextual = (phrase: string, keywords: string[], taskWords: string[]): boolean => {
           const phraseLower = phrase.toLowerCase();
-    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
     
     // Check if phrase contains keywords with fuzzy matching
     const containsKeywords = keywords.some(kw => {
@@ -1338,7 +1379,7 @@ function buildElaborateContextualDescription(
   // This ensures we get contextual information, not just repetition
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
-    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+    const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
     
     // IMPROVED: Use contextual phrase matching function
     const matchesContext = matchesPhraseContextual(phrase, taskKeywordsLower, taskWords);
@@ -1675,12 +1716,12 @@ function buildElaborateContextualDescription(
     
     description = parts.join(' ');
   }
-  // PRIORITY 3: Build sentence using extracted phrases + domain terminology + keywords
+  // PRIORITY 4: Build sentence using extracted phrases + domain terminology + keywords
   else if (phrases.length > 0) {
     // Filter out phrases that are too similar to task name
     const contextualPhrases = phrases.filter(phrase => {
       const phraseLower = phrase.toLowerCase();
-      const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= 2);
+      const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
       // Reject if all words in phrase are in task name (too similar)
       const allWordsInTaskName = phraseWords.length > 0 && 
         phraseWords.every(word => taskNameLower.includes(word));
