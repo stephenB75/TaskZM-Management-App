@@ -69,10 +69,16 @@ import {
   SETTINGS_PANEL_ICON_SIZE_SMALL,
   SETTINGS_PANEL_ICON_SIZE_MEDIUM,
   SETTINGS_PANEL_GAP_SMALL,
+  SETTINGS_PANEL_GAP_XSMALL,
   SETTINGS_PANEL_SPACING_XSMALL,
   SETTINGS_PANEL_SPACING_SMALL,
   SETTINGS_PANEL_SPACING_MEDIUM,
   SETTINGS_PANEL_SPACING_LARGE,
+  SETTINGS_PANEL_SPACING_XLARGE,
+  SETTINGS_PANEL_MARGIN_BOTTOM_LARGE,
+  SETTINGS_PANEL_MARGIN_TOP_MEDIUM,
+  SETTINGS_PANEL_MARGIN_TOP_LARGE,
+  SETTINGS_PANEL_PADDING_XSMALL,
   SETTINGS_PANEL_MARGIN_TOP_XSMALL,
   SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
   SETTINGS_PANEL_MARGIN_LEFT_SMALL,
@@ -514,10 +520,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
             }}
           >
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
               {/* Profile Card */}
               <div 
-                className="rounded-2xl border border-border/40 bg-muted/30 dark:bg-card/50 px-4 py-4 sm:px-5 sm:py-5 flex flex-col items-center gap-4 w-full"
+                className="rounded-2xl border border-border/40 bg-muted/30 dark:bg-card/50 flex flex-col items-center w-full"
+                style={{ 
+                  padding: SETTINGS_PANEL_PADDING_LARGE,
+                  gap: SETTINGS_PANEL_SPACING_LARGE
+                }}
               >
                 <div 
                   className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center text-primary font-semibold shadow-inner flex-shrink-0"
@@ -529,12 +539,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 >
                   {getInitials(user?.name)}
                 </div>
-                <div className="flex-1 min-w-0 space-y-2 text-center w-full">
-                  <div className="space-y-1">
+                <div className="flex-1 min-w-0 text-center w-full" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
                     <div className="text-base font-semibold text-foreground truncate">{user?.name || '—'}</div>
                     <div className="text-sm text-muted-foreground truncate break-all">{user?.email || '—'}</div>
                   </div>
-                  <div className={`flex flex-wrap gap-2 justify-center ${SETTINGS_PANEL_TEXT_SIZES.small}`}>
+                  <div className={`flex flex-wrap justify-center ${SETTINGS_PANEL_TEXT_SIZES.small}`} style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap">
                       {subscription.tier === 'pro' ? 'Pro Member' : 'Free Member'}
                     </Badge>
@@ -548,7 +558,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col gap-2 w-full items-center">
+              <div className="flex flex-col w-full items-center" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                 <Button 
                   size="sm" 
                   variant="outline"
@@ -579,8 +589,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
 
               {/* Input Fields - Stack format like save & sign out buttons */}
-              <div className="flex flex-col gap-3 w-full">
-                <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col w-full" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+                <div className="flex flex-col" style={{ gap: SETTINGS_PANEL_GAP_XSMALL }}>
                   <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
                   <Input 
                     id="name" 
@@ -591,7 +601,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     className="w-full"
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col" style={{ gap: SETTINGS_PANEL_GAP_XSMALL }}>
                   <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
                   <Input 
                     id="email" 
@@ -638,10 +648,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
             }}
           >
-            <div className="space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1 flex-1">
-                  <div className="flex items-center gap-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_SPACING_LARGE }}>
+                <div className="flex-1" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     <Label className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.currentPlan.label}</Label>
                     {isSubscriptionLoading && (
                       <RefreshCw style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL }} className="text-muted-foreground animate-spin" />
@@ -683,7 +693,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               {/* Subscription Details for Pro */}
               {subscription.tier === 'pro' && subscription.endDate && (
-                <div className="text-xs text-muted-foreground space-y-1">
+                <div className="text-xs text-muted-foreground" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
                   {subscription.cancelAtPeriodEnd ? (
                     <p className="text-amber-600 dark:text-amber-400">
                       {SUBSCRIPTION_UI_TEXT.settings.subscriptionDetails.expires} {new Date(subscription.endDate).toLocaleDateString()}
@@ -697,9 +707,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <Separator />
 
               {/* Features List */}
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                 <Label className="text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.settings.features.sectionTitle}</Label>
-                <div className="grid gap-2">
+                <div className="grid" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                   {/* Unlimited Tasks - Available for all */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                     <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
@@ -1081,16 +1091,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             }}
           >
             {!features.calendarSync ? (
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
                 <p className="text-sm text-muted-foreground">
                   Sync your tasks with Google, Outlook, and Apple Calendar with TaskZM Pro
                 </p>
-                <div className={`p-4 border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5`}>
-                  <div className="flex items-center gap-2 mb-2">
+                <div className={`border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5`} style={{ padding: SETTINGS_PANEL_PADDING_LARGE }}>
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_SMALL, marginBottom: SETTINGS_PANEL_SPACING_SMALL }}>
                     <Lock className={`w-4 h-4 ${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass}`} />
                     <span className="text-sm">Pro Feature</span>
                   </div>
-                <p className="text-xs text-muted-foreground mb-3">
+                <p className="text-xs text-muted-foreground" style={{ marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
                   • Google Calendar OAuth sync<br />
                   • Apple Calendar via Shortcuts<br />
                   • Automatic sync when tasks are created or updated<br />
@@ -1112,10 +1122,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   Sync your tasks with external calendar services
                 </p>
                 
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
                   {/* Google Calendar - Fully Implemented */}
-                  <div className="flex items-center justify-between gap-3 py-1">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                    <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       <Label htmlFor="google-cal" className="text-sm cursor-pointer">Google Calendar</Label>
                     </div>
                     <Switch 
@@ -1138,8 +1148,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   
                   {/* Outlook Calendar - Coming Soon */}
-                  <div className="flex items-center justify-between gap-3 py-1">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                    <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       <Label htmlFor="outlook-cal" className="text-sm cursor-pointer">Outlook Calendar</Label>
                       <Badge variant="outline" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} px-1.5 py-0 h-4 bg-muted text-muted-foreground border-muted-foreground/20`}>
                         Coming Soon
@@ -1159,8 +1169,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   
                   {/* Apple Calendar - Shortcuts */}
-                  <div className="flex items-center justify-between gap-3 py-1">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                    <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       <Label htmlFor="apple-cal" className="text-sm cursor-pointer">Apple Calendar</Label>
                     </div>
                     <Switch 
@@ -1252,7 +1262,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full mt-2 text-xs md:text-sm"
+                  className="w-full text-xs md:text-sm"
+                  style={{ marginTop: SETTINGS_PANEL_SPACING_SMALL }}
                   onClick={() => {
                     // Defer async operation to avoid blocking click handler
                     requestAnimationFrame(() => {
@@ -1278,11 +1289,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </Button>
               )}
               {permission === 'denied' && (
-                <div className="mt-3 space-y-2">
+                <div style={{ marginTop: SETTINGS_PANEL_SPACING_MEDIUM, display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground font-medium`}>
                     Notifications are blocked. Follow these steps to enable them:
                   </p>
-                  <div className="bg-background/50 border border-border rounded-md p-2.5 space-y-2">
+                  <div className="bg-background/50 border border-border rounded-md" style={{ padding: SETTINGS_PANEL_PADDING_SMALL, display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     {(() => {
                       const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
                       const isFirefox = /Firefox/.test(navigator.userAgent);

@@ -369,10 +369,12 @@ export const SETTINGS_PANEL_BADGE_PADDING_BOTTOM = '0'; // padding-bottom: 0
 export const SETTINGS_PANEL_GAP_SMALL = '0.5rem'; // gap-2 = 0.5rem
 export const SETTINGS_PANEL_GAP_MEDIUM = '0.75rem'; // gap-3 = 0.75rem
 export const SETTINGS_PANEL_GAP_LARGE = '1rem'; // gap-4 = 1rem
+export const SETTINGS_PANEL_GAP_XSMALL = '0.375rem'; // gap-1.5 = 0.375rem
 export const SETTINGS_PANEL_SPACING_XSMALL = '0.25rem'; // space-y-1 = 0.25rem
 export const SETTINGS_PANEL_SPACING_SMALL = '0.5rem'; // space-y-2 = 0.5rem
 export const SETTINGS_PANEL_SPACING_MEDIUM = '0.75rem'; // space-y-3 = 0.75rem
 export const SETTINGS_PANEL_SPACING_LARGE = '1rem'; // space-y-4 = 1rem
+export const SETTINGS_PANEL_SPACING_XLARGE = '1.5rem'; // space-y-6 = 1.5rem (for larger spacing needs)
 export const SETTINGS_PANEL_TEXT_SIZE_XSMALL = '0.625rem'; // text-[10px] = 0.625rem
 export const SETTINGS_PANEL_TEXT_SIZE_SMALL = '0.75rem'; // text-xs = 0.75rem
 export const SETTINGS_PANEL_TEXT_SIZE_MEDIUM = '0.875rem'; // text-sm = 0.875rem
@@ -380,6 +382,9 @@ export const SETTINGS_PANEL_MARGIN_TOP_XSMALL = '0.125rem'; // mt-0.5 = 0.125rem
 export const SETTINGS_PANEL_MARGIN_TOP_SMALL = '0.25rem'; // mt-1 = 0.25rem
 export const SETTINGS_PANEL_MARGIN_BOTTOM_SMALL = '0.25rem'; // mb-1 = 0.25rem
 export const SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM = '0.75rem'; // mb-3 = 0.75rem
+export const SETTINGS_PANEL_MARGIN_BOTTOM_LARGE = '1rem'; // mb-4 = 1rem
+export const SETTINGS_PANEL_MARGIN_TOP_MEDIUM = '0.75rem'; // mt-3 = 0.75rem
+export const SETTINGS_PANEL_MARGIN_TOP_LARGE = '1rem'; // mt-4 = 1rem
 export const SETTINGS_PANEL_MARGIN_RIGHT_SMALL = '0.5rem'; // mr-2 = 0.5rem
 export const SETTINGS_PANEL_MARGIN_RIGHT_XSMALL = '0.25rem'; // mr-1 = 0.25rem
 export const SETTINGS_PANEL_MARGIN_LEFT_SMALL = '0.5rem'; // ml-2 = 0.5rem
@@ -388,6 +393,7 @@ export const SETTINGS_PANEL_MARGIN_RIGHT_NONE = '0'; // margin-right: 0px
 export const SETTINGS_PANEL_PADDING_SMALL = '0.625rem'; // p-2.5 = 0.625rem
 export const SETTINGS_PANEL_PADDING_MEDIUM = '0.75rem'; // p-3 = 0.75rem
 export const SETTINGS_PANEL_PADDING_LARGE = '1rem'; // p-4 = 1rem
+export const SETTINGS_PANEL_PADDING_XSMALL = '0.375rem'; // p-1.5 = 0.375rem
 export const SETTINGS_PANEL_PADDING_LEFT_AI_SECTION = '1.75rem'; // padding-left: 28px (1.75rem)
 export const SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION = '1.75rem'; // padding-right: 28px (1.75rem)
 export const SETTINGS_PANEL_PADDING_Y_SMALL = '0.25rem'; // py-1 = 0.25rem
