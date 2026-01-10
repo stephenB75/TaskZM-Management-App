@@ -328,6 +328,10 @@ export const EMPTY_STATE_ICON_INNER_SIZE = '1.5rem'; // w-6 h-6 = 1.5rem (24px) 
 export const EMPTY_STATE_MARGIN_BOTTOM_SMALL = '0.75rem'; // mb-3 = 0.75rem (12px)
 export const EMPTY_STATE_MARGIN_BOTTOM_LARGE = '1.5rem'; // mb-6 = 1.5rem (24px)
 export const EMPTY_STATE_PADDING_X = '1rem'; // px-4 = 1rem (16px)
+// Inbox checkbox size for mobile/tablet layout
+export const INBOX_CHECKBOX_SIZE_MOBILE = '4px'; // w-1 h-1 = 4px - compact checkbox for mobile/tablet
+// Inbox card shadow for mobile/tablet layout
+export const INBOX_CARD_SHADOW_MOBILE = '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'; // Custom shadow for better mobile blending
 
 // Workspace constants (for workspace creation, loading, and management)
 export const WORKSPACE_MAX_RETRIES = 3; // Maximum number of retry attempts for workspace loading

@@ -39,7 +39,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_ICON_SIZE_LARGE, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_ICON_SIZE_LARGE, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CARD_SHADOW_MOBILE } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
@@ -1034,7 +1034,7 @@ export function InboxView() {
                             style={{
                               // Custom shadow for better mobile blending
                               boxShadow: shouldUseMobileLayout 
-                                ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
+                                ? INBOX_CARD_SHADOW_MOBILE
                                 : undefined
                             }}
                             onClick={() => handleTaskClick(task)}
@@ -1061,7 +1061,7 @@ export function InboxView() {
                                     : ""
                                 )}
                                 style={shouldUseMobileLayout 
-                                  ? { width: '4px', height: '4px', minWidth: '4px', minHeight: '4px' }
+                                  ? { width: INBOX_CHECKBOX_SIZE_MOBILE, height: INBOX_CHECKBOX_SIZE_MOBILE, minWidth: INBOX_CHECKBOX_SIZE_MOBILE, minHeight: INBOX_CHECKBOX_SIZE_MOBILE }
                                   : undefined
                                 }
                               />
@@ -1322,7 +1322,7 @@ export function InboxView() {
                           style={{
                             // Custom shadow for better mobile blending
                             boxShadow: shouldUseMobileLayout 
-                              ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
+                              ? INBOX_CARD_SHADOW_MOBILE
                               : undefined
                           }}
                           onClick={() => handleTaskClick(task)}
@@ -1349,7 +1349,7 @@ export function InboxView() {
                                   : ""
                               )}
                               style={shouldUseMobileLayout 
-                                ? { width: '4px', height: '4px', minWidth: '4px', minHeight: '4px' }
+                                ? { width: INBOX_CHECKBOX_SIZE_MOBILE, height: INBOX_CHECKBOX_SIZE_MOBILE, minWidth: INBOX_CHECKBOX_SIZE_MOBILE, minHeight: INBOX_CHECKBOX_SIZE_MOBILE }
                                 : undefined
                               }
                             />
