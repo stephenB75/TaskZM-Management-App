@@ -80,5 +80,12 @@ export const TIMING_CONSTANTS = {
   recurrence: {
     nextOccurrenceLockTimeout: 2000, // 2 seconds - Lock timeout to prevent duplicate next occurrence creation
   },
+  
+  // Error Boundary constants
+  errorBoundary: {
+    reloadCooldown: 30000, // 30 seconds - Cooldown between reload attempts to prevent reload loops
+    maxReloadsPerSession: 2, // Maximum automatic reloads per session
+    reloadDelay: 3000, // 3 seconds - Delay before attempting automatic reload (gives user time to see error)
+  },
 } as const;
 

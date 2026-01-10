@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 
 interface Props {
   children: ReactNode;
@@ -14,8 +15,9 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   private reloadAttempted = false;
   private lastErrorTime = 0;
-  private readonly RELOAD_COOLDOWN = 30000; // 30 seconds - prevent reload loops
-  private readonly MAX_RELOADS_PER_SESSION = 2; // Maximum 2 automatic reloads per session
+  private readonly RELOAD_COOLDOWN = TIMING_CONSTANTS.errorBoundary.reloadCooldown;
+  private readonly MAX_RELOADS_PER_SESSION = TIMING_CONSTANTS.errorBoundary.maxReloadsPerSession;
+  private readonly RELOAD_DELAY = TIMING_CONSTANTS.errorBoundary.reloadDelay;
   private reloadCount = 0;
 
   constructor(props: Props) {
@@ -87,7 +89,7 @@ export class ErrorBoundary extends Component<Props, State> {
         
         console.warn(`ErrorBoundary: Attempting automatic recovery (${this.reloadCount}/${this.MAX_RELOADS_PER_SESSION})`);
         
-        // Attempt automatic recovery after a delay (increased to 3 seconds to give user time to see error)
+        // Attempt automatic recovery after a delay (gives user time to see error)
         setTimeout(() => {
           try {
             // Clear the reload count if we're about to reload (fresh start)
@@ -103,13 +105,14 @@ export class ErrorBoundary extends Component<Props, State> {
             console.error('Failed to reload page:', reloadError);
             this.reloadAttempted = false; // Allow retry if reload failed
           }
-        }, 3000); // Increased from 2 to 3 seconds
+        }, this.RELOAD_DELAY);
       } else {
         // Don't reload - show error UI instead
         if (this.reloadCount >= this.MAX_RELOADS_PER_SESSION) {
           console.warn('ErrorBoundary: Max reload attempts reached. Showing error UI instead.');
         } else if (timeSinceLastError <= this.RELOAD_COOLDOWN) {
-          console.warn(`ErrorBoundary: Reload cooldown active (${Math.ceil((this.RELOAD_COOLDOWN - timeSinceLastError) / 1000)}s remaining). Showing error UI instead.`);
+          const secondsRemaining = Math.ceil((this.RELOAD_COOLDOWN - timeSinceLastError) / TIMING_CONSTANTS.timeConversions.secondsToMs);
+          console.warn(`ErrorBoundary: Reload cooldown active (${secondsRemaining}s remaining). Showing error UI instead.`);
         }
       }
       
