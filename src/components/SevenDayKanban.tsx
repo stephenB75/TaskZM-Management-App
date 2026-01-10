@@ -1143,8 +1143,9 @@ export function SevenDayKanban({
                   >
                     <div 
                       className={cn(
-                        'p-1.5 sm:p-2 border-b backdrop-blur-sm',
-                        // Remove ring and border for today - only show brighter gradient
+                        'p-1.5 sm:p-2 border-b backdrop-blur-sm transition-all',
+                        // Enhanced styling for today - make it stand out more
+                        column.isToday && 'ring-2 ring-primary/50 shadow-lg shadow-primary/20',
                         !column.isToday && isDark && 'bg-card/50 border-border',
                         !column.isToday && !isDark && hasHeader(getDayColors(column.dayName)) && 'bg-transparent'
                       )}
@@ -1153,21 +1154,39 @@ export function SevenDayKanban({
                         if (!isDark) {
                           const dayColors = getDayColors(column.dayName);
                           if (hasHeader(dayColors)) {
-                            // For today, increase opacity to make colors brighter/deeper while keeping gradient
+                            // For today, significantly increase opacity and saturation to make colors much more vibrant
                             const headerOpacity = column.isToday 
-                              ? Math.min(100, dayColors.header.opacity + 20) // Increase opacity by 20 (max 100)
+                              ? KANBAN_DAY_COLORS.today.headerOpacity // Full opacity for maximum visibility
                               : dayColors.header.opacity;
-                            const viaOpacity = column.isToday ? 90 : 70; // Brighter middle color for today
+                            const viaOpacity = column.isToday 
+                              ? KANBAN_DAY_COLORS.today.viaOpacity // Full opacity for via color on today
+                              : 70; // Standard via opacity for non-today days
                             
                             baseStyle.backgroundImage = `linear-gradient(to right, ${dayColors.header.from}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${dayColors.header.via}${Math.round(viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${dayColors.header.to}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
                             
-                            // Only set border color for non-today days
-                            if (!column.isToday) {
-                              baseStyle.borderColor = `${dayColors.header.border}${Math.round(dayColors.header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                            // Add border for today to make it stand out more
+                            if (column.isToday) {
+                              // Use a more prominent border color for today
+                              baseStyle.borderColor = `${dayColors.header.border}${Math.round(KANBAN_DAY_COLORS.today.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                              baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidth;
                             } else {
-                              // Remove border for today
-                              baseStyle.borderColor = 'transparent';
+                              // Standard border for non-today days
+                              baseStyle.borderColor = `${dayColors.header.border}${Math.round(dayColors.header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
                             }
+                          }
+                        } else {
+                          // Dark mode: enhance today column with brighter background
+                          if (column.isToday) {
+                            // Use primary color with configured opacity for dark mode
+                            const primaryColor = KANBAN_DAY_COLORS.today.ring;
+                            const [r, g, b] = [
+                              parseInt(primaryColor.slice(1, 3), 16),
+                              parseInt(primaryColor.slice(3, 5), 16),
+                              parseInt(primaryColor.slice(5, 7), 16),
+                            ];
+                            baseStyle.backgroundColor = `rgba(${r}, ${g}, ${b}, ${KANBAN_DAY_COLORS.today.darkModeBackgroundOpacity})`;
+                            baseStyle.borderColor = `${KANBAN_DAY_COLORS.today.ring}${Math.round(KANBAN_DAY_COLORS.today.ringOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                            baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidth;
                           }
                         }
                         return baseStyle;
