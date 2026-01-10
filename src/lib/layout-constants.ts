@@ -372,7 +372,9 @@ export const SETTINGS_PANEL_GAP_MEDIUM = '0.75rem'; // gap-3 = 0.75rem
 export const SETTINGS_PANEL_GAP_LARGE = '1rem'; // gap-4 = 1rem
 export const SETTINGS_PANEL_GAP_XSMALL = '0.375rem'; // gap-1.5 = 0.375rem
 export const SETTINGS_PANEL_SPACING_XSMALL = '0.25rem'; // space-y-1 = 0.25rem
+export const SETTINGS_PANEL_SPACING_EXTRA_SMALL = '0.375rem'; // space-y-1.5 = 0.375rem
 export const SETTINGS_PANEL_SPACING_SMALL = '0.5rem'; // space-y-2 = 0.5rem
+export const SETTINGS_PANEL_SPACING_EXTRA_LARGE = '0.625rem'; // space-y-2.5 = 0.625rem
 export const SETTINGS_PANEL_SPACING_MEDIUM = '0.75rem'; // space-y-3 = 0.75rem
 export const SETTINGS_PANEL_SPACING_LARGE = '1rem'; // space-y-4 = 1rem
 export const SETTINGS_PANEL_SPACING_XLARGE = '1.5rem'; // space-y-6 = 1.5rem (for larger spacing needs)
@@ -380,7 +382,9 @@ export const SETTINGS_PANEL_TEXT_SIZE_XSMALL = '0.625rem'; // text-[10px] = 0.62
 export const SETTINGS_PANEL_TEXT_SIZE_SMALL = '0.75rem'; // text-xs = 0.75rem
 export const SETTINGS_PANEL_TEXT_SIZE_MEDIUM = '0.875rem'; // text-sm = 0.875rem
 export const SETTINGS_PANEL_MARGIN_TOP_XSMALL = '0.125rem'; // mt-0.5 = 0.125rem
+export const SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL = '0.375rem'; // mt-1.5 = 0.375rem
 export const SETTINGS_PANEL_MARGIN_TOP_SMALL = '0.25rem'; // mt-1 = 0.25rem
+export const SETTINGS_PANEL_MARGIN_TOP_MEDIUM_SMALL = '0.5rem'; // mt-2 = 0.5rem
 export const SETTINGS_PANEL_MARGIN_BOTTOM_SMALL = '0.25rem'; // mb-1 = 0.25rem
 export const SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM = '0.75rem'; // mb-3 = 0.75rem
 export const SETTINGS_PANEL_MARGIN_BOTTOM_LARGE = '1rem'; // mb-4 = 1rem
@@ -388,7 +392,9 @@ export const SETTINGS_PANEL_MARGIN_TOP_MEDIUM = '0.75rem'; // mt-3 = 0.75rem
 export const SETTINGS_PANEL_MARGIN_TOP_LARGE = '1rem'; // mt-4 = 1rem
 export const SETTINGS_PANEL_MARGIN_RIGHT_SMALL = '0.5rem'; // mr-2 = 0.5rem
 export const SETTINGS_PANEL_MARGIN_RIGHT_XSMALL = '0.25rem'; // mr-1 = 0.25rem
+export const SETTINGS_PANEL_MARGIN_LEFT_XSMALL = '0.25rem'; // ml-1 = 0.25rem
 export const SETTINGS_PANEL_MARGIN_LEFT_SMALL = '0.5rem'; // ml-2 = 0.5rem
+export const SETTINGS_PANEL_MARGIN_LEFT_MEDIUM = '1rem'; // ml-4 = 1rem
 export const SETTINGS_PANEL_MARGIN_LEFT_NONE = '0'; // margin-left: 0px
 export const SETTINGS_PANEL_MARGIN_RIGHT_NONE = '0'; // margin-right: 0px
 export const SETTINGS_PANEL_PADDING_SMALL = '0.625rem'; // p-2.5 = 0.625rem
@@ -398,7 +404,11 @@ export const SETTINGS_PANEL_PADDING_XSMALL = '0.375rem'; // p-1.5 = 0.375rem
 export const SETTINGS_PANEL_PADDING_LEFT_AI_SECTION = '1.75rem'; // padding-left: 28px (1.75rem)
 export const SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION = '1.75rem'; // padding-right: 28px (1.75rem)
 export const SETTINGS_PANEL_PADDING_Y_SMALL = '0.25rem'; // py-1 = 0.25rem
+export const SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL = '0.125rem'; // py-0.5 = 0.125rem
+export const SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL = '0.375rem'; // pt-1.5 = 0.375rem
+export const SETTINGS_PANEL_PADDING_RIGHT_SMALL = '0.5rem'; // pr-2 = 0.5rem
 export const SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION = '26px'; // line-height: 26px
+export const SETTINGS_PANEL_AVATAR_FONT_SIZE = '1.6rem'; // fontSize: 1.6rem for large avatar
 export const SETTINGS_PANEL_GAP_NONE = '0'; // gap: 0px
 export const SETTINGS_PANEL_POSITION_STATIC = 'static'; // position: static
 export const MOBILE_PADDING_BOTTOM = '2rem'; // padding-bottom: 2rem for mobile views

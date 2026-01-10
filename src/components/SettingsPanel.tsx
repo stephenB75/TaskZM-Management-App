@@ -45,7 +45,7 @@ import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS, AI_DAILY_HOUR_OPTIONS, AI_DAILY_HOUR_LABELS } from '../lib/ai-config';
 import taskzmLogoGray from '../assets/taskzm-logo-gray.png';  // Gray logo for about section
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
-import { SETTINGS_PANEL_TEXT_SIZES } from '../lib/text-size-constants';
+import { SETTINGS_PANEL_TEXT_SIZES, SETTINGS_PANEL_TEXT_SIZE_BASE, SETTINGS_PANEL_TEXT_SIZE_LARGE } from '../lib/text-size-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import {
   SETTINGS_PANEL_MOBILE_HEADER_SPACER,
@@ -99,6 +99,7 @@ import {
   SETTINGS_PANEL_TEXT_SIZE_XSMALL,
   SETTINGS_PANEL_TEXT_SIZE_SMALL,
   SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+  SETTINGS_PANEL_AVATAR_FONT_SIZE,
   SETTINGS_PANEL_ICON_SIZE_MEDIUM,
   SETTINGS_PANEL_ICON_SIZE_LARGE,
   SETTINGS_PANEL_ICON_SIZE_XLARGE,
@@ -120,15 +121,22 @@ import {
   TOGGLE_SWITCH_DIMENSIONS,
   TOGGLE_SWITCH_SPACING,
   SETTINGS_PANEL_MARGIN_TOP_XSMALL,
+  SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL,
+  SETTINGS_PANEL_MARGIN_TOP_MEDIUM_SMALL,
   SETTINGS_PANEL_MARGIN_TOP_SMALL,
   SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
   SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM,
   SETTINGS_PANEL_MARGIN_RIGHT_SMALL,
   SETTINGS_PANEL_MARGIN_RIGHT_XSMALL,
+  SETTINGS_PANEL_MARGIN_LEFT_XSMALL,
   SETTINGS_PANEL_MARGIN_LEFT_SMALL,
+  SETTINGS_PANEL_MARGIN_LEFT_MEDIUM,
   SETTINGS_PANEL_PADDING_SMALL,
   SETTINGS_PANEL_PADDING_MEDIUM,
   SETTINGS_PANEL_PADDING_LARGE,
+  SETTINGS_PANEL_PADDING_RIGHT_SMALL,
+  SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL,
+  SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL,
   NAV_BAR_BOTTOM_PADDING_MOBILE,
   NAV_BAR_SPACER_HEIGHT,
   NAV_BAR_HEIGHT,
@@ -534,7 +542,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   style={{ 
                     width: SETTINGS_PANEL_AVATAR_SIZE, 
                     height: SETTINGS_PANEL_AVATAR_SIZE,
-                    fontSize: '1.6rem'
+                    fontSize: SETTINGS_PANEL_AVATAR_FONT_SIZE
                   }}
                 >
                   {getInitials(user?.name)}
@@ -971,7 +979,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <Separator />
                   
                   {subscription.cancelAtPeriodEnd && (
-                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-3">
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg" style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
                       <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                         <Info className="text-amber-600 dark:text-amber-400 flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                         <div>
@@ -986,7 +994,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     </div>
                   )}
 
-                  <div className="space-y-2">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -1073,8 +1081,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
-            <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-primary" />
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
+              <Calendar className="text-primary" style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE }} />
               <span>Calendar Integration</span>
               {!features.calendarSync && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
@@ -1111,7 +1119,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     onClick={() => setShowPricingDialog(true)}
                     className={`${UI_SETTINGS_BADGE_COLORS.primaryClass} ${UI_SETTINGS_BADGE_COLORS.primaryHoverClass} w-full`}
                   >
-                    <Sparkles className="w-3 h-3 mr-1.5" />
+                    <Sparkles className="mr-1.5" style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
                     {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
                 </div>
@@ -1199,7 +1207,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 }}
                 disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.apple)}
               >
-                <Calendar className="w-4 h-4 mr-2" />
+                <Calendar className="mr-2" style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                 {isCalendarSyncing ? 'Syncing...' : 'Sync All Tasks'}
               </Button>
               
@@ -1226,8 +1234,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
-            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-              <Bell className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
+            <div className="flex items-center min-w-0 flex-1" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+              <Bell className="text-primary flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} />
               <span className="text-sm md:text-base truncate">Notifications</span>
               {badgeCount > 0 && (
                 <Badge variant="destructive" className="ml-auto flex-shrink-0 text-xs">
@@ -1248,8 +1256,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             </p>
 
             {/* Permission Status */}
-            <div className="p-2.5 md:p-3 rounded-lg border bg-muted/50">
-              <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="rounded-lg border bg-muted/50" style={{ padding: SETTINGS_PANEL_PADDING_SMALL }}>
+              <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
                 <span className="text-xs md:text-sm font-medium flex-1 min-w-0">Notification Permission</span>
                 <Badge 
                   variant={permission === 'granted' ? 'default' : permission === 'denied' ? 'destructive' : 'secondary'}
@@ -1302,62 +1310,62 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       
                       if (isChrome || isEdge) {
                         return (
-                          <div className={`space-y-1.5 ${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
+                          <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
                             <p className="font-medium text-foreground">Chrome/Edge:</p>
-                            <ol className="list-decimal list-inside space-y-1 ml-1">
+                            <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
                               <li>Click the lock icon (🔒) or info icon (i) in the address bar</li>
                               <li>Find "Notifications" in the dropdown menu</li>
                               <li>Change from "Block" to "Allow"</li>
                               <li>Refresh this page</li>
                             </ol>
-                            <p className="mt-1.5 pt-1.5 border-t border-border/50">
+                            <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
                               Or: Settings → Privacy and security → Site settings → Notifications → Add this site to "Allowed"
                             </p>
                           </div>
                         );
                       } else if (isFirefox) {
                         return (
-                          <div className={`space-y-1.5 ${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
+                          <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
                             <p className="font-medium text-foreground">Firefox:</p>
-                            <ol className="list-decimal list-inside space-y-1 ml-1">
+                            <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
                               <li>Click the lock icon (🔒) in the address bar</li>
                               <li>Click "More Information"</li>
                               <li>Go to the "Permissions" tab</li>
                               <li>Find "Notifications" and change from "Block" to "Allow"</li>
                               <li>Refresh this page</li>
                             </ol>
-                            <p className="mt-1.5 pt-1.5 border-t border-border/50">
+                            <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
                               Or: Settings → Privacy & Security → Permissions → Notifications → Allow for this site
                             </p>
                           </div>
                         );
                       } else if (isSafari) {
                         return (
-                          <div className={`space-y-1.5 ${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
+                          <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
                             <p className="font-medium text-foreground">Safari:</p>
-                            <ol className="list-decimal list-inside space-y-1 ml-1">
+                            <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
                               <li>Safari menu → Settings (Preferences)</li>
                               <li>Go to "Websites" tab</li>
                               <li>Select "Notifications" in the left sidebar</li>
                               <li>Find this website and change to "Allow"</li>
                               <li>Refresh this page</li>
                             </ol>
-                            <p className="mt-1.5 pt-1.5 border-t border-border/50">
+                            <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
                               Note: Safari requires you to enable notifications in Safari settings, not from the browser prompt.
                             </p>
                           </div>
                         );
                       } else {
                         return (
-                          <div className={`space-y-1.5 ${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>
+                          <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
                             <p className="font-medium text-foreground">General Instructions:</p>
-                            <ol className="list-decimal list-inside space-y-1 ml-1">
+                            <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
                               <li>Look for a lock icon (🔒) or info icon (i) in your browser's address bar</li>
                               <li>Click it to open site permissions</li>
                               <li>Find "Notifications" and change to "Allow"</li>
                               <li>Refresh this page</li>
                             </ol>
-                            <p className="mt-1.5 pt-1.5 border-t border-border/50">
+                            <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
                               Or check your browser settings under Privacy/Security → Site Permissions → Notifications
                             </p>
                           </div>
@@ -1368,7 +1376,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
               )}
               {permission === 'default' && (
-                <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground mt-2 leading-relaxed`}>
+                <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground leading-relaxed`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_MEDIUM_SMALL }}>
                   Click "Enable Notifications" above to receive alerts for due and overdue tasks. A browser dialog will appear asking for permission.
                 </p>
               )}
@@ -1378,8 +1386,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
             {/* Notification Settings */}
             <div className="space-y-2.5 md:space-y-3">
-              <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
-                <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                   <Label htmlFor="notifications-enabled" className="text-xs md:text-sm cursor-pointer">Enable Notifications</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Turn on all notification features</p>
                 </div>
@@ -1401,8 +1409,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
-                <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                   <Label htmlFor="notifications-badge" className="text-xs md:text-sm cursor-pointer">{NOTIFICATION_PANEL_TEXT.badge.showAppIconBadge}</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>{NOTIFICATION_PANEL_TEXT.badge.displayTaskCount}</p>
                 </div>
@@ -1415,8 +1423,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
-                <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                   <Label htmlFor="notifications-overdue" className="text-xs md:text-sm cursor-pointer">Overdue Alerts</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify when tasks become overdue</p>
                 </div>
@@ -1429,8 +1437,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
-                <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                   <Label htmlFor="notifications-reminders" className="text-xs md:text-sm cursor-pointer">Due Date Reminders</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify 1 hour before tasks are due</p>
                 </div>
@@ -1447,8 +1455,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               {/* Additional Notification Options */}
               <div className="space-y-2.5 md:space-y-3">
-                <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
-                  <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                     <Label htmlFor="push-notif" className="text-xs md:text-sm cursor-pointer">Push Notifications</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Desktop and mobile alerts</p>
                   </div>
@@ -1460,8 +1468,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   />
                 </div>
                 
-                <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
-                  <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                     <Label htmlFor="email-notif" className="text-xs md:text-sm cursor-pointer">Email Notifications</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Daily task summary emails</p>
                   </div>
@@ -1472,8 +1480,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   />
                 </div>
 
-                <div className="flex items-start justify-between gap-2 md:gap-3 py-1">
-                  <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                     <Label htmlFor="sound-notif" className="text-xs md:text-sm cursor-pointer">Sound</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Play sound for notifications</p>
                   </div>
@@ -1489,14 +1497,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
             {/* Current Badge Count */}
             {notificationSettings.showBadge && badgeCount > 0 && (
-              <div className="mt-3 md:mt-4 p-2.5 md:p-3 rounded-lg border bg-primary/5">
+              <div className="rounded-lg border bg-primary/5" style={{ marginTop: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM, padding: SETTINGS_PANEL_PADDING_SMALL }}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs md:text-sm font-medium">{NOTIFICATION_PANEL_TEXT.badge.currentBadgeCount}</span>
-                  <Badge variant="destructive" className="text-base md:text-lg px-2 md:px-3 py-0.5 md:py-1">
+                  <Badge variant="destructive" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_BASE, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL }}>
                     {badgeCount}
                   </Badge>
                 </div>
-                <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground mt-1`}>
+                <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
                   {badgeCount === 1 ? NOTIFICATION_PANEL_TEXT.badge.taskNeedsAttention : NOTIFICATION_PANEL_TEXT.badge.tasksNeedAttention}
                 </p>
               </div>
@@ -1518,7 +1526,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <Tag className="w-5 h-5 text-primary" />
               <span>Tags Management</span>
             </div>
@@ -1575,7 +1583,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             </div>
             
             {availableTags.filter((tag) => tag.toLowerCase() !== 'urgent').length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-2">
+              <p className="text-sm text-muted-foreground text-center" style={{ paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
                 No tags yet. Add your first tag above!
               </p>
             )}
@@ -1596,7 +1604,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <Sparkles className="w-5 h-5 text-primary" />
               <span>AI Scheduling</span>
               {!features.aiScheduler && (
@@ -1620,7 +1628,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </p>
                 
                 <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
-                  <div className="space-y-2">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Smart task scheduling</li>
@@ -1646,7 +1654,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3 py-1">
-                <div className="space-y-0.5 flex-1 min-w-0">
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
                   <Label htmlFor="ai-auto-scheduling" className="text-sm cursor-pointer">Enable AI Auto-Scheduling</Label>
                   <p className="text-xs text-muted-foreground">Automatically schedule tasks when created</p>
                 </div>
@@ -1659,7 +1667,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
               
               <div className="flex items-start justify-between gap-3 py-1">
-                <div className="space-y-0.5 flex-1 min-w-0">
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
                   <Label htmlFor="ai-priority-scheduling" className="text-sm cursor-pointer">Priority-Based Scheduling</Label>
                   <p className="text-xs text-muted-foreground">Schedule urgent tasks first, then high, medium, low</p>
                 </div>
@@ -1673,7 +1681,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
 
               <div className="flex items-start justify-between gap-3 py-1">
-                <div className="space-y-0.5 flex-1 min-w-0">
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
                   <Label htmlFor="ai-schedule-unscheduled" className="text-sm cursor-pointer">Schedule Unscheduled Tasks</Label>
                   <p className="text-xs text-muted-foreground">AI schedules tasks without due dates</p>
                 </div>
@@ -1699,7 +1707,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     const labels = AI_DAILY_HOUR_LABELS[hourOption];
                     return (
                       <div key={key} className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
-                        <div className="space-y-0.5 flex-1 min-w-0">
+                        <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
                           <Label 
                             htmlFor={`ai-hours-${hourOption}`}
                             className="cursor-pointer"
@@ -1820,7 +1828,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <Clock className="w-5 h-5 text-primary" />
               <span>Date, Time & Theme</span>
             </div>
@@ -1955,7 +1963,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <RotateCcw className="w-5 h-5 text-primary" />
               <span>Task Rollover</span>
               {!features.taskRollover && (
@@ -1979,7 +1987,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </p>
                 
                 <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
-                  <div className="space-y-2">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Automatic task rollover at midnight</li>
@@ -2051,7 +2059,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <Briefcase className="w-5 h-5 text-primary" />
               <span>Task Category Hours</span>
               {!features.taskHours && (
@@ -2075,7 +2083,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </p>
                 
                 <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
-                  <div className="space-y-2">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     <p className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.upgradeToProToUnlock}</p>
                     <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                       <li>• Weekday/weekend hour settings</li>
@@ -2412,7 +2420,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <Trophy className="w-5 h-5 text-primary" />
               <span>Awards & Achievements</span>
               <Badge variant="secondary" className="ml-auto bg-muted text-muted-foreground text-xs">
@@ -2475,7 +2483,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
                     }}
                   >
-                    <div className="space-y-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       {awards.filter(a => a.category === 'completion').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
                         const progress = getAwardProgress(award.id);
@@ -2559,7 +2567,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
                     }}
                   >
-                    <div className="space-y-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       {awards.filter(a => a.category === 'streak').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
                         const progress = getAwardProgress(award.id);
@@ -2643,7 +2651,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
                     }}
                   >
-                    <div className="space-y-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       {awards.filter(a => a.category === 'focus').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
                         const progress = getAwardProgress(award.id);
@@ -2730,7 +2738,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
                     }}
                   >
-                    <div className="space-y-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       {awards.filter(a => a.category === 'special' || a.category === 'speed').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
                         const IconComponent = getAwardIcon(award.icon);
@@ -2791,7 +2799,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline py-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <Compass className="w-5 h-5 text-primary" />
               <span>App Tour</span>
               {!hasSeenTour && (
@@ -2875,7 +2883,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <AccordionTrigger className="hover:no-underline py-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <Info className="w-5 h-5 text-primary" />
               <span>About</span>
             </div>

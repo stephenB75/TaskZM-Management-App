@@ -48,6 +48,8 @@ export const COMMON_TEXT_SIZES = {
 } as const;
 
 // Settings Panel specific text sizes
+export const SETTINGS_PANEL_TEXT_SIZE_BASE = '1rem'; // text-base = 1rem (16px)
+export const SETTINGS_PANEL_TEXT_SIZE_LARGE = '1.125rem'; // text-lg = 1.125rem (18px)
 export const SETTINGS_PANEL_TEXT_SIZES = {
   helper: TEXT_SIZES.responsive.xs10_md_xs, // text-[10px] md:text-xs - Most common
   helperStatic: TEXT_SIZES.xs10, // text-[10px] - Static helper text
