@@ -107,13 +107,21 @@ export const KANBAN_DAY_COLORS = {
     ring: '#7B68EE',
     ringOpacity: 40,
     text: '#7B68EE',
-    // Enhanced styling for highlighted today column
+    // Enhanced styling for highlighted today column - deeper, more vibrant colors
     headerOpacity: 100, // Full opacity for maximum visibility
     viaOpacity: 100, // Full opacity for via color
-    borderOpacity: 60, // More prominent border opacity (60% vs standard 30%)
+    borderOpacity: 75, // More prominent border opacity (75% vs standard 30%) - deeper border
     borderWidth: '2px', // Thicker border for today
-    darkModeBackgroundOpacity: 0.25, // 25% opacity for dark mode background
-    shadowOpacity: 0.20, // 20% opacity for shadow
+    darkModeBackgroundOpacity: 0.35, // 35% opacity for dark mode background - deeper color
+    shadowOpacity: 0.30, // 30% opacity for shadow - more prominent shadow
+    // Color darkening factor for today column (multiplies RGB values to create deeper colors)
+    colorDarkeningFactor: 0.85, // Darken colors by 15% to make them deeper (0.85 = 85% of original brightness)
+    // Dark mode ring opacity enhancement
+    darkModeRingOpacityIncrease: 20, // Increase ring opacity by 20 for deeper appearance in dark mode
+  },
+  // Standard opacity values for non-highlighted columns
+  standard: {
+    viaOpacity: 70, // Standard via opacity for non-today days
   },
 } as const;
 
