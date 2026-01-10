@@ -317,7 +317,7 @@ export function TodayAgendaView({
   const getTaskHeight = useCallback((task: Task) => {
     // Use AI estimator to get accurate duration (handles null/0/undefined cases)
     const minutes = getTaskMinutes(task);
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop;
+    const isMobile = shouldUseMobileLayout;
     
     // Determine task category using constants
     const isShortTask = minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
@@ -462,16 +462,16 @@ export function TodayAgendaView({
           `flex flex-col transition-all duration-300`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
-          isMobile ? "w-full" : "h-full min-h-0", // h-full ensures proper height chain for ScrollArea (matches InboxView pattern)
+          shouldUseMobileLayout ? "w-full" : "h-full min-h-0", // h-full ensures proper height chain for ScrollArea (matches InboxView pattern)
           // On desktop, apply gradient background to root container (like Folders Panel)
-          !isMobile && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
+          !shouldUseMobileLayout && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
         )}
         style={{
           position: 'relative',
           zIndex: isOver ? Z_INDEX.DROP_ZONE : Z_INDEX.TIMELINE_LINE, // Ensure drop zone is above other elements when dragging over
           // On mobile, ensure transparent background to show parent gradient
           // On desktop, background gradient is applied via className above
-          ...(isMobile ? {
+          ...(shouldUseMobileLayout ? {
             backgroundColor: 'transparent',
             background: 'transparent',
           } : {
@@ -506,18 +506,18 @@ export function TodayAgendaView({
             actions={
               <div className={cn(
                 "flex flex-col items-end text-right",
-                isMobile && "justify-center self-center" // Vertically center on mobile within header
+                shouldUseMobileLayout && "justify-center self-center" // Vertically center on mobile/tablet within header
               )}>
                 <span 
                   className="font-bold text-foreground uppercase tracking-wide"
-                  style={{ fontSize: isMobile ? HEADER_DATE_SIZE_MOBILE : HEADER_DATE_SIZE }}
+                  style={{ fontSize: shouldUseMobileLayout ? HEADER_DATE_SIZE_MOBILE : HEADER_DATE_SIZE }}
                 >
                   {today.toLocaleDateString("en-US", { weekday: "short" })}
                 </span>
                 <span 
                   className="font-bold text-foreground"
                   style={{ 
-                    fontSize: isMobile ? HEADER_DATE_NUMBER_SIZE_MOBILE : HEADER_DATE_NUMBER_SIZE,
+                    fontSize: shouldUseMobileLayout ? HEADER_DATE_NUMBER_SIZE_MOBILE : HEADER_DATE_NUMBER_SIZE,
                     marginTop: HEADER_DATE_MARGIN_TOP,
                   }}
                 >
@@ -553,7 +553,7 @@ export function TodayAgendaView({
       {/* On mobile (when hideHeader is false), rely on parent scroll container in App.tsx */}
       {/* On desktop (when hideHeader is true), use ScrollArea for standalone scrolling */}
       {hideHeader ? (
-        isMobile ? (
+        shouldUseMobileLayout ? (
           <div className="w-full relative flex-1 min-h-0">
             <div 
               ref={timelineContainerRef}

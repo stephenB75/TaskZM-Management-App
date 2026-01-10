@@ -1033,7 +1033,7 @@ export function InboxView() {
                             )}
                             style={{
                               // Custom shadow for better mobile blending
-                              boxShadow: isMobile 
+                              boxShadow: shouldUseMobileLayout 
                                 ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
                                 : undefined
                             }}
@@ -1056,11 +1056,11 @@ export function InboxView() {
                                 onClick={(e) => e.stopPropagation()}
                                 className={cn(
                                   "mt-0.5",
-                                  isMobile 
+                                  shouldUseMobileLayout 
                                     ? "!w-1 !h-1 !min-w-1 !min-h-1 [&_[data-slot='checkbox-indicator']_svg]:!w-0.5 [&_[data-slot='checkbox-indicator']_svg]:!h-0.5"
                                     : ""
                                 )}
-                                style={isMobile 
+                                style={shouldUseMobileLayout 
                                   ? { width: '4px', height: '4px', minWidth: '4px', minHeight: '4px' }
                                   : undefined
                                 }
@@ -1321,7 +1321,7 @@ export function InboxView() {
                           )}
                           style={{
                             // Custom shadow for better mobile blending
-                            boxShadow: isMobile 
+                            boxShadow: shouldUseMobileLayout 
                               ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
                               : undefined
                           }}
@@ -1344,11 +1344,11 @@ export function InboxView() {
                               onClick={(e) => e.stopPropagation()}
                               className={cn(
                                 "mt-0.5",
-                                isMobile 
+                                shouldUseMobileLayout 
                                   ? "!w-1 !h-1 !min-w-1 !min-h-1 [&_[data-slot='checkbox-indicator']_svg]:!w-0.5 [&_[data-slot='checkbox-indicator']_svg]:!h-0.5"
                                   : ""
                               )}
-                              style={isMobile 
+                              style={shouldUseMobileLayout 
                                 ? { width: '4px', height: '4px', minWidth: '4px', minHeight: '4px' }
                                 : undefined
                               }
