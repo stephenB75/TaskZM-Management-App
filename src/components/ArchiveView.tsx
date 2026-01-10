@@ -457,27 +457,7 @@ export function ArchiveView() {
                                   {task.title}
                                 </h3>
 
-                                {task.description && (
-                                  <div 
-                                    className={cn(
-                                      "text-[10px] text-muted-foreground line-clamp-4 break-words opacity-60 leading-tight px-1.5",
-                                      // Rich text formatting styles - only apply if HTML is present
-                                      // Note: Rich text editor font size changes will override this base size via inline styles
-                                      hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
-                                      hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
-                                      hasHTMLTags(task.description) && "[&_u]:underline",
-                                      hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
-                                      hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
-                                      hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
-                                      hasHTMLTags(task.description) && "[&_li]:ml-1",
-                                      hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words"
-                                    )}
-                                    {...(hasHTMLTags(task.description) 
-                                      ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                                      : { children: task.description }
-                                    )}
-                                  />
-                                )}
+                                {/* Description removed - only showing headline in archive view */}
 
                                 {/* Assignee Display */}
                                 {task.assignedTo &&
@@ -632,27 +612,7 @@ export function ArchiveView() {
                                 {task.title}
                               </h3>
 
-                              {task.description && (
-                                <div 
-                                  className={cn(
-                                    "text-[10px] text-muted-foreground line-clamp-4 break-words opacity-60 leading-tight px-1.5",
-                                    // Rich text formatting styles - only apply if HTML is present
-                                    // Note: Rich text editor font size changes will override this base size via inline styles
-                                    hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
-                                    hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
-                                    hasHTMLTags(task.description) && "[&_u]:underline",
-                                    hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
-                                    hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
-                                    hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
-                                    hasHTMLTags(task.description) && "[&_li]:ml-1",
-                                    hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words"
-                                  )}
-                                  {...(hasHTMLTags(task.description) 
-                                    ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                                    : { children: task.description }
-                                  )}
-                                />
-                              )}
+                              {/* Description removed - only showing headline in archive view */}
 
                               {/* Assignee Display */}
                               {task.assignedTo &&

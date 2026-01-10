@@ -593,22 +593,38 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             return null;
           }
           
-          // Wait for chart to fully render - multiple checks for SVG rendering
-          await new Promise(resolve => setTimeout(resolve, ANALYTICS_PDF_CONFIG.chart.waitForRender || 500));
+          // Wait for chart to fully render - increased wait time for SVG rendering
+          await new Promise(resolve => setTimeout(resolve, ANALYTICS_PDF_CONFIG.chart.waitForRender || 800));
           
-          // Force a reflow to ensure charts are rendered
+          // Force multiple reflows to ensure charts are fully rendered
+          void element.offsetHeight;
+          await new Promise(resolve => setTimeout(resolve, 200));
           void element.offsetHeight;
           
-          // Additional wait for SVG rendering (Recharts uses SVG)
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          // Check if SVG elements are present (Recharts renders as SVG)
+          // Check if SVG elements are present (Recharts uses SVG)
           const svgElements = element.querySelectorAll('svg');
           if (svgElements.length === 0) {
-            console.warn(`No SVG elements found in chart: ${title}`);
-            // Wait a bit more and try again
-            await new Promise(resolve => setTimeout(resolve, 500));
+            console.warn(`No SVG elements found in chart: ${title}, waiting longer...`);
+            // Wait longer and check again
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const svgCheck = element.querySelectorAll('svg');
+            if (svgCheck.length === 0) {
+              console.warn(`Still no SVG elements found in chart: ${title}`);
+              return null;
+            }
           }
+          
+          // Ensure all SVG elements have proper dimensions
+          svgElements.forEach((svg) => {
+            const svgEl = svg as SVGSVGElement;
+            if (!svgEl.getAttribute('width') || !svgEl.getAttribute('height')) {
+              const rect = svgEl.getBoundingClientRect();
+              if (rect.width > 0 && rect.height > 0) {
+                svgEl.setAttribute('width', String(rect.width));
+                svgEl.setAttribute('height', String(rect.height));
+              }
+            }
+          });
           
           const rect = element.getBoundingClientRect();
           
@@ -631,8 +647,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             height: rect.height,
             windowWidth: window.innerWidth,
             windowHeight: window.innerHeight,
-            // Better SVG handling
+            // Better SVG handling - use foreignObjectRendering for better SVG support
             foreignObjectRendering: true,
+            // Remove imageTimeout to prevent premature capture
+            imageTimeout: 15000,
             // Preserve aspect ratio and ensure proper rendering
             onclone: (clonedDoc) => {
               // Find the cloned element by data attribute
@@ -681,30 +699,59 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
                 clonedElement.style.overflow = 'visible';
                 clonedElement.style.display = 'block';
                 clonedElement.style.visibility = 'visible';
+                clonedElement.style.opacity = '1';
                 
                 // Ensure all SVG elements are visible and properly sized
                 const svgs = clonedElement.querySelectorAll('svg');
                 svgs.forEach((svg) => {
                   const svgEl = svg as SVGSVGElement;
-                  svgEl.setAttribute('width', String(rect.width));
-                  svgEl.setAttribute('height', String(rect.height));
+                  const svgRect = svgEl.getBoundingClientRect();
+                  
+                  // Set explicit dimensions
+                  if (svgRect.width > 0 && svgRect.height > 0) {
+                    svgEl.setAttribute('width', String(svgRect.width));
+                    svgEl.setAttribute('height', String(svgRect.height));
+                  } else {
+                    svgEl.setAttribute('width', String(rect.width));
+                    svgEl.setAttribute('height', String(rect.height));
+                  }
+                  
                   svgEl.style.width = `${rect.width}px`;
                   svgEl.style.height = `${rect.height}px`;
                   svgEl.style.display = 'block';
                   svgEl.style.visibility = 'visible';
                   svgEl.style.position = 'relative';
+                  svgEl.style.opacity = '1';
                   
                   // Ensure SVG viewBox is set correctly
                   if (!svgEl.getAttribute('viewBox')) {
                     svgEl.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
                   }
+                  
+                  // Ensure all child elements are visible
+                  const allChildren = svgEl.querySelectorAll('*');
+                  allChildren.forEach((child) => {
+                    (child as HTMLElement).style.visibility = 'visible';
+                    (child as HTMLElement).style.opacity = '1';
+                  });
                 });
                 
                 // Also ensure ResponsiveContainer wrapper is properly sized
                 const responsiveContainers = clonedElement.querySelectorAll('.recharts-responsive-container');
                 responsiveContainers.forEach((container) => {
-                  (container as HTMLElement).style.width = `${rect.width}px`;
-                  (container as HTMLElement).style.height = `${rect.height}px`;
+                  const containerEl = container as HTMLElement;
+                  containerEl.style.width = `${rect.width}px`;
+                  containerEl.style.height = `${rect.height}px`;
+                  containerEl.style.display = 'block';
+                  containerEl.style.visibility = 'visible';
+                  containerEl.style.opacity = '1';
+                });
+                
+                // Ensure all canvas elements are visible (some charts use canvas)
+                const canvases = clonedElement.querySelectorAll('canvas');
+                canvases.forEach((canvas) => {
+                  (canvas as HTMLCanvasElement).style.visibility = 'visible';
+                  (canvas as HTMLCanvasElement).style.opacity = '1';
                 });
               }
             },
@@ -714,6 +761,25 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           if (canvas.width === 0 || canvas.height === 0) {
             console.warn(`Canvas has zero dimensions for: ${title}`);
             return null;
+          }
+          
+          // Verify canvas has actual content (not just empty/white)
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            const imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 100), Math.min(canvas.height, 100));
+            const pixels = imageData.data;
+            let hasContent = false;
+            for (let i = 0; i < pixels.length; i += 4) {
+              // Check if pixel is not fully transparent or not white
+              if (pixels[i + 3] > 0 && !(pixels[i] === 255 && pixels[i + 1] === 255 && pixels[i + 2] === 255)) {
+                hasContent = true;
+                break;
+              }
+            }
+            if (!hasContent) {
+              console.warn(`Canvas appears to be empty for: ${title}`);
+              return null;
+            }
           }
           
           return canvas.toDataURL(ANALYTICS_PDF_CONFIG.chart.imageFormat, 1.0);

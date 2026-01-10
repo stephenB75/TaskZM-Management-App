@@ -55,7 +55,7 @@ export const ANALYTICS_PDF_CONFIG = {
     },
     imageFormat: 'image/png', // Image format for chart capture
     pdfImageFormat: 'PNG', // Image format for PDF (jsPDF format)
-    waitForRender: 500, // Wait time in ms for charts to render before capture
+    waitForRender: 1000, // Wait time in ms for charts to render before capture (increased for better SVG rendering)
   },
   labels: {
     title: "TaskZM Analytics Report",
