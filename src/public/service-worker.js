@@ -27,7 +27,9 @@ self.addEventListener('install', (event) => {
       );
     })
   );
-  self.skipWaiting();
+  // Don't skip waiting - let old service worker finish before activating new one
+  // This prevents automatic page refreshes when service worker updates
+  // self.skipWaiting(); // DISABLED to prevent automatic refreshes
 });
 
 // Activate - clean up old caches
@@ -41,7 +43,10 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim();
+  // Don't claim clients immediately - let them continue with old service worker
+  // This prevents automatic page refreshes when service worker updates
+  // New service worker will take control on next page load/navigation
+  // self.clients.claim(); // DISABLED to prevent automatic refreshes
 });
 
 // Fetch - network first, then cache

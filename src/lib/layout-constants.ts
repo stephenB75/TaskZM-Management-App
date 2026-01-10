@@ -344,14 +344,14 @@ export const SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM = '1.5rem'; // sm:p-6 = 1.5
 export const SETTINGS_PANEL_CONTAINER_PADDING_LARGE = '2rem'; // md:p-8 = 2rem
 export const SETTINGS_PANEL_MAX_WIDTH = '42rem'; // max-w-2xl = 42rem
 export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X = '1rem'; // px-4 = 1rem
-export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL = '0.5rem'; // py-2 = 0.5rem
-export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_DESKTOP = '0'; // md:py-0 = 0
-export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y = '0.5rem'; // my-2 = 0.5rem (mobile)
-export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_MEDIUM = '0.375rem'; // sm:my-1.5 = 0.375rem
-export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_DESKTOP = '1rem'; // Increased spacing for desktop view (md:my-4 = 1rem)
+export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL = '0.75rem'; // py-3 = 0.75rem (increased from 0.5rem for better spacing)
+export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_DESKTOP = '0.75rem'; // md:py-3 = 0.75rem (increased from 0 for better spacing)
+export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y = '0.75rem'; // my-3 = 0.75rem (increased from 0.5rem for better spacing between items)
+export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_MEDIUM = '0.75rem'; // sm:my-3 = 0.75rem (increased from 0.375rem for better spacing)
+export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_DESKTOP = '1rem'; // md:my-4 = 1rem (maintained for desktop)
 export const SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y = '1rem'; // py-4 = 1rem
 export const SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM = '1rem'; // pb-4 = 1rem
-export const SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP = '0.5rem'; // pt-2 = 0.5rem
+export const SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP = '0.75rem'; // pt-3 = 0.75rem (increased from 0.5rem for better spacing)
 export const SETTINGS_PANEL_ACCORDION_CONTENT_SPACING = '1rem'; // space-y-4 = 1rem
 export const SETTINGS_PANEL_ICON_SIZE_SMALL = '0.75rem'; // w-3 h-3 = 0.75rem
 export const SETTINGS_PANEL_ICON_SIZE_MEDIUM = '1rem'; // w-4 h-4 = 1rem

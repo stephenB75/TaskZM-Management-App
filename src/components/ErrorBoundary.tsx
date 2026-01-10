@@ -44,86 +44,26 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Check if this is a known initialization error
-    const isInitializationError = 
-      error.message.includes("Cannot access") && 
-      error.message.includes("before initialization");
+    // Log all errors for debugging
+    console.error('ErrorBoundary caught an error:', {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      name: error.name,
+    });
     
-    if (isInitializationError) {
-      // This is an initialization error - could be from vendor or our code
-      console.error('ErrorBoundary: Initialization error detected', {
-        error: error.message,
-        componentStack: errorInfo.componentStack,
-        reloadCount: this.reloadCount,
-        timeSinceLastError: Date.now() - this.lastErrorTime
-      });
-      
-      // Set error state to show error UI
-      this.setState({
-        error,
-        errorInfo,
-      });
-      
-      // Prevent reload loops - check cooldown and max reloads
-      const now = Date.now();
-      const timeSinceLastError = now - this.lastErrorTime;
-      
-      // Only attempt reload if:
-      // 1. We haven't already attempted a reload for this error
-      // 2. Enough time has passed since last error (cooldown)
-      // 3. We haven't exceeded max reloads per session
-      if (!this.reloadAttempted && 
-          timeSinceLastError > this.RELOAD_COOLDOWN && 
-          this.reloadCount < this.MAX_RELOADS_PER_SESSION) {
-        
-        this.reloadAttempted = true;
-        this.lastErrorTime = now;
-        this.reloadCount++;
-        
-        // Store reload count in session storage to persist across reloads
-        try {
-          sessionStorage.setItem('errorBoundaryReloadCount', String(this.reloadCount));
-        } catch (e) {
-          // Ignore sessionStorage errors
-        }
-        
-        console.warn(`ErrorBoundary: Attempting automatic recovery (${this.reloadCount}/${this.MAX_RELOADS_PER_SESSION})`);
-        
-        // Attempt automatic recovery after a delay (gives user time to see error)
-        setTimeout(() => {
-          try {
-            // Clear the reload count if we're about to reload (fresh start)
-            if (this.reloadCount >= this.MAX_RELOADS_PER_SESSION) {
-              try {
-                sessionStorage.removeItem('errorBoundaryReloadCount');
-              } catch (e) {
-                // Ignore
-              }
-            }
-            window.location.reload();
-          } catch (reloadError) {
-            console.error('Failed to reload page:', reloadError);
-            this.reloadAttempted = false; // Allow retry if reload failed
-          }
-        }, this.RELOAD_DELAY);
-      } else {
-        // Don't reload - show error UI instead
-        if (this.reloadCount >= this.MAX_RELOADS_PER_SESSION) {
-          console.warn('ErrorBoundary: Max reload attempts reached. Showing error UI instead.');
-        } else if (timeSinceLastError <= this.RELOAD_COOLDOWN) {
-          const secondsRemaining = Math.ceil((this.RELOAD_COOLDOWN - timeSinceLastError) / TIMING_CONSTANTS.timeConversions.secondsToMs);
-          console.warn(`ErrorBoundary: Reload cooldown active (${secondsRemaining}s remaining). Showing error UI instead.`);
-        }
-      }
-      
-      return;
-    }
+    // DISABLED: Automatic reload is too disruptive and causes random refreshes
+    // Only show error UI - let user manually refresh if needed
+    // The error detection was too broad and caught non-critical errors
     
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Set error state to show error UI
     this.setState({
       error,
       errorInfo,
     });
+    
+    // Log error to console for debugging but don't auto-reload
+    console.warn('ErrorBoundary: Showing error UI. User can manually refresh if needed.');
   }
 
   handleReset = () => {

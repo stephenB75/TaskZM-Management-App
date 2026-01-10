@@ -638,7 +638,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
             }}
           >
-            <div className="space-y-4 sm:space-y-3 md:space-y-3">
+            <div className="space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
@@ -1049,8 +1049,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Calendar Integration */}
-        <AccordionItem value="calendar" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.calendar.className} dark:from-blue-900/25 dark:to-purple-900/25 my-2 sm:my-1.5 md:my-4`} data-tour="calendar-integration">
-          <AccordionTrigger className="hover:no-underline py-4">
+        <AccordionItem 
+          value="calendar" 
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.calendar.className} dark:from-blue-900/25 dark:to-purple-900/25`} 
+          data-tour="calendar-integration"
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-primary" />
               <span>Calendar Integration</span>
@@ -1191,8 +1203,19 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Notifications */}
-        <AccordionItem value="notifications" className={`border rounded-lg px-3 md:px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.notifications.className} dark:from-orange-900/20 dark:to-green-900/20 my-2 sm:my-1.5 md:my-4`}>
-          <AccordionTrigger className="hover:no-underline py-3 md:py-4">
+        <AccordionItem 
+          value="notifications" 
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.notifications.className} dark:from-orange-900/20 dark:to-green-900/20`}
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
               <Bell className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
               <span className="text-sm md:text-base truncate">Notifications</span>
@@ -1203,7 +1226,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-3 md:pb-4 pt-2 space-y-3 md:space-y-4">
+          <AccordionContent 
+            style={{ 
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
+            }}
+          >
             <p className="text-xs md:text-sm text-muted-foreground">
               Manage notifications for due and overdue tasks
             </p>
@@ -1465,8 +1494,19 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Tags Management */}
-        <AccordionItem value="tags" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.tags.className} dark:from-purple-800/25 dark:to-indigo-800/25 my-2 sm:my-1.5 md:my-4`}>
-          <AccordionTrigger className="hover:no-underline py-4">
+        <AccordionItem 
+          value="tags" 
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.tags.className} dark:from-purple-800/25 dark:to-indigo-800/25`}
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center gap-3">
               <Tag className="w-5 h-5 text-primary" />
               <span>Tags Management</span>
@@ -1532,8 +1572,19 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* AI Settings */}
-        <AccordionItem value="ai-settings" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.aiSettings.className} dark:from-cyan-900/25 dark:to-blue-900/25 my-2 sm:my-1.5 md:my-4`}>
-          <AccordionTrigger className="hover:no-underline py-4">
+        <AccordionItem 
+          value="ai-settings" 
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.aiSettings.className} dark:from-cyan-900/25 dark:to-blue-900/25`}
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center gap-3">
               <Sparkles className="w-5 h-5 text-primary" />
               <span>AI Scheduling</span>
@@ -1745,8 +1796,19 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Date, Time & Theme */}
-        <AccordionItem value="datetime" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.datetime.className} dark:from-violet-900/25 dark:to-orange-900/25 my-2 sm:my-1.5 md:my-4`}>
-          <AccordionTrigger className="hover:no-underline py-4">
+        <AccordionItem 
+          value="datetime" 
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.datetime.className} dark:from-violet-900/25 dark:to-orange-900/25`}
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-primary" />
               <span>Date, Time & Theme</span>
@@ -1759,7 +1821,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
             }}
           >
-            <div className="space-y-4 sm:space-y-3 md:space-y-3">
+            <div className="space-y-4">
               {/* Time Format */}
               <div className="space-y-2 sm:space-y-2">
                 <Label className="text-sm">Time Format</Label>
@@ -1869,8 +1931,19 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Task Rollover */}
-        <AccordionItem value="rollover" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.rollover.className} dark:from-green-900/25 dark:to-teal-900/25 my-2 sm:my-1.5 md:my-4`}>
-          <AccordionTrigger className="hover:no-underline py-4">
+        <AccordionItem 
+          value="rollover" 
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.rollover.className} dark:from-green-900/25 dark:to-teal-900/25`}
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center gap-3">
               <RotateCcw className="w-5 h-5 text-primary" />
               <span>Task Rollover</span>
@@ -1954,8 +2027,19 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Task Category Hours */}
-        <AccordionItem value="hours" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.hours.className} dark:from-amber-900/25 dark:to-pink-900/25 my-2 sm:my-1.5 md:my-4`}>
-          <AccordionTrigger className="hover:no-underline py-4">
+        <AccordionItem 
+          value="hours" 
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.hours.className} dark:from-amber-900/25 dark:to-pink-900/25`}
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center gap-3">
               <Briefcase className="w-5 h-5 text-primary" />
               <span>Task Category Hours</span>
@@ -2303,8 +2387,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         </AccordionItem>
 
         {/* Awards & Achievements */}
-        <AccordionItem value="awards" className={`border rounded-lg px-4 py-2 sm:py-0 md:py-0 ${UI_SETTINGS_PANEL_GRADIENTS.awards.className} dark:from-purple-900/30 dark:to-yellow-900/30 my-2 sm:my-1.5 md:my-4`} data-tour="awards-section">
-          <AccordionTrigger className="hover:no-underline py-4">
+        <AccordionItem 
+          value="awards" 
+          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.awards.className} dark:from-purple-900/30 dark:to-yellow-900/30`}
+          data-tour="awards-section"
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center gap-3">
               <Trophy className="w-5 h-5 text-primary" />
               <span>Awards & Achievements</span>
@@ -2361,7 +2457,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       </Badge>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="pb-3 pt-2">
+                  <AccordionContent 
+                    style={{ 
+                      paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+                      paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+                      gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
+                    }}
+                  >
                     <div className="space-y-2">
                       {awards.filter(a => a.category === 'completion').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
@@ -2439,7 +2541,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       </Badge>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="pb-3 pt-2">
+                  <AccordionContent 
+                    style={{ 
+                      paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+                      paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+                      gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
+                    }}
+                  >
                     <div className="space-y-2">
                       {awards.filter(a => a.category === 'streak').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
@@ -2517,7 +2625,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       </Badge>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="pb-3 pt-2">
+                  <AccordionContent 
+                    style={{ 
+                      paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+                      paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+                      gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
+                    }}
+                  >
                     <div className="space-y-2">
                       {awards.filter(a => a.category === 'focus').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
@@ -2598,7 +2712,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       </Badge>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="pb-3 pt-2">
+                  <AccordionContent 
+                    style={{ 
+                      paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+                      paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+                      gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING
+                    }}
+                  >
                     <div className="space-y-2">
                       {awards.filter(a => a.category === 'special' || a.category === 'speed').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
@@ -2756,7 +2876,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
             }}
           >
-            <div className="space-y-4 sm:space-y-3 md:space-y-3">
+            <div className="space-y-4">
               <div className="flex flex-col items-center gap-1.5">
                 <img 
                   src={taskzmLogoGray} 
