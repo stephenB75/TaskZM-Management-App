@@ -1144,8 +1144,8 @@ export function SevenDayKanban({
                     <div 
                       className={cn(
                         'p-1.5 sm:p-2 border-b backdrop-blur-sm transition-all',
-                        // Enhanced styling for today - make it stand out more
-                        column.isToday && 'ring-2 ring-primary/50 shadow-lg shadow-primary/20',
+                        // Enhanced styling for today - make it stand out more with deeper colors
+                        column.isToday && `ring-${KANBAN_DAY_COLORS.today.ringWidth} ring-primary/${KANBAN_DAY_COLORS.today.ringOpacityLight}`,
                         !column.isToday && isDark && 'bg-card/50 border-border',
                         !column.isToday && !isDark && hasHeader(getDayColors(column.dayName)) && 'bg-transparent'
                       )}

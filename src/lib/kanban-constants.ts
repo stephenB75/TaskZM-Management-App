@@ -110,14 +110,18 @@ export const KANBAN_DAY_COLORS = {
     // Enhanced styling for highlighted today column - deeper, more vibrant colors
     headerOpacity: 100, // Full opacity for maximum visibility
     viaOpacity: 100, // Full opacity for via color
-    borderOpacity: 75, // More prominent border opacity (75% vs standard 30%) - deeper border
+    borderOpacity: 85, // More prominent border opacity (85% vs standard 30%) - deeper, more visible border
     borderWidth: '2px', // Thicker border for today
-    darkModeBackgroundOpacity: 0.35, // 35% opacity for dark mode background - deeper color
-    shadowOpacity: 0.30, // 30% opacity for shadow - more prominent shadow
+    darkModeBackgroundOpacity: 0.40, // 40% opacity for dark mode background - deeper, more visible color
+    shadowOpacity: 0.35, // 35% opacity for shadow - more prominent shadow
     // Color darkening factor for today column (multiplies RGB values to create deeper colors)
-    colorDarkeningFactor: 0.85, // Darken colors by 15% to make them deeper (0.85 = 85% of original brightness)
+    colorDarkeningFactor: 0.80, // Darken colors by 20% to make them deeper (0.80 = 80% of original brightness) - more prominent
     // Dark mode ring opacity enhancement
-    darkModeRingOpacityIncrease: 20, // Increase ring opacity by 20 for deeper appearance in dark mode
+    darkModeRingOpacityIncrease: 25, // Increase ring opacity by 25 for deeper appearance in dark mode
+    // Ring and shadow styling for additional visual prominence
+    ringWidth: 2, // Ring width in pixels
+    ringOpacityLight: 60, // Ring opacity in light mode (60% for better visibility)
+    shadowIntensity: 'lg', // Shadow intensity level
   },
   // Standard opacity values for non-highlighted columns
   standard: {
