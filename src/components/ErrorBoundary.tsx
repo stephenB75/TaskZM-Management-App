@@ -12,6 +12,12 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+  private reloadAttempted = false;
+  private lastErrorTime = 0;
+  private readonly RELOAD_COOLDOWN = 30000; // 30 seconds - prevent reload loops
+  private readonly MAX_RELOADS_PER_SESSION = 2; // Maximum 2 automatic reloads per session
+  private reloadCount = 0;
+
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -19,6 +25,12 @@ export class ErrorBoundary extends Component<Props, State> {
       error: null,
       errorInfo: null,
     };
+    
+    // Check if we've already attempted reloads in this session
+    const sessionReloadCount = sessionStorage.getItem('errorBoundaryReloadCount');
+    if (sessionReloadCount) {
+      this.reloadCount = parseInt(sessionReloadCount, 10) || 0;
+    }
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -37,10 +49,11 @@ export class ErrorBoundary extends Component<Props, State> {
     
     if (isInitializationError) {
       // This is an initialization error - could be from vendor or our code
-      // Try to recover by forcing a page reload after a short delay
-      console.error('ErrorBoundary: Initialization error detected, attempting recovery', {
+      console.error('ErrorBoundary: Initialization error detected', {
         error: error.message,
-        componentStack: errorInfo.componentStack
+        componentStack: errorInfo.componentStack,
+        reloadCount: this.reloadCount,
+        timeSinceLastError: Date.now() - this.lastErrorTime
       });
       
       // Set error state to show error UI
@@ -49,14 +62,56 @@ export class ErrorBoundary extends Component<Props, State> {
         errorInfo,
       });
       
-      // Attempt automatic recovery after 2 seconds
-      setTimeout(() => {
+      // Prevent reload loops - check cooldown and max reloads
+      const now = Date.now();
+      const timeSinceLastError = now - this.lastErrorTime;
+      
+      // Only attempt reload if:
+      // 1. We haven't already attempted a reload for this error
+      // 2. Enough time has passed since last error (cooldown)
+      // 3. We haven't exceeded max reloads per session
+      if (!this.reloadAttempted && 
+          timeSinceLastError > this.RELOAD_COOLDOWN && 
+          this.reloadCount < this.MAX_RELOADS_PER_SESSION) {
+        
+        this.reloadAttempted = true;
+        this.lastErrorTime = now;
+        this.reloadCount++;
+        
+        // Store reload count in session storage to persist across reloads
         try {
-          window.location.reload();
-        } catch (reloadError) {
-          console.error('Failed to reload page:', reloadError);
+          sessionStorage.setItem('errorBoundaryReloadCount', String(this.reloadCount));
+        } catch (e) {
+          // Ignore sessionStorage errors
         }
-      }, 2000);
+        
+        console.warn(`ErrorBoundary: Attempting automatic recovery (${this.reloadCount}/${this.MAX_RELOADS_PER_SESSION})`);
+        
+        // Attempt automatic recovery after a delay (increased to 3 seconds to give user time to see error)
+        setTimeout(() => {
+          try {
+            // Clear the reload count if we're about to reload (fresh start)
+            if (this.reloadCount >= this.MAX_RELOADS_PER_SESSION) {
+              try {
+                sessionStorage.removeItem('errorBoundaryReloadCount');
+              } catch (e) {
+                // Ignore
+              }
+            }
+            window.location.reload();
+          } catch (reloadError) {
+            console.error('Failed to reload page:', reloadError);
+            this.reloadAttempted = false; // Allow retry if reload failed
+          }
+        }, 3000); // Increased from 2 to 3 seconds
+      } else {
+        // Don't reload - show error UI instead
+        if (this.reloadCount >= this.MAX_RELOADS_PER_SESSION) {
+          console.warn('ErrorBoundary: Max reload attempts reached. Showing error UI instead.');
+        } else if (timeSinceLastError <= this.RELOAD_COOLDOWN) {
+          console.warn(`ErrorBoundary: Reload cooldown active (${Math.ceil((this.RELOAD_COOLDOWN - timeSinceLastError) / 1000)}s remaining). Showing error UI instead.`);
+        }
+      }
       
       return;
     }
