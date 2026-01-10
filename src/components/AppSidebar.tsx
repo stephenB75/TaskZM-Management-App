@@ -58,6 +58,7 @@ export function AppSidebar({
   const { teamMembers } = useTeam();
   const { hasFeature } = useSubscription();
   const { badgeCount } = useNotifications();
+  const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets too
   const completedCount = tasks.filter(
     (t: { status: string }) => t.status === "done",
   ).length;
@@ -237,17 +238,20 @@ export function AppSidebar({
 
   return (
     <>
-      {/* Desktop Icon Navbar - Always visible on desktop */}
-      <div className="hidden md:flex w-16 border-r border-primary/20 bg-gradient-to-b from-[#F3F0F9] via-[#E6D5F0] to-[#D4C5F9] dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex-col h-full">
-        {iconNavContent}
-      </div>
+      {/* Desktop Icon Navbar - Only visible on desktop (>= 1280px) */}
+      {!shouldUseMobileLayout && (
+        <div className="flex w-16 border-r border-primary/20 bg-gradient-to-b from-[#F3F0F9] via-[#E6D5F0] to-[#D4C5F9] dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex-col h-full">
+          {iconNavContent}
+        </div>
+      )}
 
-      {/* Mobile Sidebar - Sheet overlay */}
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="left"
-          className="w-64 p-0 md:hidden"
-        >
+      {/* Mobile/Tablet Sidebar - Sheet overlay (shown on mobile and tablets < 1280px) */}
+      {shouldUseMobileLayout && (
+        <Sheet open={open} onOpenChange={onOpenChange}>
+          <SheetContent
+            side="left"
+            className="w-64 p-0"
+          >
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation Menu</SheetTitle>
             <SheetDescription>
@@ -259,6 +263,7 @@ export function AppSidebar({
           </div>
         </SheetContent>
       </Sheet>
+      )}
     </>
   );
 }
