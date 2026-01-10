@@ -10,6 +10,91 @@ import * as emailService from "./email-service.tsx";
 import * as appleCaldavSync from "./apple-caldav-sync.tsx";
 
 // ============================================================================
+// APP INITIALIZATION
+// ============================================================================
+
+const app = new Hono();
+
+// Enable logger
+app.use('*', logger(console.log));
+
+// Enable CORS for all routes and methods
+// Allow all origins to prevent CORS issues
+app.use(
+  "/*",
+  cors({
+    origin: "*", // Allow all origins
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    exposeHeaders: ["Content-Length", "Content-Type"],
+    maxAge: 86400, // 24 hours
+    credentials: false,
+  }),
+);
+
+// Explicit OPTIONS handler for all routes to ensure preflight requests work
+app.options("*", (c) => {
+  return c.text("", 204);
+});
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// Helper function to safely extract error messages
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object') {
+    const errorObj = error as any;
+    if (errorObj.message && typeof errorObj.message === 'string') {
+      return errorObj.message;
+    }
+    if (errorObj.error && typeof errorObj.error === 'string') {
+      return errorObj.error;
+    }
+    try {
+      const jsonStr = JSON.stringify(errorObj, Object.getOwnPropertyNames(errorObj));
+      if (jsonStr && jsonStr !== '{}') {
+        return jsonStr;
+      }
+    } catch {
+      // Ignore stringify errors
+    }
+  }
+  return 'An unexpected error occurred';
+}
+
+// Create Supabase client helper
+const getSupabaseClient = () => {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  );
+};
+
+// Verify user from access token
+const verifyUser = async (request: Request) => {
+  const accessToken = request.headers.get('Authorization')?.split(' ')[1];
+  if (!accessToken) {
+    return { userId: null, error: 'No access token provided' };
+  }
+
+  const supabase = getSupabaseClient();
+  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+  
+  if (error || !user) {
+    return { userId: null, error: 'Invalid access token' };
+  }
+
+  return { userId: user.id, error: null };
+};
+
+// ============================================================================
 // SHARED TERMINOLOGY
 // ============================================================================
 
@@ -221,83 +306,6 @@ app.post("/taskzm-database-function/shared-terminology", async (c) => {
     return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
-
-// Helper function to safely extract error messages
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
-  if (error && typeof error === 'object') {
-    const errorObj = error as any;
-    if (errorObj.message && typeof errorObj.message === 'string') {
-      return errorObj.message;
-    }
-    if (errorObj.error && typeof errorObj.error === 'string') {
-      return errorObj.error;
-    }
-    try {
-      const jsonStr = JSON.stringify(errorObj, Object.getOwnPropertyNames(errorObj));
-      if (jsonStr && jsonStr !== '{}') {
-        return jsonStr;
-      }
-    } catch {
-      // Ignore stringify errors
-    }
-  }
-  return 'An unexpected error occurred';
-}
-
-const app = new Hono();
-
-// Enable logger
-app.use('*', logger(console.log));
-
-// Enable CORS for all routes and methods
-// Allow all origins to prevent CORS issues
-app.use(
-  "/*",
-  cors({
-    origin: "*", // Allow all origins
-    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    exposeHeaders: ["Content-Length", "Content-Type"],
-    maxAge: 86400, // 24 hours
-    credentials: false,
-  }),
-);
-
-// Explicit OPTIONS handler for all routes to ensure preflight requests work
-app.options("*", (c) => {
-  return c.text("", 204);
-});
-
-// Create Supabase client helper
-const getSupabaseClient = () => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-  );
-};
-
-// Verify user from access token
-const verifyUser = async (request: Request) => {
-  const accessToken = request.headers.get('Authorization')?.split(' ')[1];
-  if (!accessToken) {
-    return { userId: null, error: 'No access token provided' };
-  }
-
-  const supabase = getSupabaseClient();
-  const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-  
-  if (error || !user) {
-    return { userId: null, error: 'Invalid access token' };
-  }
-
-  return { userId: user.id, error: null };
-};
 
 // Verify admin user from access token
 const verifyAdmin = async (request: Request) => {
