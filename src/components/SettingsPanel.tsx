@@ -1764,21 +1764,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             >
               <div 
                 className="flex items-start"
-                style={{ gap: SETTINGS_PANEL_GAP_SMALL }}
+                style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }} // Increased from SMALL to MEDIUM
               >
                 <Info 
                   className="text-primary flex-shrink-0" 
                   style={{ 
                     width: SETTINGS_PANEL_ICON_SIZE_MEDIUM,
                     height: SETTINGS_PANEL_ICON_SIZE_MEDIUM,
-                    marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL,
+                    marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, // Increased from XSMALL to EXTRA_SMALL
                   }}
                 />
                 <div 
                   className="flex flex-col flex-1"
                   style={{ 
                     fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, // Reduced from SMALL to XSMALL
-                    gap: SETTINGS_PANEL_SPACING_SMALL,
+                    gap: SETTINGS_PANEL_SPACING_MEDIUM, // Increased from SMALL to MEDIUM
                     minWidth: 0, // Allow flex shrinking
                   }}
                 >
@@ -1787,7 +1787,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       className="font-semibold text-foreground"
                       style={{ 
                         fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, // Reduced from MEDIUM to SMALL
-                        marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
+                        marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM, // Increased from SMALL to MEDIUM
                       }}
                     >
                       {AI_FUNCTION_EXPLANATION.TITLE}
@@ -1805,7 +1805,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
                   <div 
                     className="border-t border-primary/10"
-                    style={{ paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL }}
+                    style={{ paddingTop: SETTINGS_PANEL_PADDING_MEDIUM }} // Increased from Y_SMALL to MEDIUM
                   >
                     <p 
                       className="italic"
