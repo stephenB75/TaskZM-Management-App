@@ -81,6 +81,7 @@ import {
 import { UI_CHART_COLORS, UI_ANALYTICS_COLORS } from "../lib/ui-colors";
 import { cn } from "../lib/utils";
 import { ANALYTICS_PDF_CONFIG, ANALYTICS_PDF_BUTTON } from "../lib/analytics-constants";
+import { Progress } from "./ui/progress";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -208,6 +209,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   const cardRef = React.useRef<HTMLDivElement>(null);
   const hasTriggeredAnimationRef = React.useRef(false);
   const observerRef = React.useRef<IntersectionObserver | null>(null);
+  
+  // PDF generation progress state
+  const [pdfProgress, setPdfProgress] = useState(0);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
   // Refs for chart containers to capture as images
   const statusChartRef = React.useRef<HTMLDivElement>(null);
@@ -566,6 +571,9 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
   };
 
   const handleExportPDF = async () => {
+    setIsGeneratingPDF(true);
+    setPdfProgress(0);
+    
     try {
       const doc = new jsPDF({
         orientation: ANALYTICS_PDF_CONFIG.orientation,
@@ -576,6 +584,46 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       let yPos = ANALYTICS_PDF_CONFIG.margins.top;
       const pageHeight = doc.internal.pageSize.getHeight();
       const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Helper function to convert SVG to canvas (better for Recharts)
+      const svgToCanvas = (svg: SVGSVGElement, width: number, height: number): Promise<HTMLCanvasElement> => {
+        return new Promise((resolve, reject) => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = width * ANALYTICS_PDF_CONFIG.chart.quality;
+            canvas.height = height * ANALYTICS_PDF_CONFIG.chart.quality;
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              reject(new Error('Could not get canvas context'));
+              return;
+            }
+            
+            // Set background color
+            ctx.fillStyle = isDark ? ANALYTICS_PDF_CONFIG.chart.backgroundColor.dark : ANALYTICS_PDF_CONFIG.chart.backgroundColor.light;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Create image from SVG
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            
+            const img = new Image();
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              URL.revokeObjectURL(url);
+              resolve(canvas);
+            };
+            img.onerror = () => {
+              URL.revokeObjectURL(url);
+              reject(new Error('Failed to load SVG image'));
+            };
+            img.src = url;
+          } catch (error) {
+            reject(error);
+          }
+        });
+      };
       
       // Helper function to capture chart as image with proper aspect ratio
       const captureChart = async (ref: React.RefObject<HTMLDivElement>, title: string): Promise<string | null> => {
@@ -593,169 +641,49 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             return null;
           }
           
-          // Wait for chart to fully render - increased wait time for SVG rendering
-          await new Promise(resolve => setTimeout(resolve, ANALYTICS_PDF_CONFIG.chart.waitForRender || 800));
+          // Wait for chart to fully render
+          await new Promise(resolve => setTimeout(resolve, ANALYTICS_PDF_CONFIG.chart.waitForRender || 500));
           
-          // Force multiple reflows to ensure charts are fully rendered
+          // Force reflow to ensure charts are rendered
           void element.offsetHeight;
           await new Promise(resolve => setTimeout(resolve, 200));
-          void element.offsetHeight;
           
-          // Check if SVG elements are present (Recharts uses SVG)
-          const svgElements = element.querySelectorAll('svg');
-          if (svgElements.length === 0) {
-            console.warn(`No SVG elements found in chart: ${title}, waiting longer...`);
-            // Wait longer and check again
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const svgCheck = element.querySelectorAll('svg');
-            if (svgCheck.length === 0) {
-              console.warn(`Still no SVG elements found in chart: ${title}`);
-              return null;
-            }
+          // Find SVG element (Recharts uses SVG)
+          const svgElement = element.querySelector('svg') as SVGSVGElement;
+          if (!svgElement) {
+            console.warn(`No SVG element found in chart: ${title}`);
+            // Fallback to html2canvas if no SVG
+            return await html2canvas(element, {
+              backgroundColor: isDark ? ANALYTICS_PDF_CONFIG.chart.backgroundColor.dark : ANALYTICS_PDF_CONFIG.chart.backgroundColor.light,
+              scale: ANALYTICS_PDF_CONFIG.chart.quality,
+              logging: false,
+              useCORS: true,
+              allowTaint: true,
+            }).then(canvas => canvas.toDataURL(ANALYTICS_PDF_CONFIG.chart.imageFormat, 1.0));
           }
-          
-          // Ensure all SVG elements have proper dimensions
-          svgElements.forEach((svg) => {
-            const svgEl = svg as SVGSVGElement;
-            if (!svgEl.getAttribute('width') || !svgEl.getAttribute('height')) {
-              const rect = svgEl.getBoundingClientRect();
-              if (rect.width > 0 && rect.height > 0) {
-                svgEl.setAttribute('width', String(rect.width));
-                svgEl.setAttribute('height', String(rect.height));
-              }
-            }
-          });
           
           const rect = element.getBoundingClientRect();
           
-          // Ensure we have valid dimensions
-          if (rect.width === 0 || rect.height === 0) {
-            console.warn(`Chart has invalid dimensions for: ${title}`);
+          // Ensure SVG has proper dimensions
+          const svgRect = svgElement.getBoundingClientRect();
+          if (svgRect.width === 0 || svgRect.height === 0) {
+            console.warn(`SVG has zero dimensions for: ${title}`);
             return null;
           }
           
-          // Calculate aspect ratio to prevent warping
-          const aspectRatio = rect.width / rect.height;
+          // Set explicit SVG dimensions if not set
+          if (!svgElement.getAttribute('width') || !svgElement.getAttribute('height')) {
+            svgElement.setAttribute('width', String(svgRect.width));
+            svgElement.setAttribute('height', String(svgRect.height));
+          }
           
-          const canvas = await html2canvas(element, {
-            backgroundColor: isDark ? ANALYTICS_PDF_CONFIG.chart.backgroundColor.dark : ANALYTICS_PDF_CONFIG.chart.backgroundColor.light,
-            scale: ANALYTICS_PDF_CONFIG.chart.quality,
-            logging: false,
-            useCORS: true,
-            allowTaint: true,
-            width: rect.width,
-            height: rect.height,
-            windowWidth: window.innerWidth,
-            windowHeight: window.innerHeight,
-            // Better SVG handling - use foreignObjectRendering for better SVG support
-            foreignObjectRendering: true,
-            // Remove imageTimeout to prevent premature capture
-            imageTimeout: 15000,
-            // Preserve aspect ratio and ensure proper rendering
-            onclone: (clonedDoc) => {
-              // Find the cloned element by data attribute
-              const dataAttr = element.getAttribute('data-chart-ref');
-              let clonedElement: HTMLElement | null = null;
-              
-              if (dataAttr) {
-                // Try exact match first
-                clonedElement = clonedDoc.querySelector(`[data-chart-ref="${dataAttr}"]`) as HTMLElement;
-                
-                // Fallback: search all elements with data-chart-ref
-                if (!clonedElement) {
-                  const allElements = clonedDoc.querySelectorAll('[data-chart-ref]');
-                  for (const el of Array.from(allElements)) {
-                    if (el.getAttribute('data-chart-ref') === dataAttr) {
-                      clonedElement = el as HTMLElement;
-                      break;
-                    }
-                  }
-                }
-              }
-              
-              // If still not found, try to find by structure (last resort)
-              if (!clonedElement) {
-                // Find element at same position in cloned document
-                const allDivs = clonedDoc.querySelectorAll('div');
-                for (const div of Array.from(allDivs)) {
-                  const divRect = (div as HTMLElement).getBoundingClientRect();
-                  // Match by approximate position and size
-                  if (Math.abs(divRect.width - rect.width) < 10 && 
-                      Math.abs(divRect.height - rect.height) < 10) {
-                    const divSvg = div.querySelector('svg');
-                    if (divSvg) {
-                      clonedElement = div as HTMLElement;
-                      break;
-                    }
-                  }
-                }
-              }
-              
-              if (clonedElement) {
-                // Ensure dimensions are maintained
-                clonedElement.style.width = `${rect.width}px`;
-                clonedElement.style.height = `${rect.height}px`;
-                clonedElement.style.position = 'relative';
-                clonedElement.style.overflow = 'visible';
-                clonedElement.style.display = 'block';
-                clonedElement.style.visibility = 'visible';
-                clonedElement.style.opacity = '1';
-                
-                // Ensure all SVG elements are visible and properly sized
-                const svgs = clonedElement.querySelectorAll('svg');
-                svgs.forEach((svg) => {
-                  const svgEl = svg as SVGSVGElement;
-                  const svgRect = svgEl.getBoundingClientRect();
-                  
-                  // Set explicit dimensions
-                  if (svgRect.width > 0 && svgRect.height > 0) {
-                    svgEl.setAttribute('width', String(svgRect.width));
-                    svgEl.setAttribute('height', String(svgRect.height));
-                  } else {
-                    svgEl.setAttribute('width', String(rect.width));
-                    svgEl.setAttribute('height', String(rect.height));
-                  }
-                  
-                  svgEl.style.width = `${rect.width}px`;
-                  svgEl.style.height = `${rect.height}px`;
-                  svgEl.style.display = 'block';
-                  svgEl.style.visibility = 'visible';
-                  svgEl.style.position = 'relative';
-                  svgEl.style.opacity = '1';
-                  
-                  // Ensure SVG viewBox is set correctly
-                  if (!svgEl.getAttribute('viewBox')) {
-                    svgEl.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
-                  }
-                  
-                  // Ensure all child elements are visible
-                  const allChildren = svgEl.querySelectorAll('*');
-                  allChildren.forEach((child) => {
-                    (child as HTMLElement).style.visibility = 'visible';
-                    (child as HTMLElement).style.opacity = '1';
-                  });
-                });
-                
-                // Also ensure ResponsiveContainer wrapper is properly sized
-                const responsiveContainers = clonedElement.querySelectorAll('.recharts-responsive-container');
-                responsiveContainers.forEach((container) => {
-                  const containerEl = container as HTMLElement;
-                  containerEl.style.width = `${rect.width}px`;
-                  containerEl.style.height = `${rect.height}px`;
-                  containerEl.style.display = 'block';
-                  containerEl.style.visibility = 'visible';
-                  containerEl.style.opacity = '1';
-                });
-                
-                // Ensure all canvas elements are visible (some charts use canvas)
-                const canvases = clonedElement.querySelectorAll('canvas');
-                canvases.forEach((canvas) => {
-                  (canvas as HTMLCanvasElement).style.visibility = 'visible';
-                  (canvas as HTMLCanvasElement).style.opacity = '1';
-                });
-              }
-            },
-          });
+          // Ensure viewBox is set
+          if (!svgElement.getAttribute('viewBox')) {
+            svgElement.setAttribute('viewBox', `0 0 ${svgRect.width} ${svgRect.height}`);
+          }
+          
+          // Convert SVG to canvas using our helper
+          const canvas = await svgToCanvas(svgElement, svgRect.width, svgRect.height);
           
           // Verify canvas has content
           if (canvas.width === 0 || canvas.height === 0) {
@@ -763,29 +691,25 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             return null;
           }
           
-          // Verify canvas has actual content (not just empty/white)
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            const imageData = ctx.getImageData(0, 0, Math.min(canvas.width, 100), Math.min(canvas.height, 100));
-            const pixels = imageData.data;
-            let hasContent = false;
-            for (let i = 0; i < pixels.length; i += 4) {
-              // Check if pixel is not fully transparent or not white
-              if (pixels[i + 3] > 0 && !(pixels[i] === 255 && pixels[i + 1] === 255 && pixels[i + 2] === 255)) {
-                hasContent = true;
-                break;
-              }
-            }
-            if (!hasContent) {
-              console.warn(`Canvas appears to be empty for: ${title}`);
-              return null;
-            }
-          }
-          
           return canvas.toDataURL(ANALYTICS_PDF_CONFIG.chart.imageFormat, 1.0);
         } catch (error) {
           console.warn(`Failed to capture chart: ${title}`, error);
-          return null;
+          // Fallback to html2canvas on error
+          try {
+            const element = ref.current;
+            if (!element) return null;
+            const canvas = await html2canvas(element, {
+              backgroundColor: isDark ? ANALYTICS_PDF_CONFIG.chart.backgroundColor.dark : ANALYTICS_PDF_CONFIG.chart.backgroundColor.light,
+              scale: ANALYTICS_PDF_CONFIG.chart.quality,
+              logging: false,
+              useCORS: true,
+              allowTaint: true,
+            });
+            return canvas.toDataURL(ANALYTICS_PDF_CONFIG.chart.imageFormat, 1.0);
+          } catch (fallbackError) {
+            console.warn(`Fallback capture also failed for: ${title}`, fallbackError);
+            return null;
+          }
         }
       };
       
@@ -901,11 +825,14 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       };
 
       // Title with visual styling
+      setPdfProgress(10); // Initial progress
       doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title + 2);
       const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
       doc.setTextColor(r, g, b);
       doc.text(ANALYTICS_PDF_CONFIG.labels.title, ANALYTICS_PDF_CONFIG.margins.left, yPos);
       yPos += ANALYTICS_PDF_CONFIG.spacing.afterTitle + 2;
+      
+      setPdfProgress(15); // After title
 
       // Date
       doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
@@ -1000,44 +927,66 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         }
         yPos += ANALYTICS_PDF_CONFIG.spacing.afterSection;
 
+        // Calculate total charts to capture for progress tracking
+        const chartsToCapture = [
+          { ref: statusChartRef, label: ANALYTICS_PDF_CONFIG.labels.statusDistribution, condition: analytics.statusDistribution && analytics.statusDistribution.length > 0 },
+          { ref: timeTrendChartRef, label: ANALYTICS_PDF_CONFIG.labels.chartTimeTracked, condition: analytics.timeTrackingTrend && analytics.timeTrackingTrend.length > 0 },
+          { ref: tasksCreatedCompletedChartRef, label: ANALYTICS_PDF_CONFIG.labels.chartTasksCreatedCompleted, condition: analytics.taskPerDayProgress && analytics.taskPerDayProgress.length > 0 },
+          { ref: timeOfDayChartRef, label: ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay, condition: analytics.timePatterns?.blocks && analytics.timePatterns.blocks.length > 0 },
+          { ref: topTagsChartRef, label: ANALYTICS_PDF_CONFIG.labels.chartTopTaskTags, condition: analytics.taskTypes && analytics.taskTypes.length > 0 },
+        ].filter(chart => chart.condition && chart.ref.current);
+        
+        const totalCharts = chartsToCapture.length;
+        let chartsCaptured = 0;
+
         // Status Distribution Chart
         if (analytics.statusDistribution && analytics.statusDistribution.length > 0 && statusChartRef.current) {
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20)); // 20-80% for charts
           const chartImage = await captureChart(statusChartRef, ANALYTICS_PDF_CONFIG.labels.statusDistribution);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.statusDistribution);
           }
+          chartsCaptured++;
         }
 
         // Time Tracked Trend Chart
         if (analytics.timeTrackingTrend && analytics.timeTrackingTrend.length > 0 && timeTrendChartRef.current) {
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20));
           const chartImage = await captureChart(timeTrendChartRef, ANALYTICS_PDF_CONFIG.labels.chartTimeTracked);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.chartTimeTracked);
           }
+          chartsCaptured++;
         }
         
         // Tasks Created vs Completed Chart
         if (analytics.taskPerDayProgress && analytics.taskPerDayProgress.length > 0 && tasksCreatedCompletedChartRef.current) {
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20));
           const chartImage = await captureChart(tasksCreatedCompletedChartRef, ANALYTICS_PDF_CONFIG.labels.chartTasksCreatedCompleted);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.chartTasksCreatedCompleted);
           }
+          chartsCaptured++;
         }
         
         // Completion by Time of Day Chart
         if (analytics.timePatterns?.blocks && analytics.timePatterns.blocks.length > 0 && timeOfDayChartRef.current) {
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20));
           const chartImage = await captureChart(timeOfDayChartRef, ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay);
           }
+          chartsCaptured++;
         }
         
         // Top Task Tags Chart
         if (analytics.taskTypes && analytics.taskTypes.length > 0 && topTagsChartRef.current) {
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20));
           const chartImage = await captureChart(topTagsChartRef, ANALYTICS_PDF_CONFIG.labels.chartTopTaskTags);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.chartTopTaskTags);
           }
+          chartsCaptured++;
         }
 
         // Project Progress - Visual Table
@@ -1124,10 +1073,20 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       }
 
       // Save PDF
+      setPdfProgress(90);
       const fileName = `${ANALYTICS_PDF_CONFIG.fileName}-${new Date().toISOString().split("T")[0]}.pdf`;
       doc.save(fileName);
+      setPdfProgress(100);
+      
+      // Reset progress after a short delay
+      setTimeout(() => {
+        setIsGeneratingPDF(false);
+        setPdfProgress(0);
+      }, 500);
     } catch (error) {
       console.error("Error exporting PDF:", error);
+      setIsGeneratingPDF(false);
+      setPdfProgress(0);
     }
   };
 
@@ -1264,11 +1223,12 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               variant="ghost"
               size="icon"
               onClick={handleExportPDF}
+              disabled={isGeneratingPDF}
               className="h-8 w-8"
               title="Download PDF Report"
             >
               <Download 
-                className="w-4 h-4" 
+                className={cn("w-4 h-4", isGeneratingPDF && "animate-spin")}
                 style={{ width: ANALYTICS_PDF_BUTTON.iconSize, height: ANALYTICS_PDF_BUTTON.iconSize }}
               />
             </Button>
@@ -1276,6 +1236,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               variant="ghost"
               size="icon"
               onClick={onClose}
+              disabled={isGeneratingPDF}
               className="h-8 w-8"
             >
               <X className="w-4 h-4" />
@@ -1283,6 +1244,17 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           </div>
         }
       />
+      
+      {/* Progress Bar */}
+      {isGeneratingPDF && (
+        <div className="px-4 py-2 border-b border-border/40 bg-background/50">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs text-muted-foreground">Generating PDF...</span>
+            <span className="text-xs font-medium text-primary">{pdfProgress}%</span>
+          </div>
+          <Progress value={pdfProgress} className="h-1.5" />
+        </div>
+      )}
 
       {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
       <div className="flex-1 min-h-0">
