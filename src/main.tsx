@@ -371,43 +371,58 @@ import { SplashScreen } from '@capacitor/splash-screen';
 const isNative = Capacitor.isNativePlatform();
 
 // PWA Service Worker Registration
+// DISABLED automatic update checking to prevent random page refreshes
+// Service worker will only update on manual page refresh or navigation
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('/service-worker.js', { scope: '/' })
+      .register('/service-worker.js', { 
+        scope: '/',
+        // Disable automatic update checking - only check on manual refresh
+        updateViaCache: 'none' // This prevents automatic background updates
+      })
       .then((registration) => {
         console.log('✅ Service Worker registered:', registration.scope);
         
-        // Check for updates
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('🔄 New service worker available. Refresh to update.');
-              }
-            });
-          }
-        });
+        // DISABLED: Automatic update checking causes random page refreshes
+        // Only check for updates when user manually refreshes the page
+        // registration.addEventListener('updatefound', () => {
+        //   const newWorker = registration.installing;
+        //   if (newWorker) {
+        //     newWorker.addEventListener('statechange', () => {
+        //       if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+        //         console.log('🔄 New service worker available. Refresh to update.');
+        //       }
+        //     });
+        //   }
+        // });
+        
+        // Only check for updates on manual page refresh, not automatically
+        // This prevents random refreshes during user sessions
+        const checkForUpdates = () => {
+          registration.update().catch((error) => {
+            // Silently fail - update checking is non-critical
+            console.debug('Service worker update check failed (non-critical):', error);
+          });
+        };
+        
+        // Only check for updates when page is manually refreshed
+        // Don't check automatically during active sessions
+        window.addEventListener('beforeunload', () => {
+          // Check for updates only when user is leaving the page
+          checkForUpdates();
+        }, { once: true });
       })
       .catch((error) => {
         console.error('❌ Service Worker registration failed:', error);
       });
 
-    // Handle service worker updates - notify user instead of forcing reload
-    // This prevents frequent automatic refreshes that disrupt user experience
-    let reloadPromptShown = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // Only show prompt once per session to avoid spam
-      if (!reloadPromptShown) {
-        console.log('🔄 Service worker updated. Update will be applied on next page load.');
-        reloadPromptShown = true;
-        
-        // Optionally show a toast notification (non-intrusive)
-        // The update will be applied automatically on next navigation or manual refresh
-        // This prevents disrupting the user's current work
-      }
-    });
+    // Handle service worker updates - completely disabled to prevent any reloads
+    // DISABLED: controllerchange event can cause unexpected reloads
+    // navigator.serviceWorker.addEventListener('controllerchange', () => {
+    //   // Completely disabled - no reloads, no notifications
+    //   // Updates will only apply on next manual page refresh
+    // });
   });
 }
 
