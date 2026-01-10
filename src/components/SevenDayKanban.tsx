@@ -35,6 +35,7 @@ import {
 } from '../lib/kanban-constants';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM } from '../lib/layout-constants';
+import { useMobileLayout } from '../hooks/useMobileLayout';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
 
@@ -82,29 +83,38 @@ export function SevenDayKanban({
   const isDark = actualTheme === 'dark';
   const { accessToken } = useAuth();
   const { calendarStatus } = useCalendar();
+  const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
   
   // Calculate responsive column width based on viewport
+  // Tablets should use mobile column width for one-column layout
   const [columnWidth, setColumnWidth] = React.useState<number>(KANBAN_COLUMN_DIMENSIONS.width.desktop);
   
   React.useEffect(() => {
     const updateColumnWidth = () => {
       const width = window.innerWidth;
-      // Use constants for breakpoints
-      if (width < VIEWPORT_BREAKPOINTS.mobile) {
+      // Use mobile layout hook to determine if we should use mobile column width
+      // This ensures tablets get mobile layout in both portrait and landscape
+      if (shouldUseMobileLayout) {
+        // Mobile and tablets: use mobile column width for one-column layout
         setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.mobile);
-      } else if (width >= VIEWPORT_BREAKPOINTS.mobile && width < VIEWPORT_BREAKPOINTS.tablet) {
-        setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.tablet);
-      } else if (width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop) {
-        setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.smallMonitor);
       } else {
-        setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.desktop);
+        // Desktop: use appropriate column width based on viewport
+        if (width >= VIEWPORT_BREAKPOINTS.desktop) {
+          setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.desktop);
+        } else {
+          setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.smallMonitor);
+        }
       }
     };
     
     updateColumnWidth();
     window.addEventListener('resize', updateColumnWidth);
-    return () => window.removeEventListener('resize', updateColumnWidth);
-  }, []);
+    window.addEventListener('orientationchange', updateColumnWidth);
+    return () => {
+      window.removeEventListener('resize', updateColumnWidth);
+      window.removeEventListener('orientationchange', updateColumnWidth);
+    };
+  }, [shouldUseMobileLayout]); // Re-calculate when mobile layout preference changes
   const [weekOffset, setWeekOffset] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -497,13 +507,12 @@ export function SevenDayKanban({
           const relativeLeft = elementRect.left - containerRect.left + container.scrollLeft;
           
           // Account for container padding - use constants from KANBAN_COLUMN_DIMENSIONS
-          // Container has padding: p-2 (8px) on mobile, p-2.5 (10px) on sm/md, p-3 (12px) on lg+
-          // Match the actual padding values: p-2 sm:p-2.5 md:p-2.5 lg:p-3
-          const containerPadding = typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.desktop
-            ? KANBAN_COLUMN_DIMENSIONS.padding.desktop // p-3 = 12px on desktop (lg+)
-            : typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile
-            ? KANBAN_COLUMN_DIMENSIONS.padding.tablet // p-2.5 = 10px on sm/md (tablet)
-            : KANBAN_COLUMN_DIMENSIONS.padding.mobile; // p-2 = 8px on mobile
+          // Container has padding: p-2 (8px) on mobile/tablet, p-3 (12px) on desktop
+          // Match the actual padding values: p-2 on mobile/tablet, p-3 on desktop
+          // Tablets use mobile layout, so they use mobile padding
+          const containerPadding = shouldUseMobileLayout
+            ? KANBAN_COLUMN_DIMENSIONS.padding.mobile // p-2 = 8px on mobile/tablet
+            : KANBAN_COLUMN_DIMENSIONS.padding.desktop; // p-3 = 12px on desktop
           
           // Calculate scroll position to position tomorrow's column at the left edge of viewport
           // This hides previous days while still allowing horizontal scroll to see week one and week two
@@ -729,7 +738,7 @@ export function SevenDayKanban({
 
     return (
       <div 
-        className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "flex flex-col h-full" : "min-h-full flex flex-col"}
+        className={shouldUseMobileLayout ? "flex flex-col h-full" : "min-h-full flex flex-col"}
         style={{
           // Use gradient background on both mobile and desktop
           backgroundImage: isDark
@@ -744,17 +753,17 @@ export function SevenDayKanban({
           style={{ 
             // Remove transparent background override to allow parent gradient to show through
             // Add minimum height to fill space between header and nav bar when no tasks
-            minHeight: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+            minHeight: shouldUseMobileLayout
               ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
               : 'auto',
             // Add bottom padding to ensure content is not hidden by nav bar
             // Use the same calculation as App.tsx scroll container for consistency
-            paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+            paddingBottom: shouldUseMobileLayout
               ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`
               : undefined,
           } as React.CSSProperties}
         >
-          <DroppableColumn id={currentColumn.dateString} className={typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop ? "" : "min-h-full"}>
+          <DroppableColumn id={currentColumn.dateString} className={shouldUseMobileLayout ? "" : "min-h-full"}>
               <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                 <div className="w-full min-h-0 flex-1 flex flex-col" style={{ backgroundColor: 'transparent', background: 'transparent' } as React.CSSProperties}>
                     <div className="flex items-center gap-2 mb-3 min-w-0">
@@ -868,14 +877,14 @@ export function SevenDayKanban({
                         height: '100%',
                         width: '100%',
                         // No paddingBottom - nav bar clearance handled by spacer in App.tsx
-                        // On mobile, make background transparent to show parent gradient
+                        // On mobile/tablet, make background transparent to show parent gradient
                         // On desktop, use the gradient background
-                        backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                        backgroundImage: shouldUseMobileLayout
                           ? 'transparent'
                           : (isDark
                             ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
                             : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`),
-                        backgroundColor: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                        backgroundColor: shouldUseMobileLayout
                           ? 'transparent'
                           : undefined,
                       } as React.CSSProperties}
@@ -888,14 +897,14 @@ export function SevenDayKanban({
                           exit={{ opacity: 0 }}
                           className="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2"
                           style={{
-                            // On mobile, make background transparent to show parent gradient
+                            // On mobile/tablet, make background transparent to show parent gradient
                             // On desktop, use the gradient background
-                            backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                            backgroundImage: shouldUseMobileLayout
                               ? 'transparent'
                               : (isDark
                                 ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
                                 : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`),
-                            backgroundColor: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                            backgroundColor: shouldUseMobileLayout
                               ? 'transparent'
                               : undefined,
                           } as React.CSSProperties}
@@ -922,14 +931,14 @@ export function SevenDayKanban({
                               // No paddingBottom - nav bar clearance handled by spacer in App.tsx
                               minHeight: 0,
                               height: 'auto',
-                              // On mobile, make background transparent to show parent gradient
+                              // On mobile/tablet, make background transparent to show parent gradient
                               // On desktop, use the gradient background
-                              backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                              backgroundImage: shouldUseMobileLayout
                                 ? 'transparent'
                                 : (isDark
                                   ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
                                   : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`),
-                              backgroundColor: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                              backgroundColor: shouldUseMobileLayout
                                 ? 'transparent'
                                 : undefined,
                             } as React.CSSProperties}

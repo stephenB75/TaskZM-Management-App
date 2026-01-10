@@ -59,6 +59,7 @@ import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
 import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 
 interface DashboardViewProps {
   mobileView: "today" | "week";
@@ -500,6 +501,7 @@ export function DashboardView({
   const isDark = actualTheme === 'dark';
   const { accessToken } = useAuth();
   const { calendarStatus } = useCalendar();
+  const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
   
   // Calendar events state for showing dots on mobile week view
   const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, number>>({});
@@ -1118,9 +1120,9 @@ export function DashboardView({
         description={viewMode === "week" ? "Week View" : "Month View"}
         actions={
           <div className="flex items-center gap-2">
-            {/* View Mode Toggle - Desktop Only */}
+            {/* View Mode Toggle - Desktop Only (not mobile/tablet) */}
             <div className={cn(
-              "hidden md:flex items-center rounded-full border",
+              !shouldUseMobileLayout ? "flex items-center rounded-full border" : "hidden",
               TOGGLE_SWITCH_SPACING.container.gapClass,
               TOGGLE_SWITCH_SPACING.container.padding.horizontalClass,
               TOGGLE_SWITCH_SPACING.container.padding.verticalClass,
@@ -1178,8 +1180,8 @@ export function DashboardView({
               />
             </div>
 
-            {/* AI Scheduler Buttons - Desktop Only */}
-            <div className="hidden md:flex items-center gap-2">
+            {/* AI Scheduler Buttons - Desktop Only (not mobile/tablet) */}
+            <div className={cn(!shouldUseMobileLayout ? "flex items-center gap-2" : "hidden")}>
               <Button
                 variant="outline"
                 size="sm"
@@ -1221,10 +1223,10 @@ export function DashboardView({
           </div>
         }
       />
-      {/* Mobile 7-Day Calendar - Only show on mobile when viewing week */}
-      {mobileView === "week" && (
+      {/* Mobile/Tablet 7-Day Calendar - Only show on mobile/tablet when viewing week */}
+      {mobileView === "week" && shouldUseMobileLayout && (
         <div 
-          className="md:hidden border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
+          className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
           style={{ paddingTop: '0.75rem' }}
         >
           <div className="px-2 pb-3 sm:px-4 sm:pb-4">
@@ -1384,7 +1386,7 @@ export function DashboardView({
       )}
 
       {/* Main Layout */}
-      <div className={cn("flex-1 flex", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop ? "" : "overflow-hidden")}>
+      <div className={cn("flex-1 flex", shouldUseMobileLayout ? "" : "overflow-hidden")}>
         {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false (hidden on tablets to save space) */}
         {/* xl breakpoint (1280px) ensures it only shows on true desktop, not tablets */}
         {!hideAgenda && (
@@ -1401,7 +1403,7 @@ export function DashboardView({
 
         {/* Mobile: Tabbed View | Desktop: Kanban/Calendar */}
         <motion.div
-          className={cn("flex-1", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop ? "" : "overflow-hidden")}
+          className={cn("flex-1", shouldUseMobileLayout ? "" : "overflow-hidden")}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -1410,34 +1412,38 @@ export function DashboardView({
             ease: "easeOut",
           }}
         >
-          {/* Desktop/Tablet: Full Kanban or Calendar */}
-          <div
-            className="hidden md:block h-full"
-            data-tour="kanban-board"
-          >
-            {viewMode === "week" ? (
-              <SevenDayKanban viewMode={viewMode} />
-            ) : (
-              <MonthCalendarView />
-            )}
-          </div>
+          {/* Desktop: Full Kanban or Calendar (not mobile/tablet) */}
+          {!shouldUseMobileLayout && (
+            <div
+              className="h-full"
+              data-tour="kanban-board"
+            >
+              {viewMode === "week" ? (
+                <SevenDayKanban viewMode={viewMode} />
+              ) : (
+                <MonthCalendarView />
+              )}
+            </div>
+          )}
 
-          {/* Mobile: Tabbed Content */}
-          <div className={cn("md:hidden", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop ? "" : "min-h-full")} style={{ backgroundColor: 'transparent' }}>
-            {mobileView === "today" ? (
-              <TodayAgendaView hideHeader={true} />
-            ) : viewMode === "week" ? (
-              <SevenDayKanban
-                mobileMode
-                viewMode={viewMode}
-                mobileDayIndex={mobileDayIndex}
-                mobileWeekOffset={mobileWeekOffset}
-                onMobileWeekChange={setMobileWeekOffset}
-              />
-            ) : (
-              <MonthCalendarView mobileMode />
-            )}
-          </div>
+          {/* Mobile/Tablet: Tabbed Content (one-column layout) */}
+          {shouldUseMobileLayout && (
+            <div className={cn("", shouldUseMobileLayout ? "" : "min-h-full")} style={{ backgroundColor: 'transparent' }}>
+              {mobileView === "today" ? (
+                <TodayAgendaView hideHeader={true} />
+              ) : viewMode === "week" ? (
+                <SevenDayKanban
+                  mobileMode
+                  viewMode={viewMode}
+                  mobileDayIndex={mobileDayIndex}
+                  mobileWeekOffset={mobileWeekOffset}
+                  onMobileWeekChange={setMobileWeekOffset}
+                />
+              ) : (
+                <MonthCalendarView mobileMode />
+              )}
+            </div>
+          )}
         </motion.div>
       </div>
 

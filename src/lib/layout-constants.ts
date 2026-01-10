@@ -92,7 +92,8 @@ export const VIEWPORT_BREAKPOINTS = {
   tablet: 1024, // lg breakpoint - iPad Pro portrait width
   desktop: 1280, // xl breakpoint - standard desktop
   // Tablet range: 768px - 1279px (includes iPad, iPad Pro, and small monitors)
-  // Desktop range: 1280px and above
+  // Note: Tablets use mobile layout (one-column) in both portrait and landscape
+  // Desktop range: 1280px and above (uses full desktop layout)
 } as const;
 
 // Timeline Constants
