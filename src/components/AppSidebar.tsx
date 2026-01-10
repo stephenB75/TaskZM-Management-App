@@ -33,6 +33,7 @@ import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 import taskzmLogoColor from "../assets/taskzm-logo-light.png";  // Purple color logo
 
 interface AppSidebarProps {
