@@ -414,13 +414,13 @@ export const SETTINGS_PANEL_PADDING_SMALL = '0.625rem'; // p-2.5 = 0.625rem
 export const SETTINGS_PANEL_PADDING_MEDIUM = '0.75rem'; // p-3 = 0.75rem
 export const SETTINGS_PANEL_PADDING_LARGE = '1rem'; // p-4 = 1rem
 export const SETTINGS_PANEL_PADDING_XSMALL = '0.375rem'; // p-1.5 = 0.375rem
-export const SETTINGS_PANEL_PADDING_LEFT_AI_SECTION = '1.75rem'; // padding-left: 28px (1.75rem)
-export const SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION = '1.75rem'; // padding-right: 28px (1.75rem)
+export const SETTINGS_PANEL_PADDING_LEFT_AI_SECTION = '1rem'; // padding-left: 16px (1rem) - reduced for wider column
+export const SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION = '1rem'; // padding-right: 16px (1rem) - reduced for wider column
 export const SETTINGS_PANEL_PADDING_Y_SMALL = '0.25rem'; // py-1 = 0.25rem
 export const SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL = '0.125rem'; // py-0.5 = 0.125rem
 export const SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL = '0.375rem'; // pt-1.5 = 0.375rem
 export const SETTINGS_PANEL_PADDING_RIGHT_SMALL = '0.5rem'; // pr-2 = 0.5rem
-export const SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION = '26px'; // line-height: 26px
+export const SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION = '22px'; // line-height: 22px - reduced for smaller text
 export const SETTINGS_PANEL_AVATAR_FONT_SIZE = '1.6rem'; // fontSize: 1.6rem for large avatar
 export const SETTINGS_PANEL_GAP_NONE = '0'; // gap: 0px
 export const SETTINGS_PANEL_POSITION_STATIC = 'static'; // position: static

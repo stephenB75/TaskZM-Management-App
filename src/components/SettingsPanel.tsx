@@ -1775,17 +1775,18 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   }}
                 />
                 <div 
-                  className="flex flex-col"
+                  className="flex flex-col flex-1"
                   style={{ 
-                    fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL,
+                    fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, // Reduced from SMALL to XSMALL
                     gap: SETTINGS_PANEL_SPACING_SMALL,
+                    minWidth: 0, // Allow flex shrinking
                   }}
                 >
                   <div>
                     <p 
                       className="font-semibold text-foreground"
                       style={{ 
-                        fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+                        fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, // Reduced from MEDIUM to SMALL
                         marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
                       }}
                     >
@@ -1793,7 +1794,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     </p>
                     <p 
                       className="text-muted-foreground"
-                      style={{ lineHeight: SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION }}
+                      style={{ 
+                        lineHeight: SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION,
+                        fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, // Explicitly set smaller font size
+                      }}
                     >
                       {AI_FUNCTION_EXPLANATION.getDescription(aiSettings.maxHoursPerDay, DEFAULT_SCHEDULING_PERIOD_DAYS)}
                     </p>
