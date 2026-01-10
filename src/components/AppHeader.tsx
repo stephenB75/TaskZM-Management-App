@@ -56,7 +56,9 @@ import {
   HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL,
   HEADER_SIDE_PANEL_ANIMATION_EASE,
   HEADER_MOBILE_SAFE_AREA_SPACER,
+  VIEWPORT_BREAKPOINTS,
 } from "../lib/layout-constants";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 import {
   COLOR_GRADIENT_START,
   COLOR_GRADIENT_MID,
@@ -92,6 +94,7 @@ export function AppHeader({
   const { toggleSidebar } = useSidebar();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
+  const shouldUseMobileLayout = useMobileLayout(); // Determine if device should use mobile layout (includes tablets)
 
   // Use state to force re-render when panelOpen, panelKey, or theme changes
   // This ensures the header position and theme updates immediately
@@ -142,10 +145,10 @@ export function AppHeader({
 
   return (
     <>
-      {/* Mobile Header - Fixed at top (always shown on mobile) */}
+      {/* Mobile/Tablet Header - Fixed at top (shown on mobile and tablets < 1280px) */}
       <div 
         key={`mobile-header-${actualTheme}`}
-        className="md:hidden fixed left-0 right-0 border-b backdrop-blur-lg shadow-sm"
+        className={shouldUseMobileLayout ? "fixed left-0 right-0 border-b backdrop-blur-lg shadow-sm" : "hidden"}
         style={{
           position: 'fixed', // Explicitly set position to ensure it's fixed
           top: 0, // Start at top of viewport - no gap above
@@ -219,11 +222,11 @@ export function AppHeader({
           </div>
         </div>
       </div>
-      {/* Desktop/Tablet Header - Side panel headers are relative, main header is fixed */}
+      {/* Desktop Header - Side panel headers are relative, main header is fixed (only shown on desktop >= 1280px) */}
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel, with fade animation
         <motion.div 
-          className="hidden md:block relative border-b backdrop-blur-lg shadow-sm flex-shrink-0"
+          className={shouldUseMobileLayout ? "hidden" : "relative border-b backdrop-blur-lg shadow-sm flex-shrink-0"}
           initial={{ opacity: 0, y: HEADER_SIDE_PANEL_ANIMATION_Y_OFFSET }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ 
@@ -340,7 +343,7 @@ export function AppHeader({
         // Include panelOpen in key to ensure React unmounts/remounts when state changes
         <div 
           key={`main-header-${String(panelOpen)}-${String(panelKey || 'default')}-${actualTheme}-${headerUpdateKey}`}
-          className="hidden md:block fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"
+          className={shouldUseMobileLayout ? "hidden" : "fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"}
           style={{ 
             zIndex: HEADER_Z_INDEX,
             backgroundColor: isDark 

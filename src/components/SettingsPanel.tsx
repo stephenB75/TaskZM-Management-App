@@ -476,7 +476,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             padding: SETTINGS_PANEL_CONTAINER_PADDING_SMALL,
             paddingLeft: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
             paddingRight: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
-            paddingTop: SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
+            // On mobile/tablet, header is fixed at top, so minimal top padding needed (scroll container handles spacing)
+            // On desktop, use larger padding since header is relative
+            paddingTop: shouldUseMobileLayout 
+              ? SETTINGS_PANEL_PADDING_MEDIUM // 0.75rem (12px) - minimal spacing after fixed header
+              : SETTINGS_PANEL_CONTAINER_PADDING_LARGE, // 2rem - larger spacing for desktop relative header
             paddingBottom: shouldUseMobileLayout
               ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer to ensure last item is fully visible and scrollable
               : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
