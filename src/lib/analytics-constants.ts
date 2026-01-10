@@ -56,6 +56,29 @@ export const ANALYTICS_PDF_CONFIG = {
     imageFormat: 'image/png', // Image format for chart capture
     pdfImageFormat: 'PNG', // Image format for PDF (jsPDF format)
     waitForRender: 1000, // Wait time in ms for charts to render before capture (increased for better SVG rendering)
+    fallbackWaitForRender: 500, // Fallback wait time in ms if waitForRender is not available
+    reflowDelay: 200, // Delay in ms for forcing reflow to ensure charts are rendered
+  },
+  progress: {
+    initial: 10, // Initial progress percentage when PDF generation starts
+    afterTitle: 15, // Progress percentage after title is added
+    chartStart: 20, // Starting progress percentage for chart capture phase
+    chartEnd: 80, // Ending progress percentage for chart capture phase
+    beforeSave: 90, // Progress percentage before saving PDF
+    complete: 100, // Progress percentage when PDF generation is complete
+    resetDelay: 500, // Delay in ms before resetting progress state after completion
+  },
+  pdfSpacing: {
+    textOffset: 3, // Horizontal offset for text in PDF (mm)
+    verticalOffset: 4, // Vertical offset for text in PDF (mm)
+    metricBoxHeight: 16, // Height of metric boxes in PDF (mm)
+    metricBoxLabelY: 5.5, // Y position for metric box label text (mm from top of box)
+    metricBoxValueY: 12, // Y position for metric box value text (mm from top of box)
+    metricBoxRowSpacing: 18, // Spacing between metric box rows in PDF (mm)
+    chartBoxPadding: 18, // Additional padding for chart boxes (chart height + title + padding) in PDF (mm)
+  },
+  pdfStyling: {
+    borderWidth: 1, // Border width for boxes and charts in PDF (mm)
   },
   labels: {
     title: "TaskZM Analytics Report",

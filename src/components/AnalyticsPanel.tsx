@@ -642,11 +642,11 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           }
           
           // Wait for chart to fully render
-          await new Promise(resolve => setTimeout(resolve, ANALYTICS_PDF_CONFIG.chart.waitForRender || 500));
+          await new Promise(resolve => setTimeout(resolve, ANALYTICS_PDF_CONFIG.chart.waitForRender || ANALYTICS_PDF_CONFIG.chart.fallbackWaitForRender));
           
           // Force reflow to ensure charts are rendered
           void element.offsetHeight;
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, ANALYTICS_PDF_CONFIG.chart.reflowDelay));
           
           // Find SVG element (Recharts uses SVG)
           const svgElement = element.querySelector('svg') as SVGSVGElement;
@@ -715,28 +715,29 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       
       // Helper function to add a visual separator line
       const addSeparator = () => {
-        if (yPos + 5 > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom) {
+        const separatorThreshold = 5; // Minimum space needed for separator
+        if (yPos + separatorThreshold > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom) {
           doc.addPage();
           yPos = ANALYTICS_PDF_CONFIG.margins.top;
         }
         const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.border);
         doc.setDrawColor(r, g, b);
-        doc.setLineWidth(0.5);
+        doc.setLineWidth(ANALYTICS_PDF_CONFIG.pdfStyling.borderWidth * 0.5); // Half-width for separator
         doc.line(
           ANALYTICS_PDF_CONFIG.margins.left,
           yPos,
           pageWidth - ANALYTICS_PDF_CONFIG.margins.right,
           yPos
         );
-        yPos += 8;
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading;
       };
 
       // Helper function to add a metric box with bright, visible colors
       const addMetricBox = (label: string, value: string, x: number, width: number) => {
-        const boxHeight = 16;
+        const boxHeight = ANALYTICS_PDF_CONFIG.pdfSpacing.metricBoxHeight;
         const [rBorder, gBorder, bBorder] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBorder || ANALYTICS_PDF_CONFIG.colors.primary);
         const [rPrimary, gPrimary, bPrimary] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
-        const [rBg, gBg, bBg] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBackground || '#F9FAFB');
+        const [rBg, gBg, bBg] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBackground || ANALYTICS_PDF_CONFIG.colors.boxBackground);
         const [rText, gText, bText] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.text);
         
         // Draw box background
@@ -745,19 +746,19 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         
         // Draw box border (brighter, more visible)
         doc.setDrawColor(rBorder, gBorder, bBorder);
-        doc.setLineWidth(1); // Thicker border for visibility
+        doc.setLineWidth(ANALYTICS_PDF_CONFIG.pdfStyling.borderWidth);
         doc.rect(x, yPos, width, boxHeight);
         
         // Add label
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
         doc.setTextColor(rText, gText, bText);
-        doc.text(label, x + 3, yPos + 5.5);
+        doc.text(label, x + ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset, yPos + ANALYTICS_PDF_CONFIG.pdfSpacing.metricBoxLabelY);
         
         // Add value (bold, primary color)
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
         doc.setFont(undefined, 'bold');
         doc.setTextColor(rPrimary, gPrimary, bPrimary);
-        doc.text(value, x + 3, yPos + 12);
+        doc.text(value, x + ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset, yPos + ANALYTICS_PDF_CONFIG.pdfSpacing.metricBoxValueY);
         doc.setFont(undefined, 'normal'); // Reset font weight
       };
 
@@ -766,7 +767,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         if (!imageData) return;
         
         // Check if we need a new page
-        const chartBoxHeight = ANALYTICS_PDF_CONFIG.chart.height + 18; // Chart + title + padding
+        const chartBoxHeight = ANALYTICS_PDF_CONFIG.chart.height + ANALYTICS_PDF_CONFIG.pdfSpacing.chartBoxPadding;
         if (yPos + chartBoxHeight > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom) {
           doc.addPage();
           yPos = ANALYTICS_PDF_CONFIG.margins.top;
@@ -825,14 +826,14 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       };
 
       // Title with visual styling
-      setPdfProgress(10); // Initial progress
+      setPdfProgress(ANALYTICS_PDF_CONFIG.progress.initial);
       doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title + 2);
       const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
       doc.setTextColor(r, g, b);
       doc.text(ANALYTICS_PDF_CONFIG.labels.title, ANALYTICS_PDF_CONFIG.margins.left, yPos);
       yPos += ANALYTICS_PDF_CONFIG.spacing.afterTitle + 2;
       
-      setPdfProgress(15); // After title
+      setPdfProgress(ANALYTICS_PDF_CONFIG.progress.afterTitle);
 
       // Date
       doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
@@ -871,7 +872,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           startX + boxWidth + boxSpacing,
           boxWidth
         );
-        yPos += 18;
+        yPos += ANALYTICS_PDF_CONFIG.pdfSpacing.metricBoxRowSpacing;
 
         // Row 2: In Progress and Completion Rate
         addMetricBox(
@@ -911,7 +912,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           startX + boxWidth + boxSpacing,
           boxWidth
         );
-        yPos += 18;
+        yPos += ANALYTICS_PDF_CONFIG.pdfSpacing.metricBoxRowSpacing;
 
         // Row 2: Avg per Task (if available)
         if (analytics.avgTimePerTask > 0) {
@@ -923,7 +924,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             startX,
             boxWidth
           );
-          yPos += 18;
+          yPos += ANALYTICS_PDF_CONFIG.pdfSpacing.metricBoxRowSpacing;
         }
         yPos += ANALYTICS_PDF_CONFIG.spacing.afterSection;
 
@@ -941,7 +942,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
         // Status Distribution Chart
         if (analytics.statusDistribution && analytics.statusDistribution.length > 0 && statusChartRef.current) {
-          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20)); // 20-80% for charts
+          const chartProgressRange = ANALYTICS_PDF_CONFIG.progress.chartEnd - ANALYTICS_PDF_CONFIG.progress.chartStart;
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * chartProgressRange + ANALYTICS_PDF_CONFIG.progress.chartStart));
           const chartImage = await captureChart(statusChartRef, ANALYTICS_PDF_CONFIG.labels.statusDistribution);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.statusDistribution);
@@ -951,7 +953,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
         // Time Tracked Trend Chart
         if (analytics.timeTrackingTrend && analytics.timeTrackingTrend.length > 0 && timeTrendChartRef.current) {
-          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20));
+          const chartProgressRange = ANALYTICS_PDF_CONFIG.progress.chartEnd - ANALYTICS_PDF_CONFIG.progress.chartStart;
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * chartProgressRange + ANALYTICS_PDF_CONFIG.progress.chartStart));
           const chartImage = await captureChart(timeTrendChartRef, ANALYTICS_PDF_CONFIG.labels.chartTimeTracked);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.chartTimeTracked);
@@ -961,7 +964,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         
         // Tasks Created vs Completed Chart
         if (analytics.taskPerDayProgress && analytics.taskPerDayProgress.length > 0 && tasksCreatedCompletedChartRef.current) {
-          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20));
+          const chartProgressRange = ANALYTICS_PDF_CONFIG.progress.chartEnd - ANALYTICS_PDF_CONFIG.progress.chartStart;
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * chartProgressRange + ANALYTICS_PDF_CONFIG.progress.chartStart));
           const chartImage = await captureChart(tasksCreatedCompletedChartRef, ANALYTICS_PDF_CONFIG.labels.chartTasksCreatedCompleted);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.chartTasksCreatedCompleted);
@@ -971,7 +975,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         
         // Completion by Time of Day Chart
         if (analytics.timePatterns?.blocks && analytics.timePatterns.blocks.length > 0 && timeOfDayChartRef.current) {
-          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20));
+          const chartProgressRange = ANALYTICS_PDF_CONFIG.progress.chartEnd - ANALYTICS_PDF_CONFIG.progress.chartStart;
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * chartProgressRange + ANALYTICS_PDF_CONFIG.progress.chartStart));
           const chartImage = await captureChart(timeOfDayChartRef, ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay);
@@ -981,7 +986,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         
         // Top Task Tags Chart
         if (analytics.taskTypes && analytics.taskTypes.length > 0 && topTagsChartRef.current) {
-          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * 60 + 20));
+          const chartProgressRange = ANALYTICS_PDF_CONFIG.progress.chartEnd - ANALYTICS_PDF_CONFIG.progress.chartStart;
+          setPdfProgress(Math.round((chartsCaptured / Math.max(totalCharts, 1)) * chartProgressRange + ANALYTICS_PDF_CONFIG.progress.chartStart));
           const chartImage = await captureChart(topTagsChartRef, ANALYTICS_PDF_CONFIG.labels.chartTopTaskTags);
           if (chartImage) {
             await addChartToPDF(chartImage, ANALYTICS_PDF_CONFIG.labels.chartTopTaskTags);
@@ -999,7 +1005,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 3;
 
           const [rBorder, gBorder, bBorder] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBorder || ANALYTICS_PDF_CONFIG.colors.primary);
-          const [rBg, gBg, bBg] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBackground || '#F9FAFB');
+          const [rBg, gBg, bBg] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBackground);
           doc.setDrawColor(rBorder, gBorder, bBorder);
           doc.setLineWidth(1); // Thicker border for visibility
           
@@ -1037,8 +1043,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             doc.setTextColor(rText, gText, bText);
             doc.text(
               project.name,
-              ANALYTICS_PDF_CONFIG.margins.left + 3,
-              yPos - 3
+              ANALYTICS_PDF_CONFIG.margins.left + ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset,
+              yPos - ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset
             );
             doc.setFont(undefined, 'normal');
             
@@ -1049,8 +1055,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             doc.setTextColor(rSecondary, gSecondary, bSecondary);
             doc.text(
               progressText,
-              ANALYTICS_PDF_CONFIG.margins.left + 3,
-              yPos + 4
+              ANALYTICS_PDF_CONFIG.margins.left + ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset,
+              yPos + ANALYTICS_PDF_CONFIG.pdfSpacing.verticalOffset
             );
             
             // Completion rate (right aligned, bold, success color)
@@ -1062,8 +1068,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             const textWidth = doc.getTextWidth(rateText);
             doc.text(
               rateText,
-              pageWidth - ANALYTICS_PDF_CONFIG.margins.right - textWidth - 3,
-              yPos - 3
+              pageWidth - ANALYTICS_PDF_CONFIG.margins.right - textWidth - ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset,
+              yPos - ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset
             );
             doc.setFont(undefined, 'normal');
             
@@ -1073,16 +1079,16 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       }
 
       // Save PDF
-      setPdfProgress(90);
+      setPdfProgress(ANALYTICS_PDF_CONFIG.progress.beforeSave);
       const fileName = `${ANALYTICS_PDF_CONFIG.fileName}-${new Date().toISOString().split("T")[0]}.pdf`;
       doc.save(fileName);
-      setPdfProgress(100);
+      setPdfProgress(ANALYTICS_PDF_CONFIG.progress.complete);
       
       // Reset progress after a short delay
       setTimeout(() => {
         setIsGeneratingPDF(false);
         setPdfProgress(0);
-      }, 500);
+      }, ANALYTICS_PDF_CONFIG.progress.resetDelay);
     } catch (error) {
       console.error("Error exporting PDF:", error);
       setIsGeneratingPDF(false);
