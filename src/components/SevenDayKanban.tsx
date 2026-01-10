@@ -1145,7 +1145,8 @@ export function SevenDayKanban({
                       className={cn(
                         'p-1.5 sm:p-2 border-b backdrop-blur-sm transition-all',
                         // Enhanced styling for today - make it stand out more with deeper colors
-                        column.isToday && `ring-${KANBAN_DAY_COLORS.today.ringWidth} ring-primary/${KANBAN_DAY_COLORS.today.ringOpacityLight}`,
+                        // Use static ring-2 class instead of dynamic value (Tailwind requires static classes)
+                        column.isToday && 'ring-2',
                         !column.isToday && isDark && 'bg-card/50 border-border',
                         !column.isToday && !isDark && hasHeader(getDayColors(column.dayName)) && 'bg-transparent'
                       )}
@@ -1183,12 +1184,15 @@ export function SevenDayKanban({
                             
                             baseStyle.backgroundImage = `linear-gradient(to right, ${fromColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${viaColor}${Math.round(viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${toColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
                             
-                            // Add border for today to make it stand out more
+                            // Add border and shadow for today to make it stand out more
                             if (column.isToday) {
                               // Use darker border color for today with higher opacity
                               const darkerBorder = darkenColor(dayColors.header.border, KANBAN_DAY_COLORS.today.colorDarkeningFactor);
                               baseStyle.borderColor = `${darkerBorder}${Math.round(KANBAN_DAY_COLORS.today.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
                               baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidth;
+                              // Add ring color via inline style (since Tailwind dynamic classes don't work)
+                              const ringColor = KANBAN_DAY_COLORS.today.ring;
+                              baseStyle.boxShadow = `0 0 0 ${KANBAN_DAY_COLORS.today.ringWidth}px ${ringColor}${Math.round(KANBAN_DAY_COLORS.today.ringOpacityLight * 2.55).toString(16).padStart(2, '0')}, 0 ${KANBAN_DAY_COLORS.today.shadowSpread} ${KANBAN_DAY_COLORS.today.shadowBlur} rgba(0, 0, 0, ${KANBAN_DAY_COLORS.today.shadowOpacity})`;
                             } else {
                               // Standard border for non-today days
                               baseStyle.borderColor = `${dayColors.header.border}${Math.round(dayColors.header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
@@ -1209,6 +1213,8 @@ export function SevenDayKanban({
                             const enhancedRingOpacity = Math.min(100, KANBAN_DAY_COLORS.today.ringOpacity + KANBAN_DAY_COLORS.today.darkModeRingOpacityIncrease);
                             baseStyle.borderColor = `${KANBAN_DAY_COLORS.today.ring}${Math.round(enhancedRingOpacity * 2.55).toString(16).padStart(2, '0')}`;
                             baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidth;
+                            // Add ring and shadow for dark mode
+                            baseStyle.boxShadow = `0 0 0 ${KANBAN_DAY_COLORS.today.ringWidth}px ${KANBAN_DAY_COLORS.today.ring}${Math.round(enhancedRingOpacity * 2.55).toString(16).padStart(2, '0')}, 0 ${KANBAN_DAY_COLORS.today.shadowSpread} ${KANBAN_DAY_COLORS.today.shadowBlur} rgba(0, 0, 0, ${KANBAN_DAY_COLORS.today.shadowOpacity})`;
                           }
                         }
                         return baseStyle;

@@ -110,18 +110,20 @@ export const KANBAN_DAY_COLORS = {
     // Enhanced styling for highlighted today column - deeper, more vibrant colors
     headerOpacity: 100, // Full opacity for maximum visibility
     viaOpacity: 100, // Full opacity for via color
-    borderOpacity: 85, // More prominent border opacity (85% vs standard 30%) - deeper, more visible border
-    borderWidth: '2px', // Thicker border for today
-    darkModeBackgroundOpacity: 0.40, // 40% opacity for dark mode background - deeper, more visible color
-    shadowOpacity: 0.35, // 35% opacity for shadow - more prominent shadow
+    borderOpacity: 90, // More prominent border opacity (90% vs standard 30%) - deeper, more visible border
+    borderWidth: '3px', // Thicker border for today (increased from 2px to 3px)
+    darkModeBackgroundOpacity: 0.50, // 50% opacity for dark mode background - deeper, more visible color (increased from 40%)
+    shadowOpacity: 0.45, // 45% opacity for shadow - more prominent shadow (increased from 35%)
     // Color darkening factor for today column (multiplies RGB values to create deeper colors)
-    colorDarkeningFactor: 0.80, // Darken colors by 20% to make them deeper (0.80 = 80% of original brightness) - more prominent
+    colorDarkeningFactor: 0.70, // Darken colors by 30% to make them deeper (0.70 = 70% of original brightness) - more prominent (increased from 0.80)
     // Dark mode ring opacity enhancement
-    darkModeRingOpacityIncrease: 25, // Increase ring opacity by 25 for deeper appearance in dark mode
+    darkModeRingOpacityIncrease: 30, // Increase ring opacity by 30 for deeper appearance in dark mode (increased from 25)
     // Ring and shadow styling for additional visual prominence
     ringWidth: 2, // Ring width in pixels
-    ringOpacityLight: 60, // Ring opacity in light mode (60% for better visibility)
+    ringOpacityLight: 70, // Ring opacity in light mode (70% for better visibility, increased from 60%)
     shadowIntensity: 'lg', // Shadow intensity level
+    shadowBlur: '8px', // Shadow blur radius
+    shadowSpread: '2px', // Shadow spread radius
   },
   // Standard opacity values for non-highlighted columns
   standard: {
