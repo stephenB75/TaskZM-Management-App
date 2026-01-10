@@ -397,7 +397,8 @@ if ('serviceWorker' in navigator) {
         //   }
         // });
         
-        // Only check for updates on manual page refresh, not automatically
+        // CRITICAL: Never check for updates automatically during active sessions
+        // Only check when user explicitly refreshes the page
         // This prevents random refreshes during user sessions
         const checkForUpdates = () => {
           registration.update().catch((error) => {
@@ -417,12 +418,16 @@ if ('serviceWorker' in navigator) {
         console.error('❌ Service Worker registration failed:', error);
       });
 
-    // Handle service worker updates - completely disabled to prevent any reloads
-    // DISABLED: controllerchange event can cause unexpected reloads
-    // navigator.serviceWorker.addEventListener('controllerchange', () => {
-    //   // Completely disabled - no reloads, no notifications
-    //   // Updates will only apply on next manual page refresh
-    // });
+    // CRITICAL: Prevent any controllerchange events from causing reloads
+    // Even if a new service worker is installed, don't reload the page
+    // The new service worker will take control on next page load/navigation
+    navigator.serviceWorker.addEventListener('controllerchange', (event) => {
+      // Completely ignore controller changes - don't reload
+      // The new service worker will take control on next page load
+      console.debug('Service worker controller changed (ignored to prevent reload)');
+      // Do nothing - explicitly prevent any reload behavior
+      // Updates will only apply on next manual page refresh
+    });
   });
 }
 
