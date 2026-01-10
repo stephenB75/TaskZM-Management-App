@@ -787,7 +787,7 @@ export function InboxView() {
         {/* Quick Add and Filters Section */}
         <div 
           className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0"
-          style={shouldUseMobileLayout ? { paddingTop: PANEL_PADDING_TOP_MOBILE } : undefined} // App.tsx header spacer handles top spacing
+          style={shouldUseMobileLayout ? undefined : undefined} // App.tsx scroll container handles top spacing on mobile - no extra padding needed
         >
           <div className="flex flex-col gap-4">
             {/* Quick Add */}

@@ -55,6 +55,7 @@ import {
   HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT,
   HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL,
   HEADER_SIDE_PANEL_ANIMATION_EASE,
+  HEADER_MOBILE_SAFE_AREA_SPACER,
 } from "../lib/layout-constants";
 import {
   COLOR_GRADIENT_START,
@@ -144,12 +145,13 @@ export function AppHeader({
       {/* Mobile Header - Fixed at top (always shown on mobile) */}
       <div 
         key={`mobile-header-${actualTheme}`}
-        className="md:hidden fixed top-0 left-0 right-0 border-b backdrop-blur-lg shadow-sm"
+        className="md:hidden fixed left-0 right-0 border-b backdrop-blur-lg shadow-sm"
         style={{
           position: 'fixed', // Explicitly set position to ensure it's fixed
-          top: 0,
+          top: 0, // Start at top of viewport - no gap above
           left: 0,
           right: 0,
+          margin: 0, // Ensure no margin creates gap above
           zIndex: HEADER_Z_INDEX,
           backgroundColor: isDark 
             ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
@@ -157,11 +159,14 @@ export function AppHeader({
           borderColor: HEADER_BORDER_COLOR,
           paddingLeft: HEADER_PADDING_X_MOBILE,
           paddingRight: HEADER_PADDING_X_MOBILE,
-          paddingTop: HEADER_PADDING_Y_MOBILE,
+          // Add safe area inset to top padding to account for notched devices
+          // Header extends into safe area, content is pushed down below notch
+          paddingTop: `calc(${HEADER_PADDING_Y_MOBILE} + env(safe-area-inset-top, 0px))`,
           paddingBottom: HEADER_PADDING_Y_MOBILE,
-          minHeight: `${HEADER_HEIGHT}px`,
-          height: `${HEADER_HEIGHT}px`,
-          maxHeight: `${HEADER_HEIGHT}px`, // Prevent header from growing beyond set height
+          // Height includes safe area inset at top so header fills entire space including safe area
+          minHeight: `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`,
+          height: `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`,
+          maxHeight: `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`, // Prevent header from growing beyond set height
           boxSizing: 'border-box', // Include border in height calculation
           overflow: 'hidden', // Prevent content overflow
           transition: 'none', // Disable transitions for instant theme updates

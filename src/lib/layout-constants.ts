@@ -427,7 +427,8 @@ export const SETTINGS_PANEL_POSITION_STATIC = 'static'; // position: static
 export const MOBILE_PADDING_BOTTOM = '2rem'; // padding-bottom: 2rem for mobile views
 export const DESKTOP_PADDING_TOP = '3rem'; // padding-top: 3rem for desktop views
 // Mobile scroll container padding to ensure content is not hidden by fixed header when scrolling up
-export const MOBILE_SCROLL_CONTAINER_PADDING_TOP = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // Header height + safe area for top padding on scroll container
+// Header height already includes safe area inset in its padding, so we match that total height
+export const MOBILE_SCROLL_CONTAINER_PADDING_TOP = `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // Header height + safe area for top padding on scroll container (matches header's actual height)
 export const SETTINGS_PANEL_AVATAR_SIZE_VALUE = '2rem'; // width/height: 2rem for avatar
 export const SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT = '1.6rem'; // 20% smaller than default h-8 (2rem)
 export const SETTINGS_PANEL_START_TOUR_BUTTON_PADDING_X = '0.6rem'; // 20% smaller than default px-3 (0.75rem)
