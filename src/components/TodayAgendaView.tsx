@@ -4,7 +4,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { Calendar, Plus, StickyNote } from "lucide-react";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { useIsMobile } from "./ui/use-mobile";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useAuth } from "../contexts/AuthContext";
 import { CalendarEventCard } from "./CalendarEventCard";
@@ -22,7 +22,7 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
@@ -41,7 +41,7 @@ export function TodayAgendaView({
 }: TodayAgendaViewProps = {}) {
   const { tasks, updateTask } = useTasks();
   const { actualTheme } = useTheme();
-  const isMobile = useIsMobile();
+  const shouldUseMobileLayout = useMobileLayout();
   const { calendarStatus } = useCalendar();
   const { accessToken } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -85,7 +85,7 @@ export function TodayAgendaView({
   // Make this view a droppable zone for tasks from Kanban (disabled on mobile)
   const { setNodeRef, isOver } = useDroppable({
     id: "today-agenda",
-    disabled: isMobile, // Disable drop on mobile - only allow vertical scroll
+    disabled: shouldUseMobileLayout, // Disable drop on mobile/tablet - only allow vertical scroll
   });
 
   // Get today's tasks
@@ -571,27 +571,51 @@ export function TodayAgendaView({
               } as React.CSSProperties}
             >
             {combinedItems.length === 0 ? (
-              <div className={cn(
-                `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
-                isOver && "scale-105"
-              )}>
+              <div 
+                className={cn(
+                  `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
+                  isOver && "scale-105"
+                )}
+                style={{
+                  paddingTop: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingBottom: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingLeft: EMPTY_STATE_PADDING_X,
+                  paddingRight: EMPTY_STATE_PADDING_X,
+                }}
+              >
                 <motion.div 
                   className={cn(
-                    "w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none transition-all duration-300",
+                    "rounded-full bg-primary/10 flex items-center justify-center pointer-events-none transition-all duration-300",
                     isOver && "bg-primary/20 scale-110 ring-4 ring-primary/30"
                   )}
+                  style={{
+                    width: EMPTY_STATE_ICON_SIZE_SMALL,
+                    height: EMPTY_STATE_ICON_SIZE_SMALL,
+                    marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+                  }}
                   animate={isOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Calendar className={cn(
-                    "w-6 h-6 text-primary/40 transition-colors duration-300",
-                    isOver && "text-primary/60"
-                  )} />
+                  <Calendar 
+                    className={cn(
+                      "text-primary/40 transition-colors duration-300",
+                      isOver && "text-primary/60"
+                    )}
+                    style={{
+                      width: EMPTY_STATE_ICON_INNER_SIZE,
+                      height: EMPTY_STATE_ICON_INNER_SIZE,
+                    }}
+                  />
                 </motion.div>
-                <p className={cn(
-                  "text-sm text-muted-foreground mb-3 pointer-events-none transition-colors duration-300",
-                  isOver && "text-primary/80 font-medium"
-                )}>
+                <p 
+                  className={cn(
+                    "text-sm text-muted-foreground pointer-events-none transition-colors duration-300",
+                    isOver && "text-primary/80 font-medium"
+                  )}
+                  style={{
+                    marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+                  }}
+                >
                   {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button
@@ -802,27 +826,51 @@ export function TodayAgendaView({
                 }}
               >
               {combinedItems.length === 0 ? (
-              <div className={cn(
-                `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
-                isOver && "scale-105"
-              )}>
+              <div 
+                className={cn(
+                  `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
+                  isOver && "scale-105"
+                )}
+                style={{
+                  paddingTop: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingBottom: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingLeft: EMPTY_STATE_PADDING_X,
+                  paddingRight: EMPTY_STATE_PADDING_X,
+                }}
+              >
                 <motion.div 
                   className={cn(
-                    "w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none transition-all duration-300",
+                    "rounded-full bg-primary/10 flex items-center justify-center pointer-events-none transition-all duration-300",
                     isOver && "bg-primary/20 scale-110 ring-4 ring-primary/30"
                   )}
+                  style={{
+                    width: EMPTY_STATE_ICON_SIZE_SMALL,
+                    height: EMPTY_STATE_ICON_SIZE_SMALL,
+                    marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+                  }}
                   animate={isOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Calendar className={cn(
-                    "w-6 h-6 text-primary/40 transition-colors duration-300",
-                    isOver && "text-primary/60"
-                  )} />
+                  <Calendar 
+                    className={cn(
+                      "text-primary/40 transition-colors duration-300",
+                      isOver && "text-primary/60"
+                    )}
+                    style={{
+                      width: EMPTY_STATE_ICON_INNER_SIZE,
+                      height: EMPTY_STATE_ICON_INNER_SIZE,
+                    }}
+                  />
                 </motion.div>
-                <p className={cn(
-                  "text-sm text-muted-foreground mb-3 pointer-events-none transition-colors duration-300",
-                  isOver && "text-primary/80 font-medium"
-                )}>
+                <p 
+                  className={cn(
+                    "text-sm text-muted-foreground pointer-events-none transition-colors duration-300",
+                    isOver && "text-primary/80 font-medium"
+                  )}
+                  style={{
+                    marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+                  }}
+                >
                   {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button
@@ -1253,27 +1301,51 @@ export function TodayAgendaView({
             } as React.CSSProperties}
           >
             {combinedItems.length === 0 ? (
-              <div className={cn(
-                `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
-                isOver && "scale-105"
-              )}>
+              <div 
+                className={cn(
+                  `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
+                  isOver && "scale-105"
+                )}
+                style={{
+                  paddingTop: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingBottom: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingLeft: EMPTY_STATE_PADDING_X,
+                  paddingRight: EMPTY_STATE_PADDING_X,
+                }}
+              >
                 <motion.div 
                   className={cn(
-                    "w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none transition-all duration-300",
+                    "rounded-full bg-primary/10 flex items-center justify-center pointer-events-none transition-all duration-300",
                     isOver && "bg-primary/20 scale-110 ring-4 ring-primary/30"
                   )}
+                  style={{
+                    width: EMPTY_STATE_ICON_SIZE_SMALL,
+                    height: EMPTY_STATE_ICON_SIZE_SMALL,
+                    marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+                  }}
                   animate={isOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Calendar className={cn(
-                    "w-6 h-6 text-primary/40 transition-colors duration-300",
-                    isOver && "text-primary/60"
-                  )} />
+                  <Calendar 
+                    className={cn(
+                      "text-primary/40 transition-colors duration-300",
+                      isOver && "text-primary/60"
+                    )}
+                    style={{
+                      width: EMPTY_STATE_ICON_INNER_SIZE,
+                      height: EMPTY_STATE_ICON_INNER_SIZE,
+                    }}
+                  />
                 </motion.div>
-                <p className={cn(
-                  "text-sm text-muted-foreground mb-3 pointer-events-none transition-colors duration-300",
-                  isOver && "text-primary/80 font-medium"
-                )}>
+                <p 
+                  className={cn(
+                    "text-sm text-muted-foreground pointer-events-none transition-colors duration-300",
+                    isOver && "text-primary/80 font-medium"
+                  )}
+                  style={{
+                    marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+                  }}
+                >
                   {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button

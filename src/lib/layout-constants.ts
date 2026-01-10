@@ -318,7 +318,16 @@ export const PANEL_SEARCH_BAR_PADDING_BOTTOM = '0.75rem'; // pb-3 = 0.75rem
 export const PANEL_SEARCH_ICON_POSITION_LEFT = '0.75rem'; // left-3 = 0.75rem
 export const PANEL_SEARCH_INPUT_PADDING_LEFT = '2.25rem'; // pl-9 = 2.25rem
 export const PANEL_EMPTY_STATE_PADDING_Y = '3rem'; // py-12 = 3rem
+export const PANEL_EMPTY_STATE_PADDING_Y_LARGE = '4rem'; // py-16 = 4rem (64px) - for larger empty states like Inbox
 export const PANEL_EMPTY_STATE_TEXT_SIZE = '0.875rem'; // text-sm = 0.875rem
+// Empty state icon sizes
+export const EMPTY_STATE_ICON_SIZE_SMALL = '3rem'; // w-12 h-12 = 3rem (48px) - for Today Agenda
+export const EMPTY_STATE_ICON_SIZE_LARGE = '6rem'; // w-24 h-24 = 6rem (96px) - for Inbox
+export const EMPTY_STATE_ICON_INNER_SIZE = '1.5rem'; // w-6 h-6 = 1.5rem (24px) - inner icon size
+// Empty state spacing
+export const EMPTY_STATE_MARGIN_BOTTOM_SMALL = '0.75rem'; // mb-3 = 0.75rem (12px)
+export const EMPTY_STATE_MARGIN_BOTTOM_LARGE = '1.5rem'; // mb-6 = 1.5rem (24px)
+export const EMPTY_STATE_PADDING_X = '1rem'; // px-4 = 1rem (16px)
 
 // Workspace constants (for workspace creation, loading, and management)
 export const WORKSPACE_MAX_RETRIES = 3; // Maximum number of retry attempts for workspace loading

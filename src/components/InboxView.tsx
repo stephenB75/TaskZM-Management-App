@@ -39,10 +39,10 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_ICON_SIZE_LARGE, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
-import { useIsMobile } from "./ui/use-mobile";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
@@ -85,7 +85,7 @@ export function InboxView() {
     role: 'admin' as const,
   };
   const { scheduleAllTasks, generateSchedulePlan, applySchedulePlan, isScheduling } = useAIScheduler();
-  const isMobile = useIsMobile();
+  const shouldUseMobileLayout = useMobileLayout();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] =
     useState<string>("all");
@@ -552,7 +552,7 @@ export function InboxView() {
 
   return (
     <div
-      className={cn(`flex flex-col ${UI_INBOX_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`, isMobile ? 'min-h-full' : 'h-full')}
+      className={cn(`flex flex-col ${UI_INBOX_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`, shouldUseMobileLayout ? 'min-h-full' : 'h-full')}
       data-tour="inbox-panel"
     >
       <AppHeader
@@ -597,11 +597,11 @@ export function InboxView() {
                   className="whitespace-nowrap"
                   style={{
                     borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
                     whiteSpace: 'nowrap',
                   }}
                   size="sm"
@@ -618,11 +618,11 @@ export function InboxView() {
                   className={`whitespace-nowrap ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
                   style={{
                     borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
                     whiteSpace: 'nowrap',
                   }}
                   size="sm"
@@ -630,9 +630,9 @@ export function InboxView() {
                 >
                   <Sparkles 
                     style={{
-                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
                   <span className="hidden md:inline">
@@ -648,20 +648,20 @@ export function InboxView() {
                   className="whitespace-nowrap"
                   style={{
                     borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
                     whiteSpace: 'nowrap',
                   }}
                   size="sm"
                 >
                   <Calendar 
                     style={{
-                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
                   <span className="hidden md:inline">
@@ -686,20 +686,20 @@ export function InboxView() {
                   className="whitespace-nowrap"
                   style={{
                     borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
                     whiteSpace: 'nowrap',
                   }}
                   size="sm"
                 >
                   <Trash2 
                     style={{
-                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
                   <span className="hidden md:inline">
@@ -718,11 +718,11 @@ export function InboxView() {
                   className={`whitespace-nowrap ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
                   style={{
                     borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
                     whiteSpace: 'nowrap',
                   }}
                   size="sm"
@@ -730,9 +730,9 @@ export function InboxView() {
                 >
                   <Sparkles 
                     style={{
-                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
                   <span className="hidden md:inline">
@@ -757,20 +757,20 @@ export function InboxView() {
                   className="hidden sm:flex whitespace-nowrap"
                   style={{
                     borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
+                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
+                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
+                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
                     whiteSpace: 'nowrap',
                   }}
                   size="sm"
                 >
                   <Plus 
                     style={{
-                      width: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      marginRight: isMobile ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
+                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
+                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
                   <span className="hidden md:inline">
@@ -787,7 +787,7 @@ export function InboxView() {
         {/* Quick Add and Filters Section */}
         <div 
           className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0"
-          style={isMobile ? { paddingTop: PANEL_PADDING_TOP_MOBILE } : undefined} // App.tsx header spacer handles top spacing
+          style={shouldUseMobileLayout ? { paddingTop: PANEL_PADDING_TOP_MOBILE } : undefined} // App.tsx header spacer handles top spacing
         >
           <div className="flex flex-col gap-4">
             {/* Quick Add */}
@@ -956,15 +956,44 @@ export function InboxView() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="flex flex-col items-center justify-center py-16 px-4 text-center"
+                        className="flex flex-col items-center justify-center text-center"
+                        style={{
+                          paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+                          paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+                          paddingLeft: EMPTY_STATE_PADDING_X,
+                          paddingRight: EMPTY_STATE_PADDING_X,
+                        }}
                       >
-                        <div className={`w-24 h-24 rounded-full ${UI_INBOX_GRADIENTS.emptyState.className} flex items-center justify-center mb-6 shadow-lg`}>
-                          <Inbox className="w-12 h-12 text-primary" />
+                        <div 
+                          className={`rounded-full ${UI_INBOX_GRADIENTS.emptyState.className} flex items-center justify-center shadow-lg`}
+                          style={{
+                            width: EMPTY_STATE_ICON_SIZE_LARGE,
+                            height: EMPTY_STATE_ICON_SIZE_LARGE,
+                            marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
+                          }}
+                        >
+                          <Inbox 
+                            className="text-primary" 
+                            style={{
+                              width: EMPTY_STATE_ICON_INNER_SIZE,
+                              height: EMPTY_STATE_ICON_INNER_SIZE,
+                            }}
+                          />
                         </div>
-                        <h3 className="text-xl mb-2">
+                        <h3 
+                          className="text-xl"
+                          style={{
+                            marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+                          }}
+                        >
                           Your inbox is clear!
                         </h3>
-                        <p className="text-muted-foreground max-w-sm mb-6">
+                        <p 
+                          className="text-muted-foreground max-w-sm"
+                          style={{
+                            marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
+                          }}
+                        >
                           {unscheduledTasks.length > 0
                             ? "No tasks match your current filters."
                             : "All tasks are scheduled. Add new tasks or adjust your filters."}
@@ -1215,15 +1244,44 @@ export function InboxView() {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="flex flex-col items-center justify-center py-16 px-4 text-center"
+                      className="flex flex-col items-center justify-center text-center"
+                      style={{
+                        paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+                        paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+                        paddingLeft: EMPTY_STATE_PADDING_X,
+                        paddingRight: EMPTY_STATE_PADDING_X,
+                      }}
                     >
-                      <div className={`w-24 h-24 rounded-full ${UI_INBOX_GRADIENTS.emptyState.className} flex items-center justify-center mb-6 shadow-lg`}>
-                        <Inbox className="w-12 h-12 text-primary" />
+                      <div 
+                        className={`rounded-full ${UI_INBOX_GRADIENTS.emptyState.className} flex items-center justify-center shadow-lg`}
+                        style={{
+                          width: EMPTY_STATE_ICON_SIZE_LARGE,
+                          height: EMPTY_STATE_ICON_SIZE_LARGE,
+                          marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
+                        }}
+                      >
+                        <Inbox 
+                          className="text-primary" 
+                          style={{
+                            width: EMPTY_STATE_ICON_INNER_SIZE,
+                            height: EMPTY_STATE_ICON_INNER_SIZE,
+                          }}
+                        />
                       </div>
-                      <h3 className="text-xl mb-2">
+                      <h3 
+                        className="text-xl"
+                        style={{
+                          marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+                        }}
+                      >
                         Your inbox is clear!
                       </h3>
-                      <p className="text-muted-foreground max-w-sm mb-6">
+                      <p 
+                        className="text-muted-foreground max-w-sm"
+                        style={{
+                          marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
+                        }}
+                      >
                         {unscheduledTasks.length > 0
                           ? "No tasks match your current filters."
                           : "All tasks are scheduled. Add new tasks or adjust your filters."}
