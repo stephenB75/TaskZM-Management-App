@@ -64,26 +64,12 @@ export const AI_DAILY_HOUR_LABELS = {
 export const MAX_HOURS_PER_DAY = AI_DAILY_HOUR_OPTIONS.FIVE_HOURS; // Default fallback
 
 /**
- * DuckDuckGo Search Configuration
- */
-export const DUCKDUCKGO_CONFIG = {
-  instantAnswerApiUrl: 'https://api.duckduckgo.com/',
-  timeout: 5000, // 5 seconds timeout for search requests
-  maxResults: 5, // Maximum number of search results to process
-  minConfidenceForSearch: 0.5, // Minimum confidence to use search results
-  highConfidenceThreshold: 0.7, // Confidence threshold for high-quality search results (used in UI to indicate source)
-  cacheEnabled: true, // Enable caching for search results
-  cacheExpiryHours: 24 * 7, // Cache expires after 7 days
-  maxCacheSize: 1000, // Maximum number of cached search results
-} as const;
-
-/**
  * Description Generation Configuration
  */
 export const DESCRIPTION_GENERATION_CONFIG = {
-  maxContextLength: 500, // Maximum characters from search results to use
-  minSearchResults: 1, // Minimum search results needed to use search-based description
-  searchTimeout: 5000, // Timeout for DuckDuckGo search (ms)
+  maxContextLength: 500, // Maximum characters from context to use
+  minSearchResults: 1, // Minimum results needed (legacy - not used with Browser AI)
+  searchTimeout: 5000, // Timeout for async operations (ms)
   // Context processing thresholds
   minContextLength: 20, // Minimum context length to use in description (reduced to allow shorter but useful contexts)
   minSentenceLength: 10, // Minimum sentence length to extract (reduced to allow shorter useful sentences)
