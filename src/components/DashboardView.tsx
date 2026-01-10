@@ -1384,8 +1384,9 @@ export function DashboardView({
       )}
 
       {/* Main Layout */}
-      <div className={cn("flex-1 flex", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "overflow-hidden")}>
+      <div className={cn("flex-1 flex", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop ? "" : "overflow-hidden")}>
         {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false (hidden on tablets to save space) */}
+        {/* xl breakpoint (1280px) ensures it only shows on true desktop, not tablets */}
         {!hideAgenda && (
           <motion.div
             className="hidden xl:flex flex-col w-64 h-full min-h-0 border-r border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm"
@@ -1400,7 +1401,7 @@ export function DashboardView({
 
         {/* Mobile: Tabbed View | Desktop: Kanban/Calendar */}
         <motion.div
-          className={cn("flex-1", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "overflow-hidden")}
+          className={cn("flex-1", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop ? "" : "overflow-hidden")}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -1422,7 +1423,7 @@ export function DashboardView({
           </div>
 
           {/* Mobile: Tabbed Content */}
-          <div className={cn("md:hidden", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? "" : "min-h-full")} style={{ backgroundColor: 'transparent' }}>
+          <div className={cn("md:hidden", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop ? "" : "min-h-full")} style={{ backgroundColor: 'transparent' }}>
             {mobileView === "today" ? (
               <TodayAgendaView hideHeader={true} />
             ) : viewMode === "week" ? (

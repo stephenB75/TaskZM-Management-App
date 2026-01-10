@@ -1,8 +1,10 @@
 import * as React from "react";
+import { VIEWPORT_BREAKPOINTS } from "../../lib/layout-constants";
 
-// Tablet breakpoints: 768px - 1023px (between mobile and desktop)
-const TABLET_MIN = 768;
-const TABLET_MAX = 1023;
+// Tablet breakpoints: 768px - 1279px (includes iPad Pro at 1024px)
+// iPad Pro in portrait is 1024px, so we extend to 1279px to include it
+const TABLET_MIN = VIEWPORT_BREAKPOINTS.mobile; // 768px
+const TABLET_MAX = VIEWPORT_BREAKPOINTS.desktop - 1; // 1279px (just before desktop breakpoint)
 
 export function useIsTablet() {
   const [isTablet, setIsTablet] = React.useState<boolean | undefined>(
@@ -12,12 +14,19 @@ export function useIsTablet() {
   React.useEffect(() => {
     const checkTablet = () => {
       const width = window.innerWidth;
-      setIsTablet(width >= TABLET_MIN && width <= TABLET_MAX);
+      // Tablet range: 768px - 1279px (includes iPad, iPad Pro, and small monitors)
+      setIsTablet(width >= TABLET_MIN && width < VIEWPORT_BREAKPOINTS.desktop);
     };
 
     checkTablet();
     window.addEventListener("resize", checkTablet);
-    return () => window.removeEventListener("resize", checkTablet);
+    // Also listen for orientation changes
+    window.addEventListener("orientationchange", checkTablet);
+    
+    return () => {
+      window.removeEventListener("resize", checkTablet);
+      window.removeEventListener("orientationchange", checkTablet);
+    };
   }, []);
 
   return !!isTablet;

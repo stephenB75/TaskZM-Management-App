@@ -88,9 +88,11 @@ export const HEADER_SIDE_PANEL_ANIMATION_EASE = 'easeOut'; // Easing function fo
 
 // Viewport Breakpoints (matching Tailwind defaults)
 export const VIEWPORT_BREAKPOINTS = {
-  mobile: 768, // md breakpoint
-  tablet: 1024, // lg breakpoint
-  desktop: 1280, // xl breakpoint
+  mobile: 768, // md breakpoint - below this is mobile
+  tablet: 1024, // lg breakpoint - iPad Pro portrait width
+  desktop: 1280, // xl breakpoint - standard desktop
+  // Tablet range: 768px - 1279px (includes iPad, iPad Pro, and small monitors)
+  // Desktop range: 1280px and above
 } as const;
 
 // Timeline Constants
@@ -132,15 +134,23 @@ export const MOBILE_SPACING = {
   emptyStateMinHeight: 200, // min-h-[200px] = 200px
 } as const;
 
-// Calculate panel width based on viewport
+// Calculate panel width based on viewport and orientation
 export const getPanelWidth = (): number => {
   if (typeof window === 'undefined') return PANEL_WIDTH;
   const width = window.innerWidth;
-  if (width >= 768 && width < 1024) {
+  const height = window.innerHeight;
+  const isLandscape = width > height;
+  
+  // Tablet range: 768px - 1279px (includes iPad, iPad Pro, and small monitors)
+  if (width >= 768 && width < 1280) {
+    // In landscape, tablets have more horizontal space, so use small monitor width
+    if (isLandscape && width >= 1024) {
+      return PANEL_WIDTH_SMALL_MONITOR;
+    }
+    // Portrait tablets use narrower panel
     return PANEL_WIDTH_TABLET;
-  } else if (width >= 1024 && width < 1280) {
-    return PANEL_WIDTH_SMALL_MONITOR;
   }
+  // Desktop: 1280px and above
   return PANEL_WIDTH;
 };
 

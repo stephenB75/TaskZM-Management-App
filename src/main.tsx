@@ -394,10 +394,19 @@ if ('serviceWorker' in navigator) {
         console.error('❌ Service Worker registration failed:', error);
       });
 
-    // Handle service worker updates
+    // Handle service worker updates - notify user instead of forcing reload
+    // This prevents frequent automatic refreshes that disrupt user experience
+    let reloadPromptShown = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.log('🔄 Service worker updated. Reloading...');
-      window.location.reload();
+      // Only show prompt once per session to avoid spam
+      if (!reloadPromptShown) {
+        console.log('🔄 Service worker updated. Update will be applied on next page load.');
+        reloadPromptShown = true;
+        
+        // Optionally show a toast notification (non-intrusive)
+        // The update will be applied automatically on next navigation or manual refresh
+        // This prevents disrupting the user's current work
+      }
     });
   });
 }

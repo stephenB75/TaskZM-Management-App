@@ -290,8 +290,8 @@ body {
   background: rgba(155, 135, 232, 0.5);
 }
 
-/* Tablet optimizations (768px - 1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
+/* Tablet optimizations (768px - 1279px) - includes iPad, iPad Pro, and small monitors */
+@media (min-width: 768px) and (max-width: 1279px) {
   /* Improve touch targets for tablets */
   button, a {
     min-height: 40px;
@@ -309,6 +309,56 @@ body {
     padding-left: 1rem;
     padding-right: 1rem;
   }
+  
+  /* Optimize panel widths for tablets */
+  .tablet-panel {
+    max-width: 90vw;
+  }
+}
+
+/* Tablet portrait optimizations (768px - 1279px, portrait orientation) */
+@media (min-width: 768px) and (max-width: 1279px) and (orientation: portrait) {
+  /* Optimize for portrait tablets like iPad */
+  body {
+    font-size: 16px; /* Prevent iOS zoom on input focus */
+  }
+  
+  /* Better vertical spacing in portrait */
+  .tablet-portrait-compact {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  
+  /* Optimize sidebar for portrait tablets */
+  .tablet-portrait-sidebar {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Tablet landscape optimizations (768px - 1279px, landscape orientation) */
+@media (min-width: 768px) and (max-width: 1279px) and (orientation: landscape) {
+  /* Optimize for landscape tablets */
+  body {
+    font-size: 16px; /* Prevent iOS zoom on input focus */
+  }
+  
+  /* Better horizontal spacing in landscape */
+  .tablet-landscape-expanded {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+  
+  /* Optimize grid layouts for landscape */
+  .tablet-landscape-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+  
+  /* Reduce vertical padding in landscape */
+  .tablet-landscape-compact {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
 }
 
 /* Small monitor optimizations (1024px - 1279px) */
@@ -318,14 +368,55 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  
+  /* Better content width for small monitors */
+  .small-monitor-container {
+    max-width: 95%;
+    margin: 0 auto;
+  }
 }
 
 /* Mobile landscape optimizations */
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-width: 767px) and (orientation: landscape) {
   /* Reduce vertical padding in landscape mode */
   .mobile-landscape-compact {
     padding-top: 0.5rem !important;
     padding-bottom: 0.5rem !important;
+  }
+  
+  /* Optimize header for mobile landscape */
+  .mobile-landscape-header {
+    min-height: 60px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  /* Compact navigation for mobile landscape */
+  .mobile-landscape-nav {
+    padding: 0.25rem 0;
+  }
+}
+
+/* iPad Pro specific optimizations (1024px - 1279px) */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  /* iPad Pro portrait and landscape */
+  .ipad-pro-optimized {
+    /* Ensure proper touch targets */
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Orientation change transitions */
+@media (orientation: portrait) {
+  * {
+    transition: padding 0.2s ease, margin 0.2s ease;
+  }
+}
+
+@media (orientation: landscape) {
+  * {
+    transition: padding 0.2s ease, margin 0.2s ease;
   }
 }
 

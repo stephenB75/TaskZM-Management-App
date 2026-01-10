@@ -317,7 +317,7 @@ export function TodayAgendaView({
   const getTaskHeight = useCallback((task: Task) => {
     // Use AI estimator to get accurate duration (handles null/0/undefined cases)
     const minutes = getTaskMinutes(task);
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop;
     
     // Determine task category using constants
     const isShortTask = minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
@@ -559,10 +559,10 @@ export function TodayAgendaView({
               ref={timelineContainerRef}
               className="px-5 w-full relative"
               style={{
-                paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
+                paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop 
                   ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing
                   : DESKTOP_PADDING_TOP,
-                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop
                   ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer
                   : undefined,
                 // Ensure transparent background to show parent gradient
@@ -793,10 +793,10 @@ export function TodayAgendaView({
                 ref={timelineContainerRef}
                 className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative")}
                 style={{
-                  paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet 
+                  paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop 
                     ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` 
                     : DESKTOP_PADDING_TOP,
-                  paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                  paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop
                     ? KANBAN_MOBILE.bottomPaddingCalc
                     : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
                 }}
@@ -1015,7 +1015,7 @@ export function TodayAgendaView({
         )
       ) : (
         // LAYER 1: When hideHeader=false (header IS visible)
-        typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet ? (
+        typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.desktop ? (
           // Desktop: Use ScrollArea when header is visible (matches the pattern from line 767)
           <div className="flex-1 min-h-0">
             <ScrollArea className="h-full w-full">
