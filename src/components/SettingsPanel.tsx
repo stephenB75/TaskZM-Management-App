@@ -39,7 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
-import { useIsMobile } from './ui/use-mobile';
+import { useMobileLayout } from '../hooks/useMobileLayout';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS, AI_DAILY_HOUR_OPTIONS, AI_DAILY_HOUR_LABELS } from '../lib/ai-config';
@@ -181,7 +181,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
-  const isMobile = useIsMobile();
+  const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
   
   // Date, Time & Theme settings state
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(() => {
@@ -467,7 +467,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         className="flex-1 overflow-y-auto overscroll-y-contain"
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          paddingBottom: isMobile ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` : undefined, // Add padding to scroll container on mobile to ensure content can scroll past nav bar
+          paddingBottom: shouldUseMobileLayout ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` : undefined, // Add padding to scroll container on mobile/tablet to ensure content can scroll past nav bar
         } as React.CSSProperties}
       >
         <div 
@@ -477,7 +477,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             paddingLeft: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
             paddingRight: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
             paddingTop: SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
-            paddingBottom: isMobile
+            paddingBottom: shouldUseMobileLayout
               ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer to ensure last item is fully visible and scrollable
               : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
           }}

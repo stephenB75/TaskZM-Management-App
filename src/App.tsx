@@ -49,7 +49,7 @@ import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
 import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
-import { useIsMobile } from './components/ui/use-mobile';
+import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, LOADING_SCREEN_LOGO } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
@@ -76,7 +76,7 @@ function AppContent() {
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { settings: aiSettings } = useAI();
   const { hasFeature, features, subscription } = useSubscription();
-  const isMobile = useIsMobile();
+  const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
   
   // Initialize view: 'today' on mobile, 'dashboard' on desktop
   const getInitialView = () => {
@@ -767,7 +767,8 @@ function AppContent() {
         />
         <main className="flex-1 overflow-hidden relative flex">
           {/* Mobile/Tablet: Show different views - Full height container with proper bottom spacing */}
-          <div className="lg:hidden flex-1 flex flex-col min-h-0">
+          {shouldUseMobileLayout && (
+          <div className="flex-1 flex flex-col min-h-0">
             <div 
               className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 relative"
               style={{
@@ -775,24 +776,24 @@ function AppContent() {
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehaviorY: 'contain',
                 // Minimum height to fill space between header and nav bar, extends with content
-                minHeight: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                minHeight: shouldUseMobileLayout
                   ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
                   : 'auto',
-                // Add padding-top on mobile to ensure content is not hidden by fixed header when scrolling up
-                paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                // Add padding-top on mobile/tablet to ensure content is not hidden by fixed header when scrolling up
+                paddingTop: shouldUseMobileLayout
                   ? MOBILE_SCROLL_CONTAINER_PADDING_TOP
                   : undefined,
-                // Add padding-bottom on mobile to ensure content can scroll past nav bar
+                // Add padding-bottom on mobile/tablet to ensure content can scroll past nav bar
                 // Use full nav bar height + safe area + extra buffer to ensure last item is fully visible
-                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                paddingBottom: shouldUseMobileLayout
                   ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`
                   : undefined,
                 // Background gradient fills the container and extends with content - extends to nav bar
-                backgroundImage: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                backgroundImage: shouldUseMobileLayout
                   ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`
                   : 'transparent',
                 // Ensure background extends fully to nav bar and beyond with content
-                backgroundSize: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                backgroundSize: shouldUseMobileLayout
                   ? '100% auto'
                   : 'auto',
                 backgroundRepeat: 'repeat-y',
@@ -825,10 +826,11 @@ function AppContent() {
               )}
             </div>
           </div>
+          )}
 
-          {/* Desktop: Slide-out Panels with Push Effect */}
+          {/* Desktop: Slide-out Panels with Push Effect (not mobile/tablet) */}
           <AnimatePresence mode="wait">
-            {(currentView === 'notifications' || currentView === 'today' || currentView === 'inbox' || currentView === 'team' || currentView === 'folders' || currentView === 'analytics' || currentView === 'archive' || currentView === 'settings') && (
+            {!shouldUseMobileLayout && (currentView === 'notifications' || currentView === 'today' || currentView === 'inbox' || currentView === 'team' || currentView === 'folders' || currentView === 'analytics' || currentView === 'archive' || currentView === 'settings') && (
               <motion.div
                 key={currentView}
                 initial={{ width: 0, opacity: 0 }}
@@ -838,7 +840,7 @@ function AppContent() {
                 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="hidden md:block h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
+                className="h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
               >
                 {/* Panel Content */}
                 <div className="h-full w-full overflow-hidden">
@@ -863,10 +865,11 @@ function AppContent() {
             )}
           </AnimatePresence>
 
-          {/* Desktop: Dashboard - pushed to the right when panel is open */}
+          {/* Desktop: Dashboard - pushed to the right when panel is open (not mobile/tablet) */}
           {/* No animation - header shifts instantly when panel opens/closes */}
+          {!shouldUseMobileLayout && (
           <div 
-            className={`hidden md:block h-full flex-1 overflow-hidden`}
+            className="h-full flex-1 overflow-hidden"
             style={{ paddingTop: `${HEADER_HEIGHT}px` }}
           >
             <DashboardView 
@@ -879,6 +882,7 @@ function AppContent() {
               panelKey={currentView}
             />
           </div>
+          )}
         </main>
         <BottomNav 
           currentView={currentView}
