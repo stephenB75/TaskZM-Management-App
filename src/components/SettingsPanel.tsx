@@ -558,7 +558,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col w-full items-center" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+              <div className="flex flex-col w-full items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
                 <Button 
                   size="sm" 
                   variant="outline"
@@ -590,7 +590,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               {/* Input Fields - Stack format like save & sign out buttons */}
               <div className="flex flex-col w-full" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                <div className="flex flex-col" style={{ gap: SETTINGS_PANEL_GAP_XSMALL }}>
+                <div className="flex flex-col" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                   <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
                   <Input 
                     id="name" 
@@ -601,7 +601,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     className="w-full"
                   />
                 </div>
-                <div className="flex flex-col" style={{ gap: SETTINGS_PANEL_GAP_XSMALL }}>
+                <div className="flex flex-col" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                   <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
                   <Input 
                     id="email" 
@@ -707,23 +707,23 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <Separator />
 
               {/* Features List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
                 <Label className="text-xs text-muted-foreground">{SUBSCRIPTION_UI_TEXT.settings.features.sectionTitle}</Label>
-                <div className="grid" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                <div className="grid" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
                   {/* Unlimited Tasks - Available for all */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.unlimitedTasks}</span>
                   </div>
 
                   {/* Custom Tags - Available for all */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.customTags}</span>
                   </div>
 
                   {/* AI Scheduler - PRO only */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.aiScheduler ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
@@ -743,7 +743,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   {/* Task Hours - PRO only */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.taskHours ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
@@ -760,7 +760,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   {/* Analytics - PRO only */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.analytics ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
@@ -783,7 +783,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   {/* Pomodoro Timer - PRO only */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.pomodoroTimer ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
@@ -800,7 +800,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   {/* Team Features - PRO only */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.teamFeatures ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
@@ -817,7 +817,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   {/* Calendar Sync - PRO only */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.calendarSync ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
@@ -840,7 +840,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   {/* Recurring Tasks - PRO (Monthly with limit, Yearly unlimited) */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.recurringTasks ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
@@ -863,7 +863,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   {/* Task Rollover - PRO only */}
-                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                  <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.taskRollover ? (
                       <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
@@ -887,7 +887,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <div className="text-xs font-semibold text-muted-foreground mb-2">Pro Yearly Features:</div>
 
                       {/* Task Templates - PRO YEARLY only */}
-                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                         {features.taskTemplates ? (
                           <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
@@ -904,7 +904,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       </div>
 
                       {/* Task Dependencies - PRO YEARLY only */}
-                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                         {features.taskDependencies ? (
                           <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
@@ -921,7 +921,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       </div>
 
                       {/* Multiple Workspaces - PRO YEARLY only */}
-                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
+                      <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                         {features.multipleWorkspaces ? (
                           <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
@@ -1096,7 +1096,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   Sync your tasks with Google, Outlook, and Apple Calendar with TaskZM Pro
                 </p>
                 <div className={`border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5`} style={{ padding: SETTINGS_PANEL_PADDING_LARGE }}>
-                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_SMALL, marginBottom: SETTINGS_PANEL_SPACING_SMALL }}>
+                  <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
                     <Lock className={`w-4 h-4 ${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass}`} />
                     <span className="text-sm">Pro Feature</span>
                   </div>
@@ -1122,9 +1122,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   Sync your tasks with external calendar services
                 </p>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
                   {/* Google Calendar - Fully Implemented */}
-                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
                     <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       <Label htmlFor="google-cal" className="text-sm cursor-pointer">Google Calendar</Label>
                     </div>
@@ -1148,7 +1148,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   
                   {/* Outlook Calendar - Coming Soon */}
-                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
                     <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       <Label htmlFor="outlook-cal" className="text-sm cursor-pointer">Outlook Calendar</Label>
                       <Badge variant="outline" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} px-1.5 py-0 h-4 bg-muted text-muted-foreground border-muted-foreground/20`}>
@@ -1169,7 +1169,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   
                   {/* Apple Calendar - Shortcuts */}
-                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
                     <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       <Label htmlFor="apple-cal" className="text-sm cursor-pointer">Apple Calendar</Label>
                     </div>
