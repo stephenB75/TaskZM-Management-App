@@ -487,8 +487,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             style={{ 
               maxWidth: SETTINGS_PANEL_MAX_WIDTH,
               paddingBottom: 0, // Bottom padding handled by parent container
-              paddingTop: isMobile
-                ? '0.75rem' // 12px on mobile for better spacing after AppHeader
+              paddingTop: shouldUseMobileLayout
+                ? SETTINGS_PANEL_PADDING_MEDIUM // 0.75rem (12px) on mobile/tablet for better spacing after AppHeader
                 : SETTINGS_PANEL_PADDING_TOP 
             }}
           >

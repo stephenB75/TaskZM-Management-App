@@ -357,7 +357,7 @@ function AppContent() {
     if (hasInitializedView.current) return;
     
     // Check if we're on mobile (either via hook or window width)
-    const checkMobile = isMobile || (typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile);
+    const checkMobile = shouldUseMobileLayout || (typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile);
     
     // Only set to 'today' on mobile if currently on 'dashboard'
     // This ensures mobile always starts with 'today' view on refresh/reopen
@@ -544,7 +544,7 @@ function AppContent() {
               alt="TaskZM Logo" 
               className="mx-auto w-auto object-contain"
               style={{ 
-                height: isMobile ? LOADING_SCREEN_LOGO.height.mobile : LOADING_SCREEN_LOGO.height.desktop,
+                height: shouldUseMobileLayout ? LOADING_SCREEN_LOGO.height.mobile : LOADING_SCREEN_LOGO.height.desktop,
                 maxWidth: LOADING_SCREEN_LOGO.maxWidth 
               }}
             />
@@ -590,7 +590,7 @@ function AppContent() {
     } else {
       setCurrentView(view);
       // On mobile, when dashboard is selected, default to week view
-      if (view === 'dashboard' && isMobile) {
+      if (view === 'dashboard' && shouldUseMobileLayout) {
         setMobileView('week');
       }
     }
@@ -600,7 +600,7 @@ function AppContent() {
   const handleClosePanel = () => {
     setCurrentView('dashboard');
     // On mobile, when closing a panel, default to week view
-    if (isMobile) {
+    if (shouldUseMobileLayout) {
       setMobileView('week');
     }
   };
