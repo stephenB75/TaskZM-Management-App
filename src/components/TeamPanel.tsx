@@ -890,7 +890,6 @@ export function TeamPanel() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
             </div>
           </div>
         </div>
