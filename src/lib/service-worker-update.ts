@@ -6,11 +6,13 @@
 
 import { toast } from './toast-wrapper';
 import { TIMING_CONSTANTS } from './timing-constants';
+import { NOTIFICATION_STORAGE_KEYS, NOTIFICATION_TOAST_MESSAGES } from './notification-constants';
 
 const UPDATE_CHECK_INTERVAL = TIMING_CONSTANTS.serviceWorker.updateCheckInterval;
 const UPDATE_NOTIFICATION_COOLDOWN = TIMING_CONSTANTS.serviceWorker.notificationCooldown;
 const UPDATE_NOTIFICATION_DURATION = TIMING_CONSTANTS.serviceWorker.notificationDuration;
-const UPDATE_NOTIFICATION_KEY = 'taskzm_update_available';
+const UPDATE_VISIBILITY_CHECK_INTERVAL = TIMING_CONSTANTS.serviceWorker.visibilityCheckInterval;
+const UPDATE_NOTIFICATION_KEY = NOTIFICATION_STORAGE_KEYS.updateAvailable;
 
 let updateCheckInterval: number | null = null;
 let updateAvailableToastId: string | number | null = null;
@@ -66,8 +68,8 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       const now = Date.now();
-      // Only check if at least 5 minutes have passed since last check
-      if (now - lastVisibilityCheck > 5 * 60 * 1000) {
+      // Only check if enough time has passed since last check
+      if (now - lastVisibilityCheck > UPDATE_VISIBILITY_CHECK_INTERVAL) {
         lastVisibilityCheck = now;
         checkForUpdates();
       }
@@ -117,12 +119,12 @@ function showUpdateAvailableNotification() {
   // Show new notification with action button
   // Sonner supports action buttons via the action option
   updateAvailableToastId = toast.info(
-    'Update available',
+    NOTIFICATION_TOAST_MESSAGES.updateAvailable,
     {
-      description: 'A new version is ready. Click to refresh when convenient.',
+      description: NOTIFICATION_TOAST_MESSAGES.updateAvailableDescription,
       duration: UPDATE_NOTIFICATION_DURATION,
       action: {
-        label: 'Refresh Now',
+        label: NOTIFICATION_TOAST_MESSAGES.updateAvailableAction,
         onClick: () => {
           // User chose to refresh - reload the page
           window.location.reload();

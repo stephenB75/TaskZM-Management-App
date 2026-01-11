@@ -108,6 +108,7 @@ export const TIMING_CONSTANTS = {
     updateCheckInterval: 30 * 60 * 1000, // 30 minutes - Check for updates in background
     notificationCooldown: 5 * 60 * 1000, // 5 minutes - Don't show notification again within this time
     notificationDuration: 15000, // 15 seconds - How long to show update notification
+    visibilityCheckInterval: 5 * 60 * 1000, // 5 minutes - Minimum time between visibility-based update checks
   },
 } as const;
 

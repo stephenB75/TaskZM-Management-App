@@ -22,6 +22,7 @@ export const NOTIFICATION_STORAGE_KEYS = {
   lastSeenPomodoroSessions: 'lastSeenPomodoroSessions',
   lastSeenAwards: 'lastSeenAwards',
   toastNotifications: 'toastNotifications',
+  updateAvailable: 'taskzm_update_available', // Service worker update notification key
 } as const;
 
 // Notification icon paths
