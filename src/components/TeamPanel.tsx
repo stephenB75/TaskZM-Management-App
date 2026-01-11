@@ -110,6 +110,8 @@ import {
   TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
   TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
+  PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR,
+  PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT,
   PANEL_SEARCH_BAR_PADDING_TOP,
   PANEL_SEARCH_BAR_PADDING_BOTTOM,
   PANEL_SEARCH_ICON_POSITION_LEFT,
@@ -540,13 +542,15 @@ export function TeamPanel() {
     acceptInvitation: (id: string) => void;
   }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const gradientBackground = `linear-gradient(to right, ${AUTH_COLORS.primaryGradient.from}, ${AUTH_COLORS.primaryGradient.via}, ${AUTH_COLORS.primaryGradient.to})`;
 
     return (
       <div 
         className="relative w-full"
         onClick={(e) => {
           // Don't trigger card click if clicking on dropdown area or if dropdown is open
-          if (!dropdownOpen && !(e.target as HTMLElement).closest('[data-slot="dropdown-menu-trigger"]')) {
+          const target = e.target as HTMLElement;
+          if (!dropdownOpen && !target.closest(PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR)) {
             onCardClick(member);
           }
         }}
@@ -576,7 +580,7 @@ export function TeamPanel() {
         <div
           className="relative w-full"
           style={{
-            background: `linear-gradient(to right, ${AUTH_COLORS.primaryGradient.from}, ${AUTH_COLORS.primaryGradient.via}, ${AUTH_COLORS.primaryGradient.to})`,
+            background: gradientBackground,
             borderTopLeftRadius: TEAM_PANEL_CARD_BORDER_RADIUS_TOP,
             borderTopRightRadius: TEAM_PANEL_CARD_BORDER_RADIUS_TOP,
             borderBottomLeftRadius: TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM,
@@ -772,7 +776,7 @@ export function TeamPanel() {
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
-                      data-slot="dropdown-menu-trigger"
+                      data-slot={PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT}
                     >
                       <MoreVertical style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
                     </Button>
@@ -798,9 +802,9 @@ export function TeamPanel() {
                           }}
                           className="cursor-pointer"
                         >
-                      <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Resend Invitation
-                    </DropdownMenuItem>
+                          <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                          Resend Invitation
+                        </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={() => {
                         setDropdownOpen(false);

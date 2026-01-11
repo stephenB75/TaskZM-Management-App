@@ -319,6 +319,8 @@ export const FOLDER_PANEL_COLOR_PICKER_GAP = '0.5rem'; // gap-2 = 0.5rem
 
 // Common Panel Constants (for both Folder and Team panels)
 export const PANEL_DROPDOWN_TIMEOUT_DELAY_MS = 150; // Timeout delay for dropdown menu actions (150ms)
+export const PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR = '[data-slot="dropdown-menu-trigger"]'; // CSS selector for dropdown menu trigger element
+export const PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT = 'dropdown-menu-trigger'; // data-slot attribute value for dropdown menu trigger element
 export const PANEL_SEARCH_BAR_PADDING_TOP = '1rem'; // pt-4 = 1rem
 export const PANEL_SEARCH_BAR_PADDING_BOTTOM = '0.75rem'; // pb-3 = 0.75rem
 export const PANEL_SEARCH_ICON_POSITION_LEFT = '0.75rem'; // left-3 = 0.75rem
