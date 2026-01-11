@@ -135,7 +135,7 @@ export const KANBAN_DAY_COLORS = {
       widthPercent: 50, // Width as percentage of column (50% = half width)
       marginBottom: '4px', // Space between line and tab
       borderRadius: '2px', // Border radius for rounded corners
-      color: '#7B68EE', // Solid lavender color for the indicator line
+      color: '#7B68EE', // Solid lavender color for the indicator line (matches ring and text colors)
     },
   },
   // Standard opacity values for non-highlighted columns
