@@ -243,6 +243,9 @@ export function AppTour({
                   💎 {SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature} - {SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(monthlyPrice)}
                 </p>
               )}
+              <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50">
+                🎉 You've completed the tour! Click "Get Started" to begin using TaskZM.
+              </p>
             </div>
           ),
           placement: getPlacement('bottom', 'top'),

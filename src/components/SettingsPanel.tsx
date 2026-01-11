@@ -2821,14 +2821,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             style={{ 
               paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
               paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
-              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: SETTINGS_PANEL_SPACING_MEDIUM,
             }}
           >
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground" style={{ marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
               Take a guided tour of TaskZM's features and learn how to get the most out of your neurodivergent-friendly task manager.
             </p>
             
-            <div className="bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/5 dark:to-accent/5 border border-primary/20 dark:border-primary/10 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/5 dark:to-accent/5 border border-primary/20 dark:border-primary/10 rounded-lg p-4" style={{ marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
               <div className="flex items-start gap-3 mb-3">
                 <Compass className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
@@ -2851,7 +2853,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </Button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" style={{ marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
               <p className="text-xs font-medium">Tour Highlights:</p>
               <ul className="text-xs text-muted-foreground space-y-1 ml-4">
                 <li>• Navigation & panel system</li>
@@ -2864,7 +2866,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </ul>
             </div>
 
-            <Separator />
+            <Separator style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }} />
 
             <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
               <div className="flex items-start gap-2">
