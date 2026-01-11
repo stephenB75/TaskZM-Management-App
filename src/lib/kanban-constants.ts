@@ -107,15 +107,15 @@ export const KANBAN_DAY_COLORS = {
     ring: '#7B68EE',
     ringOpacity: 40,
     text: '#7B68EE',
-    // Enhanced styling for highlighted today column - deeper, more vibrant colors
+    // Enhanced styling for highlighted today column - full pastel color at 100% opacity
     headerOpacity: 100, // Full opacity for maximum visibility
     viaOpacity: 100, // Full opacity for via color
     borderOpacity: 90, // More prominent border opacity (90% vs standard 30%) - deeper, more visible border
     borderWidth: '3px', // Thicker border for today (increased from 2px to 3px)
     darkModeBackgroundOpacity: 0.50, // 50% opacity for dark mode background - deeper, more visible color (increased from 40%)
     shadowOpacity: 0.45, // 45% opacity for shadow - more prominent shadow (increased from 35%)
-    // Color darkening factor for today column (multiplies RGB values to create deeper colors)
-    colorDarkeningFactor: 0.70, // Darken colors by 30% to make them deeper (0.70 = 70% of original brightness) - more prominent (increased from 0.80)
+    // Color darkening factor for today column - set to 1.0 to use full pastel color (no darkening)
+    colorDarkeningFactor: 1.0, // Use full pastel color at 100% (1.0 = 100% of original brightness, no darkening)
     // Dark mode ring opacity enhancement
     darkModeRingOpacityIncrease: 30, // Increase ring opacity by 30 for deeper appearance in dark mode (increased from 25)
     // Ring and shadow styling for additional visual prominence

@@ -1163,7 +1163,7 @@ export function SevenDayKanban({
                               return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
                             };
                             
-                            // For today, use deeper/darker colors for more vibrant appearance
+                            // For today, use full pastel color at 100% opacity (no darkening)
                             const headerOpacity = column.isToday 
                               ? KANBAN_DAY_COLORS.today.headerOpacity // Full opacity for maximum visibility
                               : dayColors.header.opacity;
@@ -1171,24 +1171,32 @@ export function SevenDayKanban({
                               ? KANBAN_DAY_COLORS.today.viaOpacity // Full opacity for via color on today
                               : KANBAN_DAY_COLORS.standard.viaOpacity; // Standard via opacity for non-today days
                             
-                            // Use darker colors for today to create deeper appearance
+                            // Use full pastel colors for today (no darkening when colorDarkeningFactor is 1.0)
                             const fromColor = column.isToday 
-                              ? darkenColor(dayColors.header.from, KANBAN_DAY_COLORS.today.colorDarkeningFactor)
+                              ? (KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0 
+                                  ? dayColors.header.from 
+                                  : darkenColor(dayColors.header.from, KANBAN_DAY_COLORS.today.colorDarkeningFactor))
                               : dayColors.header.from;
                             const viaColor = column.isToday 
-                              ? darkenColor(dayColors.header.via, KANBAN_DAY_COLORS.today.colorDarkeningFactor)
+                              ? (KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0 
+                                  ? dayColors.header.via 
+                                  : darkenColor(dayColors.header.via, KANBAN_DAY_COLORS.today.colorDarkeningFactor))
                               : dayColors.header.via;
                             const toColor = column.isToday 
-                              ? darkenColor(dayColors.header.to, KANBAN_DAY_COLORS.today.colorDarkeningFactor)
+                              ? (KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0 
+                                  ? dayColors.header.to 
+                                  : darkenColor(dayColors.header.to, KANBAN_DAY_COLORS.today.colorDarkeningFactor))
                               : dayColors.header.to;
                             
                             baseStyle.backgroundImage = `linear-gradient(to right, ${fromColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${viaColor}${Math.round(viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${toColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
                             
                             // Add border and shadow for today to make it stand out more
                             if (column.isToday) {
-                              // Use darker border color for today with higher opacity
-                              const darkerBorder = darkenColor(dayColors.header.border, KANBAN_DAY_COLORS.today.colorDarkeningFactor);
-                              baseStyle.borderColor = `${darkerBorder}${Math.round(KANBAN_DAY_COLORS.today.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                              // Use full pastel border color for today with higher opacity (no darkening when colorDarkeningFactor is 1.0)
+                              const borderColor = KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0
+                                ? dayColors.header.border
+                                : darkenColor(dayColors.header.border, KANBAN_DAY_COLORS.today.colorDarkeningFactor);
+                              baseStyle.borderColor = `${borderColor}${Math.round(KANBAN_DAY_COLORS.today.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
                               baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidth;
                               // Add ring color via inline style (since Tailwind dynamic classes don't work)
                               const ringColor = KANBAN_DAY_COLORS.today.ring;
