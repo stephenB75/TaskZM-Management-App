@@ -23,7 +23,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { cn } from "../lib/utils";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
-import { Z_INDEX } from "../lib/layout-constants";
+import { Z_INDEX, VIEWPORT_BREAKPOINTS, TOUR_CONSTANTS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { getOfferings } from "../lib/revenuecat";
 import { useAuth } from "../contexts/AuthContext";
@@ -923,8 +923,8 @@ export function AppTour({
         if (element) {
           // Scroll element into view with offset to account for tour card on desktop
           const rect = element.getBoundingClientRect();
-          const isDesktop = window.innerWidth >= 640;
-          const scrollOffset = isDesktop ? 200 : 0; // Account for tour card on desktop
+          const isDesktop = window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet;
+          const scrollOffset = isDesktop ? TOUR_CONSTANTS.scrollOffset : 0;
           window.scrollTo({
             top: window.scrollY + rect.top - (window.innerHeight / 2) + (scrollOffset / 2),
             behavior: 'smooth'
@@ -1056,7 +1056,7 @@ export function AppTour({
       if (element) {
         const rect = element.getBoundingClientRect();
         // Add padding around the element for better visibility
-        const padding = 12;
+        const padding = TOUR_CONSTANTS.spotlightPadding;
         const newRect = new DOMRect(
           Math.max(0, rect.left - padding),
           Math.max(0, rect.top - padding),
@@ -1100,7 +1100,12 @@ export function AppTour({
             {/* Dark overlay with spotlight cutout - only show if element is highlighted */}
             {spotlightRect && (
               <div 
-                className="absolute inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+                className="absolute inset-0 backdrop-blur-sm transition-opacity duration-300"
+              style={{
+                backgroundColor: isDark 
+                  ? `rgba(0, 0, 0, ${TOUR_CONSTANTS.overlayOpacity.dark})`
+                  : `rgba(0, 0, 0, ${TOUR_CONSTANTS.overlayOpacity.light})`,
+              }}
                 style={{
                   clipPath: `polygon(
                     0% 0%, 
@@ -1124,8 +1129,8 @@ export function AppTour({
             key={currentStep}
             initial={{
               opacity: 0,
-              scale: 0.95,
-              y: direction === "forward" ? 20 : -20,
+              scale: TOUR_CONSTANTS.animation.initialScale,
+              y: direction === "forward" ? TOUR_CONSTANTS.animation.initialY : TOUR_CONSTANTS.animation.initialYReverse,
             }}
             animate={{
               opacity: 1,
@@ -1134,8 +1139,8 @@ export function AppTour({
             }}
             exit={{
               opacity: 0,
-              scale: 0.95,
-              y: direction === "forward" ? -20 : 20,
+              scale: TOUR_CONSTANTS.animation.initialScale,
+              y: direction === "forward" ? TOUR_CONSTANTS.animation.initialYReverse : TOUR_CONSTANTS.animation.initialY,
             }}
             transition={{
               type: "spring",
@@ -1143,11 +1148,16 @@ export function AppTour({
               stiffness: TIMING_CONSTANTS.tour.animation.springStiffness,
             }}
             className={cn(
-              "fixed bottom-4 left-4 right-4 sm:right-auto sm:left-auto sm:top-1/2 sm:-translate-y-1/2 sm:right-4 sm:w-96",
+              "fixed bottom-4 left-4 right-4 sm:right-auto sm:left-auto sm:top-1/2 sm:-translate-y-1/2 sm:right-4",
               "rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-primary/25 dark:border-primary/20",
-              "bg-card/95 dark:bg-card/95 backdrop-blur-md",
-              "pointer-events-auto"
+              "backdrop-blur-md pointer-events-auto"
             )}
+            style={{
+              width: window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet ? `${TOUR_CONSTANTS.cardWidth}px` : undefined,
+              backgroundColor: isDark 
+                ? `hsl(var(--card) / ${TOUR_CONSTANTS.cardOpacity})`
+                : `hsl(var(--card) / ${TOUR_CONSTANTS.cardOpacity})`,
+            }}
             style={{
               zIndex: Z_INDEX.APP_TOUR,
               boxShadow: isDark

@@ -755,6 +755,31 @@ export const COMPONENT_DIMENSIONS = {
       combined: 'max-h-[400px] sm:max-h-[500px] md:max-h-[600px]',
     },
   },
+} as const;
+
+// Tour-specific constants
+export const TOUR_CONSTANTS = {
+  // Tour card dimensions
+  cardWidth: 384, // w-96 = 384px - Tour card width on desktop
+  cardPadding: {
+    mobile: '1rem', // p-4 = 1rem (16px)
+    desktop: '1rem', // p-4 = 1rem (16px)
+  },
+  // Spotlight effect
+  spotlightPadding: 12, // px - Padding around highlighted element for spotlight cutout
+  scrollOffset: 200, // px - Scroll offset to account for tour card on desktop
+  // Overlay opacity
+  overlayOpacity: {
+    light: 0.50, // bg-black/50
+    dark: 0.60, // bg-black/60
+  },
+  cardOpacity: 0.95, // bg-card/95 - Tour card background opacity
+  // Animation values
+  animation: {
+    initialScale: 0.95,
+    initialY: 20, // px - Initial Y offset for card animation
+    initialYReverse: -20, // px - Reverse Y offset for card animation
+  },
   aiRecommendation: {
     containerHeight: 'h-[calc(100vh-8rem)]',
   },
