@@ -921,12 +921,23 @@ export function AppTour({
       setTimeout(() => {
         const element = document.querySelector(`[data-tour="${step.highlightElement}"]`);
         if (element) {
-          // Scroll element into view
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Add highlight class (will be handled by CSS or we can add inline styles)
+          // Scroll element into view with offset to account for tour card on desktop
+          const rect = element.getBoundingClientRect();
+          const isDesktop = window.innerWidth >= 640;
+          const scrollOffset = isDesktop ? 200 : 0; // Account for tour card on desktop
+          window.scrollTo({
+            top: window.scrollY + rect.top - (window.innerHeight / 2) + (scrollOffset / 2),
+            behavior: 'smooth'
+          });
+          // Add highlight class
           element.classList.add('tour-highlight');
         }
       }, TIMING_CONSTANTS.tour.highlightDelay);
+    } else {
+      // Remove highlight from any previously highlighted elements
+      document.querySelectorAll('.tour-highlight').forEach(el => {
+        el.classList.remove('tour-highlight');
+      });
     }
   }, [currentStep, run, onNavigate, dynamicTourSteps]);
 
@@ -1031,35 +1042,100 @@ export function AppTour({
 
   const Icon = step.icon;
 
+  // Calculate spotlight position for highlighted element
+  const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
+  
+  useEffect(() => {
+    if (!run || !step.highlightElement) {
+      setSpotlightRect(null);
+      return;
+    }
+    
+    const updateSpotlight = () => {
+      const element = document.querySelector(`[data-tour="${step.highlightElement}"]`);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        // Add padding around the element for better visibility
+        const padding = 12;
+        const newRect = new DOMRect(
+          Math.max(0, rect.left - padding),
+          Math.max(0, rect.top - padding),
+          rect.width + (padding * 2),
+          rect.height + (padding * 2)
+        );
+        setSpotlightRect(newRect);
+      } else {
+        setSpotlightRect(null);
+      }
+    };
+    
+    // Initial update with delay to allow navigation
+    const timeout = setTimeout(updateSpotlight, TIMING_CONSTANTS.tour.highlightDelay);
+    
+    // Update on scroll/resize
+    window.addEventListener('scroll', updateSpotlight, true);
+    window.addEventListener('resize', updateSpotlight);
+    
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('scroll', updateSpotlight, true);
+      window.removeEventListener('resize', updateSpotlight);
+    };
+  }, [run, step.highlightElement, currentStep]);
+
   return (
     <AnimatePresence mode="wait" initial={false}>
       {run && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 flex items-center justify-center p-2 sm:p-4 bg-background/90 dark:bg-background/85 backdrop-blur-lg"
-          style={{
-            zIndex: Z_INDEX.APP_TOUR,
-          }}
-        >
-          {/* Tour Card */}
+        <>
+          {/* Spotlight Overlay - Dark background with cutout for highlighted area */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 pointer-events-none"
+            style={{
+              zIndex: Z_INDEX.APP_TOUR - 1,
+            }}
+          >
+            {/* Dark overlay with spotlight cutout - only show if element is highlighted */}
+            {spotlightRect && (
+              <div 
+                className="absolute inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+                style={{
+                  clipPath: `polygon(
+                    0% 0%, 
+                    0% 100%, 
+                    ${Math.max(0, spotlightRect.left)}px 100%, 
+                    ${Math.max(0, spotlightRect.left)}px ${Math.max(0, spotlightRect.top)}px, 
+                    ${Math.min(window.innerWidth, spotlightRect.right)}px ${Math.max(0, spotlightRect.top)}px, 
+                    ${Math.min(window.innerWidth, spotlightRect.right)}px ${Math.min(window.innerHeight, spotlightRect.bottom)}px, 
+                    ${Math.max(0, spotlightRect.left)}px ${Math.min(window.innerHeight, spotlightRect.bottom)}px, 
+                    ${Math.max(0, spotlightRect.left)}px 100%, 
+                    100% 100%, 
+                    100% 0%
+                  )`,
+                }}
+              />
+            )}
+          </motion.div>
+
+          {/* Tour Card - Positioned to side/bottom, compact design */}
           <motion.div
             key={currentStep}
             initial={{
               opacity: 0,
               scale: 0.95,
-              x: direction === "forward" ? 50 : -50,
+              y: direction === "forward" ? 20 : -20,
             }}
             animate={{
               opacity: 1,
               scale: 1,
-              x: 0,
+              y: 0,
             }}
             exit={{
               opacity: 0,
               scale: 0.95,
-              x: direction === "forward" ? -50 : 50,
+              y: direction === "forward" ? -20 : 20,
             }}
             transition={{
               type: "spring",
@@ -1067,13 +1143,16 @@ export function AppTour({
               stiffness: TIMING_CONSTANTS.tour.animation.springStiffness,
             }}
             className={cn(
-              "w-full max-w-2xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-primary/25 dark:border-primary/20",
-              isDark ? "bg-card" : "bg-card",
+              "fixed bottom-4 left-4 right-4 sm:right-auto sm:left-auto sm:top-1/2 sm:-translate-y-1/2 sm:right-4 sm:w-96",
+              "rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-primary/25 dark:border-primary/20",
+              "bg-card/95 dark:bg-card/95 backdrop-blur-md",
+              "pointer-events-auto"
             )}
             style={{
+              zIndex: Z_INDEX.APP_TOUR,
               boxShadow: isDark
-                ? "0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(155, 135, 232, 0.2)"
-                : "0 20px 60px rgba(155, 135, 232, 0.15), 0 8px 20px rgba(155, 135, 232, 0.1)",
+                ? "0 20px 60px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(155, 135, 232, 0.3)"
+                : "0 20px 60px rgba(155, 135, 232, 0.2), 0 8px 20px rgba(155, 135, 232, 0.15)",
             }}
           >
             {/* Header */}
@@ -1351,7 +1430,7 @@ export function AppTour({
               </div>
             </div>
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
