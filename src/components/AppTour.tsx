@@ -11,8 +11,9 @@ import { useAuth } from "../contexts/AuthContext";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 import { getOfferings } from "../lib/revenuecat";
 import { configureRevenueCat } from "../lib/revenuecat";
-import { Z_INDEX, TOUR_CONSTANTS } from "../lib/layout-constants";
+import { Z_INDEX, TOUR_CONSTANTS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 
 interface AppTourProps {
   run: boolean;
@@ -31,6 +32,7 @@ export function AppTour({
   const isDark = theme === "dark";
   const { user } = useAuth();
   const { subscription } = useSubscription();
+  const shouldUseMobileLayout = useMobileLayout();
   const [monthlyPrice, setMonthlyPrice] = useState<string>(DEFAULT_MONTHLY_PRICE);
   const [steps, setSteps] = useState<Step[]>([]);
 
@@ -54,9 +56,14 @@ export function AppTour({
     fetchPricing();
   }, [user?.id]);
 
-  // Create tour steps with dynamic pricing
+  // Create tour steps with dynamic pricing and responsive placement
   useEffect(() => {
     const createSteps = (): Step[] => {
+      // Determine placement based on device type
+      const getPlacement = (desktopPlacement: string, mobilePlacement: string = desktopPlacement) => {
+        return shouldUseMobileLayout ? mobilePlacement : desktopPlacement;
+      };
+
       const baseSteps: Step[] = [
         {
           target: 'body',
@@ -70,35 +77,6 @@ export function AppTour({
           ),
           placement: 'center',
           disableBeacon: true,
-        },
-        {
-          target: '[data-tour="kanban"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">7-Day Kanban Board</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Your main workspace showing the upcoming week at a glance. Each day is color-coded with calming pastel colors for easy visual scanning.
-              </p>
-              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
-                <li>Drag tasks between days</li>
-                <li>Click + to add new tasks</li>
-                <li>Use Pomodoro timer for focused work</li>
-              </ul>
-            </div>
-          ),
-          placement: 'bottom',
-        },
-        {
-          target: '[data-tour="add-task"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Task Cards</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Each task card shows priority, category, duration, and description. Click any task to edit details, add subtasks, or start a Pomodoro session.
-              </p>
-            </div>
-          ),
-          placement: 'bottom',
         },
         {
           target: '[data-tour="sidebar"]',
@@ -116,19 +94,35 @@ export function AppTour({
               </ul>
             </div>
           ),
-          placement: 'right',
+          placement: getPlacement('right', 'bottom'),
         },
         {
           target: '[data-tour="today-panel"]',
           content: (
             <div>
               <h3 className="text-lg font-semibold mb-2">Today Agenda</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-2">
                 See all your tasks for today in a timeline view. Tasks are arranged chronologically with their scheduled times.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                This panel slides in from the side. Click the X button to close it.
               </p>
             </div>
           ),
-          placement: 'left',
+          placement: getPlacement('left', 'top'),
+        },
+        {
+          target: 'body',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Closing Today Agenda</h3>
+              <p className="text-sm text-muted-foreground">
+                Now let's close this panel and move to the next feature. The panel will close automatically.
+              </p>
+            </div>
+          ),
+          placement: 'center',
+          disableBeacon: true,
         },
         {
           target: '[data-tour="inbox-panel"]',
@@ -143,22 +137,81 @@ export function AppTour({
               </p>
             </div>
           ),
-          placement: 'left',
+          placement: getPlacement('left', 'top'),
         },
         {
-          target: '[data-tour="kanban"]',
+          target: 'body',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Closing Inbox</h3>
+              <p className="text-sm text-muted-foreground">
+                Great! Now let's explore the main workspace. The panel will close automatically.
+              </p>
+            </div>
+          ),
+          placement: 'center',
+          disableBeacon: true,
+        },
+        {
+          target: shouldUseMobileLayout ? '[data-tour="kanban"]' : '[data-tour="kanban-board"]',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">7-Day Kanban Board</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                Your main workspace showing the upcoming week at a glance. Each day is color-coded with calming pastel colors for easy visual scanning.
+              </p>
+              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
+                <li>Drag tasks between days</li>
+                <li>Click + to add new tasks</li>
+                <li>Use Pomodoro timer for focused work</li>
+              </ul>
+            </div>
+          ),
+          placement: getPlacement('bottom', 'top'),
+        },
+        {
+          target: '[data-tour="calendar-month-view-toggle"]',
           content: (
             <div>
               <h3 className="text-lg font-semibold mb-2">Calendar Month View</h3>
               <p className="text-sm text-muted-foreground mb-2">
-                Switch to month view using the toggle button to see your entire month at a glance. This view shows all scheduled tasks across the month, helping you plan ahead.
+                Switch to month view using this toggle button to see your entire month at a glance. This view shows all scheduled tasks across the month, helping you plan ahead.
               </p>
               <p className="text-xs text-muted-foreground">
                 Toggle between week and month views anytime.
               </p>
             </div>
           ),
-          placement: 'top',
+          placement: getPlacement('bottom', 'top'),
+        },
+        {
+          target: shouldUseMobileLayout ? '[data-tour="kanban"]' : '[data-tour="kanban-board"]',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Back to Week View</h3>
+              <p className="text-sm text-muted-foreground">
+                Let's switch back to week view to see the task cards in detail. The view will change automatically.
+              </p>
+            </div>
+          ),
+          placement: getPlacement('bottom', 'top'),
+        },
+        {
+          target: '[data-tour="add-task"]',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Task Cards</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                Each task card shows priority, category, duration, and description. Click any task to edit details, add subtasks, or start a Pomodoro session.
+              </p>
+              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
+                <li>Drag to reschedule</li>
+                <li>Click to edit</li>
+                <li>Start Pomodoro timer</li>
+              </ul>
+            </div>
+          ),
+          placement: getPlacement('bottom', 'top'),
         },
         {
           target: '[data-tour="ai-scheduler"]',
@@ -175,15 +228,15 @@ export function AppTour({
               )}
             </div>
           ),
-          placement: 'bottom',
+          placement: getPlacement('bottom', 'top'),
         },
         {
-          target: '[data-tour="analytics-panel"]',
+          target: '[data-tour="re-schedule"]',
           content: (
             <div>
-              <h3 className="text-lg font-semibold mb-2">Analytics & Reporting</h3>
+              <h3 className="text-lg font-semibold mb-2">Re-Schedule Tasks 🔄</h3>
               <p className="text-sm text-muted-foreground mb-2">
-                Track your productivity with detailed analytics. View completion rates, time spent, task distribution, and export comprehensive PDF reports.
+                Need to reschedule tasks? Use Re-Schedule to move tasks to a different day, week, or month. AI will intelligently redistribute them.
               </p>
               {subscription.tier === 'free' && (
                 <p className="text-xs text-primary font-medium mt-2">
@@ -192,7 +245,7 @@ export function AppTour({
               )}
             </div>
           ),
-          placement: 'left',
+          placement: getPlacement('bottom', 'top'),
         },
       ];
 
@@ -200,51 +253,92 @@ export function AppTour({
     };
 
     setSteps(createSteps());
-  }, [monthlyPrice, subscription.tier]);
+  }, [monthlyPrice, subscription.tier, shouldUseMobileLayout]);
 
   // Handle tour callbacks
   const handleJoyrideCallback = useCallback((data: CallBackProps) => {
     const { status, type, action, index } = data;
 
-    // Handle navigation based on step
-    if (onNavigate && type === EVENTS.STEP_AFTER) {
+    // Handle navigation and actions based on step
+    if (onNavigate && (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND)) {
       const step = steps[index];
       if (step) {
-        // Navigate based on target
+        // Handle panel opening
         if (step.target === '[data-tour="today-panel"]') {
-          onNavigate('today');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
+              detail: { panel: 'today' } 
+            }));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
         } else if (step.target === '[data-tour="inbox-panel"]') {
-          onNavigate('inbox');
-        } else if (step.target === '[data-tour="analytics-panel"]') {
-          onNavigate('analytics');
-        } else if (step.target === '[data-tour="kanban"]' || step.target === '[data-tour="add-task"]' || step.target === '[data-tour="ai-scheduler"]' || step.target === '[data-tour="calendar-month-view-toggle"]') {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
+              detail: { panel: 'inbox' } 
+            }));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+
+        // Handle panel closing (after showing panel content)
+        // Close Today Agenda panel after step 2 (index 2, before step 3)
+        if (step.target === 'body' && index === 3) {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-close-panel'));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+        // Close Inbox panel after step 4 (index 4, before step 5)
+        else if (step.target === 'body' && index === 5) {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-close-panel'));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+
+        // Navigate to dashboard for main workspace views
+        if (step.target === '[data-tour="kanban"]' || 
+            step.target === '[data-tour="kanban-board"]' ||
+            step.target === '[data-tour="add-task"]' || 
+            step.target === '[data-tour="ai-scheduler"]' || 
+            step.target === '[data-tour="re-schedule"]' ||
+            step.target === '[data-tour="calendar-month-view-toggle"]') {
           onNavigate('dashboard');
         }
 
         // Handle view mode changes
         if (step.target === '[data-tour="calendar-month-view-toggle"]') {
-          window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
-            detail: { mode: 'month' } 
-          }));
-        } else if (step.target === '[data-tour="kanban"]') {
-          window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
-            detail: { mode: 'week' } 
-          }));
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
+              detail: { mode: 'month' } 
+            }));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        } else if ((step.target === '[data-tour="kanban"]' || step.target === '[data-tour="kanban-board"]') && index === 8) {
+          // Switch back to week view (step 8)
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
+              detail: { mode: 'week' } 
+            }));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
         }
 
-        // Handle panel opening
+        // Handle AI panel opening
         if (step.target === '[data-tour="ai-scheduler"]') {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-open-panel', { 
               detail: { panel: 'ai' } 
             }));
           }, TIMING_CONSTANTS.tour.navigationComplete);
-        } else if (step.target === '[data-tour="analytics-panel"]') {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: 'analytics' } 
-            }));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+      }
+    }
+
+    // Also handle step before to prepare for next step
+    if (type === EVENTS.STEP_BEFORE) {
+      const step = steps[index];
+      if (step) {
+        // Ensure we're on dashboard before showing kanban/calendar views
+        if (step.target === '[data-tour="kanban"]' || 
+            step.target === '[data-tour="kanban-board"]' ||
+            step.target === '[data-tour="calendar-month-view-toggle"]' ||
+            step.target === '[data-tour="add-task"]') {
+          onNavigate('dashboard');
         }
       }
     }

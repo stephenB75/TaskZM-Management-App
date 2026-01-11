@@ -127,17 +127,32 @@ function AppContent() {
         setAiPanelOpen(true);
       } else if (panel === 'analytics') {
         setCurrentView('analytics');
+      } else if (panel === 'today') {
+        setCurrentView('today');
+      } else if (panel === 'inbox') {
+        setCurrentView('inbox');
+      }
+    };
+
+    const handleTourClosePanel = () => {
+      setCurrentView('dashboard');
+      setAiPanelOpen(false);
+      // On mobile, when closing a panel, default to week view
+      if (shouldUseMobileLayout) {
+        setMobileView('week');
       }
     };
 
     window.addEventListener('tour-set-view-mode', handleTourSetViewMode as EventListener);
     window.addEventListener('tour-open-panel', handleTourOpenPanel as EventListener);
+    window.addEventListener('tour-close-panel', handleTourClosePanel as EventListener);
 
     return () => {
       window.removeEventListener('tour-set-view-mode', handleTourSetViewMode as EventListener);
       window.removeEventListener('tour-open-panel', handleTourOpenPanel as EventListener);
+      window.removeEventListener('tour-close-panel', handleTourClosePanel as EventListener);
     };
-  }, []);
+  }, [shouldUseMobileLayout]);
   
   const { scheduleAllTasks, unscheduledCount, isScheduling } = useAIScheduler();
   const { tasks } = useTasks();

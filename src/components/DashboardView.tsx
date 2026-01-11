@@ -1229,6 +1229,7 @@ export function DashboardView({
                 }}
                 className="rounded-full bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all"
                 disabled={isRescheduling}
+                data-tour="re-schedule"
               >
                 <RefreshCw className={cn("w-4 h-4 mr-2 text-primary dark:text-primary-foreground", isRescheduling && "animate-spin")} />
                 <span className="text-foreground dark:text-gray-100">Re-schedule</span>
