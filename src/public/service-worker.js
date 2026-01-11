@@ -29,26 +29,44 @@ self.addEventListener('install', (event) => {
       );
     })
   );
-  // Don't skip waiting - let old service worker finish before activating new one
-  // This prevents automatic page refreshes when service worker updates
-  // self.skipWaiting(); // DISABLED to prevent automatic refreshes
+  // CRITICAL: Don't skip waiting - force the service worker to wait indefinitely
+  // This prevents it from activating and causing page refreshes
+  // The new service worker will only activate when the user manually refreshes
+  // self.skipWaiting(); // DISABLED - service worker will wait until next page load
 });
 
 // Activate - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
-          .map((name) => caches.delete(name))
-      );
-    })
+    Promise.all([
+      // Clean up old caches
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
+            .map((name) => caches.delete(name))
+        );
+      }),
+      // CRITICAL: Check if there are any active clients (open pages)
+      // If there are active clients, DON'T claim them - let them continue with old service worker
+      // This prevents automatic page refreshes
+      self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
+        // If there are active clients, don't claim them
+        // The new service worker will only take control when:
+        // 1. All pages are closed, OR
+        // 2. User manually refreshes the page
+        if (clients.length > 0) {
+          // Don't claim clients - let them continue with old service worker
+          // This prevents automatic refreshes
+          console.log('[Service Worker] New version installed but waiting - will activate on next page load');
+          return Promise.resolve();
+        } else {
+          // No active clients - safe to claim (but this shouldn't happen during active session)
+          return self.clients.claim();
+        }
+      })
+    ])
   );
-  // Don't claim clients immediately - let them continue with old service worker
-  // This prevents automatic page refreshes when service worker updates
-  // New service worker will take control on next page load/navigation
-  // self.clients.claim(); // DISABLED to prevent automatic refreshes
 });
 
 // Fetch - network first, then cache
@@ -161,4 +179,24 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.openWindow(event.notification.data)
   );
+});
+
+// CRITICAL: Listen for messages from the page
+// If the page tells us to wait, we'll stay in waiting state
+// This prevents automatic activation and page refreshes
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    // Page is telling us whether to skip waiting
+    // If skip is false, we stay in waiting state (don't activate)
+    if (event.data.skip === false) {
+      console.log('[Service Worker] Received wait instruction - staying in waiting state');
+      // Don't call skipWaiting() - stay in waiting state
+      return;
+    }
+  }
+  
+  // For any other messages, respond to keep the channel open
+  if (event.ports && event.ports[0]) {
+    event.ports[0].postMessage({ type: 'ACK', received: true });
+  }
 });

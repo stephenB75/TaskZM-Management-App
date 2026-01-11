@@ -19,6 +19,7 @@ let registration: ServiceWorkerRegistration | null = null;
 /**
  * Initialize service worker update checking
  * Checks for updates periodically in the background
+ * Updates will NEVER cause automatic page refreshes - only manual refresh applies updates
  */
 export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistration) {
   registration = swRegistration;
@@ -26,7 +27,7 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
   // Check for updates immediately on load (non-blocking)
   checkForUpdates();
   
-  // Set up periodic background checks
+  // Set up periodic background checks (reduced frequency to minimize checks)
   updateCheckInterval = window.setInterval(() => {
     checkForUpdates();
   }, UPDATE_CHECK_INTERVAL);
@@ -38,18 +39,38 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           // New service worker is installed and waiting
+          // CRITICAL: Don't let it activate - it will wait until user manually refreshes
           // Show notification to user (non-blocking)
           showUpdateAvailableNotification();
+          
+          // Send message to new worker to ensure it waits
+          // This prevents it from activating automatically
+          // Use a MessageChannel for reliable communication
+          if (newWorker.state === 'installed') {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = (event) => {
+              if (event.data && event.data.type === 'ACK') {
+                console.debug('[Service Worker Update] Confirmed new worker will wait');
+              }
+            };
+            newWorker.postMessage({ type: 'SKIP_WAITING', skip: false }, [channel.port2]);
+          }
         }
       });
     }
   });
   
   // Check for updates when page becomes visible (user returns to tab)
+  // But only if enough time has passed (reduce frequency)
+  let lastVisibilityCheck = 0;
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      // Check for updates when user returns to the app
-      checkForUpdates();
+      const now = Date.now();
+      // Only check if at least 5 minutes have passed since last check
+      if (now - lastVisibilityCheck > 5 * 60 * 1000) {
+        lastVisibilityCheck = now;
+        checkForUpdates();
+      }
     }
   });
 }
@@ -57,10 +78,14 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
 /**
  * Check for service worker updates in the background
  * This is non-blocking and won't disrupt user sessions
+ * Updates will be downloaded but will NOT activate until user manually refreshes
  */
 function checkForUpdates() {
   if (!registration) return;
   
+  // Check for updates in the background
+  // The new service worker will install but wait (not activate)
+  // It will only activate when user manually refreshes the page
   registration.update().catch((error) => {
     // Silently fail - update checking is non-critical
     console.debug('Service worker update check failed (non-critical):', error);

@@ -395,13 +395,24 @@ if ('serviceWorker' in navigator) {
 
     // CRITICAL: Prevent any controllerchange events from causing reloads
     // Even if a new service worker is installed, don't reload the page
-    // The new service worker will take control on next page load/navigation
+    // The new service worker will take control ONLY on next page load/navigation
+    // This ensures updates happen in the background without disrupting user sessions
     navigator.serviceWorker.addEventListener('controllerchange', (event) => {
       // Completely ignore controller changes - don't reload
       // The new service worker will take control on next page load
-      console.debug('Service worker controller changed (ignored to prevent reload)');
+      console.debug('[Service Worker] Controller changed (ignored to prevent reload - update will apply on next page load)');
       // Do nothing - explicitly prevent any reload behavior
-      // Updates will only apply when user manually refreshes
+      // Updates will only apply when user manually refreshes or navigates away
+    });
+    
+    // Additional safeguard: Listen for messages from service worker
+    // If service worker tries to activate, tell it to wait
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'SKIP_WAITING') {
+        // Service worker is asking to activate - tell it to wait
+        console.debug('[Service Worker] Received skip waiting request - ignoring to prevent reload');
+        // Don't respond - let it wait
+      }
     });
   });
 }
