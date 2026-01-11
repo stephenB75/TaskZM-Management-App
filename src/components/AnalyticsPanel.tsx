@@ -732,22 +732,16 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading;
       };
 
-      // Helper function to add a metric box with bright, visible colors
+      // Helper function to add a metric box without borders (clean design)
       const addMetricBox = (label: string, value: string, x: number, width: number) => {
         const boxHeight = ANALYTICS_PDF_CONFIG.pdfSpacing.metricBoxHeight;
-        const [rBorder, gBorder, bBorder] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBorder || ANALYTICS_PDF_CONFIG.colors.primary);
         const [rPrimary, gPrimary, bPrimary] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
         const [rBg, gBg, bBg] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBackground || ANALYTICS_PDF_CONFIG.colors.boxBackground);
         const [rText, gText, bText] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.text);
         
-        // Draw box background
+        // Draw box background (no border frame)
         doc.setFillColor(rBg, gBg, bBg);
         doc.rect(x, yPos, width, boxHeight, 'F');
-        
-        // Draw box border (brighter, more visible)
-        doc.setDrawColor(rBorder, gBorder, bBorder);
-        doc.setLineWidth(ANALYTICS_PDF_CONFIG.pdfStyling.borderWidth);
-        doc.rect(x, yPos, width, boxHeight);
         
         // Add label
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.small);
@@ -798,18 +792,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         const imageAspectRatio = img.width / img.height;
         const chartHeight = chartWidth / imageAspectRatio;
         
-        // Draw border around chart area (brighter, more visible)
-        const [rBorder, gBorder, bBorder] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBorder || ANALYTICS_PDF_CONFIG.colors.primary);
-        doc.setDrawColor(rBorder, gBorder, bBorder);
-        doc.setLineWidth(1); // Thicker border for visibility
-        doc.rect(
-          ANALYTICS_PDF_CONFIG.margins.left - 2,
-          yPos - 2,
-          chartWidth + 4,
-          chartHeight + 4
-        );
-        
-        // Add chart image with proper aspect ratio
+        // Add chart image with proper aspect ratio (no border frame)
         try {
           doc.addImage(
             imageData,
@@ -1004,10 +987,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           doc.text(ANALYTICS_PDF_CONFIG.labels.projectProgress, ANALYTICS_PDF_CONFIG.margins.left, yPos);
           yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 3;
 
-          const [rBorder, gBorder, bBorder] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBorder || ANALYTICS_PDF_CONFIG.colors.primary);
           const [rBg, gBg, bBg] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBackground);
-          doc.setDrawColor(rBorder, gBorder, bBorder);
-          doc.setLineWidth(1); // Thicker border for visibility
           
           analytics.projectProgress.slice(0, ANALYTICS_PDF_CONFIG.limits.maxProjects).forEach((project, index) => {
             if (yPos > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom - ANALYTICS_PDF_CONFIG.pageBreak.threshold) {
@@ -1018,7 +998,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             const rowHeight = 12;
             const tableWidth = pageWidth - ANALYTICS_PDF_CONFIG.margins.left - ANALYTICS_PDF_CONFIG.margins.right;
             
-            // Draw row background
+            // Draw row background (no border frame)
             doc.setFillColor(rBg, gBg, bBg);
             doc.rect(
               ANALYTICS_PDF_CONFIG.margins.left,
@@ -1026,14 +1006,6 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               tableWidth,
               rowHeight,
               'F'
-            );
-            
-            // Draw row border (brighter, more visible)
-            doc.rect(
-              ANALYTICS_PDF_CONFIG.margins.left,
-              yPos - rowHeight + 2,
-              tableWidth,
-              rowHeight
             );
             
             // Project name (bold, primary color)
