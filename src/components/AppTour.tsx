@@ -876,6 +876,9 @@ export function AppTour({
   // Check if current step is the pricing step (second to last)
   const isPricingStep = currentStep === dynamicTourSteps.length - 2;
 
+  // Calculate spotlight position for highlighted element - MUST be before early return
+  const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
+
   // Sync ref with state
   useEffect(() => {
     currentStepRef.current = currentStep;
@@ -1038,13 +1041,7 @@ export function AppTour({
     onFinish();
   };
 
-  if (!run) return null;
-
-  const Icon = step.icon;
-
-  // Calculate spotlight position for highlighted element
-  const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
-  
+  // Update spotlight position when step changes or element should be highlighted
   useEffect(() => {
     if (!run || !step.highlightElement) {
       setSpotlightRect(null);
@@ -1082,6 +1079,10 @@ export function AppTour({
       window.removeEventListener('resize', updateSpotlight);
     };
   }, [run, step.highlightElement, currentStep]);
+
+  if (!run) return null;
+
+  const Icon = step.icon;
 
   return (
     <AnimatePresence mode="wait" initial={false}>
