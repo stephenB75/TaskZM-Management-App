@@ -715,14 +715,14 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
       
       // Helper function to add a visual separator line
       const addSeparator = () => {
-        const separatorThreshold = 5; // Minimum space needed for separator
+        const separatorThreshold = ANALYTICS_PDF_CONFIG.pdfSpacing.separatorThreshold;
         if (yPos + separatorThreshold > pageHeight - ANALYTICS_PDF_CONFIG.margins.bottom) {
           doc.addPage();
           yPos = ANALYTICS_PDF_CONFIG.margins.top;
         }
         const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.border);
         doc.setDrawColor(r, g, b);
-        doc.setLineWidth(ANALYTICS_PDF_CONFIG.pdfStyling.borderWidth * 0.5); // Half-width for separator
+        doc.setLineWidth(ANALYTICS_PDF_CONFIG.pdfStyling.borderWidth * ANALYTICS_PDF_CONFIG.pdfStyling.separatorWidthMultiplier);
         doc.line(
           ANALYTICS_PDF_CONFIG.margins.left,
           yPos,
@@ -777,7 +777,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         doc.setTextColor(r, g, b);
         doc.text(title, ANALYTICS_PDF_CONFIG.margins.left, yPos);
         doc.setFont(undefined, 'normal');
-        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 2;
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + ANALYTICS_PDF_CONFIG.pdfSpacing.chartTitleOffset;
         
         // Calculate image dimensions maintaining aspect ratio
         const chartWidth = ANALYTICS_PDF_CONFIG.chart.width;
@@ -805,16 +805,16 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         } catch (error) {
           console.warn('Error adding chart image to PDF:', error);
         }
-        yPos += chartHeight + ANALYTICS_PDF_CONFIG.chart.spacing + 6;
+        yPos += chartHeight + ANALYTICS_PDF_CONFIG.chart.spacing + ANALYTICS_PDF_CONFIG.pdfSpacing.chartBottomSpacing;
       };
 
       // Title with visual styling
       setPdfProgress(ANALYTICS_PDF_CONFIG.progress.initial);
-      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title + 2);
+      doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.title + ANALYTICS_PDF_CONFIG.pdfStyling.titleFontSizeIncrease);
       const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
       doc.setTextColor(r, g, b);
       doc.text(ANALYTICS_PDF_CONFIG.labels.title, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-      yPos += ANALYTICS_PDF_CONFIG.spacing.afterTitle + 2;
+      yPos += ANALYTICS_PDF_CONFIG.spacing.afterTitle + ANALYTICS_PDF_CONFIG.spacing.afterTitleExtra;
       
       setPdfProgress(ANALYTICS_PDF_CONFIG.progress.afterTitle);
 
@@ -827,7 +827,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         ANALYTICS_PDF_CONFIG.margins.left,
         yPos
       );
-      yPos += ANALYTICS_PDF_CONFIG.spacing.afterDate + 5;
+      yPos += ANALYTICS_PDF_CONFIG.spacing.afterDate + ANALYTICS_PDF_CONFIG.spacing.afterDateExtra;
 
       // Summary Statistics - Visual Metric Boxes
       if (analytics) {
@@ -835,11 +835,11 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         const [r3, g3, b3] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.text);
         doc.setTextColor(r3, g3, b3);
         doc.text(ANALYTICS_PDF_CONFIG.labels.summary, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 3;
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + ANALYTICS_PDF_CONFIG.spacing.afterHeadingExtra;
 
         // Create metric boxes in a 2x2 grid
-        const boxWidth = (pageWidth - ANALYTICS_PDF_CONFIG.margins.left - ANALYTICS_PDF_CONFIG.margins.right - 5) / 2;
-        const boxSpacing = 5;
+        const boxWidth = (pageWidth - ANALYTICS_PDF_CONFIG.margins.left - ANALYTICS_PDF_CONFIG.margins.right - ANALYTICS_PDF_CONFIG.spacing.boxSpacing) / 2;
+        const boxSpacing = ANALYTICS_PDF_CONFIG.spacing.boxSpacing;
         const startX = ANALYTICS_PDF_CONFIG.margins.left;
         
         // Row 1: Total Tasks and Completed
@@ -870,12 +870,12 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           startX + boxWidth + boxSpacing,
           boxWidth
         );
-        yPos += ANALYTICS_PDF_CONFIG.spacing.afterSection + 5;
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterSection + ANALYTICS_PDF_CONFIG.spacing.afterSectionExtra;
 
         // Time Tracking - Visual Metric Boxes
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
         doc.text(ANALYTICS_PDF_CONFIG.labels.timeTracking, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 3;
+        yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + ANALYTICS_PDF_CONFIG.spacing.afterHeadingExtra;
 
         const totalHours = Math.floor(analytics.totalTimeTracked / MINUTES_PER_HOUR);
         const totalMinutes = Math.round(analytics.totalTimeTracked % MINUTES_PER_HOUR);
@@ -985,7 +985,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           const [r4, g4, b4] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
           doc.setTextColor(r4, g4, b4);
           doc.text(ANALYTICS_PDF_CONFIG.labels.projectProgress, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-          yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + 3;
+          yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + ANALYTICS_PDF_CONFIG.spacing.afterHeadingExtra;
 
           const [rBg, gBg, bBg] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.boxBackground);
           
@@ -995,14 +995,14 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               yPos = ANALYTICS_PDF_CONFIG.margins.top;
             }
             
-            const rowHeight = 12;
+            const rowHeight = ANALYTICS_PDF_CONFIG.pdfSpacing.projectRowHeight;
             const tableWidth = pageWidth - ANALYTICS_PDF_CONFIG.margins.left - ANALYTICS_PDF_CONFIG.margins.right;
             
             // Draw row background (no border frame)
             doc.setFillColor(rBg, gBg, bBg);
             doc.rect(
               ANALYTICS_PDF_CONFIG.margins.left,
-              yPos - rowHeight + 2,
+              yPos - rowHeight + ANALYTICS_PDF_CONFIG.pdfSpacing.projectRowOffset,
               tableWidth,
               rowHeight,
               'F'

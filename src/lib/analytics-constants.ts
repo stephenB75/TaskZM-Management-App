@@ -33,10 +33,15 @@ export const ANALYTICS_PDF_CONFIG = {
   },
   spacing: {
     afterTitle: 10,
+    afterTitleExtra: 2, // Additional spacing after title (mm)
     afterDate: 15,
+    afterDateExtra: 5, // Additional spacing after date (mm)
     afterHeading: 8,
+    afterHeadingExtra: 3, // Additional spacing after heading (mm)
     betweenItems: 6,
     afterSection: 8,
+    afterSectionExtra: 5, // Additional spacing after section (mm)
+    boxSpacing: 5, // Spacing between metric boxes (mm)
   },
   pageBreak: {
     threshold: 20, // Minimum space from bottom before adding new page
@@ -76,9 +81,16 @@ export const ANALYTICS_PDF_CONFIG = {
     metricBoxValueY: 12, // Y position for metric box value text (mm from top of box)
     metricBoxRowSpacing: 18, // Spacing between metric box rows in PDF (mm)
     chartBoxPadding: 18, // Additional padding for chart boxes (chart height + title + padding) in PDF (mm)
+    chartTitleOffset: 2, // Additional spacing after chart title (mm)
+    chartBottomSpacing: 6, // Additional spacing after chart image (mm)
+    projectRowHeight: 12, // Height of project progress rows in PDF (mm)
+    projectRowOffset: 2, // Vertical offset for project row positioning (mm)
+    separatorThreshold: 5, // Minimum space needed for separator (mm)
   },
   pdfStyling: {
     borderWidth: 1, // Border width for boxes and charts in PDF (mm)
+    separatorWidthMultiplier: 0.5, // Multiplier for separator line width (half of border width)
+    titleFontSizeIncrease: 2, // Additional font size increase for title (points)
   },
   labels: {
     title: "TaskZM Analytics Report",
