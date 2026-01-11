@@ -102,5 +102,12 @@ export const TIMING_CONSTANTS = {
       springStiffness: 200, // Spring animation stiffness value
     },
   },
+  
+  // Service Worker update checking
+  serviceWorker: {
+    updateCheckInterval: 30 * 60 * 1000, // 30 minutes - Check for updates in background
+    notificationCooldown: 5 * 60 * 1000, // 5 minutes - Don't show notification again within this time
+    notificationDuration: 15000, // 15 seconds - How long to show update notification
+  },
 } as const;
 
