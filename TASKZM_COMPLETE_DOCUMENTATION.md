@@ -1,7 +1,7 @@
 # TaskZM Complete Documentation
 
-**Version 1.0.9** — Complete Application Documentation  
-**Last Updated:** January 2025  
+**Version 1.0.13** — Complete Application Documentation  
+**Last Updated:** January 10, 2026  
 **Status:** ✅ Production Ready
 
 > 📝 **Maintenance Note:** This document is the central source of truth for all TaskZM documentation. It should be updated whenever new features, improvements, or changes are made to the application. See the [Documentation Maintenance](#documentation-maintenance) section for guidelines.
@@ -606,6 +606,32 @@ taskzm/
 ---
 
 ## Recent Improvements & Updates
+
+### January 2026 Updates (Version 1.0.13)
+
+#### App Tour Redesign
+- ✅ **React Joyride Integration**: Replaced custom tour with `react-joyride` library for more reliable tour experience
+- ✅ **Responsive Tour**: Tour adapts to mobile and desktop with appropriate tooltip placement
+- ✅ **Improved Tour Flow**: 
+  - Shows sidebar navigation, Today Agenda panel, Inbox panel
+  - Demonstrates Kanban week view and calendar month view
+  - Highlights task cards and AI features (Scheduler & Re-Schedule)
+- ✅ **Panel Management**: Automatic panel opening/closing during tour
+- ✅ **View Mode Switching**: Automatic week/month view transitions during tour
+
+#### Analytics PDF Report Enhancements
+- ✅ **Frame Removal**: Removed all border frames from charts, metric boxes, and project progress rows
+- ✅ **Hardcoded Values Elimination**: Replaced all hardcoded spacing, sizing, and styling values with constants
+- ✅ **New Constants**: Added comprehensive constants for PDF spacing, styling, and layout
+
+#### Kanban Column Highlighting
+- ✅ **Full Pastel Color**: Changed highlighted column (today) to use full pastel color at 100% opacity
+- ✅ **Visual Consistency**: Maintains original pastel color appearance while standing out with border, ring, and shadow effects
+
+#### Service Worker Updates
+- ✅ **Background Updates**: Service worker updates happen in background without disrupting user sessions
+- ✅ **Update Notifications**: Toast notifications inform users when updates are available
+- ✅ **Update Intervals**: Checks for updates every 30 minutes with 5-minute notification cooldown
 
 ### January 2025 Updates
 
