@@ -129,6 +129,13 @@ export const KANBAN_DAY_COLORS = {
     borderWidthNone: '0', // CSS value for no border width
     borderColorTransparent: 'transparent', // CSS value for transparent border
     boxShadowNone: 'none', // CSS value for no box shadow
+    // Horizontal line indicator above tab for current day
+    indicatorLine: {
+      height: '3px', // Height of the horizontal line
+      widthPercent: 50, // Width as percentage of column (50% = half width)
+      marginBottom: '4px', // Space between line and tab
+      borderRadius: '2px', // Border radius for rounded corners
+    },
   },
   // Standard opacity values for non-highlighted columns
   standard: {
