@@ -835,6 +835,32 @@ export const TOUR_CONSTANTS = {
       dark: '#9ca3af', // Light gray for dark mode muted text
     },
   },
+  // Tour locale strings
+  locale: {
+    back: 'Back',
+    close: 'Close',
+    last: 'Get Started! 🎉',
+    next: 'Next',
+    skip: 'Skip',
+  },
+  // Tour panel names
+  panels: {
+    today: 'today',
+    inbox: 'inbox',
+    ai: 'ai',
+  },
+  // Tour view modes
+  viewModes: {
+    month: 'month',
+    week: 'week',
+    dashboard: 'dashboard',
+  },
+  // Tour step indices (for panel closing logic)
+  stepIndices: {
+    closeTodayPanel: 3, // Close Today Agenda panel after step 2 (index 3)
+    closeInboxPanel: 5, // Close Inbox panel after step 4 (index 5)
+    switchToWeekView: 8, // Switch back to week view (step 8, index 8)
+  },
 } as const;
 
 // Toggle Switch Dimensions

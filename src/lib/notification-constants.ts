@@ -23,6 +23,8 @@ export const NOTIFICATION_STORAGE_KEYS = {
   lastSeenAwards: 'lastSeenAwards',
   toastNotifications: 'toastNotifications',
   updateAvailable: 'taskzm_update_available', // Service worker update notification key
+  tourCompleted: 'taskzm_tour_completed', // App tour completion flag
+  newSignup: 'taskzm_is_new_signup', // New user signup flag
 } as const;
 
 // Notification icon paths

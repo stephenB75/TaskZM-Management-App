@@ -13,6 +13,7 @@ import { getOfferings } from "../lib/revenuecat";
 import { configureRevenueCat } from "../lib/revenuecat";
 import { Z_INDEX, TOUR_CONSTANTS, VIEWPORT_BREAKPOINTS, SETTINGS_PANEL_SPACING_MEDIUM } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
+import { NOTIFICATION_STORAGE_KEYS } from "../lib/notification-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 
 interface AppTourProps {
@@ -273,26 +274,26 @@ export function AppTour({
         if (step.target === '[data-tour="today-panel"]') {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: 'today' } 
+              detail: { panel: TOUR_CONSTANTS.panels.today } 
             }));
           }, TIMING_CONSTANTS.tour.navigationComplete);
         } else if (step.target === '[data-tour="inbox-panel"]') {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: 'inbox' } 
+              detail: { panel: TOUR_CONSTANTS.panels.inbox } 
             }));
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
 
         // Handle panel closing (after showing panel content)
         // Close Today Agenda panel after step 2 (index 2, before step 3)
-        if (step.target === 'body' && index === 3) {
+        if (step.target === 'body' && index === TOUR_CONSTANTS.stepIndices.closeTodayPanel) {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-close-panel'));
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
         // Close Inbox panel after step 4 (index 4, before step 5)
-        else if (step.target === 'body' && index === 5) {
+        else if (step.target === 'body' && index === TOUR_CONSTANTS.stepIndices.closeInboxPanel) {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-close-panel'));
           }, TIMING_CONSTANTS.tour.navigationComplete);
@@ -304,21 +305,21 @@ export function AppTour({
             step.target === '[data-tour="add-task"]' || 
             step.target === '[data-tour="ai-scheduler"]' ||
             step.target === '[data-tour="calendar-month-view-toggle"]') {
-          onNavigate('dashboard');
+          onNavigate(TOUR_CONSTANTS.viewModes.dashboard);
         }
 
         // Handle view mode changes
         if (step.target === '[data-tour="calendar-month-view-toggle"]') {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
-              detail: { mode: 'month' } 
+              detail: { mode: TOUR_CONSTANTS.viewModes.month } 
             }));
           }, TIMING_CONSTANTS.tour.navigationComplete);
-        } else if ((step.target === '[data-tour="kanban"]' || step.target === '[data-tour="kanban-board"]') && index === 8) {
+        } else if ((step.target === '[data-tour="kanban"]' || step.target === '[data-tour="kanban-board"]') && index === TOUR_CONSTANTS.stepIndices.switchToWeekView) {
           // Switch back to week view (step 8)
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
-              detail: { mode: 'week' } 
+              detail: { mode: TOUR_CONSTANTS.viewModes.week } 
             }));
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
@@ -327,7 +328,7 @@ export function AppTour({
         if (step.target === '[data-tour="ai-scheduler"]') {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: 'ai' } 
+              detail: { panel: TOUR_CONSTANTS.panels.ai } 
             }));
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
@@ -344,7 +345,7 @@ export function AppTour({
             step.target === '[data-tour="calendar-month-view-toggle"]' ||
             step.target === '[data-tour="add-task"]' ||
             step.target === '[data-tour="ai-scheduler"]') {
-          onNavigate('dashboard');
+          onNavigate(TOUR_CONSTANTS.viewModes.dashboard);
         }
       }
     }
@@ -353,13 +354,13 @@ export function AppTour({
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       // Mark tour as completed
       try {
-        localStorage.setItem('taskzm_tour_completed', 'true');
+        localStorage.setItem(NOTIFICATION_STORAGE_KEYS.tourCompleted, 'true');
       } catch (error) {
         console.warn('Failed to save tour completion:', error);
       }
 
       // Show pricing dialog for new free users
-      const isNewSignup = window?.localStorage?.getItem('taskzm_is_new_signup') === 'true';
+      const isNewSignup = window?.localStorage?.getItem(NOTIFICATION_STORAGE_KEYS.newSignup) === 'true';
       if (isNewSignup && subscription.tier === 'free' && onShowPricing) {
         setTimeout(() => {
           onShowPricing();
@@ -418,11 +419,11 @@ export function AppTour({
       callback={handleJoyrideCallback}
       styles={joyrideStyles}
       locale={{
-        back: 'Back',
-        close: 'Close',
-        last: 'Get Started! 🎉',
-        next: 'Next',
-        skip: 'Skip',
+        back: TOUR_CONSTANTS.locale.back,
+        close: TOUR_CONSTANTS.locale.close,
+        last: TOUR_CONSTANTS.locale.last,
+        next: TOUR_CONSTANTS.locale.next,
+        skip: TOUR_CONSTANTS.locale.skip,
       }}
       floaterProps={{
         disableAnimation: false,
