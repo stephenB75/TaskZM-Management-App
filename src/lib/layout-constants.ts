@@ -783,6 +783,49 @@ export const TOUR_CONSTANTS = {
   aiRecommendation: {
     containerHeight: 'h-[calc(100vh-8rem)]',
   },
+  // Tour styling
+  tooltip: {
+    borderRadius: 12, // px - Border radius for tooltip
+    padding: 20, // px - Padding inside tooltip
+  },
+  button: {
+    fontSize: 14, // px - Font size for buttons
+    fontWeight: 600, // Font weight for buttons
+    padding: '10px 20px', // Button padding
+    borderRadius: 8, // px - Border radius for buttons
+    marginRight: 10, // px - Margin right for back button
+  },
+  spotlight: {
+    borderRadius: 8, // px - Border radius for spotlight highlight
+    padding: 8, // px - Padding around highlighted element
+  },
+  scroll: {
+    offset: 100, // px - Scroll offset when navigating to elements
+  },
+  // Tour colors
+  colors: {
+    primary: APP_THEME_COLOR_PRIMARY, // Primary theme color
+    text: {
+      light: '#1f2937', // Dark gray for light mode text
+      dark: '#ffffff', // White for dark mode text
+    },
+    background: {
+      light: '#ffffff', // White for light mode background
+      dark: '#1f2937', // Dark gray for dark mode background
+    },
+    overlay: {
+      light: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black for light mode overlay
+      dark: 'rgba(0, 0, 0, 0.7)', // More opaque black for dark mode overlay
+    },
+    arrow: {
+      light: '#ffffff', // White arrow for light mode
+      dark: '#1f2937', // Dark gray arrow for dark mode
+    },
+    muted: {
+      light: '#6b7280', // Gray for light mode muted text
+      dark: '#9ca3af', // Light gray for dark mode muted text
+    },
+  },
 } as const;
 
 // Toggle Switch Dimensions

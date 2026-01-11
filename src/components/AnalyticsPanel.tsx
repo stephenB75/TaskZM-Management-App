@@ -1212,7 +1212,8 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
 
   return (
     <div 
-      className={cn("flex flex-col bg-background", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full')} 
+      className={cn("flex flex-col bg-background", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full')}
+      data-tour="analytics-panel" 
       style={{ 
         backgroundImage: panelGradient,
       } as React.CSSProperties}

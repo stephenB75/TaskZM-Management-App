@@ -1161,6 +1161,7 @@ export function DashboardView({
                     ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
                     : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,
                 )}
+                data-tour="calendar-month-view-toggle"
               >
                 Week
               </span>
