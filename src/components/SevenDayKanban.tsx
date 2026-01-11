@@ -1144,9 +1144,7 @@ export function SevenDayKanban({
                     <div 
                       className={cn(
                         'p-1.5 sm:p-2 border-b backdrop-blur-sm transition-all',
-                        // Enhanced styling for today - make it stand out more with deeper colors
-                        // Use static ring-2 class instead of dynamic value (Tailwind requires static classes)
-                        column.isToday && 'ring-2',
+                        // Enhanced styling for today - full pastel color gradient at 100% opacity, no frame/border
                         !column.isToday && isDark && 'bg-card/50 border-border',
                         !column.isToday && !isDark && hasHeader(getDayColors(column.dayName)) && 'bg-transparent'
                       )}
@@ -1190,39 +1188,35 @@ export function SevenDayKanban({
                             
                             baseStyle.backgroundImage = `linear-gradient(to right, ${fromColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${viaColor}${Math.round(viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${toColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
                             
-                            // Add border and shadow for today to make it stand out more
+                            // For today: no border/frame, just the full pastel gradient at 100% opacity
                             if (column.isToday) {
-                              // Use full pastel border color for today with higher opacity (no darkening when colorDarkeningFactor is 1.0)
-                              const borderColor = KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0
-                                ? dayColors.header.border
-                                : darkenColor(dayColors.header.border, KANBAN_DAY_COLORS.today.colorDarkeningFactor);
-                              baseStyle.borderColor = `${borderColor}${Math.round(KANBAN_DAY_COLORS.today.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
-                              baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidth;
-                              // Add ring color via inline style (since Tailwind dynamic classes don't work)
-                              const ringColor = KANBAN_DAY_COLORS.today.ring;
-                              baseStyle.boxShadow = `0 0 0 ${KANBAN_DAY_COLORS.today.ringWidth}px ${ringColor}${Math.round(KANBAN_DAY_COLORS.today.ringOpacityLight * 2.55).toString(16).padStart(2, '0')}, 0 ${KANBAN_DAY_COLORS.today.shadowSpread} ${KANBAN_DAY_COLORS.today.shadowBlur} rgba(0, 0, 0, ${KANBAN_DAY_COLORS.today.shadowOpacity})`;
+                              // Remove border/frame - just use the gradient
+                              baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidthNone;
+                              baseStyle.borderColor = KANBAN_DAY_COLORS.today.borderColorTransparent;
+                              // No ring or shadow - clean gradient only
+                              baseStyle.boxShadow = KANBAN_DAY_COLORS.today.boxShadowNone;
                             } else {
                               // Standard border for non-today days
                               baseStyle.borderColor = `${dayColors.header.border}${Math.round(dayColors.header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
                             }
                           }
                         } else {
-                          // Dark mode: enhance today column with deeper, brighter background
+                          // Dark mode: enhance today column with full pastel gradient at 100% opacity, no frame/border
                           if (column.isToday) {
-                            // Use primary color with higher opacity for deeper appearance in dark mode
-                            const primaryColor = KANBAN_DAY_COLORS.today.ring;
-                            const [r, g, b] = [
-                              parseInt(primaryColor.slice(1, 3), 16),
-                              parseInt(primaryColor.slice(3, 5), 16),
-                              parseInt(primaryColor.slice(5, 7), 16),
-                            ];
-                            baseStyle.backgroundColor = `rgba(${r}, ${g}, ${b}, ${KANBAN_DAY_COLORS.today.darkModeBackgroundOpacity})`;
-                            // Use higher ring opacity for deeper border in dark mode
-                            const enhancedRingOpacity = Math.min(100, KANBAN_DAY_COLORS.today.ringOpacity + KANBAN_DAY_COLORS.today.darkModeRingOpacityIncrease);
-                            baseStyle.borderColor = `${KANBAN_DAY_COLORS.today.ring}${Math.round(enhancedRingOpacity * 2.55).toString(16).padStart(2, '0')}`;
-                            baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidth;
-                            // Add ring and shadow for dark mode
-                            baseStyle.boxShadow = `0 0 0 ${KANBAN_DAY_COLORS.today.ringWidth}px ${KANBAN_DAY_COLORS.today.ring}${Math.round(enhancedRingOpacity * 2.55).toString(16).padStart(2, '0')}, 0 ${KANBAN_DAY_COLORS.today.shadowSpread} ${KANBAN_DAY_COLORS.today.shadowBlur} rgba(0, 0, 0, ${KANBAN_DAY_COLORS.today.shadowOpacity})`;
+                            // Get day colors for gradient even in dark mode
+                            const dayColors = getDayColors(column.dayName);
+                            if (hasHeader(dayColors)) {
+                              // Use full pastel gradient at 100% opacity in dark mode too
+                              const fromColor = dayColors.header.from;
+                              const viaColor = dayColors.header.via;
+                              const toColor = dayColors.header.to;
+                              baseStyle.backgroundImage = `linear-gradient(to right, ${fromColor}${Math.round(KANBAN_DAY_COLORS.today.headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${viaColor}${Math.round(KANBAN_DAY_COLORS.today.viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${toColor}${Math.round(KANBAN_DAY_COLORS.today.headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
+                            }
+                            // Remove border/frame - just use the gradient
+                            baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidthNone;
+                            baseStyle.borderColor = KANBAN_DAY_COLORS.today.borderColorTransparent;
+                            // No ring or shadow - clean gradient only
+                            baseStyle.boxShadow = KANBAN_DAY_COLORS.today.boxShadowNone;
                           }
                         }
                         return baseStyle;

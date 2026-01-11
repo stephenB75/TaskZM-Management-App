@@ -107,23 +107,28 @@ export const KANBAN_DAY_COLORS = {
     ring: '#7B68EE',
     ringOpacity: 40,
     text: '#7B68EE',
-    // Enhanced styling for highlighted today column - full pastel color at 100% opacity
+    // Enhanced styling for highlighted today column - full pastel color at 100% opacity, no frame/border
     headerOpacity: 100, // Full opacity for maximum visibility
     viaOpacity: 100, // Full opacity for via color
-    borderOpacity: 90, // More prominent border opacity (90% vs standard 30%) - deeper, more visible border
-    borderWidth: '3px', // Thicker border for today (increased from 2px to 3px)
+    borderOpacity: 90, // More prominent border opacity (90% vs standard 30%) - deeper, more visible border (not used when noBorder is true)
+    borderWidth: '3px', // Thicker border for today (increased from 2px to 3px) (not used when noBorder is true)
     darkModeBackgroundOpacity: 0.50, // 50% opacity for dark mode background - deeper, more visible color (increased from 40%)
-    shadowOpacity: 0.45, // 45% opacity for shadow - more prominent shadow (increased from 35%)
+    shadowOpacity: 0.45, // 45% opacity for shadow - more prominent shadow (increased from 35%) (not used when noBorder is true)
     // Color darkening factor for today column - set to 1.0 to use full pastel color (no darkening)
     colorDarkeningFactor: 1.0, // Use full pastel color at 100% (1.0 = 100% of original brightness, no darkening)
     // Dark mode ring opacity enhancement
-    darkModeRingOpacityIncrease: 30, // Increase ring opacity by 30 for deeper appearance in dark mode (increased from 25)
-    // Ring and shadow styling for additional visual prominence
+    darkModeRingOpacityIncrease: 30, // Increase ring opacity by 30 for deeper appearance in dark mode (increased from 25) (not used when noBorder is true)
+    // Ring and shadow styling for additional visual prominence (not used when noBorder is true)
     ringWidth: 2, // Ring width in pixels
     ringOpacityLight: 70, // Ring opacity in light mode (70% for better visibility, increased from 60%)
     shadowIntensity: 'lg', // Shadow intensity level
     shadowBlur: '8px', // Shadow blur radius
     shadowSpread: '2px', // Shadow spread radius
+    // No border/frame styling - clean gradient only
+    noBorder: true, // Remove border/frame for today column (clean gradient only)
+    borderWidthNone: '0', // CSS value for no border width
+    borderColorTransparent: 'transparent', // CSS value for transparent border
+    boxShadowNone: 'none', // CSS value for no box shadow
   },
   // Standard opacity values for non-highlighted columns
   standard: {
