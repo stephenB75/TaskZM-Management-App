@@ -272,6 +272,12 @@ export const TEAM_PANEL_TEXTAREA_PADDING_X = '0.75rem'; // px-3 = 0.75rem
 export const TEAM_PANEL_TEXTAREA_PADDING_Y = '0.5rem'; // py-2 = 0.5rem
 export const TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT = '0.25rem'; // right-1 = 0.25rem
 export const TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET = '0.5rem'; // Additional padding top offset
+export const TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM = '0.5rem'; // Border radius for bottom corners (rounded-lg equivalent)
+export const TEAM_PANEL_CARD_BORDER_RADIUS_TOP = '0'; // No border radius for top corners (90 degree angles)
+export const TEAM_PANEL_NOTIFICATION_BADGE_TOP = '0.5rem'; // top-2 = 0.5rem (8px)
+export const TEAM_PANEL_NOTIFICATION_BADGE_RIGHT = '0.5rem'; // right-2 = 0.5rem (8px)
+export const TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET = '-0.125rem'; // Negative offset for notification dot positioning
+export const TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET = '-0.125rem'; // Negative offset for notification dot positioning
 
 // Folder Panel specific constants
 export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]

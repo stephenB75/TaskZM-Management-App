@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   Eye,
   UserPlus,
+  User,
   MoreVertical,
   Trash2,
   Edit2,
@@ -25,13 +26,6 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 // Avatar imports removed - using initials badge instead
 import { Badge } from "./ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
 import {
   Select,
   SelectContent,
@@ -109,6 +103,12 @@ import {
   TEAM_PANEL_TEXTAREA_PADDING_Y,
   TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT,
   TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET,
+  TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM,
+  TEAM_PANEL_CARD_BORDER_RADIUS_TOP,
+  TEAM_PANEL_NOTIFICATION_BADGE_TOP,
+  TEAM_PANEL_NOTIFICATION_BADGE_RIGHT,
+  TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
+  TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
   PANEL_SEARCH_BAR_PADDING_TOP,
   PANEL_SEARCH_BAR_PADDING_BOTTOM,
@@ -134,6 +134,7 @@ import {
   COLOR_TASK_TODO_BLUE,
   getColorWithOpacity,
 } from "../lib/color-theme";
+import { AUTH_COLORS } from "../lib/auth-constants";
 
 export function TeamPanel() {
   const {
@@ -541,171 +542,158 @@ export function TeamPanel() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     return (
-      <div>
-        <Card
-          className={cn(
-            "relative border transition-colors duration-200",
-            "bg-card",
-            !dropdownOpen && "hover:border-primary/40 hover:shadow-md",
-            member.hasUnreadNotification &&
-              member.inviteStatus === "accepted" &&
-              "ring-2 ring-primary/30 border-primary/50"
+      <div 
+        className="relative w-full"
+        onClick={(e) => {
+          // Don't trigger card click if clicking on dropdown area or if dropdown is open
+          if (!dropdownOpen && !(e.target as HTMLElement).closest('[data-slot="dropdown-menu-trigger"]')) {
+            onCardClick(member);
+          }
+        }}
+      >
+        {/* Notification Badge */}
+        {member.hasUnreadNotification &&
+          member.inviteStatus === "accepted" && (
+            <div 
+              className="absolute" 
+              style={{ 
+                top: TEAM_PANEL_NOTIFICATION_BADGE_TOP,
+                right: TEAM_PANEL_NOTIFICATION_BADGE_RIGHT,
+                zIndex: TEAM_PANEL_NOTIFICATION_Z_INDEX 
+              }}
+            >
+              <div 
+                className="bg-primary rounded-full animate-pulse" 
+                style={{ 
+                  width: TEAM_PANEL_NOTIFICATION_BADGE_SIZE, 
+                  height: TEAM_PANEL_NOTIFICATION_BADGE_SIZE 
+                }} 
+              />
+            </div>
           )}
-          onClick={(e) => {
-            // Don't trigger card click if clicking on dropdown area or if dropdown is open
-            if (!dropdownOpen && !(e.target as HTMLElement).closest('[data-slot="dropdown-menu-trigger"]')) {
-              onCardClick(member);
-            }
+        
+        {/* Rectangle with rounded bottom corners and app theme gradient */}
+        <div
+          className="relative w-full"
+          style={{
+            background: `linear-gradient(to right, ${AUTH_COLORS.primaryGradient.from}, ${AUTH_COLORS.primaryGradient.via}, ${AUTH_COLORS.primaryGradient.to})`,
+            borderTopLeftRadius: TEAM_PANEL_CARD_BORDER_RADIUS_TOP,
+            borderTopRightRadius: TEAM_PANEL_CARD_BORDER_RADIUS_TOP,
+            borderBottomLeftRadius: TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM,
+            borderBottomRightRadius: TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM,
+            padding: TEAM_PANEL_CARD_PADDING,
           }}
         >
-          {/* Left border accent based on role */}
-          <div 
-            className="absolute left-0 top-0 bottom-0 rounded-l-md"
-            style={{ 
-              width: TEAM_PANEL_ROLE_BORDER_WIDTH,
-              backgroundColor: member.role === "admin" 
-                ? COLOR_ROLE_ADMIN 
-                : member.role === "member" 
-                  ? COLOR_ROLE_MEMBER 
-                  : COLOR_ROLE_VIEWER
-            }}
-          />
-          
-          {/* Notification Badge */}
-          {member.hasUnreadNotification &&
-            member.inviteStatus === "accepted" && (
-              <div className="absolute top-2 right-2" style={{ zIndex: TEAM_PANEL_NOTIFICATION_Z_INDEX }}>
-                <div 
-                  className="bg-primary rounded-full animate-pulse" 
+          <div className="flex items-start" style={{ gap: PANEL_GAP_LARGE }}>
+            {/* User Icon on the left */}
+            <div className="relative flex-shrink-0">
+              <User 
+                className="text-foreground" 
+                style={{ 
+                  width: TEAM_PANEL_AVATAR_SIZE, 
+                  height: TEAM_PANEL_AVATAR_SIZE 
+                }} 
+              />
+              {member.hasUnreadNotification &&
+                member.inviteStatus === "accepted" && (
+                  <div 
+                    className="absolute bg-primary rounded-full border-background" 
+                    style={{ 
+                      width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                      height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                      borderWidth: TEAM_PANEL_NOTIFICATION_DOT_BORDER_WIDTH,
+                      borderStyle: 'solid',
+                      bottom: TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
+                      right: TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET
+                    }} 
+                  />
+                )}
+            </div>
+
+            {/* Info Section */}
+            <div className="flex-1 min-w-0">
+              {/* Name and Role inline */}
+              <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
+                <h3 className="font-semibold" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}>
+                  {member.name}
+                  {isCurrentUser && (
+                    <span className="font-normal text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
+                      (You)
+                    </span>
+                  )}
+                </h3>
+                <Badge
+                  variant={getRoleBadgeVariant(member.role)}
                   style={{ 
-                    width: TEAM_PANEL_NOTIFICATION_BADGE_SIZE, 
-                    height: TEAM_PANEL_NOTIFICATION_BADGE_SIZE 
-                  }} 
-                />
-              </div>
-            )}
-          
-          <CardContent 
-            className="rounded-lg"
-            style={{ 
-              padding: TEAM_PANEL_CARD_PADDING,
-              paddingLeft: TEAM_PANEL_CARD_PADDING_LEFT
-            }}
-          >
-            <div className="flex items-start" style={{ gap: PANEL_GAP_LARGE }}>
-              {/* Simple Avatar */}
-              <div className="relative flex-shrink-0">
-                <div 
-                  className="rounded-lg flex items-center justify-center bg-muted"
-                  style={{
-                    width: TEAM_PANEL_AVATAR_SIZE,
-                    height: TEAM_PANEL_AVATAR_SIZE,
-                    borderWidth: TEAM_PANEL_AVATAR_BORDER_WIDTH,
-                    borderStyle: 'solid',
-                    borderColor: member.role === "admin" 
-                      ? getColorWithOpacity(COLOR_ROLE_ADMIN, 0.3)
-                      : member.role === "member" 
-                        ? getColorWithOpacity(COLOR_ROLE_MEMBER, 0.3)
-                        : getColorWithOpacity(COLOR_ROLE_VIEWER, 0.3)
+                    fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                    paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                    paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                    paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                    paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
                   }}
                 >
-                  <span className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}>
-                    {member.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()
-                      .slice(0, 2)}
+                  {getRoleIcon(member.role)}
+                  <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
+                    {member.role}
                   </span>
-                </div>
-                {member.hasUnreadNotification &&
-                  member.inviteStatus === "accepted" && (
-                    <div 
-                      className="absolute bg-primary rounded-full border-background" 
-                      style={{ 
-                        width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                        height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                        borderWidth: TEAM_PANEL_NOTIFICATION_DOT_BORDER_WIDTH,
-                        borderStyle: 'solid',
-                        bottom: '-0.125rem',
-                        right: '-0.125rem'
-                      }} 
-                    />
-                  )}
+                </Badge>
+              </div>
+              
+              {/* Badging under name */}
+              <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
+                {getInviteStatusBadge(member)}
               </div>
 
-              {/* Info Section */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-                      {member.name}
-                      {isCurrentUser && (
-                        <span className="font-normal text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
-                          (You)
-                        </span>
-                      )}
-                    </h3>
-                    
-                    {/* Role and Status Badges */}
-                    <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
-                      <Badge
-                        variant={getRoleBadgeVariant(member.role)}
-                        style={{ 
-                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                          paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                          paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                          paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                          paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
-                        }}
-                      >
-                        {getRoleIcon(member.role)}
-                        <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
-                          {member.role}
-                        </span>
-                      </Badge>
-                      {getInviteStatusBadge(member)}
-                    </div>
-                  </div>
-                </div>
+              {/* Email underneath badging */}
+              <div className="flex items-center text-muted-foreground" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                <Mail className="flex-shrink-0" style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL }} />
+                <span className="truncate">
+                  {member.email}
+                </span>
+              </div>
 
-                {/* Email */}
-                <div className="flex items-center text-muted-foreground" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
-                  <Mail className="flex-shrink-0" style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL }} />
-                  <span className="truncate">
-                    {member.email}
+              {/* Expiration Date */}
+              {member.inviteStatus === "pending" && member.expiresAt && (
+                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
+                  <Calendar 
+                    className="flex-shrink-0"
+                    style={{ 
+                      width: TEAM_PANEL_ICON_SIZE_SMALL, 
+                      height: TEAM_PANEL_ICON_SIZE_SMALL,
+                      color: formatExpirationDate(member.expiresAt)?.isExpired 
+                        ? COLOR_STATUS_EXPIRED_RED 
+                        : COLOR_STATUS_PENDING_AMBER
+                    }} 
+                  />
+                  <span 
+                    className="font-medium"
+                    style={{
+                      color: formatExpirationDate(member.expiresAt)?.isExpired 
+                        ? COLOR_STATUS_EXPIRED_RED 
+                        : COLOR_STATUS_PENDING_AMBER
+                    }}
+                  >
+                    {formatExpirationDate(member.expiresAt)?.text}
                   </span>
                 </div>
+              )}
 
-                {/* Expiration Date */}
-                {member.inviteStatus === "pending" && member.expiresAt && (
-                  <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}>
-                    <Calendar 
-                      className="flex-shrink-0"
-                      style={{ 
-                        width: TEAM_PANEL_ICON_SIZE_SMALL, 
-                        height: TEAM_PANEL_ICON_SIZE_SMALL,
-                        color: formatExpirationDate(member.expiresAt)?.isExpired 
-                          ? COLOR_STATUS_EXPIRED_RED 
-                          : COLOR_STATUS_PENDING_AMBER
-                      }} 
-                    />
-                    <span 
-                      className="font-medium"
-                      style={{
-                        color: formatExpirationDate(member.expiresAt)?.isExpired 
-                          ? COLOR_STATUS_EXPIRED_RED 
-                          : COLOR_STATUS_PENDING_AMBER
-                      }}
-                    >
-                      {formatExpirationDate(member.expiresAt)?.text}
-                    </span>
-                  </div>
-                )}
-
-                {/* Task Stats */}
-                {stats.total > 0 && (
-                  <div className="flex items-center flex-wrap border-t" style={{ gap: PANEL_GAP_SMALL, marginTop: TEAM_PANEL_MARGIN_TOP_SMALL, paddingTop: TEAM_PANEL_MARGIN_TOP_SMALL }}>
+              {/* Task Stats */}
+              {stats.total > 0 && (
+                <div className="flex items-center flex-wrap border-t" style={{ gap: PANEL_GAP_SMALL, marginTop: TEAM_PANEL_MARGIN_TOP_SMALL, paddingTop: TEAM_PANEL_MARGIN_TOP_SMALL }}>
+                  <Badge 
+                    variant="outline" 
+                    style={{ 
+                      fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                      paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                      paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                      paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                      paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
+                    }}
+                  >
+                    {stats.total} {stats.total === 1 ? "task" : "tasks"}
+                  </Badge>
+                  {stats.completed > 0 && (
                     <Badge 
                       variant="outline" 
                       style={{ 
@@ -713,72 +701,59 @@ export function TeamPanel() {
                         paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
                         paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
                         paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                        paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
+                        paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
+                        color: COLOR_TASK_COMPLETED_GREEN,
+                        borderColor: getColorWithOpacity(COLOR_TASK_COMPLETED_GREEN, 0.3),
+                        backgroundColor: getColorWithOpacity(COLOR_TASK_COMPLETED_GREEN, 0.1)
                       }}
                     >
-                      {stats.total} {stats.total === 1 ? "task" : "tasks"}
+                      {stats.completed} done
                     </Badge>
-                    {stats.completed > 0 && (
-                      <Badge 
-                        variant="outline" 
-                        style={{ 
-                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                          paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                          paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                          paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                          paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
-                          color: COLOR_TASK_COMPLETED_GREEN,
-                          borderColor: getColorWithOpacity(COLOR_TASK_COMPLETED_GREEN, 0.3),
-                          backgroundColor: getColorWithOpacity(COLOR_TASK_COMPLETED_GREEN, 0.1)
-                        }}
-                      >
-                        {stats.completed} done
-                      </Badge>
-                    )}
-                    {stats.inProgress > 0 && (
-                      <Badge 
-                        variant="outline" 
-                        style={{ 
-                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                          paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                          paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                          paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                          paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
-                          color: COLOR_TASK_IN_PROGRESS_AMBER,
-                          borderColor: getColorWithOpacity(COLOR_TASK_IN_PROGRESS_AMBER, 0.3),
-                          backgroundColor: getColorWithOpacity(COLOR_TASK_IN_PROGRESS_AMBER, 0.1)
-                        }}
-                      >
-                        {stats.inProgress} active
-                      </Badge>
-                    )}
-                    {stats.todo > 0 && (
-                      <Badge 
-                        variant="outline" 
-                        style={{ 
-                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                          paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                          paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                          paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                          paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
-                          color: COLOR_TASK_TODO_BLUE,
-                          borderColor: getColorWithOpacity(COLOR_TASK_TODO_BLUE, 0.3),
-                          backgroundColor: getColorWithOpacity(COLOR_TASK_TODO_BLUE, 0.1)
-                        }}
-                      >
-                        {stats.todo} todo
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </div>
+                  )}
+                  {stats.inProgress > 0 && (
+                    <Badge 
+                      variant="outline" 
+                      style={{ 
+                        fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                        paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                        paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                        paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                        paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
+                        color: COLOR_TASK_IN_PROGRESS_AMBER,
+                        borderColor: getColorWithOpacity(COLOR_TASK_IN_PROGRESS_AMBER, 0.3),
+                        backgroundColor: getColorWithOpacity(COLOR_TASK_IN_PROGRESS_AMBER, 0.1)
+                      }}
+                    >
+                      {stats.inProgress} active
+                    </Badge>
+                  )}
+                  {stats.todo > 0 && (
+                    <Badge 
+                      variant="outline" 
+                      style={{ 
+                        fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                        paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                        paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                        paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                        paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
+                        color: COLOR_TASK_TODO_BLUE,
+                        borderColor: getColorWithOpacity(COLOR_TASK_TODO_BLUE, 0.3),
+                        backgroundColor: getColorWithOpacity(COLOR_TASK_TODO_BLUE, 0.1)
+                      }}
+                    >
+                      {stats.todo} todo
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
 
-              {/* Actions Menu */}
-              <div 
-                className="relative"
-                style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
-                onClick={(e) => e.stopPropagation()}
-              >
+            {/* Actions Menu */}
+            <div 
+              className="relative"
+              style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
+              onClick={(e) => e.stopPropagation()}
+            >
                 <DropdownMenu
                   open={dropdownOpen}
                   onOpenChange={setDropdownOpen}
@@ -913,8 +888,8 @@ export function TeamPanel() {
                 </DropdownMenu>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   });
