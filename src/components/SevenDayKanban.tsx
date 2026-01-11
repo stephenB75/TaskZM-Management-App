@@ -1126,35 +1126,23 @@ export function SevenDayKanban({
                     }}
                   >
                     {/* Horizontal line indicator above column box for current day */}
-                    {column.isToday && (() => {
-                      const dayColors = getDayColors(column.dayName);
-                      if (hasHeader(dayColors)) {
-                        // Use the same gradient colors as the tab
-                        const fromColor = dayColors.header.from;
-                        const viaColor = dayColors.header.via;
-                        const toColor = dayColors.header.to;
-                        const lineGradient = `linear-gradient(to right, ${fromColor}${Math.round(KANBAN_DAY_COLORS.today.headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${viaColor}${Math.round(KANBAN_DAY_COLORS.today.viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${toColor}${Math.round(KANBAN_DAY_COLORS.today.headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
-                        
-                        return (
-                          <div
-                            className="flex justify-center"
-                            style={{
-                              marginBottom: KANBAN_DAY_COLORS.today.indicatorLine.marginBottom,
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: `${KANBAN_DAY_COLORS.today.indicatorLine.widthPercent}%`,
-                                height: KANBAN_DAY_COLORS.today.indicatorLine.height,
-                                background: lineGradient,
-                                borderRadius: KANBAN_DAY_COLORS.today.indicatorLine.borderRadius,
-                              }}
-                            />
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {column.isToday && (
+                      <div
+                        className="flex justify-center"
+                        style={{
+                          marginBottom: KANBAN_DAY_COLORS.today.indicatorLine.marginBottom,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${KANBAN_DAY_COLORS.today.indicatorLine.widthPercent}%`,
+                            height: KANBAN_DAY_COLORS.today.indicatorLine.height,
+                            backgroundColor: KANBAN_DAY_COLORS.today.indicatorLine.color,
+                            borderRadius: KANBAN_DAY_COLORS.today.indicatorLine.borderRadius,
+                          }}
+                        />
+                      </div>
+                    )}
                     <motion.div
                       data-column-date={column.dateString}
                       className={cn(
