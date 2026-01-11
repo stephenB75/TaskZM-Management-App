@@ -794,10 +794,10 @@ export function TeamPanel() {
                             setDropdownOpen(false);
                             setTimeout(() => {
                               onResendInvitation(member);
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="cursor-pointer"
-                    >
+                            }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                          }}
+                          className="cursor-pointer"
+                        >
                       <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Resend Invitation
                     </DropdownMenuItem>
