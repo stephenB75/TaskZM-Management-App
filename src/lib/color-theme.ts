@@ -57,6 +57,10 @@ export const COLOR_TEXT_PRIMARY = '#1F2937'; // Dark gray for primary text
 export const COLOR_TEXT_SECONDARY = '#6B7280'; // Medium gray for secondary text
 export const COLOR_TEXT_MUTED = '#9CA3AF'; // Light gray for muted text
 export const COLOR_TEXT_WHITE = '#FFFFFF'; // White text
+export const COLOR_TEXT_BLACK = '#000000'; // Black text
+
+// Background Colors
+export const COLOR_BACKGROUND_TRANSPARENT = 'transparent'; // Transparent background
 
 // Border Colors
 export const COLOR_BORDER_LIGHT = '#E5E7EB'; // Light gray border

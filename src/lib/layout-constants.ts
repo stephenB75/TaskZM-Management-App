@@ -274,6 +274,7 @@ export const TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT = '0.25rem'; // right-1 = 0.25
 export const TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET = '0.5rem'; // Additional padding top offset
 export const TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM = '0.5rem'; // Border radius for bottom corners (rounded-lg equivalent)
 export const TEAM_PANEL_CARD_BORDER_RADIUS_TOP = '0'; // No border radius for top corners (90 degree angles)
+export const TEAM_PANEL_CARD_BACKGROUND_HEIGHT = '4px'; // Height of the gradient background bar
 export const TEAM_PANEL_NOTIFICATION_BADGE_TOP = '0.5rem'; // top-2 = 0.5rem (8px)
 export const TEAM_PANEL_NOTIFICATION_BADGE_RIGHT = '0.5rem'; // right-2 = 0.5rem (8px)
 export const TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET = '-0.125rem'; // Negative offset for notification dot positioning

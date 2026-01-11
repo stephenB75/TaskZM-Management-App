@@ -109,6 +109,7 @@ import {
   TEAM_PANEL_NOTIFICATION_BADGE_RIGHT,
   TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
   TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET,
+  TEAM_PANEL_CARD_BACKGROUND_HEIGHT,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
   PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR,
   PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT,
@@ -134,9 +135,10 @@ import {
   COLOR_TASK_COMPLETED_GREEN,
   COLOR_TASK_IN_PROGRESS_AMBER,
   COLOR_TASK_TODO_BLUE,
+  COLOR_TEXT_BLACK,
+  COLOR_BACKGROUND_TRANSPARENT,
   getColorWithOpacity,
 } from "../lib/color-theme";
-import { AUTH_COLORS } from "../lib/auth-constants";
 
 export function TeamPanel() {
   const {
@@ -422,15 +424,9 @@ export function TeamPanel() {
           variant="outline"
           style={{
             fontSize: TEAM_PANEL_TEXT_SIZE_SMALL,
-            backgroundColor: expiration?.isExpired 
-              ? getColorWithOpacity(COLOR_STATUS_EXPIRED_RED, 0.1)
-              : getColorWithOpacity(COLOR_STATUS_PENDING_AMBER, 0.1),
-            color: expiration?.isExpired 
-              ? COLOR_STATUS_EXPIRED_RED 
-              : COLOR_STATUS_PENDING_AMBER,
-            borderColor: expiration?.isExpired 
-              ? getColorWithOpacity(COLOR_STATUS_EXPIRED_RED, 0.3)
-              : getColorWithOpacity(COLOR_STATUS_PENDING_AMBER, 0.3)
+            backgroundColor: COLOR_BACKGROUND_TRANSPARENT,
+            color: COLOR_TEXT_BLACK,
+            borderColor: COLOR_TEXT_BLACK
           }}
         >
           <Clock style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
@@ -444,9 +440,9 @@ export function TeamPanel() {
           variant="outline"
           style={{
             fontSize: TEAM_PANEL_TEXT_SIZE_SMALL,
-            backgroundColor: getColorWithOpacity(COLOR_STATUS_DECLINED_GRAY, 0.1),
-            color: COLOR_STATUS_DECLINED_GRAY,
-            borderColor: getColorWithOpacity(COLOR_STATUS_DECLINED_GRAY, 0.3)
+            backgroundColor: COLOR_BACKGROUND_TRANSPARENT,
+            color: COLOR_TEXT_BLACK,
+            borderColor: COLOR_TEXT_BLACK
           }}
         >
           <XCircle style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
@@ -542,7 +538,6 @@ export function TeamPanel() {
     acceptInvitation: (id: string) => void;
   }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
-    const gradientBackground = `linear-gradient(to right, ${AUTH_COLORS.primaryGradient.from}, ${AUTH_COLORS.primaryGradient.via}, ${AUTH_COLORS.primaryGradient.to})`;
 
     return (
       <div 
@@ -576,15 +571,10 @@ export function TeamPanel() {
             </div>
           )}
         
-        {/* Rectangle with rounded bottom corners and app theme gradient */}
+        {/* Content container */}
         <div
           className="relative w-full"
           style={{
-            background: gradientBackground,
-            borderTopLeftRadius: TEAM_PANEL_CARD_BORDER_RADIUS_TOP,
-            borderTopRightRadius: TEAM_PANEL_CARD_BORDER_RADIUS_TOP,
-            borderBottomLeftRadius: TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM,
-            borderBottomRightRadius: TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM,
             padding: TEAM_PANEL_CARD_PADDING,
           }}
         >
@@ -643,17 +633,17 @@ export function TeamPanel() {
                 </Badge>
               </div>
               
-              {/* Badging under name */}
-              <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-                {getInviteStatusBadge(member)}
-              </div>
-
-              {/* Email underneath badging */}
-              <div className="flex items-center text-muted-foreground" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+              {/* Email */}
+              <div className="flex items-center text-muted-foreground" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
                 <Mail className="flex-shrink-0" style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL }} />
                 <span className="truncate">
                   {member.email}
                 </span>
+              </div>
+
+              {/* Badging above email */}
+              <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
+                {getInviteStatusBadge(member)}
               </div>
 
               {/* Expiration Date */}
