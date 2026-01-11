@@ -4,6 +4,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tour highlighting styles */
+.tour-highlight {
+  position: relative;
+  z-index: var(--tour-highlight-z-index, 9998);
+  animation: tour-pulse var(--tour-pulse-duration, 2s) ease-in-out infinite;
+  box-shadow: 0 0 0 var(--tour-shadow-size-initial, 4px) var(--tour-shadow-color, rgba(155, 135, 232, 0.3)), 0 0 var(--tour-shadow-blur-initial, 20px) var(--tour-shadow-color, rgba(155, 135, 232, 0.5)) !important;
+  border-radius: var(--tour-border-radius, 8px);
+}
+
+@keyframes tour-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 var(--tour-shadow-size-initial, 4px) var(--tour-shadow-color, rgba(155, 135, 232, 0.3)), 0 0 var(--tour-shadow-blur-initial, 20px) var(--tour-shadow-color, rgba(155, 135, 232, 0.5));
+  }
+  50% {
+    box-shadow: 0 0 0 var(--tour-shadow-size-pulse, 8px) var(--tour-shadow-color-pulse, rgba(155, 135, 232, 0.2)), 0 0 var(--tour-shadow-blur-pulse, 30px) var(--tour-shadow-color-pulse, rgba(155, 135, 232, 0.6));
+  }
+}
+
 :root {
   --font-size: 16px;
   

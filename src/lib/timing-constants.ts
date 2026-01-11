@@ -87,5 +87,20 @@ export const TIMING_CONSTANTS = {
     maxReloadsPerSession: 2, // Maximum automatic reloads per session
     reloadDelay: 3000, // 3 seconds - Delay before attempting automatic reload (gives user time to see error)
   },
+  
+  // Tour-specific delays and timeouts
+  tour: {
+    navigationComplete: 300, // ms - Wait for navigation to complete before opening panels
+    navigationReset: 500, // ms - Delay before resetting navigation flag
+    highlightDelay: 600, // ms - Wait for navigation and panel opening before highlighting
+    initializationReset: 100, // ms - Short delay for initialization reset
+    pricingDialogDelay: 300, // ms - Delay before showing pricing dialog after tour
+    animation: {
+      delay: 0.2, // seconds - Default animation delay for illustrations
+      duration: 0.8, // seconds - Default animation duration for illustrations
+      springDamping: 25, // Spring animation damping value
+      springStiffness: 200, // Spring animation stiffness value
+    },
+  },
 } as const;
 

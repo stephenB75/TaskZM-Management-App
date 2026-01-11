@@ -533,6 +533,19 @@ export function DashboardView({
   const [viewMode, setViewMode] = useState<"week" | "month">(
     "week",
   );
+
+  // Listen for tour view mode changes
+  useEffect(() => {
+    const handleDashboardSetViewMode = (event: CustomEvent<{ mode: 'week' | 'month' }>) => {
+      setViewMode(event.detail.mode);
+    };
+
+    window.addEventListener('dashboard-set-view-mode', handleDashboardSetViewMode as EventListener);
+
+    return () => {
+      window.removeEventListener('dashboard-set-view-mode', handleDashboardSetViewMode as EventListener);
+    };
+  }, []);
   const [showSchedulePreview, setShowSchedulePreview] =
     useState(false);
   const [schedulePlan, setSchedulePlan] = useState<

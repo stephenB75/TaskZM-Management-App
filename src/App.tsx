@@ -98,6 +98,7 @@ function AppContent() {
   const [showDemoDisclaimer, setShowDemoDisclaimer] = useState(false);
   const hasInitializedView = useRef(false);
   const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
+  const dashboardViewModeRef = useRef<'week' | 'month'>('week');
   
   // Update panel width based on viewport size
   useEffect(() => {
@@ -108,6 +109,34 @@ function AppContent() {
     updatePanelWidth();
     window.addEventListener('resize', updatePanelWidth);
     return () => window.removeEventListener('resize', updatePanelWidth);
+  }, []);
+
+  // Handle tour events for view mode changes and panel opening
+  useEffect(() => {
+    const handleTourSetViewMode = (event: CustomEvent<{ mode: 'week' | 'month' }>) => {
+      dashboardViewModeRef.current = event.detail.mode;
+      // Dispatch to DashboardView if it's mounted
+      window.dispatchEvent(new CustomEvent('dashboard-set-view-mode', { 
+        detail: { mode: event.detail.mode } 
+      }));
+    };
+
+    const handleTourOpenPanel = (event: CustomEvent<{ panel: string }>) => {
+      const panel = event.detail.panel;
+      if (panel === 'ai') {
+        setAiPanelOpen(true);
+      } else if (panel === 'analytics') {
+        setCurrentView('analytics');
+      }
+    };
+
+    window.addEventListener('tour-set-view-mode', handleTourSetViewMode as EventListener);
+    window.addEventListener('tour-open-panel', handleTourOpenPanel as EventListener);
+
+    return () => {
+      window.removeEventListener('tour-set-view-mode', handleTourSetViewMode as EventListener);
+      window.removeEventListener('tour-open-panel', handleTourOpenPanel as EventListener);
+    };
   }, []);
   
   const { scheduleAllTasks, unscheduledCount, isScheduling } = useAIScheduler();

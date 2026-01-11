@@ -24,6 +24,7 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { cn } from "../lib/utils";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 import { Z_INDEX } from "../lib/layout-constants";
+import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { getOfferings } from "../lib/revenuecat";
 import { useAuth } from "../contexts/AuthContext";
 import { configureRevenueCat } from "../lib/revenuecat";
@@ -50,8 +51,17 @@ interface TourStep {
     | "sidebar"
     | "ai"
     | "task"
-    | "features";
+    | "features"
+    | "calendar"
+    | "analytics"
+    | "inbox"
+    | "today";
   screenshot?: string; // Path to screenshot image
+  // Navigation and highlighting
+  navigateTo?: string; // View to navigate to (e.g., 'dashboard', 'inbox', 'today', 'analytics')
+  highlightElement?: string; // data-tour attribute value to highlight
+  openPanel?: string; // Panel to open (e.g., 'analytics', 'ai')
+  setViewMode?: 'week' | 'month'; // For dashboard view mode
 }
 
 // Function to create tour steps with dynamic pricing
@@ -62,6 +72,7 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
       "Your neurodivergent-friendly task management companion designed to reduce overwhelm and boost focus with calming colors and smooth animations.",
     icon: Sparkles,
     iconColor: "from-[#E6D5F0] to-[#9B87E8]",
+    navigateTo: "dashboard",
     features: [
       {
         icon: "🎨",
@@ -83,11 +94,13 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
   {
     title: "7-Day Kanban Board",
     description:
-      "Your main workspace showing the upcoming week at a glance. Each day is color-coded with calming pastel colors for easy visual scanning.",
+      "Your main workspace showing the upcoming week at a glance. Each day is color-coded with calming pastel colors for easy visual scanning. Drag tasks between days, click + to add new tasks, and use the Pomodoro timer for focused work sessions.",
     icon: Calendar,
     iconColor: "from-[#C9E4F7] to-[#B8E6D5]",
-    illustration: "kanban", // Fallback illustration if screenshot not found
-    screenshot: "/screenshots/kanban-board.png", // Kanban board screenshot
+    illustration: "kanban",
+    navigateTo: "dashboard",
+    setViewMode: "week",
+    highlightElement: "kanban",
     features: [
       {
         icon: "👆",
@@ -112,12 +125,47 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
     ],
   },
   {
+    title: "Task Cards",
+    description:
+      "Each task card shows priority, category, duration, and description. Click any task to edit details, add subtasks, set dependencies, or start a Pomodoro session. Tasks can be dragged to reschedule or marked complete.",
+    icon: Target,
+    iconColor: "from-[#FFD6BA] to-[#FFA875]",
+    illustration: "task",
+    navigateTo: "dashboard",
+    setViewMode: "week",
+    highlightElement: "add-task",
+    features: [
+      {
+        icon: "✅",
+        title: "Subtasks",
+        description: "Break work into steps",
+      },
+      {
+        icon: "⏱️",
+        title: "Pomodoro Timer",
+        description: "Built-in focus sessions",
+      },
+      {
+        icon: "🎯",
+        title: "Priorities",
+        description: "Urgent, High, Medium, Low",
+      },
+      {
+        icon: "🏷️",
+        title: "Tags",
+        description: "Organize with custom tags",
+      },
+    ],
+  },
+  {
     title: "Sidebar Navigation",
     description:
-      "Access all your tools through the icon sidebar on the left. Click any icon to open a sliding panel with smooth animations.",
+      "Access all your tools through the icon sidebar on the left. Click any icon to open a sliding panel with smooth animations. The sidebar gives you quick access to Today Agenda, Inbox, Analytics, Team, and more.",
     icon: BarChart3,
     iconColor: "from-[#E6D5F0] to-[#9B87E8]",
     illustration: "sidebar",
+    navigateTo: "dashboard",
+    highlightElement: "sidebar",
     features: [
       {
         icon: "🔔",
@@ -135,16 +183,6 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
         description: "Unscheduled task capture",
       },
       {
-        icon: "📁",
-        title: "Folders",
-        description: "Organize by project",
-      },
-      {
-        icon: "👥",
-        title: "Team",
-        description: "Collaborate together",
-      },
-      {
         icon: "📊",
         title: "Analytics",
         description: "Track your progress",
@@ -152,12 +190,95 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
     ],
   },
   {
+    title: "Today Agenda",
+    description:
+      "See all your tasks for today in a timeline view. Tasks are arranged chronologically with their scheduled times. This view helps you see your day at a glance and manage your time effectively.",
+    icon: Clock,
+    iconColor: "from-[#B8E6D5] to-[#9FD9BF]",
+    illustration: "today",
+    navigateTo: "today",
+    highlightElement: "today-panel",
+    features: [
+      {
+        icon: "⏰",
+        title: "Timeline View",
+        description: "See tasks by time",
+      },
+      {
+        icon: "📋",
+        title: "Daily Overview",
+        description: "All today's tasks",
+      },
+      {
+        icon: "✅",
+        title: "Quick Complete",
+        description: "Mark tasks done",
+      },
+    ],
+  },
+  {
+    title: "Inbox",
+    description:
+      "Capture all your unscheduled tasks in the Inbox. This is your brain dump area where you can quickly add tasks without worrying about scheduling. Later, use AI Scheduler or manually schedule them to your week.",
+    icon: Inbox,
+    iconColor: "from-[#C9E4F7] to-[#E6D5F0]",
+    illustration: "inbox",
+    navigateTo: "inbox",
+    highlightElement: "inbox-panel",
+    features: [
+      {
+        icon: "📝",
+        title: "Quick Capture",
+        description: "Add tasks instantly",
+      },
+      {
+        icon: "🤖",
+        title: "AI Scheduling",
+        description: "Schedule all at once",
+      },
+      {
+        icon: "📅",
+        title: "Manual Schedule",
+        description: "Drag to specific days",
+      },
+    ],
+  },
+  {
+    title: "Calendar Month View",
+    description:
+      "Switch to month view to see your entire month at a glance. This view shows all scheduled tasks across the month, helping you plan ahead and see your workload distribution.",
+    icon: Calendar,
+    iconColor: "from-[#E6D5F0] to-[#C9E4F7]",
+    illustration: "calendar",
+    navigateTo: "dashboard",
+    setViewMode: "month",
+    features: [
+      {
+        icon: "📅",
+        title: "Month Overview",
+        description: "See entire month",
+      },
+      {
+        icon: "📊",
+        title: "Workload Planning",
+        description: "Plan ahead",
+      },
+      {
+        icon: "🔄",
+        title: "Easy Switching",
+        description: "Toggle week/month view",
+      },
+    ],
+  },
+  {
     title: "AI Scheduler ✨",
     description:
-      "Let AI intelligently distribute your unscheduled tasks across the week based on priorities, time estimates, task categories, and your custom working hours.",
+      "Let AI intelligently distribute your unscheduled tasks across the week based on priorities, time estimates, task categories, and your custom working hours. The AI respects your calendar events and daily hour limits.",
     icon: Sparkles,
     iconColor: "from-[#E6D5F0] to-[#C9E4F7]",
     illustration: "ai",
+    navigateTo: "dashboard",
+    openPanel: "ai",
     features: [
       {
         icon: "⚙️",
@@ -175,6 +296,11 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
         description: "Urgent tasks first",
       },
       {
+        icon: "🔄",
+        title: "Re-Schedule",
+        description: "Reschedule days/weeks",
+      },
+      {
         icon: "💎",
         title: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature,
         description: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(monthlyPrice),
@@ -182,52 +308,39 @@ const createTourSteps = (monthlyPrice: string = DEFAULT_MONTHLY_PRICE): TourStep
     ],
   },
   {
-    title: "Rich Task Features",
+    title: "Analytics & Reporting",
     description:
-      "Every task is packed with features to help you stay organized, focused, and productive throughout your day.",
-    icon: Target,
-    iconColor: "from-[#FFD6BA] to-[#FFA875]",
-    illustration: "task",
+      "Track your productivity with detailed analytics. View completion rates, time spent, task distribution, and export comprehensive PDF reports. Analytics help you understand your work patterns and improve your productivity.",
+    icon: BarChart3,
+    iconColor: "from-[#F4D9F4] to-[#D4A6D4]",
+    illustration: "analytics",
+    navigateTo: "analytics",
+    openPanel: "analytics",
     features: [
       {
-        icon: "✅",
-        title: "Subtasks",
-        description: "Break work into steps",
+        icon: "📊",
+        title: "Completion Rates",
+        description: "Track task completion",
       },
       {
         icon: "⏱️",
-        title: "Pomodoro Timer",
-        description: "Built-in focus sessions",
+        title: "Time Analytics",
+        description: "See time spent",
       },
       {
-        icon: "⏰",
-        title: "Time Estimates",
-        description: "Plan your capacity",
+        icon: "📈",
+        title: "Trends",
+        description: "Productivity patterns",
       },
       {
-        icon: "🎯",
-        title: "Priorities",
-        description: "Urgent, High, Medium, Low",
+        icon: "📄",
+        title: "PDF Reports",
+        description: "Export detailed reports",
       },
       {
-        icon: "🏷️",
-        title: "Tags",
-        description: "Organize with custom tags",
-      },
-      {
-        icon: "🔄",
-        title: "Recurrence",
-        description: "Up to 5 active (Pro Monthly)",
-      },
-      {
-        icon: "🔗",
-        title: "Dependencies",
-        description: "Link related tasks",
-      },
-      {
-        icon: "👥",
-        title: "Team Assignment",
-        description: "Assign to team members",
+        icon: "💎",
+        title: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature,
+        description: SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(monthlyPrice),
       },
     ],
   },
@@ -522,7 +635,7 @@ function AIIllustration() {
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: "100%" }}
-        transition={{ delay: 0.2, duration: 0.8 }}
+        transition={{ delay: TIMING_CONSTANTS.tour.animation.delay, duration: TIMING_CONSTANTS.tour.animation.duration }}
         className="h-1.5 sm:h-2 rounded-full"
         style={{
           background:
@@ -601,6 +714,112 @@ function FeaturesIllustration() {
   );
 }
 
+function CalendarIllustration() {
+  return (
+    <div className="grid grid-cols-7 gap-1 p-2 sm:p-3 md:p-4">
+      {Array.from({ length: 14 }, (_, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: i * 0.02 }}
+          className="h-8 sm:h-10 rounded-md flex items-center justify-center text-[10px] sm:text-xs"
+          style={{
+            background: i % 7 === 0 || i % 7 === 6 
+              ? "rgba(230, 213, 240, 0.2)" 
+              : "rgba(201, 228, 247, 0.2)",
+          }}
+        >
+          {i + 1}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function AnalyticsIllustration() {
+  return (
+    <div className="p-2 sm:p-3 md:p-4 space-y-2 flex items-end justify-center gap-2 h-24 sm:h-32">
+      {[75, 60, 85, 50].map((height, i) => (
+        <motion.div
+          key={i}
+          initial={{ height: 0 }}
+          animate={{ height: `${height}%` }}
+          transition={{ delay: i * 0.1, duration: 0.5 }}
+          className="rounded-t-lg w-12 sm:w-16"
+          style={{
+            background: i === 0
+              ? "linear-gradient(180deg, #E6D5F0 0%, #9B87E8 100%)"
+              : i === 1
+                ? "linear-gradient(180deg, #C9E4F7 0%, #B3D9F2 100%)"
+                : i === 2
+                  ? "linear-gradient(180deg, #B8E6D5 0%, #9FD9BF 100%)"
+                  : "linear-gradient(180deg, #FFD6BA 0%, #FFA875 100%)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function InboxIllustration() {
+  return (
+    <div className="p-2 sm:p-3 md:p-4 space-y-1.5 sm:space-y-2">
+      {[1, 2, 3].map((i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: i * 0.1 }}
+          className="h-8 sm:h-10 rounded-lg"
+          style={{
+            background: i === 1
+              ? "rgba(201, 228, 247, 0.3)"
+              : i === 2
+                ? "rgba(184, 230, 213, 0.3)"
+                : "rgba(230, 213, 240, 0.3)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TodayIllustration() {
+  return (
+    <div className="p-2 sm:p-3 md:p-4 space-y-2">
+      {[
+        { time: "9:00 AM", height: 40 },
+        { time: "2:00 PM", height: 60 },
+        { time: "4:30 PM", height: 30 },
+      ].map((item, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.1 }}
+          className="flex items-center gap-2"
+        >
+          <div className="text-[10px] sm:text-xs opacity-70 w-16 sm:w-20">
+            {item.time}
+          </div>
+          <div
+            className="rounded-lg flex-1"
+            style={{
+              height: `${item.height}px`,
+              background: i === 0
+                ? "linear-gradient(135deg, rgba(201, 228, 247, 0.4) 0%, rgba(184, 230, 213, 0.4) 100%)"
+                : i === 1
+                  ? "linear-gradient(135deg, rgba(230, 213, 240, 0.4) 0%, rgba(199, 184, 234, 0.4) 100%)"
+                  : "linear-gradient(135deg, rgba(255, 214, 186, 0.4) 0%, rgba(255, 168, 117, 0.4) 100%)",
+            }}
+          />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export function AppTour({
   run,
   onFinish,
@@ -662,6 +881,55 @@ export function AppTour({
     currentStepRef.current = currentStep;
   }, [currentStep]);
 
+  // Handle navigation and highlighting when step changes
+  useEffect(() => {
+    if (!run || !onNavigate) return;
+    
+    const step = dynamicTourSteps[currentStep];
+    if (!step) return;
+    
+    // Navigate to the view specified in the step
+    if (step.navigateTo && !isNavigatingRef.current) {
+      isNavigatingRef.current = true;
+      onNavigate(step.navigateTo);
+      
+      // Handle view mode changes for dashboard
+      if (step.navigateTo === 'dashboard' && step.setViewMode) {
+        // Dispatch custom event to change view mode
+        window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
+          detail: { mode: step.setViewMode } 
+        }));
+      }
+      
+      // Handle panel opening
+      if (step.openPanel) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('tour-open-panel', { 
+            detail: { panel: step.openPanel } 
+          }));
+        }, TIMING_CONSTANTS.tour.navigationComplete);
+      }
+      
+      // Reset navigation flag after a delay
+      setTimeout(() => {
+        isNavigatingRef.current = false;
+      }, TIMING_CONSTANTS.tour.navigationReset);
+    }
+    
+    // Highlight element if specified
+    if (step.highlightElement) {
+      setTimeout(() => {
+        const element = document.querySelector(`[data-tour="${step.highlightElement}"]`);
+        if (element) {
+          // Scroll element into view
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add highlight class (will be handled by CSS or we can add inline styles)
+          element.classList.add('tour-highlight');
+        }
+      }, TIMING_CONSTANTS.tour.highlightDelay);
+    }
+  }, [currentStep, run, onNavigate, dynamicTourSteps]);
+
   // Only reset when tour starts (run changes from false to true)
   // Don't reset when tour is running or closing
   useEffect(() => {
@@ -689,12 +957,16 @@ export function AppTour({
         // Reset navigation flag after a short delay
         setTimeout(() => {
           isNavigatingRef.current = false;
-        }, 100);
+        }, TIMING_CONSTANTS.tour.initializationReset);
       }
     } else if (!run && wasRunning) {
       // Tour was closed - reset initialization flag for next time
       hasInitializedRef.current = false;
       currentStepRef.current = 0;
+      // Remove all highlight classes
+      document.querySelectorAll('.tour-highlight').forEach(el => {
+        el.classList.remove('tour-highlight');
+      });
     }
     // Update ref to track previous run state
     prevRunRef.current = run;
@@ -715,7 +987,7 @@ export function AppTour({
           // Small delay to let tour close smoothly
           setTimeout(() => {
             onShowPricing();
-          }, 300);
+          }, TIMING_CONSTANTS.tour.pricingDialogDelay);
         }
         
         onFinish();
@@ -749,7 +1021,7 @@ export function AppTour({
     if (isNewSignup && subscription.tier === 'free' && onShowPricing) {
       setTimeout(() => {
         onShowPricing();
-      }, 300);
+      }, TIMING_CONSTANTS.tour.pricingDialogDelay);
     }
     
     onFinish();
@@ -791,8 +1063,8 @@ export function AppTour({
             }}
             transition={{
               type: "spring",
-              damping: 25,
-              stiffness: 200,
+              damping: TIMING_CONSTANTS.tour.animation.springDamping,
+              stiffness: TIMING_CONSTANTS.tour.animation.springStiffness,
             }}
             className={cn(
               "w-full max-w-2xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-primary/25 dark:border-primary/20",
@@ -940,6 +1212,18 @@ export function AppTour({
                 )}
                 {step.illustration === "features" && (
                   <FeaturesIllustration />
+                )}
+                {step.illustration === "calendar" && (
+                  <CalendarIllustration />
+                )}
+                {step.illustration === "analytics" && (
+                  <AnalyticsIllustration />
+                )}
+                {step.illustration === "inbox" && (
+                  <InboxIllustration />
+                )}
+                {step.illustration === "today" && (
+                  <TodayIllustration />
                 )}
               </div>
             )}
