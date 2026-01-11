@@ -958,6 +958,14 @@ export function AppTour({
       return;
     }
     
+    // CRITICAL: Also prevent reset if tour is running and was already running
+    // This handles the case where run stays true but component re-renders
+    if (run && wasRunning) {
+      // Tour is already running - don't reset anything, just update ref
+      prevRunRef.current = run;
+      return;
+    }
+    
     if (run && !wasRunning && !hasInitializedRef.current) {
       // Tour just started - reset to first step
       setCurrentStep(0);
@@ -989,6 +997,9 @@ export function AppTour({
   }, [run]);
 
   const handleNext = () => {
+    // Reset navigation flag to allow navigation for next step
+    isNavigatingRef.current = false;
+    
     setCurrentStep((prevStep) => {
       const nextStep = prevStep + 1;
       if (nextStep >= dynamicTourSteps.length) {
@@ -1015,6 +1026,9 @@ export function AppTour({
   };
 
   const handlePrev = () => {
+    // Reset navigation flag to allow navigation for previous step
+    isNavigatingRef.current = false;
+    
     setCurrentStep((prevStep) => {
       if (prevStep > 0) {
         const prevStepValue = prevStep - 1;
@@ -1043,7 +1057,7 @@ export function AppTour({
 
   // Update spotlight position when step changes or element should be highlighted
   useEffect(() => {
-    if (!run || !step.highlightElement) {
+    if (!run || !step || !step.highlightElement) {
       setSpotlightRect(null);
       return;
     }
@@ -1078,9 +1092,9 @@ export function AppTour({
       window.removeEventListener('scroll', updateSpotlight, true);
       window.removeEventListener('resize', updateSpotlight);
     };
-  }, [run, step.highlightElement, currentStep]);
+  }, [run, step, currentStep]);
 
-  if (!run) return null;
+  if (!run || !step) return null;
 
   const Icon = step.icon;
 
