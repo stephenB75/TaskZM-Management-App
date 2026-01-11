@@ -2830,11 +2830,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               Take a guided tour of TaskZM's features and learn how to get the most out of your neurodivergent-friendly task manager.
             </p>
             
-            <div className="bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/5 dark:to-accent/5 border border-primary/20 dark:border-primary/10 rounded-lg p-4" style={{ marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
-              <div className="flex items-start gap-3 mb-3">
-                <Compass className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/5 dark:to-accent/5 border border-primary/20 dark:border-primary/10 rounded-lg" style={{ padding: SETTINGS_PANEL_PADDING_LARGE, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
+              <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM, marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
+                <Compass className="w-5 h-5 text-primary flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                 <div>
-                  <p className="text-sm mb-1 text-foreground">Interactive Walkthrough</p>
+                  <p className="text-sm text-foreground" style={{ marginBottom: SETTINGS_PANEL_SPACING_XSMALL }}>Interactive Walkthrough</p>
                   <p className="text-xs text-muted-foreground">
                     {hasSeenTour 
                       ? 'Revisit all the key features and learn new tips'
@@ -2848,14 +2848,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 className="w-full bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 text-primary-foreground border border-primary/20 shadow-sm"
                 onClick={handleStartTour}
               >
-                <Compass className="w-4 h-4 mr-2" />
+                <Compass className="w-4 h-4" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                 {hasSeenTour ? 'Restart Tour' : 'Start Tour'}
               </Button>
             </div>
 
-            <div className="space-y-2" style={{ marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
               <p className="text-xs font-medium">Tour Highlights:</p>
-              <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+              <ul className="text-xs text-muted-foreground" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_MEDIUM }}>
                 <li>• Navigation & panel system</li>
                 <li>• Today Agenda timeline</li>
                 <li>• 7-Day Kanban board</li>
@@ -2868,9 +2868,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
             <Separator style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }} />
 
-            <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
-              <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+            <div className="bg-primary/5 rounded-lg border border-primary/10" style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM }}>
+              <div className="flex items-start" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                <Info className="w-4 h-4 text-primary flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                 <div className="text-xs text-muted-foreground">
                   <p>
                     The tour takes about 2-3 minutes and can be skipped or paused at any time. 

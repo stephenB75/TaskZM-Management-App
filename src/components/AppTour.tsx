@@ -11,7 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 import { getOfferings } from "../lib/revenuecat";
 import { configureRevenueCat } from "../lib/revenuecat";
-import { Z_INDEX, TOUR_CONSTANTS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { Z_INDEX, TOUR_CONSTANTS, VIEWPORT_BREAKPOINTS, SETTINGS_PANEL_SPACING_MEDIUM } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 
@@ -243,7 +243,13 @@ export function AppTour({
                   💎 {SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature} - {SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(monthlyPrice)}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50">
+              <p 
+                className="text-xs text-muted-foreground border-t border-border/50"
+                style={{ 
+                  marginTop: SETTINGS_PANEL_SPACING_MEDIUM, // mt-3 = 0.75rem (12px)
+                  paddingTop: SETTINGS_PANEL_SPACING_MEDIUM // pt-3 = 0.75rem (12px)
+                }}
+              >
                 🎉 You've completed the tour! Click "Get Started" to begin using TaskZM.
               </p>
             </div>
