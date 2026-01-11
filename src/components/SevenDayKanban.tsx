@@ -1117,31 +1117,15 @@ export function SevenDayKanban({
                       const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
 
                 return (
-                  <motion.div
+                  <div
                     key={column.dateString}
-                    data-column-date={column.dateString}
-                    className={cn(
-                      'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
-                      !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-transparent'),
-                            column.isWeekend && isDark && 'bg-card/60',
-                            isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
-                    )}
+                    className="flex flex-col"
                     style={{
                       minWidth: `${columnWidth}px`,
                       width: `${columnWidth}px`,
-                      ...(column.isWeekend && !isDark && {
-                        backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
-                      }),
-                    }}
-                    initial={{ opacity: 0, y: KANBAN_ANIMATION.initialY }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ 
-                      duration: KANBAN_ANIMATION.duration, 
-                            delay: globalIndex * KANBAN_ANIMATION.delayPerColumn,
-                      ease: KANBAN_ANIMATION.easing
                     }}
                   >
-                    {/* Horizontal line indicator above tab for current day */}
+                    {/* Horizontal line indicator above column box for current day */}
                     {column.isToday && (() => {
                       const dayColors = getDayColors(column.dayName);
                       if (hasHeader(dayColors)) {
@@ -1171,6 +1155,29 @@ export function SevenDayKanban({
                       }
                       return null;
                     })()}
+                    <motion.div
+                      data-column-date={column.dateString}
+                      className={cn(
+                        'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
+                        !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-transparent'),
+                              column.isWeekend && isDark && 'bg-card/60',
+                              isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
+                      )}
+                      style={{
+                        minWidth: `${columnWidth}px`,
+                        width: `${columnWidth}px`,
+                        ...(column.isWeekend && !isDark && {
+                          backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
+                        }),
+                      }}
+                      initial={{ opacity: 0, y: KANBAN_ANIMATION.initialY }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ 
+                        duration: KANBAN_ANIMATION.duration, 
+                              delay: globalIndex * KANBAN_ANIMATION.delayPerColumn,
+                        ease: KANBAN_ANIMATION.easing
+                      }}
+                    >
                     <div 
                       className={cn(
                         'p-1.5 sm:p-2 border-b backdrop-blur-sm transition-all',
@@ -1436,6 +1443,7 @@ export function SevenDayKanban({
                       </SortableContext>
                     </DroppableColumn>
                         </motion.div>
+                    </div>
                       );
                     })}
                     </div>
