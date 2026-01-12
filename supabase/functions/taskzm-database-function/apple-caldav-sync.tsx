@@ -927,11 +927,94 @@ function parseVEvent(
         return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
       }
       
+      // Helper function to normalize timezone identifier
+      // Converts offset formats (GMT-0400) to IANA timezone identifiers
+      const normalizeTimezone = (tzid: string): string => {
+        if (!tzid) return DEFAULT_TIMEZONE;
+        
+        // Remove any quotes or extra whitespace
+        const cleanTzid = tzid.trim().replace(/["']/g, '');
+        
+        // Check if it's already a valid IANA timezone (contains /)
+        if (cleanTzid.includes('/')) {
+          return cleanTzid;
+        }
+        
+        // Handle GMT offset formats (GMT-0400, GMT+0500, etc.)
+        const gmtMatch = cleanTzid.match(/^GMT([+-])(\d{2})(\d{2})$/i);
+        if (gmtMatch) {
+          const sign = gmtMatch[1];
+          const hours = parseInt(gmtMatch[2], 10);
+          const minutes = parseInt(gmtMatch[3], 10);
+          const totalOffsetMinutes = (sign === '+' ? 1 : -1) * (hours * 60 + minutes);
+          
+          // Map common offsets to IANA timezones
+          // This is approximate - we'll use the user's timezone as fallback
+          if (totalOffsetMinutes === -300) return 'America/New_York'; // EST/EDT
+          if (totalOffsetMinutes === -240) return 'America/New_York'; // EDT
+          if (totalOffsetMinutes === -360) return 'America/Chicago'; // CST/CDT
+          if (totalOffsetMinutes === -420) return 'America/Denver'; // MST/MDT
+          if (totalOffsetMinutes === -480) return 'America/Los_Angeles'; // PST/PDT
+          if (totalOffsetMinutes === 0) return 'UTC';
+          
+          // For other offsets, try to use user's timezone or default
+          console.warn(`Unmapped GMT offset ${cleanTzid}, using default timezone`);
+          return currentUserTimezone || DEFAULT_TIMEZONE;
+        }
+        
+        // Handle other common abbreviations (EST, EDT, PST, etc.)
+        const abbrevMap: Record<string, string> = {
+          'EST': 'America/New_York',
+          'EDT': 'America/New_York',
+          'CST': 'America/Chicago',
+          'CDT': 'America/Chicago',
+          'MST': 'America/Denver',
+          'MDT': 'America/Denver',
+          'PST': 'America/Los_Angeles',
+          'PDT': 'America/Los_Angeles',
+          'UTC': 'UTC',
+          'GMT': 'UTC',
+        };
+        
+        const upperTzid = cleanTzid.toUpperCase();
+        if (abbrevMap[upperTzid]) {
+          return abbrevMap[upperTzid];
+        }
+        
+        // If we can't normalize it, use default timezone
+        console.warn(`Unknown timezone format ${cleanTzid}, using default timezone`);
+        return currentUserTimezone || DEFAULT_TIMEZONE;
+      };
+      
       // Helper function to convert local time in a timezone to UTC
       const convertToUTC = (targetTzid: string, yr: number, mo: number, dy: number, hr: number, mn: number, sc: number): string => {
+        // Normalize timezone identifier first
+        const normalizedTzid = normalizeTimezone(targetTzid);
+        
+        // Validate that the normalized timezone is valid for Intl.DateTimeFormat
+        let validTzid = normalizedTzid;
+        try {
+          // Test if timezone is valid by trying to create a formatter
+          new Intl.DateTimeFormat('en-US', { timeZone: normalizedTzid });
+        } catch (e) {
+          // Invalid timezone - use default and log warning
+          console.warn(`Invalid timezone ${targetTzid} (normalized to ${normalizedTzid}), using default:`, e);
+          validTzid = currentUserTimezone || DEFAULT_TIMEZONE;
+          // Validate the fallback timezone too
+          try {
+            new Intl.DateTimeFormat('en-US', { timeZone: validTzid });
+          } catch (fallbackError) {
+            // Even fallback is invalid - use hardcoded default and calculate offset directly
+            console.warn(`Fallback timezone ${validTzid} is also invalid, using UTC offset calculation:`, fallbackError);
+            // Calculate UTC directly using offset (assume EST/EDT offset of -5 hours)
+            const fallbackUTC = new Date(Date.UTC(yr, mo, dy, hr + 5, mn, sc));
+            return fallbackUTC.toISOString();
+          }
+        }
+        
         // Use formatToParts for reliable parsing
         const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: targetTzid,
+          timeZone: validTzid,
           year: 'numeric',
           month: 'numeric',
           day: 'numeric',
