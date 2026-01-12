@@ -12,8 +12,15 @@
  * 5. Store as read-only items with source="iCloud"
  */
 
+// Constants
+const DEFAULT_TIMEZONE = 'America/New_York';
+const MAX_RECURRENCE_ITERATIONS = 365; // Maximum iterations for recurring event expansion (1 year)
+const CALENDAR_SYNC_PAST_DAYS = 365; // Days to look back when syncing calendar (to capture recurring events)
+const CALENDAR_SYNC_FUTURE_DAYS = 90; // Days to look ahead when syncing calendar
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000; // 86400000 ms
+
 // Module-level variable to store user's timezone (set during sync)
-let currentUserTimezone = 'America/New_York';
+let currentUserTimezone = DEFAULT_TIMEZONE;
 
 // Types
 export interface AppleCalDAVCredentials {
@@ -38,6 +45,9 @@ export interface CalendarEvent {
   lastModified?: string;
   calendarHref: string;
   calendarColor?: string;
+  rrule?: string; // Original RRULE string for recurring events
+  recurrenceBaseId?: string; // Links instances to base recurring event
+  isRecurring?: boolean; // Flag indicating if this is a recurring event
 }
 
 export interface SyncResult {
@@ -598,11 +608,11 @@ export async function fetchCalendarEvents(
     ? calendarHref
     : `${ICLOUD_CALDAV_URL}${calendarHref}`;
 
-  // Default to 365 days in past and 90 days in future
+  // Default to CALENDAR_SYNC_PAST_DAYS in past and CALENDAR_SYNC_FUTURE_DAYS in future
   // We need a wide past range to capture recurring events that started long ago
   // but have occurrences in our target date range
-  const start = startDate || new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-  const end = endDate || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+  const start = startDate || new Date(Date.now() - (CALENDAR_SYNC_PAST_DAYS * MILLISECONDS_PER_DAY));
+  const end = endDate || new Date(Date.now() + (CALENDAR_SYNC_FUTURE_DAYS * MILLISECONDS_PER_DAY));
 
   // Format dates for CalDAV
   const formatDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -701,7 +711,8 @@ function expandRecurringEvent(
   baseEvent: CalendarEvent,
   rrule: string,
   rangeStart: Date,
-  rangeEnd: Date
+  rangeEnd: Date,
+  recurrenceBaseId?: string
 ): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   
@@ -746,7 +757,7 @@ function expandRecurringEvent(
   }
   
   // Limit iterations to prevent infinite loops
-  const maxIterations = count || 365;
+  const maxIterations = count || MAX_RECURRENCE_ITERATIONS;
   let iterations = 0;
   let currentDate = new Date(baseStart);
   
@@ -761,6 +772,10 @@ function expandRecurringEvent(
         uid: eventUid,
         dtstart: formatDatePreservingTimezone(currentDate, isUtc),
         dtend: formatDatePreservingTimezone(endDate, isUtc),
+        // Preserve recurrence metadata for all instances
+        rrule: baseEvent.rrule || rrule, // Ensure RRULE is preserved
+        recurrenceBaseId: recurrenceBaseId || baseEvent.uid, // Link to base event
+        isRecurring: true, // All instances are part of recurring series
       });
     }
     
@@ -1015,6 +1030,10 @@ function parseVEvent(
     ? `${baseUid}_${parsedDtstart.replace(/[-:TZ]/g, '')}`
     : baseUid;
 
+  // Determine if this is a recurring event
+  const isRecurring = !!rrule && !recurrenceId;
+  const baseUidForRecurrence = baseUid; // Store original UID for recurrence linking
+
   const baseEvent: CalendarEvent = {
     uid,
     summary: summary.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
@@ -1024,11 +1043,14 @@ function parseVEvent(
     location: getProp('LOCATION')?.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
     lastModified: getProp('LAST-MODIFIED') ? parseDate(getProp('LAST-MODIFIED')!) : undefined,
     calendarHref,
+    rrule: isRecurring ? rrule : undefined, // Preserve RRULE for recurring events
+    recurrenceBaseId: recurrenceId ? baseUidForRecurrence : undefined, // Link instances to base
+    isRecurring: isRecurring, // Flag for recurring events
   };
 
   // If this is a recurring event and we have a date range, expand it
   if (rrule && rangeStart && rangeEnd && !recurrenceId) {
-    const expandedEvents = expandRecurringEvent(baseEvent, rrule, rangeStart, rangeEnd);
+    const expandedEvents = expandRecurringEvent(baseEvent, rrule, rangeStart, rangeEnd, baseUidForRecurrence);
     // expandRecurringEvent already includes the base event if it's in range,
     // so we don't need to add it separately. Just return the expanded events.
     // Deduplicate by start time and title to prevent duplicates
@@ -1071,7 +1093,7 @@ export async function syncCalendarsToDatabase(
   workspaceId: string,
   credentials: AppleCalDAVCredentials,
   selectedCalendarHrefs: string[],
-  userTimezone: string = 'America/New_York'
+  userTimezone: string = DEFAULT_TIMEZONE
 ): Promise<SyncResult> {
   // Store the user timezone for use in date parsing
   currentUserTimezone = userTimezone;
@@ -1153,6 +1175,10 @@ export async function syncCalendarsToDatabase(
             location: event.location,
             calendar_color: event.calendarColor,
             external_updated_at: event.lastModified,
+            // Preserve recurrence metadata
+            rrule: event.rrule || null,
+            recurrence_base_id: event.recurrenceBaseId || null,
+            is_recurring: event.isRecurring || false,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
@@ -1180,6 +1206,10 @@ export async function syncCalendarsToDatabase(
             calendar_color: event.calendarColor,
             external_updated_at: event.lastModified,
             is_readonly: true,
+            // Store recurrence metadata
+            rrule: event.rrule || null,
+            recurrence_base_id: event.recurrenceBaseId || null,
+            is_recurring: event.isRecurring || false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });

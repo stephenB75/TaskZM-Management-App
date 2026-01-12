@@ -8,6 +8,11 @@ import * as kv from "./kv_store.tsx";
 import * as caldav from "./caldav-client.tsx";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Constants
+const MAX_RECURRENCE_ITERATIONS = 365; // Maximum iterations for recurring event expansion (1 year)
+const TOKEN_VALIDITY_BUFFER_MS = 5 * 60 * 1000; // 5 minutes buffer for token validity check
+const DEFAULT_EVENT_DURATION_MINUTES = 30; // Default duration for calendar events without end time
+
 // Calendar provider types
 export type CalendarProvider = 'google' | 'outlook' | 'apple';
 
@@ -34,6 +39,7 @@ export interface CalendarEvent {
   location?: string;
   provider: CalendarProvider;
   providerEventId: string;
+  calendarColor?: string; // Calendar color for display
 }
 
 /**
@@ -112,8 +118,8 @@ export async function refreshAccessToken(
 
   const now = Date.now();
   
-  // If token is still valid (with 5 minute buffer), return as-is
-  if (tokens.expiresAt && tokens.expiresAt > now + 300000) {
+  // If token is still valid (with buffer), return as-is
+  if (tokens.expiresAt && tokens.expiresAt > now + TOKEN_VALIDITY_BUFFER_MS) {
     return tokens;
   }
 
@@ -633,7 +639,7 @@ function calculateEndDate(startDate: string, estimatedMinutes?: number): string 
   if (isNaN(start.getTime())) {
     throw new Error(`Invalid startDate format: ${startDate}`);
   }
-  const minutes = estimatedMinutes || 30;
+  const minutes = estimatedMinutes || DEFAULT_EVENT_DURATION_MINUTES;
   const end = new Date(start.getTime() + minutes * 60000);
   return end.toISOString();
 }
@@ -997,6 +1003,149 @@ export async function getCalendarEvents(
 }
 
 /**
+ * Generate recurring event occurrences from RRULE
+ */
+function generateRecurringOccurrences(
+  baseEvent: any,
+  rangeStart: Date,
+  rangeEnd: Date
+): CalendarEvent[] {
+  if (!baseEvent.rrule) {
+    // Not a recurring event, return single occurrence if in range
+    const eventStart = new Date(baseEvent.start_time);
+    if (eventStart >= rangeStart && eventStart <= rangeEnd) {
+      return [{
+        id: baseEvent.id,
+        title: baseEvent.title,
+        description: baseEvent.description,
+        start: baseEvent.start_time,
+        end: baseEvent.end_time,
+        location: baseEvent.location,
+        provider: 'apple' as const,
+        providerEventId: baseEvent.external_id,
+        calendarColor: baseEvent.calendar_color,
+      }];
+    }
+    return [];
+  }
+
+  const occurrences: CalendarEvent[] = [];
+  
+  // Parse RRULE
+  const parts: Record<string, string> = {};
+  baseEvent.rrule.split(';').forEach((part: string) => {
+    const [key, value] = part.split('=');
+    if (key && value) parts[key] = value;
+  });
+
+  const freq = parts['FREQ'];
+  const interval = parseInt(parts['INTERVAL'] || '1', 10);
+  const count = parts['COUNT'] ? parseInt(parts['COUNT'], 10) : undefined;
+  const until = parts['UNTIL'];
+  const byDay = parts['BYDAY'];
+  const byMonthDay = parts['BYMONTHDAY'];
+
+  // Parse base event times
+  const baseStart = new Date(baseEvent.start_time);
+  const baseEnd = new Date(baseEvent.end_time);
+  const duration = baseEnd.getTime() - baseStart.getTime();
+  const isUtc = baseEvent.start_time.endsWith('Z');
+
+  // Calculate until date
+  let untilDate = rangeEnd;
+  if (until) {
+    if (until.length >= 8) {
+      const year = parseInt(until.substring(0, 4), 10);
+      const month = parseInt(until.substring(4, 6), 10) - 1;
+      const day = parseInt(until.substring(6, 8), 10);
+      let hour = 23, minute = 59, second = 59;
+      if (until.length >= 15) {
+        hour = parseInt(until.substring(9, 11), 10);
+        minute = parseInt(until.substring(11, 13), 10);
+        second = parseInt(until.substring(13, 15), 10);
+      }
+      untilDate = new Date(Date.UTC(year, month, day, hour, minute, second));
+    }
+  }
+
+  // Limit iterations
+  const maxIterations = count || MAX_RECURRENCE_ITERATIONS;
+  let iterations = 0;
+  let currentDate = new Date(baseStart);
+
+  while (currentDate <= untilDate && currentDate <= rangeEnd && iterations < maxIterations) {
+    if (currentDate >= rangeStart && currentDate <= rangeEnd) {
+      const endDate = new Date(currentDate.getTime() + duration);
+      
+      occurrences.push({
+        id: `${baseEvent.id}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
+        title: baseEvent.title,
+        description: baseEvent.description,
+        start: isUtc ? currentDate.toISOString() : currentDate.toISOString().replace('Z', ''),
+        end: isUtc ? endDate.toISOString() : endDate.toISOString().replace('Z', ''),
+        location: baseEvent.location,
+        provider: 'apple' as const,
+        providerEventId: `${baseEvent.external_id}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
+        calendarColor: baseEvent.calendar_color,
+      });
+    }
+
+    // Move to next occurrence
+    if (isUtc) {
+      switch (freq) {
+        case 'DAILY':
+          currentDate.setUTCDate(currentDate.getUTCDate() + interval);
+          break;
+        case 'WEEKLY':
+          currentDate.setUTCDate(currentDate.getUTCDate() + (7 * interval));
+          break;
+        case 'MONTHLY':
+          if (byMonthDay) {
+            const targetDay = parseInt(byMonthDay, 10);
+            currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+            currentDate.setUTCDate(Math.min(targetDay, new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0).getUTCDate()));
+          } else {
+            currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+          }
+          break;
+        case 'YEARLY':
+          currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
+          break;
+        default:
+          iterations = maxIterations;
+      }
+    } else {
+      switch (freq) {
+        case 'DAILY':
+          currentDate.setDate(currentDate.getDate() + interval);
+          break;
+        case 'WEEKLY':
+          currentDate.setDate(currentDate.getDate() + (7 * interval));
+          break;
+        case 'MONTHLY':
+          if (byMonthDay) {
+            const targetDay = parseInt(byMonthDay, 10);
+            currentDate.setMonth(currentDate.getMonth() + interval);
+            currentDate.setDate(Math.min(targetDay, new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()));
+          } else {
+            currentDate.setMonth(currentDate.getMonth() + interval);
+          }
+          break;
+        case 'YEARLY':
+          currentDate.setFullYear(currentDate.getFullYear() + interval);
+          break;
+        default:
+          iterations = maxIterations;
+      }
+    }
+
+    iterations++;
+  }
+
+  return occurrences;
+}
+
+/**
  * Get Apple Calendar events from the database (new CalDAV sync)
  */
 async function getAppleEventsFromDatabase(
@@ -1010,13 +1159,14 @@ async function getAppleEventsFromDatabase(
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     );
 
+    // Fetch all events (including base recurring events)
+    // We'll expand recurring events on-demand
+    // Fetch all events for this user - we'll filter and expand in code
     const { data: events, error } = await supabase
       .from('calendar_events')
       .select('*')
       .eq('user_id', userId)
       .eq('source', 'icloud')
-      .gte('start_time', startDate)
-      .lte('start_time', endDate)
       .order('start_time', { ascending: true });
 
     if (error) {
@@ -1024,17 +1174,51 @@ async function getAppleEventsFromDatabase(
       return [];
     }
 
-    return (events || []).map((event: any) => ({
-      id: event.id,
-      title: event.title,
-      description: event.description,
-      start: event.start_time,
-      end: event.end_time,
-      location: event.location,
-      provider: 'apple' as const,
-      providerEventId: event.external_id,
-      calendarColor: event.calendar_color,
-    }));
+    const result: CalendarEvent[] = [];
+    const processedBaseEvents = new Set<string>();
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    for (const event of events || []) {
+      // If this is a base recurring event (has RRULE and no recurrence_base_id)
+      if (event.is_recurring && event.rrule && !event.recurrence_base_id) {
+        // Only process each base event once
+        if (processedBaseEvents.has(event.external_id)) {
+          continue;
+        }
+        processedBaseEvents.add(event.external_id);
+
+        // Generate occurrences for this recurring event within the date range
+        const occurrences = generateRecurringOccurrences(
+          event,
+          startDateObj,
+          endDateObj
+        );
+        result.push(...occurrences);
+      } else if (!event.recurrence_base_id) {
+        // Regular non-recurring event - only include if within date range
+        const eventStart = new Date(event.start_time);
+        if (eventStart >= startDateObj && eventStart <= endDateObj) {
+          result.push({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            start: event.start_time,
+            end: event.end_time,
+            location: event.location,
+            provider: 'apple' as const,
+            providerEventId: event.external_id,
+            calendarColor: event.calendar_color,
+          });
+        }
+      }
+      // Skip expanded instances (they're handled by base event expansion)
+    }
+
+    // Sort by start time
+    result.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+    return result;
   } catch (error) {
     console.log('Failed to fetch Apple events from database:', error);
     return [];
