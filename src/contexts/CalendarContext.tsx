@@ -49,7 +49,7 @@ const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
-  const { hasFeature, features } = useSubscription();
+  const { hasFeature, features, subscription } = useSubscription();
   const { tasks, workspaceId } = useTasks();
   const [calendarStatus, setCalendarStatus] = useState<CalendarStatus>({
     google: false,
@@ -190,12 +190,27 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    // Gate: Calendar sync requires Pro subscription
-    if (!hasFeature('calendarSync')) {
-      // Dispatch event to trigger upgrade prompt
-      window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
-        detail: { feature: 'calendarSync' } 
-      }));
+    // Gate: Calendar sync requires Pro subscription (Monthly or Yearly)
+    // Check both tier and feature to ensure proper gating
+    if (subscription.tier !== 'pro' || !hasFeature('calendarSync')) {
+      // Only show upgrade prompt for free tier users
+      // Pro users (monthly or yearly) should have calendarSync enabled
+      if (subscription.tier !== 'pro') {
+        // Dispatch event to trigger upgrade prompt
+        window.dispatchEvent(new CustomEvent('showUpgradePrompt', { 
+          detail: { feature: 'calendarSync' } 
+        }));
+      } else {
+        // Pro user but feature not enabled - this shouldn't happen, but log it
+        console.warn('[Calendar Sync] Pro user detected but calendarSync feature not enabled. Subscription:', {
+          tier: subscription.tier,
+          billingPeriod: subscription.billingPeriod,
+          hasFeature: hasFeature('calendarSync'),
+        });
+        toast.error('Calendar sync is not available', {
+          description: 'Please contact support if you have a Pro subscription.',
+        });
+      }
       return;
     }
     

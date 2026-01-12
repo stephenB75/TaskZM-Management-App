@@ -350,6 +350,12 @@ function AppContent() {
     const handleUpgradePrompt = (event: CustomEvent) => {
       const feature = event.detail?.feature;
       if (feature && ['recurringTasks', 'taskDependencies', 'taskTemplates', 'calendarSync'].includes(feature)) {
+        // CRITICAL: Don't show upgrade prompt if user already has Pro subscription (monthly or yearly)
+        // Only show for free tier users
+        if (subscription.tier === 'pro') {
+          console.debug(`[Upgrade Prompt] Skipping upgrade prompt for ${feature} - user already has Pro subscription (${subscription.billingPeriod || 'unknown'} billing)`);
+          return;
+        }
         setUpgradeFeature(feature);
         setShowUpgradePrompt(true);
       }
@@ -359,7 +365,7 @@ function AppContent() {
     return () => {
       window.removeEventListener('showUpgradePrompt', handleUpgradePrompt as EventListener);
     };
-  }, [setUpgradeFeature, setShowUpgradePrompt]);
+  }, [setUpgradeFeature, setShowUpgradePrompt, subscription.tier, subscription.billingPeriod]);
 
   // Check for invitation token in URL
   const [inviteToken, setInviteToken] = useState<string | null>(null);
