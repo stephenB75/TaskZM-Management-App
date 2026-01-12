@@ -40,6 +40,9 @@ export interface CalendarEvent {
   provider: CalendarProvider;
   providerEventId: string;
   calendarColor?: string; // Calendar color for display
+  rrule?: string; // Original RRULE string for recurring events
+  recurrenceBaseId?: string; // Links instances to base recurring event
+  isRecurring?: boolean; // Flag indicating if this is a recurring event
 }
 
 /**
@@ -967,36 +970,15 @@ export async function getCalendarEvents(
   startDate: string,
   endDate: string
 ): Promise<CalendarEvent[]> {
-  // For Apple, first check if using the new CalDAV setup (credentials in KV store)
-  if (provider === 'apple') {
-    const newCalDavEvents = await getAppleEventsFromDatabase(userId, startDate, endDate);
-    if (newCalDavEvents.length > 0) {
-      return newCalDavEvents;
-    }
-    // If no events in database, check if new CalDAV is configured
-    const credentialsJson = await kv.get(`caldav_credentials_${userId}`);
-    if (credentialsJson) {
-      // New CalDAV is configured but no events synced yet - return empty
-      // (the sync will populate the calendar_events table)
-      return [];
-    }
-    // Fall back to old CalDAV token approach
-  }
-
-  let tokens = await getCalendarTokens(userId, provider);
-  if (!tokens) {
-    return [];
-  }
-
+  // For all providers, try to get events from database first
+  // This ensures we have recurring events properly expanded
   switch (provider) {
     case 'google':
-      tokens = await refreshAccessToken(userId, provider, tokens);
-      return await getGoogleCalendarEvents(tokens, startDate, endDate);
+      return await getGoogleEventsFromDatabase(userId, startDate, endDate);
     case 'outlook':
-      tokens = await refreshAccessToken(userId, provider, tokens);
-      return await getOutlookCalendarEvents(tokens, startDate, endDate);
+      return await getOutlookEventsFromDatabase(userId, startDate, endDate);
     case 'apple':
-      return await getAppleCalendarEvents(tokens, startDate, endDate);
+      return await getAppleEventsFromDatabase(userId, startDate, endDate);
     default:
       return [];
   }
@@ -1014,6 +996,14 @@ function generateRecurringOccurrences(
     // Not a recurring event, return single occurrence if in range
     const eventStart = new Date(baseEvent.start_time);
     if (eventStart >= rangeStart && eventStart <= rangeEnd) {
+      // Determine provider from source or external_id format
+      let provider: CalendarProvider = 'apple';
+      if (baseEvent.source === 'google' || baseEvent.external_id?.startsWith('google_')) {
+        provider = 'google';
+      } else if (baseEvent.source === 'outlook' || baseEvent.external_id?.startsWith('outlook_')) {
+        provider = 'outlook';
+      }
+      
       return [{
         id: baseEvent.id,
         title: baseEvent.title,
@@ -1021,7 +1011,7 @@ function generateRecurringOccurrences(
         start: baseEvent.start_time,
         end: baseEvent.end_time,
         location: baseEvent.location,
-        provider: 'apple' as const,
+        provider,
         providerEventId: baseEvent.external_id,
         calendarColor: baseEvent.calendar_color,
       }];
@@ -1270,6 +1260,25 @@ async function getAppleCalendarEvents(
 }
 
 /**
+ * Convert Google Calendar recurrence to RRULE
+ */
+function convertGoogleRecurrenceToRRULE(recurrence: string[]): string | undefined {
+  if (!recurrence || recurrence.length === 0) {
+    return undefined;
+  }
+  
+  // Google Calendar returns RRULE strings directly in the recurrence array
+  // Format: "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20231231T235959Z"
+  const rruleString = recurrence.find((r: string) => r.startsWith('RRULE:'));
+  if (rruleString) {
+    // Remove "RRULE:" prefix
+    return rruleString.substring(6);
+  }
+  
+  return undefined;
+}
+
+/**
  * Get Google Calendar events
  */
 async function getGoogleCalendarEvents(
@@ -1307,6 +1316,98 @@ async function getGoogleCalendarEvents(
 }
 
 /**
+ * Convert Outlook Calendar recurrence pattern to RRULE
+ */
+function convertOutlookRecurrenceToRRULE(recurrence: any): string | undefined {
+  if (!recurrence || !recurrence.pattern) {
+    return undefined;
+  }
+  
+  const pattern = recurrence.pattern;
+  const range = recurrence.range;
+  
+  let rrule = '';
+  
+  // Frequency
+  const freq = pattern.type?.toUpperCase();
+  if (!freq) return undefined;
+  
+  // Map Outlook frequency to RRULE frequency
+  let rruleFreq: string;
+  switch (freq) {
+    case 'DAILY':
+      rruleFreq = 'DAILY';
+      break;
+    case 'WEEKLY':
+      rruleFreq = 'WEEKLY';
+      break;
+    case 'ABSOLUTEMONTHLY':
+    case 'RELATIVEMONTHLY':
+      rruleFreq = 'MONTHLY';
+      break;
+    case 'ABSOLUTEYEARLY':
+    case 'RELATIVEYEARLY':
+      rruleFreq = 'YEARLY';
+      break;
+    default:
+      return undefined;
+  }
+  
+  rrule = `FREQ=${rruleFreq}`;
+  
+  // Interval
+  if (pattern.interval && pattern.interval > 1) {
+    rrule += `;INTERVAL=${pattern.interval}`;
+  }
+  
+  // Days of week (for weekly/monthly/yearly)
+  if (pattern.daysOfWeek && pattern.daysOfWeek.length > 0) {
+    const dayMap: Record<string, string> = {
+      'sunday': 'SU',
+      'monday': 'MO',
+      'tuesday': 'TU',
+      'wednesday': 'WE',
+      'thursday': 'TH',
+      'friday': 'FR',
+      'saturday': 'SA',
+    };
+    const days = pattern.daysOfWeek.map((d: string) => dayMap[d.toLowerCase()]).filter(Boolean);
+    if (days.length > 0) {
+      rrule += `;BYDAY=${days.join(',')}`;
+    }
+  }
+  
+  // Day of month (for monthly/yearly)
+  if (pattern.dayOfMonth) {
+    rrule += `;BYMONTHDAY=${pattern.dayOfMonth}`;
+  }
+  
+  // Month (for yearly)
+  if (pattern.month) {
+    rrule += `;BYMONTH=${pattern.month}`;
+  }
+  
+  // Range
+  if (range) {
+    if (range.type === 'endDate' && range.endDate) {
+      // Convert date to UNTIL format (YYYYMMDDTHHMMSSZ)
+      const endDate = new Date(range.endDate);
+      const year = endDate.getUTCFullYear();
+      const month = String(endDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(endDate.getUTCDate()).padStart(2, '0');
+      const hour = String(endDate.getUTCHours()).padStart(2, '0');
+      const minute = String(endDate.getUTCMinutes()).padStart(2, '0');
+      const second = String(endDate.getUTCSeconds()).padStart(2, '0');
+      rrule += `;UNTIL=${year}${month}${day}T${hour}${minute}${second}Z`;
+    } else if (range.type === 'numbered' && range.numberOfOccurrences) {
+      rrule += `;COUNT=${range.numberOfOccurrences}`;
+    }
+  }
+  
+  return rrule;
+}
+
+/**
  * Get Outlook Calendar events
  */
 async function getOutlookCalendarEvents(
@@ -1314,9 +1415,12 @@ async function getOutlookCalendarEvents(
   startDate: string,
   endDate: string
 ): Promise<CalendarEvent[]> {
-  const url = new URL('https://graph.microsoft.com/v1.0/me/calendarview');
-  url.searchParams.set('startDateTime', startDate);
-  url.searchParams.set('endDateTime', endDate);
+  // Fetch base recurring events (not expanded instances)
+  // Use /events endpoint with $filter to get series masters
+  const url = new URL('https://graph.microsoft.com/v1.0/me/calendar/events');
+  url.searchParams.set('$filter', `start/dateTime ge '${startDate}' and end/dateTime le '${endDate}'`);
+  url.searchParams.set('$select', 'id,subject,body,start,end,location,recurrence,seriesMasterId,type');
+  url.searchParams.set('$orderby', 'start/dateTime');
 
   const response = await fetch(url.toString(), {
     headers: {
@@ -1331,15 +1435,26 @@ async function getOutlookCalendarEvents(
 
   const data = await response.json();
   
-  return (data.value || []).map((event: any) => ({
-    id: `outlook_${event.id}`,
-    title: event.subject,
-    description: event.body?.content,
-    start: event.start.dateTime,
-    end: event.end.dateTime,
-    provider: 'outlook',
-    providerEventId: event.id,
-  }));
+  return (data.value || []).map((event: any) => {
+    // Only process series masters (base recurring events) or single events
+    const isRecurring = event.type === 'seriesMaster' || !!event.recurrence;
+    const rrule = isRecurring ? convertOutlookRecurrenceToRRULE(event.recurrence) : undefined;
+    const recurrenceBaseId = event.seriesMasterId || (isRecurring ? event.id : undefined);
+    
+    return {
+      id: `outlook_${event.id}`,
+      title: event.subject,
+      description: event.body?.content,
+      start: event.start.dateTime,
+      end: event.end.dateTime,
+      location: event.location?.displayName,
+      provider: 'outlook',
+      providerEventId: event.id,
+      rrule,
+      recurrenceBaseId,
+      isRecurring,
+    };
+  });
 }
 
 /**
