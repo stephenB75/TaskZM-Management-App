@@ -970,18 +970,37 @@ export async function getCalendarEvents(
   startDate: string,
   endDate: string
 ): Promise<CalendarEvent[]> {
-  // For all providers, try to get events from database first
-  // This ensures we have recurring events properly expanded
-  switch (provider) {
-    case 'google':
-      return await getGoogleEventsFromDatabase(userId, startDate, endDate);
-    case 'outlook':
-      return await getOutlookEventsFromDatabase(userId, startDate, endDate);
-    case 'apple':
-      return await getAppleEventsFromDatabase(userId, startDate, endDate);
-    default:
-      return [];
+  // For Apple, always use database (events are synced via CalDAV)
+  if (provider === 'apple') {
+    return await getAppleEventsFromDatabase(userId, startDate, endDate);
   }
+
+  // For Google and Outlook, try database first, then fall back to API
+  let events: CalendarEvent[] = [];
+  
+  if (provider === 'google') {
+    events = await getGoogleEventsFromDatabase(userId, startDate, endDate);
+    // If no events in database, fetch from API
+    if (events.length === 0) {
+      const tokens = await getCalendarTokens(userId, provider);
+      if (tokens) {
+        const refreshedTokens = await refreshAccessToken(userId, provider, tokens);
+        events = await getGoogleCalendarEvents(refreshedTokens, startDate, endDate);
+      }
+    }
+  } else if (provider === 'outlook') {
+    events = await getOutlookEventsFromDatabase(userId, startDate, endDate);
+    // If no events in database, fetch from API
+    if (events.length === 0) {
+      const tokens = await getCalendarTokens(userId, provider);
+      if (tokens) {
+        const refreshedTokens = await refreshAccessToken(userId, provider, tokens);
+        events = await getOutlookCalendarEvents(refreshedTokens, startDate, endDate);
+      }
+    }
+  }
+
+  return events;
 }
 
 /**
@@ -1216,6 +1235,162 @@ async function getAppleEventsFromDatabase(
 }
 
 /**
+ * Get Google Calendar events from the database
+ */
+async function getGoogleEventsFromDatabase(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<CalendarEvent[]> {
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    );
+
+    // Fetch all events (including base recurring events)
+    const { data: events, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('source', 'google')
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      console.log('Error fetching Google events from database:', error);
+      return [];
+    }
+
+    const result: CalendarEvent[] = [];
+    const processedBaseEvents = new Set<string>();
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    for (const event of events || []) {
+      // If this is a base recurring event (has RRULE and no recurrence_base_id)
+      if (event.is_recurring && event.rrule && !event.recurrence_base_id) {
+        // Only process each base event once
+        if (processedBaseEvents.has(event.external_id)) {
+          continue;
+        }
+        processedBaseEvents.add(event.external_id);
+
+        // Generate occurrences for this recurring event within the date range
+        const occurrences = generateRecurringOccurrences(
+          event,
+          startDateObj,
+          endDateObj
+        );
+        result.push(...occurrences);
+      } else if (!event.recurrence_base_id) {
+        // Regular non-recurring event - only include if within date range
+        const eventStart = new Date(event.start_time);
+        if (eventStart >= startDateObj && eventStart <= endDateObj) {
+          result.push({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            start: event.start_time,
+            end: event.end_time,
+            location: event.location,
+            provider: 'google' as const,
+            providerEventId: event.external_id,
+            calendarColor: event.calendar_color,
+          });
+        }
+      }
+      // Skip expanded instances (they're handled by base event expansion)
+    }
+
+    // Sort by start time
+    result.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+    return result;
+  } catch (error) {
+    console.log('Failed to fetch Google events from database:', error);
+    return [];
+  }
+}
+
+/**
+ * Get Outlook Calendar events from the database
+ */
+async function getOutlookEventsFromDatabase(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<CalendarEvent[]> {
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    );
+
+    // Fetch all events (including base recurring events)
+    const { data: events, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('source', 'outlook')
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      console.log('Error fetching Outlook events from database:', error);
+      return [];
+    }
+
+    const result: CalendarEvent[] = [];
+    const processedBaseEvents = new Set<string>();
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+
+    for (const event of events || []) {
+      // If this is a base recurring event (has RRULE and no recurrence_base_id)
+      if (event.is_recurring && event.rrule && !event.recurrence_base_id) {
+        // Only process each base event once
+        if (processedBaseEvents.has(event.external_id)) {
+          continue;
+        }
+        processedBaseEvents.add(event.external_id);
+
+        // Generate occurrences for this recurring event within the date range
+        const occurrences = generateRecurringOccurrences(
+          event,
+          startDateObj,
+          endDateObj
+        );
+        result.push(...occurrences);
+      } else if (!event.recurrence_base_id) {
+        // Regular non-recurring event - only include if within date range
+        const eventStart = new Date(event.start_time);
+        if (eventStart >= startDateObj && eventStart <= endDateObj) {
+          result.push({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            start: event.start_time,
+            end: event.end_time,
+            location: event.location,
+            provider: 'outlook' as const,
+            providerEventId: event.external_id,
+            calendarColor: event.calendar_color,
+          });
+        }
+      }
+      // Skip expanded instances (they're handled by base event expansion)
+    }
+
+    // Sort by start time
+    result.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+    return result;
+  } catch (error) {
+    console.log('Failed to fetch Outlook events from database:', error);
+    return [];
+  }
+}
+
+/**
  * Get Apple Calendar events via CalDAV
  */
 async function getAppleCalendarEvents(
@@ -1286,13 +1461,14 @@ async function getGoogleCalendarEvents(
   startDate: string,
   endDate: string
 ): Promise<CalendarEvent[]> {
-  const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
-  url.searchParams.set('timeMin', startDate);
-  url.searchParams.set('timeMax', endDate);
-  url.searchParams.set('singleEvents', 'true');
-  url.searchParams.set('orderBy', 'startTime');
+  // Fetch base recurring events (not expanded)
+  const baseUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
+  baseUrl.searchParams.set('timeMin', startDate);
+  baseUrl.searchParams.set('timeMax', endDate);
+  baseUrl.searchParams.set('singleEvents', 'false'); // Get base recurring events
+  baseUrl.searchParams.set('orderBy', 'startTime');
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(baseUrl.toString(), {
     headers: {
       'Authorization': `Bearer ${tokens.accessToken}`,
     },
@@ -1304,15 +1480,25 @@ async function getGoogleCalendarEvents(
 
   const data = await response.json();
   
-  return (data.items || []).map((event: any) => ({
-    id: `google_${event.id}`,
-    title: event.summary,
-    description: event.description,
-    start: event.start.dateTime || event.start.date,
-    end: event.end.dateTime || event.end.date,
-    provider: 'google',
-    providerEventId: event.id,
-  }));
+  return (data.items || []).map((event: any) => {
+    const isRecurring = !!(event.recurrence && event.recurrence.length > 0);
+    const rrule = isRecurring ? convertGoogleRecurrenceToRRULE(event.recurrence) : undefined;
+    const recurrenceBaseId = event.recurringEventId || (isRecurring ? event.id : undefined);
+    
+    return {
+      id: `google_${event.id}`,
+      title: event.summary,
+      description: event.description,
+      start: event.start.dateTime || event.start.date,
+      end: event.end.dateTime || event.end.date,
+      location: event.location,
+      provider: 'google',
+      providerEventId: event.id,
+      rrule,
+      recurrenceBaseId,
+      isRecurring,
+    };
+  });
 }
 
 /**
