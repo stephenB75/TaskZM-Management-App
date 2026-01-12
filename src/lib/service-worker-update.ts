@@ -13,7 +13,7 @@ const UPDATE_NOTIFICATION_COOLDOWN = TIMING_CONSTANTS.serviceWorker.notification
 const UPDATE_NOTIFICATION_DURATION = TIMING_CONSTANTS.serviceWorker.notificationDuration;
 // REMOVED: UPDATE_VISIBILITY_CHECK_INTERVAL - no longer checking on visibility changes
 const UPDATE_NOTIFICATION_KEY = NOTIFICATION_STORAGE_KEYS.updateAvailable;
-const INITIAL_UPDATE_CHECK_DELAY = 1000; // 1 second delay for initial check to ensure page is loaded
+const INITIAL_UPDATE_CHECK_DELAY = TIMING_CONSTANTS.serviceWorker.initialUpdateCheckDelay;
 
 let updateCheckInterval: number | null = null;
 let updateAvailableToastId: string | number | null = null;

@@ -109,6 +109,7 @@ export const TIMING_CONSTANTS = {
     notificationCooldown: 5 * 60 * 1000, // 5 minutes - Don't show notification again within this time
     notificationDuration: 15000, // 15 seconds - How long to show update notification
     visibilityCheckInterval: 5 * 60 * 1000, // 5 minutes - Minimum time between visibility-based update checks
+    initialUpdateCheckDelay: 1000, // 1 second - Delay for initial update check to ensure page is loaded
   },
 } as const;
 

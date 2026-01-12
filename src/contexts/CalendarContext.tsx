@@ -710,9 +710,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     setShowAppleCalDAVDialog(false);
     
     // Trigger initial sync after setup
+    // Use a small delay to ensure setup is complete
     setTimeout(() => {
       syncAppleCalendarInternal(false);
-    }, 1000);
+    }, TIMING_CONSTANTS.intervals.taskContext); // Use task context delay constant (1 second)
   }, [user, calendarStatus, syncAppleCalendarInternal]);
 
   // Automatic Apple Calendar sync on mount (if connected)
@@ -729,16 +730,20 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     
     let initialSyncTimer: NodeJS.Timeout | number | null = null;
     
+    // Use constants for timeout values
+    const IDLE_CALLBACK_TIMEOUT = 5 * TIMING_CONSTANTS.timeConversions.secondsToMs; // 5 seconds
+    const FALLBACK_SYNC_DELAY = 5 * TIMING_CONSTANTS.timeConversions.secondsToMs; // 5 seconds
+    
     if ('requestIdleCallback' in window) {
       // Use idle callback to sync when browser is idle (after 5 seconds max wait)
       const idleCallback = (window as any).requestIdleCallback(
         scheduleSync,
-        { timeout: 5000 }
+        { timeout: IDLE_CALLBACK_TIMEOUT }
       );
       initialSyncTimer = idleCallback;
     } else {
       // Fallback: Wait 5 seconds after mount to let app fully load
-      initialSyncTimer = setTimeout(scheduleSync, 5000);
+      initialSyncTimer = setTimeout(scheduleSync, FALLBACK_SYNC_DELAY);
     }
     
     return () => {
@@ -786,7 +791,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         const timeSinceLastSync = now - lastAutoSyncRef.current;
         
         // Only sync if it's been at least 1 minute since last sync (reduced for better responsiveness)
-        if (timeSinceLastSync >= 1 * 60 * 1000) {
+        const VISIBILITY_SYNC_COOLDOWN = TIMING_CONSTANTS.timeConversions.minutesToMs; // 1 minute
+        if (timeSinceLastSync >= VISIBILITY_SYNC_COOLDOWN) {
           console.debug('Auto-syncing Apple Calendar on visibility change...');
           syncAppleCalendarInternal(true);
         }

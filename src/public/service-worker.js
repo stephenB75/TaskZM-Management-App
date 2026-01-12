@@ -47,23 +47,21 @@ self.addEventListener('activate', (event) => {
             .map((name) => caches.delete(name))
         );
       }),
-      // CRITICAL: Check if there are any active clients (open pages)
-      // If there are active clients, DON'T claim them - let them continue with old service worker
-      // This prevents automatic page refreshes
+      // CRITICAL: NEVER claim clients - this prevents automatic page refreshes
+      // The new service worker will only take control when:
+      // 1. All pages are closed, OR
+      // 2. User manually refreshes the page
+      // We explicitly do NOT call self.clients.claim() to prevent any automatic activation
+      // This ensures updates happen in the background without disrupting user sessions
       self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
-        // If there are active clients, don't claim them
-        // The new service worker will only take control when:
-        // 1. All pages are closed, OR
-        // 2. User manually refreshes the page
         if (clients.length > 0) {
           // Don't claim clients - let them continue with old service worker
           // This prevents automatic refreshes
           console.log('[Service Worker] New version installed but waiting - will activate on next page load');
-          return Promise.resolve();
-        } else {
-          // No active clients - safe to claim (but this shouldn't happen during active session)
-          return self.clients.claim();
         }
+        // CRITICAL: Never call self.clients.claim() - even if no clients
+        // This ensures the service worker waits until manual refresh
+        return Promise.resolve();
       })
     ])
   );
