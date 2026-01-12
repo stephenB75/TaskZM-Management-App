@@ -1144,17 +1144,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       id="google-cal" 
                       className="flex-shrink-0"
                       checked={calendarStatus.google}
-                      onCheckedChange={(checked) => {
-                        if (checked) connectCalendar('google');
-                        else disconnectCalendar('google');
-                        toast.success(
-                          checked ? 'Google Calendar Connected' : 'Google Calendar Disconnected',
-                          {
-                            description: checked 
-                              ? 'Your Google Calendar is now synced with TaskZM' 
-                              : 'Google Calendar has been disconnected'
+                      disabled={isCalendarSyncing}
+                      onCheckedChange={async (checked) => {
+                        try {
+                          if (checked) {
+                            await connectCalendar('google');
+                          } else {
+                            await disconnectCalendar('google');
                           }
-                        );
+                          // Status will be updated by checkCalendarStatus in the connect/disconnect functions
+                          // No need to show toast here - connect/disconnect functions handle it
+                        } catch (error) {
+                          // Error handling is done in connect/disconnect functions
+                          console.error('Calendar toggle error:', error);
+                        }
                       }}
                     />
                   </div>

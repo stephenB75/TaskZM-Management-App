@@ -2187,7 +2187,7 @@ app.post("/taskzm-database-function/calendar/google/use-supabase-tokens", async 
     const tokens: calendarSync.CalendarTokens = {
       accessToken: providerToken,
       refreshToken: providerRefreshToken,
-      expiresAt: Date.now() + (3600 * 1000), // Assume 1 hour expiry (will refresh if needed)
+      expiresAt: Date.now() + (3600 * 1000), // Assume 1 hour expiry (will refresh if needed) - using calculation for clarity
       provider: 'google',
     };
 

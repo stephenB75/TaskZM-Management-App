@@ -65,11 +65,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const lastAutoSyncRef = useRef<number>(0);
   const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Calendar sync interval: 5 minutes (300000 ms) - reduced for better responsiveness
-  const CALENDAR_SYNC_INTERVAL = 5 * 60 * 1000;
+  // Calendar sync interval - use constant from TIMING_CONSTANTS
+  const CALENDAR_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.syncInterval;
   
-  // Minimum time between auto syncs: 2 minutes (120000 ms) - reduced for better responsiveness
-  const MIN_AUTO_SYNC_INTERVAL = 2 * 60 * 1000;
+  // Minimum time between auto syncs - use constant from TIMING_CONSTANTS
+  const MIN_AUTO_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.minAutoSyncInterval;
 
   // Load calendar status from localStorage on mount
   useEffect(() => {
@@ -96,7 +96,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     const cacheKey = `calendar_status_cache_${user.id}`;
     const cacheTimeKey = `calendar_status_cache_time_${user.id}`;
     const cachedTime = localStorage.getItem(cacheTimeKey);
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    const CACHE_DURATION = TIMING_CONSTANTS.calendar.cacheDuration;
     
     if (cachedTime) {
       const cacheAge = Date.now() - parseInt(cachedTime, 10);
@@ -317,8 +317,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
       
       // Open OAuth flow in popup
-      const width = 600;
-      const height = 700;
+      const width = TIMING_CONSTANTS.calendar.popupWidth;
+      const height = TIMING_CONSTANTS.calendar.popupHeight;
       const left = window.screen.width / 2 - width / 2;
       const top = window.screen.height / 2 - height / 2;
       
@@ -407,7 +407,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             checkCalendarStatus();
           }, TIMING_CONSTANTS.delays.calendarCheck);
         }
-      }, 500);
+      }, TIMING_CONSTANTS.calendar.popupCheckInterval);
 
       toast.success(`Connecting to ${provider} Calendar...`, {
         description: 'Complete the authorization in the popup window',

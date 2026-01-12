@@ -9,9 +9,13 @@ import * as calendarSync from './calendar-sync.tsx';
 // Import CalendarEvent type
 type CalendarEvent = calendarSync.CalendarEvent;
 
+const DEFAULT_TIMEZONE = 'America/New_York';
 const CALENDAR_SYNC_PAST_DAYS = 365; // Days to look back when syncing calendar (to capture recurring events)
 const CALENDAR_SYNC_FUTURE_DAYS = 90; // Days to look ahead when syncing calendar
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000; // 86400000 ms
+const GOOGLE_CALENDAR_MAX_RESULTS = 2500; // Google Calendar API max results limit
+const GOOGLE_CALENDAR_PRIMARY = 'primary'; // Google Calendar default calendar identifier
+const TOKEN_EXPIRY_ASSUMPTION_MS = 3600 * 1000; // 1 hour in milliseconds - assumed token expiry (will refresh if needed) - using calculation for clarity (3600 seconds * 1000 ms)
 
 export interface SyncResult {
   success: boolean;
@@ -29,7 +33,7 @@ export async function syncGoogleCalendarsToDatabase(
   supabase: any,
   userId: string,
   workspaceId: string,
-  userTimezone: string = 'America/New_York'
+  userTimezone: string = DEFAULT_TIMEZONE
 ): Promise<SyncResult> {
   console.log(`[Google Calendar Sync] Syncing with user timezone: ${userTimezone}`);
   
@@ -66,7 +70,7 @@ export async function syncGoogleCalendarsToDatabase(
     baseUrl.searchParams.set('timeMax', endDate.toISOString());
     baseUrl.searchParams.set('singleEvents', 'false'); // Get base recurring events
     baseUrl.searchParams.set('orderBy', 'startTime');
-    baseUrl.searchParams.set('maxResults', '2500'); // Google API limit
+    baseUrl.searchParams.set('maxResults', GOOGLE_CALENDAR_MAX_RESULTS.toString());
 
     const response = await fetch(baseUrl.toString(), {
       headers: {
@@ -215,7 +219,7 @@ export async function syncGoogleCalendarsToDatabase(
             end_time: event.end,
             location: event.location,
             source: 'google',
-            calendar_href: 'primary', // Google Calendar uses 'primary' as the default calendar
+            calendar_href: GOOGLE_CALENDAR_PRIMARY, // Google Calendar uses 'primary' as the default calendar
             calendar_color: event.calendarColor,
             external_updated_at: event.start, // Use start time as updated_at
             is_readonly: true,
@@ -239,7 +243,7 @@ export async function syncGoogleCalendarsToDatabase(
     }
 
     // Handle deletions - events that exist in DB but not in Google Calendar
-    const syncedCalendarHrefs = new Set(['primary']); // Google Calendar uses 'primary' as default
+    const syncedCalendarHrefs = new Set([GOOGLE_CALENDAR_PRIMARY]); // Google Calendar uses 'primary' as default
     
     // Compare external_id from DB with fetched event UIDs
     for (const [externalId, existing] of existingMap) {

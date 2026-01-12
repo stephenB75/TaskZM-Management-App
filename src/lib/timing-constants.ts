@@ -74,6 +74,12 @@ export const TIMING_CONSTANTS = {
     minRecurrenceInterval: 1, // Minimum recurrence interval
     maxRecurrenceInterval: 365, // Maximum recurrence interval (1 year)
     maxOccurrences: 365, // Maximum number of occurrences to pre-create for a recurring task
+    syncInterval: 5 * 60 * 1000, // 5 minutes - Calendar sync interval
+    minAutoSyncInterval: 2 * 60 * 1000, // 2 minutes - Minimum time between auto syncs
+    cacheDuration: 5 * 60 * 1000, // 5 minutes - Calendar status cache duration
+    popupCheckInterval: 500, // 500ms - OAuth popup check interval
+    popupWidth: 600, // 600px - OAuth popup width
+    popupHeight: 700, // 700px - OAuth popup height
   },
   
   // Recurrence-specific delays
