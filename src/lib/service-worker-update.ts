@@ -11,8 +11,9 @@ import { NOTIFICATION_STORAGE_KEYS, NOTIFICATION_TOAST_MESSAGES } from './notifi
 const UPDATE_CHECK_INTERVAL = TIMING_CONSTANTS.serviceWorker.updateCheckInterval;
 const UPDATE_NOTIFICATION_COOLDOWN = TIMING_CONSTANTS.serviceWorker.notificationCooldown;
 const UPDATE_NOTIFICATION_DURATION = TIMING_CONSTANTS.serviceWorker.notificationDuration;
-const UPDATE_VISIBILITY_CHECK_INTERVAL = TIMING_CONSTANTS.serviceWorker.visibilityCheckInterval;
+// REMOVED: UPDATE_VISIBILITY_CHECK_INTERVAL - no longer checking on visibility changes
 const UPDATE_NOTIFICATION_KEY = NOTIFICATION_STORAGE_KEYS.updateAvailable;
+const INITIAL_UPDATE_CHECK_DELAY = 1000; // 1 second delay for initial check to ensure page is loaded
 
 let updateCheckInterval: number | null = null;
 let updateAvailableToastId: string | number | null = null;
@@ -26,10 +27,14 @@ let registration: ServiceWorkerRegistration | null = null;
 export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistration) {
   registration = swRegistration;
   
-  // Check for updates immediately on load (non-blocking)
-  checkForUpdates();
+  // Check for updates after a delay (non-blocking, background only)
+  // Use a small delay to ensure it doesn't block initial page load
+  setTimeout(() => {
+    checkForUpdates();
+  }, INITIAL_UPDATE_CHECK_DELAY);
   
-  // Set up periodic background checks (reduced frequency to minimize checks)
+  // Set up periodic background checks ONLY (no visibility change triggers)
+  // This ensures updates are checked in the background without disrupting user sessions
   updateCheckInterval = window.setInterval(() => {
     checkForUpdates();
   }, UPDATE_CHECK_INTERVAL);
@@ -62,31 +67,27 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
     }
   });
   
-  // Check for updates when page becomes visible (user returns to tab)
-  // But only if enough time has passed (reduce frequency)
-  let lastVisibilityCheck = 0;
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      const now = Date.now();
-      // Only check if enough time has passed since last check
-      if (now - lastVisibilityCheck > UPDATE_VISIBILITY_CHECK_INTERVAL) {
-        lastVisibilityCheck = now;
-        checkForUpdates();
-      }
-    }
-  });
+  // REMOVED: Visibility change handler for update checks
+  // Update checks should ONLY happen in the background via interval
+  // This prevents any refresh behavior when user clicks back to the app
+  // Updates will be checked periodically in the background without user interaction
 }
 
 /**
  * Check for service worker updates in the background
  * This is non-blocking and won't disrupt user sessions
  * Updates will be downloaded but will NOT activate until user manually refreshes
+ * 
+ * IMPORTANT: This function is ONLY called from background intervals (not on visibility changes)
+ * The update check itself is safe - it only checks for updates, doesn't cause refreshes
+ * The service worker is configured to wait and not activate automatically
  */
 function checkForUpdates() {
   if (!registration) return;
   
-  // Check for updates in the background
-  // The new service worker will install but wait (not activate)
+  // Check for updates in the background (safe to run even when page is visible)
+  // The update() call itself doesn't cause refreshes - it only checks for new versions
+  // The new service worker will install but wait (not activate) due to our configuration
   // It will only activate when user manually refreshes the page
   registration.update().catch((error) => {
     // Silently fail - update checking is non-critical
