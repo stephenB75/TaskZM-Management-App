@@ -102,6 +102,7 @@ export function findNextAvailableSlot(
   // Get all tasks scheduled for the target date (excluding the current task)
   // CRITICAL: Include ALL tasks regardless of category to detect conflicts across categories
   // This ensures recurring tasks see regular tasks and vice versa
+  // CRITICAL: Also filter out tasks with invalid times (midnight) to ensure we only check real scheduled times
   const dateTasks = allTasks.filter((task) => {
     if (taskId && task.id === taskId) return false;
     if (task.status === 'done') return false;
@@ -112,6 +113,12 @@ export function findNextAvailableSlot(
     const taskScheduledDate = typeof task.scheduledDate === 'string'
       ? new Date(task.scheduledDate)
       : new Date(task.scheduledDate);
+    
+    // CRITICAL: Only include tasks with valid scheduled times (not midnight/00:00:00)
+    // This ensures we only check conflicts with tasks that have actual scheduled times
+    const hasValidTime = !isNaN(taskScheduledDate.getTime()) && 
+      (taskScheduledDate.getHours() !== 0 || taskScheduledDate.getMinutes() !== 0);
+    if (!hasValidTime) return false;
     
     // Normalize to start of day for comparison
     const taskDate = new Date(taskScheduledDate);
@@ -325,9 +332,10 @@ export function findNextAvailableSlot(
       const overlaps = candidateStart < existing.end && candidateEnd > existing.start;
       
       // 2. Exact same start time (most common case for duplicate scheduling)
-      // CRITICAL: Use a small tolerance (1 millisecond) to catch exact matches that might have rounding differences
+      // CRITICAL: Use a tolerance of 1 minute to catch tasks scheduled at the same time
+      // This prevents multiple tasks from being scheduled at exactly the same time (e.g., 9:00 AM)
       const timeDifference = Math.abs(candidateStart - existing.start);
-      const sameStartTime = timeDifference < 1; // Exact match or within 1ms
+      const sameStartTime = timeDifference < MILLISECONDS_PER_MINUTE; // Within 1 minute = same time slot
       
       // 3. Candidate starts slightly before existing but still overlaps
       const startsBeforeAndOverlaps = candidateStart < existing.start && candidateEnd > existing.start;
