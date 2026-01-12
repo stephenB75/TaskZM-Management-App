@@ -608,11 +608,15 @@ export async function fetchCalendarEvents(
     ? calendarHref
     : `${ICLOUD_CALDAV_URL}${calendarHref}`;
 
-  // Default to CALENDAR_SYNC_PAST_DAYS in past and CALENDAR_SYNC_FUTURE_DAYS in future
-  // We need a wide past range to capture recurring events that started long ago
-  // but have occurrences in our target date range
+  // Use a very wide date range to ensure we capture all events, including:
+  // - Base recurring events that started long ago
+  // - Events that were recently added or modified
+  // - Events that might be outside the typical viewing range
+  // This ensures sync captures all changes (additions, updates, deletions)
   const start = startDate || new Date(Date.now() - (CALENDAR_SYNC_PAST_DAYS * MILLISECONDS_PER_DAY));
   const end = endDate || new Date(Date.now() + (CALENDAR_SYNC_FUTURE_DAYS * MILLISECONDS_PER_DAY));
+  
+  console.log(`Fetching events from ${start.toISOString()} to ${end.toISOString()}`);
 
   // Format dates for CalDAV
   const formatDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -1224,9 +1228,10 @@ export async function syncCalendarsToDatabase(
     console.log(`Syncing ${deduplicatedEvents.length} unique events (${allEvents.length} before deduplication)`);
 
     // Get existing synced events for this user
+    // Include calendar_href to properly filter deletions by synced calendars
     const { data: existingEvents, error: fetchError } = await supabase
       .from('calendar_events')
-      .select('id, external_id, external_updated_at')
+      .select('id, external_id, external_updated_at, calendar_href')
       .eq('user_id', userId)
       .eq('source', 'icloud');
 
@@ -1236,16 +1241,18 @@ export async function syncCalendarsToDatabase(
       return result;
     }
 
-    // Build map of existing events by external_id
-    // For recurring events, we need to match by base UID
+    // Build map of existing events by external_id (which should match event UID for base events)
+    // For recurring events, external_id should be the base UID
     const existingMap = new Map(
       (existingEvents || []).map((e: any) => [e.external_id, e])
     );
     
-    // For fetched events, use base UID for recurring events
+    // For fetched events, use base UID for recurring events (same format as external_id)
+    // This ensures we can properly match and detect deletions
     const fetchedUids = new Set(deduplicatedEvents.map(e => {
-      // For base recurring events, use the event UID
+      // For base recurring events, use the event UID (which is stored as external_id)
       // For instances (shouldn't happen now, but handle for safety), use base UID
+      // This should match the external_id format in the database
       return e.recurrenceBaseId || e.uid;
     }));
 
@@ -1323,17 +1330,33 @@ export async function syncCalendarsToDatabase(
     }
 
     // Handle deletions - events that exist in DB but not in iCloud
-    for (const [uid, existing] of existingMap) {
-      if (!fetchedUids.has(uid)) {
-        const { error: deleteError } = await supabase
-          .from('calendar_events')
-          .delete()
-          .eq('id', existing.id);
+    // Only delete events from calendars that were synced (selectedCalendarHrefs)
+    // This prevents deleting events from calendars that weren't included in this sync
+    const syncedCalendarHrefs = new Set(selectedCalendarHrefs);
+    
+    // Compare external_id from DB with fetched event UIDs
+    for (const [externalId, existing] of existingMap) {
+      // Check if this external_id exists in the fetched events
+      // external_id should match the event UID for base events
+      if (!fetchedUids.has(externalId)) {
+        // Only delete if this event is from a calendar that was synced
+        // This prevents accidental deletion of events from unsynced calendars
+        if (existing.calendar_href && syncedCalendarHrefs.has(existing.calendar_href)) {
+          // Event was deleted from iCloud - remove from database
+          const { error: deleteError } = await supabase
+            .from('calendar_events')
+            .delete()
+            .eq('id', existing.id);
 
-        if (deleteError) {
-          result.errors.push(`Failed to delete event ${uid}: ${deleteError.message}`);
+          if (deleteError) {
+            result.errors.push(`Failed to delete event ${externalId}: ${deleteError.message}`);
+          } else {
+            result.deleted++;
+            console.log(`Deleted event ${externalId} from calendar ${existing.calendar_href} (no longer in iCloud)`);
+          }
         } else {
-          result.deleted++;
+          // Event is from a calendar that wasn't synced - skip deletion
+          console.debug(`Skipping deletion of event ${externalId} - not from synced calendar (href: ${existing.calendar_href})`);
         }
       }
     }

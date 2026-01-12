@@ -64,11 +64,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const lastAutoSyncRef = useRef<number>(0);
   const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Calendar sync interval: 15 minutes (900000 ms)
-  const CALENDAR_SYNC_INTERVAL = 15 * 60 * 1000;
+  // Calendar sync interval: 5 minutes (300000 ms) - reduced for better responsiveness
+  const CALENDAR_SYNC_INTERVAL = 5 * 60 * 1000;
   
-  // Minimum time between auto syncs: 5 minutes (300000 ms)
-  const MIN_AUTO_SYNC_INTERVAL = 5 * 60 * 1000;
+  // Minimum time between auto syncs: 2 minutes (120000 ms) - reduced for better responsiveness
+  const MIN_AUTO_SYNC_INTERVAL = 2 * 60 * 1000;
 
   // Load calendar status from localStorage on mount
   useEffect(() => {
@@ -472,7 +472,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   // Internal function to sync Apple Calendar (can be called silently for auto-sync)
   const syncAppleCalendarInternal = useCallback(async (silent: boolean = false): Promise<boolean> => {
-    if (!user || !accessToken) return false;
+    if (!user || !accessToken) {
+      console.debug('Apple Calendar sync skipped: no user or access token');
+      return false;
+    }
     
     // Prevent multiple simultaneous syncs
     if (isSyncingRef.current) {
@@ -485,10 +488,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       const now = Date.now();
       const timeSinceLastSync = now - lastAutoSyncRef.current;
       if (timeSinceLastSync < MIN_AUTO_SYNC_INTERVAL) {
-        console.debug(`Apple Calendar auto-sync skipped (last sync was ${Math.round(timeSinceLastSync / 1000)}s ago)`);
+        console.debug(`Apple Calendar auto-sync skipped (last sync was ${Math.round(timeSinceLastSync / 1000)}s ago, minimum is ${MIN_AUTO_SYNC_INTERVAL / 1000}s)`);
         return false;
       }
     }
+    
+    console.log(`[Apple Calendar Sync] Starting ${silent ? 'background' : 'manual'} sync...`);
     
     try {
       isSyncingRef.current = true;
@@ -516,6 +521,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         
         // Clear calendar events cache to force refresh
         clearCalendarEventsCache();
+        
+        console.log(`[Apple Calendar Sync] Success: ${data.created} created, ${data.updated} updated, ${data.deleted} deleted`);
         
         if (!silent) {
           toast.success('iCloud Calendar synced!', {
@@ -778,8 +785,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         const now = Date.now();
         const timeSinceLastSync = now - lastAutoSyncRef.current;
         
-        // Only sync if it's been at least 2 minutes since last sync
-        if (timeSinceLastSync >= 2 * 60 * 1000) {
+        // Only sync if it's been at least 1 minute since last sync (reduced for better responsiveness)
+        if (timeSinceLastSync >= 1 * 60 * 1000) {
           console.debug('Auto-syncing Apple Calendar on visibility change...');
           syncAppleCalendarInternal(true);
         }
