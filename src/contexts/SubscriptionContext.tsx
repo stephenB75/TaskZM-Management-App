@@ -386,19 +386,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       });
     }, SUBSCRIPTION_SYNC_INTERVAL);
 
-    // Also sync when window regains focus (user returns to app)
-    const handleFocus = () => {
-      console.log('Window focused, syncing subscription...');
-      refreshSubscription().catch((error) => {
-        console.warn('Focus subscription sync failed:', error);
-      });
-    };
-
-    window.addEventListener('focus', handleFocus);
+    // REMOVED: Focus handler that triggers syncs on window focus
+    // This was causing app refreshes when users switched back to the window
+    // Subscription syncs now only happen:
+    // 1. On manual refresh button click
+    // 2. Via periodic background sync (every SUBSCRIPTION_SYNC_INTERVAL)
+    // This prevents disruptive refreshes during user sessions
 
     return () => {
       clearInterval(syncInterval);
-      window.removeEventListener('focus', handleFocus);
     };
   }, [user, accessToken, refreshSubscription]);
 

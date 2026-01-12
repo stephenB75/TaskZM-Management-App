@@ -1028,7 +1028,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const ERROR_TOAST_COOLDOWN = 5000; // Don't show same error within 5 seconds
+  const ERROR_TOAST_COOLDOWN = TIMING_CONSTANTS.taskSync.errorToastCooldown; // Don't show same error within cooldown period
 
   const syncWithServer = useCallback(
     async (wsId?: string, silent: boolean = false) => {
@@ -1040,7 +1040,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         if (!silent) {
           const now = Date.now();
           // Only log offline status once per minute to avoid spam
-          if (now - lastNetworkErrorLogRef.current > 60000) {
+          if (now - lastNetworkErrorLogRef.current > TIMING_CONSTANTS.taskSync.networkErrorLogCooldown) {
             logger.debug('Sync skipped: browser is offline');
             lastNetworkErrorLogRef.current = now;
           }
@@ -1370,7 +1370,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Debounce helper to prevent multiple rapid syncs
   const lastEventSyncRef = useRef<number>(0);
-  const DEBOUNCE_INTERVAL = 2000; // Only sync once per 2 seconds from events - reduced for better cross-device sync
+  const DEBOUNCE_INTERVAL = TIMING_CONSTANTS.taskSync.debounceInterval; // Only sync once per interval from events - reduced for better cross-device sync
   const lastFullSyncRef = useRef<number>(0);
   const FULL_SYNC_INTERVAL = SYNC_INTERVAL_30_SECONDS; // Full sync (all resources) every 30 seconds - reduced for better cross-device sync
 
@@ -1413,20 +1413,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaceId, accessToken, syncWithServer]);
 
-  // Sync when page becomes visible (user switches back to tab/device) - debounced with full sync
-  useEffect(() => {
-    if (!autoSyncEnabled || !workspaceId || !accessToken) return;
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Do full sync when user returns to app
-        debouncedSync(true);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [autoSyncEnabled, workspaceId, accessToken, debouncedSync]);
+  // REMOVED: Visibility change handler that triggers syncs on tab switch
+  // This was causing app refreshes when users switched tabs/apps
+  // Task syncs now only happen:
+  // 1. On manual sync button click
+  // 2. On network reconnect (online event)
+  // 3. Via periodic background sync (if auto-sync is enabled)
+  // This prevents disruptive refreshes during user sessions
 
   // Sync when network comes back online - debounced with full sync
   useEffect(() => {
@@ -1441,18 +1434,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('online', handleOnline);
   }, [autoSyncEnabled, workspaceId, accessToken, debouncedSync]);
 
-  // Sync on window focus (user switches back to window) - debounced
-  useEffect(() => {
-    if (!autoSyncEnabled || !workspaceId || !accessToken) return;
-
-    const handleFocus = () => {
-      // Only sync tasks on focus (not full sync)
-      debouncedSync(false);
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [autoSyncEnabled, workspaceId, accessToken, debouncedSync]);
+  // REMOVED: Focus handler that triggers syncs on window focus
+  // This was causing app refreshes when users switched back to the window
+  // Task syncs now only happen:
+  // 1. On manual sync button click
+  // 2. On network reconnect (online event)
+  // 3. Via periodic background sync (if auto-sync is enabled)
+  // This prevents disruptive refreshes during user sessions
 
   // Helper function to calculate the next occurrence date from a given date
   // MUST be defined before addTask and updateTask
@@ -2032,7 +2020,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // Release lock after a short delay to ensure server save completes
           setTimeout(() => {
             nextOccurrenceCreationLock.current.delete(taskId);
-          }, 500);
+          }, TIMING_CONSTANTS.taskSync.uiUpdateDelay);
         }
         
         // Reload from server to get the authoritative version
@@ -2046,7 +2034,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               logger.debug('Background sync after task update:', err);
             });
           }
-        }, 1000);
+        }, TIMING_CONSTANTS.taskSync.serverProcessDelay);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to update task on server:', error);
@@ -2074,7 +2062,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               if (isRecurringTask && isBeingMarkedComplete) {
                 setTimeout(() => {
                   nextOccurrenceCreationLock.current.delete(taskId);
-                }, 500);
+                }, TIMING_CONSTANTS.taskSync.uiUpdateDelay);
               }
               await loadTasksFromServer(validWorkspaceId);
               // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
@@ -2086,7 +2074,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                     logger.debug('Background sync after task update retry:', err);
                   });
                 }
-              }, 1000);
+              }, TIMING_CONSTANTS.taskSync.serverProcessDelay);
               return;
             } else {
               logger.error('Workspace creation failed - no workspace ID returned');
@@ -2520,7 +2508,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               logger.debug('Background folder sync after creation:', err);
             });
           }
-        }, 1000); // 1 second delay to allow server to process
+        }, TIMING_CONSTANTS.taskSync.serverProcessDelay); // Delay to allow server to process
       } catch (error) {
         logger.error('Failed to save folder to server:', error);
         // Keep the optimistic update, but mark it for sync
@@ -2660,7 +2648,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               logger.debug('Background folder sync after update:', err);
             });
           }
-        }, 1000); // 1 second delay to allow server to process
+        }, TIMING_CONSTANTS.taskSync.serverProcessDelay); // Delay to allow server to process
       } catch (error) {
         logger.error('Failed to update folder on server:', error);
         // Keep the optimistic update, but mark it for sync

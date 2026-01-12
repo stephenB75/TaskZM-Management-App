@@ -117,5 +117,14 @@ export const TIMING_CONSTANTS = {
     visibilityCheckInterval: 5 * 60 * 1000, // 5 minutes - Minimum time between visibility-based update checks
     initialUpdateCheckDelay: 1000, // 1 second - Delay for initial update check to ensure page is loaded
   },
+  
+  // Task sync constants
+  taskSync: {
+    errorToastCooldown: 5000, // 5 seconds - Don't show same error within cooldown period
+    debounceInterval: 2000, // 2 seconds - Only sync once per interval from events
+    serverProcessDelay: 1000, // 1 second - Delay to allow server to process
+    networkErrorLogCooldown: 60000, // 1 minute - Don't log network errors more than once per minute
+    uiUpdateDelay: 500, // 500ms - Delay for UI updates after server operations
+  },
 } as const;
 

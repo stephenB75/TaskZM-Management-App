@@ -936,51 +936,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     };
   }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal, CALENDAR_SYNC_INTERVAL]);
 
-  // Sync when page becomes visible (user returns to app) - Apple Calendar
-  useEffect(() => {
-    if (!user || !accessToken || !calendarStatus.apple) return;
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Check if enough time has passed since last sync
-        const now = Date.now();
-        const timeSinceLastSync = now - lastAutoSyncRef.current;
-        
-        // Only sync if it's been at least 1 minute since last sync (reduced for better responsiveness)
-        const VISIBILITY_SYNC_COOLDOWN = TIMING_CONSTANTS.timeConversions.minutesToMs; // 1 minute
-        if (timeSinceLastSync >= VISIBILITY_SYNC_COOLDOWN) {
-          console.debug('Auto-syncing Apple Calendar on visibility change...');
-          syncAppleCalendarInternal(true);
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal]);
-
-  // Sync when page becomes visible (user returns to app) - Google Calendar
-  useEffect(() => {
-    if (!user || !accessToken || !calendarStatus.google) return;
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Check if enough time has passed since last sync
-        const now = Date.now();
-        const timeSinceLastSync = now - lastAutoSyncRef.current;
-        
-        // Only sync if it's been at least 1 minute since last sync
-        const VISIBILITY_SYNC_COOLDOWN = TIMING_CONSTANTS.timeConversions.minutesToMs; // 1 minute
-        if (timeSinceLastSync >= VISIBILITY_SYNC_COOLDOWN) {
-          console.debug('Auto-syncing Google Calendar on visibility change...');
-          syncGoogleCalendarInternal(true);
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user, accessToken, calendarStatus.google, syncGoogleCalendarInternal]);
+  // REMOVED: Visibility change handlers that trigger syncs on tab switch
+  // These were causing app refreshes when users switched tabs/apps
+  // Calendar syncs now only happen:
+  // 1. On manual sync button click
+  // 2. On initial calendar connection
+  // 3. Via periodic background sync (if implemented in the future)
+  // This prevents disruptive refreshes during user sessions
 
   return (
     <CalendarContext.Provider
