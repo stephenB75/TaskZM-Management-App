@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../lib/supabase-client';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
 import { clearCalendarEventsCache } from '../lib/calendar-events-cache';
@@ -234,8 +235,55 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // For Google Calendar, check if user signed in with Google via Supabase
+    if (provider === 'google') {
+      try {
+        // Check if user has Google OAuth tokens from Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user?.app_metadata?.provider === 'google') {
+          // User signed in with Google - try to use Supabase tokens
+          const providerToken = (session as any).provider_token;
+          const providerRefreshToken = (session as any).provider_refresh_token;
+          
+          if (providerToken) {
+            // Try to use Supabase Google tokens for calendar
+            const response = await fetch(`${BASE_URL}/calendar/google/use-supabase-tokens`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                providerToken,
+                providerRefreshToken,
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success) {
+                // Successfully connected using Supabase tokens
+                await checkCalendarStatus();
+                toast.success('Google Calendar connected!', {
+                  description: 'Using your Google account from sign-in',
+                });
+                return;
+              }
+            }
+            
+            // If using Supabase tokens failed (e.g., missing calendar scopes), fall through to OAuth flow
+            console.log('Supabase Google tokens not sufficient for calendar, using OAuth flow');
+          }
+        }
+      } catch (error) {
+        // If checking Supabase tokens fails, fall through to OAuth flow
+        console.log('Error checking Supabase Google tokens, using OAuth flow:', error);
+      }
+    }
+
     try {
-      // Get OAuth URL from server
+      // Get OAuth URL from server (fallback or if Supabase tokens not available)
       const response = await fetch(`${BASE_URL}/calendar/${provider}/auth`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -569,6 +617,93 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
   }, [user, accessToken]);
 
+  // Sync Google Calendar events from Google Calendar to database
+  const syncGoogleCalendarInternal = useCallback(async (silent: boolean = false): Promise<boolean> => {
+    if (!user || !accessToken) {
+      console.debug('Google Calendar sync skipped: no user or access token');
+      return false;
+    }
+    
+    // Prevent multiple simultaneous syncs
+    if (isSyncingRef.current) {
+      console.debug('Google Calendar sync already in progress, skipping...');
+      return false;
+    }
+    
+    console.log(`[Google Calendar Sync] Starting ${silent ? 'background' : 'manual'} sync...`);
+    
+    try {
+      isSyncingRef.current = true;
+      if (!silent) {
+        setIsSyncing(true);
+      }
+      
+      // Auto-detect user's timezone from browser
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
+      
+      const response = await fetch(`${BASE_URL}/calendar/google/sync`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userTimezone }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setLastSync(new Date());
+        
+        // Clear calendar events cache to force refresh
+        clearCalendarEventsCache();
+        
+        console.log(`[Google Calendar Sync] Success: ${data.created} created, ${data.updated} updated, ${data.deleted} deleted`);
+        
+        if (!silent) {
+          toast.success('Google Calendar synced!', {
+            description: `Imported ${data.created} new, updated ${data.updated}, removed ${data.deleted} events`,
+          });
+        } else {
+          console.debug(`Google Calendar auto-sync complete: ${data.created} new, ${data.updated} updated, ${data.deleted} removed`);
+        }
+        return true;
+      } else if (response.status === 400 && data.error?.includes('not connected')) {
+        // Google Calendar not connected
+        if (!silent) {
+          toast.info('Google Calendar not connected', {
+            description: 'Please connect your Google Calendar first.',
+          });
+        }
+        return false;
+      } else {
+        if (!silent) {
+          toast.error('Sync failed', {
+            description: data.error || 'Failed to sync with Google Calendar',
+          });
+        } else {
+          console.debug('Google Calendar auto-sync failed:', data.error);
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error('Google Calendar sync error:', error);
+      if (!silent) {
+        toast.error('Sync failed', {
+          description: 'Could not connect to Google Calendar',
+        });
+      } else {
+        console.debug('Google Calendar auto-sync error (silent):', error);
+      }
+      return false;
+    } finally {
+      isSyncingRef.current = false;
+      if (!silent) {
+        setIsSyncing(false);
+      }
+    }
+  }, [user, accessToken]);
+
   // Sync all tasks to calendar
   const syncAllTasks = useCallback(async (provider: CalendarProvider) => {
     if (!user) return;
@@ -579,7 +714,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Google/Outlook use server-side sync
+    // Google Calendar - trigger sync (import from Google Calendar)
+    if (provider === 'google') {
+      await syncGoogleCalendarInternal(false);
+      return;
+    }
+
+    // Outlook use server-side sync
     if (!accessToken || !workspaceId) return;
 
     try {
@@ -780,7 +921,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     };
   }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal, CALENDAR_SYNC_INTERVAL]);
 
-  // Sync when page becomes visible (user returns to app)
+  // Sync when page becomes visible (user returns to app) - Apple Calendar
   useEffect(() => {
     if (!user || !accessToken || !calendarStatus.apple) return;
     
@@ -802,6 +943,29 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal]);
+
+  // Sync when page becomes visible (user returns to app) - Google Calendar
+  useEffect(() => {
+    if (!user || !accessToken || !calendarStatus.google) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Check if enough time has passed since last sync
+        const now = Date.now();
+        const timeSinceLastSync = now - lastAutoSyncRef.current;
+        
+        // Only sync if it's been at least 1 minute since last sync
+        const VISIBILITY_SYNC_COOLDOWN = TIMING_CONSTANTS.timeConversions.minutesToMs; // 1 minute
+        if (timeSinceLastSync >= VISIBILITY_SYNC_COOLDOWN) {
+          console.debug('Auto-syncing Google Calendar on visibility change...');
+          syncGoogleCalendarInternal(true);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, accessToken, calendarStatus.google, syncGoogleCalendarInternal]);
 
   return (
     <CalendarContext.Provider

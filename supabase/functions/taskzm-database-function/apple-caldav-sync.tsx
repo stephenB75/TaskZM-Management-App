@@ -903,7 +903,14 @@ function parseVEvent(
   const rrule = getProp('RRULE');
   const recurrenceId = getProp('RECURRENCE-ID');
 
+  // Log missing required fields for debugging
   if (!baseUid || !summary || !dtstartData) {
+    console.warn('Skipping event due to missing required fields:', {
+      hasUid: !!baseUid,
+      hasSummary: !!summary,
+      hasDtstart: !!dtstartData,
+      calendarHref,
+    });
     return [];
   }
 
@@ -1208,7 +1215,10 @@ export async function syncCalendarsToDatabase(
     
     for (const href of selectedCalendarHrefs) {
       try {
+        console.log(`[Calendar Sync] Fetching events from calendar: ${href}`);
         const events = await fetchCalendarEvents(credentials, href);
+        console.log(`[Calendar Sync] Fetched ${events.length} events from calendar ${href}`);
+        
         // Add calendar color to each event
         const calendarColor = calendarColorMap.get(href);
         for (const event of events) {
@@ -1218,9 +1228,11 @@ export async function syncCalendarsToDatabase(
       } catch (error) {
         const message = `Failed to fetch from ${href}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         result.errors.push(message);
-        console.error(message);
+        console.error(`[Calendar Sync] ${message}`, error);
       }
     }
+    
+    console.log(`[Calendar Sync] Total events fetched from all calendars: ${allEvents.length}`);
 
     // Deduplicate events before syncing to database
     // This prevents duplicate recurring event instances from being stored
@@ -1257,7 +1269,20 @@ export async function syncCalendarsToDatabase(
     }));
 
     // Process each fetched event (using deduplicated list)
+    console.log(`[Calendar Sync] Processing ${deduplicatedEvents.length} events for database sync...`);
     for (const event of deduplicatedEvents) {
+      // Validate event has required fields before processing
+      if (!event.uid || !event.summary || !event.dtstart || !event.dtend) {
+        console.warn('[Calendar Sync] Skipping event with missing required fields:', {
+          hasUid: !!event.uid,
+          hasSummary: !!event.summary,
+          hasDtstart: !!event.dtstart,
+          hasDtend: !!event.dtend,
+          eventUid: event.uid,
+        });
+        result.errors.push(`Event missing required fields: ${event.uid || 'unknown'}`);
+        continue;
+      }
       // For recurring events, match by base UID (the event.uid for base events)
       // For non-recurring events, match by event.uid
       // Since we're not expanding during sync anymore, all events should be base events
@@ -1285,9 +1310,11 @@ export async function syncCalendarsToDatabase(
           .eq('id', existing.id);
 
         if (updateError) {
+          console.error(`[Calendar Sync] Failed to update event ${event.uid}:`, updateError);
           result.errors.push(`Failed to update event ${event.uid}: ${updateError.message}`);
         } else {
           result.updated++;
+          console.debug(`[Calendar Sync] Updated event: ${event.uid} - ${event.summary}`);
         }
       } else {
         // Create new event
@@ -1322,9 +1349,11 @@ export async function syncCalendarsToDatabase(
           });
 
         if (insertError) {
+          console.error(`[Calendar Sync] Failed to create event ${event.uid}:`, insertError);
           result.errors.push(`Failed to create event ${event.uid}: ${insertError.message}`);
         } else {
           result.created++;
+          console.debug(`[Calendar Sync] Created event: ${event.uid} - ${event.summary}`);
         }
       }
     }

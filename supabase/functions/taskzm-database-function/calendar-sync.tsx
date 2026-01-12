@@ -1509,7 +1509,7 @@ async function getAppleCalendarEvents(
 /**
  * Convert Google Calendar recurrence to RRULE
  */
-function convertGoogleRecurrenceToRRULE(recurrence: string[]): string | undefined {
+export function convertGoogleRecurrenceToRRULE(recurrence: string[]): string | undefined {
   if (!recurrence || recurrence.length === 0) {
     return undefined;
   }

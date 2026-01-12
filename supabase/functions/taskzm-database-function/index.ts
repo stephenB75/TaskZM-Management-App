@@ -8,6 +8,7 @@ import * as caldav from "./caldav-client.tsx";
 import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
 import * as appleCaldavSync from "./apple-caldav-sync.tsx";
+import * as googleCalendarSync from "./google-calendar-sync.tsx";
 
 // ============================================================================
 // APP INITIALIZATION
@@ -2147,6 +2148,59 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
   } catch (error) {
     console.log('Error initiating Google OAuth:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Use Google OAuth tokens from Supabase session
+app.post("/taskzm-database-function/calendar/google/use-supabase-tokens", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { providerToken, providerRefreshToken } = await c.req.json();
+
+    if (!providerToken) {
+      return c.json({ error: 'No provider token provided' }, 400);
+    }
+
+    // Verify the token works with Google Calendar API
+    const testResponse = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+      headers: {
+        'Authorization': `Bearer ${providerToken}`,
+      },
+    });
+
+    if (!testResponse.ok) {
+      // Token might not have calendar scopes - need to request them
+      if (testResponse.status === 403) {
+        return c.json({ 
+          success: false,
+          error: 'Token does not have calendar permissions. Please use OAuth flow to grant calendar access.',
+        }, 403);
+      }
+      throw new Error(`Token validation failed: ${testResponse.status}`);
+    }
+
+    // Token is valid - store it for calendar use
+    const tokens: calendarSync.CalendarTokens = {
+      accessToken: providerToken,
+      refreshToken: providerRefreshToken,
+      expiresAt: Date.now() + (3600 * 1000), // Assume 1 hour expiry (will refresh if needed)
+      provider: 'google',
+    };
+
+    await calendarSync.storeCalendarTokens(userId, 'google', tokens);
+    console.log('Google Calendar tokens stored from Supabase session for user:', userId);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Error using Supabase Google tokens:', error);
+    return c.json({ 
+      success: false,
+      error: getErrorMessage(error) 
+    }, 500);
   }
 });
 
