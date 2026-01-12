@@ -12,6 +12,52 @@ import { DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
 
+/**
+ * Clean HTML/CSS fragments and invalid characters from text
+ * Removes HTML tags, CSS properties, and other fragments that shouldn't be in descriptions
+ */
+function cleanText(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+  
+  // Remove HTML tags and fragments
+  let cleaned = text
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/style\s*=\s*["'][^"']*["']/gi, '') // Remove style attributes
+    .replace(/12px;?/gi, '') // Remove specific CSS fragments like "12px;"
+    .replace(/font-size\s*:\s*[^;]+;?/gi, '') // Remove font-size CSS
+    .replace(/color\s*:\s*[^;]+;?/gi, '') // Remove color CSS
+    .replace(/["']>/g, '') // Remove closing quote and bracket fragments
+    .replace(/;\s*>/g, '') // Remove semicolon and bracket fragments
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+  
+  return cleaned;
+}
+
+/**
+ * Filter out invalid keywords (price ranges, numbers, HTML fragments, etc.)
+ */
+function isValidKeyword(keyword: string): boolean {
+  if (!keyword || typeof keyword !== 'string') return false;
+  
+  const cleaned = cleanText(keyword);
+  if (!cleaned || cleaned.length < 2) return false;
+  
+  // Filter out price ranges like "10k-15k", "20k-25k"
+  if (/^\d+k-\d+k$/i.test(cleaned)) return false;
+  
+  // Filter out pure numbers
+  if (/^\d+$/.test(cleaned)) return false;
+  
+  // Filter out HTML/CSS fragments
+  if (/<|>|style|px|font-size|color:/i.test(cleaned)) return false;
+  
+  // Filter out very short fragments
+  if (cleaned.length < 2) return false;
+  
+  return true;
+}
+
 export interface GeneratedDescription {
   description: string;
   domain: Domain;
@@ -698,8 +744,11 @@ function extractKeywordsAndVerbsFromSearch(
   pronouns: string[];
   context: string;
 } {
-  // STEP 1: Extract keywords from task name (user input)
-  const taskKeywords = extractKeywordsFromTaskName(taskName);
+  // STEP 1: Extract keywords from task name (user input) and filter invalid ones
+  const taskKeywords = extractKeywordsFromTaskName(taskName)
+    .filter(kw => isValidKeyword(kw)) // Filter out HTML fragments, price ranges, etc.
+    .map(kw => cleanText(kw)) // Clean any remaining HTML fragments
+    .filter(kw => kw.length > 0); // Remove empty after cleaning
   
   // STEP 2: Find phrases in search results using keywords
   const foundPhrases = findPhrasesUsingKeywords(searchResults, taskKeywords);
@@ -1546,7 +1595,7 @@ function buildElaborateContextualDescription(
     const researchKeywords = DESCRIPTION_GENERATION_CONFIG.researchTask.keywords;
     const isResearchTask = taskKeywordsLower.some(kw => researchKeywords.some(rk => kw.includes(rk) || rk.includes(kw)));
     
-    let bestPhrase = elaboratingPhrases[0];
+    let bestPhrase = cleanText(elaboratingPhrases[0]); // Clean HTML fragments
     let bestPhraseLower = bestPhrase.toLowerCase();
     
     // If this is a research task, try to combine multiple contextual phrases
@@ -1610,7 +1659,7 @@ function buildElaborateContextualDescription(
         description = parts.join(' ');
         } else {
         // Use single phrase but make it more elaborate
-        bestPhrase = elaboratingPhrases[0];
+        bestPhrase = cleanText(elaboratingPhrases[0]); // Clean HTML fragments
         bestPhraseLower = bestPhrase.toLowerCase();
       }
     }
@@ -1629,89 +1678,131 @@ function buildElaborateContextualDescription(
                              domainActionVerbs.some(av => bestPhraseLower.includes(av));
       
       // Get relevant keywords that relate to the phrase but aren't already in it
-      // IMPROVED: Only include semantically relevant keywords
-      const relevantKeywords = keywords.filter(kw => {
-        const kwLower = kw.toLowerCase();
-        // Must not be in phrase or task name
-        if (bestPhraseLower.includes(kwLower) || taskNameLower.includes(kwLower)) {
-          return false;
-        }
-        // Must relate to phrase keywords
-        if (!taskKeywordsLower.some(tkw => bestPhraseLower.includes(tkw.toLowerCase()) || kwLower.includes(tkw.toLowerCase()))) {
-          return false;
-        }
-        // Must be semantically relevant to the task
-        return isSemanticallyRelevant(kw);
-      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
+      // IMPROVED: Only include semantically relevant keywords, filter HTML fragments, limit to 2-3 keywords
+      const relevantKeywords = keywords
+        .filter(kw => {
+          // First validate keyword is clean and valid
+          if (!isValidKeyword(kw)) return false;
+          
+          const kwLower = cleanText(kw).toLowerCase();
+          // Must not be in phrase or task name
+          if (bestPhraseLower.includes(kwLower) || taskNameLower.includes(kwLower)) {
+            return false;
+          }
+          // Must relate to phrase keywords
+          if (!taskKeywordsLower.some(tkw => bestPhraseLower.includes(tkw.toLowerCase()) || kwLower.includes(tkw.toLowerCase()))) {
+            return false;
+          }
+          // Must be semantically relevant to the task
+          return isSemanticallyRelevant(kw);
+        })
+        .map(kw => cleanText(kw)) // Clean HTML fragments
+        .filter(kw => kw.length > 0) // Remove empty after cleaning
+        .slice(0, 2); // Limit to 2 keywords max to avoid "and and and" chains
       
-      // Get context nouns that add value - IMPROVED: Only include semantically relevant nouns
-      const contextNouns = elaboratingNouns.filter(n => {
-        const nLower = n.toLowerCase();
-        // Must not be in phrase or task name
-        if (bestPhraseLower.includes(nLower) || taskNameLower.includes(nLower)) {
-          return false;
-        }
-        // Must be semantically relevant to the task
-        return isSemanticallyRelevant(n);
-      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
+      // Get context nouns that add value - IMPROVED: Only include semantically relevant nouns, filter HTML fragments
+      const contextNouns = elaboratingNouns
+        .filter(n => {
+          // First validate noun is clean and valid
+          if (!isValidKeyword(n)) return false;
+          
+          const nLower = cleanText(n).toLowerCase();
+          // Must not be in phrase or task name
+          if (bestPhraseLower.includes(nLower) || taskNameLower.includes(nLower)) {
+            return false;
+          }
+          // Must be semantically relevant to the task
+          return isSemanticallyRelevant(n);
+        })
+        .map(n => cleanText(n)) // Clean HTML fragments
+        .filter(n => n.length > 0) // Remove empty after cleaning
+        .slice(0, 2); // Limit to 2 nouns max
       
       // ENHANCED: Build complete contextual sentences using sentence templates
       // This ensures we write complete sentences from keywords and phrases, not just fragments
+      // Clean the best phrase first
+      const cleanedPhrase = cleanText(bestPhrase);
+      
       if (phraseHasAction && contextNouns.length > 0) {
-        // Complete sentence: Phrase (with action) + involving + nouns
-        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+        // Complete sentence: Phrase (with action) + involving + nouns (max 2)
+        const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
+                         contextNouns.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}.`;
       } else if (phraseHasAction && relevantKeywords.length > 0) {
-        // Complete sentence: Phrase (with action) + related to + keywords
-        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+        // Complete sentence: Phrase (with action) + related to + keywords (max 2)
+        const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
+                            relevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
       } else if (actionVerb && contextNouns.length > 0) {
-        // Complete sentence: Verb + phrase + for + nouns
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
+        // Complete sentence: Verb + phrase + for + nouns (max 1)
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${cleanedPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
       } else if (actionVerb && relevantKeywords.length > 0) {
-        // Complete sentence: Verb + phrase + related to + keywords
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}.`;
+        // Complete sentence: Verb + phrase + related to + keywords (max 1)
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${cleanedPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}.`;
       } else if (phraseHasAction) {
         // Complete sentence: Phrase (with action) as standalone sentence
-        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)}.`;
+        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)}.`;
       } else if (actionVerb) {
         // Complete sentence: Verb + phrase
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}.`;
+        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${cleanedPhrase}.`;
       } else if (contextNouns.length > 0) {
-        // Complete sentence: Phrase + involving + nouns
-        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+        // Complete sentence: Phrase + involving + nouns (max 2)
+        const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
+                         contextNouns.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}.`;
       } else if (relevantKeywords.length > 0) {
-        // Complete sentence: Phrase + related to + keywords
-        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+        // Complete sentence: Phrase + related to + keywords (max 2)
+        const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
+                            relevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
       } else {
         // Fallback: Phrase as standalone sentence
-        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)}.`;
+        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)}.`;
       }
     }
   } 
   // PRIORITY 2: Build sentence using domain verbs + nouns + keywords
   else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
     const actionVerb = elaboratingVerbs[0];
-    // IMPROVED: Filter nouns by semantic relevance
+    // IMPROVED: Filter nouns by semantic relevance, filter HTML fragments, limit to 2
     const contextNouns = elaboratingNouns
-      .filter(n => isSemanticallyRelevant(n))
-      .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
+      .filter(n => {
+        // First validate noun is clean and valid
+        if (!isValidKeyword(n)) return false;
+        return isSemanticallyRelevant(n);
+      })
+      .map(n => cleanText(n)) // Clean HTML fragments
+      .filter(n => n.length > 0) // Remove empty after cleaning
+      .slice(0, 2); // Limit to 2 nouns max
     
-    // Get relevant keywords that add context - IMPROVED: Only include semantically relevant keywords
-    const relevantKeywords = keywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
-      // Must not be in context nouns or task name
-      if (contextNouns.some(n => n.toLowerCase().includes(kwLower)) || taskNameLower.includes(kwLower)) {
-        return false;
-      }
-      // Must be semantically relevant to the task
-      return isSemanticallyRelevant(kw);
-    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
-    
-    // Build complete sentence
-    const parts: string[] = [];
-    parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
+    // Get relevant keywords that add context - IMPROVED: Only include semantically relevant keywords, filter HTML fragments, limit to 2
+    const relevantKeywords = keywords
+      .filter(kw => {
+        // First validate keyword is clean and valid
+        if (!isValidKeyword(kw)) return false;
         
-        if (relevantKeywords.length > 0) {
-      parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
+        const kwLower = cleanText(kw).toLowerCase();
+        // Must not be in context nouns or task name
+        if (contextNouns.some(n => cleanText(n).toLowerCase().includes(kwLower)) || taskNameLower.includes(kwLower)) {
+          return false;
+        }
+        // Must be semantically relevant to the task
+        return isSemanticallyRelevant(kw);
+      })
+      .map(kw => cleanText(kw)) // Clean HTML fragments
+      .filter(kw => kw.length > 0) // Remove empty after cleaning
+      .slice(0, 2); // Limit to 2 keywords max
+    
+    // Build complete sentence (limit to max 2 nouns and 2 keywords)
+    const parts: string[] = [];
+    const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
+                     contextNouns.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+    parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${nounsList}`);
+        
+    if (relevantKeywords.length > 0) {
+      const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
+                          relevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+      parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}`);
     }
     
     description = parts.join(' ');
@@ -1735,26 +1826,40 @@ function buildElaborateContextualDescription(
       const bestPhraseLower = bestPhrase.toLowerCase();
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
       
-      // Get relevant keywords and domain nouns - IMPROVED: Only include semantically relevant terms
-      const relevantKeywords = keywords.filter(kw => {
-        const kwLower = kw.toLowerCase();
-        // Must not be in phrase or task name
-        if (bestPhraseLower.includes(kwLower) || taskNameLower.includes(kwLower)) {
-          return false;
-        }
-        // Must be semantically relevant to the task
-        return isSemanticallyRelevant(kw);
-      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
+      // Get relevant keywords and domain nouns - IMPROVED: Only include semantically relevant terms, filter HTML fragments, limit to 2
+      const relevantKeywords = keywords
+        .filter(kw => {
+          // First validate keyword is clean and valid
+          if (!isValidKeyword(kw)) return false;
+          
+          const kwLower = cleanText(kw).toLowerCase();
+          // Must not be in phrase or task name
+          if (bestPhraseLower.includes(kwLower) || taskNameLower.includes(kwLower)) {
+            return false;
+          }
+          // Must be semantically relevant to the task
+          return isSemanticallyRelevant(kw);
+        })
+        .map(kw => cleanText(kw)) // Clean HTML fragments
+        .filter(kw => kw.length > 0) // Remove empty after cleaning
+        .slice(0, 2); // Limit to 2 keywords max
       
-      const contextNouns = elaboratingNouns.filter(n => {
-        const nLower = n.toLowerCase();
-        // Must not be in phrase
-        if (bestPhraseLower.includes(nLower)) {
-          return false;
-        }
-        // Must be semantically relevant to the task
-        return isSemanticallyRelevant(n);
-      }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
+      const contextNouns = elaboratingNouns
+        .filter(n => {
+          // First validate noun is clean and valid
+          if (!isValidKeyword(n)) return false;
+          
+          const nLower = cleanText(n).toLowerCase();
+          // Must not be in phrase
+          if (bestPhraseLower.includes(nLower)) {
+            return false;
+          }
+          // Must be semantically relevant to the task
+          return isSemanticallyRelevant(n);
+        })
+        .map(n => cleanText(n)) // Clean HTML fragments
+        .filter(n => n.length > 0) // Remove empty after cleaning
+        .slice(0, 2); // Limit to 2 nouns max
       
       // Build complete sentence
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
@@ -1773,9 +1878,13 @@ function buildElaborateContextualDescription(
         parts.push(bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1));
         
         if (contextNouns.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
+          const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
+                           contextNouns.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}`);
         } else if (relevantKeywords.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
+          const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
+                              relevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}`);
         }
         
         description = parts.join(' ');
@@ -2042,8 +2151,24 @@ function buildElaborateContextualDescription(
     }
   }
   
-  // Ensure proper capitalization and punctuation
-  description = description.trim();
+  // Clean HTML fragments and ensure proper capitalization and punctuation
+  description = cleanText(description).trim();
+  
+  // Remove duplicate sentences (check for repeated patterns)
+  const sentences = description.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const uniqueSentences: string[] = [];
+  const seenSentences = new Set<string>();
+  
+  for (const sentence of sentences) {
+    const cleanedSentence = sentence.trim().toLowerCase();
+    if (!seenSentences.has(cleanedSentence) && cleanedSentence.length > 5) {
+      seenSentences.add(cleanedSentence);
+      uniqueSentences.push(sentence.trim());
+    }
+  }
+  
+  description = uniqueSentences.join('. ').trim();
+  
   if (description.length > 0) {
     description = description.charAt(0).toUpperCase() + description.slice(1);
     if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
@@ -2450,8 +2575,8 @@ export async function generateDescription(
       confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   }
 
-  // Ensure we always return a non-empty description
-  const finalDescription = description.trim();
+  // Clean HTML fragments and ensure we always return a non-empty description
+  const finalDescription = cleanText(description).trim();
   
   if (!finalDescription || finalDescription.length === 0) {
     // Ultimate fallback: create a basic description from task name
