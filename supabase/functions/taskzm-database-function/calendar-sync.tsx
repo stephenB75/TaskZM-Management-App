@@ -1033,6 +1033,10 @@ function generateRecurringOccurrences(
         provider,
         providerEventId: baseEvent.external_id,
         calendarColor: baseEvent.calendar_color,
+        // Include recurrence metadata (will be undefined for non-recurring events)
+        rrule: baseEvent.rrule,
+        recurrenceBaseId: baseEvent.recurrence_base_id,
+        isRecurring: baseEvent.is_recurring || false,
       }];
     }
     return [];
@@ -1096,6 +1100,10 @@ function generateRecurringOccurrences(
         provider: 'apple' as const,
         providerEventId: `${baseEvent.external_id}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
         calendarColor: baseEvent.calendar_color,
+        // Include recurrence metadata so frontend can recognize recurring events
+        rrule: baseEvent.rrule,
+        recurrenceBaseId: baseEvent.external_id, // Link to base event
+        isRecurring: true, // All occurrences are part of recurring series
       });
     }
 
@@ -1218,6 +1226,10 @@ async function getAppleEventsFromDatabase(
             provider: 'apple' as const,
             providerEventId: event.external_id,
             calendarColor: event.calendar_color,
+            // Include recurrence metadata
+            rrule: event.rrule,
+            recurrenceBaseId: event.recurrence_base_id,
+            isRecurring: event.is_recurring || false,
           });
         }
       }
@@ -1296,6 +1308,10 @@ async function getGoogleEventsFromDatabase(
             provider: 'google' as const,
             providerEventId: event.external_id,
             calendarColor: event.calendar_color,
+            // Include recurrence metadata
+            rrule: event.rrule,
+            recurrenceBaseId: event.recurrence_base_id,
+            isRecurring: event.is_recurring || false,
           });
         }
       }
@@ -1374,6 +1390,10 @@ async function getOutlookEventsFromDatabase(
             provider: 'outlook' as const,
             providerEventId: event.external_id,
             calendarColor: event.calendar_color,
+            // Include recurrence metadata
+            rrule: event.rrule,
+            recurrenceBaseId: event.recurrence_base_id,
+            isRecurring: event.is_recurring || false,
           });
         }
       }

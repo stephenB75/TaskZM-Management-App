@@ -14,6 +14,9 @@ export interface CalendarEvent {
   location?: string;
   provider: 'google' | 'apple';
   calendarColor?: string;
+  rrule?: string; // Original RRULE string for recurring events
+  recurrenceBaseId?: string; // Links instances to base recurring event
+  isRecurring?: boolean; // Flag indicating if this is a recurring event
 }
 
 interface CacheEntry {
@@ -95,6 +98,10 @@ async function fetchProviderEvents(
         location: event.location,
         provider,
         calendarColor: event.calendarColor,
+        // Include recurrence metadata if available
+        rrule: event.rrule,
+        recurrenceBaseId: event.recurrenceBaseId,
+        isRecurring: event.isRecurring || false,
       });
     }
 

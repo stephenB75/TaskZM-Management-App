@@ -182,6 +182,7 @@ interface CalendarEventData {
   location?: string;
   calendarColor?: string;
   provider: 'google' | 'apple';
+  isRecurring?: boolean; // Flag indicating if this is a recurring event
 }
 
 // Simple hash function for consistent color assignment based on title

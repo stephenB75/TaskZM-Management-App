@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin, Repeat } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -10,6 +10,7 @@ interface CalendarEventCardProps {
   location?: string;
   provider: 'google' | 'apple';
   calendarColor?: string;
+  isRecurring?: boolean; // Flag indicating if this is a recurring event
 }
 
 // Calculate duration in minutes between two ISO date strings
@@ -230,7 +231,7 @@ const eventColorPalette = [
   },
 ];
 
-export function CalendarEventCard({ title, start, end, location, provider, calendarColor }: CalendarEventCardProps) {
+export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring }: CalendarEventCardProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const mode = isDark ? 'dark' : 'light';
@@ -287,6 +288,9 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           <span className={cn('text-[10px] font-medium uppercase tracking-wide', colors.mutedText)}>
             {provider === 'apple' ? 'iCloud' : 'Google'} Calendar
           </span>
+          {isRecurring && (
+            <Repeat className={cn('h-2.5 w-2.5', colors.mutedText)} title="Recurring event" />
+          )}
         </div>
         
         {/* Title */}

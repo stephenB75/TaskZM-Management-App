@@ -55,7 +55,7 @@ export function TodayAgendaView({
   const scrollAreaRef = useRef<HTMLDivElement | null>(null);
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }>>([]);
+  const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string; isRecurring?: boolean }>>([]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -182,7 +182,7 @@ export function TodayAgendaView({
   interface CombinedItem {
     type: 'task' | 'event';
     task?: Task;
-    event?: { id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string };
+    event?: { id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string; isRecurring?: boolean };
     sortTime: number;
   }
 
@@ -692,6 +692,7 @@ export function TodayAgendaView({
                               location={item.event.location}
                               provider={item.event.provider}
                               calendarColor={item.event.calendarColor}
+                              isRecurring={item.event.isRecurring}
                             />
                           </div>
                         );
@@ -947,6 +948,7 @@ export function TodayAgendaView({
                               location={item.event.location}
                               provider={item.event.provider}
                               calendarColor={item.event.calendarColor}
+                              isRecurring={item.event.isRecurring}
                             />
                           </div>
                         );
