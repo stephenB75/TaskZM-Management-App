@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.13';
-export const VERSION_NAME = 'AI Generator Enhancement & Description Improvements';
-export const VERSION_DATE = 'January 9, 2026';
-export const BUILD_NUMBER = '20260109-1';
+export const APP_VERSION = '1.0.14';
+export const VERSION_NAME = 'Terminology Expansion & AI Scheduler Conflict Fix';
+export const VERSION_DATE = 'January 12, 2026';
+export const BUILD_NUMBER = '20260112-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,27 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.14',
+    date: 'January 12, 2026',
+    name: 'Terminology Expansion & AI Scheduler Conflict Fix',
+    changes: [
+      'Expanded terminology database for all domains (Business, Home, Personal, World) with modern keywords and phrases',
+      'Added SaaS and subscription terminology (ARR, MRR, churn rate, SLA, uptime, downtime, etc.) to Business domain',
+      'Added modern productivity terms (async, remote, hybrid work, virtual meeting, sprint, kanban, etc.) to Business domain',
+      'Added smart home and automation keywords (smart home, IoT, home automation, energy efficiency, etc.) to Home domain',
+      'Added sustainability and eco-friendly terms (solar panel, renewable energy, carbon footprint, recycling, etc.) to Home domain',
+      'Added personal wellness and development terms (mindfulness, meditation, yoga, nutrition tracking, etc.) to Personal domain',
+      'Added global and international terms (globalization, climate change, human rights, geopolitics, etc.) to World domain',
+      'Created script to save expanded terminology to shared database for all users',
+      'Fixed AI Scheduler conflict detection to prevent multiple tasks from being scheduled at the same time',
+      'Updated sameStartTime check in findNextAvailableSlot to use 1-minute tolerance instead of 1ms for better conflict detection',
+      'Added filter to exclude tasks with midnight times from conflict detection in findNextAvailableSlot',
+      'Enhanced conflict detection to catch tasks scheduled at the same time slot (e.g., both at 9:00 AM)',
+      'Verified all conflict detection checks use consistent 1-minute tolerance across the scheduler',
+      'Confirmed no hardcoded values were used in terminology expansion and conflict detection fixes',
+    ],
+  },
   {
     version: '1.0.13',
     date: 'January 9, 2026',
