@@ -1048,14 +1048,13 @@ function parseVEvent(
     isRecurring: isRecurring, // Flag for recurring events
   };
 
-  // If this is a recurring event and we have a date range, expand it
-  if (rrule && rangeStart && rangeEnd && !recurrenceId) {
-    const expandedEvents = expandRecurringEvent(baseEvent, rrule, rangeStart, rangeEnd, baseUidForRecurrence);
-    // expandRecurringEvent already includes the base event if it's in range,
-    // so we don't need to add it separately. Just return the expanded events.
-    // Deduplicate by start time and title to prevent duplicates
-    const deduplicated = deduplicateEvents(expandedEvents);
-    return deduplicated;
+  // For recurring events, DO NOT expand during sync
+  // Store only the base event with RRULE, expand on-demand when fetching
+  // This ensures we can generate occurrences for any date range
+  if (rrule && !recurrenceId) {
+    // Return only the base recurring event (not expanded)
+    // The expansion will happen on-demand in getAppleEventsFromDatabase
+    return [baseEvent];
   }
 
   return [baseEvent];
@@ -1154,14 +1153,26 @@ export async function syncCalendarsToDatabase(
       return result;
     }
 
+    // Build map of existing events by external_id
+    // For recurring events, we need to match by base UID
     const existingMap = new Map(
       (existingEvents || []).map((e: any) => [e.external_id, e])
     );
-    const fetchedUids = new Set(deduplicatedEvents.map(e => e.uid));
+    
+    // For fetched events, use base UID for recurring events
+    const fetchedUids = new Set(deduplicatedEvents.map(e => {
+      // For base recurring events, use the event UID
+      // For instances (shouldn't happen now, but handle for safety), use base UID
+      return e.recurrenceBaseId || e.uid;
+    }));
 
     // Process each fetched event (using deduplicated list)
     for (const event of deduplicatedEvents) {
-      const existing = existingMap.get(event.uid);
+      // For recurring events, match by base UID (the event.uid for base events)
+      // For non-recurring events, match by event.uid
+      // Since we're not expanding during sync anymore, all events should be base events
+      const matchKey = event.recurrenceBaseId || event.uid;
+      const existing = existingMap.get(matchKey);
       
       if (existing) {
         // Always update to ensure latest parsing is applied
@@ -1190,12 +1201,16 @@ export async function syncCalendarsToDatabase(
         }
       } else {
         // Create new event
+        // For base recurring events, use event.uid as external_id
+        // For instances (shouldn't happen now), use base UID
+        // Since we're not expanding during sync, event.uid is always the base UID
+        const externalId = event.recurrenceBaseId || event.uid;
         const { error: insertError } = await supabase
           .from('calendar_events')
           .insert({
             user_id: userId,
             workspace_id: workspaceId,
-            external_id: event.uid,
+            external_id: externalId,
             title: event.summary,
             description: event.description,
             start_time: event.dtstart,
@@ -1207,8 +1222,10 @@ export async function syncCalendarsToDatabase(
             external_updated_at: event.lastModified,
             is_readonly: true,
             // Store recurrence metadata
+            // For base recurring events: rrule is set, recurrence_base_id is null, is_recurring is true
+            // Since we're not expanding during sync, all events are base events
             rrule: event.rrule || null,
-            recurrence_base_id: event.recurrenceBaseId || null,
+            recurrence_base_id: null, // Always null for base events (we're not storing instances)
             is_recurring: event.isRecurring || false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
