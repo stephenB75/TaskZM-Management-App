@@ -1044,6 +1044,14 @@ function generateRecurringOccurrences(
 
   const occurrences: CalendarEvent[] = [];
   
+  // Determine provider from source or external_id format
+  let provider: CalendarProvider = 'apple';
+  if (baseEvent.source === 'google' || baseEvent.external_id?.startsWith('google_')) {
+    provider = 'google';
+  } else if (baseEvent.source === 'outlook' || baseEvent.external_id?.startsWith('outlook_')) {
+    provider = 'outlook';
+  }
+  
   // Parse RRULE
   const parts: Record<string, string> = {};
   baseEvent.rrule.split(';').forEach((part: string) => {
@@ -1086,8 +1094,42 @@ function generateRecurringOccurrences(
   let iterations = 0;
   let currentDate = new Date(baseStart);
 
+  // If base event starts before the range, fast-forward to first occurrence within range
+  // This ensures we generate all occurrences within the requested date range
+  if (currentDate < rangeStart) {
+    // Calculate how many intervals we need to skip to reach the range start
+    const daysDiff = Math.floor((rangeStart.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (freq === 'DAILY') {
+      const intervalsToSkip = Math.floor(daysDiff / interval);
+      if (isUtc) {
+        currentDate.setUTCDate(currentDate.getUTCDate() + (intervalsToSkip * interval));
+      } else {
+        currentDate.setDate(currentDate.getDate() + (intervalsToSkip * interval));
+      }
+    } else if (freq === 'WEEKLY') {
+      const weeksDiff = Math.floor(daysDiff / (7 * interval));
+      if (isUtc) {
+        currentDate.setUTCDate(currentDate.getUTCDate() + (weeksDiff * 7 * interval));
+      } else {
+        currentDate.setDate(currentDate.getDate() + (weeksDiff * 7 * interval));
+      }
+    }
+    // For MONTHLY and YEARLY, we'll let the loop handle it naturally
+    // as the calculation is more complex with BYDAY and BYMONTHDAY
+  }
+
   while (currentDate <= untilDate && currentDate <= rangeEnd && iterations < maxIterations) {
-    if (currentDate >= rangeStart && currentDate <= rangeEnd) {
+    // Check if this occurrence falls within the requested date range
+    // Compare dates at midnight to ensure we catch all occurrences on the same day
+    const currentDateOnly = new Date(currentDate);
+    currentDateOnly.setHours(0, 0, 0, 0);
+    const rangeStartOnly = new Date(rangeStart);
+    rangeStartOnly.setHours(0, 0, 0, 0);
+    const rangeEndOnly = new Date(rangeEnd);
+    rangeEndOnly.setHours(23, 59, 59, 999);
+    
+    if (currentDateOnly >= rangeStartOnly && currentDateOnly <= rangeEndOnly) {
       const endDate = new Date(currentDate.getTime() + duration);
       
       occurrences.push({
@@ -1097,7 +1139,7 @@ function generateRecurringOccurrences(
         start: isUtc ? currentDate.toISOString() : currentDate.toISOString().replace('Z', ''),
         end: isUtc ? endDate.toISOString() : endDate.toISOString().replace('Z', ''),
         location: baseEvent.location,
-        provider: 'apple' as const,
+        provider: provider as CalendarProvider,
         providerEventId: `${baseEvent.external_id}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
         calendarColor: baseEvent.calendar_color,
         // Include recurrence metadata so frontend can recognize recurring events
@@ -1223,7 +1265,7 @@ async function getAppleEventsFromDatabase(
             start: event.start_time,
             end: event.end_time,
             location: event.location,
-            provider: 'apple' as const,
+            provider: 'apple' as CalendarProvider,
             providerEventId: event.external_id,
             calendarColor: event.calendar_color,
             // Include recurrence metadata
