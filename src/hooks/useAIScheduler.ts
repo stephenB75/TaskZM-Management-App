@@ -908,11 +908,16 @@ export function useAIScheduler() {
     }
     
     // Fetch calendar events for the date range
-    const startDate = dateRange ? new Date(dateRange.startDate) : (() => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return today;
-    })();
+    // CRITICAL: Ensure startDate is never in the past - always use today as minimum
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const startDate = dateRange ? (() => {
+      const rangeStart = new Date(dateRange.startDate);
+      rangeStart.setHours(0, 0, 0, 0);
+      // Never allow scheduling in the past - use today as minimum
+      return rangeStart < today ? new Date(today) : rangeStart;
+    })() : new Date(today);
     
     const endDate = dateRange ? new Date(dateRange.endDate) : (() => {
       const future = new Date(startDate);
@@ -1412,17 +1417,42 @@ export function useAIScheduler() {
             }
           }
           
-          // If first occurrence is valid and NO occurrence day would exceed limits, use it
-          if (isWithinRange && !wouldExceedOnAnyDay) {
+          // CRITICAL SAFEGUARD: Ensure first occurrence is not in the past
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const firstOccurrenceDateOnly = new Date(recurringFirstOccurrence);
+          firstOccurrenceDateOnly.setHours(0, 0, 0, 0);
+          const isFirstOccurrenceInPast = firstOccurrenceDateOnly < today;
+          
+          // If first occurrence is valid, within range, not in the past, and NO occurrence day would exceed limits, use it
+          if (isWithinRange && !isFirstOccurrenceInPast && !wouldExceedOnAnyDay) {
             // Calculate daysToAdd based on first occurrence
             const daysDiff = Math.floor((recurringFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
-            daysToAdd = daysDiff;
+            // Ensure daysToAdd is not negative (shouldn't happen, but safeguard)
+            daysToAdd = Math.max(0, daysDiff);
             foundDay = true;
             reason = `Recurring task - scheduled to first occurrence (${getDateString(recurringFirstOccurrence)})`;
             logger.debug('Recurring task scheduled to first occurrence', {
               taskId: task.id,
               firstOccurrence: getDateString(recurringFirstOccurrence),
             });
+          } else if (isFirstOccurrenceInPast) {
+            // First occurrence is in the past - recalculate from today
+            logger.warn('Recurring task first occurrence is in the past, recalculating from today', {
+              taskId: task.id,
+              originalFirstOccurrence: getDateString(recurringFirstOccurrence),
+            });
+            const recalculatedFirstOccurrence = calculateFirstOccurrenceDate(task, today);
+            if (recalculatedFirstOccurrence) {
+              const recalculatedIsWithinRange = !dateRange || (recalculatedFirstOccurrence >= startDate && recalculatedFirstOccurrence <= endDate);
+              if (recalculatedIsWithinRange && !wouldExceedOnAnyDay) {
+                const daysDiff = Math.floor((recalculatedFirstOccurrence.getTime() - baseDate.getTime()) / MILLISECONDS_PER_DAY);
+                daysToAdd = Math.max(0, daysDiff);
+                foundDay = true;
+                recurringFirstOccurrence = recalculatedFirstOccurrence; // Update for later use
+                reason = `Recurring task - scheduled to first occurrence (${getDateString(recalculatedFirstOccurrence)}, recalculated from today)`;
+              }
+            }
           }
         }
       }
@@ -1586,6 +1616,25 @@ export function useAIScheduler() {
           scheduleDate = new Date(recurringFirstOccurrence);
           scheduleDate.setHours(0, 0, 0, 0);
           
+          // CRITICAL SAFEGUARD: Ensure recurring task first occurrence is never in the past
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (scheduleDate < today) {
+            logger.warn('CRITICAL: Recurring task first occurrence is in the past, recalculating', {
+              taskId: task.id,
+              originalFirstOccurrence: getDateString(recurringFirstOccurrence),
+            });
+            // Recalculate first occurrence starting from today
+            const recalculated = calculateFirstOccurrenceDate(task, today);
+            if (recalculated) {
+              scheduleDate = new Date(recalculated);
+              scheduleDate.setHours(0, 0, 0, 0);
+            } else {
+              // Fallback: use today if calculation fails
+              scheduleDate = new Date(today);
+            }
+          }
+          
           // CRITICAL: For recurring tasks, check ALL occurrence days within the scheduling range
           // to ensure the selected time doesn't conflict on any occurrence day
           // This prevents scheduling a recurring task at a time that conflicts with existing tasks
@@ -1620,6 +1669,25 @@ export function useAIScheduler() {
           // Non-recurring task: use calculated date
           scheduleDate = new Date(baseDate);
           scheduleDate.setDate(scheduleDate.getDate() + finalDaysToAdd);
+          
+          // CRITICAL SAFEGUARD: Ensure scheduleDate is never in the past
+          // If somehow the calculation resulted in a past date, use today instead
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const scheduleDateOnly = new Date(scheduleDate);
+          scheduleDateOnly.setHours(0, 0, 0, 0);
+          
+          if (scheduleDateOnly < today) {
+            logger.warn('CRITICAL: Task scheduled date is in the past, correcting to today', {
+              taskId: task.id,
+              calculatedDate: getDateString(scheduleDate),
+              correctedDate: getDateString(today),
+              finalDaysToAdd,
+              baseDate: getDateString(baseDate),
+            });
+            scheduleDate = new Date(today);
+            scheduleDate.setHours(0, 0, 0, 0);
+          }
         }
         
         // GUIDELINE 4: RESPECT CATEGORY HOURS RULES
