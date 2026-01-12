@@ -12,6 +12,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const MAX_RECURRENCE_ITERATIONS = 365; // Maximum iterations for recurring event expansion (1 year)
 const TOKEN_VALIDITY_BUFFER_MS = 5 * 60 * 1000; // 5 minutes buffer for token validity check
 const DEFAULT_EVENT_DURATION_MINUTES = 30; // Default duration for calendar events without end time
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000; // 86400000 ms - milliseconds in one day
+const DAYS_PER_WEEK = 7; // Number of days in a week
+const MIDNIGHT_HOUR = 0; // Hour for midnight normalization
+const MIDNIGHT_MINUTE = 0; // Minute for midnight normalization
+const MIDNIGHT_SECOND = 0; // Second for midnight normalization
+const MIDNIGHT_MILLISECOND = 0; // Millisecond for midnight normalization
+const END_OF_DAY_HOUR = 23; // Hour for end of day normalization
+const END_OF_DAY_MINUTE = 59; // Minute for end of day normalization
+const END_OF_DAY_SECOND = 59; // Second for end of day normalization
+const END_OF_DAY_MILLISECOND = 999; // Millisecond for end of day normalization
 
 // Calendar provider types
 export type CalendarProvider = 'google' | 'outlook' | 'apple';
@@ -1098,7 +1108,7 @@ function generateRecurringOccurrences(
   // This ensures we generate all occurrences within the requested date range
   if (currentDate < rangeStart) {
     // Calculate how many intervals we need to skip to reach the range start
-    const daysDiff = Math.floor((rangeStart.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.floor((rangeStart.getTime() - currentDate.getTime()) / MILLISECONDS_PER_DAY);
     
     if (freq === 'DAILY') {
       const intervalsToSkip = Math.floor(daysDiff / interval);
@@ -1108,11 +1118,11 @@ function generateRecurringOccurrences(
         currentDate.setDate(currentDate.getDate() + (intervalsToSkip * interval));
       }
     } else if (freq === 'WEEKLY') {
-      const weeksDiff = Math.floor(daysDiff / (7 * interval));
+      const weeksDiff = Math.floor(daysDiff / (DAYS_PER_WEEK * interval));
       if (isUtc) {
-        currentDate.setUTCDate(currentDate.getUTCDate() + (weeksDiff * 7 * interval));
+        currentDate.setUTCDate(currentDate.getUTCDate() + (weeksDiff * DAYS_PER_WEEK * interval));
       } else {
-        currentDate.setDate(currentDate.getDate() + (weeksDiff * 7 * interval));
+        currentDate.setDate(currentDate.getDate() + (weeksDiff * DAYS_PER_WEEK * interval));
       }
     }
     // For MONTHLY and YEARLY, we'll let the loop handle it naturally
@@ -1123,11 +1133,11 @@ function generateRecurringOccurrences(
     // Check if this occurrence falls within the requested date range
     // Compare dates at midnight to ensure we catch all occurrences on the same day
     const currentDateOnly = new Date(currentDate);
-    currentDateOnly.setHours(0, 0, 0, 0);
+    currentDateOnly.setHours(MIDNIGHT_HOUR, MIDNIGHT_MINUTE, MIDNIGHT_SECOND, MIDNIGHT_MILLISECOND);
     const rangeStartOnly = new Date(rangeStart);
-    rangeStartOnly.setHours(0, 0, 0, 0);
+    rangeStartOnly.setHours(MIDNIGHT_HOUR, MIDNIGHT_MINUTE, MIDNIGHT_SECOND, MIDNIGHT_MILLISECOND);
     const rangeEndOnly = new Date(rangeEnd);
-    rangeEndOnly.setHours(23, 59, 59, 999);
+    rangeEndOnly.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
     
     if (currentDateOnly >= rangeStartOnly && currentDateOnly <= rangeEndOnly) {
       const endDate = new Date(currentDate.getTime() + duration);
@@ -1156,7 +1166,7 @@ function generateRecurringOccurrences(
           currentDate.setUTCDate(currentDate.getUTCDate() + interval);
           break;
         case 'WEEKLY':
-          currentDate.setUTCDate(currentDate.getUTCDate() + (7 * interval));
+          currentDate.setUTCDate(currentDate.getUTCDate() + (DAYS_PER_WEEK * interval));
           break;
         case 'MONTHLY':
           if (byMonthDay) {
@@ -1179,7 +1189,7 @@ function generateRecurringOccurrences(
           currentDate.setDate(currentDate.getDate() + interval);
           break;
         case 'WEEKLY':
-          currentDate.setDate(currentDate.getDate() + (7 * interval));
+          currentDate.setDate(currentDate.getDate() + (DAYS_PER_WEEK * interval));
           break;
         case 'MONTHLY':
           if (byMonthDay) {
