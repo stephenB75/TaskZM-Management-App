@@ -58,6 +58,7 @@ import { COLOR_PRIMARY } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
+import { ACTION_PLAN_CONFIG } from "../lib/ai-config";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -732,7 +733,7 @@ export const DraggableTaskCard = React.forwardRef<
           </div>
 
           {/* AI Action Plan Breakdown - Show if available */}
-          {breakdown?.actionPlan && breakdown.actionPlan.steps.length > 0 && (() => {
+          {breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 && (() => {
             // Get domain-specific colors
             const domainColors = breakdown.domain === 'business' 
               ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800' }
@@ -744,9 +745,11 @@ export const DraggableTaskCard = React.forwardRef<
               ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800' }
               : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800' };
             
-            // For 15-minute tasks, show only the first step (consistent with desktop view)
-            const is15MinuteTask = estimatedTimeValue !== null && estimatedTimeValue <= 15;
-            const maxStepsToShow = is15MinuteTask ? 1 : 3;
+            // For short tasks, show only the first step (consistent with desktop view)
+            const isShortTask = estimatedTimeValue !== null && estimatedTimeValue <= ACTION_PLAN_CONFIG.SHORT_TASK_THRESHOLD_MINUTES;
+            const maxStepsToShow = isShortTask 
+              ? ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.SHORT_TASK 
+              : ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.NORMAL_TASK;
             
             return (
               <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>

@@ -635,6 +635,23 @@ export const ACTION_PLAN_TIME_DISTRIBUTION = {
 } as const;
 
 /**
+ * Action plan configuration
+ */
+export const ACTION_PLAN_CONFIG = {
+  // Default minutes for empty tasks or when time estimation is 0
+  DEFAULT_MINUTES: MIN_TASK_DURATION_MINUTES, // 15 minutes (uses existing constant)
+  // Minimum minutes per step when totalMinutes is 0
+  MIN_MINUTES_PER_STEP: 1,
+  // Maximum steps to display in task card
+  MAX_STEPS_DISPLAY: {
+    SHORT_TASK: 1, // For tasks <= 15 minutes
+    NORMAL_TASK: 3, // For tasks > 15 minutes
+  },
+  // Threshold for short tasks (in minutes)
+  SHORT_TASK_THRESHOLD_MINUTES: MIN_TASK_DURATION_MINUTES, // 15 minutes
+} as const;
+
+/**
  * Description analysis complexity thresholds
  */
 export const DESCRIPTION_COMPLEXITY_THRESHOLDS = {

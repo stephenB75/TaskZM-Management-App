@@ -13,6 +13,7 @@
 
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync } from './domain-terminology';
 import { extractTermsFromTaskNameWithBrowserAI, validateAndEnhanceTermsWithDictionary } from './description-generator';
+import { DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { logger } from './logger';
 
 export interface AIContext {
@@ -135,26 +136,26 @@ export async function createAIContext(
     domainTerms
   );
 
-  // Remove duplicates and limit to reasonable counts
+  // Remove duplicates and limit to reasonable counts (using config constants)
   const uniqueKeywords = Array.from(new Set(enhancedTerms.keywords.map(k => k.toLowerCase())))
     .map(k => enhancedTerms.keywords.find(ek => ek.toLowerCase() === k)!)
-    .slice(0, 15); // Use reasonable limit
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords);
   
   const uniquePhrases = Array.from(new Set(enhancedTerms.phrases.map(p => p.toLowerCase())))
     .map(p => enhancedTerms.phrases.find(ep => ep.toLowerCase() === p)!)
-    .slice(0, 10);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
   
   const uniqueVerbs = Array.from(new Set(enhancedTerms.verbs.map(v => v.toLowerCase())))
     .map(v => enhancedTerms.verbs.find(ev => ev.toLowerCase() === v)!)
-    .slice(0, 10);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs);
   
   const uniqueNouns = Array.from(new Set(enhancedTerms.nouns.map(n => n.toLowerCase())))
     .map(n => enhancedTerms.nouns.find(en => en.toLowerCase() === n)!)
-    .slice(0, 10);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns);
   
   const uniquePronouns = Array.from(new Set(enhancedTerms.pronouns.map(p => p.toLowerCase())))
     .map(p => enhancedTerms.pronouns.find(ep => ep.toLowerCase() === p)!)
-    .slice(0, 5);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns);
 
   logger.debug('AI Context: Terms extracted and enhanced', {
     keywords: uniqueKeywords.length,
@@ -254,26 +255,26 @@ export function createAIContextSync(
     domainTerms
   );
 
-  // Remove duplicates
+  // Remove duplicates and limit to reasonable counts (using config constants)
   const uniqueKeywords = Array.from(new Set(enhancedTerms.keywords.map(k => k.toLowerCase())))
     .map(k => enhancedTerms.keywords.find(ek => ek.toLowerCase() === k)!)
-    .slice(0, 15);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords);
   
   const uniquePhrases = Array.from(new Set(enhancedTerms.phrases.map(p => p.toLowerCase())))
     .map(p => enhancedTerms.phrases.find(ep => ep.toLowerCase() === p)!)
-    .slice(0, 10);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
   
   const uniqueVerbs = Array.from(new Set(enhancedTerms.verbs.map(v => v.toLowerCase())))
     .map(v => enhancedTerms.verbs.find(ev => ev.toLowerCase() === v)!)
-    .slice(0, 10);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs);
   
   const uniqueNouns = Array.from(new Set(enhancedTerms.nouns.map(n => n.toLowerCase())))
     .map(n => enhancedTerms.nouns.find(en => en.toLowerCase() === n)!)
-    .slice(0, 10);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns);
   
   const uniquePronouns = Array.from(new Set(enhancedTerms.pronouns.map(p => p.toLowerCase())))
     .map(p => enhancedTerms.pronouns.find(ep => ep.toLowerCase() === p)!)
-    .slice(0, 5);
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns);
 
   return {
     domain,

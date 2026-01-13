@@ -10,7 +10,7 @@ import { detectDomain, type Domain, getDomainTerminology } from './domain-termin
 import { analyzeTaskVerbs } from './verb-analysis';
 import { estimateTaskHours } from './daily-hours-utils';
 import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from './business-constants';
-import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
+import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS, DESCRIPTION_GENERATION_CONFIG, ACTION_PLAN_CONFIG } from './ai-config';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY } from './task-constants';
 import { extractTermsFromTaskNameWithBrowserAI } from './description-generator';
 import type { AIContext } from './ai-context';
@@ -46,9 +46,15 @@ export function generateActionPlan(
   const fullText = `${title} ${description}`.trim();
 
   if (!fullText || fullText.length === 0) {
+    // Even for empty tasks, return at least one default step to ensure action plan displays
     return {
-      steps: [],
-      totalEstimatedMinutes: 0,
+      steps: [{
+        action: 'Complete task',
+        estimatedMinutes: ACTION_PLAN_CONFIG.DEFAULT_MINUTES,
+        category: 'execution' as const,
+        order: 1,
+      }],
+      totalEstimatedMinutes: ACTION_PLAN_CONFIG.DEFAULT_MINUTES,
       suggestedSubtasks: [],
       context: DEFAULT_TASK_DOMAIN,
       confidence: 0,
@@ -123,9 +129,17 @@ export function generateActionPlan(
     extractedTerms
   );
 
+  // Ensure we always have at least one step (safety check)
+  const finalSteps = steps.length > 0 ? steps : [{
+    action: title || 'Complete task',
+    estimatedMinutes: totalMinutes > 0 ? totalMinutes : ACTION_PLAN_CONFIG.DEFAULT_MINUTES,
+    category: 'execution' as const,
+    order: 1,
+  }];
+
   return {
-    steps,
-    totalEstimatedMinutes: totalMinutes,
+    steps: finalSteps,
+    totalEstimatedMinutes: totalMinutes > 0 ? totalMinutes : finalSteps.reduce((sum, step) => sum + step.estimatedMinutes, 0),
     suggestedSubtasks,
     context: domain,
     confidence: domainConfidence,
@@ -199,9 +213,11 @@ function generateSteps(
 
   // If no steps generated, create a default step
   if (steps.length === 0) {
+    // Ensure we always have at least one step, even if totalMinutes is 0
+    const defaultMinutes = totalMinutes > 0 ? totalMinutes : ACTION_PLAN_CONFIG.DEFAULT_MINUTES;
     steps.push({
       action: title || 'Complete task',
-      estimatedMinutes: totalMinutes,
+      estimatedMinutes: defaultMinutes,
       category: 'execution',
       order: 1,
     });
@@ -209,10 +225,19 @@ function generateSteps(
 
   // Ensure total minutes match (distribute proportionally)
   const currentTotal = steps.reduce((sum, step) => sum + step.estimatedMinutes, 0);
-  if (currentTotal !== totalMinutes && currentTotal > 0) {
+  if (currentTotal !== totalMinutes && currentTotal > 0 && totalMinutes > 0) {
     const ratio = totalMinutes / currentTotal;
     steps.forEach(step => {
       step.estimatedMinutes = Math.round(step.estimatedMinutes * ratio);
+    });
+  } else if (totalMinutes === 0 && currentTotal > 0) {
+    // If totalMinutes is 0 but we have steps, set a minimum time for each step
+    const minMinutesPerStep = Math.max(
+      ACTION_PLAN_CONFIG.MIN_MINUTES_PER_STEP,
+      Math.floor(ACTION_PLAN_CONFIG.DEFAULT_MINUTES / steps.length)
+    );
+    steps.forEach(step => {
+      step.estimatedMinutes = Math.max(minMinutesPerStep, step.estimatedMinutes);
     });
   }
 
