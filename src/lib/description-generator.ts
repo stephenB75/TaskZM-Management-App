@@ -934,7 +934,7 @@ function extractKeywordsAndVerbsFromSearch(
  * 3. Enhances terms with domain-specific context
  * 4. Fills gaps when search results are minimal
  */
-function validateAndEnhanceTermsWithDictionary(
+export function validateAndEnhanceTermsWithDictionary(
   extracted: {
     keywords: string[];
     phrases: string[];
