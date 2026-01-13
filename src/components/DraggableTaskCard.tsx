@@ -147,12 +147,14 @@ export const DraggableTaskCard = React.forwardRef<
     // Use task.id for all tasks to ensure timer sync across all components
     // (TaskDialog, TaskCard, TodayAgenda) - when timer is activated in one location,
     // it activates in all locations
-    const pomodoroTimerId = task.id;
-    const timerState = getTimerState(pomodoroTimerId);
-    
     // For recurring tasks, use unique sortable ID per date occurrence to maintain chronological order
     const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
     const sortableId = isRecurringTask ? `${task.id}__${droppableId}` : task.id;
+    
+    // For recurring tasks, use occurrence-specific ID for pomodoro timer to ensure each occurrence has its own timer state
+    // This prevents the timer from being shared across all occurrences in the series
+    const pomodoroTimerId = isRecurringTask ? `${task.id}__${droppableId}` : task.id;
+    const timerState = getTimerState(pomodoroTimerId);
     
     const {
       attributes,

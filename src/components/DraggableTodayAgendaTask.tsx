@@ -4,7 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "motion/react";
 import { Circle, Timer, Clock, Repeat } from "lucide-react";
 import { Badge } from "./ui/badge";
-import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags, getDateString } from "../lib/utils";
 import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
@@ -86,7 +86,13 @@ export function DraggableTodayAgendaTask({
   const { getTimerState, timers: pomodoroTimers } = usePomodoro();
   const { actualTheme } = useTheme();
   const isMobile = useIsMobile();
-  const timerState = getTimerState(task.id);
+  // For recurring tasks, use occurrence-specific ID for pomodoro timer to ensure each occurrence has its own timer state
+  // This prevents the timer from being shared across all occurrences in the series
+  const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
+  const pomodoroTimerId = isRecurringTask && task.scheduledDate
+    ? `${task.id}__${getDateString(new Date(task.scheduledDate))}`
+    : task.id;
+  const timerState = getTimerState(pomodoroTimerId);
   const isDark = actualTheme === 'dark';
   const canUsePomodoro = hasFeature("pomodoroTimer");
   
@@ -806,7 +812,7 @@ export function DraggableTodayAgendaTask({
                     onClick={(e) => e.stopPropagation()}
                   >
                     <PomodoroTimer
-                      taskId={task.id}
+                      taskId={pomodoroTimerId}
                       taskTitle={task.title}
                       onTimeUpdate={handlePomodoroTimeUpdate}
                       compact={true}
