@@ -13,6 +13,7 @@ import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from './business-constants';
 import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY } from './task-constants';
 import { extractTermsFromTaskNameWithBrowserAI } from './description-generator';
+import type { AIContext } from './ai-context';
 
 export interface ActionPlanStep {
   action: string;
@@ -32,9 +33,13 @@ export interface ActionPlan {
 
 /**
  * Generate action plan from task description
+ * 
+ * @param task - Task to generate action plan for
+ * @param aiContext - Optional shared AI context (if provided, uses it instead of re-detecting/re-extracting)
  */
 export function generateActionPlan(
-  task: Task | Partial<Task>
+  task: Task | Partial<Task>,
+  aiContext?: AIContext
 ): ActionPlan {
   const title = (task.title || '').trim();
   const description = (task.description || '').trim();
@@ -50,10 +55,26 @@ export function generateActionPlan(
     };
   }
 
-  // Detect domain
-  const domainDetection = detectDomain(title, description);
-  const domain = domainDetection.domain;
-  const terminology = getDomainTerminology(domain);
+  // Use shared context if provided, otherwise detect/extract independently
+  let domain: Domain;
+  let domainConfidence: number;
+  let terminology: ReturnType<typeof getDomainTerminology>;
+  let extractedTerms: ReturnType<typeof extractTermsFromTaskNameWithBrowserAI>;
+
+  if (aiContext) {
+    // Use shared context (no redundant work)
+    domain = aiContext.domain;
+    domainConfidence = aiContext.domainConfidence;
+    terminology = aiContext.domainTerms;
+    extractedTerms = aiContext.extractedTerms;
+  } else {
+    // Fallback: detect and extract independently (backward compatibility)
+    const domainDetection = detectDomain(title, description);
+    domain = domainDetection.domain;
+    domainConfidence = domainDetection.confidence;
+    terminology = getDomainTerminology(domain);
+    extractedTerms = extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
+  }
 
   // Estimate total time
   const taskForEstimation: Task = {
@@ -89,7 +110,8 @@ export function generateActionPlan(
     description,
     domain,
     terminology,
-    totalMinutes
+    totalMinutes,
+    extractedTerms
   );
 
   // Generate suggested subtasks
@@ -97,7 +119,8 @@ export function generateActionPlan(
     title,
     description,
     domain,
-    terminology
+    terminology,
+    extractedTerms
   );
 
   return {
@@ -105,7 +128,7 @@ export function generateActionPlan(
     totalEstimatedMinutes: totalMinutes,
     suggestedSubtasks,
     context: domain,
-    confidence: domainDetection.confidence,
+    confidence: domainConfidence,
   };
 }
 
@@ -118,17 +141,16 @@ function generateSteps(
   description: string,
   domain: Domain,
   terminology: ReturnType<typeof getDomainTerminology>,
-  totalMinutes: number
+  totalMinutes: number,
+  extractedTerms?: ReturnType<typeof extractTermsFromTaskNameWithBrowserAI>
 ): ActionPlanStep[] {
   const steps: ActionPlanStep[] = [];
   const fullText = `${title} ${description}`.trim();
   const text = fullText.toLowerCase();
 
-  // Use Browser AI to extract terms from task title and description
-  // Browser AI extracts keywords, phrases, verbs, and nouns from user input
-  // Local Terminology enhances extracted terms with domain-specific context
-  const extractedTerms = extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
-  const { keywords, phrases, verbs, nouns } = extractedTerms;
+  // Use provided extracted terms or extract them
+  const terms = extractedTerms || extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
+  const { keywords, phrases, verbs, nouns } = terms;
   
   // Log confirmation that both Browser AI and Local Terminology are being used
   if (keywords.length > 0 || phrases.length > 0 || verbs.length > 0 || nouns.length > 0) {
@@ -571,17 +593,16 @@ function generateSubtasks(
   title: string,
   description: string,
   domain: Domain,
-  terminology: ReturnType<typeof getDomainTerminology>
+  terminology: ReturnType<typeof getDomainTerminology>,
+  extractedTerms?: ReturnType<typeof extractTermsFromTaskNameWithBrowserAI>
 ): string[] {
   const subtasks: string[] = [];
   const fullText = `${title} ${description}`.trim();
   const text = fullText.toLowerCase();
 
-  // Use Browser AI to extract terms from task title and description
-  // Browser AI extracts keywords, phrases, verbs, and nouns from user input
-  // Local Terminology enhances extracted terms with domain-specific context
-  const extractedTerms = extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
-  const { keywords, phrases, verbs, nouns } = extractedTerms;
+  // Use provided extracted terms or extract them
+  const terms = extractedTerms || extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
+  const { keywords, phrases, verbs, nouns } = terms;
 
   // Helper function to check if terms match concepts
   const hasTerm = (searchTerms: string[], matchTerms: string[]) => 

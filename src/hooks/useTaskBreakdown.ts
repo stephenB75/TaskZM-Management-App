@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Task } from '../types';
-import { detectDomain, type Domain } from '../lib/domain-terminology';
+import { type Domain } from '../lib/domain-terminology';
 import { analyzeDescription, type DescriptionAnalysis } from '../lib/description-analyzer';
 import { generateActionPlan, type ActionPlan } from '../lib/action-plan-generator';
 import { estimateTaskHours, cacheAIAnalysis } from '../lib/daily-hours-utils';
@@ -18,6 +18,7 @@ import {
   TASK_BREAKDOWN_CACHE_SIZE,
 } from '../lib/ai-config';
 import { DEFAULT_TASK_STATUS } from '../lib/task-constants';
+import { createAIContextSync, type AIContext } from '../lib/ai-context';
 
 export interface TaskBreakdown {
   estimatedMinutes: number;
@@ -119,8 +120,8 @@ export function useTaskBreakdown(
       // Use requestAnimationFrame to avoid blocking UI
       requestAnimationFrame(() => {
         try {
-          // Detect domain
-          const domainDetection = detectDomain(title, description);
+          // Create shared AI context once (eliminates redundant domain detection and term extraction)
+          const aiContext = createAIContextSync(title, description);
 
           // Create temporary task for analysis
           const tempTask: Partial<Task> = {
@@ -162,19 +163,19 @@ export function useTaskBreakdown(
           const estimatedHours = estimateTaskHours(taskForEstimation);
           const estimatedMinutes = Math.round(estimatedHours * MINUTES_PER_HOUR);
 
-          // Analyze description
-          const descriptionAnalysis = analyzeDescription(title, description);
+          // Analyze description (pass shared context to avoid redundant work)
+          const descriptionAnalysis = analyzeDescription(title, description, aiContext);
 
-          // Generate action plan
-          const actionPlan = generateActionPlan(tempTask as Task);
+          // Generate action plan (pass shared context to avoid redundant work)
+          const actionPlan = generateActionPlan(tempTask as Task, aiContext);
 
           // Determine suggested category from domain
           let suggestedCategory: 'work' | 'personal' | 'projects' | null = null;
-          if (domainDetection.domain === 'business') {
+          if (aiContext.domain === 'business') {
             suggestedCategory = 'work';
-          } else if (domainDetection.domain === 'personal') {
+          } else if (aiContext.domain === 'personal') {
             suggestedCategory = 'personal';
-          } else if (domainDetection.domain === 'home' || domainDetection.domain === 'world') {
+          } else if (aiContext.domain === 'home' || aiContext.domain === 'world') {
             suggestedCategory = 'personal'; // Default to personal for home/world
           }
 
@@ -186,8 +187,8 @@ export function useTaskBreakdown(
             suggestedCategory,
             actionPlan,
             descriptionAnalysis,
-            domain: domainDetection.domain,
-            confidence: domainDetection.confidence,
+            domain: aiContext.domain,
+            confidence: aiContext.domainConfidence,
           };
 
           // Cache result using current hash (not from closure)

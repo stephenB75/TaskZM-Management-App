@@ -3,13 +3,18 @@
  * 
  * Analyzes user input to extract context, enhance descriptions, and provide
  * domain-specific insights for task breakdown suggestions.
+ * ENHANCED: Now uses sophisticated extraction methods from description-generator
+ * for better keyword and phrase analysis.
  */
 
 import type { Task } from '../types';
 import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
 import { analyzeTaskVerbs } from './verb-analysis';
-import { DESCRIPTION_COMPLEXITY_THRESHOLDS } from './ai-config';
+import { DESCRIPTION_COMPLEXITY_THRESHOLDS, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
 import { DEFAULT_TASK_STATUS } from './task-constants';
+import { extractTermsFromTaskNameWithBrowserAI, validateAndEnhanceTermsWithDictionary } from './description-generator';
+import { logger } from './logger';
+import type { AIContext } from './ai-context';
 
 export interface DescriptionAnalysis {
   original: string;
@@ -19,16 +24,24 @@ export interface DescriptionAnalysis {
   detectedDomain: Domain;
   confidence: number;
   keywords: string[];
+  phrases: string[];
   verbs: string[];
+  nouns: string[];
   complexity: 'simple' | 'moderate' | 'complex';
 }
 
 /**
  * Analyze user input to extract verbs, keywords, phrases, and domain context
+ * ENHANCED: Now uses sophisticated extraction methods for better keyword and phrase analysis
+ * 
+ * @param title - Task title
+ * @param description - Task description
+ * @param aiContext - Optional shared AI context (if provided, uses it instead of re-detecting/re-extracting)
  */
 export function analyzeDescription(
   title: string,
-  description: string
+  description: string,
+  aiContext?: AIContext
 ): DescriptionAnalysis {
   const fullText = `${title} ${description}`.trim();
   const original = description.trim();
@@ -42,13 +55,37 @@ export function analyzeDescription(
       detectedDomain: 'personal',
       confidence: 0,
       keywords: [],
+      phrases: [],
       verbs: [],
+      nouns: [],
       complexity: 'simple',
     };
   }
 
-  // Detect domain
-  const domainDetection = detectDomain(title, description);
+  // Use shared context if provided, otherwise detect/extract independently
+  let domain: Domain;
+  let domainConfidence: number;
+  let uniqueKeywords: string[];
+  let uniquePhrases: string[];
+  let uniqueVerbs: string[];
+  let uniqueNouns: string[];
+  let domainTerms: ReturnType<typeof getDomainTerminology>;
+
+  if (aiContext) {
+    // Use shared context (no redundant work)
+    domain = aiContext.domain;
+    domainConfidence = aiContext.domainConfidence;
+    uniqueKeywords = aiContext.enhancedTerms.keywords;
+    uniquePhrases = aiContext.enhancedTerms.phrases;
+    uniqueVerbs = aiContext.enhancedTerms.verbs;
+    uniqueNouns = aiContext.enhancedTerms.nouns;
+    domainTerms = aiContext.domainTerms;
+  } else {
+    // Fallback: detect and extract independently (backward compatibility)
+    const domainDetection = detectDomain(title, description);
+    domain = domainDetection.domain;
+    domainConfidence = domainDetection.confidence;
+    domainTerms = getDomainTerminology(domain);
 
   // Analyze verbs
   const tempTask: Partial<Task> = {
@@ -61,7 +98,54 @@ export function analyzeDescription(
   const verbAnalysis = analyzeTaskVerbs(tempTask as Task);
   const primaryVerb = verbAnalysis.primaryVerb;
 
-  // Extract keywords and verbs from text
+    // ENHANCED: Use sophisticated extraction methods from description-generator
+    // Extract terms from both title and description for comprehensive analysis
+    const titleExtracted = extractTermsFromTaskNameWithBrowserAI(title, domainTerms);
+    const descriptionExtracted = description.trim().length > 0 
+      ? extractTermsFromTaskNameWithBrowserAI(description, domainTerms)
+      : { keywords: [], phrases: [], verbs: [], nouns: [], pronouns: [], context: '' };
+
+    // Combine and enhance extracted terms
+    const combinedExtracted = {
+      keywords: [...titleExtracted.keywords, ...descriptionExtracted.keywords],
+      phrases: [...titleExtracted.phrases, ...descriptionExtracted.phrases],
+      verbs: [...titleExtracted.verbs, ...descriptionExtracted.verbs],
+      nouns: [...titleExtracted.nouns, ...descriptionExtracted.nouns],
+      pronouns: [...titleExtracted.pronouns, ...descriptionExtracted.pronouns],
+      context: `${titleExtracted.context} ${descriptionExtracted.context}`.trim(),
+    };
+
+    // Validate and enhance terms with domain terminology dictionary
+    const enhancedTerms = validateAndEnhanceTermsWithDictionary(
+      combinedExtracted,
+      fullText,
+      domainTerms
+    );
+
+    // Remove duplicates and limit to reasonable counts
+    uniqueKeywords = Array.from(new Set(enhancedTerms.keywords.map(k => k.toLowerCase())))
+      .map(k => enhancedTerms.keywords.find(ek => ek.toLowerCase() === k)!)
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords);
+    
+    uniquePhrases = Array.from(new Set(enhancedTerms.phrases.map(p => p.toLowerCase())))
+      .map(p => enhancedTerms.phrases.find(ep => ep.toLowerCase() === p)!)
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
+    
+    uniqueVerbs = Array.from(new Set(enhancedTerms.verbs.map(v => v.toLowerCase())))
+      .map(v => enhancedTerms.verbs.find(ev => ev.toLowerCase() === v)!)
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs);
+    
+    uniqueNouns = Array.from(new Set(enhancedTerms.nouns.map(n => n.toLowerCase())))
+      .map(n => enhancedTerms.nouns.find(en => en.toLowerCase() === n)!)
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns);
+  }
+
+  // Add primary verb if not already in verbs list
+  const allVerbs = primaryVerb !== 'unknown' && !uniqueVerbs.some(v => v.toLowerCase() === primaryVerb.toLowerCase())
+    ? [primaryVerb, ...uniqueVerbs]
+    : uniqueVerbs;
+
+  // Extract keywords and verbs from text for complexity calculation
   const words = fullText
     .toLowerCase()
     .split(/[\s\-_.,!?;:()\[\]{}'"]+/)
@@ -84,20 +168,30 @@ export function analyzeDescription(
   // Generate enhanced description
   const { enhanced, suggestions, addedContext } = enhanceDescription(
     original,
-    domainDetection.domain,
-    domainDetection.keywords,
+    domain,
+    uniqueKeywords,
     primaryVerb
   );
+
+  logger.debug('AI Analyzer: Enhanced extraction', {
+    keywords: uniqueKeywords.length,
+    phrases: uniquePhrases.length,
+    verbs: allVerbs.length,
+    nouns: uniqueNouns.length,
+    domain,
+  });
 
   return {
     original,
     enhanced,
     suggestions,
     addedContext,
-    detectedDomain: domainDetection.domain,
-    confidence: domainDetection.confidence,
-    keywords: domainDetection.keywords,
-    verbs: primaryVerb !== 'unknown' ? [primaryVerb] : [],
+    detectedDomain: domain,
+    confidence: domainConfidence,
+    keywords: uniqueKeywords,
+    phrases: uniquePhrases,
+    verbs: allVerbs,
+    nouns: uniqueNouns,
     complexity,
   };
 }
@@ -236,30 +330,34 @@ function generateDomainSuggestions(
 
 /**
  * Extract key phrases and terminology from description
+ * ENHANCED: Now uses domain terminology and sophisticated extraction methods
  */
-export function extractKeyPhrases(description: string): string[] {
+export function extractKeyPhrases(description: string, title?: string): string[] {
   if (!description || description.trim().length === 0) {
     return [];
   }
 
-  const phrases: string[] = [];
-  const words = description.toLowerCase().split(/\s+/);
+  const fullText = title ? `${title} ${description}`.trim() : description.trim();
+  
+  // Detect domain for better phrase extraction
+  const domainDetection = detectDomain(title || '', description);
+  const domainTerms = getDomainTerminology(domainDetection.domain);
 
-  // Extract 2-3 word phrases
-  for (let i = 0; i < words.length - 1; i++) {
-    const twoWord = `${words[i]} ${words[i + 1]}`;
-    if (twoWord.length > DESCRIPTION_COMPLEXITY_THRESHOLDS.MIN_PHRASE_LENGTH) {
-      phrases.push(twoWord);
-    }
+  // Use sophisticated extraction method
+  const extracted = extractTermsFromTaskNameWithBrowserAI(fullText, domainTerms);
+  
+  // Enhance with domain terminology
+  const enhanced = validateAndEnhanceTermsWithDictionary(
+    extracted,
+    fullText,
+    domainTerms
+  );
 
-    if (i < words.length - 2) {
-      const threeWord = `${words[i]} ${words[i + 1]} ${words[i + 2]}`;
-      if (threeWord.length > 8) {
-        phrases.push(threeWord);
-      }
-    }
-  }
+  // Return unique phrases, prioritizing domain phrases
+  const uniquePhrases = Array.from(new Set(enhanced.phrases.map(p => p.toLowerCase())))
+    .map(p => enhanced.phrases.find(ep => ep.toLowerCase() === p)!)
+    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
 
-  return phrases;
+  return uniquePhrases;
 }
 
