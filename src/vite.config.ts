@@ -61,8 +61,8 @@ export default defineConfig(({ mode }) => {
       // Figma asset imports
       'figma:asset/f020a6c6df5d63544be1176abd3239b5ad2f7a86.png': path.resolve(__dirname, './assets/app-icon.png'),
       'figma:asset/app-icon.png': path.resolve(__dirname, './assets/app-icon.png'),
-      // TaskZM Logo
-      'figma:asset/taskzm-logo.png': path.resolve(__dirname, './assets/taskzm-logo.png'),
+      // TaskZM Logo - using new black logo
+      'figma:asset/taskzm-logo.png': path.resolve(__dirname, './assets/Taskzm_Logo_BLK-removebg.png'),
     },
   },
   server: {
