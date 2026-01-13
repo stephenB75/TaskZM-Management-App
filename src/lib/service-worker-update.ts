@@ -40,28 +40,42 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
   }, UPDATE_CHECK_INTERVAL);
   
   // Listen for updatefound event (new service worker detected)
+  // CRITICAL: Only handle this once per update to prevent multiple notifications
+  let updateFoundHandled = false;
   swRegistration.addEventListener('updatefound', () => {
+    // Prevent handling the same update multiple times
+    if (updateFoundHandled) {
+      console.debug('[Service Worker Update] Update already being handled, ignoring duplicate event');
+      return;
+    }
+    
     const newWorker = swRegistration.installing;
     if (newWorker) {
+      updateFoundHandled = true;
+      
       newWorker.addEventListener('statechange', () => {
+        // Only handle 'installed' state once
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           // New service worker is installed and waiting
           // CRITICAL: Don't let it activate - it will wait until user manually refreshes
-          // Show notification to user (non-blocking)
+          // Show notification to user (non-blocking) - but only once
           showUpdateAvailableNotification();
           
           // Send message to new worker to ensure it waits
           // This prevents it from activating automatically
           // Use a MessageChannel for reliable communication
-          if (newWorker.state === 'installed') {
-            const channel = new MessageChannel();
-            channel.port1.onmessage = (event) => {
-              if (event.data && event.data.type === 'ACK') {
-                console.debug('[Service Worker Update] Confirmed new worker will wait');
-              }
-            };
-            newWorker.postMessage({ type: 'SKIP_WAITING', skip: false }, [channel.port2]);
-          }
+          const channel = new MessageChannel();
+          channel.port1.onmessage = (event) => {
+            if (event.data && event.data.type === 'ACK') {
+              console.debug('[Service Worker Update] Confirmed new worker will wait');
+            }
+          };
+          newWorker.postMessage({ type: 'SKIP_WAITING', skip: false }, [channel.port2]);
+          
+          // Reset flag after a delay to allow handling future updates
+          setTimeout(() => {
+            updateFoundHandled = false;
+          }, UPDATE_NOTIFICATION_COOLDOWN);
         }
       });
     }
