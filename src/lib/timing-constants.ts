@@ -111,11 +111,11 @@ export const TIMING_CONSTANTS = {
   
   // Service Worker update checking
   serviceWorker: {
-    updateCheckInterval: 60 * 60 * 1000, // 60 minutes - Check for updates in background (reduced frequency to prevent random refreshes)
-    notificationCooldown: 5 * 60 * 1000, // 5 minutes - Don't show notification again within this time
+    updateCheckInterval: 2 * 60 * 60 * 1000, // 2 hours - Check for updates in background (increased to prevent random refreshes)
+    notificationCooldown: 10 * 60 * 1000, // 10 minutes - Don't show notification again within this time (increased to prevent spam)
     notificationDuration: 15000, // 15 seconds - How long to show update notification
     visibilityCheckInterval: 5 * 60 * 1000, // 5 minutes - Minimum time between visibility-based update checks (not used - kept for reference)
-    initialUpdateCheckDelay: 5000, // 5 seconds - Delay for initial update check to ensure page is fully loaded (increased to prevent early checks)
+    initialUpdateCheckDelay: 30000, // 30 seconds - Delay for initial update check to ensure page is fully loaded (increased to prevent early checks)
   },
   
   // Task sync constants

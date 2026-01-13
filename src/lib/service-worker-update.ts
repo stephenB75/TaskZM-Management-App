@@ -95,18 +95,29 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
  * IMPORTANT: This function is ONLY called from background intervals (not on visibility changes)
  * The update check itself is safe - it only checks for updates, doesn't cause refreshes
  * The service worker is configured to wait and not activate automatically
+ * 
+ * CRITICAL: Added additional safeguards to prevent any refresh behavior
  */
 function checkForUpdates() {
   if (!registration) return;
   
-  // Check for updates in the background (safe to run even when page is visible)
-  // The update() call itself doesn't cause refreshes - it only checks for new versions
-  // The new service worker will install but wait (not activate) due to our configuration
-  // It will only activate when user manually refreshes the page
-  registration.update().catch((error) => {
-    // Silently fail - update checking is non-critical
-    console.debug('Service worker update check failed (non-critical):', error);
-  });
+  // CRITICAL: Only check for updates if page is not currently visible
+  // This prevents any potential refresh triggers during active use
+  // Check updates only when page is hidden (background tab)
+  if (document.hidden) {
+    // Check for updates in the background (safe to run when page is hidden)
+    // The update() call itself doesn't cause refreshes - it only checks for new versions
+    // The new service worker will install but wait (not activate) due to our configuration
+    // It will only activate when user manually refreshes the page
+    registration.update().catch((error) => {
+      // Silently fail - update checking is non-critical
+      console.debug('Service worker update check failed (non-critical):', error);
+    });
+  } else {
+    // Page is visible - skip update check to prevent any potential refresh triggers
+    // We'll check again on the next interval when page might be hidden
+    console.debug('[Service Worker] Skipping update check (page is visible)');
+  }
 }
 
 /**

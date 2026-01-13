@@ -398,7 +398,7 @@ if ('serviceWorker' in navigator) {
     // The new service worker will take control ONLY on next page load/navigation
     // This ensures updates happen in the background without disrupting user sessions
     let controllerChangeHandled = false;
-    navigator.serviceWorker.addEventListener('controllerchange', (event) => {
+    const controllerChangeHandler = (event: Event) => {
       // Prevent handling the same controller change multiple times
       if (controllerChangeHandled) {
         console.debug('[Service Worker] Controller change already handled, ignoring duplicate event');
@@ -406,6 +406,10 @@ if ('serviceWorker' in navigator) {
       }
       
       controllerChangeHandled = true;
+      // CRITICAL: Explicitly prevent default behavior and stop propagation
+      event.preventDefault?.();
+      event.stopPropagation?.();
+      
       // Completely ignore controller changes - don't reload
       // The new service worker will take control on next page load
       console.debug('[Service Worker] Controller changed (ignored to prevent reload - update will apply on next page load)');
@@ -416,12 +420,15 @@ if ('serviceWorker' in navigator) {
       setTimeout(() => {
         controllerChangeHandled = false;
       }, TIMING_CONSTANTS.serviceWorker.notificationCooldown);
-    });
+    };
+    
+    // Use capture phase to intercept early, and make it non-capturing to prevent propagation
+    navigator.serviceWorker.addEventListener('controllerchange', controllerChangeHandler, { capture: false, passive: true });
     
     // Additional safeguard: Listen for messages from service worker
     // If service worker tries to activate, tell it to wait
     let skipWaitingMessageHandled = false;
-    navigator.serviceWorker.addEventListener('message', (event) => {
+    const messageHandler = (event: MessageEvent) => {
       if (event.data && event.data.type === 'SKIP_WAITING') {
         // Prevent handling the same message multiple times
         if (skipWaitingMessageHandled) {
@@ -430,16 +437,21 @@ if ('serviceWorker' in navigator) {
         }
         
         skipWaitingMessageHandled = true;
+        // CRITICAL: Explicitly prevent any reload behavior
         // Service worker is asking to activate - tell it to wait
         console.debug('[Service Worker] Received skip waiting request - ignoring to prevent reload');
         // Don't respond - let it wait
+        // Explicitly prevent any default behavior
+        event.stopPropagation?.();
         
         // Reset flag after a delay
         setTimeout(() => {
           skipWaitingMessageHandled = false;
         }, TIMING_CONSTANTS.serviceWorker.notificationCooldown);
       }
-    });
+    };
+    
+    navigator.serviceWorker.addEventListener('message', messageHandler, { passive: true });
   });
 }
 
