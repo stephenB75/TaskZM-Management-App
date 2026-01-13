@@ -625,7 +625,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       
       // Check if the found time is different from requested (and we should show dialog)
       const timeDifference = Math.abs(finalTime.getTime() - requestedTime.getTime());
-      const shouldShowDialog = timeDifference > 15 * 60 * 1000; // More than 15 minutes difference
+      const shouldShowDialog = timeDifference > TIMING_CONSTANTS.dragDrop.timeDifferenceThreshold; // More than threshold difference
       
       if (shouldShowDialog && isToday) {
         // Show dialog if time was adjusted significantly
@@ -661,7 +661,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         if (altLimitCheck.wouldExceed) {
           toast.error('Daily limit exceeded', {
             description: `This task would exceed the ${maxHoursPerDay}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
-            duration: 5000,
+            duration: TIMING_CONSTANTS.dragDrop.toastDuration,
           });
           return;
         }
@@ -1068,7 +1068,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     
     // Check if the found time is different from requested (and we should show dialog)
     const timeDifference = requestedTime ? Math.abs(newDate.getTime() - requestedTime.getTime()) : 0;
-    const shouldShowDialog = timeDifference > 15 * 60 * 1000; // More than 15 minutes difference
+    const shouldShowDialog = timeDifference > TIMING_CONSTANTS.dragDrop.timeDifferenceThreshold; // More than threshold difference
     
     if (shouldShowDialog && requestedTime) {
       // Show dialog if time was adjusted significantly

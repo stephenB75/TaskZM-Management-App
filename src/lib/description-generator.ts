@@ -1723,7 +1723,7 @@ function buildElaborateContextualDescription(
         })
         .map(kw => cleanText(kw)) // Clean HTML fragments
         .filter(kw => kw.length > 0) // Remove empty after cleaning
-        .slice(0, 2); // Limit to 2 keywords max to avoid "and and and" chains
+        .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin); // Limit keywords to avoid "and and and" chains
       
       // Get context nouns that add value - IMPROVED: Only include semantically relevant nouns, filter HTML fragments
       const contextNouns = elaboratingNouns
@@ -1741,7 +1741,7 @@ function buildElaborateContextualDescription(
         })
         .map(n => cleanText(n)) // Clean HTML fragments
         .filter(n => n.length > 0) // Remove empty after cleaning
-        .slice(0, 2); // Limit to 2 nouns max
+        .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin); // Limit nouns to avoid long chains
       
       // ENHANCED: Build complete contextual sentences using sentence templates
       // This ensures we write complete sentences from keywords and phrases, not just fragments
@@ -1751,12 +1751,12 @@ function buildElaborateContextualDescription(
       if (phraseHasAction && contextNouns.length > 0) {
         // Complete sentence: Phrase (with action) + involving + nouns (max 2)
         const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
-                         contextNouns.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                         contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
         description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}.`;
       } else if (phraseHasAction && relevantKeywords.length > 0) {
         // Complete sentence: Phrase (with action) + related to + keywords (max 2)
         const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
-                            relevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                            relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
         description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
       } else if (actionVerb && contextNouns.length > 0) {
         // Complete sentence: Verb + phrase + for + nouns (max 1)
@@ -1773,12 +1773,12 @@ function buildElaborateContextualDescription(
       } else if (contextNouns.length > 0) {
         // Complete sentence: Phrase + involving + nouns (max 2)
         const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
-                         contextNouns.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                         contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
         description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}.`;
       } else if (relevantKeywords.length > 0) {
         // Complete sentence: Phrase + related to + keywords (max 2)
         const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
-                            relevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                            relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
         description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
       } else {
         // Fallback: Phrase as standalone sentence
@@ -1798,7 +1798,7 @@ function buildElaborateContextualDescription(
       })
       .map(n => cleanText(n)) // Clean HTML fragments
       .filter(n => n.length > 0) // Remove empty after cleaning
-      .slice(0, 2); // Limit to 2 nouns max
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin); // Limit nouns to avoid long chains
     
     // Get relevant keywords that add context - IMPROVED: Only include semantically relevant keywords, filter HTML fragments, limit to 2
     const relevantKeywords = keywords
@@ -1816,17 +1816,17 @@ function buildElaborateContextualDescription(
       })
       .map(kw => cleanText(kw)) // Clean HTML fragments
       .filter(kw => kw.length > 0) // Remove empty after cleaning
-      .slice(0, 2); // Limit to 2 keywords max
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin); // Limit keywords to avoid long chains
     
     // Build complete sentence (limit to max 2 nouns and 2 keywords)
     const parts: string[] = [];
     const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
-                     contextNouns.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                     contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
     parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${nounsList}`);
         
     if (relevantKeywords.length > 0) {
       const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
-                          relevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                          relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}`);
     }
     
@@ -1867,7 +1867,7 @@ function buildElaborateContextualDescription(
         })
         .map(kw => cleanText(kw)) // Clean HTML fragments
         .filter(kw => kw.length > 0) // Remove empty after cleaning
-        .slice(0, 2); // Limit to 2 keywords max
+        .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin); // Limit keywords to avoid long chains
       
       const contextNouns = elaboratingNouns
         .filter(n => {
@@ -1884,7 +1884,7 @@ function buildElaborateContextualDescription(
         })
         .map(n => cleanText(n)) // Clean HTML fragments
         .filter(n => n.length > 0) // Remove empty after cleaning
-        .slice(0, 2); // Limit to 2 nouns max
+        .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin); // Limit nouns to avoid long chains
       
       // Build complete sentence
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
@@ -1904,11 +1904,11 @@ function buildElaborateContextualDescription(
         
         if (contextNouns.length > 0) {
           const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
-                           contextNouns.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                           contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
           parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}`);
         } else if (relevantKeywords.length > 0) {
           const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
-                              relevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                              relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
           parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}`);
         }
         
@@ -2275,7 +2275,7 @@ function buildCompleteSentences(
     const verb = verbs[0];
     const relevantKeywords = keywords
       .filter(k => !taskNameLower.includes(k.toLowerCase()))
-      .slice(0, 2);
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin);
     if (relevantKeywords.length > 0 && !taskNameLower.includes(verb.toLowerCase())) {
       sentences.push(sentenceTemplates[2](verb, relevantKeywords));
     }
@@ -2285,7 +2285,7 @@ function buildCompleteSentences(
     const phrase = phrases[0];
     const relevantKeywords = keywords
       .filter(k => !taskNameLower.includes(k.toLowerCase()))
-      .slice(0, 2);
+      .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin);
     if (relevantKeywords.length > 0 && !taskNameLower.includes(phrase.toLowerCase())) {
       sentences.push(sentenceTemplates[3](phrase, relevantKeywords));
     }
@@ -2539,7 +2539,7 @@ export async function generateDescription(
       description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${cleanedContextNouns[0]}`;
     } else if (cleanedActionVerb && cleanedRelevantKeywords.length > 0) {
       const keywordsList = cleanedRelevantKeywords.length === 1 ? cleanedRelevantKeywords[0] : 
-                          cleanedRelevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                          cleanedRelevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${keywordsList}`;
     } else if (cleanedActionVerb) {
       description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
@@ -2547,7 +2547,7 @@ export async function generateDescription(
       description = `${cleanedContextNouns[0].charAt(0).toUpperCase() + cleanedContextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
     } else if (cleanedRelevantKeywords.length > 0) {
       const keywordsList = cleanedRelevantKeywords.length === 1 ? cleanedRelevantKeywords[0] : 
-                          cleanedRelevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+                          cleanedRelevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       description = `${keywordsList} ${domainGuidance.toLowerCase()}`;
     } else {
       // Use domain guidance as base description

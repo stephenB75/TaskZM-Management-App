@@ -2815,7 +2815,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             logger.debug('Background folder sync after deletion:', err);
           });
         }
-      }, 1000); // 1 second delay to allow server to process
+      }, TIMING_CONSTANTS.taskSync.serverProcessDelay); // Delay to allow server to process
     }
   }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag, ensureWorkspace, createWorkspaceIfNeeded, setWorkspaceId, debouncedSync]);
 

@@ -126,5 +126,11 @@ export const TIMING_CONSTANTS = {
     networkErrorLogCooldown: 60000, // 1 minute - Don't log network errors more than once per minute
     uiUpdateDelay: 500, // 500ms - Delay for UI updates after server operations
   },
+  
+  // Drag and drop constants
+  dragDrop: {
+    timeDifferenceThreshold: 15 * 60 * 1000, // 15 minutes - Threshold for showing time difference dialog
+    toastDuration: 5000, // 5 seconds - Duration for toast notifications
+  },
 } as const;
 

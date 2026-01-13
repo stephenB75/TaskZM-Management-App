@@ -78,14 +78,22 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'sdk', 'software development kit', 'no-code', 'extensibility', 'privacy-by-design',
     'soc 2', 'compliance', 'data protection', 'security', 'encryption', 'authentication',
     'authorization', 'access control', 'audit log', 'backup', 'disaster recovery',
-    // Modern productivity and collaboration terms
-    'async', 'asynchronous', 'sync', 'synchronous', 'remote', 'hybrid', 'work from home',
-    'wfh', 'distributed team', 'virtual meeting', 'video conference', 'screen share',
+    // Modern productivity and collaboration terms (2024-2025)
+    'async', 'asynchronous', 'async-first', 'async communication', 'sync', 'synchronous', 
+    'remote', 'hybrid', 'hybrid work', 'work from home', 'wfh', 'return to office', 'rto',
+    'distributed team', 'virtual meeting', 'video conference', 'screen share', 'zoom fatigue',
     'collaboration', 'real-time', 'live', 'streaming', 'webinar', 'workshop', 'training',
     'onboarding', 'offboarding', 'knowledge base', 'documentation', 'wiki', 'faq',
     'ticket', 'support ticket', 'help desk', 'customer support', 'customer success',
     'user feedback', 'feature request', 'roadmap', 'sprint', 'agile', 'scrum', 'kanban',
     'standup', 'retrospective', 'backlog', 'epic', 'story', 'task', 'subtask',
+    // Modern workplace trends (2024-2025)
+    'quiet quitting', 'great resignation', 'burnout', 'burnout prevention', 'employee wellness',
+    'work-life balance', 'work-life integration', 'boundary setting', 'focus time', 'deep work',
+    'time blocking', 'calendar blocking', 'meeting fatigue', 'meeting overload', 'async standup',
+    'dei', 'diversity equity inclusion', 'belonging', 'inclusive workplace', 'psychological safety',
+    'esg', 'environmental social governance', 'sustainability', 'carbon neutral', 'net zero',
+    'corporate responsibility', 'social impact', 'b corp', 'triple bottom line',
     // Modern business tools and platforms
     'crm', 'customer relationship management', 'erp', 'enterprise resource planning',
     'project management', 'task management', 'time tracking', 'invoicing', 'accounting',
@@ -436,7 +444,9 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'reliability', 'safety', 'performance', 'efficiency', 'comfort', 'space', 'cargo', 'seating',
     'test drive', 'inspection', 'history', 'report', 'vin', 'carfax', 'autocheck',
     // Modern home management keywords
-    'smart home', 'home automation', 'iot', 'internet of things', 'smart device', 'smart devices',
+        'smart home', 'home automation', 'iot', 'internet of things', 'smart device', 'smart devices',
+        'matter protocol', 'thread protocol', 'homekit', 'google home', 'alexa', 'siri',
+        'smart appliance', 'smart tv', 'smart doorbell', 'smart garage', 'smart irrigation',
     'smart thermostat', 'smart lighting', 'smart lock', 'smart security', 'home assistant',
     'alexa', 'google home', 'siri', 'voice control', 'automation', 'automated',
     'energy efficiency', 'solar panel', 'solar panels', 'renewable energy', 'sustainability',
