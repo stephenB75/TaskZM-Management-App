@@ -48,12 +48,14 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { PrivacyPolicyDialog } from "./PrivacyPolicyDialog";
 import { TermsOfServiceDialog } from "./TermsOfServiceDialog";
-import taskzmLogo from "../assets/taskzm-logo.png";  // Black logo
+import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black logo for light mode
+import taskzmLogoGray from "../assets/taskzm-logo-gray.png";  // Gray logo for dark mode
 import { supabase } from '../lib/supabase-client';
 import { 
   DEMO_ACCOUNT_CONFIG, 
@@ -96,6 +98,8 @@ function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 
 
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const isMobile = useIsMobile();
   
   // Determine screen size category with state for reactivity
@@ -519,7 +523,7 @@ export function AuthScreen() {
                 </span>
               </motion.div>
               <motion.img
-                src={taskzmLogo}
+                src={isDark ? taskzmLogoGray : taskzmLogoBlack}
                 alt="TaskZM Logo"
                 className="object-contain"
                 style={{

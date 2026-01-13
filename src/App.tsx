@@ -15,7 +15,7 @@ import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionCo
 import { TaskProvider, useTasks } from './contexts/TaskContext';
 import { LoadingProvider, useLoading } from './contexts/LoadingContext';
 import { LoadingProvider, useLoading } from './contexts/LoadingContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { AIProvider, useAI } from './contexts/AIContext';
 import { CalendarProvider } from './contexts/CalendarContext';
@@ -56,6 +56,7 @@ import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
+import logoImageGray from './assets/taskzm-logo-gray.png';
 
 const getTwoWeekDateRange = () => {
   const start = new Date();
@@ -77,6 +78,8 @@ function AppContent() {
   const { settings: aiSettings } = useAI();
   const { hasFeature, features, subscription } = useSubscription();
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   
   // Initialize view: 'today' on mobile, 'dashboard' on desktop
   const getInitialView = () => {
@@ -590,7 +593,7 @@ function AppContent() {
         <div className="text-center px-4">
           <div className="mb-6">
             <img 
-              src={logoImageBlack} 
+              src={isDark ? logoImageGray : logoImageBlack} 
               alt="TaskZM Logo" 
               className="mx-auto w-auto object-contain"
               style={{ 

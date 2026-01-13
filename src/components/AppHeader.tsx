@@ -66,7 +66,8 @@ import {
   getColorWithOpacity,
 } from "../lib/color-theme";
 import { cn } from "../lib/utils";
-import logoImageColor from "../assets/Taskzm_Logo_BLK-removebg.png"; // Black logo version
+import logoImageBlack from "../assets/Taskzm_Logo_BLK-removebg.png"; // Black logo version
+import logoImageGray from "../assets/taskzm-logo-gray.png"; // Gray logo version for dark mode
 
 interface AppHeaderProps {
   title: string | React.ReactNode;
@@ -282,11 +283,10 @@ export function AppHeader({
               )}
               {!hideDesktopLogo && (
                 <motion.img
-                  src={logoImageColor}
+                  src={isDark ? logoImageGray : logoImageBlack}
                   alt="TaskZM Logo"
                   className={cn(
                     "w-auto flex-shrink-0",
-                    isDark && "dark-logo-filter"
                   )}
                   style={{ 
                     height: HEADER_LOGO_HEIGHT,
@@ -396,12 +396,9 @@ export function AppHeader({
               )}
               {!hideDesktopLogo && (
                 <img
-                  src={logoImageColor}
+                  src={isDark ? logoImageGray : logoImageBlack}
                   alt="TaskZM Logo"
-                  className={cn(
-                    "w-auto flex-shrink-0 object-contain self-center",
-                    isDark && "dark-logo-filter"
-                  )}
+                  className="w-auto flex-shrink-0 object-contain self-center"
                   style={{ 
                     height: HEADER_LOGO_HEIGHT_DESKTOP,
                     maxHeight: '100%',

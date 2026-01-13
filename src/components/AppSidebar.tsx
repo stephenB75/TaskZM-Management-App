@@ -34,8 +34,8 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useMobileLayout } from "../hooks/useMobileLayout";
-import taskzmLogoColor from "../assets/taskzm-logo-light.png";  // Purple color logo
-import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black logo for mobile menu
+import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black logo for light mode
+import taskzmLogoGray from "../assets/taskzm-logo-gray.png";  // Gray logo for dark mode
 
 interface AppSidebarProps {
   currentView: string;
@@ -180,7 +180,7 @@ export function AppSidebar({
       {/* Header */}
       <div className="mb-6 flex flex-col items-center gap-1.5">
         <img
-          src={taskzmLogoBlack}
+          src={isDark ? taskzmLogoGray : taskzmLogoBlack}
           alt="TaskZM Logo"
           className="w-[160px] object-contain"
         />
