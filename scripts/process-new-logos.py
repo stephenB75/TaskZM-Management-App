@@ -79,11 +79,11 @@ def main():
     assets_dir = os.path.join(project_root, 'src', 'assets')
     public_dir = os.path.join(project_root, 'src', 'public')
     
-    # Expected input files (user should place these in the assets folder)
-    # User should name them: new-logo-black.png and new-logo-gray.png
+    # Expected input files (the new logo files that exist)
     input_files = {
-        'black': os.path.join(assets_dir, 'new-logo-black.png'),
-        'gray': os.path.join(assets_dir, 'new-logo-gray.png'),
+        'black': os.path.join(assets_dir, 'TaskZM_New Logo_BLK.png'),
+        'gray': os.path.join(assets_dir, 'TaskZM_New Logo_GRY.png'),
+        'appicon': os.path.join(assets_dir, 'TaskZM Appicon.png'),
     }
     
     # Output files (where processed logos will be saved)
@@ -91,6 +91,7 @@ def main():
         'black': os.path.join(assets_dir, 'Taskzm_Logo_BLK-removebg.png'),
         'gray': os.path.join(assets_dir, 'taskzm-logo-gray.png'),
         'splash': os.path.join(public_dir, 'taskzm-logo.png'),
+        'appicon': os.path.join(assets_dir, 'app-icon.png'),
     }
     
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -103,16 +104,15 @@ def main():
     for name, path in input_files.items():
         if not os.path.exists(path):
             print(f"⚠️  Input file not found: {path}")
-            print(f"   Please add your new {name} logo as: new-logo-{name}.png")
             all_exist = False
     
     if not all_exist:
         print()
-        print("📋 Instructions:")
-        print("1. Place your new logo files in: src/assets/")
-        print("   - Name the black/colored version: new-logo-black.png")
-        print("   - Name the gray version: new-logo-gray.png")
-        print("2. Run this script again: python3 scripts/process-new-logos.py")
+        print("❌ Required logo files not found in src/assets/")
+        print("   Expected files:")
+        print("   - TaskZM_New Logo_BLK.png (black version)")
+        print("   - TaskZM_New Logo_GRY.png (gray version)")
+        print("   - TaskZM Appicon.png (app icon)")
         print()
         return 1
     
@@ -133,6 +133,13 @@ def main():
         tolerance=30
     )
     
+    # Process app icon
+    success_appicon = remove_white_background(
+        input_files['appicon'],
+        output_files['appicon'],
+        tolerance=30
+    )
+    
     # Copy black logo to splash screen location
     if success_black:
         try:
@@ -143,7 +150,7 @@ def main():
             print(f"⚠️  Could not copy to splash screen: {e}")
     
     print()
-    if success_black and success_gray:
+    if success_black and success_gray and success_appicon:
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         print("✅ All logos processed successfully!")
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -152,9 +159,11 @@ def main():
         print(f"   Black logo: {output_files['black']}")
         print(f"   Gray logo: {output_files['gray']}")
         print(f"   Splash logo: {output_files['splash']}")
+        print(f"   App icon: {output_files['appicon']}")
         print()
-        print("🎉 Your new logos are ready to use!")
+        print("🎉 Your new logos and app icon are ready to use!")
         print("   The app will automatically use them on next build.")
+        print("   Note: Run 'npm run generate-icons' to generate all icon sizes from app-icon.png")
         return 0
     else:
         print("❌ Some logos failed to process. Please check the errors above.")

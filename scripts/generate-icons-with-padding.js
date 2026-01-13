@@ -53,8 +53,8 @@ async function generateIcon({ size, name, padding }) {
     const offsetX = Math.floor((size - scaledWidth) / 2);
     const offsetY = Math.floor((size - scaledHeight) / 2);
     
-    // Create a white background (or transparent for favicon)
-    const backgroundColor = name.includes('favicon') ? { r: 0, g: 0, b: 0, alpha: 0 } : { r: 255, g: 255, b: 255, alpha: 1 };
+    // Create a transparent background (app icon now has transparent background)
+    const backgroundColor = { r: 0, g: 0, b: 0, alpha: 0 };
     
     // Generate the icon
     await sharp({
@@ -96,7 +96,7 @@ async function generateFavicon() {
     const favicon16 = await sharp(SOURCE_ICON)
       .resize(16, 16, {
         fit: 'contain',
-        background: { r: 255, g: 255, b: 255, alpha: 1 },
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
       })
       .png()
       .toBuffer();
