@@ -1284,7 +1284,7 @@ export const DraggableTaskCard = React.forwardRef<
                       }}
                     >
                       <div
-                        className="break-words"
+                        className="break-normal leading-relaxed"
                         style={{
                           fontSize: `${dropdownFontSize}px`,
                           color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,

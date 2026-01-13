@@ -151,7 +151,7 @@ export function TaskCard({
             {task.description && (
               <div 
                 className={cn(
-                  "text-[12px] text-gray-600 dark:text-muted-foreground break-words px-1.5 py-1 mt-0.5 mb-3",
+                  "text-[13px] text-gray-600 dark:text-muted-foreground leading-relaxed break-normal px-1.5 py-1 mt-0.5 mb-3",
                   // Rich text formatting styles - only apply if HTML is present
                   // Note: Rich text editor font size changes will override this base size via inline styles
                   hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
@@ -162,7 +162,7 @@ export function TaskCard({
                   hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3 [&_ul]:my-0.5",
                   hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3 [&_ol]:my-0.5",
                   hasHTMLTags(task.description) && "[&_li]:ml-1",
-                  hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words",
+                  hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-normal [&_p]:leading-relaxed",
                   hasHTMLTags(task.description) && "[&_code]:bg-muted [&_code]:dark:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono"
                 )}
                 {...(hasHTMLTags(task.description) 
