@@ -19,16 +19,41 @@ import { DEFAULT_TASK_DOMAIN } from './task-constants';
 function cleanText(text: string): string {
   if (!text || typeof text !== 'string') return '';
   
-  // Remove HTML tags and fragments
+  // Remove HTML tags and fragments - more aggressive cleaning
   let cleaned = text
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/style\s*=\s*["'][^"']*["']/gi, '') // Remove style attributes
-    .replace(/12px;?/gi, '') // Remove specific CSS fragments like "12px;"
-    .replace(/font-size\s*:\s*[^;]+;?/gi, '') // Remove font-size CSS
-    .replace(/color\s*:\s*[^;]+;?/gi, '') // Remove color CSS
-    .replace(/["']>/g, '') // Remove closing quote and bracket fragments
-    .replace(/;\s*>/g, '') // Remove semicolon and bracket fragments
-    .replace(/\s+/g, ' ') // Normalize whitespace
+    // Remove HTML tags first
+    .replace(/<[^>]*>/g, '')
+    // Remove style attributes and their values
+    .replace(/style\s*=\s*["'][^"']*["']/gi, '')
+    // Remove CSS property fragments (more comprehensive)
+    .replace(/\d+px;?/gi, '') // Remove any pixel values like "12px;", "10px", etc.
+    .replace(/font-size\s*:\s*[^;]+;?/gi, '')
+    .replace(/color\s*:\s*[^;]+;?/gi, '')
+    .replace(/font-family\s*:\s*[^;]+;?/gi, '')
+    .replace(/line-height\s*:\s*[^;]+;?/gi, '')
+    // Remove quote and bracket fragments (more patterns)
+    .replace(/["']>/g, '')
+    .replace(/;\s*>/g, '')
+    .replace(/">/g, '')
+    .replace(/;">/g, '')
+    .replace(/px;">/gi, '')
+    .replace(/px;?">/gi, '')
+    // Remove any remaining HTML-like fragments
+    .replace(/&[a-z]+;/gi, '') // Remove HTML entities
+    .replace(/&#\d+;/g, '') // Remove numeric HTML entities
+    // Remove duplicate fragments that might have been created
+    .replace(/(12px;?\s*">?\s*)+/gi, '') // Remove repeated "12px;">" patterns
+    .replace(/(px;?\s*">?\s*)+/gi, '') // Remove any repeated "px;">" patterns
+    // Normalize whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // Additional pass to catch any remaining fragments
+  cleaned = cleaned
+    .replace(/px;?/gi, '') // Remove any remaining px fragments
+    .replace(/">/g, '') // Remove any remaining quote-bracket fragments
+    .replace(/;\s*>/g, '') // Remove any remaining semicolon-bracket fragments
+    .replace(/\s+/g, ' ') // Normalize whitespace again
     .trim();
   
   return cleaned;
@@ -2498,24 +2523,32 @@ export async function generateDescription(
       return !taskNameLower.includes(kwLower) && kwLower.length >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minKeywordLength;
     }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
-    // Build contextual sentence using available terms
+    // Build contextual sentence using available terms - clean all inputs first
+    const cleanedActionVerb = actionVerb ? cleanText(actionVerb) : '';
+    const cleanedContextNouns = contextNouns.map(n => cleanText(n)).filter(n => n.length > 0 && isValidKeyword(n));
+    const cleanedRelevantKeywords = relevantKeywords.map(kw => cleanText(kw)).filter(kw => kw.length > 0 && isValidKeyword(kw));
+    
     if (domainPhrases.length > 0) {
-      const bestPhrase = domainPhrases[0];
-      if (actionVerb) {
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+      const bestPhrase = cleanText(domainPhrases[0]);
+      if (cleanedActionVerb) {
+        description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${bestPhrase}`;
       } else {
         description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
       }
-    } else if (actionVerb && contextNouns.length > 0) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns[0]}`;
-    } else if (actionVerb && relevantKeywords.length > 0) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
-    } else if (actionVerb) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
-    } else if (contextNouns.length > 0) {
-      description = `${contextNouns[0].charAt(0).toUpperCase() + contextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
-    } else if (relevantKeywords.length > 0) {
-      description = `${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)} ${domainGuidance.toLowerCase()}`;
+    } else if (cleanedActionVerb && cleanedContextNouns.length > 0) {
+      description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${cleanedContextNouns[0]}`;
+    } else if (cleanedActionVerb && cleanedRelevantKeywords.length > 0) {
+      const keywordsList = cleanedRelevantKeywords.length === 1 ? cleanedRelevantKeywords[0] : 
+                          cleanedRelevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+      description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${keywordsList}`;
+    } else if (cleanedActionVerb) {
+      description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
+    } else if (cleanedContextNouns.length > 0) {
+      description = `${cleanedContextNouns[0].charAt(0).toUpperCase() + cleanedContextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
+    } else if (cleanedRelevantKeywords.length > 0) {
+      const keywordsList = cleanedRelevantKeywords.length === 1 ? cleanedRelevantKeywords[0] : 
+                          cleanedRelevantKeywords.slice(0, 2).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+      description = `${keywordsList} ${domainGuidance.toLowerCase()}`;
     } else {
       // Use domain guidance as base description
       description = domainGuidance;
