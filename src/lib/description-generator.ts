@@ -1797,46 +1797,50 @@ function buildElaborateContextualDescription(
         .filter(n => n.length > 0) // Remove empty after cleaning
         .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin); // Limit nouns to avoid long chains
       
-      // ENHANCED: Build complete contextual sentences using sentence templates
+      // ENHANCED: Build complete, natural sentences with proper sentence structure
       // This ensures we write complete sentences from keywords and phrases, not just fragments
       // Clean the best phrase first
       const cleanedPhrase = cleanText(bestPhrase);
       
+      // Build complete sentences with proper sentence openers and structure
       if (phraseHasAction && contextNouns.length > 0) {
-        // Complete sentence: Phrase (with action) + involving + nouns (max 2)
+        // Complete sentence: "This task involves [phrase] for [nouns]"
         const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                          contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}.`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${nounsList}.`;
       } else if (phraseHasAction && relevantKeywords.length > 0) {
-        // Complete sentence: Phrase (with action) + related to + keywords (max 2)
+        // Complete sentence: "This task involves [phrase] related to [keywords]"
         const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
                             relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
       } else if (actionVerb && contextNouns.length > 0) {
-        // Complete sentence: Verb + phrase + for + nouns (max 1)
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${cleanedPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
+        // Complete sentence: "This task involves [verb]ing [phrase] for [nouns]"
+        const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
       } else if (actionVerb && relevantKeywords.length > 0) {
-        // Complete sentence: Verb + phrase + related to + keywords (max 1)
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${cleanedPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}.`;
+        // Complete sentence: "This task involves [verb]ing [phrase] related to [keywords]"
+        const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}.`;
       } else if (phraseHasAction) {
-        // Complete sentence: Phrase (with action) as standalone sentence
-        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)}.`;
+        // Complete sentence: "This task involves [phrase]"
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()}.`;
       } else if (actionVerb) {
-        // Complete sentence: Verb + phrase
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${cleanedPhrase}.`;
+        // Complete sentence: "This task involves [verb]ing [phrase]"
+        const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedPhrase.toLowerCase()}.`;
       } else if (contextNouns.length > 0) {
-        // Complete sentence: Phrase + involving + nouns (max 2)
+        // Complete sentence: "This task involves [phrase] for [nouns]"
         const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                          contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}.`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${nounsList}.`;
       } else if (relevantKeywords.length > 0) {
-        // Complete sentence: Phrase + related to + keywords (max 2)
+        // Complete sentence: "This task involves [phrase] related to [keywords]"
         const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
                             relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
       } else {
-        // Fallback: Phrase as standalone sentence
-        description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)}.`;
+        // Fallback: "This task involves [phrase]"
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()}.`;
       }
     }
     } // Close else block for sortedPhrases
@@ -1873,19 +1877,18 @@ function buildElaborateContextualDescription(
       .filter(kw => kw.length > 0) // Remove empty after cleaning
       .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin); // Limit keywords to avoid long chains
     
-    // Build complete sentence (limit to max 2 nouns and 2 keywords)
-    const parts: string[] = [];
+    // Build complete sentence with proper sentence opener
+    const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
     const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                      contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-    parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${nounsList}`);
-        
+    
     if (relevantKeywords.length > 0) {
       const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
                           relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-      parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}`);
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${nounsList} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+    } else {
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${nounsList}.`;
     }
-    
-    description = parts.join(' ');
   }
   // PRIORITY 4: Build sentence using extracted phrases + domain terminology + keywords
   if (!description && phrases.length > 0) {
@@ -1941,33 +1944,30 @@ function buildElaborateContextualDescription(
         .filter(n => n.length > 0) // Remove empty after cleaning
         .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin); // Limit nouns to avoid long chains
       
-      // Build complete sentence
+      // Build complete sentence with proper sentence opener
+      const cleanedBestPhrase = cleanText(bestPhrase);
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
-        const parts: string[] = [];
-        parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`);
+        const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
         
         if (contextNouns.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}`);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
         } else if (relevantKeywords.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}`);
-        }
-        
-        description = parts.join(' ');
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}.`;
         } else {
-        const parts: string[] = [];
-        parts.push(bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1));
-        
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()}.`;
+        }
+      } else {
         if (contextNouns.length > 0) {
           const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                            contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${nounsList}`);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${nounsList}.`;
         } else if (relevantKeywords.length > 0) {
           const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
                               relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}`);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+        } else {
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedBestPhrase.toLowerCase()}.`;
         }
-        
-        description = parts.join(' ');
       }
     }
   }
@@ -1980,15 +1980,16 @@ function buildElaborateContextualDescription(
       !taskNameLower.includes(kw.toLowerCase())
     ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
-    // Build complete sentence
-    const parts: string[] = [];
-    parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
+    // Build complete sentence with proper sentence opener
+    const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+    const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
     
     if (relevantKeywords.length > 0) {
-      parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
+      const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${nounsList} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+    } else {
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${nounsList}.`;
     }
-    
-    description = parts.join(' ');
   }
   // PRIORITY 5: Build sentence using verbs + keywords
   if (!description && verbs.length > 0 && keywords.length > 0) {
@@ -2004,14 +2005,16 @@ function buildElaborateContextualDescription(
       return isSemanticallyRelevant(kw);
     }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
+    const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
     if (relevantKeywords.length > 0) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
-      } else {
+      const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${keywordsList}.`;
+    } else {
       // Use domain nouns if available
       if (elaboratingNouns.length > 0) {
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${elaboratingNouns[0]}`;
-          } else {
-        description = actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${elaboratingNouns[0]}.`;
+      } else {
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm}.`;
       }
     }
   }
@@ -2035,17 +2038,19 @@ function buildElaborateContextualDescription(
     // Use action verb from extracted verbs or domain terminology
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
     
+    const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
     if (relevantKeywords.length > 0) {
+      const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       if (actionVerb) {
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns[0]} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
-        } else {
-        description = `${contextNouns[0]} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${contextNouns[0]} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+      } else {
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${contextNouns[0]} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
       }
     } else {
       if (actionVerb) {
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns[0]}`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${contextNouns[0]}.`;
       } else {
-        description = contextNouns[0].charAt(0).toUpperCase() + contextNouns[0].slice(1);
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${contextNouns[0]}.`;
       }
     }
   }
@@ -2065,17 +2070,20 @@ function buildElaborateContextualDescription(
       .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsExtended);
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
     
+    const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
     if (actionVerb && relevantKeywords.length > 0) {
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
+      const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${keywordsList}.`;
     } else if (relevantKeywords.length > 0) {
       // Try to add domain nouns for context
+      const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       if (elaboratingNouns.length > 0) {
-        description = `${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${elaboratingNouns[0]}`;
-        } else {
-        description = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${keywordsList} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${elaboratingNouns[0]}.`;
+      } else {
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${keywordsList}.`;
       }
     } else if (actionVerb) {
-      description = actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1);
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm}.`;
     }
   }
   
@@ -2088,31 +2096,36 @@ function buildElaborateContextualDescription(
       const actionVerb = elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '';
       const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
       
+      const cleanedBestPhrase = cleanText(bestPhrase);
+      const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
       if (actionVerb && contextNouns.length > 0) {
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
       } else if (actionVerb) {
-        description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()}.`;
       } else if (contextNouns.length > 0) {
-        description = `${bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns[0]}`;
-        } else {
-        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
+      } else {
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedBestPhrase.toLowerCase()}.`;
       }
     } else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
       const actionVerb = elaboratingVerbs[0];
+      const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
       const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`;
+      const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${nounsList}.`;
     } else if (elaboratingVerbs.length > 0) {
       const actionVerb = elaboratingVerbs[0];
+      const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
       const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
-      description = `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${domainGuidance.toLowerCase()}.`;
     } else if (elaboratingNouns.length > 0) {
       const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
       const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
-      description = `${contextNouns[0].charAt(0).toUpperCase() + contextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
-      } else {
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${contextNouns[0]} ${domainGuidance.toLowerCase()}.`;
+    } else {
       // Last resort: use domain guidance as description
       const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
-      description = domainGuidance;
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${domainGuidance.toLowerCase()}.`;
     }
   }
   
@@ -2163,21 +2176,31 @@ function buildElaborateContextualDescription(
         return isSemanticallyRelevant(n);
       }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
-      // Build complete sentence
-      const parts: string[] = [];
+      // Build complete sentence with proper sentence opener
+      const cleanedBestPhrase = cleanText(bestPhrase);
+      const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
+      
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
-        parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${bestPhrase}`);
+        if (contextNouns.length > 0) {
+          const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${nounsList}.`;
+        } else if (relevantKeywords.length > 0) {
+          const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+        } else {
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()}.`;
+        }
       } else {
-        parts.push(bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1));
+        if (contextNouns.length > 0) {
+          const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${nounsList}.`;
+        } else if (relevantKeywords.length > 0) {
+          const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+        } else {
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedBestPhrase.toLowerCase()}.`;
+        }
       }
-      
-      if (contextNouns.length > 0) {
-        parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-      } else if (relevantKeywords.length > 0) {
-        parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-      }
-      
-      description = parts.join(' ');
     } else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
       // Use domain verbs and nouns with keywords
       const actionVerb = elaboratingVerbs[0];
@@ -2187,45 +2210,47 @@ function buildElaborateContextualDescription(
         !taskNameLower.includes(kw.toLowerCase())
       ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
-      const parts: string[] = [];
-      parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-        
-        if (relevantKeywords.length > 0) {
-        parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
-      }
+      const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+      const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       
-      description = parts.join(' ');
+      if (relevantKeywords.length > 0) {
+        const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${nounsList} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+      } else {
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${nounsList}.`;
+      }
         } else {
       // Build sentence using available terms
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
       const contextNouns = nouns.length > 0 ? nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (elaboratingNouns.length > 0 ? elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
       const relevantKeywords = keywords.filter(kw => !taskNameLower.includes(kw.toLowerCase())).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
-      const parts: string[] = [];
+      const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
+      
       if (actionVerb) {
         if (contextNouns.length > 0) {
-          parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${contextNouns[0]}`);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${contextNouns[0]}.`;
         } else if (relevantKeywords.length > 0) {
-          parts.push(`${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
+          const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${keywordsList}.`;
         } else {
-          parts.push(actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1));
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm}.`;
         }
       } else if (contextNouns.length > 0) {
-        parts.push(contextNouns[0].charAt(0).toUpperCase() + contextNouns[0].slice(1));
         if (relevantKeywords.length > 0) {
-          parts.push(`${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}`);
+          const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${contextNouns[0]} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+        } else {
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${contextNouns[0]}.`;
         }
       } else if (relevantKeywords.length > 0) {
-        parts.push(relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `));
-      }
-      
-      if (parts.length > 0) {
-        description = parts.join(' ');
+        const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${keywordsList}.`;
       } else {
         // Last resort: use domain guidance
         const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
         if (domainGuidance) {
-          description = domainGuidance;
+          description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${domainGuidance.toLowerCase()}.`;
         }
       }
     }
@@ -2583,30 +2608,32 @@ export async function generateDescription(
     const cleanedContextNouns = contextNouns.map(n => cleanText(n)).filter(n => n.length > 0 && isValidKeyword(n));
     const cleanedRelevantKeywords = relevantKeywords.map(kw => cleanText(kw)).filter(kw => kw.length > 0 && isValidKeyword(kw));
     
+    const verbForm = cleanedActionVerb ? (cleanedActionVerb.endsWith('e') ? cleanedActionVerb.slice(0, -1) + 'ing' : cleanedActionVerb + 'ing') : '';
+    
     if (domainPhrases.length > 0) {
       const bestPhrase = cleanText(domainPhrases[0]);
       if (cleanedActionVerb) {
-        description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${bestPhrase}`;
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${bestPhrase.toLowerCase()}.`;
       } else {
-        description = bestPhrase.charAt(0).toUpperCase() + bestPhrase.slice(1);
+        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${bestPhrase.toLowerCase()}.`;
       }
     } else if (cleanedActionVerb && cleanedContextNouns.length > 0) {
-      description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${cleanedContextNouns[0]}`;
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedContextNouns[0]}.`;
     } else if (cleanedActionVerb && cleanedRelevantKeywords.length > 0) {
       const keywordsList = cleanedRelevantKeywords.length === 1 ? cleanedRelevantKeywords[0] : 
                           cleanedRelevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-      description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${keywordsList}`;
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${keywordsList}.`;
     } else if (cleanedActionVerb) {
-      description = `${cleanedActionVerb.charAt(0).toUpperCase() + cleanedActionVerb.slice(1)} ${domainGuidance.toLowerCase()}`;
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${domainGuidance.toLowerCase()}.`;
     } else if (cleanedContextNouns.length > 0) {
-      description = `${cleanedContextNouns[0].charAt(0).toUpperCase() + cleanedContextNouns[0].slice(1)} ${domainGuidance.toLowerCase()}`;
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedContextNouns[0]} ${domainGuidance.toLowerCase()}.`;
     } else if (cleanedRelevantKeywords.length > 0) {
       const keywordsList = cleanedRelevantKeywords.length === 1 ? cleanedRelevantKeywords[0] : 
                           cleanedRelevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-      description = `${keywordsList} ${domainGuidance.toLowerCase()}`;
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${keywordsList} ${domainGuidance.toLowerCase()}.`;
     } else {
       // Use domain guidance as base description
-      description = domainGuidance;
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${domainGuidance.toLowerCase()}.`;
     }
     
     logger.debug(`Rebuilt description using domain terminology: "${description.substring(0, 50)}..."`);
