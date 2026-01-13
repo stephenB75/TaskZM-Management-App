@@ -306,6 +306,10 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     partialStemMatch: 0.5, // Partial stem match similarity (stem contains another)
     relationshipThreshold: 0.6, // Minimum similarity threshold for word relationship
   },
+  // Variation configuration for description generation
+  variation: {
+    threshold: 0.3, // Threshold for variation seed (70% chance to use variation when seed > 0.3)
+  },
 } as const;
 
 /**

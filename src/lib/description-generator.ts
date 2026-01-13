@@ -1641,7 +1641,7 @@ function buildElaborateContextualDescription(
   // ENHANCED: Add variation - randomly select which priority to start with (for different results each time)
   // This ensures descriptions change each time the button is pressed
   const variationSeed = Math.random();
-  const useVariation = variationSeed > 0.3; // 70% chance to use variation
+  const useVariation = variationSeed > DESCRIPTION_GENERATION_CONFIG.variation.threshold; // 70% chance to use variation
   
   // PRIORITY 1: Build complete contextual sentence using domain phrases + keywords + verbs/nouns
   // IMPROVED: Better prioritization of domain phrases and more natural sentence construction
