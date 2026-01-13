@@ -38,12 +38,19 @@ function cleanText(text: string): string {
     .replace(/;">/g, '')
     .replace(/px;">/gi, '')
     .replace(/px;?">/gi, '')
+    // Remove standalone quote-bracket fragments (catches ">involves" patterns)
+    .replace(/\s*">\s*/g, ' ') // Remove ">" followed by text
+    .replace(/\s*">/g, '') // Remove trailing ">
+    .replace(/">\s*/g, ' ') // Remove leading ">
     // Remove any remaining HTML-like fragments
     .replace(/&[a-z]+;/gi, '') // Remove HTML entities
     .replace(/&#\d+;/g, '') // Remove numeric HTML entities
     // Remove duplicate fragments that might have been created
     .replace(/(12px;?\s*">?\s*)+/gi, '') // Remove repeated "12px;">" patterns
     .replace(/(px;?\s*">?\s*)+/gi, '') // Remove any repeated "px;">" patterns
+    // Remove price range patterns that might have leaked through
+    .replace(/\b\d+k-\d+k\b/gi, '') // Remove "10k-15k" patterns
+    .replace(/\b\d+-\d+\s*k\b/gi, '') // Remove "10-15k" patterns
     // Normalize whitespace
     .replace(/\s+/g, ' ')
     .trim();
@@ -53,8 +60,17 @@ function cleanText(text: string): string {
     .replace(/px;?/gi, '') // Remove any remaining px fragments
     .replace(/">/g, '') // Remove any remaining quote-bracket fragments
     .replace(/;\s*>/g, '') // Remove any remaining semicolon-bracket fragments
+    .replace(/\s*>\s*/g, ' ') // Remove any standalone > characters
     .replace(/\s+/g, ' ') // Normalize whitespace again
     .trim();
+  
+  // Final validation: if the cleaned text is mostly fragments, return empty
+  const fragmentPatterns = /(px|">|;>|font-size|color:)/gi;
+  const fragmentMatches = (cleaned.match(fragmentPatterns) || []).length;
+  const wordCount = cleaned.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength).length;
+  if (fragmentMatches > wordCount) {
+    return ''; // Too many fragments, likely invalid
+  }
   
   return cleaned;
 }
@@ -66,19 +82,31 @@ function isValidKeyword(keyword: string): boolean {
   if (!keyword || typeof keyword !== 'string') return false;
   
   const cleaned = cleanText(keyword);
-  if (!cleaned || cleaned.length < 2) return false;
+  if (!cleaned || cleaned.length < DESCRIPTION_GENERATION_CONFIG.minKeywordLength) return false;
   
-  // Filter out price ranges like "10k-15k", "20k-25k"
+  // Filter out price ranges like "10k-15k", "20k-25k", "10-15k"
   if (/^\d+k-\d+k$/i.test(cleaned)) return false;
+  if (/^\d+-\d+\s*k$/i.test(cleaned)) return false;
+  // Filter out single price values (max length for prices like "10k", "100k" is typically 6 chars)
+  const MAX_PRICE_LENGTH = 6;
+  if (/^\d+k$/i.test(cleaned) && cleaned.length <= MAX_PRICE_LENGTH) return false; // Single price like "10k"
   
   // Filter out pure numbers
   if (/^\d+$/.test(cleaned)) return false;
   
-  // Filter out HTML/CSS fragments
-  if (/<|>|style|px|font-size|color:/i.test(cleaned)) return false;
+  // Filter out HTML/CSS fragments (more comprehensive)
+  if (/<|>|style|px|font-size|color:|">|;>|px;|12px/i.test(cleaned)) return false;
+  
+  // Filter out fragments that start or end with invalid characters
+  if (/^[">;]|[">;]$/.test(cleaned)) return false;
   
   // Filter out very short fragments
-  if (cleaned.length < 2) return false;
+  if (cleaned.length < DESCRIPTION_GENERATION_CONFIG.minKeywordLength) return false;
+  
+  // Filter out fragments that are mostly punctuation
+  const letterCount = (cleaned.match(/[a-z]/gi) || []).length;
+  const MIN_LETTER_RATIO = 0.5; // At least 50% letters
+  if (letterCount < cleaned.length * MIN_LETTER_RATIO) return false;
   
   return true;
 }
@@ -192,7 +220,8 @@ function calculateWordSimilarity(word1: string, word2: string): number {
   
   // Check conceptual relationships (synonyms, related concepts)
   if (areConceptsRelated(w1, w2)) {
-    return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch * 0.9; // High similarity for related concepts
+    const RELATED_CONCEPT_SIMILARITY_MULTIPLIER = 0.9; // High similarity for related concepts
+    return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch * RELATED_CONCEPT_SIMILARITY_MULTIPLIER;
   }
   
   // Levenshtein distance-based similarity
@@ -1615,15 +1644,40 @@ function buildElaborateContextualDescription(
   const useVariation = variationSeed > 0.3; // 70% chance to use variation
   
   // PRIORITY 1: Build complete contextual sentence using domain phrases + keywords + verbs/nouns
+  // IMPROVED: Better prioritization of domain phrases and more natural sentence construction
   if (elaboratingPhrases.length > 0) {
     // For research/comparison tasks, try to combine multiple related phrases for more elaborate descriptions
     const researchKeywords = DESCRIPTION_GENERATION_CONFIG.researchTask.keywords;
     const isResearchTask = taskKeywordsLower.some(kw => researchKeywords.some(rk => kw.includes(rk) || rk.includes(kw)));
     
-    let bestPhrase = cleanText(elaboratingPhrases[0]); // Clean HTML fragments
-    let bestPhraseLower = bestPhrase.toLowerCase();
+    // IMPROVED: Select the most relevant phrase (longer phrases are usually more descriptive)
+    // Sort phrases by length and relevance to task keywords
+    const sortedPhrases = elaboratingPhrases
+      .map(phrase => ({
+        phrase,
+        cleaned: cleanText(phrase),
+        relevance: taskKeywordsLower.reduce((score, kw) => {
+          const phraseLower = phrase.toLowerCase();
+          if (phraseLower.includes(kw)) score += 2;
+          if (kw.includes(phraseLower.split(' ')[0])) score += 1;
+          return score;
+        }, 0),
+        length: phrase.length
+      }))
+      .filter(p => p.cleaned.length > 0 && isValidKeyword(p.cleaned))
+      .sort((a, b) => {
+        // Prioritize by relevance, then by length
+        if (a.relevance !== b.relevance) return b.relevance - a.relevance;
+        return b.length - a.length;
+      });
     
-    // If this is a research task, try to combine multiple contextual phrases
+    if (sortedPhrases.length === 0) {
+      // No valid phrases after cleaning, fall through to next priority
+    } else {
+      let bestPhrase = sortedPhrases[0].cleaned;
+      let bestPhraseLower = bestPhrase.toLowerCase();
+      
+      // If this is a research task, try to combine multiple contextual phrases
     if (isResearchTask && elaboratingPhrases.length >= DESCRIPTION_GENERATION_CONFIG.researchTask.minPhrasesForCombination) {
       // Find phrases that work well together (research + compare + purchase)
       const phraseIndicators = DESCRIPTION_GENERATION_CONFIG.researchTask.phraseIndicators;
@@ -1785,9 +1839,10 @@ function buildElaborateContextualDescription(
         description = `${cleanedPhrase.charAt(0).toUpperCase() + cleanedPhrase.slice(1)}.`;
       }
     }
+    } // Close else block for sortedPhrases
   } 
   // PRIORITY 2: Build sentence using domain verbs + nouns + keywords
-  else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
+  if (!description && elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
     const actionVerb = elaboratingVerbs[0];
     // IMPROVED: Filter nouns by semantic relevance, filter HTML fragments, limit to 2
     const contextNouns = elaboratingNouns
@@ -1833,7 +1888,7 @@ function buildElaborateContextualDescription(
     description = parts.join(' ');
   }
   // PRIORITY 4: Build sentence using extracted phrases + domain terminology + keywords
-  else if (phrases.length > 0) {
+  if (!description && phrases.length > 0) {
     // Filter out phrases that are too similar to task name
     const contextualPhrases = phrases.filter(phrase => {
       const phraseLower = phrase.toLowerCase();
@@ -1917,7 +1972,7 @@ function buildElaborateContextualDescription(
     }
   }
   // PRIORITY 4: Build sentence using extracted verbs + nouns + keywords
-  else if (verbs.length > 0 && nouns.length > 0) {
+  if (!description && verbs.length > 0 && nouns.length > 0) {
     const actionVerb = verbs[0];
     const contextNouns = nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
     const relevantKeywords = keywords.filter(kw => 
@@ -1936,7 +1991,7 @@ function buildElaborateContextualDescription(
     description = parts.join(' ');
   }
   // PRIORITY 5: Build sentence using verbs + keywords
-  else if (verbs.length > 0 && keywords.length > 0) {
+  if (!description && verbs.length > 0 && keywords.length > 0) {
     const actionVerb = verbs[0];
     // IMPROVED: Only include semantically relevant keywords
     const relevantKeywords = keywords.filter(kw => {
@@ -1961,7 +2016,7 @@ function buildElaborateContextualDescription(
     }
   }
   // PRIORITY 6: Build sentence using nouns + keywords
-  else if (nouns.length > 0 && keywords.length > 0) {
+  if (!description && nouns.length > 0 && keywords.length > 0) {
     // IMPROVED: Filter nouns by semantic relevance
     const contextNouns = nouns
       .filter(n => isSemanticallyRelevant(n))
@@ -1995,7 +2050,7 @@ function buildElaborateContextualDescription(
     }
   }
   // PRIORITY 7: Build sentence using keywords + domain terminology
-  else if (keywords.length > 0) {
+  if (!description && keywords.length > 0) {
     // IMPROVED: Only include semantically relevant keywords
     const relevantKeywords = keywords
       .filter(kw => {
@@ -2166,7 +2221,7 @@ function buildElaborateContextualDescription(
       
       if (parts.length > 0) {
         description = parts.join(' ');
-    } else {
+      } else {
         // Last resort: use domain guidance
         const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
         if (domainGuidance) {
@@ -2609,8 +2664,26 @@ export async function generateDescription(
   }
 
   // Clean HTML fragments and ensure we always return a non-empty description
-  const finalDescription = cleanText(description).trim();
+  // Apply multiple passes of cleaning to catch all fragments
+  let finalDescription = cleanText(description).trim();
   
+  // Additional cleaning pass: remove any remaining fragments that might have been missed
+  finalDescription = cleanText(finalDescription).trim();
+  
+  // Remove duplicate words/phrases that might have been created during cleaning
+  const words = finalDescription.split(/\s+/);
+  const uniqueWords: string[] = [];
+  const seenWords = new Set<string>();
+  for (const word of words) {
+    const wordLower = word.toLowerCase();
+    if (!seenWords.has(wordLower) && word.length > 0) {
+      seenWords.add(wordLower);
+      uniqueWords.push(word);
+    }
+  }
+  finalDescription = uniqueWords.join(' ').trim();
+  
+  // Final validation: ensure description is meaningful
   if (!finalDescription || finalDescription.length === 0) {
     // Ultimate fallback: create a basic description from task name
     const fallbackDescription = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}.`;
@@ -2620,6 +2693,14 @@ export async function generateDescription(
       domain,
       confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
     };
+  }
+  
+  // Remove any trailing fragments that might have been left
+  finalDescription = finalDescription.replace(/\s*[">;]\s*$/, '').trim();
+  
+  // Ensure description ends with proper punctuation
+  if (!finalDescription.match(/[.!?]$/)) {
+    finalDescription = finalDescription + '.';
   }
 
     logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedBrowserAI=true, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
