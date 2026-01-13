@@ -43,7 +43,7 @@ import { useMobileLayout } from '../hooks/useMobileLayout';
 import { toast } from 'sonner';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS, AI_DAILY_HOUR_OPTIONS, AI_DAILY_HOUR_LABELS } from '../lib/ai-config';
-import taskzmLogoGray from '../assets/taskzm-logo-gray.png';  // Gray logo for about section
+import taskzmLogoBlack from '../assets/Taskzm_Logo_BLK-removebg.png';  // Black logo for about section
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
 import { SETTINGS_PANEL_TEXT_SIZES, SETTINGS_PANEL_TEXT_SIZE_BASE, SETTINGS_PANEL_TEXT_SIZE_LARGE } from '../lib/text-size-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
@@ -149,6 +149,7 @@ import {
   SETTINGS_PANEL_START_TOUR_ICON_SIZE,
   SETTINGS_PANEL_TOAST_DURATION_MS,
   SETTINGS_PANEL_TIMEOUT_DELAY_MS,
+  COMPONENT_DIMENSIONS,
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
@@ -2911,9 +2912,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <div className="space-y-4">
               <div className="flex flex-col items-center gap-1.5">
                 <img 
-                  src={taskzmLogoGray} 
+                  src={taskzmLogoBlack} 
                   alt="TaskZM Logo"
-                  className="w-[140px] object-contain"
+                  className={`${COMPONENT_DIMENSIONS.settingsPanel.logoWidthMobile} sm:${COMPONENT_DIMENSIONS.settingsPanel.logoWidth} object-contain`}
                 />
                 <div className="text-xs text-muted-foreground text-center">Version {APP_VERSION}</div>
                 <div className="text-xs text-muted-foreground/70 text-center">{VERSION_NAME}</div>

@@ -660,7 +660,8 @@ export const DIALOG_CLOSE_BUTTON = {
 // Component Dimensions
 export const COMPONENT_DIMENSIONS = {
   settingsPanel: {
-    logoWidth: 'w-[120px]',
+    logoWidth: 'w-[180px]', // Logo width for about section - large enough to fit the space
+    logoWidthMobile: 'w-[140px]', // Smaller logo for mobile devices
   },
   notificationsPanel: {
     selectWidth: 'w-full sm:w-[180px]',
