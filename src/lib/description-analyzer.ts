@@ -62,6 +62,17 @@ export function analyzeDescription(
     };
   }
 
+  // Analyze verbs (needed in both branches)
+  const tempTask: Partial<Task> = {
+    title,
+    description,
+    status: DEFAULT_TASK_STATUS,
+    priority: 'medium',
+    tags: [],
+  };
+  const verbAnalysis = analyzeTaskVerbs(tempTask as Task);
+  const primaryVerb = verbAnalysis.primaryVerb;
+
   // Use shared context if provided, otherwise detect/extract independently
   let domain: Domain;
   let domainConfidence: number;
@@ -86,17 +97,6 @@ export function analyzeDescription(
     domain = domainDetection.domain;
     domainConfidence = domainDetection.confidence;
     domainTerms = getDomainTerminology(domain);
-
-  // Analyze verbs
-  const tempTask: Partial<Task> = {
-    title,
-    description,
-    status: DEFAULT_TASK_STATUS,
-    priority: 'medium',
-    tags: [],
-  };
-  const verbAnalysis = analyzeTaskVerbs(tempTask as Task);
-  const primaryVerb = verbAnalysis.primaryVerb;
 
     // ENHANCED: Use sophisticated extraction methods from description-generator
     // Extract terms from both title and description for comprehensive analysis

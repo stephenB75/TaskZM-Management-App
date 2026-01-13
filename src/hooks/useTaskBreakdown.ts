@@ -122,6 +122,14 @@ export function useTaskBreakdown(
         try {
           // Create shared AI context once (eliminates redundant domain detection and term extraction)
           const aiContext = createAIContextSync(title, description);
+          
+          // Log for debugging
+          console.log('AI Analysis: Creating context', {
+            title: title.substring(0, 50),
+            description: description.substring(0, 50),
+            domain: aiContext.domain,
+            confidence: aiContext.domainConfidence,
+          });
 
           // Create temporary task for analysis
           const tempTask: Partial<Task> = {
@@ -215,12 +223,22 @@ export function useTaskBreakdown(
             verbAnalysis.primaryVerb
           );
 
+          console.log('AI Analysis: Breakdown generated', {
+            estimatedMinutes: result.estimatedMinutes,
+            effortScore: result.effortScore,
+            domain: result.domain,
+            hasActionPlan: !!result.actionPlan,
+            hasDescriptionAnalysis: !!result.descriptionAnalysis,
+          });
+
           setBreakdown(result);
           setIsLoading(false);
         } catch (err) {
           const error = err instanceof Error ? err : new Error('Failed to analyze breakdown');
+          console.error('AI Analysis: Error in breakdown analysis', error);
           setError(error);
           setIsLoading(false);
+          setBreakdown(null); // Ensure breakdown is null on error
         }
       });
     } catch (err) {

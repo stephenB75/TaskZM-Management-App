@@ -642,7 +642,7 @@ export function TaskDialog({
     useState(false);
 
   // AI Task Breakdown - Real-time analysis
-  const { breakdown, isLoading: isBreakdownLoading } = useTaskBreakdown(
+  const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
     title,
     description,
     { debounceMs: 300, enabled: true }
@@ -2071,40 +2071,50 @@ export function TaskDialog({
                         <Sparkles className="w-4 h-4 animate-pulse" />
                         <span>Analyzing task...</span>
                       </div>
+                    ) : breakdownError ? (
+                      <div className="flex items-center gap-2 text-destructive text-sm">
+                        <span>Error analyzing task: {breakdownError.message}</span>
+                      </div>
                     ) : breakdown ? (
-                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                      <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-primary" />
                           <span className="font-semibold text-foreground">AI Analysis</span>
                         </div>
-                        {breakdown.estimatedMinutes > 0 && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                            <Clock className="w-3.5 h-3.5 text-primary" />
-                            <span className="text-xs font-medium text-foreground">
-                              {breakdown.estimatedHours}h {breakdown.estimatedMinutes % 60}m
-                            </span>
-                          </div>
-                        )}
-                        {breakdown.effortScore > 0 && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                            <span className="text-xs font-medium text-foreground">
-                              Effort: {breakdown.effortScore.toFixed(1)}/5
-                            </span>
-                          </div>
-                        )}
-                        {breakdown.primaryVerb && breakdown.primaryVerb !== 'unknown' && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                            <span className="text-xs font-medium text-foreground capitalize">
-                              {breakdown.primaryVerb}
-                            </span>
-                          </div>
-                        )}
-                        <Badge
-                          variant="outline"
-                          className="text-xs border-primary/30"
-                        >
-                          {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-3 text-sm">
+                          {/* Always show domain badge */}
+                          <Badge
+                            variant="outline"
+                            className="text-xs border-primary/30"
+                          >
+                            {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
+                          </Badge>
+                          {/* Show estimated time if available */}
+                          {breakdown.estimatedMinutes > 0 && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                              <Clock className="w-3.5 h-3.5 text-primary" />
+                              <span className="text-xs font-medium text-foreground">
+                                {breakdown.estimatedHours}h {breakdown.estimatedMinutes % 60}m
+                              </span>
+                            </div>
+                          )}
+                          {/* Show effort score if available */}
+                          {breakdown.effortScore > 0 && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                              <span className="text-xs font-medium text-foreground">
+                                Effort: {breakdown.effortScore.toFixed(1)}/5
+                              </span>
+                            </div>
+                          )}
+                          {/* Show primary verb if available */}
+                          {breakdown.primaryVerb && breakdown.primaryVerb !== 'unknown' && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                              <span className="text-xs font-medium text-foreground capitalize">
+                                {breakdown.primaryVerb}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                         {breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {breakdown.descriptionAnalysis.suggestions.slice(0, 2).map((suggestion, idx) => (
