@@ -3,6 +3,7 @@ import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import { useTasks } from './TaskContext';
 import { useAuth } from './AuthContext';
 import type { Award, UserAward, AwardProgress } from '../types';
+import { getUserAwards, saveUserAwards, saveUserAward } from '../lib/api';
 import {
   COLOR_AWARD_COMMON,
   COLOR_AWARD_RARE,
@@ -252,25 +253,61 @@ export function AwardProvider({ children }: { children: ReactNode }) {
   const [earnedAwards, setEarnedAwards] = useState<UserAward[]>([]);
   const [celebrationQueue, setCelebrationQueue] = useState<Award[]>([]);
 
-  // Load earned awards from localStorage
+  // Load earned awards from database (with localStorage fallback)
   useEffect(() => {
-    if (user) {
-      const saved = getFromLocalStorage<UserAward[]>(`awards_${user.id}`, []);
-      setEarnedAwards(saved);
-      // Clear celebration queue on load to prevent re-showing awards on refresh
-      setCelebrationQueue([]);
-    } else {
-      // Clear awards when user logs out
-      setEarnedAwards([]);
-      setCelebrationQueue([]);
-    }
+    const loadAwards = async () => {
+      if (user) {
+        try {
+          // Try to load from database first
+          const dbAwards = await getUserAwards();
+          if (dbAwards && dbAwards.length > 0) {
+            setEarnedAwards(dbAwards);
+            // Sync to localStorage as cache
+            saveToLocalStorage(`awards_${user.id}`, dbAwards);
+          } else {
+            // Fallback to localStorage if database is empty
+            const saved = getFromLocalStorage<UserAward[]>(`awards_${user.id}`, []);
+            if (saved.length > 0) {
+              setEarnedAwards(saved);
+              // Sync localStorage to database
+              await saveUserAwards(saved);
+            } else {
+              setEarnedAwards([]);
+            }
+          }
+          // Clear celebration queue on load to prevent re-showing awards on refresh
+          setCelebrationQueue([]);
+        } catch (error) {
+          console.error('Error loading awards:', error);
+          // Fallback to localStorage on error
+          const saved = getFromLocalStorage<UserAward[]>(`awards_${user.id}`, []);
+          setEarnedAwards(saved);
+          setCelebrationQueue([]);
+        }
+      } else {
+        // Clear awards when user logs out
+        setEarnedAwards([]);
+        setCelebrationQueue([]);
+      }
+    };
+
+    loadAwards();
   }, [user]);
 
-  // Save earned awards to localStorage
-  const saveEarnedAwards = useCallback((awards: UserAward[]) => {
+  // Save earned awards to both database and localStorage
+  const saveEarnedAwards = useCallback(async (awards: UserAward[]) => {
     if (user) {
+      // Save to localStorage immediately for fast access
       saveToLocalStorage(`awards_${user.id}`, awards);
       setEarnedAwards(awards);
+      
+      // Save to database in background (don't block UI)
+      try {
+        await saveUserAwards(awards);
+      } catch (error) {
+        console.error('Error saving awards to database:', error);
+        // Continue even if database save fails - localStorage is still saved
+      }
     }
   }, [user]);
 
@@ -409,7 +446,16 @@ export function AwardProvider({ children }: { children: ReactNode }) {
     }
 
     if (newlyEarnedAwards.length > 0) {
-      saveEarnedAwards(updatedEarnedAwards);
+      await saveEarnedAwards(updatedEarnedAwards);
+      // Also save each new award individually for immediate database sync
+      for (const newAward of newlyEarnedAwards) {
+        const userAward = updatedEarnedAwards.find(ua => ua.awardId === newAward.id);
+        if (userAward) {
+          saveUserAward(userAward).catch(err => 
+            console.error(`Error saving award ${userAward.awardId}:`, err)
+          );
+        }
+      }
       setCelebrationQueue(prev => [...prev, ...newlyEarnedAwards]);
     }
 

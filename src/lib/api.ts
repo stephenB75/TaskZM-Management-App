@@ -1,5 +1,5 @@
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import type { Task, TimeTrackingSession, Activity, Folder } from '../types';
+import type { Task, TimeTrackingSession, Activity, Folder, UserAward } from '../types';
 import { logger } from './logger';
 import type { Domain } from './domain-terminology';
 
@@ -1168,5 +1168,76 @@ export async function saveSharedTerminology(
   } catch (error) {
     logger.warn('Error saving shared terminology:', error);
     return { success: false, saved: 0, skipped: keywords.length + phrases.length + verbs.length + nouns.length };
+  }
+}
+
+/**
+ * Get all earned awards for the current user from the database
+ */
+export async function getUserAwards(): Promise<UserAward[]> {
+  try {
+    const response = await fetch(`${API_BASE}/user/awards`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      logger.warn('Failed to fetch user awards:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.awards || [];
+  } catch (error) {
+    logger.warn('Error fetching user awards:', error);
+    return [];
+  }
+}
+
+/**
+ * Save earned awards to the database
+ * This will upsert awards (insert if new, update if exists)
+ */
+export async function saveUserAwards(awards: UserAward[]): Promise<{ success: boolean; saved: number }> {
+  try {
+    const response = await fetch(`${API_BASE}/user/awards`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ awards }),
+    });
+
+    if (!response.ok) {
+      logger.error('Failed to save user awards:', response.status);
+      return { success: false, saved: 0 };
+    }
+
+    const data = await response.json();
+    return { success: true, saved: data.saved || awards.length };
+  } catch (error) {
+    logger.error('Error saving user awards:', error);
+    return { success: false, saved: 0 };
+  }
+}
+
+/**
+ * Save a single award to the database
+ */
+export async function saveUserAward(award: UserAward): Promise<{ success: boolean }> {
+  try {
+    const response = await fetch(`${API_BASE}/user/awards/single`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ award }),
+    });
+
+    if (!response.ok) {
+      logger.error('Failed to save user award:', response.status);
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (error) {
+    logger.error('Error saving user award:', error);
+    return { success: false };
   }
 }

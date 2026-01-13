@@ -5159,4 +5159,122 @@ app.all('*', async (c) => {
   }, 404);
 });
 
+// ============================================================================
+// USER AWARDS ENDPOINTS
+// ============================================================================
+
+// Get all awards for the current user
+app.get("/taskzm-database-function/user/awards", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const supabase = getSupabaseClient();
+    const { data: awards, error } = await supabase
+      .from('user_awards')
+      .select('award_id, earned_at, progress')
+      .eq('user_id', userId)
+      .order('earned_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user awards:', error);
+      return c.json({ error: 'Failed to fetch awards' }, 500);
+    }
+
+    // Transform to match UserAward interface
+    const userAwards = (awards || []).map(award => ({
+      awardId: award.award_id,
+      earnedAt: award.earned_at,
+      progress: award.progress,
+    }));
+
+    return c.json({ awards: userAwards });
+  } catch (error) {
+    console.error('Error in get user awards:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Save multiple awards (upsert)
+app.post("/taskzm-database-function/user/awards", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { awards } = await c.req.json();
+    if (!Array.isArray(awards)) {
+      return c.json({ error: 'Awards must be an array' }, 400);
+    }
+
+    const supabase = getSupabaseClient();
+    let saved = 0;
+
+    // Upsert each award
+    for (const award of awards) {
+      const { error } = await supabase
+        .from('user_awards')
+        .upsert({
+          user_id: userId,
+          award_id: award.awardId,
+          earned_at: award.earnedAt || new Date().toISOString(),
+          progress: award.progress || null,
+        }, {
+          onConflict: 'user_id,award_id',
+        });
+
+      if (!error) {
+        saved++;
+      } else {
+        console.error(`Error saving award ${award.awardId}:`, error);
+      }
+    }
+
+    return c.json({ success: true, saved });
+  } catch (error) {
+    console.error('Error in save user awards:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Save a single award (upsert)
+app.post("/taskzm-database-function/user/awards/single", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { award } = await c.req.json();
+    if (!award || !award.awardId) {
+      return c.json({ error: 'Award data is required' }, 400);
+    }
+
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from('user_awards')
+      .upsert({
+        user_id: userId,
+        award_id: award.awardId,
+        earned_at: award.earnedAt || new Date().toISOString(),
+        progress: award.progress || null,
+      }, {
+        onConflict: 'user_id,award_id',
+      });
+
+    if (error) {
+      console.error('Error saving award:', error);
+      return c.json({ error: 'Failed to save award' }, 500);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error in save user award:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
 Deno.serve(app.fetch);
