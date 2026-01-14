@@ -452,7 +452,46 @@
       };
       var APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // APP_TEXT_FALLBACK_COLOR from layout-constants.ts
       
+      // Update preload link and image src to use constants immediately
+      // This runs as soon as the script loads to ensure the image path is correct
+      (function() {
+        // Wait for DOM to be ready
+        function updateLogoPaths() {
+          var preloadLink = document.querySelector('link[rel="preload"][as="image"]');
+          if (preloadLink) {
+            preloadLink.href = SPLASH_SCREEN_LOGO_PATHS.primary;
+          }
+          var logoImg = document.getElementById('splash-logo');
+          if (logoImg) {
+            // Only update if src is different to avoid unnecessary reload
+            if (logoImg.src !== window.location.origin + SPLASH_SCREEN_LOGO_PATHS.primary && 
+                !logoImg.src.endsWith(SPLASH_SCREEN_LOGO_PATHS.primary)) {
+              logoImg.src = SPLASH_SCREEN_LOGO_PATHS.primary;
+            }
+            logoImg.alt = SPLASH_SCREEN_TEXT.logoAlt;
+          }
+          var loadingMessage = document.getElementById('splash-message');
+          if (loadingMessage) {
+            loadingMessage.textContent = SPLASH_SCREEN_TEXT.loadingMessage;
+          }
+        }
+        
+        // Run immediately if DOM is ready, otherwise wait
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', updateLogoPaths);
+        } else {
+          updateLogoPaths();
+        }
+        
+        // Also run after a short delay to catch any late-loading elements
+        setTimeout(updateLogoPaths, 100);
+      })();
+      
       function handleSplashLogoError(img) {
+        // Log error for debugging (only in development)
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          console.warn('[Splash Screen] Logo failed to load, trying alternative paths...');
+        }
         // Try multiple paths to find the logo (using constants)
         var paths = [
           SPLASH_SCREEN_LOGO_PATHS.primary,
