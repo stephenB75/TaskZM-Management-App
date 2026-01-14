@@ -1934,7 +1934,9 @@ export function TaskDialog({
                                 
                                 if (generated.description && generated.description.trim().length > 0) {
                                   // Replace existing description with regenerated one
-                                  setDescription(generated.description);
+                                  // Ensure description starts at first line (remove leading whitespace)
+                                  const cleanedDescription = generated.description.trim().replace(/^\s+/, '');
+                                  setDescription(cleanedDescription);
                                   const source = generated.confidence >= DESCRIPTION_GENERATION_CONFIG.highConfidenceThreshold 
                                     ? DESCRIPTION_GENERATION_CONFIG.sourceLabels.browserAI 
                                     : DESCRIPTION_GENERATION_CONFIG.sourceLabels.localTerminology;

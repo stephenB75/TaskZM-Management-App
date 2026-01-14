@@ -1640,7 +1640,9 @@ function buildElaborateContextualDescription(
   
   // ENHANCED: Add variation - randomly select which priority to start with (for different results each time)
   // This ensures descriptions change each time the button is pressed
-  const variationSeed = Math.random();
+  // Use timestamp-based seed for additional variation to ensure refresh always produces different results
+  const timestampSeed = Date.now() % 10000; // Use timestamp for variation
+  const variationSeed = (Math.random() + timestampSeed / 10000) % 1; // Combine random and timestamp
   const useVariation = variationSeed > DESCRIPTION_GENERATION_CONFIG.variation.threshold; // 70% chance to use variation
   
   // PRIORITY 1: Build complete contextual sentence using domain phrases + keywords + verbs/nouns
@@ -2286,11 +2288,22 @@ function buildElaborateContextualDescription(
 
 /**
  * Shuffle array using Fisher-Yates algorithm for variation
+ * Optional seed parameter ensures different shuffles for refresh button
  */
-function shuffleArray<T>(array: T[]): T[] {
+function shuffleArray<T>(array: T[], seed?: number): T[] {
   const shuffled = [...array];
+  // Use seed-based random if provided, otherwise use Math.random for variation
+  let seedValue = seed;
+  const random = seedValue !== undefined 
+    ? () => {
+        // Simple seeded random function for consistent but varied shuffling
+        seedValue = ((seedValue! * 9301 + 49297) % 233280);
+        return seedValue! / 233280;
+      }
+    : () => Math.random();
+  
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
@@ -2391,11 +2404,13 @@ function buildContextualDescription(
   domain: Domain,
   domainTerms: ReturnType<typeof getDomainTerminology>
 ): string {
-  // Add variation: shuffle terms to get different results each time
-  const shuffledKeywords = shuffleArray(keywords);
-  const shuffledPhrases = shuffleArray(phrases);
-  const shuffledVerbs = shuffleArray(verbs);
-  const shuffledNouns = shuffleArray(nouns);
+  // ENHANCED: Add variation - shuffle terms to get different results each time
+  // Use timestamp-based seed for additional variation to ensure refresh always produces different results
+  const variationSeed = Date.now() % 1000; // Use timestamp for additional variation
+  const shuffledKeywords = shuffleArray(keywords, variationSeed);
+  const shuffledPhrases = shuffleArray(phrases, variationSeed + 1);
+  const shuffledVerbs = shuffleArray(verbs, variationSeed + 2);
+  const shuffledNouns = shuffleArray(nouns, variationSeed + 3);
   
   // Use the elaborate description builder with shuffled terms for variation
   return buildElaborateContextualDescription(
@@ -2724,6 +2739,9 @@ export async function generateDescription(
   
   // Remove any trailing fragments that might have been left
   finalDescription = finalDescription.replace(/\s*[">;]\s*$/, '').trim();
+  
+  // Remove leading whitespace and ensure sentences start at first line
+  finalDescription = finalDescription.replace(/^\s+/, '').replace(/\n\s+/g, '\n');
   
   // Ensure description ends with proper punctuation
   if (!finalDescription.match(/[.!?]$/)) {

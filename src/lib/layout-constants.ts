@@ -720,7 +720,7 @@ export const COMPONENT_DIMENSIONS = {
       rows: 3, // rows={3} - initial visible rows
       placeholder: 'Add a description... (Editable - AI Action Plan updates automatically as you type)',
       focusClassName: 'focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary', // Focus styles for description textarea
-      maxHeight: 400, // Maximum height in pixels (allows scrolling for long content)
+      maxHeight: 2000, // Maximum height in pixels (increased to allow unlimited text with scrolling)
       // No character limit - standard practice is to allow unlimited text with proper wrapping
       // Text will wrap naturally and scroll if content exceeds max height
     },
