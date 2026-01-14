@@ -272,6 +272,14 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     localTerminology: 'local terminology',
   },
   // Description connector words - Enhanced with more natural connectors for better context flow
+  // English articles for proper grammar
+  articles: {
+    indefinite: {
+      a: 'a',
+      an: 'an',
+    },
+    definite: 'the',
+  },
   descriptionConnectors: {
     // Primary connectors
     involving: 'involving',
