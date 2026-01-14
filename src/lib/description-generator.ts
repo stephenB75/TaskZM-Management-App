@@ -1292,6 +1292,66 @@ function extractTermsFromTaskName(
  * Uses Browser AI extracted terms and domain terminology to create actionable descriptions
  * for the AI Action Plan to use when building steps
  */
+/**
+ * Get proper verb form based on template type
+ * Templates like "enables", "requires", "allows" can use gerund (preferred) or "to" + infinitive
+ * Templates like "involves", "includes" use gerund
+ * This ensures grammatically correct sentences
+ */
+function getVerbFormForTemplate(verb: string, template: string): string {
+  if (!verb) return '';
+  
+  // Get base verb form (handle -ing, -ed endings)
+  let baseVerb = verb.toLowerCase().trim();
+  
+  // If already in gerund form, extract base
+  if (baseVerb.endsWith('ing')) {
+    baseVerb = baseVerb.slice(0, -3);
+    // Handle double consonants: running -> run
+    if (baseVerb.length > 1 && baseVerb[baseVerb.length - 1] === baseVerb[baseVerb.length - 2]) {
+      baseVerb = baseVerb.slice(0, -1);
+    }
+    // Add 'e' back if it was removed: writing -> write
+    if (baseVerb.length > 0 && !baseVerb.endsWith('e')) {
+      // Check if adding 'e' makes sense (not all verbs end in 'e')
+      const withE = baseVerb + 'e';
+      // Common verbs that end in 'e': create, update, make, use, etc.
+      if (['creat', 'updat', 'mak', 'us', 'writ', 'tak', 'giv', 'mov', 'sav', 'lov', 'liv', 'com', 'becom'].some(prefix => baseVerb.startsWith(prefix))) {
+        baseVerb = withE;
+      }
+    }
+  } else if (baseVerb.endsWith('ed')) {
+    baseVerb = baseVerb.slice(0, -2);
+    // Handle double consonants: planned -> plan
+    if (baseVerb.length > 1 && baseVerb[baseVerb.length - 1] === baseVerb[baseVerb.length - 2]) {
+      baseVerb = baseVerb.slice(0, -1);
+    }
+    // Add 'e' back if needed
+    if (baseVerb.length > 0 && !baseVerb.endsWith('e')) {
+      const withE = baseVerb + 'e';
+      if (['creat', 'updat', 'mak', 'us', 'writ', 'tak', 'giv', 'mov', 'sav', 'lov', 'liv', 'com', 'becom'].some(prefix => baseVerb.startsWith(prefix))) {
+        baseVerb = withE;
+      }
+    }
+  }
+  
+  // Convert to gerund form (works for all templates)
+  // Most templates can use gerund: "enables performing", "requires updating", "involves creating"
+  if (baseVerb.endsWith('e')) {
+    return baseVerb.slice(0, -1) + 'ing';
+  }
+  
+  // Handle double consonants for gerund: run -> running, plan -> planning
+  const lastChar = baseVerb[baseVerb.length - 1];
+  const doubleConsonantVerbs = ['run', 'plan', 'stop', 'get', 'put', 'set', 'sit', 'hit', 'cut', 'let', 'bet', 'fit', 'spit', 'split', 'shut', 'shut', 'spread', 'read', 'lead'];
+  if (doubleConsonantVerbs.includes(baseVerb)) {
+    return baseVerb + lastChar + 'ing';
+  }
+  
+  // Default: add 'ing'
+  return baseVerb + 'ing';
+}
+
 function buildElaborateContextualDescription(
   taskName: string,
   keywords: string[],
@@ -1834,17 +1894,27 @@ function buildElaborateContextualDescription(
           : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
         description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${connector} ${keywordsList}.`;
       } else if (actionVerb && contextNouns.length > 0) {
-        const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+        const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
         const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
           ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
           : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-        description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
+        // If verb form already includes "to", don't add connector
+        if (verbForm.startsWith('to ')) {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
+        } else {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
+        }
       } else if (actionVerb && relevantKeywords.length > 0) {
-        const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+        const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
         const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
           ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
           : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-        description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+        // If verb form already includes "to", adjust connector
+        if (verbForm.startsWith('to ')) {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+        } else {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+        }
       } else if (phraseHasAction) {
         const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
           ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
@@ -1855,7 +1925,7 @@ function buildElaborateContextualDescription(
           ? `${templateOpener} ${connector} ${cleanedPhrase.toLowerCase()}.`
           : `${templateOpener} ${cleanedPhrase.toLowerCase()}.`;
       } else if (actionVerb) {
-        const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+        const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
         description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()}.`;
       } else if (contextNouns.length > 0) {
         const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
@@ -1916,7 +1986,7 @@ function buildElaborateContextualDescription(
     const selectedTemplate = templateKeys[Math.floor(variationSeed * templateKeys.length)];
     const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
     
-    const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+    const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
     const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                      contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
     
@@ -1992,7 +2062,7 @@ function buildElaborateContextualDescription(
       
       const cleanedBestPhrase = cleanText(bestPhrase);
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
-        const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+        const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
         
         if (contextNouns.length > 0) {
           const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
@@ -2049,7 +2119,7 @@ function buildElaborateContextualDescription(
     const selectedTemplate = templateKeys[Math.floor(variationSeed * templateKeys.length)];
     const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
     
-    const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+    const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
     const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
     
     if (relevantKeywords.length > 0) {
@@ -2081,7 +2151,7 @@ function buildElaborateContextualDescription(
     const selectedTemplate = templateKeys[Math.floor(variationSeed * templateKeys.length)];
     const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
     
-    const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+    const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
     if (relevantKeywords.length > 0) {
       const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       description = `${templateOpener} ${verbForm} ${keywordsList}.`;
@@ -2714,13 +2784,13 @@ export async function generateDescription(
     const cleanedContextNouns = contextNouns.map(n => cleanText(n)).filter(n => n.length > 0 && isValidKeyword(n));
     const cleanedRelevantKeywords = relevantKeywords.map(kw => cleanText(kw)).filter(kw => kw.length > 0 && isValidKeyword(kw));
     
-    const verbForm = cleanedActionVerb ? (cleanedActionVerb.endsWith('e') ? cleanedActionVerb.slice(0, -1) + 'ing' : cleanedActionVerb + 'ing') : '';
-    
     // ENHANCED: Build contextual sentence with template variation
     const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
     const fallbackVariationSeed = Math.random();
     const selectedTemplate = templateKeys[Math.floor(fallbackVariationSeed * templateKeys.length)];
     const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+    
+    const verbForm = cleanedActionVerb ? getVerbFormForTemplate(cleanedActionVerb, selectedTemplate) : '';
     
     if (domainPhrases.length > 0) {
       const bestPhrase = cleanText(domainPhrases[0]);
