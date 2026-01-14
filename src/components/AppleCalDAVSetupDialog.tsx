@@ -293,6 +293,7 @@ export function AppleCalDAVSetupDialog({
                     placeholder="xxxx-xxxx-xxxx-xxxx"
                     value={appPassword}
                     onChange={(e) => setAppPassword(e.target.value)}
+                    autoComplete="new-password"
                     disabled={isLoading}
                   />
                 </div>

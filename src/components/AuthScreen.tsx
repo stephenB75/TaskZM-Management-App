@@ -660,6 +660,7 @@ export function AuthScreen() {
                             onChange={(e) =>
                               setSignInPassword(e.target.value)
                             }
+                            autoComplete="current-password"
                             required
                             className="border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm pr-10"
                           />
@@ -856,6 +857,7 @@ export function AuthScreen() {
                             onChange={(e) =>
                               setSignUpPassword(e.target.value)
                             }
+                            autoComplete="new-password"
                             required
                             className="border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm pr-10"
                           />
@@ -927,6 +929,7 @@ export function AuthScreen() {
                                 e.target.value,
                               )
                             }
+                            autoComplete="new-password"
                             required
                             className={`border-2 focus:border-primary transition-colors h-9 sm:h-10 text-xs sm:text-sm bg-background dark:bg-card shadow-sm pr-10 ${
                               signUpConfirmPassword && !passwordsMatch ? 'border-red-500' : ''
