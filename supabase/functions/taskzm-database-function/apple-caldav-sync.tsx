@@ -1000,23 +1000,44 @@ function parseVEvent(
       // Helper function to convert local time in a timezone to UTC
       const convertToUTC = (targetTzid: string, yr: number, mo: number, dy: number, hr: number, mn: number, sc: number): string => {
         // Normalize timezone identifier first
-        const normalizedTzid = normalizeTimezone(targetTzid);
+        let normalizedTzid: string;
+        try {
+          normalizedTzid = normalizeTimezone(targetTzid);
+          // Ensure normalized timezone is not the original invalid format
+          if (normalizedTzid === targetTzid && !normalizedTzid.includes('/') && normalizedTzid.toUpperCase().startsWith('GMT')) {
+            // Normalization didn't change the value and it's still an invalid GMT format
+            console.warn(`normalizeTimezone returned unchanged invalid timezone ${targetTzid}, using fallback`);
+            normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
+          }
+        } catch (normalizeError) {
+          // If normalization itself fails, use default
+          console.warn(`Failed to normalize timezone ${targetTzid}, using default:`, normalizeError);
+          normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
+        }
         
         // Validate that the normalized timezone is valid for Intl.DateTimeFormat
+        // Double-check it's not still an invalid GMT format
+        if (normalizedTzid.toUpperCase().startsWith('GMT') && !normalizedTzid.includes('/')) {
+          console.warn(`Normalized timezone ${normalizedTzid} is still invalid GMT format, using fallback`);
+          normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
+        }
+        
         let validTzid = normalizedTzid;
         try {
           // Test if timezone is valid by trying to create a formatter
           new Intl.DateTimeFormat('en-US', { timeZone: normalizedTzid });
         } catch (e) {
           // Invalid timezone - use default and log warning
-          console.warn(`Invalid timezone ${targetTzid} (normalized to ${normalizedTzid}), using default:`, e);
+          const errorMsg = e instanceof Error ? e.message : String(e);
+          console.warn(`Invalid timezone ${targetTzid} (normalized to ${normalizedTzid}), using default: ${errorMsg}`);
           validTzid = currentUserTimezone || DEFAULT_TIMEZONE;
           // Validate the fallback timezone too
           try {
             new Intl.DateTimeFormat('en-US', { timeZone: validTzid });
           } catch (fallbackError) {
             // Even fallback is invalid - use hardcoded default and calculate offset directly
-            console.warn(`Fallback timezone ${validTzid} is also invalid, using UTC offset calculation:`, fallbackError);
+            const fallbackErrorMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+            console.warn(`Fallback timezone ${validTzid} is also invalid, using UTC offset calculation: ${fallbackErrorMsg}`);
             // Calculate UTC directly using offset (assume EST/EDT offset of -5 hours)
             const fallbackUTC = new Date(Date.UTC(yr, mo, dy, hr + 5, mn, sc));
             return fallbackUTC.toISOString();
