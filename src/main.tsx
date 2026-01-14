@@ -29,14 +29,16 @@ if (typeof window !== 'undefined') {
       }
       return;
     }
-    // Suppress preload warnings from extensions (Rokt, shopping extensions, etc.)
+    // Suppress preload warnings from extensions (Rokt, shopping extensions, etc.) and missing font files
     if (message.includes('was preloaded using link preload but not used') ||
         message.includes('rokt-icons.woff') ||
         message.includes('apps.rokt.com') ||
+        message.includes('inter-var.woff2') ||
         fullMessage.includes('rokt-icons.woff') ||
         fullMessage.includes('apps.rokt.com') ||
-        fullMessage.includes('rokt.com')) {
-      console.debug('Suppressed extension preload warning', args);
+        fullMessage.includes('rokt.com') ||
+        fullMessage.includes('inter-var.woff2')) {
+      console.debug('Suppressed extension/font preload warning', args);
       return;
     }
     // Suppress performance violation warnings from browser extensions and app animations
@@ -90,23 +92,33 @@ if (typeof window !== 'undefined') {
         fullMessage.includes('contentScript') ||
         fullMessage.includes('contentScript.bundle.js') ||
         fullMessage.includes('web-client-content-script') ||
+        fullMessage.includes('web-client-content-script.js') ||
         fullMessage.includes('ERR_FILE_NOT_FOUND') ||
         fullMessage.includes('userReportLinkedCandidate') ||
         fullMessage.includes('checkoutUrls') ||
         fullMessage.includes('No tab with id') ||
         fullMessage.includes('Frame with ID') ||
+        fullMessage.includes('Frame with ID 0') ||
         fullMessage.includes('was removed') ||
         (fullMessage.includes('Cannot read properties of undefined') && (
           fullMessage.includes('checkoutUrls') ||
-          fullMessage.includes('length') ||
+          fullMessage.includes('reading \'length\'') ||
+          fullMessage.includes('reading \'checkoutUrls\'') ||
           fullMessage.includes('background.js') ||
           fullMessage.includes('content.js') ||
           fullMessage.includes('serviceWorker.js') ||
           fullMessage.includes('service-worker.js') ||
           fullMessage.includes('chrome-extension://')
         )) ||
-        (fullMessage.includes('MutationObserver') && fullMessage.includes('Failed to execute')) ||
+        (fullMessage.includes('MutationObserver') && (
+          fullMessage.includes('Failed to execute') ||
+          fullMessage.includes('parameter 1 is not of type') ||
+          fullMessage.includes('not of type \'Node\'') ||
+          fullMessage.includes('observe')
+        )) ||
         fullMessage.includes('asynchronous response') ||
+        fullMessage.includes('message channel closed') ||
+        fullMessage.includes('A listener indicated an asynchronous response') ||
         (fullMessage.includes('Error checking mobile size') && fullMessage.includes('ReferenceError'))) {
       console.debug('Suppressed browser extension error', args);
       return;
@@ -288,7 +300,8 @@ if (typeof window !== 'undefined') {
           (message.includes('observe') && message.includes('MutationObserver')) ||
           (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
           (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
-          (message.includes('Failed to execute \'observe\' on \'MutationObserver\''));
+          (message.includes('Failed to execute \'observe\' on \'MutationObserver\'')) ||
+          (message.includes('MutationObserver') && message.includes('parameter 1'));
       
       // Check if error is from browser extension files
       const isExtensionFile = stack.includes('content.js') ||
@@ -304,18 +317,26 @@ if (typeof window !== 'undefined') {
           message.includes('moz-extension://') ||
           message.includes('safari-extension://');
       
+      // Check for Frame errors from extensions
+      const isFrameError = message.includes('Frame with ID') ||
+          (message.includes('Frame with ID 0') && message.includes('was removed')) ||
+          (message.includes('was removed') && isExtensionFile);
+      
+      // Check for undefined property errors from extensions
+      const isUndefinedPropertyError = message.includes('Cannot read properties of undefined') && (
+          message.includes('checkoutUrls') ||
+          message.includes('reading \'length\'') ||
+          message.includes('reading \'checkoutUrls\'') ||
+          isExtensionFile
+      );
+      
       if (isAsyncMessageError ||
           isMutationObserverError ||
+          isFrameError ||
           message.includes('checkoutUrls') ||
           message.includes('No tab with id') ||
-          message.includes('Frame with ID') ||
-          message.includes('was removed') ||
           message.includes('ERR_FILE_NOT_FOUND') ||
-          (message.includes('Cannot read properties of undefined') && (
-            message.includes('checkoutUrls') ||
-            message.includes('length') ||
-            isExtensionFile
-          )) ||
+          isUndefinedPropertyError ||
           isExtensionFile) {
         event.preventDefault();
         // Completely silent - these are browser extension errors, not app errors
