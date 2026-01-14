@@ -599,10 +599,32 @@ function AppContent() {
     }
     
     // Data is loaded, now check if React has fully rendered and app is interactive
+    let checkCount = 0;
+    const maxChecks = 50; // Maximum 5 seconds (50 * 100ms)
+    const timeoutId = setTimeout(() => {
+      // Fallback: if we've been checking for too long, assume app is ready
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ App ready check timeout - forcing app to be considered ready');
+      }
+      setIsAppRendered(true);
+    }, 5000); // 5 second fallback
+    
     const checkAppReady = () => {
+      checkCount++;
+      
+      // Safety: if we've checked too many times, assume app is ready
+      if (checkCount > maxChecks) {
+        if (import.meta.env.DEV) {
+          console.warn('⚠️ App ready check exceeded max attempts - forcing app to be considered ready');
+        }
+        clearTimeout(timeoutId);
+        setIsAppRendered(true);
+        return;
+      }
+      
       const rootEl = document.getElementById('root');
       if (!rootEl) {
-        setIsAppRendered(false);
+        setTimeout(checkAppReady, 100);
         return;
       }
       
@@ -611,21 +633,33 @@ function AppContent() {
       const hasContent = rootEl.children.length > 0 || 
                         innerHTML.length > TIMING_CONSTANTS.delays.splashScreenMinContentLength;
       
-      // Check for interactive elements
+      // Check for interactive elements (buttons, links, inputs, etc.)
       const hasInteractive = rootEl.querySelector('button, a, [role="button"], input, select, textarea, [data-testid], [onclick]') !== null;
       
-      // Check for app-specific elements
+      // Check for app-specific elements (sidebar, dashboard, kanban, etc.)
+      // OR check for auth screen elements (auth form, sign in button, etc.)
       const hasAppElements = rootEl.querySelector('[class*="sidebar"], [class*="dashboard"], [class*="kanban"], [class*="view"], [class*="panel"]') !== null ||
-                           rootEl.querySelector('nav, header, main, section, aside') !== null;
+                           rootEl.querySelector('nav, header, main, section, aside') !== null ||
+                           rootEl.querySelector('[class*="auth"], [class*="signin"], [class*="signup"], [id*="auth"]') !== null; // Auth screen elements
       
-      const isReady = hasContent && hasInteractive && hasAppElements;
+      // App is ready if it has content AND (interactive elements OR app elements)
+      // This allows auth screen to pass (has content + interactive) without requiring app-specific elements
+      const isReady = hasContent && (hasInteractive || hasAppElements);
       
       if (isReady) {
+        clearTimeout(timeoutId);
+        if (import.meta.env.DEV) {
+          console.log('✅ App is ready:', { hasContent, hasInteractive, hasAppElements });
+        }
         // Add a small delay to ensure smooth transition
         setTimeout(() => {
           setIsAppRendered(true);
         }, 300);
       } else {
+        if (import.meta.env.DEV && checkCount % 10 === 0) {
+          // Log every 10th check to avoid spam
+          console.log(`⏳ App not ready yet (attempt ${checkCount}/${maxChecks}):`, { hasContent, hasInteractive, hasAppElements });
+        }
         // Check again after a short delay
         setTimeout(checkAppReady, 100);
       }
@@ -637,6 +671,11 @@ function AppContent() {
         checkAppReady();
       });
     });
+    
+    // Cleanup timeout on unmount
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [isLoading]);
   
   // Show loading screen if data is loading OR app is not yet rendered/interactive
