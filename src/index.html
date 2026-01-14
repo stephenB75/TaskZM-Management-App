@@ -113,11 +113,21 @@
         animation: fadeIn 0.5s ease-in;
         -webkit-animation: fadeIn 0.5s ease-in;
         object-fit: contain;
-        display: block;
+        display: block !important;
         margin: 0 auto;
         background: transparent;
         background-color: transparent;
-        opacity: 1;
+        opacity: 1 !important;
+        visibility: visible !important;
+        position: relative;
+        z-index: 1;
+      }
+      
+      /* Ensure logo is always visible - override any conflicting styles */
+      #initial-splash #splash-logo {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
       
       #initial-splash img.splash-logo-fallback {
@@ -244,7 +254,7 @@
         alt="TaskZM Logo" 
         onerror="handleSplashLogoError(this)"
         loading="eager"
-        style="display: block; margin: 0 auto; width: min(48vw, 220px); max-width: 260px; height: auto; object-fit: contain;"
+        style="display: block !important; margin: 0 auto; width: min(48vw, 220px); max-width: 260px; height: auto; object-fit: contain; opacity: 1 !important; visibility: visible !important;"
       />
     </div>
     
@@ -257,6 +267,8 @@
         retryImg.onload = function() {
           img.src = retrySrc;
           img.style.opacity = '1';
+          img.style.visibility = 'visible';
+          img.style.display = 'block';
         };
         retryImg.onerror = function() {
           // Final fallback: show text instead of wrong icon
@@ -271,27 +283,58 @@
         retryImg.src = retrySrc;
       }
       
-      // Ensure logo is visible once loaded (handle both cached and fresh loads)
+      // Ensure logo is visible immediately and stays visible
       (function() {
         var logo = document.getElementById('splash-logo');
         if (logo) {
+          // Force visibility immediately - ensure logo shows from the start
+          logo.style.setProperty('display', 'block', 'important');
+          logo.style.setProperty('visibility', 'visible', 'important');
+          logo.style.setProperty('opacity', '1', 'important');
+          
           // If already loaded (cached), show immediately
           if (logo.complete && logo.naturalHeight !== 0) {
-            logo.style.opacity = '1';
+            logo.style.setProperty('opacity', '1', 'important');
+            logo.style.setProperty('visibility', 'visible', 'important');
+            logo.style.setProperty('display', 'block', 'important');
           } else {
             // Otherwise wait for load
             logo.onload = function() {
-              this.style.opacity = '1';
+              this.style.setProperty('opacity', '1', 'important');
+              this.style.setProperty('visibility', 'visible', 'important');
+              this.style.setProperty('display', 'block', 'important');
               this.style.transition = 'opacity 0.3s ease-in';
             };
             // Set initial opacity after a tiny delay to allow for fade-in
             setTimeout(function() {
-              if (logo && logo.complete) {
-                logo.style.opacity = '1';
-                logo.style.transition = 'opacity 0.3s ease-in';
+              if (logo) {
+                logo.style.setProperty('opacity', '1', 'important');
+                logo.style.setProperty('visibility', 'visible', 'important');
+                logo.style.setProperty('display', 'block', 'important');
+                if (logo.complete) {
+                  logo.style.transition = 'opacity 0.3s ease-in';
+                }
               }
             }, 50);
           }
+          
+          // Additional check: ensure logo is visible after a short delay
+          setTimeout(function() {
+            if (logo && logo.parentNode) {
+              logo.style.setProperty('display', 'block', 'important');
+              logo.style.setProperty('visibility', 'visible', 'important');
+              logo.style.setProperty('opacity', '1', 'important');
+            }
+          }, 100);
+          
+          // Additional check: ensure logo is visible after a short delay
+          setTimeout(function() {
+            if (logo && logo.parentNode) {
+              logo.style.display = 'block';
+              logo.style.visibility = 'visible';
+              logo.style.opacity = '1';
+            }
+          }, 100);
         }
       })();
     </script>
