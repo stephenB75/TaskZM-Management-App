@@ -54,7 +54,7 @@ import {
 } from "../lib/task-card-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
-import { COLOR_PRIMARY, COLOR_BACKGROUND_WHITE } from "../lib/color-theme";
+import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
@@ -1048,7 +1048,7 @@ export const DraggableTaskCard = React.forwardRef<
                 marginLeft: `${TASK_CARD_DROPDOWN.spacing.cardOffset.left + TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
                 marginRight: `${TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
                 width: `calc(100% - ${TASK_CARD_DROPDOWN.spacing.cardOffset.left + (TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal * 2)}px)`,
-                backgroundColor: COLOR_BACKGROUND_WHITE, // White background for dropdown tab
+                backgroundColor: isDark ? domainColors.dark : domainColors.light,
                 borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
                 maxHeight: isDropdownOpen ? 'none' : 'auto',
                 transition: 'max-height 0.3s ease-in-out',
@@ -1081,8 +1081,8 @@ export const DraggableTaskCard = React.forwardRef<
                 paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.header.paddingY}px`,
                 transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
                 color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
-                // Only show background when dropdown is open (tabs visible), transparent when closed (badges only)
-                backgroundColor: isDropdownOpen ? COLOR_BACKGROUND_WHITE : 'transparent', // White background for dropdown tab
+                // Use domain-based background when dropdown is open, transparent when closed (badges only)
+                backgroundColor: isDropdownOpen ? (isDark ? domainColors.dark : domainColors.light) : COLOR_BACKGROUND_TRANSPARENT,
                 fontSize: `${dropdownFontSize}px`,
               }}
             >
@@ -1193,7 +1193,7 @@ export const DraggableTaskCard = React.forwardRef<
                   paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.content.paddingX}px`,
                   paddingRight: `${TASK_CARD_DROPDOWN.dimensions.content.paddingX}px`,
                   paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.content.paddingBottom}px`,
-                  backgroundColor: '#ffffff', // White background for dropdown content
+                  backgroundColor: isDark ? domainColors.dark : domainColors.light,
                 }}
               >
                 <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
@@ -1340,7 +1340,7 @@ export const DraggableTaskCard = React.forwardRef<
                                 : TASK_CARD_DROPDOWN_COLORS.subtask.hover.background.light;
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.backgroundColor = COLOR_BACKGROUND_TRANSPARENT;
                             }}
                           >
                             <div
@@ -1348,7 +1348,7 @@ export const DraggableTaskCard = React.forwardRef<
                               style={{
                                 width: `${TASK_CARD_DROPDOWN.dimensions.subtask.checkbox.size}px`,
                                 height: `${TASK_CARD_DROPDOWN.dimensions.subtask.checkbox.size}px`,
-                                backgroundColor: subtask.completed ? COLOR_PRIMARY : 'transparent',
+                                backgroundColor: subtask.completed ? COLOR_PRIMARY : COLOR_BACKGROUND_TRANSPARENT,
                                 borderColor: subtask.completed 
                                   ? COLOR_PRIMARY 
                                   : (isDark 
