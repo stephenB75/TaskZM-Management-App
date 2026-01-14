@@ -598,16 +598,10 @@ if (isNative) {
     }
     
     // Check if LoadingContext indicates app is ready (isLoading should be false)
-    // We can check this by looking for the loading screen element
-    const hasLoadingScreen = rootEl.querySelector('.animate-spin') !== null ||
-                            rootEl.querySelector('[class*="loading"]') !== null ||
-                            rootEl.querySelector('[class*="Loading"]') !== null ||
-                            innerHTML.includes('Loading') ||
-                            innerHTML.includes('loading') ||
-                            innerHTML.includes('spinner');
-    if (hasLoadingScreen) {
-      return false; // Still showing loading screen, not ready
-    }
+    // Note: We don't check for React loading screen elements here because the React loading screen
+    // is controlled by isLoading state, which is checked separately. The HTML splash should hide
+    // as soon as React is ready to show its loading screen.
+    // The React loading screen will handle showing/hiding based on isLoading state.
     
     // Check if app content is visible and interactive
     // Look for interactive elements (buttons, links, etc.) to ensure app is ready
@@ -628,12 +622,34 @@ if (isNative) {
       return false; // Not enough content yet
     }
     
-    // App is ready when: has content, no loading screen, has interactive elements, and has meaningful content
-    // Note: We don't check body 'loaded' class as it's set when we hide splash (circular dependency)
-    return hasReactContent && !hasLoadingScreen && hasInteractiveElements && hasMeaningfulContent;
+    // App is ready when: has content, has interactive elements, and has meaningful content
+    // Note: We don't check for React loading screen here because it's controlled by isLoading state
+    // The HTML splash should hide as soon as React is ready, and React will show its own loading screen if needed
+    return hasReactContent && hasInteractiveElements && hasMeaningfulContent;
+  };
+  
+  // Hide HTML splash screen immediately when React loads
+  // This allows React loading screen to take over (controlled by isLoading state)
+  const hideHTMLSplashScreen = () => {
+    // Use requestAnimationFrame to ensure React has started rendering
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const splashEl = document.getElementById('initial-splash');
+        if (splashEl && !splashEl.classList.contains('hidden')) {
+          splashEl.classList.add('hidden');
+          document.body.classList.add('loaded');
+          setTimeout(() => {
+            if (splashEl.parentNode) {
+              splashEl.remove();
+            }
+          }, 300); // Short delay for smooth transition
+        }
+      });
+    });
   };
   
   // Hide HTML splash when app is ready (all critical data loaded AND fully rendered)
+  // This is kept for the app-ready event handler, but HTML splash should already be hidden
   const hideSplashScreen = () => {
     const splashEl = document.getElementById('initial-splash');
     if (splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden')) {
@@ -683,9 +699,8 @@ if (isNative) {
             if (import.meta.env.DEV) {
               const rootEl = document.getElementById('root');
               const hasContent = rootEl && (rootEl.children.length > 0 || rootEl.innerHTML.trim().length > TIMING_CONSTANTS.delays.splashScreenMinContentLength);
-              const hasLoadingScreen = rootEl?.querySelector('.animate-spin') !== null;
               const hasInteractive = rootEl?.querySelector('button, a, [role="button"], input, select, textarea') !== null;
-              console.log(`⏳ App not fully ready yet (content: ${hasContent}, loading: ${hasLoadingScreen}, interactive: ${hasInteractive}), checking again...`);
+              console.log(`⏳ App not fully ready yet (content: ${hasContent}, interactive: ${hasInteractive}), checking again...`);
             }
             setTimeout(checkAndHide, TIMING_CONSTANTS.delays.splashScreenPollInterval);
           }
@@ -767,8 +782,9 @@ try {
         <App />
       </React.StrictMode>
     );
-    // Don't hide splash here - let the app-ready event handler manage it
-    // Only ensure root is visible, but keep splash visible until app is ready
+    // Hide HTML splash screen immediately when React loads
+    // React loading screen will handle showing loading state if needed (controlled by isLoading)
+    hideHTMLSplashScreen();
   } else {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
@@ -776,8 +792,9 @@ try {
         <App />
       </React.StrictMode>
     );
-    // Don't hide splash here - let the app-ready event handler manage it
-    // Only ensure root is visible, but keep splash visible until app is ready
+    // Hide HTML splash screen immediately when React loads
+    // React loading screen will handle showing loading state if needed (controlled by isLoading)
+    hideHTMLSplashScreen();
   }
 } catch (error) {
   console.error('Fatal error during app initialization:', error);
