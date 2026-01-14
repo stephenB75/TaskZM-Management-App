@@ -14,10 +14,12 @@ const UPDATE_NOTIFICATION_DURATION = TIMING_CONSTANTS.serviceWorker.notification
 // REMOVED: UPDATE_VISIBILITY_CHECK_INTERVAL - no longer checking on visibility changes
 const UPDATE_NOTIFICATION_KEY = NOTIFICATION_STORAGE_KEYS.updateAvailable;
 const INITIAL_UPDATE_CHECK_DELAY = TIMING_CONSTANTS.serviceWorker.initialUpdateCheckDelay;
+const MIN_HIDDEN_TIME = TIMING_CONSTANTS.serviceWorker.minHiddenTime;
 
 let updateCheckInterval: number | null = null;
 let updateAvailableToastId: string | number | null = null;
 let registration: ServiceWorkerRegistration | null = null;
+let lastVisibleTime: number = Date.now(); // Track when page was last visible
 
 /**
  * Initialize service worker update checking
@@ -27,8 +29,22 @@ let registration: ServiceWorkerRegistration | null = null;
 export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistration) {
   registration = swRegistration;
   
+  // Initialize last visible time to current time
+  lastVisibleTime = Date.now();
+  
+  // Track visibility changes to update lastVisibleTime
+  const handleVisibilityChange = () => {
+    if (!document.hidden) {
+      // Page became visible - update last visible time
+      lastVisibleTime = Date.now();
+    }
+  };
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
   // Check for updates after a delay (non-blocking, background only)
-  // Use a small delay to ensure it doesn't block initial page load
+  // Use a delay to ensure it doesn't block initial page load
+  // Note: Initial check will likely be skipped since page is visible
   setTimeout(() => {
     checkForUpdates();
   }, INITIAL_UPDATE_CHECK_DELAY);
@@ -97,15 +113,28 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
  * The service worker is configured to wait and not activate automatically
  * 
  * CRITICAL: Added additional safeguards to prevent any refresh behavior
+ * - Only checks when page is hidden
+ * - Requires minimum hidden time before checking (prevents checks during brief tab switches)
  */
 function checkForUpdates() {
   if (!registration) return;
   
-  // CRITICAL: Only check for updates if page is not currently visible
-  // This prevents any potential refresh triggers during active use
-  // Check updates only when page is hidden (background tab)
-  if (document.hidden) {
-    // Check for updates in the background (safe to run when page is hidden)
+  // Track visibility changes to determine how long page has been hidden
+  if (!document.hidden) {
+    // Page is visible - update last visible time and skip update check
+    lastVisibleTime = Date.now();
+    console.debug('[Service Worker] Skipping update check (page is visible)');
+    return;
+  }
+  
+  // Page is hidden - check how long it's been hidden
+  const hiddenDuration = Date.now() - lastVisibleTime;
+  
+  // CRITICAL: Only check for updates if page has been hidden for minimum duration
+  // This prevents update checks during brief tab switches or accidental visibility changes
+  // The page must be hidden for at least MIN_HIDDEN_TIME before we check for updates
+  if (hiddenDuration >= MIN_HIDDEN_TIME) {
+    // Page has been hidden long enough - safe to check for updates in the background
     // The update() call itself doesn't cause refreshes - it only checks for new versions
     // The new service worker will install but wait (not activate) due to our configuration
     // It will only activate when user manually refreshes the page
@@ -114,9 +143,9 @@ function checkForUpdates() {
       console.debug('Service worker update check failed (non-critical):', error);
     });
   } else {
-    // Page is visible - skip update check to prevent any potential refresh triggers
-    // We'll check again on the next interval when page might be hidden
-    console.debug('[Service Worker] Skipping update check (page is visible)');
+    // Page hasn't been hidden long enough - skip update check
+    // This prevents checks during brief tab switches or accidental visibility changes
+    console.debug(`[Service Worker] Skipping update check (page hidden for only ${Math.round(hiddenDuration / 1000)}s, need ${Math.round(MIN_HIDDEN_TIME / 1000)}s)`);
   }
 }
 
