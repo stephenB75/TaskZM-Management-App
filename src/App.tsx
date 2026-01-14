@@ -487,7 +487,7 @@ function AppContent() {
                 description: 'Take a quick tour to learn the basics',
                 duration: TOAST_DURATION_MEDIUM_MS
               });
-            }, 500); // Short delay after disclaimer is closed
+            }, TIMING_CONSTANTS.animations.long); // Short delay after disclaimer is closed
             
             return () => clearTimeout(timer);
           } else {
@@ -517,7 +517,7 @@ function AppContent() {
                     description: 'Take a quick tour to learn the basics',
                     duration: TOAST_DURATION_MEDIUM_MS
                   });
-                }, 500);
+                }, TIMING_CONSTANTS.animations.long);
               }
             };
             
@@ -531,7 +531,7 @@ function AppContent() {
               if (hasTriggered) {
                 clearInterval(interval);
               }
-            }, 500); // Check every 500ms
+            }, TIMING_CONSTANTS.delays.splashScreenPollInterval); // Check at polling interval
             
             return () => clearInterval(interval);
           }
@@ -554,7 +554,7 @@ function AppContent() {
               description: 'Take a quick tour to learn the basics',
               duration: TOAST_DURATION_MEDIUM_MS
             });
-          }, 1500); // 1.5 second delay to let the UI settle
+          }, TIMING_CONSTANTS.animations.long * 3); // Delay to let the UI settle (1.5 seconds)
           
           return () => clearTimeout(timer);
         }
@@ -587,44 +587,15 @@ function AppContent() {
 
 
 
-  // Don't show loading screen if splash screen is still visible (prevents double loading screen)
-  // Also don't show app content if still loading - keep splash visible instead
+  // Don't show app content if still loading - keep HTML splash visible instead
+  // The HTML splash screen handles all loading states and stays visible until everything is ready
   const splashEl = typeof document !== 'undefined' ? document.getElementById('initial-splash') : null;
   const splashVisible = splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden');
   
-  // If loading and splash is visible, don't render anything (keep splash showing)
-  if (isLoading && splashVisible) {
-    return null; // Return null to keep splash screen visible
-  }
-  
-  if (isLoading && !splashVisible) {
-    return (
-      <div className="fixed inset-0 h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#E6D5F0] via-[#C9E4F7] to-[#B8E6D5] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 z-50">
-        <div className="text-center px-4">
-          <div className="mb-6">
-            <img 
-              src={isDark ? logoImageGray : logoImageBlack} 
-              alt="TaskZM Logo" 
-              className="mx-auto w-auto object-contain"
-              style={{ 
-                height: shouldUseMobileLayout ? LOADING_SCREEN_LOGO.height.mobile : LOADING_SCREEN_LOGO.height.desktop,
-                maxWidth: LOADING_SCREEN_LOGO.maxWidth 
-              }}
-            />
-          </div>
-          <div className="relative mx-auto mb-4">
-            <div className="animate-spin rounded-full h-12 w-12 md:h-16 md:w-16 border-4 border-[#E6D5F0] border-t-primary mx-auto"></div>
-            <div className="absolute inset-0 rounded-full h-12 w-12 md:h-16 md:w-16 border-4 border-[#C9E4F7] border-t-accent mx-auto animate-spin" style={{ animationDirection: 'reverse', animationDuration: `${TIMING_CONSTANTS.animations.long * 3 / 1000}s` }}></div>
-          </div>
-          <p className="text-foreground mt-4 text-sm md:text-base font-medium">{loadingMessage || 'Loading TaskZM...'}</p>
-          <div className="flex gap-1 justify-center mt-3">
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 bg-[#B8E6D5] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-          </div>
-        </div>
-      </div>
-    );
+  // If loading, don't render anything (keep HTML splash screen visible)
+  // The HTML splash screen will hide automatically when everything is ready via main.tsx
+  if (isLoading) {
+    return null; // Return null to keep HTML splash screen visible
   }
 
   if (!user) {
@@ -795,7 +766,7 @@ function AppContent() {
         // Small delay to let tour close smoothly
         setTimeout(() => {
           setShowPricingDialog(true);
-        }, 500);
+        }, TIMING_CONSTANTS.animations.long);
       }
       
       // Clear new signup flag if it exists
