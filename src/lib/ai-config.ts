@@ -127,10 +127,20 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   minWordFrequency: 2, // Minimum word frequency to be considered a keyword
   minWordLengthForFiltering: 3, // Minimum word length for filtering similar terms (to avoid matching very short words)
   stopWords: ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'which', 'who', 'where', 'when', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just', 'now'],
-  // Description template strings
+  // Description template strings - Enhanced with more variety for better context
   descriptionTemplates: {
     involves: 'This task involves',
     focuses: 'This task focuses',
+    requires: 'This task requires',
+    entails: 'This task entails',
+    includes: 'This task includes',
+    centers: 'This task centers',
+    consists: 'This task consists',
+    aims: 'This task aims',
+    targets: 'This task targets',
+    addresses: 'This task addresses',
+    covers: 'This task covers',
+    encompasses: 'This task encompasses',
   },
   // Domain-specific guidance messages
   domainGuidance: {
@@ -240,12 +250,34 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     browserAI: 'browser AI',
     localTerminology: 'local terminology',
   },
-  // Description connector words
+  // Description connector words - Enhanced with more natural connectors for better context flow
   descriptionConnectors: {
     involving: 'involving',
     relatedTo: 'related to',
     for: 'for',
     and: 'and',
+    or: 'or',
+    with: 'with',
+    through: 'through',
+    by: 'by',
+    via: 'via',
+    using: 'using',
+    including: 'including',
+    about: 'about',
+    regarding: 'regarding',
+    concerning: 'concerning',
+    focusing: 'focusing',
+    centered: 'centered',
+    aimed: 'aimed',
+    targeting: 'targeting',
+    designed: 'designed',
+    intended: 'intended',
+    to: 'to',
+    in: 'in',
+    within: 'within',
+    across: 'across',
+    throughout: 'throughout',
+    on: 'on',
   },
   // Generic verbs that indicate low-quality descriptions
   genericVerbs: ['find', 'get', 'do', 'make', 'use', 'have'],

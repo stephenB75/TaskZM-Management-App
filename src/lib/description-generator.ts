@@ -1799,49 +1799,67 @@ function buildElaborateContextualDescription(
         .filter(n => n.length > 0) // Remove empty after cleaning
         .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin); // Limit nouns to avoid long chains
       
-      // ENHANCED: Build complete, natural sentences with proper sentence structure
+      // ENHANCED: Build complete, natural sentences with proper sentence structure and context awareness
       // This ensures we write complete sentences from keywords and phrases, not just fragments
       // Clean the best phrase first
       const cleanedPhrase = cleanText(bestPhrase);
       
+      // ENHANCED: Randomly select sentence template for variation (using variation seed)
+      const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
+      // Ensure we have valid template keys and variation seed
+      let selectedTemplate: string;
+      let templateOpener: string;
+      if (templateKeys.length === 0) {
+        // Fallback to default template if no templates available
+        selectedTemplate = 'involves';
+        templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+      } else {
+        selectedTemplate = templateKeys[Math.floor(variationSeed * templateKeys.length)];
+        templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+      }
+      
       // Build complete sentences with proper sentence openers and structure
       if (phraseHasAction && contextNouns.length > 0) {
-        // Complete sentence: "This task involves [phrase] for [nouns]"
         const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                          contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${nounsList}.`;
+        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets' 
+          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to 
+          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
+        description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${connector} ${nounsList}.`;
       } else if (phraseHasAction && relevantKeywords.length > 0) {
-        // Complete sentence: "This task involves [phrase] related to [keywords]"
         const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
                             relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
+        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
+          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+        description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${connector} ${keywordsList}.`;
       } else if (actionVerb && contextNouns.length > 0) {
-        // Complete sentence: "This task involves [verb]ing [phrase] for [nouns]"
         const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
         description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
       } else if (actionVerb && relevantKeywords.length > 0) {
-        // Complete sentence: "This task involves [verb]ing [phrase] related to [keywords]"
         const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
         description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords[0]}.`;
       } else if (phraseHasAction) {
-        // Complete sentence: "This task involves [phrase]"
-        description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()}.`;
+        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
+          : selectedTemplate === 'focuses' || selectedTemplate === 'centers'
+          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
+          : '';
+        description = connector 
+          ? `${templateOpener} ${connector} ${cleanedPhrase.toLowerCase()}.`
+          : `${templateOpener} ${cleanedPhrase.toLowerCase()}.`;
       } else if (actionVerb) {
-        // Complete sentence: "This task involves [verb]ing [phrase]"
         const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
         description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedPhrase.toLowerCase()}.`;
       } else if (contextNouns.length > 0) {
-        // Complete sentence: "This task involves [phrase] for [nouns]"
         const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                          contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
         description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${nounsList}.`;
       } else if (relevantKeywords.length > 0) {
-        // Complete sentence: "This task involves [phrase] related to [keywords]"
         const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
                             relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
         description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywordsList}.`;
       } else {
-        // Fallback: "This task involves [phrase]"
         description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${cleanedPhrase.toLowerCase()}.`;
       }
     }
