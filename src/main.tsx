@@ -564,6 +564,42 @@ if (isNative) {
   // Track when splash screen was shown to ensure minimum display time
   const splashStartTime = Date.now();
   
+  // Check if app is fully loaded and rendered AND interactive
+  // This function checks multiple conditions to ensure the app is truly ready for user interaction
+  const isAppFullyLoaded = (): boolean => {
+    // Check if root element exists and has content
+    const rootEl = document.getElementById('root');
+    if (!rootEl) {
+      return false;
+    }
+    
+    // Check if React has rendered (root should have React content)
+    const hasReactContent = rootEl.children.length > 0 ||
+                           rootEl.innerHTML.trim().length > TIMING_CONSTANTS.delays.splashScreenMinContentLength;
+    
+    if (!hasReactContent) {
+      return false;
+    }
+    
+    // Check if LoadingContext indicates app is ready (isLoading should be false)
+    // We can check this by looking for the loading screen element
+    const hasLoadingScreen = rootEl.querySelector('.animate-spin') !== null;
+    if (hasLoadingScreen) {
+      return false; // Still showing loading screen, not ready
+    }
+    
+    // Check if app content is visible and interactive
+    // Look for interactive elements (buttons, links, etc.) to ensure app is ready
+    const hasInteractiveElements = rootEl.querySelector('button, a, [role="button"], input, select, textarea') !== null;
+    if (!hasInteractiveElements) {
+      return false; // No interactive elements yet, app not ready
+    }
+    
+    // App is ready when: has content, no loading screen, and has interactive elements
+    // Note: We don't check body 'loaded' class as it's set when we hide splash (circular dependency)
+    return hasReactContent && !hasLoadingScreen && hasInteractiveElements;
+  };
+  
   // Hide HTML splash when app is ready (all critical data loaded AND fully rendered)
   const hideSplashScreen = () => {
     const splashEl = document.getElementById('initial-splash');
@@ -592,29 +628,27 @@ if (isNative) {
       console.log('✅ App ready event received, checking if app is fully loaded...');
     }
     
-    // Wait for React to render and ensure app is fully loaded AND loading state is false
+    // Wait for React to render and ensure app is fully loaded, interactive, AND loading state is false
     const checkAndHide = () => {
-      // Check if app is fully rendered
-      const appRendered = isAppFullyLoaded();
+      // Check if app is fully loaded and interactive
+      const appReady = isAppFullyLoaded();
       
-      // Also check if LoadingContext has set isLoading to false
-      // We can check this by looking for the loading screen element or checking body class
-      const rootEl = document.getElementById('root');
-      const hasLoadingScreen = rootEl?.querySelector('.animate-spin'); // Loading spinner indicator
-      const isLoading = hasLoadingScreen !== null;
-      
-      if (appRendered && !isLoading) {
+      if (appReady) {
         if (import.meta.env.DEV) {
-          console.log('✅ App is fully loaded and rendered, hiding splash screen');
+          console.log('✅ App is fully loaded, rendered, and interactive - hiding splash screen');
         }
         // Additional delay to ensure smooth transition and React has fully rendered
         requestAnimationFrame(() => {
           setTimeout(hideSplashScreen, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay);
         });
       } else {
-        // App not fully loaded yet, check again
+        // App not fully ready yet, check again
         if (import.meta.env.DEV) {
-          console.log(`⏳ App ready but not fully rendered (rendered: ${appRendered}, loading: ${isLoading}), checking again...`);
+          const rootEl = document.getElementById('root');
+          const hasContent = rootEl && (rootEl.children.length > 0 || rootEl.innerHTML.trim().length > TIMING_CONSTANTS.delays.splashScreenMinContentLength);
+          const hasLoadingScreen = rootEl?.querySelector('.animate-spin') !== null;
+          const hasInteractive = rootEl?.querySelector('button, a, [role="button"], input, select, textarea') !== null;
+          console.log(`⏳ App not fully ready yet (content: ${hasContent}, loading: ${hasLoadingScreen}, interactive: ${hasInteractive}), checking again...`);
         }
         setTimeout(checkAndHide, TIMING_CONSTANTS.delays.splashScreenPollInterval);
       }
@@ -626,19 +660,20 @@ if (isNative) {
   
   // Fallback: Hide splash after maximum wait time (safety net)
   // This ensures splash doesn't stay forever if something goes wrong
-  // But only hide if app appears to be loaded
+  // But only hide if app appears to be fully loaded and interactive
   const fallbackTimeout = setTimeout(() => {
     if (isAppFullyLoaded()) {
       if (import.meta.env.DEV) {
-        console.log('✅ Fallback timeout: App is loaded, hiding splash');
+        console.log('✅ Fallback timeout: App is fully loaded and interactive, hiding splash');
       }
       hideSplashScreen();
     } else {
-      // If app still not loaded, force hide anyway (something might be wrong)
+      // If app still not fully ready, keep splash visible (don't force hide)
+      // This prevents showing non-interactive app content
       if (import.meta.env.DEV) {
-        console.warn('⚠️ Splash screen timeout reached, forcing hide (app may not be fully loaded)');
+        console.warn('⚠️ Splash screen timeout reached, but app is not fully interactive - keeping splash visible');
       }
-      hideSplashScreen();
+      // Don't force hide - keep splash visible until app is truly ready
     }
   }, TIMING_CONSTANTS.delays.splashScreenAggressive);
   

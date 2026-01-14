@@ -588,8 +588,14 @@ function AppContent() {
 
 
   // Don't show loading screen if splash screen is still visible (prevents double loading screen)
+  // Also don't show app content if still loading - keep splash visible instead
   const splashEl = typeof document !== 'undefined' ? document.getElementById('initial-splash') : null;
   const splashVisible = splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden');
+  
+  // If loading and splash is visible, don't render anything (keep splash showing)
+  if (isLoading && splashVisible) {
+    return null; // Return null to keep splash screen visible
+  }
   
   if (isLoading && !splashVisible) {
     return (
