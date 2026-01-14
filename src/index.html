@@ -177,6 +177,10 @@
         margin: 0 auto 1rem auto;
         width: 3rem;
         height: 3rem;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 2;
       }
       
       @media (min-width: 768px) {
@@ -197,17 +201,22 @@
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        z-index: 1;
       }
       
       #initial-splash .spinner-circle-1 {
-        border-color: #E6D5F0 #E6D5F0 #E6D5F0 #9B87E8;
-        border-color: var(--pastel-lavender, #E6D5F0) var(--pastel-lavender, #E6D5F0) var(--pastel-lavender, #E6D5F0) var(--primary, #9B87E8);
+        border-top-color: var(--primary, #9B87E8);
+        border-right-color: var(--pastel-lavender, #E6D5F0);
+        border-bottom-color: var(--pastel-lavender, #E6D5F0);
+        border-left-color: var(--pastel-lavender, #E6D5F0);
         animation: spin 1s linear infinite;
       }
       
       #initial-splash .spinner-circle-2 {
-        border-color: #C9E4F7 #C9E4F7 #C9E4F7 transparent;
-        border-color: var(--pastel-sky, #C9E4F7) var(--pastel-sky, #C9E4F7) var(--pastel-sky, #C9E4F7) transparent;
+        border-top-color: transparent;
+        border-right-color: var(--pastel-sky, #C9E4F7);
+        border-bottom-color: var(--pastel-sky, #C9E4F7);
+        border-left-color: var(--pastel-sky, #C9E4F7);
         animation: spin 1.5s linear infinite reverse;
       }
       
@@ -241,19 +250,23 @@
       
       /* Loading dots */
       #initial-splash .splash-dots {
-        display: flex;
+        display: flex !important;
         gap: 0.25rem;
         justify-content: center;
         margin-top: 0.75rem;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
       
       #initial-splash .splash-dot {
         width: 0.5rem;
         height: 0.5rem;
         border-radius: 50%;
-        background-color: #9B87E8;
         background-color: var(--primary, #9B87E8);
         animation: bounce 1.4s ease-in-out infinite;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
       
       #initial-splash .splash-dot:nth-child(1) {
@@ -433,10 +446,26 @@
           // Final fallback: show text instead of wrong icon
           var splashEl = document.getElementById('initial-splash');
           if (splashEl && img.parentNode) {
-            var textFallback = document.createElement('div');
-            textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:#7B68EE;text-align:center;font-family:system-ui,-apple-system,sans-serif;'; /* COLOR_PRIMARY_DARK / APP_TEXT_FALLBACK_COLOR: #7B68EE */
-            textFallback.textContent = 'TaskZM';
-            img.parentNode.replaceChild(textFallback, img);
+            // Try one more time - ensure image is visible with all styles
+            img.style.setProperty('display', 'block', 'important');
+            img.style.setProperty('visibility', 'visible', 'important');
+            img.style.setProperty('opacity', '1', 'important');
+            img.style.setProperty('width', 'auto', 'important');
+            img.style.setProperty('height', 'min(12rem, 20vw)', 'important');
+            img.style.setProperty('max-width', '660px', 'important');
+            img.style.setProperty('max-height', '15rem', 'important');
+            
+            // Only show text fallback if image still fails after delay
+            setTimeout(function() {
+              if (img.naturalWidth === 0 || img.naturalHeight === 0 || !img.complete) {
+                var textFallback = document.createElement('div');
+                textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:var(--primary, #7B68EE);text-align:center;font-family:system-ui,-apple-system,sans-serif;margin:0 auto 1.5rem auto;'; /* COLOR_PRIMARY_DARK / APP_TEXT_FALLBACK_COLOR: #7B68EE */
+                textFallback.textContent = 'TaskZM';
+                if (img.parentNode) {
+                  img.parentNode.replaceChild(textFallback, img);
+                }
+              }
+            }, 2000);
           }
         };
         retryImg.src = retrySrc;
