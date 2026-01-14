@@ -452,6 +452,20 @@ export const APP_THEME_COLOR_SECONDARY = '#9D87C3'; // TaskZM purple/lavender (s
 export const APP_BACKGROUND_COLOR = '#F5F3FF'; // TaskZM light purple background
 export const APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // Text fallback color for loading screen
 
+// Splash Screen Logo Path Constants
+export const SPLASH_SCREEN_LOGO_PATHS = {
+  primary: '/taskzm-logo.png',
+  relative: './taskzm-logo.png',
+  relativeNoSlash: 'taskzm-logo.png',
+} as const;
+
+// Splash Screen Text Constants
+export const SPLASH_SCREEN_TEXT = {
+  logoAlt: 'TaskZM Logo',
+  loadingMessage: 'Loading TaskZM...',
+  fallbackText: 'TaskZM',
+} as const;
+
 // Loading Screen Constants
 // Base values for loading screen logo
 const LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE = '4rem'; // h-16 = 4rem (64px) - Base mobile logo height

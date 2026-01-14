@@ -431,14 +431,35 @@
     </div>
     
     <script>
+      // Splash Screen Constants (mirrors TypeScript constants from layout-constants.ts)
+      var SPLASH_SCREEN_LOGO_PATHS = {
+        primary: '/taskzm-logo.png',
+        relative: './taskzm-logo.png',
+        relativeNoSlash: 'taskzm-logo.png'
+      };
+      var SPLASH_SCREEN_TEXT = {
+        logoAlt: 'TaskZM Logo',
+        loadingMessage: 'Loading TaskZM...',
+        fallbackText: 'TaskZM'
+      };
+      var LOADING_SCREEN_LOGO = {
+        height: {
+          mobile: '12rem', // LOADING_SCREEN_LOGO.height.mobile (4rem * 3 = 12rem)
+          desktop: '15rem' // LOADING_SCREEN_LOGO.height.desktop (5rem * 3 = 15rem)
+        },
+        maxWidth: '660px', // LOADING_SCREEN_LOGO.maxWidth (220 * 3 = 660px)
+        heightViewport: '20vw' // Responsive height using viewport width
+      };
+      var APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // APP_TEXT_FALLBACK_COLOR from layout-constants.ts
+      
       function handleSplashLogoError(img) {
-        // Try multiple paths to find the logo
+        // Try multiple paths to find the logo (using constants)
         var paths = [
-          '/taskzm-logo.png',
-          './taskzm-logo.png',
-          'taskzm-logo.png',
-          '/taskzm-logo.png?v=' + Date.now(),
-          './taskzm-logo.png?v=' + Date.now()
+          SPLASH_SCREEN_LOGO_PATHS.primary,
+          SPLASH_SCREEN_LOGO_PATHS.relative,
+          SPLASH_SCREEN_LOGO_PATHS.relativeNoSlash,
+          SPLASH_SCREEN_LOGO_PATHS.primary + '?v=' + Date.now(),
+          SPLASH_SCREEN_LOGO_PATHS.relative + '?v=' + Date.now()
         ];
         var currentPathIndex = 0;
         
@@ -482,16 +503,16 @@
           img.style.setProperty('visibility', 'visible', 'important');
           img.style.setProperty('opacity', '1', 'important');
           img.style.setProperty('width', 'auto', 'important');
-          img.style.setProperty('height', 'min(12rem, 20vw)', 'important');
-          img.style.setProperty('max-width', '660px', 'important');
-          img.style.setProperty('max-height', '15rem', 'important');
+          img.style.setProperty('height', 'min(' + LOADING_SCREEN_LOGO.height.mobile + ', ' + LOADING_SCREEN_LOGO.heightViewport + ')', 'important');
+          img.style.setProperty('max-width', LOADING_SCREEN_LOGO.maxWidth, 'important');
+          img.style.setProperty('max-height', LOADING_SCREEN_LOGO.height.desktop, 'important');
           
           // Only show text fallback if image still fails after delay
           setTimeout(function() {
             if (img.naturalWidth === 0 || img.naturalHeight === 0 || !img.complete) {
               var textFallback = document.createElement('div');
-              textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:var(--primary, #7B68EE);text-align:center;font-family:system-ui,-apple-system,sans-serif;margin:0 auto 1.5rem auto;'; /* COLOR_PRIMARY_DARK / APP_TEXT_FALLBACK_COLOR: #7B68EE */
-              textFallback.textContent = 'TaskZM';
+              textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:var(--primary, ' + APP_TEXT_FALLBACK_COLOR + ');text-align:center;font-family:system-ui,-apple-system,sans-serif;margin:0 auto 1.5rem auto;'; /* Uses APP_TEXT_FALLBACK_COLOR constant */
+              textFallback.textContent = SPLASH_SCREEN_TEXT.fallbackText;
               if (img.parentNode) {
                 img.parentNode.replaceChild(textFallback, img);
               }
