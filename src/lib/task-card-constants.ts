@@ -27,6 +27,7 @@ import {
   COLOR_PASTEL_MINT,
   getColorWithOpacity,
 } from './color-theme';
+import { KANBAN_DAY_COLORS } from './kanban-constants';
 
 // Priority Colors (for priority line and badges) - Improved contrast for dark mode
 export const TASK_CARD_PRIORITY_COLORS = {
@@ -678,6 +679,97 @@ export const TASK_CARD_DROPDOWN_DOMAIN_COLORS: Record<string, { light: string; d
     dark: getColorWithOpacity(COLOR_PASTEL_SAGE, 0.3), // Muted sage for dark mode
   },
 } as const;
+
+// Available pastel colors for random dropdown assignment (excluding kanban column colors)
+export const DROPDOWN_PASTEL_COLORS = [
+  COLOR_PASTEL_SKY,      // #C9E4F7
+  COLOR_PASTEL_LAVENDER, // #E6D5F0
+  COLOR_PASTEL_PEACH,    // #FFD6BA
+  COLOR_PASTEL_LILAC,    // #E1D4F0
+  COLOR_PASTEL_PINK,     // #FFD6E8
+  COLOR_PASTEL_YELLOW,   // #FFF4CC
+  COLOR_PASTEL_SAGE,     // #D4E8D4
+  COLOR_PASTEL_MINT,     // #B8E6D5
+] as const;
+
+// Kanban column background colors (to exclude from dropdown colors)
+// Extracted from KANBAN_DAY_COLORS to avoid hardcoding
+export const KANBAN_COLUMN_BACKGROUND_COLORS = [
+  KANBAN_DAY_COLORS.monday.background,
+  KANBAN_DAY_COLORS.tuesday.background,
+  KANBAN_DAY_COLORS.wednesday.background,
+  KANBAN_DAY_COLORS.thursday.background,
+  KANBAN_DAY_COLORS.friday.background,
+  KANBAN_DAY_COLORS.saturday.background,
+  KANBAN_DAY_COLORS.sunday.background,
+] as const;
+
+/**
+ * Get column background color from date string (YYYY-MM-DD format)
+ */
+function getColumnColorFromDate(dateString: string): string | null {
+  try {
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    const dayMap: Record<number, keyof typeof KANBAN_DAY_COLORS> = {
+      0: 'sunday',
+      1: 'monday',
+      2: 'tuesday',
+      3: 'wednesday',
+      4: 'thursday',
+      5: 'friday',
+      6: 'saturday',
+    };
+    
+    const dayKey = dayMap[dayOfWeek];
+    if (dayKey && KANBAN_DAY_COLORS[dayKey] && 'background' in KANBAN_DAY_COLORS[dayKey]) {
+      return KANBAN_DAY_COLORS[dayKey].background;
+    }
+  } catch (e) {
+    // Invalid date string, return null
+  }
+  return null;
+}
+
+/**
+ * Get a random pastel color for dropdown that's different from the column color
+ * Uses task ID for consistent color assignment per task
+ */
+export function getRandomDropdownColor(
+  taskId: string,
+  droppableId?: string | null,
+  isDark: boolean = false
+): { light: string; dark: string } {
+  // Get column background color from droppableId (date string)
+  const columnBackgroundColor = droppableId ? getColumnColorFromDate(droppableId) : null;
+  
+  // Filter out column color from available colors
+  const availableColors = DROPDOWN_PASTEL_COLORS.filter(
+    color => !columnBackgroundColor || color.toLowerCase() !== columnBackgroundColor.toLowerCase()
+  );
+  
+  // If all colors are filtered out (shouldn't happen), use all colors
+  const colorsToUse = availableColors.length > 0 ? availableColors : DROPDOWN_PASTEL_COLORS;
+  
+  // Use task ID to generate a consistent random index (seeded random)
+  // Simple hash function for consistent color assignment
+  let hash = 0;
+  for (let i = 0; i < taskId.length; i++) {
+    const char = taskId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Get color index from hash
+  const colorIndex = Math.abs(hash) % colorsToUse.length;
+  const selectedColor = colorsToUse[colorIndex];
+  
+  return {
+    light: selectedColor,
+    dark: getColorWithOpacity(selectedColor, 0.3),
+  };
+}
 
 // Badge colors for Description, Subtasks, and Dependencies (light grey background for all)
 export const TASK_CARD_DROPDOWN_BADGE_COLORS = {

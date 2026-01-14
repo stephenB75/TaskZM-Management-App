@@ -46,6 +46,7 @@ import {
   TASK_CARD_DROPDOWN_COLORS,
   TASK_CARD_DROPDOWN_DOMAIN_COLORS,
   TASK_CARD_DROPDOWN_BADGE_COLORS,
+  getRandomDropdownColor,
   TASK_CARD_DROPDOWN,
   TASK_CARD_STANDARD_HEIGHTS,
   TASK_CARD_OPACITY,
@@ -1036,9 +1037,8 @@ export const DraggableTaskCard = React.forwardRef<
 
         {/* Dropdown Tab - Accordion attached directly to the card, aligned with compact card (excluding priority line) */}
         {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (() => {
-          // Get domain-based colors for dropdown background
-          const taskDomain = breakdown?.domain || 'default';
-          const domainColors = TASK_CARD_DROPDOWN_DOMAIN_COLORS[taskDomain] || TASK_CARD_DROPDOWN_DOMAIN_COLORS.default;
+          // Get random pastel color for dropdown that's different from column color
+          const randomColors = getRandomDropdownColor(task.id, droppableId, isDark);
           
           return (
             <div 
@@ -1048,7 +1048,7 @@ export const DraggableTaskCard = React.forwardRef<
                 marginLeft: `${TASK_CARD_DROPDOWN.spacing.cardOffset.left + TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
                 marginRight: `${TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
                 width: `calc(100% - ${TASK_CARD_DROPDOWN.spacing.cardOffset.left + (TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal * 2)}px)`,
-                backgroundColor: isDark ? domainColors.dark : domainColors.light,
+                backgroundColor: isDark ? randomColors.dark : randomColors.light,
                 borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
                 maxHeight: isDropdownOpen ? 'none' : 'auto',
                 transition: 'max-height 0.3s ease-in-out',
@@ -1082,7 +1082,7 @@ export const DraggableTaskCard = React.forwardRef<
                 transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
                 color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
                 // Use domain-based background when dropdown is open, transparent when closed (badges only)
-                backgroundColor: isDropdownOpen ? (isDark ? domainColors.dark : domainColors.light) : COLOR_BACKGROUND_TRANSPARENT,
+                backgroundColor: isDropdownOpen ? (isDark ? randomColors.dark : randomColors.light) : COLOR_BACKGROUND_TRANSPARENT,
                 fontSize: `${dropdownFontSize}px`,
               }}
             >
@@ -1193,7 +1193,7 @@ export const DraggableTaskCard = React.forwardRef<
                   paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.content.paddingX}px`,
                   paddingRight: `${TASK_CARD_DROPDOWN.dimensions.content.paddingX}px`,
                   paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.content.paddingBottom}px`,
-                  backgroundColor: isDark ? domainColors.dark : domainColors.light,
+                  backgroundColor: isDark ? randomColors.dark : randomColors.light,
                 }}
               >
                 <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
