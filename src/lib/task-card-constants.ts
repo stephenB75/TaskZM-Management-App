@@ -480,7 +480,7 @@ export const TASK_CARD_CALCULATIONS = {
   priorityLine: {
     width: 4, // w-1 = 4px
     height: '50%', // h-1/2
-    minHeight: 40, // min-h-[40px]
+    minHeight: 80, // min-h-[80px] - doubled from 40px
   },
   padding: {
     short: {
