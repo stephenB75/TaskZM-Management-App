@@ -51,6 +51,25 @@
     <link rel="preconnect" href="https://gflesnyfpxqhaunfskrw.supabase.co" crossorigin />
 
     <style>
+      /* Define CSS variables early for splash screen */
+      :root {
+        --pastel-lavender: #E6D5F0;
+        --pastel-sky: #C9E4F7;
+        --pastel-mint: #B8E6D5;
+        --primary: #9B87E8;
+        --foreground: #1F2937;
+        --background: #FAF9FC;
+        --card: #FFFFFF;
+      }
+      
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --foreground: #F3F4F6;
+          --background: #0F172A;
+          --card: #1E293B;
+        }
+      }
+      
       body {
         overflow: hidden;
       }
@@ -80,8 +99,9 @@
         display: flex !important;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(to bottom right, var(--pastel-lavender), var(--pastel-sky), var(--pastel-mint));
-        z-index: 999999 !important;
+        background: linear-gradient(to bottom right, #E6D5F0, #C9E4F7, #B8E6D5);
+        background: linear-gradient(to bottom right, var(--pastel-lavender, #E6D5F0), var(--pastel-sky, #C9E4F7), var(--pastel-mint, #B8E6D5));
+        z-index: 999999 !important; /* Matches Z_INDEX.SPLASH_SCREEN: 999999 */
         transition: opacity 0.5s ease-out;
         -webkit-transition: opacity 0.5s ease-out;
         visibility: visible !important;
@@ -92,7 +112,8 @@
       /* Dark mode support for splash background */
       @media (prefers-color-scheme: dark) {
         #initial-splash {
-          background: linear-gradient(to bottom right, var(--background), var(--card), var(--background));
+          background: linear-gradient(to bottom right, #0F172A, #1E293B, #0F172A);
+          background: linear-gradient(to bottom right, var(--background, #0F172A), var(--card, #1E293B), var(--background, #0F172A));
         }
       }
       
@@ -100,10 +121,12 @@
       #initial-splash .splash-content {
         text-align: center;
         padding: 1rem;
-        display: flex;
+        display: flex !important;
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
 
       /* Hide on native platforms */
@@ -126,7 +149,7 @@
         height: min(12rem, 20vw);
         max-width: 660px; /* Matches LOADING_SCREEN_LOGO.maxWidth: 220 * 3 = 660px */
         max-height: 15rem; /* Matches LOADING_SCREEN_LOGO.height.desktop: 5 * 3 = 15rem */
-        filter: drop-shadow(0 8px 24px rgba(155, 135, 232, 0.25));
+        filter: drop-shadow(0 8px 24px rgba(155, 135, 232, 0.25)); /* COLOR_PRIMARY (#9B87E8 = rgb(155, 135, 232)) with 0.25 opacity */
         -webkit-filter: drop-shadow(0 8px 24px rgba(155, 135, 232, 0.25));
         animation: fadeIn 0.5s ease-in;
         -webkit-animation: fadeIn 0.5s ease-in;
@@ -171,15 +194,20 @@
         border-width: 4px;
         border-style: solid;
         margin: 0 auto;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
       
       #initial-splash .spinner-circle-1 {
-        border-color: var(--pastel-lavender) var(--pastel-lavender) var(--pastel-lavender) var(--primary);
+        border-color: #E6D5F0 #E6D5F0 #E6D5F0 #9B87E8;
+        border-color: var(--pastel-lavender, #E6D5F0) var(--pastel-lavender, #E6D5F0) var(--pastel-lavender, #E6D5F0) var(--primary, #9B87E8);
         animation: spin 1s linear infinite;
       }
       
       #initial-splash .spinner-circle-2 {
-        border-color: var(--pastel-sky) var(--pastel-sky) var(--pastel-sky) transparent;
+        border-color: #C9E4F7 #C9E4F7 #C9E4F7 transparent;
+        border-color: var(--pastel-sky, #C9E4F7) var(--pastel-sky, #C9E4F7) var(--pastel-sky, #C9E4F7) transparent;
         animation: spin 1.5s linear infinite reverse;
       }
       
@@ -193,8 +221,16 @@
         margin-top: 1rem;
         font-size: 0.875rem;
         font-weight: 500;
-        color: var(--foreground);
+        color: #1F2937;
+        color: var(--foreground, #1F2937);
         font-family: system-ui, -apple-system, sans-serif;
+      }
+      
+      @media (prefers-color-scheme: dark) {
+        #initial-splash .splash-message {
+          color: #F3F4F6;
+          color: var(--foreground, #F3F4F6);
+        }
       }
       
       @media (min-width: 768px) {
@@ -215,7 +251,8 @@
         width: 0.5rem;
         height: 0.5rem;
         border-radius: 50%;
-        background-color: var(--primary);
+        background-color: #9B87E8;
+        background-color: var(--primary, #9B87E8);
         animation: bounce 1.4s ease-in-out infinite;
       }
       
@@ -397,7 +434,7 @@
           var splashEl = document.getElementById('initial-splash');
           if (splashEl && img.parentNode) {
             var textFallback = document.createElement('div');
-            textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:#7B68EE;text-align:center;font-family:system-ui,-apple-system,sans-serif;';
+            textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:#7B68EE;text-align:center;font-family:system-ui,-apple-system,sans-serif;'; /* COLOR_PRIMARY_DARK / APP_TEXT_FALLBACK_COLOR: #7B68EE */
             textFallback.textContent = 'TaskZM';
             img.parentNode.replaceChild(textFallback, img);
           }
