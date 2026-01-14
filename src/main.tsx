@@ -564,6 +564,20 @@ if (isNative) {
   // Track when splash screen was shown to ensure minimum display time
   const splashStartTime = Date.now();
   
+  // Update splash screen loading message from LoadingContext
+  const updateSplashMessage = (message: string) => {
+    const messageEl = document.getElementById('splash-message');
+    if (messageEl) {
+      messageEl.textContent = message || 'Loading TaskZM...';
+    }
+  };
+  
+  // Listen for loading state changes to update splash message
+  // This will be called when React's LoadingContext updates
+  window.addEventListener('splash-loading-update', ((event: CustomEvent<{ message: string }>) => {
+    updateSplashMessage(event.detail.message);
+  }) as EventListener);
+  
   // Check if app is fully loaded and rendered AND interactive
   // This function checks multiple conditions to ensure the app is truly ready for user interaction
   const isAppFullyLoaded = (): boolean => {

@@ -103,6 +103,15 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
     if (loadingState.subscription) return 'Loading subscription...';
     return 'Loading TaskZM...';
   }, [loadingState]);
+  
+  // Update HTML splash screen message when loading state changes
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('splash-loading-update', {
+        detail: { message: loadingMessage }
+      }));
+    }
+  }, [loadingMessage]);
 
   const value: LoadingContextType = {
     isLoading: !loadingState.isReady,
