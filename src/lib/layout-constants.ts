@@ -575,7 +575,7 @@ export const AUTH_SCREEN = {
     },
     spacing: {
       brandingMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - further reduced to move dialog up
-      logoMarginBottom: '0.25rem', // mb-1 = 0.25rem (4px) - reduced spacing below logo
+      logoMarginBottom: '0.125rem', // mb-0.5 = 0.125rem (2px) - minimal spacing below logo
       badgeMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - reduced spacing below badge
       formSpacing: '0.5rem', // space-y-2 = 0.5rem (8px) - reduced form spacing
       cardHeaderSpacing: '0.375rem', // space-y-1.5 = 0.375rem (6px) - reduced header spacing
@@ -605,7 +605,7 @@ export const AUTH_SCREEN = {
     },
     spacing: {
       brandingMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - further reduced to move dialog up
-      logoMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - reduced spacing below logo
+      logoMarginBottom: '0.125rem', // mb-0.5 = 0.125rem (2px) - minimal spacing below logo
       badgeMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - reduced spacing below badge
     },
   },
@@ -632,7 +632,7 @@ export const AUTH_SCREEN = {
     },
     spacing: {
       brandingMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - further reduced to move dialog up
-      logoMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below logo
+      logoMarginBottom: '0.125rem', // mb-0.5 = 0.125rem (2px) - minimal spacing below logo
       badgeMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below badge
       formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px) - reduced form spacing
       cardHeaderSpacing: '0.375rem', // space-y-1.5 = 0.375rem (6px) - reduced header spacing

@@ -530,7 +530,12 @@ export function AuthScreen() {
                   width: logo.width,
                   maxWidth: logo.maxWidth || '100%',
                   height: 'auto',
+                  marginTop: '-0.5rem', // Negative margin to reduce space above
                   marginBottom: spacing.logoMarginBottom,
+                  paddingTop: '0', // No padding above logo
+                  paddingBottom: '0', // No padding below logo
+                  display: 'block', // Remove inline spacing
+                  lineHeight: 0, // Remove line-height spacing
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.02 }}
               />

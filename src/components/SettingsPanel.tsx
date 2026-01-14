@@ -2915,6 +2915,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   src={taskzmLogoBlack} 
                   alt="TaskZM Logo"
                   className={`${COMPONENT_DIMENSIONS.settingsPanel.logoWidthMobile} sm:${COMPONENT_DIMENSIONS.settingsPanel.logoWidth} object-contain`}
+                  style={{
+                    marginTop: '-0.5rem', // Negative margin to reduce space above
+                    marginBottom: '-0.5rem', // Negative margin to reduce space below
+                    paddingTop: '0', // No padding above logo
+                    paddingBottom: '0', // No padding below logo
+                    display: 'block', // Remove inline spacing
+                    lineHeight: 0, // Remove line-height spacing
+                  }}
                 />
                 <div className="text-xs text-muted-foreground text-center">Version {APP_VERSION}</div>
                 <div className="text-xs text-muted-foreground/70 text-center">{VERSION_NAME}</div>
