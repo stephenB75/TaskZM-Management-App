@@ -700,14 +700,15 @@ const ensureSplashHidden = () => {
   document.body.classList.add('loaded');
   // Force enable scrolling
   document.body.style.overflow = 'auto';
-  // Ensure root element is visible
+  // Ensure root element is visible (but don't set z-index that could conflict with splash)
   const rootEl = document.getElementById('root');
   if (rootEl) {
     rootEl.style.display = 'block';
     rootEl.style.visibility = 'visible';
     rootEl.style.opacity = '1';
+    // Use relative positioning but don't set z-index - splash is fixed and will be on top
     rootEl.style.position = 'relative';
-    rootEl.style.zIndex = '1';
+    // Don't set z-index here - splash screen uses fixed positioning with z-999999
     rootEl.style.height = '100%';
     rootEl.style.width = '100%';
   }
@@ -727,10 +728,8 @@ try {
         <App />
       </React.StrictMode>
     );
-    // Ensure splash is hidden immediately and after rendering
-    ensureSplashHidden();
-    setTimeout(ensureSplashHidden, TIMING_CONSTANTS.delays.splashScreenImmediate);
-    setTimeout(ensureSplashHidden, TIMING_CONSTANTS.delays.splashScreenRemoval);
+    // Don't hide splash here - let the app-ready event handler manage it
+    // Only ensure root is visible, but keep splash visible until app is ready
   } else {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
@@ -738,10 +737,8 @@ try {
         <App />
       </React.StrictMode>
     );
-    // Ensure splash is hidden immediately and after rendering
-    ensureSplashHidden();
-    setTimeout(ensureSplashHidden, TIMING_CONSTANTS.delays.splashScreenImmediate);
-    setTimeout(ensureSplashHidden, TIMING_CONSTANTS.delays.splashScreenRemoval);
+    // Don't hide splash here - let the app-ready event handler manage it
+    // Only ensure root is visible, but keep splash visible until app is ready
   }
 } catch (error) {
   console.error('Fatal error during app initialization:', error);
