@@ -587,7 +587,11 @@ function AppContent() {
 
 
 
-  if (isLoading) {
+  // Don't show loading screen if splash screen is still visible (prevents double loading screen)
+  const splashEl = typeof document !== 'undefined' ? document.getElementById('initial-splash') : null;
+  const splashVisible = splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden');
+  
+  if (isLoading && !splashVisible) {
     return (
       <div className="fixed inset-0 h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#E6D5F0] via-[#C9E4F7] to-[#B8E6D5] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 z-50">
         <div className="text-center px-4">

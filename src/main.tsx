@@ -592,9 +592,18 @@ if (isNative) {
       console.log('✅ App ready event received, checking if app is fully loaded...');
     }
     
-    // Wait for React to render and ensure app is fully loaded
+    // Wait for React to render and ensure app is fully loaded AND loading state is false
     const checkAndHide = () => {
-      if (isAppFullyLoaded()) {
+      // Check if app is fully rendered
+      const appRendered = isAppFullyLoaded();
+      
+      // Also check if LoadingContext has set isLoading to false
+      // We can check this by looking for the loading screen element or checking body class
+      const rootEl = document.getElementById('root');
+      const hasLoadingScreen = rootEl?.querySelector('.animate-spin'); // Loading spinner indicator
+      const isLoading = hasLoadingScreen !== null;
+      
+      if (appRendered && !isLoading) {
         if (import.meta.env.DEV) {
           console.log('✅ App is fully loaded and rendered, hiding splash screen');
         }
@@ -605,7 +614,7 @@ if (isNative) {
       } else {
         // App not fully loaded yet, check again
         if (import.meta.env.DEV) {
-          console.log('⏳ App ready but not fully rendered, checking again...');
+          console.log(`⏳ App ready but not fully rendered (rendered: ${appRendered}, loading: ${isLoading}), checking again...`);
         }
         setTimeout(checkAndHide, TIMING_CONSTANTS.delays.splashScreenPollInterval);
       }
