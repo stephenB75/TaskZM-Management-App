@@ -85,7 +85,7 @@ import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../l
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
-import { generateDescription, getSuggestivePhrases } from "../lib/description-generator";
+import { generateDescription } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import type {
@@ -583,13 +583,6 @@ export function TaskDialog({
   };
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [suggestivePhrases, setSuggestivePhrases] = useState<{
-    phrases: string[];
-    keywords: string[];
-    verbs: string[];
-    nouns: string[];
-    domain: string;
-  } | null>(null);
   const [status, setStatus] = useState<TaskStatus>("todo");
   const [priority, setPriority] =
     useState<TaskPriority>("medium");
@@ -2070,124 +2063,6 @@ export function TaskDialog({
                     rows={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.rows}
                     className={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.focusClassName}
                   />
-                  {/* AI Suggestions: Phrases, Keywords, Verbs, Nouns */}
-                  {title.trim() && (
-                    <div className="mt-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium text-muted-foreground">AI Writing Suggestions</Label>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            try {
-                              const suggestions = getSuggestivePhrases(title, description);
-                              setSuggestivePhrases(suggestions);
-                            } catch (error) {
-                              logger.warn('Failed to get suggestive phrases:', error);
-                            }
-                          }}
-                          className="h-6 px-2 text-xs"
-                          title="Get AI suggestions for writing"
-                        >
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          Get Suggestions
-                        </Button>
-                      </div>
-                      {suggestivePhrases && (
-                        <div className="space-y-2 p-2 bg-muted/30 rounded-md border border-primary/10">
-                          {suggestivePhrases.phrases.length > 0 && (
-                            <div>
-                              <Label className="text-xs font-semibold text-foreground mb-1 block">Phrases:</Label>
-                              <div className="flex flex-wrap gap-1">
-                                {suggestivePhrases.phrases.slice(0, 5).map((phrase, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="secondary"
-                                    className="cursor-pointer hover:bg-primary/10 text-xs"
-                                    onClick={() => {
-                                      const newDescription = description 
-                                        ? `${description} ${phrase}`
-                                        : phrase;
-                                      setDescription(newDescription);
-                                    }}
-                                  >
-                                    {phrase}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {suggestivePhrases.keywords.length > 0 && (
-                            <div>
-                              <Label className="text-xs font-semibold text-foreground mb-1 block">Keywords:</Label>
-                              <div className="flex flex-wrap gap-1">
-                                {suggestivePhrases.keywords.slice(0, 8).map((keyword, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className="cursor-pointer hover:bg-primary/10 text-xs"
-                                    onClick={() => {
-                                      const newDescription = description 
-                                        ? `${description} ${keyword}`
-                                        : keyword;
-                                      setDescription(newDescription);
-                                    }}
-                                  >
-                                    {keyword}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {suggestivePhrases.verbs.length > 0 && (
-                            <div>
-                              <Label className="text-xs font-semibold text-foreground mb-1 block">Verbs:</Label>
-                              <div className="flex flex-wrap gap-1">
-                                {suggestivePhrases.verbs.slice(0, 6).map((verb, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className="cursor-pointer hover:bg-primary/10 text-xs"
-                                    onClick={() => {
-                                      const newDescription = description 
-                                        ? `${description} ${verb}`
-                                        : verb;
-                                      setDescription(newDescription);
-                                    }}
-                                  >
-                                    {verb}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {suggestivePhrases.nouns.length > 0 && (
-                            <div>
-                              <Label className="text-xs font-semibold text-foreground mb-1 block">Nouns:</Label>
-                              <div className="flex flex-wrap gap-1">
-                                {suggestivePhrases.nouns.slice(0, 6).map((noun, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className="cursor-pointer hover:bg-primary/10 text-xs"
-                                    onClick={() => {
-                                      const newDescription = description 
-                                        ? `${description} ${noun}`
-                                        : noun;
-                                      setDescription(newDescription);
-                                    }}
-                                  >
-                                    {noun}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {/* AI Task Breakdown Panel - Simplified (no action plan, inline components) */}
