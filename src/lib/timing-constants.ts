@@ -24,10 +24,10 @@ export const TIMING_CONSTANTS = {
     splashScreenAggressive: 6000, // Aggressive fallback to force hide splash (increased to ensure app is fully loaded)
     splashScreenRemoval: 500, // Delay before removing splash element from DOM
     splashScreenImmediate: 100, // Immediate fallback delay for splash hiding
-    splashScreenMinDisplay: 1500, // Minimum time splash screen should be visible (ensures smooth transition)
-    splashScreenPostReadyDelay: 300, // Delay after app-ready event before hiding (ensures React has rendered)
-    splashScreenPollInterval: 100, // Interval for polling if app is fully loaded (ms)
-    splashScreenMinContentLength: 100, // Minimum innerHTML length (chars) to consider React content rendered
+    splashScreenMinDisplay: 2000, // Minimum time splash screen should be visible (increased to ensure app loads)
+    splashScreenPostReadyDelay: 500, // Delay after app-ready event before hiding (increased to ensure React has fully rendered)
+    splashScreenPollInterval: 150, // Interval for polling if app is fully loaded (ms) - increased for better reliability
+    splashScreenMinContentLength: 500, // Minimum innerHTML length (chars) to consider React content rendered (increased for more reliable detection)
     revenueCat: 100, // RevenueCat processing delay
     notificationCheck: 100, // Notification check delay after task update
     throttle: 1000, // Throttle delay for activity tracking
