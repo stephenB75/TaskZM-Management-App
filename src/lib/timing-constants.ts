@@ -19,11 +19,13 @@ export const TIMING_CONSTANTS = {
     aiScheduler: 100, // AI scheduler processing delay
     taskContext: 1000, // Task context update delay
     splashScreen: [100, 200, 800], // Splash screen animation delays (optimized for faster loading)
-    splashScreenFallback: 1500, // Fallback delay to hide splash screen (reduced from 3000ms)
-    splashScreenFinal: 2000, // Final fallback delay to hide splash screen (reduced from 3500ms)
-    splashScreenAggressive: 3000, // Aggressive fallback to force hide splash (reduced from 5000ms)
+    splashScreenFallback: 2000, // Fallback delay to hide splash screen (increased to ensure app loads)
+    splashScreenFinal: 4000, // Final fallback delay to hide splash screen (increased to ensure full render)
+    splashScreenAggressive: 6000, // Aggressive fallback to force hide splash (increased to ensure app is fully loaded)
     splashScreenRemoval: 500, // Delay before removing splash element from DOM
     splashScreenImmediate: 100, // Immediate fallback delay for splash hiding
+    splashScreenMinDisplay: 1500, // Minimum time splash screen should be visible (ensures smooth transition)
+    splashScreenPostReadyDelay: 300, // Delay after app-ready event before hiding (ensures React has rendered)
     revenueCat: 100, // RevenueCat processing delay
     notificationCheck: 100, // Notification check delay after task update
     throttle: 1000, // Throttle delay for activity tracking
