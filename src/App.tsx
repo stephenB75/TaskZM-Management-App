@@ -587,9 +587,64 @@ function AppContent() {
 
 
 
+  // Track if app is fully rendered and interactive (not just data loaded)
+  const [isAppRendered, setIsAppRendered] = React.useState(false);
+  
+  // Check if app is fully rendered and interactive
+  React.useEffect(() => {
+    if (isLoading) {
+      // Still loading data, don't check yet
+      setIsAppRendered(false);
+      return;
+    }
+    
+    // Data is loaded, now check if React has fully rendered and app is interactive
+    const checkAppReady = () => {
+      const rootEl = document.getElementById('root');
+      if (!rootEl) {
+        setIsAppRendered(false);
+        return;
+      }
+      
+      // Check for meaningful content
+      const innerHTML = rootEl.innerHTML.trim();
+      const hasContent = rootEl.children.length > 0 || 
+                        innerHTML.length > TIMING_CONSTANTS.delays.splashScreenMinContentLength;
+      
+      // Check for interactive elements
+      const hasInteractive = rootEl.querySelector('button, a, [role="button"], input, select, textarea, [data-testid], [onclick]') !== null;
+      
+      // Check for app-specific elements
+      const hasAppElements = rootEl.querySelector('[class*="sidebar"], [class*="dashboard"], [class*="kanban"], [class*="view"], [class*="panel"]') !== null ||
+                           rootEl.querySelector('nav, header, main, section, aside') !== null;
+      
+      const isReady = hasContent && hasInteractive && hasAppElements;
+      
+      if (isReady) {
+        // Add a small delay to ensure smooth transition
+        setTimeout(() => {
+          setIsAppRendered(true);
+        }, 300);
+      } else {
+        // Check again after a short delay
+        setTimeout(checkAppReady, 100);
+      }
+    };
+    
+    // Use requestAnimationFrame to ensure React has rendered
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        checkAppReady();
+      });
+    });
+  }, [isLoading]);
+  
+  // Show loading screen if data is loading OR app is not yet rendered/interactive
+  const showLoadingScreen = isLoading || !isAppRendered;
+  
   // If loading, show React loading screen (which properly loads images via imports)
-  // React loading screen stays visible until isLoading is false (app is fully loaded and ready)
-  if (isLoading) {
+  // React loading screen stays visible until isLoading is false AND app is fully rendered and interactive
+  if (showLoadingScreen) {
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
     
