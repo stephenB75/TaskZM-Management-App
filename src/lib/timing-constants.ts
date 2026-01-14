@@ -26,6 +26,7 @@ export const TIMING_CONSTANTS = {
     splashScreenImmediate: 100, // Immediate fallback delay for splash hiding
     splashScreenMinDisplay: 1500, // Minimum time splash screen should be visible (ensures smooth transition)
     splashScreenPostReadyDelay: 300, // Delay after app-ready event before hiding (ensures React has rendered)
+    splashScreenPollInterval: 100, // Interval for polling if app is fully loaded (ms)
     revenueCat: 100, // RevenueCat processing delay
     notificationCheck: 100, // Notification check delay after task update
     throttle: 1000, // Throttle delay for activity tracking

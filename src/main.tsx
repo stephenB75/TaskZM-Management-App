@@ -607,7 +607,7 @@ if (isNative) {
         if (import.meta.env.DEV) {
           console.log('⏳ App ready but not fully rendered, checking again...');
         }
-        setTimeout(checkAndHide, 100);
+        setTimeout(checkAndHide, TIMING_CONSTANTS.delays.splashScreenPollInterval);
       }
     };
     
