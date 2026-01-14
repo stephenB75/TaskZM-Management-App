@@ -679,18 +679,18 @@ export const TASK_CARD_DROPDOWN_DOMAIN_COLORS: Record<string, { light: string; d
   },
 } as const;
 
-// Badge colors for Description, Subtasks, and Dependencies (different colors for each)
+// Badge colors for Description, Subtasks, and Dependencies (light grey background for all)
 export const TASK_CARD_DROPDOWN_BADGE_COLORS = {
   description: {
-    background: COLOR_PASTEL_LAVENDER, // Lavender for Description badge
+    background: COLOR_BACKGROUND_GRAY, // Light grey for Description badge
     text: COLOR_TEXT_PRIMARY, // Dark text on light background
   },
   subtasks: {
-    background: COLOR_PASTEL_PINK, // Pink for Subtasks badge
+    background: COLOR_BACKGROUND_GRAY, // Light grey for Subtasks badge
     text: COLOR_TEXT_PRIMARY, // Dark text on light background
   },
   dependencies: {
-    background: COLOR_PASTEL_LILAC, // Lilac for Dependencies badge
+    background: COLOR_BACKGROUND_GRAY, // Light grey for Dependencies badge
     text: COLOR_TEXT_PRIMARY, // Dark text on light background
   },
 } as const;
