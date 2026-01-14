@@ -487,7 +487,7 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
       // Silently fail if verification module has issues
       console.debug('PWA verification skipped:', error);
     }
-  }, 2000);
+  }, TIMING_CONSTANTS.delays.splashScreenFallback);
 }
 
 // Platform-specific initialization
@@ -501,7 +501,7 @@ if (isNative) {
   // Hide Capacitor native splash screen after app loads
   setTimeout(() => {
     SplashScreen.hide().catch(console.error);
-  }, 2000);
+  }, TIMING_CONSTANTS.delays.splashScreenFallback);
 } else {
   // WEB PLATFORM
   // Only use HTML splash with user's logo - completely disable Capacitor splash

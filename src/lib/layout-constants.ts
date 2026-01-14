@@ -513,6 +513,8 @@ export const Z_INDEX = {
   TIME_INDICATOR: 50, // z-50 - Used in TodayAgendaView for current time indicator
   DRAG_DROP: 99999, // z-99999 - Used in DragDropContext for drag overlay
   NAVIGATION_MENU: 1, // z-[1] - Used in navigation-menu component
+  SPLASH_SCREEN: 999999, // z-999999 - Used in index.html for initial splash screen (must be highest)
+  SPLASH_HIDDEN: -1, // z--1 - Used when splash screen is hidden
 } as const;
 
 // Max Height Constants
