@@ -432,43 +432,72 @@
     
     <script>
       function handleSplashLogoError(img) {
-        // Silently handle logo errors - don't spam console
-        // Try to reload with fresh timestamp first
-        var retrySrc = '/taskzm-logo.png?v=' + Date.now();
-        var retryImg = new Image();
-        retryImg.onload = function() {
-          img.src = retrySrc;
-          img.style.opacity = '1';
-          img.style.visibility = 'visible';
-          img.style.display = 'block';
-        };
-        retryImg.onerror = function() {
-          // Final fallback: show text instead of wrong icon
-          var splashEl = document.getElementById('initial-splash');
-          if (splashEl && img.parentNode) {
-            // Try one more time - ensure image is visible with all styles
-            img.style.setProperty('display', 'block', 'important');
-            img.style.setProperty('visibility', 'visible', 'important');
-            img.style.setProperty('opacity', '1', 'important');
-            img.style.setProperty('width', 'auto', 'important');
-            img.style.setProperty('height', 'min(12rem, 20vw)', 'important');
-            img.style.setProperty('max-width', '660px', 'important');
-            img.style.setProperty('max-height', '15rem', 'important');
-            
-            // Only show text fallback if image still fails after delay
-            setTimeout(function() {
-              if (img.naturalWidth === 0 || img.naturalHeight === 0 || !img.complete) {
-                var textFallback = document.createElement('div');
-                textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:var(--primary, #7B68EE);text-align:center;font-family:system-ui,-apple-system,sans-serif;margin:0 auto 1.5rem auto;'; /* COLOR_PRIMARY_DARK / APP_TEXT_FALLBACK_COLOR: #7B68EE */
-                textFallback.textContent = 'TaskZM';
-                if (img.parentNode) {
-                  img.parentNode.replaceChild(textFallback, img);
-                }
-              }
-            }, 2000);
+        // Try multiple paths to find the logo
+        var paths = [
+          '/taskzm-logo.png',
+          './taskzm-logo.png',
+          'taskzm-logo.png',
+          '/taskzm-logo.png?v=' + Date.now(),
+          './taskzm-logo.png?v=' + Date.now()
+        ];
+        var currentPathIndex = 0;
+        
+        function tryNextPath() {
+          if (currentPathIndex >= paths.length) {
+            // All paths failed - show text fallback
+            showTextFallback(img);
+            return;
           }
-        };
-        retryImg.src = retrySrc;
+          
+          var retrySrc = paths[currentPathIndex];
+          var retryImg = new Image();
+          
+          retryImg.onload = function() {
+            // Success! Update the original image
+            img.src = retrySrc;
+            img.style.setProperty('opacity', '1', 'important');
+            img.style.setProperty('visibility', 'visible', 'important');
+            img.style.setProperty('display', 'block', 'important');
+          };
+          
+          retryImg.onerror = function() {
+            // This path failed, try the next one
+            currentPathIndex++;
+            tryNextPath();
+          };
+          
+          // Try loading the image
+          retryImg.src = retrySrc;
+        }
+        
+        // Start trying paths
+        tryNextPath();
+      }
+      
+      function showTextFallback(img) {
+        var splashEl = document.getElementById('initial-splash');
+        if (splashEl && img.parentNode) {
+          // Try one more time - ensure image is visible with all styles
+          img.style.setProperty('display', 'block', 'important');
+          img.style.setProperty('visibility', 'visible', 'important');
+          img.style.setProperty('opacity', '1', 'important');
+          img.style.setProperty('width', 'auto', 'important');
+          img.style.setProperty('height', 'min(12rem, 20vw)', 'important');
+          img.style.setProperty('max-width', '660px', 'important');
+          img.style.setProperty('max-height', '15rem', 'important');
+          
+          // Only show text fallback if image still fails after delay
+          setTimeout(function() {
+            if (img.naturalWidth === 0 || img.naturalHeight === 0 || !img.complete) {
+              var textFallback = document.createElement('div');
+              textFallback.style.cssText = 'font-size:min(8vw, 48px);font-weight:bold;color:var(--primary, #7B68EE);text-align:center;font-family:system-ui,-apple-system,sans-serif;margin:0 auto 1.5rem auto;'; /* COLOR_PRIMARY_DARK / APP_TEXT_FALLBACK_COLOR: #7B68EE */
+              textFallback.textContent = 'TaskZM';
+              if (img.parentNode) {
+                img.parentNode.replaceChild(textFallback, img);
+              }
+            }
+          }, 2000);
+        }
       }
       
       // Ensure logo is visible immediately and stays visible
