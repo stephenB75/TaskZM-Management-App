@@ -550,7 +550,7 @@ export const AUTH_SCREEN = {
       bottom: '1.5rem', // pb-6 = 1.5rem (24px) - increased bottom padding to prevent touching screen
     },
     logo: {
-      width: '120px', // w-[120px] - smaller for mobile to fit viewport
+      width: '180px', // w-[180px] - increased by 50% from 120px (120 * 1.5 = 180)
       maxWidth: '90%', // max-w-[90%] - ensure logo doesn't exceed viewport
     },
     card: {
@@ -588,7 +588,7 @@ export const AUTH_SCREEN = {
       bottom: '2rem', // pb-8 = 2rem (32px) - increased bottom padding to prevent touching screen
     },
     logo: {
-      width: '180px', // w-[180px] - medium size for tablets
+      width: '270px', // w-[270px] - increased by 50% from 180px (180 * 1.5 = 270)
       maxWidth: '100%',
     },
     card: {
@@ -616,7 +616,7 @@ export const AUTH_SCREEN = {
       bottom: '2rem', // pb-8 = 2rem (32px) - increased bottom padding to prevent touching screen
     },
     logo: {
-      width: '220px', // w-[220px] - optimized for desktop
+      width: '330px', // w-[330px] - increased by 50% from 220px (220 * 1.5 = 330)
     },
     card: {
       maxWidth: '28rem', // max-w-md = 28rem (448px) - standard dialog width
@@ -660,8 +660,8 @@ export const DIALOG_CLOSE_BUTTON = {
 // Component Dimensions
 export const COMPONENT_DIMENSIONS = {
   settingsPanel: {
-    logoWidth: 'w-[225px]', // Logo width for about section - 25% larger (180px * 1.25 = 225px)
-    logoWidthMobile: 'w-[175px]', // Smaller logo for mobile devices - 25% larger (140px * 1.25 = 175px)
+    logoWidth: 'w-[337.5px]', // Logo width for about section - increased by 50% from 225px (225 * 1.5 = 337.5)
+    logoWidthMobile: 'w-[262.5px]', // Smaller logo for mobile devices - increased by 50% from 175px (175 * 1.5 = 262.5)
   },
   notificationsPanel: {
     selectWidth: 'w-full sm:w-[180px]',
