@@ -51,7 +51,7 @@ import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, LOADING_SCREEN_LOGO } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, LOADING_SCREEN_LOGO, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
@@ -587,15 +587,87 @@ function AppContent() {
 
 
 
-  // Don't show app content if still loading - keep HTML splash visible instead
-  // The HTML splash screen handles all loading states and stays visible until everything is ready
-  const splashEl = typeof document !== 'undefined' ? document.getElementById('initial-splash') : null;
-  const splashVisible = splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden');
-  
-  // If loading, don't render anything (keep HTML splash screen visible)
-  // The HTML splash screen will hide automatically when everything is ready via main.tsx
+  // If loading, show React loading screen (which properly loads images via imports)
+  // React loading screen stays visible until isLoading is false (app is fully loaded and ready)
   if (isLoading) {
-    return null; // Return null to keep HTML splash screen visible
+    const { actualTheme } = useTheme();
+    const isDark = actualTheme === 'dark';
+    
+    return (
+      <div className="fixed inset-0 h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950" style={{ zIndex: REACT_LOADING_SCREEN.zIndex }}>
+        <div className="flex flex-col items-center justify-center space-y-6">
+          {/* Logo */}
+          <img
+            src={isDark ? logoImageGray : logoImageBlack}
+            alt={SPLASH_SCREEN_TEXT.logoAlt}
+            className="object-contain"
+            style={{
+              width: 'auto',
+              height: LOADING_SCREEN_LOGO.height.mobile,
+              maxWidth: LOADING_SCREEN_LOGO.maxWidth,
+              maxHeight: LOADING_SCREEN_LOGO.height.desktop,
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+            }}
+            onError={(e) => {
+              // Fallback if image fails
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = document.createElement('div');
+              fallback.textContent = SPLASH_SCREEN_TEXT.fallbackText;
+              fallback.style.cssText = `font-size: min(8vw, 48px); font-weight: bold; color: var(--primary, ${APP_TEXT_FALLBACK_COLOR}); text-align: center;`;
+              target.parentNode?.appendChild(fallback);
+            }}
+          />
+          
+          {/* Dual Spinner */}
+          <div className="relative w-12 h-12 md:w-16 md:h-16">
+            {/* Outer spinner */}
+            <div
+              className="absolute inset-0 border-4 rounded-full animate-spin"
+              style={{
+                borderTopColor: 'var(--primary, #9B87E8)',
+                borderRightColor: 'var(--pastel-lavender, #E6D5F0)',
+                borderBottomColor: 'var(--pastel-lavender, #E6D5F0)',
+                borderLeftColor: 'var(--pastel-lavender, #E6D5F0)',
+                display: 'block',
+                visibility: 'visible',
+                opacity: 1,
+                animationDuration: REACT_LOADING_SCREEN.spinner.outer.animationDuration,
+              }}
+            />
+            {/* Inner spinner */}
+            <div
+              className="absolute inset-0 border-4 rounded-full animate-spin"
+              style={{
+                borderTopColor: 'transparent',
+                borderRightColor: 'var(--pastel-sky, #C9E4F7)',
+                borderBottomColor: 'var(--pastel-sky, #C9E4F7)',
+                borderLeftColor: 'var(--pastel-sky, #C9E4F7)',
+                animationDirection: REACT_LOADING_SCREEN.spinner.inner.animationDirection,
+                animationDuration: REACT_LOADING_SCREEN.spinner.inner.animationDuration,
+                display: 'block',
+                visibility: 'visible',
+                opacity: 1,
+              }}
+            />
+          </div>
+          
+          {/* Loading message */}
+          <p className="text-sm md:text-base font-medium text-foreground">
+            {loadingMessage || SPLASH_SCREEN_TEXT.loadingMessage}
+          </p>
+          
+          {/* Loading dots */}
+          <div className="flex gap-1">
+            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.first }} />
+            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.second }} />
+            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.third }} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {

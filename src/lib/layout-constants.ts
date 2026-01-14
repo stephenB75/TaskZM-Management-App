@@ -466,6 +466,27 @@ export const SPLASH_SCREEN_TEXT = {
   fallbackText: 'TaskZM',
 } as const;
 
+// React Loading Screen Constants
+export const REACT_LOADING_SCREEN = {
+  zIndex: 999999, // z-index for React loading screen overlay
+  spinner: {
+    outer: {
+      animationDuration: '1s',
+    },
+    inner: {
+      animationDuration: '1.5s',
+      animationDirection: 'reverse' as const,
+    },
+  },
+  dots: {
+    animationDelays: {
+      first: '0ms',
+      second: '150ms',
+      third: '300ms',
+    },
+  },
+} as const;
+
 // Loading Screen Constants
 // Base values for loading screen logo
 const LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE = '4rem'; // h-16 = 4rem (64px) - Base mobile logo height
