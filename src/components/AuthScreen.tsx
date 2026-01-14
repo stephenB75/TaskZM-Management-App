@@ -507,6 +507,7 @@ export function AuthScreen() {
             variants={itemVariants}
             style={{
               marginBottom: spacing.brandingMarginBottom,
+              marginTop: '-0.5rem', // Reduce space above branding section
             } as React.CSSProperties}
           >
             <motion.div className="flex flex-col items-center w-full" variants={logoVariants}>
@@ -530,8 +531,8 @@ export function AuthScreen() {
                   width: logo.width,
                   maxWidth: logo.maxWidth || '100%',
                   height: 'auto',
-                  marginTop: '-0.5rem', // Negative margin to reduce space above
-                  marginBottom: spacing.logoMarginBottom,
+                  marginTop: '-1rem', // Increased negative margin to reduce space above
+                  marginBottom: '-0.5rem', // Negative margin to reduce space below
                   paddingTop: '0', // No padding above logo
                   paddingBottom: '0', // No padding below logo
                   display: 'block', // Remove inline spacing
