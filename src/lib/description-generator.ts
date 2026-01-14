@@ -1898,22 +1898,24 @@ function buildElaborateContextualDescription(
         const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
           ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
           : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-        // If verb form already includes "to", don't add connector
-        if (verbForm.startsWith('to ')) {
+        // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+        if (verbForm) {
           description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
         } else {
-          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
+          // If verb form is empty (was a noun), use phrase with nouns directly
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
         }
       } else if (actionVerb && relevantKeywords.length > 0) {
         const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
         const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
           ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
           : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-        // If verb form already includes "to", adjust connector
-        if (verbForm.startsWith('to ')) {
+        // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+        if (verbForm) {
           description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
         } else {
-          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+          // If verb form is empty (was a noun), use phrase with keywords directly
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
         }
       } else if (phraseHasAction) {
         const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
@@ -1926,7 +1928,13 @@ function buildElaborateContextualDescription(
           : `${templateOpener} ${cleanedPhrase.toLowerCase()}.`;
       } else if (actionVerb) {
         const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
-        description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()}.`;
+        // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+        if (verbForm) {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()}.`;
+        } else {
+          // If verb form is empty (was a noun), just use the phrase with template
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()}.`;
+        }
       } else if (contextNouns.length > 0) {
         const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                          contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
@@ -1990,15 +1998,30 @@ function buildElaborateContextualDescription(
     const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                      contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
     
-    if (relevantKeywords.length > 0) {
-      const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
-                          relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-      const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-        ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-        : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-      description = `${templateOpener} ${verbForm} ${nounsList} ${connector} ${keywordsList}.`;
+    // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+    if (verbForm) {
+      if (relevantKeywords.length > 0) {
+        const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
+                            relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
+          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+        description = `${templateOpener} ${verbForm} ${nounsList} ${connector} ${keywordsList}.`;
+      } else {
+        description = `${templateOpener} ${verbForm} ${nounsList}.`;
+      }
     } else {
-      description = `${templateOpener} ${verbForm} ${nounsList}.`;
+      // If verb form is empty (was a noun), build sentence without verb form
+      if (relevantKeywords.length > 0) {
+        const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
+                            relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
+          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+        description = `${templateOpener} ${nounsList} ${connector} ${keywordsList}.`;
+      } else {
+        description = `${templateOpener} ${nounsList}.`;
+      }
     }
   }
   // PRIORITY 4: Build sentence using extracted phrases + domain terminology + keywords
@@ -2064,18 +2087,36 @@ function buildElaborateContextualDescription(
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
         const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
         
-        if (contextNouns.length > 0) {
-          const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-            ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
-            : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-          description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
-        } else if (relevantKeywords.length > 0) {
-          const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-            ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-            : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-          description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+        // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+        if (verbForm) {
+          if (contextNouns.length > 0) {
+            const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+              ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
+              : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
+            description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
+          } else if (relevantKeywords.length > 0) {
+            const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+              ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
+              : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+            description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+          } else {
+            description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()}.`;
+          }
         } else {
-          description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()}.`;
+          // If verb form is empty (was a noun), build sentence without verb form
+          if (contextNouns.length > 0) {
+            const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+              ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
+              : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
+            description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
+          } else if (relevantKeywords.length > 0) {
+            const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+              ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
+              : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+            description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+          } else {
+            description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()}.`;
+          }
         }
       } else {
         if (contextNouns.length > 0) {
@@ -2122,14 +2163,28 @@ function buildElaborateContextualDescription(
     const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
     const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
     
-    if (relevantKeywords.length > 0) {
-      const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-      const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-        ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-        : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-      description = `${templateOpener} ${verbForm} ${nounsList} ${connector} ${keywordsList}.`;
+    // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+    if (verbForm) {
+      if (relevantKeywords.length > 0) {
+        const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
+          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+        description = `${templateOpener} ${verbForm} ${nounsList} ${connector} ${keywordsList}.`;
+      } else {
+        description = `${templateOpener} ${verbForm} ${nounsList}.`;
+      }
     } else {
-      description = `${templateOpener} ${verbForm} ${nounsList}.`;
+      // If verb form is empty (was a noun), build sentence without verb form
+      if (relevantKeywords.length > 0) {
+        const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
+          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
+          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+        description = `${templateOpener} ${nounsList} ${connector} ${keywordsList}.`;
+      } else {
+        description = `${templateOpener} ${nounsList}.`;
+      }
     }
   }
   // PRIORITY 5: Build sentence using verbs + keywords
@@ -2152,15 +2207,33 @@ function buildElaborateContextualDescription(
     const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
     
     const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
-    if (relevantKeywords.length > 0) {
-      const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-      description = `${templateOpener} ${verbForm} ${keywordsList}.`;
-    } else {
-      // Use domain nouns if available
-      if (elaboratingNouns.length > 0) {
-        description = `${templateOpener} ${verbForm} ${elaboratingNouns[0]}.`;
+    // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+    if (verbForm) {
+      if (relevantKeywords.length > 0) {
+        const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${templateOpener} ${verbForm} ${keywordsList}.`;
       } else {
-        description = `${templateOpener} ${verbForm}.`;
+        // Use domain nouns if available
+        if (elaboratingNouns.length > 0) {
+          description = `${templateOpener} ${verbForm} ${elaboratingNouns[0]}.`;
+        } else {
+          description = `${templateOpener} ${verbForm}.`;
+        }
+      }
+    } else {
+      // If verb form is empty (was a noun), build sentence without verb form
+      if (relevantKeywords.length > 0) {
+        const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
+        description = `${templateOpener} ${keywordsList}.`;
+      } else {
+        // Use domain nouns if available
+        if (elaboratingNouns.length > 0) {
+          description = `${templateOpener} ${elaboratingNouns[0]}.`;
+        } else {
+          // Fallback: use domain guidance
+          const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+          description = `${templateOpener} ${domainGuidance.toLowerCase()}.`;
+        }
       }
     }
   }
@@ -2893,18 +2966,35 @@ export async function generateDescription(
   // Additional cleaning pass: remove any remaining fragments that might have been missed
   finalDescription = cleanText(finalDescription).trim();
   
-  // Remove duplicate words/phrases that might have been created during cleaning
-  const words = finalDescription.split(/\s+/);
-  const uniqueWords: string[] = [];
-  const seenWords = new Set<string>();
-  for (const word of words) {
-    const wordLower = word.toLowerCase();
-    if (!seenWords.has(wordLower) && word.length > 0) {
-      seenWords.add(wordLower);
-      uniqueWords.push(word);
+  // ENHANCED: Remove only truly duplicate consecutive words/phrases, not all duplicates
+  // This preserves sentence structure while removing actual duplicates
+  // Split into sentences first to preserve sentence boundaries
+  const sentences = finalDescription.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const cleanedSentences: string[] = [];
+  
+  for (const sentence of sentences) {
+    const words = sentence.trim().split(/\s+/);
+    const cleanedWords: string[] = [];
+    let lastWord = '';
+    
+    // Only remove consecutive duplicate words (e.g., "the the" -> "the")
+    for (const word of words) {
+      const wordLower = word.toLowerCase();
+      // Only skip if it's the same as the previous word (consecutive duplicate)
+      if (wordLower !== lastWord.toLowerCase() || word.length === 0) {
+        cleanedWords.push(word);
+        lastWord = word;
+      }
+    }
+    
+    const cleanedSentence = cleanedWords.join(' ').trim();
+    if (cleanedSentence.length > 0) {
+      cleanedSentences.push(cleanedSentence);
     }
   }
-  finalDescription = uniqueWords.join(' ').trim();
+  
+  // Rejoin sentences with proper punctuation
+  finalDescription = cleanedSentences.join('. ').trim();
   
   // Final validation: ensure description is meaningful
   if (!finalDescription || finalDescription.length === 0) {

@@ -165,12 +165,15 @@ export function analyzeDescription(
     complexity = 'moderate';
   }
 
-  // Generate enhanced description
+  // Generate enhanced description (pass all extracted terms for better suggestions)
   const { enhanced, suggestions, addedContext } = enhanceDescription(
     original,
     domain,
     uniqueKeywords,
-    primaryVerb
+    primaryVerb,
+    uniquePhrases,
+    uniqueVerbs,
+    uniqueNouns
   );
 
   logger.debug('AI Analyzer: Enhanced extraction', {
@@ -198,21 +201,25 @@ export function analyzeDescription(
 
 /**
  * Enhance description with domain-specific context and suggestions
+ * ENHANCED: Now uses phrases, verbs, and nouns for more contextual suggestions
  */
 function enhanceDescription(
   original: string,
   domain: Domain,
   keywords: string[],
-  primaryVerb: string
+  primaryVerb: string,
+  phrases?: string[],
+  verbs?: string[],
+  nouns?: string[]
 ): {
   enhanced: string;
   suggestions: string[];
   addedContext: string[];
 } {
   if (!original || original.trim().length === 0) {
-    // For empty descriptions, suggest based on domain
+    // For empty descriptions, suggest based on domain and available terms
     const terminology = getDomainTerminology(domain);
-    const suggestions = generateDomainSuggestions(domain, terminology);
+    const suggestions = generateDomainSuggestions(domain, terminology, keywords, phrases, verbs, nouns);
     return {
       enhanced: original,
       suggestions,
@@ -222,14 +229,27 @@ function enhanceDescription(
 
   const suggestions: string[] = [];
   const addedContext: string[] = [];
+  const originalLower = original.toLowerCase();
+
+  // ENHANCED: Use phrases, verbs, and nouns for more contextual suggestions
+  const allKeywords = [...keywords, ...(phrases || []), ...(verbs || []), ...(nouns || [])];
+  const hasJobKeywords = allKeywords.some(k => ['job', 'work', 'employment', 'hours', 'time', 'log', 'login', 'platform'].includes(k.toLowerCase()));
+  const hasLoginKeywords = allKeywords.some(k => ['login', 'log', 'access', 'account', 'password'].includes(k.toLowerCase()));
+  const hasTimeKeywords = allKeywords.some(k => ['time', 'hours', 'duration', 'schedule', 'track'].includes(k.toLowerCase()));
 
   // Domain-specific enhancements
   switch (domain) {
     case 'business':
-      if (!original.toLowerCase().includes('deadline') && keywords.some(k => ['project', 'report', 'presentation'].includes(k))) {
+      if (hasJobKeywords && hasLoginKeywords && !originalLower.includes('platform')) {
+        suggestions.push('Specify which platform or system you need to log into');
+      }
+      if (hasTimeKeywords && hasJobKeywords && !originalLower.includes('track') && !originalLower.includes('record')) {
+        suggestions.push('Clarify what information needs to be tracked or recorded');
+      }
+      if (!originalLower.includes('deadline') && keywords.some(k => ['project', 'report', 'presentation'].includes(k.toLowerCase()))) {
         suggestions.push('Consider adding a deadline or timeline');
       }
-      if (!original.toLowerCase().includes('stakeholder') && keywords.some(k => ['client', 'team', 'project'].includes(k))) {
+      if (!originalLower.includes('stakeholder') && keywords.some(k => ['client', 'team', 'project'].includes(k.toLowerCase()))) {
         suggestions.push('Mention key stakeholders or participants');
       }
       if (primaryVerb === 'present' || primaryVerb === 'meet') {
@@ -238,42 +258,54 @@ function enhanceDescription(
       break;
 
     case 'home':
-      if (keywords.some(k => ['repair', 'maintenance', 'fix'].includes(k))) {
+      if (keywords.some(k => ['repair', 'maintenance', 'fix'].includes(k.toLowerCase()))) {
         suggestions.push('List any supplies or tools needed');
       }
-      if (keywords.some(k => ['cleaning', 'organize'].includes(k))) {
+      if (keywords.some(k => ['cleaning', 'organize'].includes(k.toLowerCase()))) {
         suggestions.push('Specify which areas or rooms');
       }
-      if (keywords.some(k => ['cooking', 'meal'].includes(k))) {
+      if (keywords.some(k => ['cooking', 'meal'].includes(k.toLowerCase()))) {
         suggestions.push('Include ingredients or recipe details');
       }
       break;
 
     case 'personal':
-      if (keywords.some(k => ['exercise', 'workout', 'fitness'].includes(k))) {
+      if (hasJobKeywords && hasLoginKeywords) {
+        suggestions.push('Specify the platform name and what information to log');
+      }
+      if (hasTimeKeywords && hasJobKeywords) {
+        suggestions.push('Clarify the time period or hours to be tracked');
+      }
+      if (keywords.some(k => ['exercise', 'workout', 'fitness'].includes(k.toLowerCase()))) {
         suggestions.push('Specify duration or type of workout');
       }
-      if (keywords.some(k => ['travel', 'trip'].includes(k))) {
+      if (keywords.some(k => ['travel', 'trip'].includes(k.toLowerCase()))) {
         suggestions.push('Include destination or travel details');
       }
-      if (keywords.some(k => ['learning', 'course', 'study'].includes(k))) {
+      if (keywords.some(k => ['learning', 'course', 'study'].includes(k.toLowerCase()))) {
         suggestions.push('Mention specific topics or resources');
       }
       break;
 
     case 'world':
-      if (keywords.some(k => ['travel', 'trip', 'journey'].includes(k))) {
+      if (keywords.some(k => ['travel', 'trip', 'journey'].includes(k.toLowerCase()))) {
         suggestions.push('Include time zones and cultural considerations');
       }
-      if (keywords.some(k => ['call', 'meeting', 'conference'].includes(k))) {
+      if (keywords.some(k => ['call', 'meeting', 'conference'].includes(k.toLowerCase()))) {
         suggestions.push('Specify time zone for international coordination');
       }
       break;
   }
 
-  // General enhancements
+  // General enhancements based on content
   if (original.length < DESCRIPTION_COMPLEXITY_THRESHOLDS.MIN_DESCRIPTION_LENGTH) {
-    suggestions.push('Add more details to help with task planning');
+    if (hasJobKeywords && hasLoginKeywords) {
+      suggestions.push('Add details about the login process and what needs to be tracked');
+    } else if (hasTimeKeywords) {
+      suggestions.push('Specify the time period or duration details');
+    } else {
+      suggestions.push('Add more details to help with task planning');
+    }
   }
 
   if (!original.includes('?') && !original.includes('.')) {
@@ -292,17 +324,37 @@ function enhanceDescription(
 
 /**
  * Generate domain-specific suggestions for empty descriptions
+ * ENHANCED: Now uses extracted terms for more contextual suggestions
  */
 function generateDomainSuggestions(
   domain: Domain,
-  terminology: ReturnType<typeof getDomainTerminology>
+  terminology: ReturnType<typeof getDomainTerminology>,
+  keywords?: string[],
+  phrases?: string[],
+  verbs?: string[],
+  nouns?: string[]
 ): string[] {
   const suggestions: string[] = [];
+  const allTerms = [...(keywords || []), ...(phrases || []), ...(verbs || []), ...(nouns || [])];
+  const hasJobTerms = allTerms.some(t => ['job', 'work', 'employment', 'hours', 'time', 'log', 'login', 'platform', 'part', 'time'].includes(t.toLowerCase()));
+  const hasLoginTerms = allTerms.some(t => ['login', 'log', 'access', 'account', 'password'].includes(t.toLowerCase()));
+
+  // Context-aware suggestions based on extracted terms
+  if (hasJobTerms && hasLoginTerms) {
+    suggestions.push('Specify the platform name and login credentials needed');
+    suggestions.push('Clarify what hours or information need to be logged');
+    return suggestions;
+  }
 
   switch (domain) {
     case 'business':
-      suggestions.push('Add project context, stakeholders, and deadlines');
-      suggestions.push('Include meeting participants or deliverables');
+      if (hasJobTerms) {
+        suggestions.push('Specify the platform or system to access');
+        suggestions.push('Clarify what information needs to be tracked or recorded');
+      } else {
+        suggestions.push('Add project context, stakeholders, and deadlines');
+        suggestions.push('Include meeting participants or deliverables');
+      }
       break;
 
     case 'home':
@@ -311,8 +363,13 @@ function generateDomainSuggestions(
       break;
 
     case 'personal':
-      suggestions.push('Add duration, location, or specific goals');
-      suggestions.push('Include any preparation or resources needed');
+      if (hasJobTerms) {
+        suggestions.push('Specify the job platform and login process');
+        suggestions.push('Clarify what hours or time needs to be tracked');
+      } else {
+        suggestions.push('Add duration, location, or specific goals');
+        suggestions.push('Include any preparation or resources needed');
+      }
       break;
 
     case 'world':
@@ -321,8 +378,13 @@ function generateDomainSuggestions(
       break;
 
     default:
-      suggestions.push('Add details about what needs to be done');
-      suggestions.push('Include any constraints, deadlines, or requirements');
+      if (hasJobTerms || hasLoginTerms) {
+        suggestions.push('Specify the platform and what needs to be logged');
+        suggestions.push('Clarify the time period or hours to track');
+      } else {
+        suggestions.push('Add details about what needs to be done');
+        suggestions.push('Include any constraints, deadlines, or requirements');
+      }
   }
 
   return suggestions;
