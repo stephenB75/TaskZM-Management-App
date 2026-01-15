@@ -507,7 +507,7 @@ export function AuthScreen() {
             variants={itemVariants}
             style={{
               marginBottom: spacing.brandingMarginBottom,
-              marginTop: '-0.5rem', // Reduce space above branding section
+              marginTop: '0', // Use spacing constants instead of negative margins
             } as React.CSSProperties}
           >
             <motion.div className="flex flex-col items-center w-full" variants={logoVariants}>
@@ -531,17 +531,20 @@ export function AuthScreen() {
                   width: logo.width,
                   maxWidth: logo.maxWidth || '100%',
                   height: 'auto',
-                  marginTop: '-1rem', // Increased negative margin to reduce space above
-                  marginBottom: '-0.5rem', // Negative margin to reduce space below
-                  paddingTop: '0', // No padding above logo
-                  paddingBottom: '0', // No padding below logo
-                  display: 'block', // Remove inline spacing
-                  lineHeight: 0, // Remove line-height spacing
+                  marginTop: '0', // No negative margin - use spacing constants instead
+                  marginBottom: spacing.logoMarginBottom,
+                  paddingTop: '0',
+                  paddingBottom: '0',
+                  display: 'block',
+                  lineHeight: 0,
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.02 }}
               />
               <p 
                 className="text-xs sm:text-sm text-muted-foreground text-center max-w-sm px-2 sm:px-4"
+                style={{
+                  marginTop: spacing.taglineMarginTop || spacing.logoMarginBottom,
+                } as React.CSSProperties}
               >
                 {AUTH_UI_TEXT.subtitle}
               </p>

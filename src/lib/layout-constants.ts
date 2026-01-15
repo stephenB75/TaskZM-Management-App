@@ -655,10 +655,11 @@ export const AUTH_SCREEN = {
       fontSize: '0.875rem', // text-sm = 0.875rem (14px)
     },
     spacing: {
-      brandingMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - further reduced to move dialog up
-      logoMarginBottom: '0.125rem', // mb-0.5 = 0.125rem (2px) - minimal spacing below logo
-      badgeMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - reduced spacing below badge
-      formSpacing: '0.5rem', // space-y-2 = 0.5rem (8px) - reduced form spacing
+      brandingMarginBottom: '1rem', // mb-4 = 1rem (16px) - spacing below branding section
+      logoMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - spacing below logo
+      badgeMarginBottom: '1rem', // mb-4 = 1rem (16px) - spacing below badge (increased for better separation)
+      taglineMarginTop: '0.75rem', // mt-3 = 0.75rem (12px) - spacing above tagline
+      formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px) - reduced form spacing
       cardHeaderSpacing: '0.375rem', // space-y-1.5 = 0.375rem (6px) - reduced header spacing
     },
   },
@@ -685,9 +686,10 @@ export const AUTH_SCREEN = {
       },
     },
     spacing: {
-      brandingMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - further reduced to move dialog up
-      logoMarginBottom: '0.125rem', // mb-0.5 = 0.125rem (2px) - minimal spacing below logo
-      badgeMarginBottom: '0.375rem', // mb-1.5 = 0.375rem (6px) - reduced spacing below badge
+      brandingMarginBottom: '1.25rem', // mb-5 = 1.25rem (20px) - spacing below branding section
+      logoMarginBottom: '1rem', // mb-4 = 1rem (16px) - spacing below logo
+      badgeMarginBottom: '1.25rem', // mb-5 = 1.25rem (20px) - spacing below badge (increased for better separation)
+      taglineMarginTop: '1rem', // mt-4 = 1rem (16px) - spacing above tagline
     },
   },
   desktop: {
@@ -712,9 +714,10 @@ export const AUTH_SCREEN = {
       },
     },
     spacing: {
-      brandingMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - further reduced to move dialog up
-      logoMarginBottom: '0.125rem', // mb-0.5 = 0.125rem (2px) - minimal spacing below logo
-      badgeMarginBottom: '0.5rem', // mb-2 = 0.5rem (8px) - spacing below badge
+      brandingMarginBottom: '1rem', // mb-4 = 1rem (16px) - spacing below branding section
+      logoMarginBottom: '0.75rem', // mb-3 = 0.75rem (12px) - spacing below logo
+      badgeMarginBottom: '1rem', // mb-4 = 1rem (16px) - spacing below badge (increased for better separation)
+      taglineMarginTop: '0.75rem', // mt-3 = 0.75rem (12px) - spacing above tagline
       formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px) - reduced form spacing
       cardHeaderSpacing: '0.375rem', // space-y-1.5 = 0.375rem (6px) - reduced header spacing
     },
