@@ -493,7 +493,6 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
 // Platform-specific initialization
 if (isNative) {
   // NATIVE PLATFORM (iOS/Android)
-  // HTML splash should already be hidden by inline script in index.html
   // Set status bar style
   StatusBar.setStyle({ style: Style.Light }).catch(console.error);                                                                
   StatusBar.setBackgroundColor({ color: '#F5F3FF' }).catch(console.error);
@@ -504,15 +503,15 @@ if (isNative) {
   }, TIMING_CONSTANTS.delays.splashScreenFallback);
 } else {
   // WEB PLATFORM
-  // Only use HTML splash with user's logo - completely disable Capacitor splash
+  // Use React splash screen only - hide HTML splash immediately
   // Hide Capacitor splash immediately and aggressively
   const hideCapacitorSplash = () => {
     try {
       // Hide via DOM selectors first (most reliable)
       const selectors = [
-        'div[id*="splash"]:not(#initial-splash)',
-        'div[class*="splash"]:not(#initial-splash)',
-        'div[class*="Splash"]:not(#initial-splash)',
+        'div[id*="splash"]',
+        'div[class*="splash"]',
+        'div[class*="Splash"]',
         '.capacitor-splash',
         '#capacitor-splash',
         '[data-capacitor-splash]'
@@ -560,23 +559,6 @@ if (isNative) {
   setTimeout(hideCapacitorSplash, 50); // Not in constants array, keeping as-is
   setTimeout(hideCapacitorSplash, TIMING_CONSTANTS.delays.splashScreen[1]);
   setTimeout(hideCapacitorSplash, TIMING_CONSTANTS.delays.splashScreen[1]);
-  
-  // Track when splash screen was shown to ensure minimum display time
-  const splashStartTime = Date.now();
-  
-  // Update splash screen loading message from LoadingContext
-  const updateSplashMessage = (message: string) => {
-    const messageEl = document.getElementById('splash-message');
-    if (messageEl) {
-      messageEl.textContent = message || 'Loading TaskZM...';
-    }
-  };
-  
-  // Listen for loading state changes to update splash message
-  // This will be called when React's LoadingContext updates
-  window.addEventListener('splash-loading-update', ((event: CustomEvent<{ message: string }>) => {
-    updateSplashMessage(event.detail.message);
-  }) as EventListener);
   
   // Check if app is fully loaded and rendered AND interactive
   // This function checks multiple conditions to ensure the app is truly ready for user interaction
@@ -628,141 +610,24 @@ if (isNative) {
     return hasReactContent && hasInteractiveElements && hasMeaningfulContent;
   };
   
-  // Hide HTML splash screen immediately when React loads
-  // This allows React loading screen to take over (controlled by isLoading state)
-  const hideHTMLSplashScreen = () => {
-    // Use requestAnimationFrame to ensure React has started rendering
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const splashEl = document.getElementById('initial-splash');
-        if (splashEl && !splashEl.classList.contains('hidden')) {
-          splashEl.classList.add('hidden');
-          document.body.classList.add('loaded');
-          setTimeout(() => {
-            if (splashEl.parentNode) {
-              splashEl.remove();
-            }
-          }, 300); // Short delay for smooth transition
-        }
-      });
-    });
-  };
   
-  // Hide HTML splash when app is ready (all critical data loaded AND fully rendered)
-  // This is kept for the app-ready event handler, but HTML splash should already be hidden
-  const hideSplashScreen = () => {
-    const splashEl = document.getElementById('initial-splash');
-    if (splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden')) {
-      // Ensure minimum display time for smooth transition
-      const elapsed = Date.now() - splashStartTime;
-      const minDisplayTime = TIMING_CONSTANTS.delays.splashScreenMinDisplay;
-      const remainingTime = Math.max(0, minDisplayTime - elapsed);
-      
-      setTimeout(() => {
-        splashEl.classList.add('hidden');
-        document.body.classList.add('loaded');
-        setTimeout(() => {
-          if (splashEl.parentNode) {
-            splashEl.remove();
-          }
-        }, TIMING_CONSTANTS.delays.splashScreenRemoval);
-      }, remainingTime);
-    }
-  };
-  
-  // Listen for app-ready event from LoadingContext
-  // This ensures splash stays visible until all critical data is loaded AND app is fully rendered
-  window.addEventListener('app-ready', () => {
-    if (import.meta.env.DEV) {
-      console.log('✅ App ready event received, checking if app is fully loaded...');
-    }
-    
-    // IMPORTANT: Wait for React to fully render before checking
-    // Use multiple requestAnimationFrame calls to ensure DOM is fully updated
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        // Wait for React to render and ensure app is fully loaded, interactive, AND loading state is false
-        const checkAndHide = () => {
-          // Check if app is fully loaded and interactive
-          const appReady = isAppFullyLoaded();
-          
-          if (appReady) {
-            if (import.meta.env.DEV) {
-              console.log('✅ App is fully loaded, rendered, and interactive - hiding splash screen');
-            }
-            // Additional delay to ensure smooth transition and React has fully rendered
-            requestAnimationFrame(() => {
-              setTimeout(hideSplashScreen, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay);
-            });
-          } else {
-            // App not fully ready yet, check again
-            if (import.meta.env.DEV) {
-              const rootEl = document.getElementById('root');
-              const hasContent = rootEl && (rootEl.children.length > 0 || rootEl.innerHTML.trim().length > TIMING_CONSTANTS.delays.splashScreenMinContentLength);
-              const hasInteractive = rootEl?.querySelector('button, a, [role="button"], input, select, textarea') !== null;
-              console.log(`⏳ App not fully ready yet (content: ${hasContent}, interactive: ${hasInteractive}), checking again...`);
-            }
-            setTimeout(checkAndHide, TIMING_CONSTANTS.delays.splashScreenPollInterval);
-          }
-        };
-        
-        // Start checking after a brief delay to allow React to render
-        setTimeout(checkAndHide, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay);
-      });
-    });
-  }, { once: true });
-  
-  // Fallback: Hide splash after maximum wait time (safety net)
-  // This ensures splash doesn't stay forever if something goes wrong
-  // But only hide if app appears to be fully loaded and interactive
-  const fallbackTimeout = setTimeout(() => {
-    if (isAppFullyLoaded()) {
-      if (import.meta.env.DEV) {
-        console.log('✅ Fallback timeout: App is fully loaded and interactive, hiding splash');
-      }
-      hideSplashScreen();
-    } else {
-      // If app still not fully ready, keep splash visible (don't force hide)
-      // This prevents showing non-interactive app content
-      if (import.meta.env.DEV) {
-        console.warn('⚠️ Splash screen timeout reached, but app is not fully interactive - keeping splash visible');
-      }
-      // Don't force hide - keep splash visible until app is truly ready
-    }
-  }, TIMING_CONSTANTS.delays.splashScreenAggressive);
-  
-  // Clear fallback if app-ready event fires (prevents double hiding)
-  window.addEventListener('app-ready', () => {
-    clearTimeout(fallbackTimeout);
-  }, { once: true });
+  // React splash screen handles all loading states - no HTML splash screen needed
 }
 
 // Safe root element access with error handling
 // Wrap entire app initialization in try-catch to prevent crashes
-// Also ensure splash screen is hidden and body gets loaded class even on error
-const ensureSplashHidden = () => {
-  const splashEl = document.getElementById('initial-splash');
-  if (splashEl) {
-    splashEl.classList.add('hidden');
-    // Force hide with inline styles as well
-    splashEl.style.display = 'none';
-    splashEl.style.visibility = 'hidden';
-    splashEl.style.opacity = '0';
-    splashEl.style.pointerEvents = 'none';
-    splashEl.style.zIndex = '-1';
-  }
+// Ensure body gets loaded class and root is visible even on error
+const ensureAppReady = () => {
   document.body.classList.add('loaded');
   // Force enable scrolling
   document.body.style.overflow = 'auto';
-  // Ensure root element is visible (but don't set z-index that could conflict with splash)
+  // Ensure root element is visible
   const rootEl = document.getElementById('root');
   if (rootEl) {
     rootEl.style.display = 'block';
     rootEl.style.visibility = 'visible';
     rootEl.style.opacity = '1';
-    // Use relative positioning but don't set z-index - splash is fixed and will be on top
     rootEl.style.position = 'relative';
-    // Don't set z-index here - splash screen uses fixed positioning with z-999999
     rootEl.style.height = '100%';
     rootEl.style.width = '100%';
   }
@@ -782,9 +647,6 @@ try {
         <App />
       </React.StrictMode>
     );
-    // Hide HTML splash screen immediately when React loads
-    // React loading screen will handle showing loading state if needed (controlled by isLoading)
-    hideHTMLSplashScreen();
   } else {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
@@ -792,14 +654,11 @@ try {
         <App />
       </React.StrictMode>
     );
-    // Hide HTML splash screen immediately when React loads
-    // React loading screen will handle showing loading state if needed (controlled by isLoading)
-    hideHTMLSplashScreen();
   }
 } catch (error) {
   console.error('Fatal error during app initialization:', error);
-  // Always hide splash and enable body scrolling even on error
-  ensureSplashHidden();
+  // Always enable body scrolling even on error
+  ensureAppReady();
   
   // Show a user-friendly error message
   const rootElement = document.getElementById('root') || document.body;
@@ -822,46 +681,9 @@ try {
   `;
 }
 
-// Additional fallback: Hide splash after React renders (web only)
-// This ensures splash is always hidden even if React fails to render
-// But only if app appears to be loaded
+// Ensure body is ready after React renders (web only)
 if (!isNative) {
   setTimeout(() => {
-    const splashEl = document.getElementById('initial-splash');
-    if (splashEl && !splashEl.classList.contains('hidden') && !splashEl.classList.contains('native-hidden')) {
-      // Check if app is loaded before hiding
-      const rootEl = document.getElementById('root');
-      const hasContent = rootEl && (rootEl.children.length > 0 || rootEl.innerHTML.trim().length > 0);
-      
-      if (hasContent) {
-        splashEl.classList.add('hidden');
-        document.body.classList.add('loaded');
-        setTimeout(() => {
-          if (splashEl.parentNode) {
-            splashEl.remove();
-          }
-        }, TIMING_CONSTANTS.delays.splashScreenRemoval);
-      }
-    }
+    ensureAppReady();
   }, TIMING_CONSTANTS.delays.splashScreenFinal);
-  
-  // Aggressive fallback: Force hide splash and enable body scrolling
-  // This ensures components are always visible even if something goes wrong
-  // Only use as last resort after maximum wait time
-  setTimeout(() => {
-    const splashEl = document.getElementById('initial-splash');
-    if (splashEl && !splashEl.classList.contains('hidden')) {
-      // Force hide - this is the absolute last resort
-      splashEl.classList.add('hidden');
-      splashEl.style.display = 'none';
-      splashEl.style.visibility = 'hidden';
-      splashEl.style.opacity = '0';
-      splashEl.style.pointerEvents = 'none';
-      if (splashEl.parentNode) {
-        splashEl.remove();
-      }
-    }
-    document.body.classList.add('loaded');
-    document.body.style.overflow = 'auto';
-  }, TIMING_CONSTANTS.delays.splashScreenAggressive);
 }
