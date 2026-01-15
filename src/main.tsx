@@ -419,6 +419,8 @@ if ('serviceWorker' in navigator) {
     // The new service worker will take control ONLY on next page load/navigation
     // This ensures updates happen in the background without disrupting user sessions
     let controllerChangeHandled = false;
+    let preventReloadFlag = true; // Global flag to prevent any automatic reloads
+    
     const controllerChangeHandler = (event: Event) => {
       // Prevent handling the same controller change multiple times
       if (controllerChangeHandled) {
@@ -427,9 +429,12 @@ if ('serviceWorker' in navigator) {
       }
       
       controllerChangeHandled = true;
-      // CRITICAL: Explicitly prevent default behavior and stop propagation
+      
+      // CRITICAL: Prevent reload by setting flag and stopping event
+      preventReloadFlag = true;
       event.preventDefault?.();
       event.stopPropagation?.();
+      event.stopImmediatePropagation?.();
       
       // Completely ignore controller changes - don't reload
       // The new service worker will take control on next page load
@@ -443,8 +448,24 @@ if ('serviceWorker' in navigator) {
       }, TIMING_CONSTANTS.serviceWorker.notificationCooldown);
     };
     
-    // Use capture phase to intercept early, and make it non-capturing to prevent propagation
-    navigator.serviceWorker.addEventListener('controllerchange', controllerChangeHandler, { capture: false, passive: true });
+    // CRITICAL: Use non-passive listener so we can actually prevent the reload
+    // Capture phase to intercept early before any other handlers
+    navigator.serviceWorker.addEventListener('controllerchange', controllerChangeHandler, { capture: true, passive: false });
+    
+    // Additional safeguard: Override window.location.reload to prevent automatic reloads
+    const originalReload = window.location.reload;
+    let reloadOverrideActive = true;
+    (window.location as any).reload = function(forcedReload?: boolean) {
+      // Only allow reload if explicitly called by user action (not automatic)
+      if (!preventReloadFlag || forcedReload === true) {
+        // User-initiated reload - allow it
+        originalReload.call(window.location, forcedReload);
+      } else {
+        // Automatic reload attempt - block it
+        console.debug('[Service Worker] Blocked automatic page reload - update will apply on next manual refresh');
+        preventReloadFlag = true; // Keep flag set to prevent future automatic reloads
+      }
+    };
     
     // Additional safeguard: Listen for messages from service worker
     // If service worker tries to activate, tell it to wait
@@ -460,10 +481,13 @@ if ('serviceWorker' in navigator) {
         skipWaitingMessageHandled = true;
         // CRITICAL: Explicitly prevent any reload behavior
         // Service worker is asking to activate - tell it to wait
+        preventReloadFlag = true; // Ensure reload prevention is active
         console.debug('[Service Worker] Received skip waiting request - ignoring to prevent reload');
         // Don't respond - let it wait
         // Explicitly prevent any default behavior
+        event.preventDefault?.();
         event.stopPropagation?.();
+        event.stopImmediatePropagation?.();
         
         // Reset flag after a delay
         setTimeout(() => {
@@ -472,7 +496,25 @@ if ('serviceWorker' in navigator) {
       }
     };
     
-    navigator.serviceWorker.addEventListener('message', messageHandler, { passive: true });
+    // Use non-passive listener to prevent reload
+    navigator.serviceWorker.addEventListener('message', messageHandler, { capture: true, passive: false });
+    
+    // Final safeguard: Prevent beforeunload if it's a service worker-related reload
+    window.addEventListener('beforeunload', (event) => {
+      // Only prevent if it's an automatic reload (not user-initiated navigation)
+      if (preventReloadFlag && !event.defaultPrevented) {
+        // Check if this is a service worker-related reload
+        const isServiceWorkerReload = navigator.serviceWorker.controller !== null && 
+                                      navigator.serviceWorker.controller.state === 'activated';
+        if (isServiceWorkerReload) {
+          console.debug('[Service Worker] Preventing automatic reload from beforeunload');
+          event.preventDefault();
+          event.stopPropagation();
+          preventReloadFlag = true; // Keep flag set
+          return false;
+        }
+      }
+    }, { capture: true, passive: false });
   });
 }
 

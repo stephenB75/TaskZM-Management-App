@@ -182,12 +182,14 @@ function showUpdateAvailableNotification() {
         label: NOTIFICATION_TOAST_MESSAGES.updateAvailableAction,
         onClick: () => {
           // User chose to refresh - reload the page
-          window.location.reload();
+          // Use forced reload to bypass any reload prevention (user-initiated)
+          (window.location as any).reload(true);
         },
       },
       onClick: () => {
         // Also allow clicking the toast itself to refresh
-        window.location.reload();
+        // Use forced reload to bypass any reload prevention (user-initiated)
+        (window.location as any).reload(true);
       },
     }
   );
