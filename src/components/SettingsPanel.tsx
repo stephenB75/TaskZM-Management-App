@@ -1546,11 +1546,22 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
             }}
           >
-            <p className="text-sm text-muted-foreground">
+            <p 
+              className="text-sm text-muted-foreground"
+              style={{ 
+                marginBottom: SETTINGS_PANEL_SPACING_MEDIUM,
+              }}
+            >
               Create and manage custom tags for organizing tasks
             </p>
             
-            <div className="flex gap-2">
+            <div 
+              className="flex"
+              style={{ 
+                gap: SETTINGS_PANEL_GAP_SMALL,
+                marginBottom: SETTINGS_PANEL_SPACING_MEDIUM,
+              }}
+            >
               <Input 
                 placeholder="New tag name..." 
                 className="h-9" 
@@ -1561,7 +1572,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <Button size="sm" onClick={handleAddTag}>Add</Button>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div 
+              className="flex flex-wrap"
+              style={{ 
+                gap: SETTINGS_PANEL_GAP_SMALL,
+              }}
+            >
               {availableTags
                 .filter((tag) => tag.toLowerCase() !== 'urgent')
                 .map((tag, index) => {
@@ -1583,7 +1599,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     >
                       {tag}
                       {!isProtected && (
-                        <span className="ml-1 text-xs opacity-60">×</span>
+                        <span 
+                          className="text-xs opacity-60"
+                          style={{ 
+                            marginLeft: SETTINGS_PANEL_GAP_XSMALL,
+                          }}
+                        >
+                          ×
+                        </span>
                       )}
                     </Badge>
                   );

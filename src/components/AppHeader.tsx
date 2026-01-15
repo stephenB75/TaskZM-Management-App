@@ -59,6 +59,7 @@ import {
   HEADER_SIDE_PANEL_ANIMATION_EASE,
   HEADER_MOBILE_SAFE_AREA_SPACER,
   VIEWPORT_BREAKPOINTS,
+  getHeaderGradient,
 } from "../lib/layout-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import {
@@ -351,9 +352,7 @@ export function AppHeader({
             backgroundColor: isDark 
               ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
               : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
-            backgroundImage: isDark
-              ? 'linear-gradient(90deg, rgba(31,41,55,0.92) 0%, rgba(17,24,39,0.9) 50%, rgba(31,41,55,0.92) 100%)'
-              : 'linear-gradient(90deg, rgba(255,255,255,0.96) 0%, rgba(248,244,255,0.94) 50%, rgba(255,255,255,0.96) 100%)',
+            backgroundImage: getHeaderGradient(isDark),
             borderColor: HEADER_BORDER_COLOR,
             paddingLeft: HEADER_PADDING_X_DESKTOP,
             paddingRight: HEADER_PADDING_X_DESKTOP,
@@ -398,6 +397,7 @@ export function AppHeader({
               )}
               {!hideDesktopLogo && (
                 <img
+                  key={`header-logo-${isDark ? 'dark' : 'light'}`}
                   src={isDark ? logoImageGray : logoImageBlack}
                   alt="TaskZM Logo"
                   className="w-auto flex-shrink-0 object-contain self-center"
@@ -408,6 +408,7 @@ export function AppHeader({
                     backgroundColor: 'transparent',
                     display: 'block',
                     objectFit: 'contain', // Ensure logo fits within bounds
+                    transition: 'none', // Explicitly disable transitions to prevent fade
                   }}
                 />
               )}

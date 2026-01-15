@@ -94,6 +94,25 @@ export const HEADER_BACKGROUND_OPACITY = 0.95; // bg-white/95 = 95% opacity
 export const HEADER_BACKGROUND_LIGHT_COLOR = '#FFFFFF';
 export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.95)';
 export const HEADER_BORDER_COLOR = 'rgba(148, 163, 184, 0.2)';
+
+// Header background gradient constants
+// Dark mode gradient: gray-800 to gray-900 and back
+export const HEADER_GRADIENT_DARK_START = 'rgba(31, 41, 55, 0.92)'; // gray-800 with opacity
+export const HEADER_GRADIENT_DARK_MID = 'rgba(17, 24, 39, 0.9)'; // gray-900 with opacity
+export const HEADER_GRADIENT_DARK_END = 'rgba(31, 41, 55, 0.92)'; // gray-800 with opacity
+
+// Light mode gradient: white to light purple and back
+export const HEADER_GRADIENT_LIGHT_START = 'rgba(255, 255, 255, 0.96)'; // white with opacity
+export const HEADER_GRADIENT_LIGHT_MID = 'rgba(248, 244, 255, 0.94)'; // light purple with opacity
+export const HEADER_GRADIENT_LIGHT_END = 'rgba(255, 255, 255, 0.96)'; // white with opacity
+
+// Helper function to generate header gradient
+export const getHeaderGradient = (isDark: boolean): string => {
+  if (isDark) {
+    return `linear-gradient(90deg, ${HEADER_GRADIENT_DARK_START} 0%, ${HEADER_GRADIENT_DARK_MID} 50%, ${HEADER_GRADIENT_DARK_END} 100%)`;
+  }
+  return `linear-gradient(90deg, ${HEADER_GRADIENT_LIGHT_START} 0%, ${HEADER_GRADIENT_LIGHT_MID} 50%, ${HEADER_GRADIENT_LIGHT_END} 100%)`;
+};
 export const HEADER_ANIMATION_DAMPING = 50; // Spring animation damping (higher = slower, less bouncy)
 export const HEADER_ANIMATION_STIFFNESS = 150; // Spring animation stiffness (lower = slower, less rigid)
 export const HEADER_BUTTON_NEGATIVE_MARGIN_LEFT = '-0.5rem'; // -ml-2 = -0.5rem
