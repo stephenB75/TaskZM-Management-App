@@ -113,7 +113,7 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
         
         // Calculate month difference
         const monthsDiff = 
-          (checkDateOnly.getFullYear() - baseDateOnly.getFullYear()) * 12 +
+          (checkDateOnly.getFullYear() - baseDateOnly.getFullYear()) * TIMING_CONSTANTS.calendar.monthsPerYear +
           (checkDateOnly.getMonth() - baseDateOnly.getMonth());
         
         return monthsDiff >= 0 && monthsDiff % recurrence.interval === 0;
@@ -121,7 +121,7 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
       // Fallback: same day of month every interval months
       if (checkDateOnly.getDate() !== baseDateOnly.getDate()) return false;
       const monthsDiff = 
-        (checkDateOnly.getFullYear() - baseDateOnly.getFullYear()) * 12 +
+        (checkDateOnly.getFullYear() - baseDateOnly.getFullYear()) * TIMING_CONSTANTS.calendar.monthsPerYear +
         (checkDateOnly.getMonth() - baseDateOnly.getMonth());
       return monthsDiff >= 0 && monthsDiff % recurrence.interval === 0;
 
