@@ -33,6 +33,7 @@ import {
   KANBAN_TEXT_SIZES,
   KANBAN_SPACING,
 } from '../lib/kanban-constants';
+import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM } from '../lib/layout-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
@@ -146,18 +147,20 @@ export function SevenDayKanban({
 
   const getColumnBgGradient = (dayName: string) => {
     const dayColors = getDayColors(dayName);
-    // Light mode: use day color with soft gradient
+    // Light mode: use header color (tab color) fading to white
     if (hasHeader(dayColors)) {
-      const base = dayColors.background;
-      const start = toAlphaHex(base, 28);
-      const end = toAlphaHex(base, 6);
+      // Use the header 'from' color (main tab color) as the starting point
+      const headerColor = dayColors.header.from;
+      const start = toAlphaHex(headerColor, KANBAN_DAY_COLORS.columnGradient.startOpacity);
+      // End with white (fully transparent of the header color = white background)
+      const end = COLOR_BACKGROUND_WHITE;
       return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
     }
-    // Fallback for weekend colors
-    return 'transparent';
+    // Fallback for weekend colors - fade to white
+    return `linear-gradient(180deg, rgba(255,255,255,0) 0%, ${COLOR_BACKGROUND_WHITE} 100%)`;
   };
 
-  const darkColumnGradient = 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)';
+  const darkColumnGradient = `linear-gradient(180deg, rgba(255,255,255,${KANBAN_DAY_COLORS.columnGradient.darkModeStartOpacity / 100}) 0%, rgba(255,255,255,${KANBAN_DAY_COLORS.columnGradient.darkModeEndOpacity / 100}) 100%)`;
 
   // Get week start setting
   const weekStart = getWeekStart();
@@ -1367,15 +1370,7 @@ export function SevenDayKanban({
                                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
                                   <Plus className="w-6 h-6 text-primary/40" />
                                 </div>
-                                      <p className="text-sm text-muted-foreground mb-3 pointer-events-none">No tasks</p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleAddTask(column.dateString)}
-                                        className="rounded-full pointer-events-auto"
-                                >
-                                  Add task
-                                </Button>
+                                      <p className="text-sm text-muted-foreground pointer-events-none">No tasks</p>
                               </motion.div>
                             ) : (
                                   <div className="flex flex-col items-center gap-3">

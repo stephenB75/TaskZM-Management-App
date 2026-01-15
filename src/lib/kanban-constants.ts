@@ -142,6 +142,13 @@ export const KANBAN_DAY_COLORS = {
   standard: {
     viaOpacity: 70, // Standard via opacity for non-today days
   },
+  // Column background gradient settings
+  columnGradient: {
+    startOpacity: 15, // Starting opacity percentage for column gradient (fades from tab color)
+    endOpacity: 0, // Ending opacity (fades to white/transparent)
+    darkModeStartOpacity: 6, // Starting opacity for dark mode gradient
+    darkModeEndOpacity: 2, // Ending opacity for dark mode gradient
+  },
 } as const;
 
 // Background Gradients
