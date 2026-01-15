@@ -138,12 +138,13 @@ export const HEADER_MAIN_TRANSITION_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'; // Ea
 
 // Viewport Breakpoints (matching Tailwind defaults)
 export const VIEWPORT_BREAKPOINTS = {
-  mobile: 768, // md breakpoint - below this is mobile
+  mobile: 768, // md breakpoint - below this is mobile phones
   tablet: 1024, // lg breakpoint - iPad Pro portrait width
   desktop: 1280, // xl breakpoint - standard desktop
-  // Tablet range: 768px - 1279px (includes iPad, iPad Pro, and small monitors)
-  // Note: Tablets use mobile layout (one-column) in both portrait and landscape
-  // Desktop range: 1280px and above (uses full desktop layout)
+  // Mobile phones: < 768px (use mobile layout - one-column)
+  // Tablets/iPad: 768px - 1023px (use mobile layout - one-column)
+  // Laptops and small monitors: 1024px - 1279px (use desktop layout - multi-column)
+  // Desktop: 1280px and above (use desktop layout - multi-column)
 } as const;
 
 // Timeline Constants
