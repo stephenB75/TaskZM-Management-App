@@ -1387,7 +1387,28 @@ export function useAIScheduler() {
         const fromDate = new Date(startDate);
         fromDate.setHours(0, 0, 0, 0);
         
-        recurringFirstOccurrence = calculateFirstOccurrenceDate(task, fromDate);
+        // For recurring tasks without a scheduledDate, we need to calculate the first occurrence
+        // If the task already has a scheduledDate, use it as the base, but ensure it's not in the past
+        let baseDateForCalculation = fromDate;
+        if (task.scheduledDate) {
+          const existingScheduledDate = new Date(task.scheduledDate);
+          existingScheduledDate.setHours(0, 0, 0, 0);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // If existing scheduledDate is in the past, recalculate from today
+          if (existingScheduledDate < today) {
+            baseDateForCalculation = today;
+          } else {
+            // Use existing scheduledDate as the base (it's already the first occurrence)
+            recurringFirstOccurrence = existingScheduledDate;
+          }
+        }
+        
+        // Calculate first occurrence if not already set
+        if (!recurringFirstOccurrence) {
+          recurringFirstOccurrence = calculateFirstOccurrenceDate(task, baseDateForCalculation);
+        }
         
         if (recurringFirstOccurrence) {
           // Check if first occurrence fits within date range
@@ -1987,7 +2008,10 @@ export function useAIScheduler() {
           // Force category hours by getting them directly and using category start time
           const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
           if (categoryHours) {
-            const startMinutes = parseTimeToMinutes(categoryHours.start);
+            // categoryHours.start is already in minutes, not a string
+            const startMinutes = typeof categoryHours.start === 'string' 
+              ? parseTimeToMinutes(categoryHours.start) 
+              : categoryHours.start;
             effectiveCategoryTime = {
               hours: Math.floor(startMinutes / MINUTES_PER_HOUR),
               minutes: startMinutes % MINUTES_PER_HOUR,
@@ -2034,7 +2058,10 @@ export function useAIScheduler() {
             // Use category start time as fallback
             const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
             if (categoryHours) {
-              const startMinutes = parseTimeToMinutes(categoryHours.start);
+              // categoryHours.start is already in minutes, not a string
+              const startMinutes = typeof categoryHours.start === 'string' 
+                ? parseTimeToMinutes(categoryHours.start) 
+                : categoryHours.start;
               proposedTime.setHours(Math.floor(startMinutes / MINUTES_PER_HOUR), startMinutes % MINUTES_PER_HOUR, 0, 0);
             } else {
               const [workStartHour] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
@@ -2564,7 +2591,10 @@ export function useAIScheduler() {
               // For future dates, use category start time or default work start time
               const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
               if (categoryHours) {
-                const startMinutes = parseTimeToMinutes(categoryHours.start);
+                // categoryHours.start is already in minutes, not a string
+                const startMinutes = typeof categoryHours.start === 'string' 
+                  ? parseTimeToMinutes(categoryHours.start) 
+                  : categoryHours.start;
                 scheduleDate.setHours(Math.floor(startMinutes / MINUTES_PER_HOUR), startMinutes % MINUTES_PER_HOUR, 0, 0);
               } else {
                 // Use default work start time
@@ -3083,7 +3113,10 @@ export function useAIScheduler() {
               // For future dates, use category start time or default work start time
               const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
               if (categoryHours) {
-                const startMinutes = parseTimeToMinutes(categoryHours.start);
+                // categoryHours.start is already in minutes, not a string
+                const startMinutes = typeof categoryHours.start === 'string' 
+                  ? parseTimeToMinutes(categoryHours.start) 
+                  : categoryHours.start;
                 scheduleDate.setHours(Math.floor(startMinutes / MINUTES_PER_HOUR), startMinutes % MINUTES_PER_HOUR, 0, 0);
               } else {
                 // Use default work start time
@@ -3593,7 +3626,10 @@ export function useAIScheduler() {
             // For future dates, use category start time or default work start time
             const categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
             if (categoryHours) {
-              const startMinutes = parseTimeToMinutes(categoryHours.start);
+              // categoryHours.start is already in minutes, not a string
+              const startMinutes = typeof categoryHours.start === 'string' 
+                ? parseTimeToMinutes(categoryHours.start) 
+                : categoryHours.start;
               scheduleDate.setHours(Math.floor(startMinutes / MINUTES_PER_HOUR), startMinutes % MINUTES_PER_HOUR, 0, 0);
             } else {
               // Use default work start time
