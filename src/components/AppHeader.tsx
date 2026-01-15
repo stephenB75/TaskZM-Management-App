@@ -45,6 +45,7 @@ import {
   HEADER_BORDER_COLOR,
   HEADER_BUTTON_NEGATIVE_MARGIN_LEFT,
   HEADER_SIDE_PANEL_ANIMATION_DURATION,
+  HEADER_SIDE_PANEL_ANIMATION_DURATION_CONTENT,
   HEADER_SIDE_PANEL_ANIMATION_DELAY_INITIAL,
   HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT,
   HEADER_SIDE_PANEL_ANIMATION_DELAY_LEFT,
@@ -261,7 +262,7 @@ export function AppHeader({
             style={{ gap: HEADER_SIDE_PANEL_GAP_MAIN }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION + 0.1, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT }}
+            transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION_CONTENT, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT }}
           >
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
             <motion.div

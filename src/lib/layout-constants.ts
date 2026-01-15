@@ -117,6 +117,7 @@ export const HEADER_ANIMATION_DAMPING = 50; // Spring animation damping (higher 
 export const HEADER_ANIMATION_STIFFNESS = 150; // Spring animation stiffness (lower = slower, less rigid)
 export const HEADER_BUTTON_NEGATIVE_MARGIN_LEFT = '-0.5rem'; // -ml-2 = -0.5rem
 export const HEADER_SIDE_PANEL_ANIMATION_DURATION = 0.3; // Side panel header fade animation duration
+export const HEADER_SIDE_PANEL_ANIMATION_DURATION_CONTENT = 0.4; // Content fade animation duration (duration + 0.1 for slightly longer fade)
 export const HEADER_SIDE_PANEL_ANIMATION_DELAY_INITIAL = 0.1; // Initial delay for side panel header
 export const HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT = 0.15; // Delay for content fade in
 export const HEADER_SIDE_PANEL_ANIMATION_DELAY_LEFT = 0.2; // Delay for left side elements
