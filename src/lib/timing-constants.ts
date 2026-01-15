@@ -33,6 +33,8 @@ export const TIMING_CONSTANTS = {
     splashScreenMinInteractiveElements: 3, // Minimum number of interactive elements required for app to be considered ready
     splashScreenReactInitDelay: 300, // Extra delay for React initialization after readiness check passes (ms)
     splashScreenCheckDelay: 200, // Delay before starting readiness check to ensure React has rendered (ms)
+    splashScreenKanbanAnimationDelay: 600, // Additional delay to account for kanban view animations (duration 0.4s + delay 0.2s = 600ms)
+    splashScreenMinKanbanColumns: 3, // Minimum number of kanban columns required to consider kanban view ready
     revenueCat: 100, // RevenueCat processing delay
     notificationCheck: 100, // Notification check delay after task update
     throttle: 1000, // Throttle delay for activity tracking

@@ -665,6 +665,14 @@ function AppContent() {
       const hasAppElements = rootEl.querySelector('[class*="sidebar"], [class*="dashboard"], [class*="kanban"], [class*="view"], [class*="panel"]') !== null ||
                            rootEl.querySelector('nav, header, main, section, aside') !== null;
       
+      // Check for kanban-specific elements to ensure kanban view is fully rendered
+      // Kanban columns should be present and visible
+      const hasKanbanColumns = rootEl.querySelector('[class*="kanban"] [data-rbd-droppable-id], [class*="kanban"] [data-testid*="column"], [class*="kanban"] [class*="column"]') !== null;
+      
+      // If kanban is present, ensure it has columns before considering app ready
+      const kanbanColumnCount = hasKanbanColumns ? rootEl.querySelectorAll('[class*="kanban"] [data-rbd-droppable-id], [class*="kanban"] [data-testid*="column"], [class*="kanban"] [class*="column"]').length : 0;
+      const isKanbanReady = !hasKanbanColumns || (hasKanbanColumns && kanbanColumnCount >= TIMING_CONSTANTS.delays.splashScreenMinKanbanColumns);
+      
       // Check for auth screen elements (auth form, sign in button, etc.)
       const hasAuthElements = rootEl.querySelector('[class*="auth"], [class*="signin"], [class*="signup"], [id*="auth"]') !== null;
       
@@ -689,12 +697,14 @@ function AppContent() {
       // 4. Loading screen is NOT visible (app content has replaced it)
       // 5. Body is interactive (not disabled)
       // 6. React has finished rendering
+      // 7. If kanban is present, ensure it has columns rendered
       const isReady = hasContent && 
                      hasInteractive && 
                      (hasAppElements || hasAuthElements) &&
                      !hasLoadingScreen &&
                      isBodyInteractive &&
-                     hasReactMarkers;
+                     hasReactMarkers &&
+                     isKanbanReady;
       
       if (isReady) {
         clearTimeout(timeoutId);
@@ -707,27 +717,38 @@ function AppContent() {
             hasAuthElements,
             hasLoadingScreen,
             isBodyInteractive,
-            hasReactMarkers
+            hasReactMarkers,
+            isKanbanReady,
+            kanbanColumns: kanbanColumnCount
           });
         }
         // Add additional delay to ensure React has fully initialized event handlers
         // and the app is truly responsive
+        // Also account for kanban view animations (duration + delay = 600ms)
+        const hasKanbanView = rootEl.querySelector('[class*="kanban"]') !== null;
+        const additionalDelay = hasKanbanView ? TIMING_CONSTANTS.delays.splashScreenKanbanAnimationDelay : 0;
+        
         setTimeout(() => {
           // Double-check that app is still ready before hiding
           const finalCheck = rootEl && 
                             rootEl.children.length > 0 && 
                             rootEl.querySelector('button:not([disabled]), a:not([disabled])') !== null;
           
-          if (finalCheck) {
+          // If kanban is present, ensure columns are still there
+          const finalKanbanColumnCount = hasKanbanView ? rootEl.querySelectorAll('[class*="kanban"] [data-rbd-droppable-id], [class*="kanban"] [data-testid*="column"], [class*="kanban"] [class*="column"]').length : 0;
+          const finalKanbanCheck = !hasKanbanView || 
+                                  (finalKanbanColumnCount >= TIMING_CONSTANTS.delays.splashScreenMinKanbanColumns);
+          
+          if (finalCheck && finalKanbanCheck) {
             setIsAppRendered(true);
           } else {
             // If final check fails, continue checking
             if (import.meta.env.DEV) {
-              console.warn('⚠️ Final check failed, continuing to wait...');
+              console.warn('⚠️ Final check failed, continuing to wait...', { finalCheck, finalKanbanCheck });
             }
             setTimeout(checkAppReady, TIMING_CONSTANTS.delays.splashScreenCheckDelay);
           }
-        }, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay + TIMING_CONSTANTS.delays.splashScreenReactInitDelay);
+        }, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay + TIMING_CONSTANTS.delays.splashScreenReactInitDelay + additionalDelay);
       } else {
         if (import.meta.env.DEV && checkCount % 10 === 0) {
           // Log every 10th check to avoid spam

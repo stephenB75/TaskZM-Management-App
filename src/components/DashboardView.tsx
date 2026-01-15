@@ -59,6 +59,7 @@ import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
 import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
+import { KANBAN_ANIMATION } from "../lib/kanban-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 
 interface DashboardViewProps {
@@ -1410,7 +1411,7 @@ export function DashboardView({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            transition={{ duration: KANBAN_ANIMATION.duration, ease: KANBAN_ANIMATION.ease }}
           >
             <TodayAgendaView hideHeader={true} />
           </motion.div>
@@ -1422,9 +1423,9 @@ export function DashboardView({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            duration: 0.4,
-            delay: 0.2,
-            ease: "easeOut",
+            duration: KANBAN_ANIMATION.duration,
+            delay: KANBAN_ANIMATION.delay,
+            ease: KANBAN_ANIMATION.ease,
           }}
         >
           {/* Desktop: Full Kanban or Calendar (not mobile/tablet) */}

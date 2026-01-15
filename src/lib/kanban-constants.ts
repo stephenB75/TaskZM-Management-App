@@ -194,6 +194,9 @@ export const KANBAN_COLUMN_DIMENSIONS = {
 // Animation Constants
 export const KANBAN_ANIMATION = {
   duration: 0.4, // seconds
+  delay: 0.2, // seconds - delay before animation starts
+  ease: 'easeOut', // Animation easing function
+  totalDuration: 0.6, // Total animation time (duration + delay) in seconds
   delayPerColumn: 0.06, // seconds per column index
   easing: [0.25, 0.8, 0.25, 1] as [number, number, number, number],
   transformTransition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
