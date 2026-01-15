@@ -57,6 +57,8 @@ import {
   HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT,
   HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL,
   HEADER_SIDE_PANEL_ANIMATION_EASE,
+  HEADER_MAIN_TRANSITION_DURATION,
+  HEADER_MAIN_TRANSITION_EASE,
   HEADER_MOBILE_SAFE_AREA_SPACER,
   VIEWPORT_BREAKPOINTS,
   getHeaderGradient,
@@ -363,9 +365,10 @@ export function AppHeader({
             left: `${headerLeft}px`,
             width: headerWidth,
             right: 0,
-            // Explicitly disable any CSS transitions to ensure instant updates
-            transition: 'none',
-            willChange: 'left, width, background-color', // Include background-color for theme changes
+            // Smooth transition for left and width to match panel animation
+            // Only transition position/width, not background-color (theme changes should be instant)
+            transition: `left ${HEADER_MAIN_TRANSITION_DURATION}s ${HEADER_MAIN_TRANSITION_EASE}, width ${HEADER_MAIN_TRANSITION_DURATION}s ${HEADER_MAIN_TRANSITION_EASE}`,
+            willChange: 'left, width', // Optimize for position/width changes only
           }}
         >
           {/* Static container for logo and title - no animations */}
@@ -408,11 +411,18 @@ export function AppHeader({
                     backgroundColor: 'transparent',
                     display: 'block',
                     objectFit: 'contain', // Ensure logo fits within bounds
-                    transition: 'none', // Explicitly disable transitions to prevent fade
+                    // No transition on logo itself - it moves smoothly with the header container
+                    transition: 'none',
                   }}
                 />
               )}
-              <div className="min-w-0">
+              <div 
+                className="min-w-0"
+                style={{
+                  // No transition on text - it moves smoothly with the header container
+                  transition: 'none',
+                }}
+              >
                 <h2 
                   className="font-semibold text-foreground uppercase tracking-wide"
                   style={{ fontSize: HEADER_TITLE_SIZE_DESKTOP }}

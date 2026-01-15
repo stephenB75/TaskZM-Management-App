@@ -130,6 +130,11 @@ export const HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT = 10; // X offset for ri
 export const HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL = 0.9; // Initial scale for logo
 export const HEADER_SIDE_PANEL_ANIMATION_EASE = 'easeOut'; // Easing function for side panel animations
 
+// Main header transition constants (matches panel spring animation: damping: 30, stiffness: 300)
+// Spring animation with these values typically takes ~350-400ms
+export const HEADER_MAIN_TRANSITION_DURATION = 0.35; // seconds - matches panel spring animation duration
+export const HEADER_MAIN_TRANSITION_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'; // Easing function matching spring animation feel
+
 // Viewport Breakpoints (matching Tailwind defaults)
 export const VIEWPORT_BREAKPOINTS = {
   mobile: 768, // md breakpoint - below this is mobile
