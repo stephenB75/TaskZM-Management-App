@@ -119,6 +119,43 @@ export function AIRecommendationPanel({
   const [suggestionDate, setSuggestionDate] = useState<Date | undefined>(new Date());
   const [suggestionDateOpen, setSuggestionDateOpen] = useState(false);
 
+  // Listen for tour events to open/close dialogs
+  React.useEffect(() => {
+    const handleTourOpenDialog = (event: CustomEvent<{ dialog: 'schedule-preview' | 'reschedule-day' | 'reschedule-week' | 'reschedule-month' }>) => {
+      const dialog = event.detail.dialog;
+      if (dialog === 'schedule-preview') {
+        // For tour, create a demo schedule preview with empty plan (will show empty state)
+        setSchedulePlan([]);
+        setShowSchedulePreview(true);
+      } else if (dialog === 'reschedule-day') {
+        setRescheduleType('day');
+        setSelectedDate(new Date());
+        setShowRescheduleDialog(true);
+      } else if (dialog === 'reschedule-week') {
+        setRescheduleType('week');
+        setSelectedDate(new Date());
+        setShowRescheduleDialog(true);
+      } else if (dialog === 'reschedule-month') {
+        setRescheduleType('month');
+        setSelectedDate(new Date());
+        setShowRescheduleDialog(true);
+      }
+    };
+
+    const handleTourCloseDialog = () => {
+      setShowSchedulePreview(false);
+      setShowRescheduleDialog(false);
+      setRescheduleType(null);
+    };
+
+    window.addEventListener('tour-open-ai-dialog', handleTourOpenDialog as EventListener);
+    window.addEventListener('tour-close-ai-dialog', handleTourCloseDialog as EventListener);
+    return () => {
+      window.removeEventListener('tour-open-ai-dialog', handleTourOpenDialog as EventListener);
+      window.removeEventListener('tour-close-ai-dialog', handleTourCloseDialog as EventListener);
+    };
+  }, []);
+
   const handleScheduleUnscheduledTasks = async () => {
     // Check if user has access to AI Scheduler feature
     if (!hasFeature('aiScheduler')) {
@@ -499,6 +536,7 @@ export function AIRecommendationPanel({
       <Dialog open={showRescheduleDialog} onOpenChange={setShowRescheduleDialog}>
         <DialogContent
           className="max-w-md border border-primary/10"
+          data-tour="reschedule-dialog"
           style={{
             backgroundImage: isDark
               ? 'linear-gradient(180deg, rgba(17,24,39,0.96) 0%, rgba(17,24,39,0.9) 100%)'
@@ -627,7 +665,7 @@ export function AIRecommendationPanel({
         open={showSchedulePreview}
         onOpenChange={setShowSchedulePreview}
       >
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[80vh]" data-tour="ai-schedule-preview-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />

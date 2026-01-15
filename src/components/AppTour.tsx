@@ -220,43 +220,97 @@ export function AppTour({
             <div>
               <h3 className="text-lg font-semibold mb-2">AI Recommendations Panel ✨</h3>
               <p className="text-sm text-muted-foreground mb-2">
-                This panel provides powerful AI-powered scheduling tools to help you manage your tasks intelligently.
+                This panel provides powerful AI-powered scheduling tools. Let's explore the AI Smart Scheduler first.
+              </p>
+            </div>
+          ),
+          placement: getPlacement('left', 'left'),
+        },
+        {
+          target: '[data-tour="ai-schedule-preview-dialog"]',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">AI Smart Scheduler ✨</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                This dialog shows you how AI will schedule your unscheduled tasks. The AI analyzes:
+              </p>
+              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
+                <li>Task priority (Urgent → High → Medium → Low)</li>
+                <li>Estimated duration and due dates</li>
+                <li>Your working hours and availability</li>
+                <li>Category-based time limits</li>
+              </ul>
+              <p className="text-xs text-muted-foreground mt-2">
+                Review the schedule and click "Schedule" to apply it, or "Cancel" to make changes.
+              </p>
+            </div>
+          ),
+          placement: getPlacement('left', 'left'),
+        },
+        {
+          target: 'body',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Closing Schedule Preview</h3>
+              <p className="text-sm text-muted-foreground">
+                Now let's see the Reschedule feature. The dialog will close automatically.
+              </p>
+            </div>
+          ),
+          placement: 'center',
+          disableBeacon: true,
+        },
+        {
+          target: '[data-tour="reschedule-dialog"]',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Reschedule Tasks 🔄</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                Use this dialog to reschedule tasks from a specific day, week, or month to a new date.
               </p>
               <div className="space-y-2 mt-3">
                 <div className="text-xs text-muted-foreground">
-                  <p className="font-medium mb-1">AI Smart Scheduler:</p>
-                  <p className="ml-2">Automatically schedules all unscheduled tasks by priority (Urgent → High → Medium → Low) across your selected time period. Choose from Day, Week, Month, or Two Weeks.</p>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  <p className="font-medium mb-1">Reschedule Tasks:</p>
+                  <p className="font-medium mb-1">Reschedule Options:</p>
                   <ul className="ml-2 list-disc list-inside space-y-0.5">
                     <li><strong>Day:</strong> Move all tasks from a specific day to a new date</li>
                     <li><strong>Week:</strong> Redistribute tasks across a new week</li>
                     <li><strong>Month:</strong> Reschedule tasks across a new month</li>
                   </ul>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  <p className="font-medium mb-1">How it works:</p>
-                  <p className="ml-2">The AI analyzes task priority, due dates, estimated duration, and your working hours to create an optimal schedule that reduces overwhelm and maximizes productivity.</p>
-                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Select a date using the calendar picker, then click "Reschedule" to let AI redistribute your tasks.
+                </p>
               </div>
               {subscription.tier === 'free' && (
                 <p className="text-xs text-primary font-medium mt-2">
                   💎 {SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature} - {SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(monthlyPrice)}
                 </p>
               )}
+            </div>
+          ),
+          placement: getPlacement('left', 'left'),
+        },
+        {
+          target: 'body',
+          content: (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">AI Features Complete! 🎉</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                You've seen how AI can help schedule and reschedule your tasks intelligently.
+              </p>
               <p 
                 className="text-xs text-muted-foreground border-t border-border/50 mt-3 pt-3"
                 style={{ 
-                  marginTop: SETTINGS_PANEL_SPACING_MEDIUM, // mt-3 = 0.75rem (12px)
-                  paddingTop: SETTINGS_PANEL_SPACING_MEDIUM // pt-3 = 0.75rem (12px)
+                  marginTop: SETTINGS_PANEL_SPACING_MEDIUM,
+                  paddingTop: SETTINGS_PANEL_SPACING_MEDIUM
                 }}
               >
                 🎉 You've completed the tour! Click "Get Started" to begin using TaskZM.
               </p>
             </div>
           ),
-          placement: getPlacement('left', 'left'),
+          placement: 'center',
+          disableBeacon: true,
         },
       ];
 
@@ -308,6 +362,9 @@ export function AppTour({
             step.target === '[data-tour="kanban-board"]' ||
             step.target === '[data-tour="add-task"]' || 
             step.target === '[data-tour="ai-scheduler"]' ||
+            step.target === '[data-tour="ai-recommendations-panel"]' ||
+            step.target === '[data-tour="ai-schedule-preview-dialog"]' ||
+            step.target === '[data-tour="reschedule-dialog"]' ||
             step.target === '[data-tour="calendar-month-view-toggle"]') {
           onNavigate(TOUR_CONSTANTS.viewModes.dashboard);
         }
@@ -336,6 +393,42 @@ export function AppTour({
             }));
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
+
+        // Handle AI dialog opening
+        if (step.target === '[data-tour="ai-schedule-preview-dialog"]') {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { 
+              detail: { dialog: 'schedule-preview' } 
+            }));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+
+        // Close schedule preview dialog before showing reschedule dialog
+        const rescheduleDialogIndex = steps.findIndex(s => s.target === '[data-tour="reschedule-dialog"]');
+        if (step.target === 'body' && rescheduleDialogIndex > 0 && index === rescheduleDialogIndex - 1) {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-close-ai-dialog'));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+
+        // Handle reschedule dialog opening
+        if (step.target === '[data-tour="reschedule-dialog"]') {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { 
+              detail: { dialog: 'reschedule-day' } 
+            }));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+
+        // Close reschedule dialog after showing completion step
+        const lastBodyStepIndex = steps.map((s, i) => ({ step: s, index: i }))
+          .filter(({ step }) => step.target === 'body')
+          .pop()?.index;
+        if (step.target === 'body' && lastBodyStepIndex !== undefined && index === lastBodyStepIndex - 1) {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tour-close-ai-dialog'));
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
       }
     }
 
@@ -344,20 +437,47 @@ export function AppTour({
       const step = steps[index];
       if (step) {
         // Ensure we're on dashboard before showing kanban/calendar views
-        // Also open AI panel before showing the step
+        // Also open AI panel and dialogs before showing the step
         if (step.target === '[data-tour="kanban"]' || 
             step.target === '[data-tour="kanban-board"]' ||
             step.target === '[data-tour="calendar-month-view-toggle"]' ||
             step.target === '[data-tour="add-task"]' ||
             step.target === '[data-tour="ai-scheduler"]' ||
-            step.target === '[data-tour="ai-recommendations-panel"]') {
+            step.target === '[data-tour="ai-recommendations-panel"]' ||
+            step.target === '[data-tour="ai-schedule-preview-dialog"]' ||
+            step.target === '[data-tour="reschedule-dialog"]') {
           onNavigate(TOUR_CONSTANTS.viewModes.dashboard);
           
-          // Open AI panel before showing the step
+          // Open AI panel before showing panel step
           if (step.target === '[data-tour="ai-recommendations-panel"]') {
             window.dispatchEvent(new CustomEvent('tour-open-panel', { 
               detail: { panel: TOUR_CONSTANTS.panels.ai } 
             }));
+          }
+          
+          // Open AI dialogs before showing dialog steps
+          if (step.target === '[data-tour="ai-schedule-preview-dialog"]') {
+            // Ensure panel is open first
+            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
+              detail: { panel: TOUR_CONSTANTS.panels.ai } 
+            }));
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { 
+                detail: { dialog: 'schedule-preview' } 
+              }));
+            }, TIMING_CONSTANTS.tour.navigationComplete * 2);
+          }
+          
+          if (step.target === '[data-tour="reschedule-dialog"]') {
+            // Ensure panel is open first
+            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
+              detail: { panel: TOUR_CONSTANTS.panels.ai } 
+            }));
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { 
+                detail: { dialog: 'reschedule-day' } 
+              }));
+            }, TIMING_CONSTANTS.tour.navigationComplete * 2);
           }
         }
       }
