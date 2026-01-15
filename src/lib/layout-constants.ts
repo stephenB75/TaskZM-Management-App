@@ -30,18 +30,43 @@ export const HEADER_PADDING_X_DESKTOP = '1.5rem'; // px-6 = 1.5rem (24px)
 export const HEADER_PADDING_Y_DESKTOP = '0.5rem'; // py-2 = 0.5rem (8px)
 export const HEADER_ICON_SIZE_SMALL = '1rem'; // w-4 h-4 = 1rem (16px)
 export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
-export const HEADER_LOGO_HEIGHT_BASE = '4rem'; // h-16 = 4rem (64px) - Base logo height
-// Calculate logo height for mobile (base size)
-export const HEADER_LOGO_HEIGHT_MOBILE = HEADER_LOGO_HEIGHT_BASE;
-// Calculate desktop logo height: base * 1.45 (45% increase) * 1.20 (additional 20% increase) = 4rem * 1.74 = 6.96rem (111.36px)
-export const HEADER_LOGO_HEIGHT_DESKTOP = (() => {
-  const baseValue = parseFloat(HEADER_LOGO_HEIGHT_BASE);
-  const initialDesktopMultiplier = 1.45; // Initial 45% increase for desktop
-  const additionalIncreaseMultiplier = 1.20; // Additional 20% increase
-  const totalMultiplier = initialDesktopMultiplier * additionalIncreaseMultiplier; // Combined multiplier: 1.74
-  const increasedValue = baseValue * totalMultiplier;
-  return `${increasedValue}rem`;
-})();
+// Calculate logo height to fit within header
+// Header height: 73px
+// Desktop padding: 0.5rem (8px) top + 0.5rem (8px) bottom = 16px
+// Border: 1px bottom
+// Available space: 73px - 16px - 1px = 56px
+// Use 80% of available space for comfortable fit: 56px * 0.8 = 44.8px ≈ 2.8rem
+// Mobile padding: 1rem (16px) top + 1rem (16px) bottom = 32px
+// Mobile available space: 73px - 32px - 1px = 40px
+// Use 80% of available space: 40px * 0.8 = 32px = 2rem
+
+// Logo height calculation constants
+export const HEADER_LOGO_SPACE_RATIO = 0.8; // Use 80% of available header space for logo
+export const HEADER_BORDER_BOTTOM = 1; // Border bottom in pixels
+
+// Helper function to convert rem to pixels
+const remToPx = (rem: string): number => {
+  return parseFloat(rem.replace('rem', '')) * 16;
+};
+
+// Helper function to convert pixels to rem
+const pxToRem = (px: number): string => {
+  return `${px / 16}rem`;
+};
+
+// Calculate logo height to fit within header
+// Available space = header height - padding top - padding bottom - border
+const calculateLogoHeight = (headerHeight: number, paddingTop: string, paddingBottom: string): string => {
+  const paddingTopPx = remToPx(paddingTop);
+  const paddingBottomPx = remToPx(paddingBottom);
+  const availableSpace = headerHeight - paddingTopPx - paddingBottomPx - HEADER_BORDER_BOTTOM;
+  const logoHeightPx = availableSpace * HEADER_LOGO_SPACE_RATIO;
+  return pxToRem(logoHeightPx);
+};
+
+export const HEADER_LOGO_HEIGHT_MOBILE = calculateLogoHeight(HEADER_HEIGHT, HEADER_PADDING_Y_MOBILE, HEADER_PADDING_Y_MOBILE);
+export const HEADER_LOGO_HEIGHT_DESKTOP = calculateLogoHeight(HEADER_HEIGHT, HEADER_PADDING_Y_DESKTOP, HEADER_PADDING_Y_DESKTOP);
+
 // Keep HEADER_LOGO_HEIGHT for backward compatibility (defaults to mobile)
 export const HEADER_LOGO_HEIGHT = HEADER_LOGO_HEIGHT_MOBILE;
 export const HEADER_TITLE_SIZE_MOBILE = '1.25rem'; // text-xl = 1.25rem (20px)
@@ -699,6 +724,9 @@ export const COMPONENT_DIMENSIONS = {
   settingsPanel: {
     logoWidth: 'w-[337.5px]', // Logo width for about section - increased by 50% from 225px (225 * 1.5 = 337.5)
     logoWidthMobile: 'w-[262.5px]', // Smaller logo for mobile devices - increased by 50% from 175px (175 * 1.5 = 262.5)
+  },
+  sidebar: {
+    logoMaxWidth: '10rem', // Maximum width for sidebar logo (160px = 10rem)
   },
   notificationsPanel: {
     selectWidth: 'w-full sm:w-[180px]',

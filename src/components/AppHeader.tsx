@@ -22,6 +22,8 @@ import {
   HEADER_BUTTON_SIZE,
   HEADER_LOGO_HEIGHT,
   HEADER_LOGO_HEIGHT_DESKTOP,
+  HEADER_LOGO_SPACE_RATIO,
+  HEADER_BORDER_BOTTOM,
   HEADER_TITLE_SIZE_MOBILE,
   HEADER_TITLE_SIZE_DESKTOP,
   HEADER_DESCRIPTION_SIZE,
@@ -401,9 +403,11 @@ export function AppHeader({
                   className="w-auto flex-shrink-0 object-contain self-center"
                   style={{ 
                     height: HEADER_LOGO_HEIGHT_DESKTOP,
-                    maxHeight: '100%',
+                    maxHeight: `calc(${HEADER_HEIGHT}px - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_BORDER_BOTTOM}px)`, // Fit within header minus padding and border
+                    width: 'auto', // Maintain aspect ratio
                     backgroundColor: 'transparent',
                     display: 'block',
+                    objectFit: 'contain', // Ensure logo fits within bounds
                   }}
                 />
               )}

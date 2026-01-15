@@ -28,6 +28,7 @@ import {
 } from "./ui/tooltip";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
+import { COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -182,7 +183,13 @@ export function AppSidebar({
         <img
           src={isDark ? taskzmLogoGray : taskzmLogoBlack}
           alt="TaskZM Logo"
-          className="w-[160px] object-contain"
+          className="object-contain"
+          style={{
+            width: 'auto',
+            maxWidth: COMPONENT_DIMENSIONS.sidebar.logoMaxWidth,
+            height: 'auto',
+            display: 'block',
+          }}
         />
         <p className="text-sm text-muted-foreground text-center">
           AI-Powered Tasks
