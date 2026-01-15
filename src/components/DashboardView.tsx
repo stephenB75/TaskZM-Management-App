@@ -1468,6 +1468,7 @@ export function DashboardView({
         <SheetContent
           side="right"
           className="w-full sm:w-[360px] md:w-[400px] bg-gradient-to-b from-white to-[#F9F7FD] dark:from-gray-900 dark:to-gray-800"
+          data-tour="ai-recommendations-panel"
         >
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">

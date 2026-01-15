@@ -215,25 +215,29 @@ export function AppTour({
           placement: getPlacement('bottom', 'top'),
         },
         {
-          target: '[data-tour="ai-scheduler"]',
+          target: '[data-tour="ai-recommendations-panel"]',
           content: (
             <div>
-              <h3 className="text-lg font-semibold mb-2">AI Scheduler ✨</h3>
+              <h3 className="text-lg font-semibold mb-2">AI Recommendations Panel ✨</h3>
               <p className="text-sm text-muted-foreground mb-2">
-                Let AI intelligently distribute your unscheduled tasks across the week based on priorities, time estimates, and your custom working hours.
+                This panel provides powerful AI-powered scheduling tools to help you manage your tasks intelligently.
               </p>
               <div className="space-y-2 mt-3">
                 <div className="text-xs text-muted-foreground">
-                  <p className="font-medium mb-1">Schedule by Priority:</p>
-                  <p className="ml-2">Automatically schedules all unscheduled tasks by priority (Urgent → High → Medium → Low) across your selected time period.</p>
+                  <p className="font-medium mb-1">AI Smart Scheduler:</p>
+                  <p className="ml-2">Automatically schedules all unscheduled tasks by priority (Urgent → High → Medium → Low) across your selected time period. Choose from Day, Week, Month, or Two Weeks.</p>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   <p className="font-medium mb-1">Reschedule Tasks:</p>
                   <ul className="ml-2 list-disc list-inside space-y-0.5">
-                    <li><strong>Day:</strong> Move tasks to a specific day</li>
-                    <li><strong>Week:</strong> Redistribute tasks across a week</li>
-                    <li><strong>Month:</strong> Reschedule tasks across a month</li>
+                    <li><strong>Day:</strong> Move all tasks from a specific day to a new date</li>
+                    <li><strong>Week:</strong> Redistribute tasks across a new week</li>
+                    <li><strong>Month:</strong> Reschedule tasks across a new month</li>
                   </ul>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-medium mb-1">How it works:</p>
+                  <p className="ml-2">The AI analyzes task priority, due dates, estimated duration, and your working hours to create an optimal schedule that reduces overwhelm and maximizes productivity.</p>
                 </div>
               </div>
               {subscription.tier === 'free' && (
@@ -252,7 +256,7 @@ export function AppTour({
               </p>
             </div>
           ),
-          placement: getPlacement('bottom', 'top'),
+          placement: getPlacement('left', 'left'),
         },
       ];
 
@@ -324,8 +328,8 @@ export function AppTour({
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
 
-        // Handle AI panel opening
-        if (step.target === '[data-tour="ai-scheduler"]') {
+        // Handle AI panel opening - open before showing the step
+        if (step.target === '[data-tour="ai-recommendations-panel"]') {
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('tour-open-panel', { 
               detail: { panel: TOUR_CONSTANTS.panels.ai } 
@@ -340,12 +344,21 @@ export function AppTour({
       const step = steps[index];
       if (step) {
         // Ensure we're on dashboard before showing kanban/calendar views
+        // Also open AI panel before showing the step
         if (step.target === '[data-tour="kanban"]' || 
             step.target === '[data-tour="kanban-board"]' ||
             step.target === '[data-tour="calendar-month-view-toggle"]' ||
             step.target === '[data-tour="add-task"]' ||
-            step.target === '[data-tour="ai-scheduler"]') {
+            step.target === '[data-tour="ai-scheduler"]' ||
+            step.target === '[data-tour="ai-recommendations-panel"]') {
           onNavigate(TOUR_CONSTANTS.viewModes.dashboard);
+          
+          // Open AI panel before showing the step
+          if (step.target === '[data-tour="ai-recommendations-panel"]') {
+            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
+              detail: { panel: TOUR_CONSTANTS.panels.ai } 
+            }));
+          }
         }
       }
     }
