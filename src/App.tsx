@@ -615,14 +615,14 @@ function AppContent() {
     
     // Data is loaded, now check if React has fully rendered and app is interactive
     let checkCount = 0;
-    const maxChecks = 100; // Maximum 10 seconds (100 * 100ms)
+    const maxChecks = TIMING_CONSTANTS.delays.splashScreenMaxChecks;
     const timeoutId = setTimeout(() => {
       // Fallback: if we've been checking for too long, assume app is ready
       if (import.meta.env.DEV) {
         console.warn('⚠️ App ready check timeout - forcing app to be considered ready');
       }
       setIsAppRendered(true);
-    }, 10000); // 10 second fallback
+    }, TIMING_CONSTANTS.delays.splashScreenTimeout);
     
     const checkAppReady = () => {
       checkCount++;
@@ -639,7 +639,7 @@ function AppContent() {
       
       const rootEl = document.getElementById('root');
       if (!rootEl) {
-        setTimeout(checkAppReady, 150);
+        setTimeout(checkAppReady, TIMING_CONSTANTS.delays.splashScreenPollInterval);
         return;
       }
       
@@ -649,8 +649,17 @@ function AppContent() {
                         innerHTML.length > TIMING_CONSTANTS.delays.splashScreenMinContentLength;
       
       // Check for interactive elements (buttons, links, inputs, etc.)
-      const interactiveElements = rootEl.querySelectorAll('button, a, [role="button"], input, select, textarea, [data-testid], [onclick]');
-      const hasInteractive = interactiveElements.length > 0;
+      // Require multiple interactive elements to ensure app is fully loaded
+      const interactiveElements = rootEl.querySelectorAll('button:not([disabled]), a:not([disabled]), [role="button"]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [data-testid], [onclick]');
+      const visibleInteractiveElements = Array.from(interactiveElements).filter((el) => {
+        const htmlEl = el as HTMLElement;
+        const style = window.getComputedStyle(htmlEl);
+        return style.display !== 'none' && 
+               style.visibility !== 'hidden' && 
+               style.opacity !== '0' &&
+               !htmlEl.hasAttribute('disabled');
+      });
+      const hasInteractive = visibleInteractiveElements.length >= TIMING_CONSTANTS.delays.splashScreenMinInteractiveElements;
       
       // Check for app-specific elements (sidebar, dashboard, kanban, etc.)
       const hasAppElements = rootEl.querySelector('[class*="sidebar"], [class*="dashboard"], [class*="kanban"], [class*="view"], [class*="panel"]') !== null ||
@@ -662,15 +671,30 @@ function AppContent() {
       // Check if loading screen is still visible (if it is, app isn't ready yet)
       const hasLoadingScreen = rootEl.querySelector('[class*="loading"], [class*="splash"], .animate-spin') !== null;
       
+      // Check if body is in a loading state (pointer-events: none, etc.)
+      const bodyStyle = window.getComputedStyle(document.body);
+      const isBodyInteractive = bodyStyle.pointerEvents !== 'none' && 
+                               !document.body.classList.contains('loading') &&
+                               !document.body.hasAttribute('data-loading');
+      
+      // Check if React has finished rendering by looking for React root markers
+      // React 18+ uses data-reactroot or similar markers
+      const hasReactMarkers = rootEl.querySelector('[data-reactroot], [data-react-version]') !== null ||
+                             rootEl.children.length > 0; // If there are children, React has rendered
+      
       // App is ready if:
       // 1. Has substantial content
-      // 2. Has interactive elements (multiple is better)
+      // 2. Has multiple visible, enabled interactive elements (at least 3)
       // 3. Has app elements OR auth elements (one of them)
       // 4. Loading screen is NOT visible (app content has replaced it)
+      // 5. Body is interactive (not disabled)
+      // 6. React has finished rendering
       const isReady = hasContent && 
                      hasInteractive && 
                      (hasAppElements || hasAuthElements) &&
-                     !hasLoadingScreen;
+                     !hasLoadingScreen &&
+                     isBodyInteractive &&
+                     hasReactMarkers;
       
       if (isReady) {
         clearTimeout(timeoutId);
@@ -678,30 +702,48 @@ function AppContent() {
           console.log('✅ App is ready:', { 
             hasContent, 
             hasInteractive, 
-            interactiveCount: interactiveElements.length,
+            interactiveCount: visibleInteractiveElements.length,
             hasAppElements, 
             hasAuthElements,
-            hasLoadingScreen 
+            hasLoadingScreen,
+            isBodyInteractive,
+            hasReactMarkers
           });
         }
-        // Add a small delay to ensure smooth transition
+        // Add additional delay to ensure React has fully initialized event handlers
+        // and the app is truly responsive
         setTimeout(() => {
-          setIsAppRendered(true);
-        }, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay);
+          // Double-check that app is still ready before hiding
+          const finalCheck = rootEl && 
+                            rootEl.children.length > 0 && 
+                            rootEl.querySelector('button:not([disabled]), a:not([disabled])') !== null;
+          
+          if (finalCheck) {
+            setIsAppRendered(true);
+          } else {
+            // If final check fails, continue checking
+            if (import.meta.env.DEV) {
+              console.warn('⚠️ Final check failed, continuing to wait...');
+            }
+            setTimeout(checkAppReady, TIMING_CONSTANTS.delays.splashScreenCheckDelay);
+          }
+        }, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay + TIMING_CONSTANTS.delays.splashScreenReactInitDelay);
       } else {
         if (import.meta.env.DEV && checkCount % 10 === 0) {
           // Log every 10th check to avoid spam
           console.log(`⏳ App not ready yet (attempt ${checkCount}/${maxChecks}):`, { 
             hasContent, 
             hasInteractive, 
-            interactiveCount: interactiveElements.length,
+            interactiveCount: visibleInteractiveElements.length,
             hasAppElements, 
             hasAuthElements,
-            hasLoadingScreen 
+            hasLoadingScreen,
+            isBodyInteractive,
+            hasReactMarkers
           });
         }
         // Check again after a short delay
-        setTimeout(checkAppReady, 150);
+        setTimeout(checkAppReady, TIMING_CONSTANTS.delays.splashScreenPollInterval);
       }
     };
     
@@ -711,7 +753,7 @@ function AppContent() {
         // Additional delay to ensure React has fully rendered
         setTimeout(() => {
           checkAppReady();
-        }, 200);
+        }, TIMING_CONSTANTS.delays.splashScreenCheckDelay);
       });
     });
     

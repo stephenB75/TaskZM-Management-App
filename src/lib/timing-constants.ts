@@ -28,6 +28,11 @@ export const TIMING_CONSTANTS = {
     splashScreenPostReadyDelay: 500, // Delay after app-ready event before hiding (increased to ensure React has fully rendered)
     splashScreenPollInterval: 150, // Interval for polling if app is fully loaded (ms) - increased for better reliability
     splashScreenMinContentLength: 500, // Minimum innerHTML length (chars) to consider React content rendered (increased for more reliable detection)
+    splashScreenMaxChecks: 100, // Maximum number of readiness checks (100 * 150ms = 15 seconds)
+    splashScreenTimeout: 10000, // Timeout fallback for app readiness check (10 seconds)
+    splashScreenMinInteractiveElements: 3, // Minimum number of interactive elements required for app to be considered ready
+    splashScreenReactInitDelay: 300, // Extra delay for React initialization after readiness check passes (ms)
+    splashScreenCheckDelay: 200, // Delay before starting readiness check to ensure React has rendered (ms)
     revenueCat: 100, // RevenueCat processing delay
     notificationCheck: 100, // Notification check delay after task update
     throttle: 1000, // Throttle delay for activity tracking
