@@ -539,38 +539,55 @@ export const REACT_LOADING_SCREEN = {
 } as const;
 
 // Loading Screen Constants
-// Base values for loading screen logo
-const LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE = '4rem'; // h-16 = 4rem (64px) - Base mobile logo height
+// Base values for loading screen logo (responsive sizing)
+const LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE = '2.5rem'; // h-10 = 2.5rem (40px) - Base mobile logo height (reduced from 4rem)
+const LOADING_SCREEN_LOGO_BASE_HEIGHT_TABLET = '3.5rem'; // h-14 = 3.5rem (56px) - Base tablet logo height
 const LOADING_SCREEN_LOGO_BASE_HEIGHT_DESKTOP = '5rem'; // h-20 = 5rem (80px) - Base desktop logo height
 const LOADING_SCREEN_LOGO_BASE_MAX_WIDTH = 220; // Base max width in px
-// Size increase multiplier (3x = 300% increase for better tagline visibility)
-const LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER = 3.0;
+// Size increase multiplier (2.5x = 250% increase for better visibility without being too large on mobile)
+const LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER = 2.5;
 
 export const LOADING_SCREEN_LOGO = {
   // Base sizes (for reference)
   baseHeight: {
     mobile: LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE,
+    tablet: LOADING_SCREEN_LOGO_BASE_HEIGHT_TABLET,
     desktop: LOADING_SCREEN_LOGO_BASE_HEIGHT_DESKTOP,
   },
   baseMaxWidth: LOADING_SCREEN_LOGO_BASE_MAX_WIDTH,
   sizeIncreaseMultiplier: LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER,
-  // Calculate 3x increase: base * sizeIncreaseMultiplier
+  // Calculate responsive sizes: base * sizeIncreaseMultiplier
   height: {
     mobile: (() => {
       const baseValue = parseFloat(LOADING_SCREEN_LOGO_BASE_HEIGHT_MOBILE);
       const increasedValue = baseValue * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
-      return `${increasedValue}rem`;
+      return `${increasedValue}rem`; // 2.5 * 2.5 = 6.25rem (100px)
+    })(),
+    tablet: (() => {
+      const baseValue = parseFloat(LOADING_SCREEN_LOGO_BASE_HEIGHT_TABLET);
+      const increasedValue = baseValue * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
+      return `${increasedValue}rem`; // 3.5 * 2.5 = 8.75rem (140px)
     })(),
     desktop: (() => {
       const baseValue = parseFloat(LOADING_SCREEN_LOGO_BASE_HEIGHT_DESKTOP);
       const increasedValue = baseValue * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
-      return `${increasedValue}rem`;
+      return `${increasedValue}rem`; // 5 * 2.5 = 12.5rem (200px)
     })(),
   },
-  maxWidth: (() => {
-    const increasedValue = LOADING_SCREEN_LOGO_BASE_MAX_WIDTH * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
-    return `${increasedValue}px`;
-  })(), // Maximum width for loading screen logo (3x increase from base)
+  maxWidth: {
+    mobile: (() => {
+      const increasedValue = LOADING_SCREEN_LOGO_BASE_MAX_WIDTH * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER * 0.7; // 70% for mobile
+      return `${increasedValue}px`; // 220 * 2.5 * 0.7 = 385px
+    })(),
+    tablet: (() => {
+      const increasedValue = LOADING_SCREEN_LOGO_BASE_MAX_WIDTH * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER * 0.85; // 85% for tablet
+      return `${increasedValue}px`; // 220 * 2.5 * 0.85 = 467.5px
+    })(),
+    desktop: (() => {
+      const increasedValue = LOADING_SCREEN_LOGO_BASE_MAX_WIDTH * LOADING_SCREEN_LOGO_SIZE_INCREASE_MULTIPLIER;
+      return `${increasedValue}px`; // 220 * 2.5 = 550px
+    })(),
+  },
 } as const;
 
 // Toast Notification Durations (in milliseconds)

@@ -797,20 +797,11 @@ function AppContent() {
     return (
       <div className="fixed inset-0 h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950" style={{ zIndex: REACT_LOADING_SCREEN.zIndex }}>
         <div className="flex flex-col items-center justify-center space-y-6">
-          {/* Logo */}
+          {/* Logo - Responsive sizing using CSS class */}
           <img
             src={isDark ? logoImageGray : logoImageBlack}
             alt={SPLASH_SCREEN_TEXT.logoAlt}
-            className="object-contain"
-            style={{
-              width: 'auto',
-              height: LOADING_SCREEN_LOGO.height.mobile,
-              maxWidth: LOADING_SCREEN_LOGO.maxWidth,
-              maxHeight: LOADING_SCREEN_LOGO.height.desktop,
-              display: 'block',
-              visibility: 'visible',
-              opacity: 1,
-            }}
+            className="loading-screen-logo"
             onError={(e) => {
               // Fallback if image fails
               const target = e.target as HTMLImageElement;

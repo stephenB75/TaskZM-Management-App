@@ -308,6 +308,36 @@ body {
   background: rgba(155, 135, 232, 0.5);
 }
 
+/* Responsive loading screen logo sizing */
+.loading-screen-logo {
+  width: auto !important;
+  height: 6.25rem !important; /* Mobile: 2.5rem * 2.5 = 6.25rem (100px) */
+  max-width: 385px !important; /* Mobile: 220 * 2.5 * 0.7 = 385px */
+  max-height: 6.25rem !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  object-fit: contain !important;
+}
+
+/* Tablet sizing (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .loading-screen-logo {
+    height: 8.75rem !important; /* Tablet: 3.5rem * 2.5 = 8.75rem (140px) */
+    max-width: 467.5px !important; /* Tablet: 220 * 2.5 * 0.85 = 467.5px */
+    max-height: 8.75rem !important;
+  }
+}
+
+/* Desktop and laptop sizing (1024px+) */
+@media (min-width: 1024px) {
+  .loading-screen-logo {
+    height: 12.5rem !important; /* Desktop: 5rem * 2.5 = 12.5rem (200px) */
+    max-width: 550px !important; /* Desktop: 220 * 2.5 = 550px */
+    max-height: 12.5rem !important;
+  }
+}
+
 /* Tablet optimizations (768px - 1279px) - includes iPad, iPad Pro, and small monitors */
 @media (min-width: 768px) and (max-width: 1279px) {
   /* Improve touch targets for tablets */

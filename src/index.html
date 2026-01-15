@@ -146,9 +146,9 @@
 
       #initial-splash img {
         width: auto;
-        height: min(12rem, 20vw);
-        max-width: 660px; /* Matches LOADING_SCREEN_LOGO.maxWidth: 220 * 3 = 660px */
-        max-height: 15rem; /* Matches LOADING_SCREEN_LOGO.height.desktop: 5 * 3 = 15rem */
+        height: 6.25rem; /* Mobile: 2.5rem * 2.5 = 6.25rem (100px) */
+        max-width: 385px; /* Mobile: 220 * 2.5 * 0.7 = 385px */
+        max-height: 6.25rem;
         filter: drop-shadow(0 8px 24px rgba(155, 135, 232, 0.25)); /* COLOR_PRIMARY (#9B87E8 = rgb(155, 135, 232)) with 0.25 opacity */
         -webkit-filter: drop-shadow(0 8px 24px rgba(155, 135, 232, 0.25));
         animation: fadeIn 0.5s ease-in;
@@ -162,6 +162,24 @@
         visibility: visible !important;
         position: relative;
         z-index: 1;
+      }
+      
+      /* Tablet sizing (768px - 1023px) */
+      @media (min-width: 768px) and (max-width: 1023px) {
+        #initial-splash img {
+          height: 8.75rem; /* Tablet: 3.5rem * 2.5 = 8.75rem (140px) */
+          max-width: 467.5px; /* Tablet: 220 * 2.5 * 0.85 = 467.5px */
+          max-height: 8.75rem;
+        }
+      }
+      
+      /* Desktop and laptop sizing (1024px+) */
+      @media (min-width: 1024px) {
+        #initial-splash img {
+          height: 12.5rem; /* Desktop: 5rem * 2.5 = 12.5rem (200px) */
+          max-width: 550px; /* Desktop: 220 * 2.5 = 550px */
+          max-height: 12.5rem;
+        }
       }
       
       /* Ensure logo is always visible - override any conflicting styles */
@@ -415,7 +433,7 @@
           alt="TaskZM Logo" 
           onerror="handleSplashLogoError(this)"
           loading="eager"
-          style="display: block !important; margin: 0 auto 1.5rem auto; width: auto; height: min(12rem, 20vw); max-width: 660px; max-height: 15rem; object-fit: contain; opacity: 1 !important; visibility: visible !important;"
+          style="display: block !important; margin: 0 auto 1.5rem auto; width: auto; height: 6.25rem; max-width: 385px; max-height: 6.25rem; object-fit: contain; opacity: 1 !important; visibility: visible !important;"
         />
         <div class="splash-spinner">
           <div class="spinner-circle spinner-circle-1"></div>
@@ -444,11 +462,15 @@
       };
       var LOADING_SCREEN_LOGO = {
         height: {
-          mobile: '12rem', // LOADING_SCREEN_LOGO.height.mobile (4rem * 3 = 12rem)
-          desktop: '15rem' // LOADING_SCREEN_LOGO.height.desktop (5rem * 3 = 15rem)
+          mobile: '6.25rem', // LOADING_SCREEN_LOGO.height.mobile (2.5rem * 2.5 = 6.25rem)
+          tablet: '8.75rem', // LOADING_SCREEN_LOGO.height.tablet (3.5rem * 2.5 = 8.75rem)
+          desktop: '12.5rem' // LOADING_SCREEN_LOGO.height.desktop (5rem * 2.5 = 12.5rem)
         },
-        maxWidth: '660px', // LOADING_SCREEN_LOGO.maxWidth (220 * 3 = 660px)
-        heightViewport: '20vw' // Responsive height using viewport width
+        maxWidth: {
+          mobile: '385px', // LOADING_SCREEN_LOGO.maxWidth.mobile (220 * 2.5 * 0.7 = 385px)
+          tablet: '467.5px', // LOADING_SCREEN_LOGO.maxWidth.tablet (220 * 2.5 * 0.85 = 467.5px)
+          desktop: '550px' // LOADING_SCREEN_LOGO.maxWidth.desktop (220 * 2.5 = 550px)
+        }
       };
       var APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // APP_TEXT_FALLBACK_COLOR from layout-constants.ts
       
@@ -542,9 +564,10 @@
           img.style.setProperty('visibility', 'visible', 'important');
           img.style.setProperty('opacity', '1', 'important');
           img.style.setProperty('width', 'auto', 'important');
-          img.style.setProperty('height', 'min(' + LOADING_SCREEN_LOGO.height.mobile + ', ' + LOADING_SCREEN_LOGO.heightViewport + ')', 'important');
-          img.style.setProperty('max-width', LOADING_SCREEN_LOGO.maxWidth, 'important');
-          img.style.setProperty('max-height', LOADING_SCREEN_LOGO.height.desktop, 'important');
+          // Responsive sizing is handled by CSS media queries, but set mobile defaults
+          img.style.setProperty('height', LOADING_SCREEN_LOGO.height.mobile, 'important');
+          img.style.setProperty('max-width', LOADING_SCREEN_LOGO.maxWidth.mobile, 'important');
+          img.style.setProperty('max-height', LOADING_SCREEN_LOGO.height.mobile, 'important');
           
           // Only show text fallback if image still fails after delay
           setTimeout(function() {
