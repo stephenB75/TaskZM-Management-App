@@ -1208,6 +1208,68 @@ export function TaskDialog({
         : null,
     };
 
+    // For recurring tasks, if no scheduledDate is set, calculate the first occurrence date
+    // This ensures recurring tasks always have a base date for the recurrence pattern to work
+    if (recurrenceType !== "none" && !finalScheduledDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let firstOccurrenceDate: Date | null = null;
+      
+      if (recurrenceType === "daily") {
+        firstOccurrenceDate = new Date(today);
+        firstOccurrenceDate.setDate(today.getDate() + recurrenceInterval);
+      } else if (recurrenceType === "weekly" && recurrenceDaysOfWeek && recurrenceDaysOfWeek.length > 0) {
+        const currentDay = today.getDay();
+        const sortedDays = [...recurrenceDaysOfWeek].sort((a, b) => a - b);
+        // Find the next matching day (including today if it matches)
+        const nextDayInWeek = sortedDays.find(day => day >= currentDay);
+        
+        if (nextDayInWeek !== undefined) {
+          firstOccurrenceDate = new Date(today);
+          firstOccurrenceDate.setDate(today.getDate() + (nextDayInWeek - currentDay));
+          // If it's today, move to the next occurrence
+          if (firstOccurrenceDate.getTime() === today.getTime()) {
+            // Find the next occurrence after today
+            const nextAfterToday = sortedDays.find(day => day > currentDay);
+            if (nextAfterToday !== undefined) {
+              firstOccurrenceDate.setDate(today.getDate() + (nextAfterToday - currentDay));
+            } else {
+              // First occurrence is in the next interval week
+              const daysUntilNextWeek = 7 - currentDay;
+              const daysToFirstDay = sortedDays[0];
+              const daysToAdd = daysUntilNextWeek + daysToFirstDay + (7 * (recurrenceInterval - 1));
+              firstOccurrenceDate.setDate(today.getDate() + daysToAdd);
+            }
+          }
+        } else {
+          // First occurrence is in the next interval week
+          const daysUntilNextWeek = 7 - currentDay;
+          const daysToFirstDay = sortedDays[0];
+          const daysToAdd = daysUntilNextWeek + daysToFirstDay + (7 * (recurrenceInterval - 1));
+          firstOccurrenceDate = new Date(today);
+          firstOccurrenceDate.setDate(today.getDate() + daysToAdd);
+        }
+      } else if (recurrenceType === "monthly") {
+        if (recurrenceDayOfMonth) {
+          firstOccurrenceDate = new Date(today.getFullYear(), today.getMonth(), recurrenceDayOfMonth);
+          if (firstOccurrenceDate < today) {
+            // If the day has passed this month, move to next month
+            firstOccurrenceDate.setMonth(today.getMonth() + recurrenceInterval);
+          }
+        } else {
+          // Use the same day of month
+          firstOccurrenceDate = new Date(today);
+          firstOccurrenceDate.setMonth(today.getMonth() + recurrenceInterval);
+        }
+      }
+      
+      if (firstOccurrenceDate) {
+        firstOccurrenceDate.setHours(0, 0, 0, 0);
+        finalScheduledDate = firstOccurrenceDate.toISOString();
+      }
+    }
+
     // Ensure tags is always an array
     const taskTags = Array.isArray(tags) ? tags.filter(tag => tag && tag.trim()) : [];
 
