@@ -82,6 +82,9 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
         }
         firstOccurrence.setHours(0, 0, 0, 0);
         
+        // If check date is before first occurrence, it doesn't match
+        if (checkDateOnly < firstOccurrence) return false;
+        
         // Calculate the week number (0-based) from the first occurrence
         // All days in the same week as the first occurrence are in week 0
         // All days in the week that is interval weeks later are in week interval, etc.
@@ -96,6 +99,7 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
         
         // Check if we're on a valid interval week and the day matches
         // All days in week 0, interval, 2*interval, etc. should match
+        // Ensure weeksFromFirst is non-negative and divisible by interval
         return weeksFromFirst >= 0 && weeksFromFirst % recurrence.interval === 0;
       }
       // Fallback: simple weekly interval (same day of week every interval weeks)
