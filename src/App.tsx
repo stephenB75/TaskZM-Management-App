@@ -589,6 +589,16 @@ function AppContent() {
 
   // Track if app is fully rendered and interactive (not just data loaded)
   const [isAppRendered, setIsAppRendered] = React.useState(false);
+  const [minDisplayTimeElapsed, setMinDisplayTimeElapsed] = React.useState(false);
+  
+  // Track minimum display time for loading screen
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinDisplayTimeElapsed(true);
+    }, TIMING_CONSTANTS.delays.splashScreenMinDisplay);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Check if app is fully rendered and interactive
   React.useEffect(() => {
@@ -598,16 +608,21 @@ function AppContent() {
       return;
     }
     
+    // Wait for minimum display time before checking
+    if (!minDisplayTimeElapsed) {
+      return;
+    }
+    
     // Data is loaded, now check if React has fully rendered and app is interactive
     let checkCount = 0;
-    const maxChecks = 50; // Maximum 5 seconds (50 * 100ms)
+    const maxChecks = 100; // Maximum 10 seconds (100 * 100ms)
     const timeoutId = setTimeout(() => {
       // Fallback: if we've been checking for too long, assume app is ready
       if (import.meta.env.DEV) {
         console.warn('⚠️ App ready check timeout - forcing app to be considered ready');
       }
       setIsAppRendered(true);
-    }, 5000); // 5 second fallback
+    }, 10000); // 10 second fallback
     
     const checkAppReady = () => {
       checkCount++;
@@ -624,51 +639,79 @@ function AppContent() {
       
       const rootEl = document.getElementById('root');
       if (!rootEl) {
-        setTimeout(checkAppReady, 100);
+        setTimeout(checkAppReady, 150);
         return;
       }
       
-      // Check for meaningful content
+      // Check for meaningful content (more strict - require substantial content)
       const innerHTML = rootEl.innerHTML.trim();
-      const hasContent = rootEl.children.length > 0 || 
+      const hasContent = rootEl.children.length > 0 && 
                         innerHTML.length > TIMING_CONSTANTS.delays.splashScreenMinContentLength;
       
       // Check for interactive elements (buttons, links, inputs, etc.)
-      const hasInteractive = rootEl.querySelector('button, a, [role="button"], input, select, textarea, [data-testid], [onclick]') !== null;
+      const interactiveElements = rootEl.querySelectorAll('button, a, [role="button"], input, select, textarea, [data-testid], [onclick]');
+      const hasInteractive = interactiveElements.length > 0;
       
       // Check for app-specific elements (sidebar, dashboard, kanban, etc.)
-      // OR check for auth screen elements (auth form, sign in button, etc.)
       const hasAppElements = rootEl.querySelector('[class*="sidebar"], [class*="dashboard"], [class*="kanban"], [class*="view"], [class*="panel"]') !== null ||
-                           rootEl.querySelector('nav, header, main, section, aside') !== null ||
-                           rootEl.querySelector('[class*="auth"], [class*="signin"], [class*="signup"], [id*="auth"]') !== null; // Auth screen elements
+                           rootEl.querySelector('nav, header, main, section, aside') !== null;
       
-      // App is ready if it has content AND (interactive elements OR app elements)
-      // This allows auth screen to pass (has content + interactive) without requiring app-specific elements
-      const isReady = hasContent && (hasInteractive || hasAppElements);
+      // Check for auth screen elements (auth form, sign in button, etc.)
+      const hasAuthElements = rootEl.querySelector('[class*="auth"], [class*="signin"], [class*="signup"], [id*="auth"]') !== null;
+      
+      // Check if loading screen is still visible (if it is, app isn't ready yet)
+      const hasLoadingScreen = rootEl.querySelector('[class*="loading"], [class*="splash"], .animate-spin') !== null;
+      
+      // App is ready if:
+      // 1. Has substantial content
+      // 2. Has interactive elements (multiple is better)
+      // 3. Has app elements OR auth elements (one of them)
+      // 4. Loading screen is NOT visible (app content has replaced it)
+      const isReady = hasContent && 
+                     hasInteractive && 
+                     (hasAppElements || hasAuthElements) &&
+                     !hasLoadingScreen;
       
       if (isReady) {
         clearTimeout(timeoutId);
         if (import.meta.env.DEV) {
-          console.log('✅ App is ready:', { hasContent, hasInteractive, hasAppElements });
+          console.log('✅ App is ready:', { 
+            hasContent, 
+            hasInteractive, 
+            interactiveCount: interactiveElements.length,
+            hasAppElements, 
+            hasAuthElements,
+            hasLoadingScreen 
+          });
         }
         // Add a small delay to ensure smooth transition
         setTimeout(() => {
           setIsAppRendered(true);
-        }, 300);
+        }, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay);
       } else {
         if (import.meta.env.DEV && checkCount % 10 === 0) {
           // Log every 10th check to avoid spam
-          console.log(`⏳ App not ready yet (attempt ${checkCount}/${maxChecks}):`, { hasContent, hasInteractive, hasAppElements });
+          console.log(`⏳ App not ready yet (attempt ${checkCount}/${maxChecks}):`, { 
+            hasContent, 
+            hasInteractive, 
+            interactiveCount: interactiveElements.length,
+            hasAppElements, 
+            hasAuthElements,
+            hasLoadingScreen 
+          });
         }
         // Check again after a short delay
-        setTimeout(checkAppReady, 100);
+        setTimeout(checkAppReady, 150);
       }
     };
     
     // Use requestAnimationFrame to ensure React has rendered
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        checkAppReady();
+        // Additional delay to ensure React has fully rendered
+        setTimeout(() => {
+          checkAppReady();
+        }, 200);
       });
     });
     
@@ -676,10 +719,11 @@ function AppContent() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [isLoading]);
+  }, [isLoading, minDisplayTimeElapsed]);
   
   // Show loading screen if data is loading OR app is not yet rendered/interactive
-  const showLoadingScreen = isLoading || !isAppRendered;
+  // Also ensure minimum display time has elapsed
+  const showLoadingScreen = isLoading || !isAppRendered || !minDisplayTimeElapsed;
   
   // If loading, show React loading screen (which properly loads images via imports)
   // React loading screen stays visible until isLoading is false AND app is fully rendered and interactive
