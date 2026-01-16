@@ -448,6 +448,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }, [user, accessToken]);
 
   // Deduplicate recurring task occurrences
+  // CRITICAL: This function should ONLY remove true duplicates, not filter out recurring task series
+  // Recurring tasks work by having ONE task that appears on multiple dates via isDateInRecurrence()
   // Removes duplicate tasks that have the same title, recurrence pattern, and scheduled date
   // Also handles pre-created occurrences (recurrence.type = 'none') by matching title and scheduledDate
   function deduplicateRecurringTasks(tasks: Task[]): Task[] {
@@ -474,8 +476,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
     
     // Now deduplicate by recurrence pattern (for tasks with same title/config but different IDs)
-    const seenActiveRecurring = new Map<string, Task>(); // For active recurring tasks (type !== 'none')
+    // CRITICAL: Only deduplicate completed occurrences and true duplicates (same title + pattern + scheduledDate)
+    // Active recurring tasks should ALL be kept - they need to appear on multiple dates
     const seenCompletedOccurrences = new Map<string, Task>(); // For completed occurrences (type = 'none' AND status = 'done')
+    const seenTrueDuplicates = new Map<string, Task>(); // For true duplicates (same title + pattern + scheduledDate)
     
     // Use the deduplicated-by-ID tasks
     const uniqueByIdTasks = Array.from(tasksById.values());
@@ -508,41 +512,40 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
       
       // Handle active recurring tasks (recurrence.type !== 'none')
-      // Create a unique key for this recurring task
-      // Format: title|type|interval|daysOfWeek|dayOfMonth|endDate
-      // Note: scheduledDate is NOT included because it changes as the task advances
-      const daysOfWeekKey = task.recurrence.daysOfWeek 
-        ? JSON.stringify([...task.recurrence.daysOfWeek].sort())
-        : '';
-      const dayOfMonthKey = task.recurrence.dayOfMonth || '';
-      const endDateKey = task.recurrence.endDate || '';
-      const key = `${task.title}|${task.recurrence.type}|${task.recurrence.interval}|${daysOfWeekKey}|${dayOfMonthKey}|${endDateKey}`;
-      
-      // If we've seen this key before, keep the one with the most recent updatedAt
-      if (seenActiveRecurring.has(key)) {
-        const existing = seenActiveRecurring.get(key)!;
-        const existingDate = new Date(existing.updatedAt);
-        const currentDate = new Date(task.updatedAt);
+      // CRITICAL FIX: Only deduplicate if they have the same title, pattern, AND scheduledDate (true duplicates)
+      // Recurring tasks should all be kept - they represent the same task appearing on multiple dates
+      // The system uses isDateInRecurrence() to determine which dates each task appears on
+      // We only deduplicate if the exact same task was created twice (same title + pattern + scheduledDate)
+      if (task.recurrence.type !== 'none' && task.scheduledDate) {
+        const daysOfWeekKey = task.recurrence.daysOfWeek 
+          ? JSON.stringify([...task.recurrence.daysOfWeek].sort())
+          : '';
+        const dayOfMonthKey = task.recurrence.dayOfMonth || '';
+        const endDateKey = task.recurrence.endDate || '';
+        const scheduledDateKey = task.scheduledDate || '';
+        // Include scheduledDate in key to only catch true duplicates (same task created twice)
+        const key = `${task.title}|${task.recurrence.type}|${task.recurrence.interval}|${daysOfWeekKey}|${dayOfMonthKey}|${endDateKey}|${scheduledDateKey}`;
         
-        // Keep the most recently updated one
-        if (currentDate > existingDate) {
-          seenActiveRecurring.set(key, task);
+        // If we've seen this exact key before (same pattern AND same scheduledDate), it's a true duplicate
+        if (seenTrueDuplicates.has(key)) {
+          const existing = seenTrueDuplicates.get(key)!;
+          const existingDate = new Date(existing.updatedAt);
+          const currentDate = new Date(task.updatedAt);
+          
+          // Keep the most recently updated one
+          if (currentDate > existingDate) {
+            seenTrueDuplicates.set(key, task);
+          }
+        } else {
+          seenTrueDuplicates.set(key, task);
         }
-      } else {
-        seenActiveRecurring.set(key, task);
       }
+      // If task has no scheduledDate, keep it (it will be handled elsewhere)
     }
     
-    // Count duplicates removed
-    const allSeenTasks = new Set([...seenActiveRecurring.values(), ...seenCompletedOccurrences.values()]);
-    const duplicatesRemoved = tasks.length - allSeenTasks.size;
-    
-    if (duplicatesRemoved > 0 || duplicateIds.length > 0) {
-      logger.warn(`Removed ${duplicatesRemoved} duplicate recurring task occurrence(s)${duplicateIds.length > 0 ? ` and ${duplicateIds.length} duplicate task ID(s)` : ''}`);
-    }
-    
-    // Return all tasks, but filter out duplicates
-    return uniqueByIdTasks.filter(task => {
+    // Count duplicates removed (only count tasks that were actually filtered out)
+    let duplicatesRemoved = 0;
+    const filteredTasks = uniqueByIdTasks.filter(task => {
       if (!task.recurrence) {
         return true; // Keep tasks without recurrence
       }
@@ -552,25 +555,45 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         const key = `${task.title}|${task.scheduledDate}`;
         const deduplicatedTask = seenCompletedOccurrences.get(key);
         // Keep only if this is the task we're keeping
-        return deduplicatedTask?.id === task.id;
+        const shouldKeep = deduplicatedTask?.id === task.id;
+        if (!shouldKeep) duplicatesRemoved++;
+        return shouldKeep;
       }
       
       // Check active recurring tasks (type !== 'none')
+      // CRITICAL FIX: Only filter out true duplicates (same title + pattern + scheduledDate)
+      // All other active recurring tasks should be kept - they need to appear on multiple dates
       if (task.recurrence.type !== 'none') {
+        // If task has no scheduledDate, keep it (it will be handled elsewhere)
+        if (!task.scheduledDate) {
+          return true;
+        }
+        
         const daysOfWeekKey = task.recurrence.daysOfWeek 
           ? JSON.stringify([...task.recurrence.daysOfWeek].sort())
           : '';
         const dayOfMonthKey = task.recurrence.dayOfMonth || '';
         const endDateKey = task.recurrence.endDate || '';
-        const key = `${task.title}|${task.recurrence.type}|${task.recurrence.interval}|${daysOfWeekKey}|${dayOfMonthKey}|${endDateKey}`;
-        const deduplicatedTask = seenActiveRecurring.get(key);
-        // Keep only if this is the task we're keeping
-        return deduplicatedTask?.id === task.id;
+        const scheduledDateKey = task.scheduledDate || '';
+        const key = `${task.title}|${task.recurrence.type}|${task.recurrence.interval}|${daysOfWeekKey}|${dayOfMonthKey}|${endDateKey}|${scheduledDateKey}`;
+        const deduplicatedTask = seenTrueDuplicates.get(key);
+        // Keep only if this is the task we're keeping (true duplicate check)
+        // If not found in seenTrueDuplicates, keep it (it's a unique recurring task)
+        // CRITICAL: Always keep active recurring tasks - they need to appear on multiple dates via isDateInRecurrence()
+        const shouldKeep = deduplicatedTask ? deduplicatedTask.id === task.id : true;
+        if (!shouldKeep) duplicatesRemoved++;
+        return shouldKeep;
       }
       
       // Keep tasks that don't match either pattern (e.g., non-recurring tasks)
       return true;
     });
+    
+    if (duplicatesRemoved > 0 || duplicateIds.length > 0) {
+      logger.warn(`Removed ${duplicatesRemoved} duplicate recurring task occurrence(s)${duplicateIds.length > 0 ? ` and ${duplicateIds.length} duplicate task ID(s)` : ''}`);
+    }
+    
+    return filteredTasks;
   }
 
   // Load tasks from Supabase (source of truth)
