@@ -33,13 +33,17 @@ export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
 export const HEADER_BUTTON_SIZE_SMALL_SCREEN = '1.75rem'; // h-7 w-7 = 1.75rem (28px) - for laptops and small screens
 export const HEADER_ICON_SIZE_SMALL_SCREEN = '0.875rem'; // w-3.5 h-3.5 = 0.875rem (14px) - for laptops and small screens
 export const HEADER_ICON_SIZE_BUTTON_SMALL = '0.75rem'; // w-3 h-3 = 0.75rem (12px) - for button icons on small screens
-export const HEADER_ICON_SIZE_BUTTON_DESKTOP = '1rem'; // w-4 h-4 = 1rem (16px) - for button icons on desktop
-export const HEADER_ICON_MARGIN_SMALL = '0.375rem'; // mr-1.5 = 0.375rem (6px) - margin for icons on small screens
-export const HEADER_ICON_MARGIN_DESKTOP = '0.5rem'; // mr-2 = 0.5rem (8px) - margin for icons on desktop
-export const HEADER_BUTTON_PADDING_X_SMALL = '0.5rem'; // px-2 = 0.5rem (8px) - horizontal padding for buttons on small screens
-export const HEADER_BUTTON_PADDING_Y_SMALL = '0.375rem'; // py-1.5 = 0.375rem (6px) - vertical padding for buttons on small screens
-export const HEADER_BUTTON_TEXT_SIZE_SMALL = '0.75rem'; // text-xs = 0.75rem (12px) - text size for buttons on small screens
-export const HEADER_BUTTON_SCALE_SMALL = 0.9; // scale-90 = 0.9 - scale factor for buttons on small screens
+export const HEADER_ICON_SIZE_BUTTON_DESKTOP = '0.875rem'; // w-3.5 h-3.5 = 0.875rem (14px) - for button icons on desktop (reduced from 1rem)
+export const HEADER_ICON_MARGIN_SMALL = '0.25rem'; // mr-1 = 0.25rem (4px) - margin for icons on small screens (reduced from 0.375rem)
+export const HEADER_ICON_MARGIN_DESKTOP = '0.375rem'; // mr-1.5 = 0.375rem (6px) - margin for icons on desktop (reduced from 0.5rem)
+export const HEADER_BUTTON_PADDING_X_SMALL = '0.375rem'; // px-1.5 = 0.375rem (6px) - horizontal padding for buttons on small screens (reduced from 0.5rem)
+export const HEADER_BUTTON_PADDING_X_DESKTOP = '0.5rem'; // px-2 = 0.5rem (8px) - horizontal padding for buttons on desktop
+export const HEADER_BUTTON_PADDING_Y_SMALL = '0.25rem'; // py-1 = 0.25rem (4px) - vertical padding for buttons on small screens (reduced from 0.375rem)
+export const HEADER_BUTTON_PADDING_Y_DESKTOP = '0.375rem'; // py-1.5 = 0.375rem (6px) - vertical padding for buttons on desktop
+export const HEADER_BUTTON_TEXT_SIZE_SMALL = '0.6875rem'; // ~text-xs = 0.6875rem (11px) - text size for buttons on small screens (reduced from 0.75rem)
+export const HEADER_BUTTON_TEXT_SIZE_DESKTOP = '0.75rem'; // text-xs = 0.75rem (12px) - text size for buttons on desktop
+export const HEADER_BUTTON_SCALE_SMALL = 0.85; // scale-85 = 0.85 - scale factor for buttons on small screens (reduced from 0.9)
+export const HEADER_BUTTON_SCALE_DESKTOP = 0.9; // scale-90 = 0.9 - scale factor for buttons on desktop
 export const HEADER_MIN_WIDTH_SMALL = '200px'; // min-w-[200px] = 200px - minimum width for header content on small screens
 // Calculate logo height to fit within header
 // Header height: 73px

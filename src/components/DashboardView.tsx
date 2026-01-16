@@ -67,9 +67,13 @@ import {
   HEADER_GAP_MEDIUM,
   HEADER_GAP_XSMALL,
   HEADER_BUTTON_SCALE_SMALL,
+  HEADER_BUTTON_SCALE_DESKTOP,
   HEADER_BUTTON_TEXT_SIZE_SMALL,
+  HEADER_BUTTON_TEXT_SIZE_DESKTOP,
   HEADER_BUTTON_PADDING_X_SMALL,
+  HEADER_BUTTON_PADDING_X_DESKTOP,
   HEADER_BUTTON_PADDING_Y_SMALL,
+  HEADER_BUTTON_PADDING_Y_DESKTOP,
   HEADER_ICON_SIZE_BUTTON_SMALL,
   HEADER_ICON_SIZE_BUTTON_DESKTOP,
   HEADER_ICON_MARGIN_SMALL,
@@ -1182,7 +1186,7 @@ export function DashboardView({
                 TOGGLE_SWITCH_COLORS.container.border.light,
                 TOGGLE_SWITCH_COLORS.container.border.dark
               )}
-              style={isSmallScreen ? { transform: `scale(${HEADER_BUTTON_SCALE_SMALL})` } : undefined}
+              style={{ transform: `scale(${isSmallScreen ? HEADER_BUTTON_SCALE_SMALL : HEADER_BUTTON_SCALE_DESKTOP})` }}
             >
               <Calendar
                 className={cn(
@@ -1249,15 +1253,15 @@ export function DashboardView({
                   "rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40 hover:from-[#C9E4F7] hover:to-[#E6D5F0] dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all",
                   !isSmallScreen && "whitespace-nowrap"
                 )}
-                style={isSmallScreen ? {
-                  fontSize: HEADER_BUTTON_TEXT_SIZE_SMALL,
-                  paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
-                  paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
-                  paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
-                  paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
+                style={{
+                  fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
+                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PADDING_X_SMALL : HEADER_BUTTON_PADDING_X_DESKTOP,
+                  paddingRight: isSmallScreen ? HEADER_BUTTON_PADDING_X_SMALL : HEADER_BUTTON_PADDING_X_DESKTOP,
+                  paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
+                  paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   height: 'auto',
                   minWidth: 'auto',
-                } : undefined}
+                }}
                 data-tour="ai-scheduler"
               >
                 <Sparkles 
@@ -1297,15 +1301,15 @@ export function DashboardView({
                   "rounded-full bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all",
                   !isSmallScreen && "whitespace-nowrap"
                 )}
-                style={isSmallScreen ? {
-                  fontSize: HEADER_BUTTON_TEXT_SIZE_SMALL,
-                  paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
-                  paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
-                  paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
-                  paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
+                style={{
+                  fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
+                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PADDING_X_SMALL : HEADER_BUTTON_PADDING_X_DESKTOP,
+                  paddingRight: isSmallScreen ? HEADER_BUTTON_PADDING_X_SMALL : HEADER_BUTTON_PADDING_X_DESKTOP,
+                  paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
+                  paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   height: 'auto',
                   minWidth: 'auto',
-                } : undefined}
+                }}
                 disabled={isRescheduling}
                 data-tour="re-schedule"
               >
