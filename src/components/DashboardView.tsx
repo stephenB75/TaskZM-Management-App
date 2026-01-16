@@ -84,6 +84,8 @@ import {
   HEADER_TITLE_SIZE_SMALL_SCREEN,
   HEADER_DESCRIPTION_SIZE,
   HEADER_DESCRIPTION_SIZE_SMALL_SCREEN,
+  TOAST_DURATION_SHORT_MS,
+  TOAST_DURATION_MEDIUM_MS,
 } from "../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 import { KANBAN_ANIMATION } from "../lib/kanban-constants";
@@ -1204,17 +1206,17 @@ export function DashboardView({
             {/* View Mode Toggle with text above - Desktop Only (not mobile/tablet) */}
             {!shouldUseMobileLayout && (
               <div 
-                className="flex flex-col items-end"
+                className="flex flex-col items-start"
                 style={{ 
                   gap: HEADER_GAP_XSMALL,
                 }}
               >
-                {/* Text above toggle */}
+                {/* Text above toggle - aligned with left side of button */}
                 <div 
                   className="flex items-center"
                   style={{
                     gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL,
-                    justifyContent: 'flex-end',
+                    justifyContent: 'flex-start',
                   }}
                 >
                   <h2 
@@ -1360,7 +1362,7 @@ export function DashboardView({
                     console.error('Error opening reschedule dialog:', error);
                     toast.error('Failed to open reschedule dialog', {
                       description: 'Please try again',
-                      duration: 3000,
+                      duration: TOAST_DURATION_SHORT_MS,
                     });
                   }
                 }}
