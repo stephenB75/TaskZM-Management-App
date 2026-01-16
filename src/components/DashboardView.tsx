@@ -65,6 +65,7 @@ import {
   VIEWPORT_BREAKPOINTS,
   HEADER_GAP_SMALL,
   HEADER_GAP_MEDIUM,
+  HEADER_GAP_XSMALL,
   HEADER_BUTTON_SCALE_SMALL,
   HEADER_BUTTON_TEXT_SIZE_SMALL,
   HEADER_BUTTON_PADDING_X_SMALL,
@@ -1162,11 +1163,8 @@ export function DashboardView({
         description={viewMode === "week" ? "Week View" : "Month View"}
         actions={
           <div 
-            className={cn(
-              "flex items-center",
-              isSmallScreen ? "flex-wrap justify-end" : ""
-            )}
-            style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
+            className="flex items-center flex-shrink-0 min-w-0"
+            style={{ gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM }}
           >
             {/* View Mode Toggle - Desktop Only (not mobile/tablet) */}
             <div 
@@ -1235,10 +1233,9 @@ export function DashboardView({
             {/* AI Scheduler Buttons - Desktop Only (not mobile/tablet) */}
             <div 
               className={cn(
-                !shouldUseMobileLayout ? "flex items-center" : "hidden",
-                isSmallScreen ? "flex-wrap" : ""
+                !shouldUseMobileLayout ? "flex items-center flex-shrink-0" : "hidden"
               )}
-              style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
+              style={{ gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM }}
             >
               <Button
                 variant="outline"
