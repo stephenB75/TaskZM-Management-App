@@ -409,11 +409,13 @@ export function AppHeader({
           >
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animations */}
             <div
-              className="flex items-center min-w-0 flex-1 flex-shrink"
+              className="flex items-center min-w-0"
               style={{ 
                 gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE,
-                minWidth: isSmallScreen ? HEADER_MIN_WIDTH_SMALL : undefined,
-                maxWidth: '100%',
+                flex: '1 1 auto', // Use auto basis - allows natural sizing and better wrapping
+                minWidth: isSmallScreen ? HEADER_MIN_WIDTH_SMALL : '200px', // Minimum width to ensure content visibility
+                maxWidth: '100%', // Never exceed container width
+                width: isSmallScreen ? 'auto' : undefined, // On small screens, use auto width for better wrapping
               }}
             >
               {onBack && (
@@ -450,16 +452,20 @@ export function AppHeader({
                 />
               )}
               <div 
-                className="min-w-0 flex items-center flex-shrink flex-wrap"
+                className="min-w-0 flex items-center flex-wrap"
                 style={{
                   // No transition on text - it moves smoothly with the header container
                   transition: 'none',
                   gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL,
+                  flexShrink: 1, // Allow text container to shrink
                 }}
               >
                 <h2 
                   className="font-semibold text-foreground uppercase tracking-wide"
-                  style={{ fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP }}
+                  style={{ 
+                    fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
+                    flexShrink: 1, // Allow title to shrink
+                  }}
                 >
                   {typeof title === 'string' ? title : title}
                 </h2>
@@ -469,6 +475,7 @@ export function AppHeader({
                     style={{ 
                       fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
                       marginTop: 0,
+                      flexShrink: 1, // Allow description to shrink
                     }}
                   >
                     {description}
@@ -479,10 +486,12 @@ export function AppHeader({
             {/* Right side: Actions (switch + buttons) */}
             {actions && (
               <div 
-                className="flex items-center flex-shrink-0"
+                className="flex items-center"
                 style={{ 
                   gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
                   justifyContent: 'flex-end',
+                  flexShrink: 0, // Prevent actions from shrinking
+                  flexBasis: 'auto', // Use natural width
                 }}
               >
                 {actions}

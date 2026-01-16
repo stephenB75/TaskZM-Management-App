@@ -1163,8 +1163,12 @@ export function DashboardView({
         description={viewMode === "week" ? "Week View" : "Month View"}
         actions={
           <div 
-            className="flex items-center flex-shrink-0 min-w-0"
-            style={{ gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM }}
+            className="flex items-center min-w-0"
+            style={{ 
+              gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
+              flexShrink: 0, // Prevent actions from shrinking
+              flexBasis: 'auto', // Use natural width
+            }}
           >
             {/* View Mode Toggle - Desktop Only (not mobile/tablet) */}
             <div 
