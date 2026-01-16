@@ -65,6 +65,7 @@ import {
   VIEWPORT_BREAKPOINTS,
   HEADER_GAP_SMALL,
   HEADER_GAP_MEDIUM,
+  HEADER_GAP_LARGE,
   HEADER_GAP_XSMALL,
   HEADER_BUTTON_SCALE_SMALL,
   HEADER_BUTTON_SCALE_DESKTOP,
@@ -527,15 +528,36 @@ export function DashboardView({
   
   // Track screen size for responsive button sizing
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop);
   useEffect(() => {
     const checkScreenSize = () => {
       const width = window.innerWidth;
       setIsSmallScreen(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
+      setScreenWidth(width);
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+
+  // Calculate progressive button scale based on screen width
+  // Desktop (1280px+): HEADER_BUTTON_SCALE_DESKTOP (0.85)
+  // Small desktop (1024-1279px): Interpolated between 0.8 and 0.85
+  // Tablet (768-1023px): HEADER_BUTTON_SCALE_SMALL (0.8)
+  // Progressive scaling between breakpoints for smooth transitions
+  const getButtonScale = () => {
+    if (screenWidth >= VIEWPORT_BREAKPOINTS.desktop) {
+      return HEADER_BUTTON_SCALE_DESKTOP; // 0.85
+    } else if (screenWidth >= VIEWPORT_BREAKPOINTS.tablet) {
+      // Between tablet and desktop: interpolate from 0.8 to 0.85
+      const ratio = (screenWidth - VIEWPORT_BREAKPOINTS.tablet) / (VIEWPORT_BREAKPOINTS.desktop - VIEWPORT_BREAKPOINTS.tablet);
+      return HEADER_BUTTON_SCALE_SMALL + (HEADER_BUTTON_SCALE_DESKTOP - HEADER_BUTTON_SCALE_SMALL) * ratio;
+    } else {
+      return HEADER_BUTTON_SCALE_SMALL; // 0.8
+    }
+  };
+
+  const buttonScale = getButtonScale();
   
   // Calendar events state for showing dots on mobile week view
   const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, number>>({});
@@ -1186,7 +1208,7 @@ export function DashboardView({
                 TOGGLE_SWITCH_COLORS.container.border.light,
                 TOGGLE_SWITCH_COLORS.container.border.dark
               )}
-              style={{ transform: `scale(${isSmallScreen ? HEADER_BUTTON_SCALE_SMALL : HEADER_BUTTON_SCALE_DESKTOP})` }}
+              style={{ transform: `scale(${buttonScale})` }}
             >
               <Calendar
                 className={cn(
@@ -1261,6 +1283,7 @@ export function DashboardView({
                   paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   height: 'auto',
                   minWidth: 'auto',
+                  transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
                 }}
                 data-tour="ai-scheduler"
               >
@@ -1309,6 +1332,7 @@ export function DashboardView({
                   paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   height: 'auto',
                   minWidth: 'auto',
+                  transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
                 }}
                 disabled={isRescheduling}
                 data-tour="re-schedule"
@@ -1334,7 +1358,7 @@ export function DashboardView({
       {mobileView === "week" && shouldUseMobileLayout && (
         <div 
           className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
-          style={{ paddingTop: '0.75rem' }}
+          style={{ paddingTop: HEADER_GAP_LARGE }}
         >
           <div className="px-2 pb-3 sm:px-4 sm:pb-4">
             {/* Week Navigation Header */}
