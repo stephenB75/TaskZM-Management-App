@@ -1252,6 +1252,7 @@ export function DashboardView({
                   paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
                   paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
                   height: 'auto',
+                  minWidth: 'auto',
                 } : undefined}
                 data-tour="ai-scheduler"
               >
@@ -1288,7 +1289,10 @@ export function DashboardView({
                     });
                   }
                 }}
-                className="rounded-full bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all"
+                className={cn(
+                  "rounded-full bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all",
+                  !isSmallScreen && "whitespace-nowrap"
+                )}
                 style={isSmallScreen ? {
                   fontSize: HEADER_BUTTON_TEXT_SIZE_SMALL,
                   paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
@@ -1296,6 +1300,7 @@ export function DashboardView({
                   paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
                   paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
                   height: 'auto',
+                  minWidth: 'auto',
                 } : undefined}
                 disabled={isRescheduling}
                 data-tour="re-schedule"

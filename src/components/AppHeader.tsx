@@ -400,9 +400,11 @@ export function AppHeader({
         >
           {/* Static container for logo and title - no animations */}
           <div 
-            className="flex h-full items-center justify-between"
+            className="flex h-full items-center flex-wrap"
             style={{ 
               gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_XLARGE,
+              justifyContent: 'space-between',
+              alignContent: 'center',
             }}
           >
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animations */}
@@ -411,6 +413,7 @@ export function AppHeader({
               style={{ 
                 gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE,
                 minWidth: isSmallScreen ? HEADER_MIN_WIDTH_SMALL : undefined,
+                maxWidth: '100%',
               }}
             >
               {onBack && (
@@ -447,7 +450,7 @@ export function AppHeader({
                 />
               )}
               <div 
-                className="min-w-0 flex items-center flex-shrink"
+                className="min-w-0 flex items-center flex-shrink flex-wrap"
                 style={{
                   // No transition on text - it moves smoothly with the header container
                   transition: 'none',
@@ -455,14 +458,14 @@ export function AppHeader({
                 }}
               >
                 <h2 
-                  className="font-semibold text-foreground uppercase tracking-wide whitespace-nowrap"
+                  className="font-semibold text-foreground uppercase tracking-wide"
                   style={{ fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP }}
                 >
                   {typeof title === 'string' ? title : title}
                 </h2>
                 {description && (
                   <p 
-                    className="text-muted-foreground whitespace-nowrap"
+                    className="text-muted-foreground"
                     style={{ 
                       fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
                       marginTop: 0,
@@ -476,8 +479,11 @@ export function AppHeader({
             {/* Right side: Actions (switch + buttons) */}
             {actions && (
               <div 
-                className="flex items-center flex-shrink-0 min-w-0"
-                style={{ gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM }}
+                className="flex items-center flex-shrink-0"
+                style={{ 
+                  gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
+                  justifyContent: 'flex-end',
+                }}
               >
                 {actions}
               </div>
