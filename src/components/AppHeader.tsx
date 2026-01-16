@@ -458,12 +458,13 @@ export function AppHeader({
                   flexBasis: 'auto',
                 }}
               >
-                {/* Text above buttons */}
+                {/* Text above buttons - inline (horizontal) */}
                 <div 
-                  className="min-w-0 flex flex-col items-end"
+                  className="min-w-0 flex items-center items-end"
                   style={{
                     transition: 'none',
-                    gap: HEADER_GAP_XSMALL, // Small gap between title and description
+                    gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL, // Gap between title and description
+                    justifyContent: 'flex-end',
                   }}
                 >
                   <h2 
