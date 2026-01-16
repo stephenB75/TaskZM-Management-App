@@ -57,7 +57,23 @@ import { useCalendarEventCounts } from "../hooks/useCalendarEvents";
 import { cn, sanitizeHTML, hasHTMLTags, getDateString, getWeekStart } from "../lib/utils";
 import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { 
+  TOGGLE_SWITCH_DIMENSIONS, 
+  TOGGLE_SWITCH_SPACING, 
+  TOGGLE_SWITCH_TEXT_SIZES, 
+  HEADER_MOBILE_SAFE_AREA_SPACER, 
+  VIEWPORT_BREAKPOINTS,
+  HEADER_GAP_SMALL,
+  HEADER_GAP_MEDIUM,
+  HEADER_BUTTON_SCALE_SMALL,
+  HEADER_BUTTON_TEXT_SIZE_SMALL,
+  HEADER_BUTTON_PADDING_X_SMALL,
+  HEADER_BUTTON_PADDING_Y_SMALL,
+  HEADER_ICON_SIZE_BUTTON_SMALL,
+  HEADER_ICON_SIZE_BUTTON_DESKTOP,
+  HEADER_ICON_MARGIN_SMALL,
+  HEADER_ICON_MARGIN_DESKTOP,
+} from "../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 import { KANBAN_ANIMATION } from "../lib/kanban-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
@@ -503,6 +519,18 @@ export function DashboardView({
   const { accessToken } = useAuth();
   const { calendarStatus } = useCalendar();
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
+  
+  // Track screen size for responsive button sizing
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsSmallScreen(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
   
   // Calendar events state for showing dots on mobile week view
   const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, number>>({});
@@ -1133,18 +1161,27 @@ export function DashboardView({
         panelKey={panelKey}
         description={viewMode === "week" ? "Week View" : "Month View"}
         actions={
-          <div className="flex items-center gap-2">
+          <div 
+            className={cn(
+              "flex items-center",
+              isSmallScreen ? "flex-wrap justify-end" : ""
+            )}
+            style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
+          >
             {/* View Mode Toggle - Desktop Only (not mobile/tablet) */}
-            <div className={cn(
-              !shouldUseMobileLayout ? "flex items-center rounded-full border" : "hidden",
-              TOGGLE_SWITCH_SPACING.container.gapClass,
-              TOGGLE_SWITCH_SPACING.container.padding.horizontalClass,
-              TOGGLE_SWITCH_SPACING.container.padding.verticalClass,
-              TOGGLE_SWITCH_COLORS.container.background.light,
-              TOGGLE_SWITCH_COLORS.container.background.dark,
-              TOGGLE_SWITCH_COLORS.container.border.light,
-              TOGGLE_SWITCH_COLORS.container.border.dark,
-            )}>
+            <div 
+              className={cn(
+                !shouldUseMobileLayout ? "flex items-center rounded-full border" : "hidden",
+                TOGGLE_SWITCH_SPACING.container.gapClass,
+                TOGGLE_SWITCH_SPACING.container.padding.horizontalClass,
+                TOGGLE_SWITCH_SPACING.container.padding.verticalClass,
+                TOGGLE_SWITCH_COLORS.container.background.light,
+                TOGGLE_SWITCH_COLORS.container.background.dark,
+                TOGGLE_SWITCH_COLORS.container.border.light,
+                TOGGLE_SWITCH_COLORS.container.border.dark
+              )}
+              style={isSmallScreen ? { transform: `scale(${HEADER_BUTTON_SCALE_SMALL})` } : undefined}
+            >
               <Calendar
                 className={cn(
                   TOGGLE_SWITCH_DIMENSIONS.icon.sizeClass,
@@ -1196,16 +1233,42 @@ export function DashboardView({
             </div>
 
             {/* AI Scheduler Buttons - Desktop Only (not mobile/tablet) */}
-            <div className={cn(!shouldUseMobileLayout ? "flex items-center gap-2" : "hidden")}>
+            <div 
+              className={cn(
+                !shouldUseMobileLayout ? "flex items-center" : "hidden",
+                isSmallScreen ? "flex-wrap" : ""
+              )}
+              style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
+            >
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleScheduleUnscheduledTasks}
-                className="rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40 hover:from-[#C9E4F7] hover:to-[#E6D5F0] dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all whitespace-nowrap"
+                className={cn(
+                  "rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40 hover:from-[#C9E4F7] hover:to-[#E6D5F0] dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all",
+                  !isSmallScreen && "whitespace-nowrap"
+                )}
+                style={isSmallScreen ? {
+                  fontSize: HEADER_BUTTON_TEXT_SIZE_SMALL,
+                  paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
+                  paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
+                  paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
+                  paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
+                  height: 'auto',
+                } : undefined}
                 data-tour="ai-scheduler"
               >
-                <Sparkles className="w-4 h-4 mr-2 text-primary dark:text-primary-foreground flex-shrink-0" />
-                <span className="text-foreground dark:text-gray-100">AI Scheduler Suggestions</span>
+                <Sparkles 
+                  className="text-primary dark:text-primary-foreground flex-shrink-0"
+                  style={{
+                    width: isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP,
+                    height: isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP,
+                    marginRight: isSmallScreen ? HEADER_ICON_MARGIN_SMALL : HEADER_ICON_MARGIN_DESKTOP,
+                  }}
+                />
+                <span className="text-foreground dark:text-gray-100">
+                  {isSmallScreen ? "AI Suggestions" : "AI Scheduler Suggestions"}
+                </span>
               </Button>
               <Button
                 variant="outline"
@@ -1229,10 +1292,28 @@ export function DashboardView({
                   }
                 }}
                 className="rounded-full bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all"
+                style={isSmallScreen ? {
+                  fontSize: HEADER_BUTTON_TEXT_SIZE_SMALL,
+                  paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
+                  paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
+                  paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
+                  paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
+                  height: 'auto',
+                } : undefined}
                 disabled={isRescheduling}
                 data-tour="re-schedule"
               >
-                <RefreshCw className={cn("w-4 h-4 mr-2 text-primary dark:text-primary-foreground", isRescheduling && "animate-spin")} />
+                <RefreshCw 
+                  className={cn(
+                    "text-primary dark:text-primary-foreground",
+                    isRescheduling && "animate-spin"
+                  )}
+                  style={{
+                    width: isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP,
+                    height: isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP,
+                    marginRight: isSmallScreen ? HEADER_ICON_MARGIN_SMALL : HEADER_ICON_MARGIN_DESKTOP,
+                  }}
+                />
                 <span className="text-foreground dark:text-gray-100">Re-schedule</span>
               </Button>
             </div>

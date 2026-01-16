@@ -19,14 +19,27 @@ import {
   HEADER_PADDING_X_DESKTOP,
   HEADER_PADDING_Y_DESKTOP,
   HEADER_ICON_SIZE_SMALL,
+  HEADER_ICON_SIZE_SMALL_SCREEN,
+  HEADER_ICON_SIZE_BUTTON_SMALL,
+  HEADER_ICON_SIZE_BUTTON_DESKTOP,
+  HEADER_ICON_MARGIN_SMALL,
+  HEADER_ICON_MARGIN_DESKTOP,
   HEADER_BUTTON_SIZE,
+  HEADER_BUTTON_SIZE_SMALL_SCREEN,
+  HEADER_BUTTON_PADDING_X_SMALL,
+  HEADER_BUTTON_PADDING_Y_SMALL,
+  HEADER_BUTTON_TEXT_SIZE_SMALL,
+  HEADER_BUTTON_SCALE_SMALL,
+  HEADER_MIN_WIDTH_SMALL,
   HEADER_LOGO_HEIGHT,
   HEADER_LOGO_HEIGHT_DESKTOP,
   HEADER_LOGO_SPACE_RATIO,
   HEADER_BORDER_BOTTOM,
   HEADER_TITLE_SIZE_MOBILE,
   HEADER_TITLE_SIZE_DESKTOP,
+  HEADER_TITLE_SIZE_SMALL_SCREEN,
   HEADER_DESCRIPTION_SIZE,
+  HEADER_DESCRIPTION_SIZE_SMALL_SCREEN,
   HEADER_DESCRIPTION_MARGIN_TOP,
   HEADER_GAP_SMALL,
   HEADER_GAP_MEDIUM,
@@ -102,6 +115,18 @@ export function AppHeader({
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const shouldUseMobileLayout = useMobileLayout(); // Determine if device should use mobile layout (includes tablets)
+  
+  // Detect laptop/small screen (1024px - 1279px) for responsive adjustments
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsSmallScreen(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Use state to force re-render when panelOpen, panelKey, or theme changes
   // This ensures the header position and theme updates immediately
@@ -374,15 +399,24 @@ export function AppHeader({
         >
           {/* Static container for logo and title - no animations */}
           <div 
-            className="flex items-center justify-between h-full"
+            className={cn(
+              "flex h-full",
+              isSmallScreen ? "flex-wrap items-center" : "items-center justify-between"
+            )}
             style={{ 
-              gap: HEADER_GAP_XLARGE,
+              gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_XLARGE,
             }}
           >
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animations */}
             <div
-              className="flex items-center min-w-0 flex-1"
-              style={{ gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE }}
+              className={cn(
+                "flex items-center min-w-0",
+                isSmallScreen ? "flex-1 basis-full" : "flex-1"
+              )}
+              style={{ 
+                gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE,
+                minWidth: isSmallScreen ? HEADER_MIN_WIDTH_SMALL : undefined,
+              }}
             >
               {onBack && (
                 <Button
@@ -426,7 +460,7 @@ export function AppHeader({
               >
                 <h2 
                   className="font-semibold text-foreground uppercase tracking-wide"
-                  style={{ fontSize: HEADER_TITLE_SIZE_DESKTOP }}
+                  style={{ fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP }}
                 >
                   {typeof title === 'string' ? title : title}
                 </h2>
@@ -434,7 +468,7 @@ export function AppHeader({
                   <p 
                     className="text-muted-foreground"
                     style={{ 
-                      fontSize: HEADER_DESCRIPTION_SIZE,
+                      fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
                       marginTop: HEADER_DESCRIPTION_MARGIN_TOP,
                     }}
                   >
@@ -445,7 +479,13 @@ export function AppHeader({
             </div>
             {/* Right side: Actions (switch + buttons) */}
             {actions && (
-              <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_MEDIUM }}>
+              <div 
+                className={cn(
+                  "flex flex-shrink-0",
+                  isSmallScreen ? "items-center justify-end flex-wrap basis-full" : "items-center"
+                )} 
+                style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
+              >
                 {actions}
               </div>
             )}
