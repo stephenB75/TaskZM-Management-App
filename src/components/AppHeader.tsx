@@ -401,21 +401,17 @@ export function AppHeader({
         >
           {/* Static container for logo and title - no animations */}
           <div 
-            className="flex h-full items-center flex-wrap"
+            className="flex h-full items-center"
             style={{ 
               gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_XLARGE,
               justifyContent: 'space-between',
-              alignContent: 'center',
             }}
           >
-            {/* Left side: Back Button (if onBack provided) + Logo + Title/Description - No animations */}
+            {/* Left side: Back Button (if onBack provided) + Logo only - No animations */}
             <div
-              className="flex items-center min-w-0"
+              className="flex items-center min-w-0 flex-shrink-0"
               style={{ 
                 gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE,
-                flex: '1 1 auto', // Use auto basis - allows natural sizing and better wrapping
-                minWidth: isSmallScreen ? HEADER_MIN_WIDTH_SMALL : HEADER_MIN_WIDTH_DESKTOP, // Minimum width to ensure content visibility
-                maxWidth: '100%', // Never exceed container width
               }}
             >
               {onBack && (
@@ -451,53 +447,57 @@ export function AppHeader({
                   }}
                 />
               )}
+            </div>
+            {/* Right side: Text above buttons */}
+            {actions && (
               <div 
-                className="min-w-0 flex flex-col"
-                style={{
-                  // No transition on text - it moves smoothly with the header container
-                  transition: 'none',
-                  gap: HEADER_GAP_XSMALL, // Small gap between title and description
-                  flexShrink: 1, // Allow text container to shrink
-                  justifyContent: 'center', // Vertically center the text stack
+                className="flex flex-col items-end justify-center min-w-0"
+                style={{ 
+                  gap: HEADER_GAP_XSMALL, // Small gap between text and buttons
+                  flexShrink: 1, // Allow to shrink if needed
+                  flexBasis: 'auto',
                 }}
               >
-                <h2 
-                  className="font-semibold text-foreground uppercase tracking-wide"
-                  style={{ 
-                    fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
-                    flexShrink: 1, // Allow title to shrink
-                    lineHeight: 1.2, // Tighter line height for compact display
+                {/* Text above buttons */}
+                <div 
+                  className="min-w-0 flex flex-col items-end"
+                  style={{
+                    transition: 'none',
+                    gap: HEADER_GAP_XSMALL, // Small gap between title and description
                   }}
                 >
-                  {typeof title === 'string' ? title : title}
-                </h2>
-                {description && (
-                  <p 
-                    className="text-muted-foreground"
+                  <h2 
+                    className="font-semibold text-foreground uppercase tracking-wide"
                     style={{ 
-                      fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
-                      marginTop: 0,
-                      flexShrink: 1, // Allow description to shrink
+                      fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
                       lineHeight: 1.2, // Tighter line height for compact display
                     }}
                   >
-                    {description}
-                  </p>
-                )}
-              </div>
-            </div>
-            {/* Right side: Actions (switch + buttons) */}
-            {actions && (
-              <div 
-                className="flex items-center"
-                style={{ 
-                  gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
-                  justifyContent: 'flex-end',
-                  flexShrink: 0, // Prevent actions from shrinking
-                  flexBasis: 'auto', // Use natural width
-                }}
-              >
-                {actions}
+                    {typeof title === 'string' ? title : title}
+                  </h2>
+                  {description && (
+                    <p 
+                      className="text-muted-foreground"
+                      style={{ 
+                        fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
+                        marginTop: 0,
+                        lineHeight: 1.2, // Tighter line height for compact display
+                      }}
+                    >
+                      {description}
+                    </p>
+                  )}
+                </div>
+                {/* Buttons below text */}
+                <div 
+                  className="flex items-center"
+                  style={{ 
+                    gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  {actions}
+                </div>
               </div>
             )}
           </div>
