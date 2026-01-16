@@ -593,6 +593,24 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       logger.warn(`Removed ${duplicatesRemoved} duplicate recurring task occurrence(s)${duplicateIds.length > 0 ? ` and ${duplicateIds.length} duplicate task ID(s)` : ''}`);
     }
     
+    // Debug: Log recurring tasks to verify they're being kept
+    if (import.meta.env.DEV) {
+      const activeRecurringTasks = filteredTasks.filter(t => t.recurrence && t.recurrence.type !== 'none');
+      if (activeRecurringTasks.length > 0) {
+        logger.debug('Active recurring tasks after deduplication', {
+          count: activeRecurringTasks.length,
+          tasks: activeRecurringTasks.map(t => ({
+            id: t.id,
+            title: t.title,
+            scheduledDate: t.scheduledDate,
+            recurrenceType: t.recurrence.type,
+            recurrenceInterval: t.recurrence.interval,
+            daysOfWeek: t.recurrence.daysOfWeek
+          }))
+        });
+      }
+    }
+    
     return filteredTasks;
   }
 

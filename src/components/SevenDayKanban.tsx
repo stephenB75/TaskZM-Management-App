@@ -570,9 +570,41 @@ export function SevenDayKanban({
           if (!task || typeof task !== 'object') {
             return false;
           }
+          
+          // CRITICAL: For recurring tasks, ensure they have a scheduledDate
+          // Recurring tasks need a scheduledDate (base date) for isDateInRecurrence to work
+          if (task.recurrence && task.recurrence.type !== 'none' && !task.scheduledDate) {
+            if (import.meta.env.DEV) {
+              logger.warn('Recurring task missing scheduledDate, cannot determine recurrence dates', {
+                taskId: task.id,
+                taskTitle: task.title,
+                recurrenceType: task.recurrence.type,
+                dateString
+              });
+            }
+            return false;
+          }
+          
           try {
             // Check if task matches this date (either exact match or recurrence pattern)
-            return isDateInRecurrence(task, checkDate);
+            const matches = isDateInRecurrence(task, checkDate);
+            
+            // Debug logging for recurring tasks
+            if (import.meta.env.DEV && task.recurrence && task.recurrence.type !== 'none') {
+              if (matches) {
+                logger.debug('Recurring task matches date', {
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  scheduledDate: task.scheduledDate,
+                  checkDate: dateString,
+                  recurrenceType: task.recurrence.type,
+                  recurrenceInterval: task.recurrence.interval,
+                  daysOfWeek: task.recurrence.daysOfWeek
+                });
+              }
+            }
+            
+            return matches;
           } catch (error) {
             logger.error('Error checking date in recurrence:', error, task);
             return false;
