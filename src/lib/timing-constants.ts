@@ -144,5 +144,12 @@ export const TIMING_CONSTANTS = {
     timeDifferenceThreshold: 15 * 60 * 1000, // 15 minutes - Threshold for showing time difference dialog
     toastDuration: 5000, // 5 seconds - Duration for toast notifications
   },
+  
+  // Demo account constants
+  demo: {
+    cleanupTimeoutMinutes: 15, // 15 minutes - Demo accounts are cleaned up after this inactivity period
+    cleanupTimeoutMs: 15 * 60 * 1000, // 15 minutes in milliseconds - Demo account cleanup timeout
+    activityTrackingInterval: 5 * 60 * 1000, // 5 minutes - How often to track demo user activity
+  },
 } as const;
 

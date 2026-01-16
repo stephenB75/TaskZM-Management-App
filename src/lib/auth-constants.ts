@@ -10,6 +10,7 @@ export const DEMO_ACCOUNT_CONFIG = {
   emailPrefix: 'demo_',
   password: 'demo123456',
   name: 'Demo User',
+  cleanupTimeoutMinutes: 15, // Minutes - Demo accounts are cleaned up after this inactivity period
 } as const;
 
 // UI Text Constants

@@ -9,6 +9,7 @@ import {
 } from './ui/dialog';
 import { Button } from './ui/button';
 import { AlertTriangle, Clock, LogOut, Sparkles } from 'lucide-react';
+import { DEMO_ACCOUNT_CONFIG } from '../lib/auth-constants';
 
 interface DemoAccountDisclaimerProps {
   open: boolean;
@@ -75,7 +76,7 @@ export function DemoAccountDisclaimer({
                       <strong>Account will be removed</strong> when you log out
                     </li>
                     <li>
-                      <strong>Automatic cleanup</strong> after 15 minutes of inactivity
+                      <strong>Automatic cleanup</strong> after {DEMO_ACCOUNT_CONFIG.cleanupTimeoutMinutes} minutes of inactivity
                     </li>
                     <li>
                       All data will be <strong>permanently deleted</strong>
@@ -92,7 +93,7 @@ export function DemoAccountDisclaimer({
                   </p>
                   <p className="text-xs text-blue-800 dark:text-blue-200">
                     Your account will be automatically cleaned up if inactive for more than{' '}
-                    <strong>15 minutes</strong>. Stay active to keep your session!
+                    <strong>{DEMO_ACCOUNT_CONFIG.cleanupTimeoutMinutes} minutes</strong>. Stay active to keep your session!
                   </p>
                 </div>
               </div>

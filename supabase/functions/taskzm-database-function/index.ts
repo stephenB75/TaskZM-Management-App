@@ -39,6 +39,13 @@ app.options("*", (c) => {
 });
 
 // ============================================================================
+// CONSTANTS
+// ============================================================================
+
+// Demo account configuration
+const DEMO_CLEANUP_TIMEOUT_MINUTES = 15; // Minutes - Demo accounts are cleaned up after this inactivity period
+
+// ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
@@ -1858,7 +1865,7 @@ app.post("/taskzm-database-function/demo/update-activity", async (c) => {
 });
 
 // Cleanup inactive demo users (called by background job or admin)
-// This endpoint checks for demo users with no activity > 1 hour and cleans them up
+// This endpoint checks for demo users with no activity > DEMO_CLEANUP_TIMEOUT_MINUTES and cleans them up
 app.post("/taskzm-database-function/demo/cleanup-inactive", async (c) => {
   try {
     // Verify admin access or scheduled job token
@@ -1875,7 +1882,8 @@ app.post("/taskzm-database-function/demo/cleanup-inactive", async (c) => {
       }
     }
     
-    const { maxInactiveMinutes = 15 } = body;
+    // Use constant for default timeout, but allow override via request body
+    const { maxInactiveMinutes = DEMO_CLEANUP_TIMEOUT_MINUTES } = body;
     
     console.log(`🧹 Starting cleanup of inactive demo users (inactive > ${maxInactiveMinutes} minutes)`);
     
