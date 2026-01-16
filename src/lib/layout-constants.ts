@@ -38,8 +38,9 @@ export const HEADER_ICON_MARGIN_SMALL = '0.1875rem'; // mr-0.75 = 0.1875rem (3px
 export const HEADER_ICON_MARGIN_DESKTOP = '0.25rem'; // mr-1 = 0.25rem (4px) - margin for icons on desktop (reduced from 0.375rem)
 export const HEADER_BUTTON_PADDING_X_SMALL = '0.25rem'; // px-1 = 0.25rem (4px) - horizontal padding for buttons on small screens (reduced from 0.375rem)
 export const HEADER_BUTTON_PADDING_X_DESKTOP = '0.375rem'; // px-1.5 = 0.375rem (6px) - horizontal padding for buttons on desktop (reduced from 0.5rem)
-export const HEADER_BUTTON_PADDING_Y_SMALL = '0.1875rem'; // py-0.75 = 0.1875rem (3px) - vertical padding for buttons on small screens (reduced from 0.25rem)
-export const HEADER_BUTTON_PADDING_Y_DESKTOP = '0.25rem'; // py-1 = 0.25rem (4px) - vertical padding for buttons on desktop (reduced from 0.375rem)
+export const HEADER_BUTTON_PADDING_Y_SMALL = '0.125rem'; // py-0.5 = 0.125rem (2px) - vertical padding for buttons on small screens (reduced for pill shape)
+export const HEADER_BUTTON_PADDING_Y_DESKTOP = '0.1875rem'; // py-0.75 = 0.1875rem (3px) - vertical padding for buttons on desktop (reduced for pill shape)
+export const HEADER_BUTTON_BORDER_RADIUS = '9999px'; // Fully rounded pill shape
 export const HEADER_BUTTON_TEXT_SIZE_SMALL = '0.625rem'; // ~text-xs = 0.625rem (10px) - text size for buttons on small screens (reduced from 0.6875rem)
 export const HEADER_BUTTON_TEXT_SIZE_DESKTOP = '0.6875rem'; // ~text-xs = 0.6875rem (11px) - text size for buttons on desktop (reduced from 0.75rem)
 export const HEADER_BUTTON_SCALE_SMALL = 0.8; // scale-80 = 0.8 - scale factor for buttons on small screens (reduced from 0.85)

@@ -75,6 +75,7 @@ import {
   HEADER_BUTTON_PADDING_X_DESKTOP,
   HEADER_BUTTON_PADDING_Y_SMALL,
   HEADER_BUTTON_PADDING_Y_DESKTOP,
+  HEADER_BUTTON_BORDER_RADIUS,
   HEADER_ICON_SIZE_BUTTON_SMALL,
   HEADER_ICON_SIZE_BUTTON_DESKTOP,
   HEADER_ICON_MARGIN_SMALL,
@@ -1196,20 +1197,56 @@ export function DashboardView({
               flexBasis: 'auto', // Use natural width
             }}
           >
-            {/* View Mode Toggle - Desktop Only (not mobile/tablet) */}
-            <div 
-              className={cn(
-                !shouldUseMobileLayout ? "flex items-center rounded-full border" : "hidden",
-                TOGGLE_SWITCH_SPACING.container.gapClass,
-                TOGGLE_SWITCH_SPACING.container.padding.horizontalClass,
-                TOGGLE_SWITCH_SPACING.container.padding.verticalClass,
-                TOGGLE_SWITCH_COLORS.container.background.light,
-                TOGGLE_SWITCH_COLORS.container.background.dark,
-                TOGGLE_SWITCH_COLORS.container.border.light,
-                TOGGLE_SWITCH_COLORS.container.border.dark
-              )}
-              style={{ transform: `scale(${buttonScale})` }}
-            >
+            {/* View Mode Toggle with text above - Desktop Only (not mobile/tablet) */}
+            {!shouldUseMobileLayout && (
+              <div 
+                className="flex flex-col items-end"
+                style={{ 
+                  gap: HEADER_GAP_XSMALL,
+                }}
+              >
+                {/* Text above toggle */}
+                <div 
+                  className="flex items-center"
+                  style={{
+                    gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL,
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <h2 
+                    className="font-semibold text-foreground uppercase tracking-wide"
+                    style={{ 
+                      fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    Dashboard
+                  </h2>
+                  <p 
+                    className="text-muted-foreground"
+                    style={{ 
+                      fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
+                      marginTop: 0,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {viewMode === "week" ? "Week View" : "Month View"}
+                  </p>
+                </div>
+                {/* Toggle button */}
+                <div 
+                  className={cn(
+                    "flex items-center rounded-full border",
+                    TOGGLE_SWITCH_SPACING.container.gapClass,
+                    TOGGLE_SWITCH_SPACING.container.padding.horizontalClass,
+                    TOGGLE_SWITCH_SPACING.container.padding.verticalClass,
+                    TOGGLE_SWITCH_COLORS.container.background.light,
+                    TOGGLE_SWITCH_COLORS.container.background.dark,
+                    TOGGLE_SWITCH_COLORS.container.border.light,
+                    TOGGLE_SWITCH_COLORS.container.border.dark
+                  )}
+                  style={{ transform: `scale(${buttonScale})` }}
+                >
               <Calendar
                 className={cn(
                   TOGGLE_SWITCH_DIMENSIONS.icon.sizeClass,
@@ -1258,7 +1295,9 @@ export function DashboardView({
                     : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,
                 )}
               />
-            </div>
+                </div>
+              </div>
+            )}
 
             {/* AI Scheduler Buttons - Desktop Only (not mobile/tablet) */}
             <div 
@@ -1272,7 +1311,7 @@ export function DashboardView({
                 size="sm"
                 onClick={handleScheduleUnscheduledTasks}
                 className={cn(
-                  "rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40 hover:from-[#C9E4F7] hover:to-[#E6D5F0] dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all",
+                  "bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40 hover:from-[#C9E4F7] hover:to-[#E6D5F0] dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all",
                   !isSmallScreen && "whitespace-nowrap"
                 )}
                 style={{
@@ -1283,6 +1322,7 @@ export function DashboardView({
                   paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   height: 'auto',
                   minWidth: 'auto',
+                  borderRadius: HEADER_BUTTON_BORDER_RADIUS, // Pill shape
                   transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
                 }}
                 data-tour="ai-scheduler"
@@ -1321,7 +1361,7 @@ export function DashboardView({
                   }
                 }}
                 className={cn(
-                  "rounded-full bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all",
+                  "bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all",
                   !isSmallScreen && "whitespace-nowrap"
                 )}
                 style={{
@@ -1332,6 +1372,7 @@ export function DashboardView({
                   paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   height: 'auto',
                   minWidth: 'auto',
+                  borderRadius: HEADER_BUTTON_BORDER_RADIUS, // Pill shape
                   transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
                 }}
                 disabled={isRescheduling}

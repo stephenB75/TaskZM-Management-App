@@ -448,57 +448,18 @@ export function AppHeader({
                 />
               )}
             </div>
-            {/* Right side: Text above buttons */}
+            {/* Right side: Actions (text is now inside actions component) */}
             {actions && (
               <div 
-                className="flex flex-col items-end justify-center min-w-0"
+                className="flex items-center"
                 style={{ 
-                  gap: HEADER_GAP_XSMALL, // Small gap between text and buttons
-                  flexShrink: 1, // Allow to shrink if needed
-                  flexBasis: 'auto',
+                  gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
+                  justifyContent: 'flex-end',
+                  flexShrink: 0, // Prevent actions from shrinking
+                  flexBasis: 'auto', // Use natural width
                 }}
               >
-                {/* Text above buttons - inline (horizontal) */}
-                <div 
-                  className="min-w-0 flex items-center items-end"
-                  style={{
-                    transition: 'none',
-                    gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL, // Gap between title and description
-                    justifyContent: 'flex-end',
-                  }}
-                >
-                  <h2 
-                    className="font-semibold text-foreground uppercase tracking-wide"
-                    style={{ 
-                      fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
-                      lineHeight: 1.2, // Tighter line height for compact display
-                    }}
-                  >
-                    {typeof title === 'string' ? title : title}
-                  </h2>
-                  {description && (
-                    <p 
-                      className="text-muted-foreground"
-                      style={{ 
-                        fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
-                        marginTop: 0,
-                        lineHeight: 1.2, // Tighter line height for compact display
-                      }}
-                    >
-                      {description}
-                    </p>
-                  )}
-                </div>
-                {/* Buttons below text */}
-                <div 
-                  className="flex items-center"
-                  style={{ 
-                    gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
-                    justifyContent: 'flex-end',
-                  }}
-                >
-                  {actions}
-                </div>
+                {actions}
               </div>
             )}
           </div>
