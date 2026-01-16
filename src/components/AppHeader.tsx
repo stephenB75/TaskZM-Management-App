@@ -31,6 +31,7 @@ import {
   HEADER_BUTTON_TEXT_SIZE_SMALL,
   HEADER_BUTTON_SCALE_SMALL,
   HEADER_MIN_WIDTH_SMALL,
+  HEADER_MIN_WIDTH_DESKTOP,
   HEADER_LOGO_HEIGHT,
   HEADER_LOGO_HEIGHT_DESKTOP,
   HEADER_LOGO_SPACE_RATIO,
@@ -413,9 +414,8 @@ export function AppHeader({
               style={{ 
                 gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE,
                 flex: '1 1 auto', // Use auto basis - allows natural sizing and better wrapping
-                minWidth: isSmallScreen ? HEADER_MIN_WIDTH_SMALL : '200px', // Minimum width to ensure content visibility
+                minWidth: isSmallScreen ? HEADER_MIN_WIDTH_SMALL : HEADER_MIN_WIDTH_DESKTOP, // Minimum width to ensure content visibility
                 maxWidth: '100%', // Never exceed container width
-                width: isSmallScreen ? 'auto' : undefined, // On small screens, use auto width for better wrapping
               }}
             >
               {onBack && (
@@ -452,12 +452,13 @@ export function AppHeader({
                 />
               )}
               <div 
-                className="min-w-0 flex items-center flex-wrap"
+                className="min-w-0 flex flex-col"
                 style={{
                   // No transition on text - it moves smoothly with the header container
                   transition: 'none',
-                  gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL,
+                  gap: HEADER_GAP_XSMALL, // Small gap between title and description
                   flexShrink: 1, // Allow text container to shrink
+                  justifyContent: 'center', // Vertically center the text stack
                 }}
               >
                 <h2 
@@ -465,6 +466,7 @@ export function AppHeader({
                   style={{ 
                     fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
                     flexShrink: 1, // Allow title to shrink
+                    lineHeight: 1.2, // Tighter line height for compact display
                   }}
                 >
                   {typeof title === 'string' ? title : title}
@@ -476,6 +478,7 @@ export function AppHeader({
                       fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
                       marginTop: 0,
                       flexShrink: 1, // Allow description to shrink
+                      lineHeight: 1.2, // Tighter line height for compact display
                     }}
                   >
                     {description}
