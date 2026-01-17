@@ -1,19 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import {
-  X,
-  TrendingUp,
-  Clock,
-  Target,
-  Timer,
-  CheckCircle2,
-  Calendar,
-  BarChart3,
-  Activity,
-  Zap,
-  PieChart as PieChartIcon,
-  Download,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 import { AppHeader } from "./AppHeader";
 import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
 import { Button } from "./ui/button";
@@ -1218,7 +1206,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               disabled={isGeneratingPDF}
               className="h-8 w-8"
             >
-              <X className="w-4 h-4" />
+              <Icon name="x" size={16} />
             </Button>
           </div>
         }
@@ -1245,28 +1233,28 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               <MetricCard
                 title="Total Tasks"
                 value={analytics.totalTasks}
-                icon={Target}
+                iconName="target"
                 color={COLOR_PRIMARY}
               />
               <MetricCard
                 title="Completed"
                 value={analytics.completedTasks}
                 subtitle={`${Math.round(analytics.completionRate)}% rate`}
-                icon={CheckCircle2}
+                iconName="check-circle"
                 color={COLOR_SUCCESS}
               />
               <MetricCard
                 title="Time Tracked"
                 value={`${Math.floor(analytics.totalTimeTracked / MINUTES_PER_HOUR)}h`}
                 subtitle={`${Math.round(analytics.totalTimeTracked % MINUTES_PER_HOUR)}m total`}
-                icon={Timer}
+                iconName="timer"
                 color={COLOR_INFO}
               />
               <MetricCard
                 title="This Week"
                 value={`${Math.floor(analytics.weeklyTimeTracked / MINUTES_PER_HOUR)}h`}
                 subtitle={`${Math.round(analytics.weeklyTimeTracked % MINUTES_PER_HOUR)}m`}
-                icon={Calendar}
+                iconName="calendar"
                 color={COLOR_WARNING}
               />
             </div>
@@ -1627,28 +1615,28 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               <MetricCard
                 title="Total Tasks"
                 value={analytics.totalTasks}
-                icon={Target}
+                iconName="target"
                 color={COLOR_PRIMARY}
               />
               <MetricCard
                 title="Completed"
                 value={analytics.completedTasks}
                 subtitle={`${Math.round(analytics.completionRate)}% rate`}
-                icon={CheckCircle2}
+                iconName="check-circle"
                 color={COLOR_SUCCESS}
               />
               <MetricCard
                 title="Time Tracked"
                 value={`${Math.floor(analytics.totalTimeTracked / MINUTES_PER_HOUR)}h`}
                 subtitle={`${Math.round(analytics.totalTimeTracked % MINUTES_PER_HOUR)}m total`}
-                icon={Timer}
+                iconName="timer"
                 color={COLOR_INFO}
               />
               <MetricCard
                 title="This Week"
                 value={`${Math.floor(analytics.weeklyTimeTracked / MINUTES_PER_HOUR)}h`}
                 subtitle={`${Math.round(analytics.weeklyTimeTracked % MINUTES_PER_HOUR)}m`}
-                icon={Calendar}
+                iconName="calendar"
                 color={COLOR_WARNING}
               />
             </div>

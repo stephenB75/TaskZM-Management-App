@@ -11,12 +11,9 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Badge } from "./ui/badge";
-import {
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 
 interface HealthStatus {

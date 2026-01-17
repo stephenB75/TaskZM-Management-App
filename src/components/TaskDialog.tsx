@@ -1,25 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  X,
-  Plus,
-  Calendar as CalendarIcon,
-  Tag,
-  Users,
-  Clock,
-  Repeat,
-  Link2,
-  AlertCircle,
-  Globe,
-  Trash2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Settings,
-  ListChecks,
-  Copy,
-  Folder,
-  Sparkles,
-} from "lucide-react";
+// Icons migrated to Icon component
 import { Icon } from "./Icon";
 import {
   Dialog,

@@ -1,16 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import {
-  Sparkles,
-  Brain,
-  Clock,
-  Target,
-  Calendar,
-  X,
-  Check,
-  CalendarDays,
-  CalendarRange,
-} from "lucide-react";
+// Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { useAI } from "../contexts/AIContext";

@@ -1,13 +1,8 @@
 import React from "react";
 import { motion } from "motion/react";
-import {
-  Check,
-  Calendar,
-  Clock,
-  Target,
-  Brain,
-  Sparkles,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import {
   Dialog,
   DialogContent,

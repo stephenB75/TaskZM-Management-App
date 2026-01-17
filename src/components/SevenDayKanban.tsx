@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Plus, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+// Icons migrated to Icon component
+import { Icon } from './Icon';
 import { useTasks } from '../contexts/TaskContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCalendar } from '../contexts/CalendarContext';
@@ -817,7 +818,7 @@ export function SevenDayKanban({
                         className="rounded-full h-7 px-3 gap-1.5 sm:h-8 sm:px-3 flex-shrink-0 text-xs ml-auto sm:ml-2"
                         aria-label="Jump to today"
                       >
-                        <CalendarDays className="hidden sm:block w-3.5 h-3.5 flex-shrink-0 mr-1" />
+                        <Icon name="calendar-days" size={14} className="hidden sm:block flex-shrink-0 mr-1" />
                         <span>Today</span>
                       </Button>
                       
@@ -828,7 +829,7 @@ export function SevenDayKanban({
                         className="rounded-full h-7 w-7 p-0 gap-0 sm:w-auto sm:h-8 sm:px-3 sm:gap-1.5 flex-shrink-0 text-xs"
                         aria-label="Add new task"
                       >
-                        <Plus className="w-3.5 h-3.5 flex-shrink-0 sm:mr-1" />
+                        <Icon name="plus" size={14} className="flex-shrink-0 sm:mr-1" />
                         <span className="hidden sm:inline">Add</span>
                       </Button>
                     </div>
@@ -944,7 +945,7 @@ export function SevenDayKanban({
                           } as React.CSSProperties}
                         >
                           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
-                            <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary/40" />
+                            <Icon name="plus" size={shouldUseMobileLayout ? 24 : 32} className="text-primary/40" />
                           </div>
                           <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">No tasks scheduled</p>
                           <Button
@@ -953,7 +954,7 @@ export function SevenDayKanban({
                             onClick={() => handleAddTask(currentColumn.dateString)}
                             className="rounded-full h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm"
                           >
-                            <Plus className="w-3.5 h-3.5 mr-1.5 sm:w-4 sm:h-4 sm:mr-2" />
+                            <Icon name="plus" size={shouldUseMobileLayout ? ICON_SIZE_SM : ICON_SIZE_MD} className="mr-1.5 sm:mr-2" />
                             Add your first task
                           </Button>
                         </motion.div>
@@ -1301,7 +1302,7 @@ export function SevenDayKanban({
                           onClick={() => handleAddTask(column.dateString)}
                           data-tour="add-task"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Icon name="plus" size={ICON_SIZE_SM} />
                         </Button>
                       </div>
                     </div>
@@ -1399,7 +1400,7 @@ export function SevenDayKanban({
                                       style={{ minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px` }}
                               >
                                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
-                                  <Plus className="w-6 h-6 text-primary/40" />
+                                  <Icon name="plus" size={24} className="text-primary/40" />
                                 </div>
                                       <p className="text-sm text-muted-foreground pointer-events-none">No tasks</p>
                               </motion.div>

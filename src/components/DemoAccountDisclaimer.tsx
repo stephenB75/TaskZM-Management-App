@@ -8,7 +8,9 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { AlertTriangle, Clock, LogOut, Sparkles } from 'lucide-react';
+// Icons migrated to Icon component
+import { Icon } from './Icon';
+import { ICON_SIZE_SM, ICON_SIZE_MD } from '../lib/layout-constants';
 import { DEMO_ACCOUNT_CONFIG } from '../lib/auth-constants';
 
 interface DemoAccountDisclaimerProps {

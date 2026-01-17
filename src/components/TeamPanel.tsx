@@ -1,24 +1,6 @@
 import React, { useState, useMemo } from "react";
-import {
-  Users,
-  Mail,
-  Shield,
-  ShieldCheck,
-  Eye,
-  UserPlus,
-  User,
-  MoreVertical,
-  Trash2,
-  Edit2,
-  X,
-  Bell,
-  Clock,
-  Search,
-  Send,
-  XCircle,
-  Calendar,
-  Loader2,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 import { AppHeader } from "./AppHeader";
 import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
 import { Button } from "./ui/button";

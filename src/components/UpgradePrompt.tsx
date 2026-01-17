@@ -9,18 +9,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "./ui/alert-dialog";
-import {
-  Sparkles,
-  Zap,
-  BarChart3,
-  Clock,
-  RotateCcw,
-  Timer,
-  Users,
-  Calendar,
-  Link2,
-  Copy,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 import { UI_UPGRADE_PROMPT_COLORS } from "../lib/ui-colors";
 
@@ -43,7 +33,7 @@ interface UpgradePromptProps {
 
 const featureConfig = {
   aiScheduler: {
-    icon: Sparkles,
+    iconName: "sparkles",
     title: "AI Scheduler",
     description:
       "Let AI intelligently schedule your tasks based on priority, category hours, and your preferences.",
@@ -55,7 +45,7 @@ const featureConfig = {
     ],
   },
   taskHours: {
-    icon: Clock,
+    iconName: "clock",
     title: "Task Hours",
     description:
       "Set custom working hours for different task categories (Work, Personal, Projects) with separate weekday and weekend schedules.",
@@ -67,7 +57,7 @@ const featureConfig = {
     ],
   },
   analytics: {
-    icon: BarChart3,
+    iconName: "bar-chart",
     title: "Analytics Dashboard",
     description:
       "Track your productivity with detailed insights, completion rates, and visual trends over time.",
@@ -79,7 +69,7 @@ const featureConfig = {
     ],
   },
   taskRollover: {
-    icon: RotateCcw,
+    iconName: "rotate-ccw",
     title: "Task Rollover",
     description:
       "Automatically roll over incomplete tasks to the next day, ensuring nothing falls through the cracks.",
@@ -91,7 +81,7 @@ const featureConfig = {
     ],
   },
   pomodoroTimer: {
-    icon: Timer,
+    iconName: "timer",
     title: "Pomodoro Timer",
     description:
       "Focus better with the built-in Pomodoro timer featuring 25/5/15 minute intervals and automatic session tracking.",
@@ -103,7 +93,7 @@ const featureConfig = {
     ],
   },
   teamFeatures: {
-    icon: Users,
+    iconName: "users",
     title: "Team Collaboration",
     description:
       "Collaborate with your team by managing members, assigning tasks, and tracking team progress.",
@@ -115,7 +105,7 @@ const featureConfig = {
     ],
   },
   calendarSync: {
-    icon: Calendar,
+    iconName: "calendar",
     title: "Calendar Sync",
     description:
       "Sync your tasks with Google, Outlook (Coming Soon), and Apple Calendar for a unified view of your schedule.",
@@ -127,7 +117,7 @@ const featureConfig = {
     ],
   },
   recurringTasks: {
-    icon: RotateCcw,
+    iconName: "rotate-ccw",
     title: "Recurring Tasks",
     description:
       "Create tasks that repeat automatically on a schedule - daily, weekly, or monthly. Perfect for routines, meetings, and regular maintenance.",
@@ -139,7 +129,7 @@ const featureConfig = {
     ],
   },
   taskDependencies: {
-    icon: Link2,
+    iconName: "link-2",
     title: "Task Dependencies",
     description:
       "Link related tasks together so you can see what needs to be done first. Manage complex projects with clear task relationships.",
@@ -151,7 +141,7 @@ const featureConfig = {
     ],
   },
   taskTemplates: {
-    icon: Copy,
+    iconName: "copy",
     title: "Task Templates",
     description:
       "Save task patterns and reuse them instantly. Create templates for common workflows, meetings, or project setups.",
@@ -171,7 +161,6 @@ export function UpgradePrompt({
   feature,
 }: UpgradePromptProps) {
   const config = featureConfig[feature];
-  const UpgradeIcon = config.icon;
 
   const handleUpgrade = () => {
     onOpenChange(false);
@@ -184,7 +173,7 @@ export function UpgradePrompt({
         <AlertDialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className={`w-10 h-10 rounded-full ${UI_UPGRADE_PROMPT_COLORS.accentBgOpacity20} flex items-center justify-center`}>
-              <UpgradeIcon className={`w-5 h-5 ${UI_UPGRADE_PROMPT_COLORS.accentTextClass}`} />
+              <Icon name={config.iconName} size={20} weight="duotone" className={UI_UPGRADE_PROMPT_COLORS.accentTextClass} />
             </div>
             <AlertDialogTitle>
               {SUBSCRIPTION_UI_TEXT.upgradePrompt.unlock(config.title)}
@@ -204,7 +193,7 @@ export function UpgradePrompt({
                       key={index}
                       className="flex items-start gap-2 text-sm"
                     >
-                      <Sparkles className={`w-4 h-4 ${UI_UPGRADE_PROMPT_COLORS.accentTextClass} flex-shrink-0 mt-0.5`} />
+                      <Icon name="sparkles" size={16} weight="duotone" className={`${UI_UPGRADE_PROMPT_COLORS.accentTextClass} flex-shrink-0 mt-0.5`} />
                       <span>{benefit}</span>
                     </li>
                   ))}

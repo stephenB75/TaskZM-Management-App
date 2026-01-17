@@ -1,15 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import {
-  Folder,
-  FolderPlus,
-  Edit2,
-  Trash2,
-  MoreVertical,
-  Search,
-  X,
-  Loader2,
-  ChevronRight,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { useDroppable } from "@dnd-kit/core";
 import { AppHeader } from "./AppHeader";
 import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";

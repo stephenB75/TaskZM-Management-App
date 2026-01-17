@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, Repeat } from 'lucide-react';
+// Icons migrated to Icon component - already using Icon
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -284,12 +284,12 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
       <div className="flex-1 py-1 flex flex-col gap-1">
         {/* Header with calendar icon */}
         <div className="flex items-center gap-1.5">
-          <Calendar className={cn('h-3 w-3', colors.mutedText)} />
+          <Icon name="calendar" size={12} weight="duotone" className={colors.mutedText} />
           <span className={cn('text-[10px] font-medium uppercase tracking-wide', colors.mutedText)}>
             {provider === 'apple' ? 'iCloud' : 'Google'} Calendar
           </span>
           {isRecurring && (
-            <Repeat className={cn('h-2.5 w-2.5', colors.mutedText)} title="Recurring event" />
+            <Icon name="repeat" size={10} weight="duotone" className={colors.mutedText} title="Recurring event" />
           )}
         </div>
         
@@ -304,7 +304,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         {/* Time and duration */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1">
-            <Clock className={cn('h-3 w-3', colors.mutedText)} />
+            <Icon name="clock" size={12} className={colors.mutedText} />
             <span className={cn('text-[10px]', colors.mutedText)}>
               {startTime} – {endTime}
             </span>
@@ -321,7 +321,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         {/* Location if present */}
         {location && (
           <div className="flex items-center gap-1 mt-0.5">
-            <MapPin className={cn('h-3 w-3 flex-shrink-0', colors.mutedText)} />
+            <Icon name="map-pin" size={12} className={cn('flex-shrink-0', colors.mutedText)} />
             <span className={cn('text-[10px] truncate', colors.mutedText)}>
               {location}
             </span>

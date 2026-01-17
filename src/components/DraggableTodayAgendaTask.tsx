@@ -2,7 +2,9 @@ import React from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "motion/react";
-import { Circle, Timer, Clock, Repeat } from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { TASK_CARD_ICON_SIZES } from "../lib/task-card-constants";
 import { Badge } from "./ui/badge";
 import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags, getDateString } from "../lib/utils";
 import { toast } from "sonner";

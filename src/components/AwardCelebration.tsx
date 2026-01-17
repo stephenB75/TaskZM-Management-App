@@ -2,13 +2,8 @@ import React, { useEffect } from "react";
 import { toast } from "sonner";
 import { useAwards } from "../contexts/AwardContext";
 import { useIsMobile } from "./ui/use-mobile";
-import {
-  Target,
-  TrendingUp,
-  Zap,
-  Award as AwardIcon,
-  Sparkles,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 
 export function AwardCelebration() {
   const { celebrationQueue, dismissCelebration } = useAwards();
@@ -110,19 +105,19 @@ export function AwardCelebration() {
     }
   }, [currentAward, dismissCelebration]);
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIconName = (category: string): string => {
     switch (category) {
       case "completion":
-        return Target;
+        return "target";
       case "streak":
-        return TrendingUp;
+        return "trending-up";
       case "focus":
-        return Zap;
+        return "zap";
       case "special":
       case "speed":
-        return Sparkles;
+        return "sparkles";
       default:
-        return AwardIcon;
+        return "award";
     }
   };
 
@@ -140,7 +135,7 @@ export function AwardCelebration() {
   };
 
   const showAwardToast = (award: any) => {
-    const AwardIconComponent = getCategoryIcon(award.category);
+    const iconName = getCategoryIconName(award.category);
     const color = getRarityColor(award.rarity);
 
     toast.custom(
@@ -169,7 +164,7 @@ export function AwardCelebration() {
                   backgroundColor: `${color}15`,
                 }}
               >
-                <AwardIconComponent className="w-5 h-5" style={{ color }} />
+                <Icon name={iconName} size={20} weight="duotone" style={{ color }} />
               </div>
 
               {/* Text content */}

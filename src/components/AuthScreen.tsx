@@ -1,26 +1,7 @@
 import React, { useState } from "react";
-import {
-  CheckCircle2,
-  Sparkles,
-  Calendar,
-  Clock,
-  BarChart3,
-  Users,
-  Zap,
-  Timer,
-  Trophy,
-  Tag,
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  AlertCircle,
-  CheckCircle,
-  Brain,
-  Repeat,
-  Shield,
-  Activity,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";

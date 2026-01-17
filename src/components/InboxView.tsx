@@ -1,15 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Inbox,
-  Plus,
-  Search,
-  Filter,
-  Calendar,
-  Clock,
-  Tag,
-  Sparkles,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { usePermissions } from "../hooks/usePermissions";
@@ -46,7 +38,7 @@ import { useMobileLayout } from "../hooks/useMobileLayout";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
-import { Trash2 } from "lucide-react";
+// Trash2 icon migrated to Icon component
 import {
   AlertDialog,
   AlertDialogAction,
@@ -628,10 +620,11 @@ export function InboxView() {
                   size="sm"
                   disabled={isScheduling}
                 >
-                  <Sparkles 
+                  <Icon 
+                    name="sparkles" 
+                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
+                    weight="duotone"
                     style={{
-                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
                       marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
@@ -728,10 +721,11 @@ export function InboxView() {
                   size="sm"
                   disabled={unscheduledTasks.length === 0}
                 >
-                  <Sparkles 
+                  <Icon 
+                    name="sparkles" 
+                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
+                    weight="duotone"
                     style={{
-                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
                       marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
@@ -824,7 +818,7 @@ export function InboxView() {
                         size="sm"
                         disabled={!quickAddTitle.trim()}
                       >
-                        <Plus className="w-4 h-4" />
+                        <Icon name="plus" size={16} />
                       </Button>
                     </div>
                   </Card>
@@ -972,12 +966,11 @@ export function InboxView() {
                             marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
                           }}
                         >
-                          <Inbox 
+                          <Icon 
+                            name="inbox" 
+                            size={EMPTY_STATE_ICON_INNER_SIZE} 
+                            weight="duotone"
                             className="text-primary" 
-                            style={{
-                              width: EMPTY_STATE_ICON_INNER_SIZE,
-                              height: EMPTY_STATE_ICON_INNER_SIZE,
-                            }}
                           />
                         </div>
                         <h3 
@@ -1260,12 +1253,11 @@ export function InboxView() {
                           marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
                         }}
                       >
-                        <Inbox 
+                        <Icon 
+                          name="inbox" 
+                          size={EMPTY_STATE_ICON_INNER_SIZE} 
+                          weight="duotone"
                           className="text-primary" 
-                          style={{
-                            width: EMPTY_STATE_ICON_INNER_SIZE,
-                            height: EMPTY_STATE_ICON_INNER_SIZE,
-                          }}
                         />
                       </div>
                       <h3 

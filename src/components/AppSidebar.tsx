@@ -1,5 +1,5 @@
 import React from "react";
-import { Lock } from "lucide-react";
+// Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";

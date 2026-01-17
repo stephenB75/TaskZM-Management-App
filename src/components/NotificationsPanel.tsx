@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Bell,
-  Clock,
-  AlertCircle,
-  CheckCircle2,
-  Timer,
-  X,
-  Filter,
-  Award as AwardIcon,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { usePomodoro } from "../contexts/PomodoroContext";

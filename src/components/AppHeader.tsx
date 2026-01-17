@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Cloud, CloudOff, Menu, ArrowLeft } from "lucide-react";
+// Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
@@ -221,7 +221,7 @@ export function AppHeader({
                 style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
                 onClick={onBack}
               >
-                <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
+                <Icon name="arrow-left" size={HEADER_ICON_SIZE_SMALL} />
               </Button>
             ) : (
               <Button
@@ -231,7 +231,7 @@ export function AppHeader({
                 style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
                 onClick={toggleSidebar}
               >
-                <Menu style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
+                <Icon name="menu" size={HEADER_ICON_SIZE_SMALL} />
               </Button>
             )}
 
@@ -312,7 +312,7 @@ export function AppHeader({
                     marginLeft: HEADER_BUTTON_NEGATIVE_MARGIN_LEFT
                   }}
                 >
-                  <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
+                  <Icon name="arrow-left" size={HEADER_ICON_SIZE_SMALL} />
                 </Button>
               )}
               {!hideDesktopLogo && (
@@ -427,7 +427,7 @@ export function AppHeader({
                     marginLeft: HEADER_BUTTON_NEGATIVE_MARGIN_LEFT
                   }}
                 >
-                  <ArrowLeft style={{ width: HEADER_ICON_SIZE_SMALL, height: HEADER_ICON_SIZE_SMALL }} />
+                  <Icon name="arrow-left" size={HEADER_ICON_SIZE_SMALL} />
                 </Button>
               )}
               {!hideDesktopLogo && (

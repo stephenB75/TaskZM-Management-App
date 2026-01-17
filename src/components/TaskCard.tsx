@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { MoreVertical, Calendar, Clock, CheckCircle2, Circle, AlertCircle, Tag, Users, Sparkles, Link2 } from 'lucide-react';
+// Icons migrated to Icon component
+import { Icon } from './Icon';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
@@ -134,7 +135,7 @@ export function TaskCard({
             {/* Scheduled Time with AM/PM - Top Left Corner */}
             {formatTimeAMPM(task.scheduledDate || task.dueDate) && (
               <div className="flex items-center gap-1 mb-1 px-1">
-                <Clock className="w-3 h-3 text-gray-400" />
+                <Icon name="clock" size={12} className="text-gray-400" />
                 <span className="text-xs text-gray-600">
                   {formatTimeAMPM(task.scheduledDate || task.dueDate)}
                 </span>
@@ -251,21 +252,21 @@ export function TaskCard({
                   'flex items-center gap-1',
                   overdue && task.status !== 'done' ? 'text-red-600' : 'text-gray-600'
                 )}>
-                  <Calendar className="w-3 h-3" />
+                  <Icon name="calendar" size={12} weight="duotone" />
                   <span>{formatDate(task.dueDate)}</span>
                 </div>
               )}
 
               {task.estimatedTime && (
                 <div className="flex items-center gap-1 text-gray-600">
-                  <Clock className="w-3 h-3" />
+                  <Icon name="clock" size={12} />
                   <span>{task.estimatedTime}m</span>
                 </div>
               )}
 
               {task.tags && task.tags.length > 0 && (
                 <div className="flex items-center gap-1">
-                  <Tag className="w-3 h-3 text-gray-400" />
+                  <Icon name="tag" size={12} className="text-gray-400" />
                   <div className="flex gap-1">
                     {task.tags.slice(0, 2).map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs px-1 py-0">
@@ -281,14 +282,14 @@ export function TaskCard({
 
               {task.assignedTo.length > 0 && (
                 <div className="flex items-center gap-1 text-gray-600">
-                  <Users className="w-3 h-3" />
+                  <Icon name="users" size={12} />
                   <span>{task.assignedTo.length}</span>
                 </div>
               )}
 
               {task.dependencies && task.dependencies.length > 0 && (
                 <div className="flex items-center gap-1 text-gray-600">
-                  <Link2 className="w-3 h-3" />
+                  <Icon name="link-2" size={12} />
                   <span>{task.dependencies.length}</span>
                 </div>
               )}

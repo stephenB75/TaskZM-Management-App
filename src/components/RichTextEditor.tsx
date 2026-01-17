@@ -1,24 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { 
-  Bold, 
-  Italic,
-  Underline, 
-  Strikethrough, 
-  Highlighter, 
-  List, 
-  ListOrdered,
-  Type,
-  Eraser,
-  CaseLower,
-  Pilcrow,
-  Code,
-  Indent,
-  Outdent,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify
-} from 'lucide-react';
+// Icons migrated to Icon component
+import { Icon } from './Icon';
+import { COMPONENT_DIMENSIONS } from '../lib/layout-constants';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';

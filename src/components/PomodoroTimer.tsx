@@ -1,13 +1,8 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Play,
-  Pause,
-  Square,
-  Timer,
-  Coffee,
-  CheckCircle2,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 import { cn } from "../lib/utils";

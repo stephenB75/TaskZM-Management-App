@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion } from "motion/react";
 import { useDroppable } from "@dnd-kit/core";
-import { Calendar, Plus, StickyNote } from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useMobileLayout } from "../hooks/useMobileLayout";
@@ -596,7 +597,7 @@ export function TodayAgendaView({
                   animate={isOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Calendar 
+                  <Icon name="calendar" 
                     className={cn(
                       "text-primary/40 transition-colors duration-300",
                       isOver && "text-primary/60"
@@ -627,7 +628,7 @@ export function TodayAgendaView({
                     isOver && "ring-2 ring-primary/50 scale-105"
                   )}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Icon name="plus" size={ICON_SIZE_MD} className="mr-2" />
                   {TODAY_AGENDA_TEXT.emptyState.addTask}
                 </Button>
               </div>
@@ -718,7 +719,7 @@ export function TodayAgendaView({
                       className="mt-6 pt-4 border-t border-primary/20"
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <StickyNote className="w-4 h-4 text-primary" />
+                        <Icon name="sticky-note" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
                         <h3 className="text-xs uppercase tracking-wide text-muted-foreground">
                           Next Up Details
                         </h3>
@@ -773,7 +774,7 @@ export function TodayAgendaView({
                               </div>
                             </div>
                             <div className="flex items-start gap-1.5 mt-1.5">
-                              <StickyNote className="w-3 h-3 text-primary/60 mt-0.5 flex-shrink-0" />
+                              <Icon name="sticky-note" size={ICON_SIZE_SM} weight="duotone" className="text-primary/60 mt-0.5 flex-shrink-0" />
                               <div 
                                 className={cn(
                                   "text-xs text-muted-foreground leading-relaxed flex-1",
@@ -852,7 +853,7 @@ export function TodayAgendaView({
                   animate={isOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Calendar 
+                  <Icon name="calendar" 
                     className={cn(
                       "text-primary/40 transition-colors duration-300",
                       isOver && "text-primary/60"
@@ -883,7 +884,7 @@ export function TodayAgendaView({
                     isOver && "ring-2 ring-primary/50 scale-105"
                   )}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Icon name="plus" size={ICON_SIZE_MD} className="mr-2" />
                   {TODAY_AGENDA_TEXT.emptyState.addTask}
                 </Button>
               </div>
@@ -974,7 +975,7 @@ export function TodayAgendaView({
                       className="mt-6 pt-4 border-t border-primary/20"
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <StickyNote className="w-4 h-4 text-primary" />
+                        <Icon name="sticky-note" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
                         <h3 className="text-xs uppercase tracking-wide text-muted-foreground">
                           Next Up Details
                         </h3>
@@ -1029,7 +1030,7 @@ export function TodayAgendaView({
                               </div>
                             </div>
                             <div className="flex items-start gap-1.5 mt-1.5">
-                              <StickyNote className="w-3 h-3 text-primary/60 mt-0.5 flex-shrink-0" />
+                              <Icon name="sticky-note" size={ICON_SIZE_SM} weight="duotone" className="text-primary/60 mt-0.5 flex-shrink-0" />
                               <div 
                                 className={cn(
                                   "text-xs text-muted-foreground leading-relaxed flex-1",
@@ -1328,7 +1329,7 @@ export function TodayAgendaView({
                   animate={isOver ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Calendar 
+                  <Icon name="calendar" 
                     className={cn(
                       "text-primary/40 transition-colors duration-300",
                       isOver && "text-primary/60"
@@ -1359,7 +1360,7 @@ export function TodayAgendaView({
                     isOver && "ring-2 ring-primary/50 scale-105"
                   )}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Icon name="plus" size={ICON_SIZE_MD} className="mr-2" />
                   {TODAY_AGENDA_TEXT.emptyState.addTask}
                 </Button>
               </div>
@@ -1435,7 +1436,7 @@ export function TodayAgendaView({
                       className="mt-6 pt-4 border-t border-primary/20"
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <StickyNote className="w-4 h-4 text-primary" />
+                        <Icon name="sticky-note" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
                         <h3 className="text-xs uppercase tracking-wide text-muted-foreground">
                           Next Up Details
                         </h3>
@@ -1486,7 +1487,7 @@ export function TodayAgendaView({
                               </div>
                             </div>
                             <div className="flex items-start gap-1.5 mt-1.5">
-                              <StickyNote className="w-3 h-3 text-primary/60 mt-0.5 flex-shrink-0" />
+                              <Icon name="sticky-note" size={ICON_SIZE_SM} weight="duotone" className="text-primary/60 mt-0.5 flex-shrink-0" />
                               <div 
                                 className={cn(
                                   "text-xs text-muted-foreground leading-relaxed flex-1",

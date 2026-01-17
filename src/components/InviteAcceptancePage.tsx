@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Loader2, Mail, Shield, Eye, ShieldCheck } from 'lucide-react';
+// Icons migrated to Icon component
+import { Icon } from './Icon';
+import { ICON_SIZE_SM, ICON_SIZE_MD } from '../lib/layout-constants';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';

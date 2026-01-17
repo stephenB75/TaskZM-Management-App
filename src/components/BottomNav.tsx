@@ -1,10 +1,6 @@
 import React from "react";
-import {
-  Inbox,
-  Settings,
-  Calendar,
-  CalendarDays,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 import { motion } from "motion/react";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
@@ -88,7 +84,7 @@ export function BottomNav({
     {
       id: "today",
       label: "Today",
-      icon: Calendar,
+      iconName: "calendar",
       onClick: () => {
         triggerHaptic();
         onViewChange("today");
@@ -99,7 +95,7 @@ export function BottomNav({
     {
       id: "week",
       label: "Week",
-      icon: CalendarDays,
+      iconName: "calendar-days",
       onClick: () => {
         triggerHaptic();
         if (currentView !== "dashboard") {
@@ -112,7 +108,7 @@ export function BottomNav({
     {
       id: "inbox",
       label: "Inbox",
-      icon: Inbox,
+      iconName: "inbox",
       onClick: () => {
         triggerHaptic();
         onViewChange("inbox");
@@ -123,7 +119,7 @@ export function BottomNav({
     {
       id: "settings",
       label: "Settings",
-      icon: Settings,
+      iconName: "settings",
       onClick: () => {
         triggerHaptic();
         onViewChange("settings");
@@ -167,7 +163,6 @@ export function BottomNav({
         }}
       >
         {navItems.map((item) => {
-          const NavIcon = item.icon;
           return (
             <button
               key={item.id}
@@ -223,9 +218,11 @@ export function BottomNav({
                     }}
                   />
                 )}
-                <NavIcon 
+                <Icon 
+                  name={item.iconName}
+                  size={NAV_BAR_ICON_SIZE}
+                  weight={item.active ? "duotone" : "regular"}
                   className="relative z-10" 
-                  style={{ width: NAV_BAR_ICON_SIZE, height: NAV_BAR_ICON_SIZE }}
                 />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span 

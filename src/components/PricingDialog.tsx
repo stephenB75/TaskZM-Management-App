@@ -8,19 +8,9 @@ import {
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import {
-  Check,
-  Sparkles,
-  Zap,
-  BarChart3,
-  Calendar,
-  Tag,
-  RotateCcw,
-  Timer,
-  Users,
-  X,
-  Crown,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";

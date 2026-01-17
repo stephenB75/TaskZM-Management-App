@@ -9,7 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Folder } from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "../Icon";
+import { ICON_SIZE_SM } from "../../lib/layout-constants";
 import { UI_FOLDER_COLORS } from "../../lib/ui-colors";
 import { Z_INDEX } from "../../lib/layout-constants";
 import type { TaskStatus, TaskPriority, Folder as FolderType } from "../../types";

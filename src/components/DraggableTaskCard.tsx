@@ -1,7 +1,8 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Circle, Timer, Clock, Repeat, ChevronDown, ChevronUp, FileText, ListChecks, Link2, Sparkles } from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 import { Badge } from "./ui/badge";
 import {
   Tooltip,
@@ -630,7 +631,7 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Scheduled Time with AM/PM */}
           {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Clock className={cn("text-gray-400 dark:text-gray-300", isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop)} />
+                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-gray-400 dark:text-gray-300" />
                   <span className={cn("text-gray-600 dark:text-gray-200 font-bold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                 {scheduledTimeLabel}
                   </span>
@@ -682,7 +683,7 @@ export const DraggableTaskCard = React.forwardRef<
                       background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
                     }}
                   >
-                    <Timer className={cn("animate-spin", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                    <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin" weight="duotone" />
                     <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                   </div>
                 </div>
@@ -691,9 +692,10 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
               {showTrackedTimeTopRow && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Timer 
-                    className={cn(isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} 
+                  <Icon name="timer" 
+                    size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop}
                     style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                    weight="duotone"
                   />
                   <span 
                     className={cn("font-medium", isMobile ? TASK_CARD_FONT_SIZES.trackedTime.mobile : TASK_CARD_FONT_SIZES.trackedTime.desktop)}
@@ -710,14 +712,15 @@ export const DraggableTaskCard = React.forwardRef<
               onPointerDown={(e) => e.stopPropagation()}
               className={cn("flex-shrink-0 hover:opacity-80 transition-opacity", isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop)}
             >
-              <Circle
+              <Icon name="circle"
+                size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
                 className={cn(
                   "transition-colors",
-                  isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop,
                   task.status === "done"
                     ? "text-primary fill-primary"
                     : "text-gray-300 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300",
                 )}
+                weight={task.status === "done" ? "fill" : "regular"}
               />
             </button>
           </div>
@@ -725,7 +728,7 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Row 2: H3 Title (Bold) */}
           <div className={cn("flex items-start mt-1", isMobile ? TASK_CARD_SPACING.title.mobile : TASK_CARD_SPACING.title.desktop)}>
             {task.recurrence && task.recurrence.type !== "none" && (
-              <Repeat className={cn("text-primary flex-shrink-0 mt-0.5", isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop)} />
+              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className="text-primary flex-shrink-0 mt-0.5" weight="duotone" />
             )}
             <h3
               className={cn(
@@ -761,7 +764,7 @@ export const DraggableTaskCard = React.forwardRef<
             return (
               <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                 <div className="flex items-center gap-1 mb-1">
-                  <Sparkles className={cn("w-3 h-3", domainColors.text)} />
+                  <Icon name="sparkles" size={12} className={domainColors.text} weight="duotone" />
                   <span className={cn("font-medium", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                     AI Action Plan
                   </span>
@@ -973,7 +976,7 @@ export const DraggableTaskCard = React.forwardRef<
                           background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
                         }}
                       >
-                        <Timer className={cn("animate-spin flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                        <Icon name="timer" className={cn("animate-spin flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
                         <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                       </div>
                     </div>
@@ -982,7 +985,7 @@ export const DraggableTaskCard = React.forwardRef<
                   {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top) */}
                   {task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && task.actualTime && task.actualTime > 0 && !pomodoroIsRunning && (
                     <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
-                      <Timer 
+                      <Icon name="timer" 
                         className={cn("flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop)} 
                         style={{ color: TASK_CARD_THEME_COLORS.primary }}
                       />

@@ -1,18 +1,7 @@
 import React, { useState, useMemo } from "react";
-import {
-  Folder,
-  ArrowLeft,
-  Plus,
-  Search,
-  Filter,
-  Calendar,
-  Clock,
-  Tag,
-  CheckCircle2,
-  Circle,
-  PlayCircle,
-  Pause,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { motion } from "motion/react";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";

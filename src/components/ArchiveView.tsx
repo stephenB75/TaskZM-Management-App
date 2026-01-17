@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Archive,
-  Search,
-  Filter,
-  Calendar,
-  Check,
-  Trash2,
-  RotateCcw,
-} from "lucide-react";
+// Icons migrated to Icon component - imports removed
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { AppHeader } from "./AppHeader";
@@ -42,6 +34,8 @@ import { useIsMobile } from "./ui/use-mobile";
 import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
+import { Icon } from "./Icon";
+import { EMPTY_STATE_ICON_SIZE_LARGE } from "../lib/layout-constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -403,7 +397,7 @@ export function ArchiveView() {
                         className="flex flex-col items-center justify-center py-16 text-center"
                       >
                         <div className={cn("w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg", UI_INBOX_GRADIENTS.emptyState.className)}>
-                          <Archive className="w-12 h-12 text-primary" />
+                          <Icon name="archive" size={EMPTY_STATE_ICON_SIZE_LARGE} weight="duotone" className="text-primary" />
                         </div>
                         <h3 className="text-xl mb-2">
                           No completed tasks
@@ -592,7 +586,7 @@ export function ArchiveView() {
                       className="flex flex-col items-center justify-center py-16 text-center"
                     >
                       <div className={cn("w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg", UI_INBOX_GRADIENTS.emptyState.className)}>
-                        <Archive className="w-12 h-12 text-primary" />
+                        <Icon name="archive" size={EMPTY_STATE_ICON_SIZE_LARGE} weight="duotone" className="text-primary" />
                       </div>
                       <h3 className="text-xl mb-2">
                         No completed tasks

@@ -20,17 +20,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useCalendar } from "../contexts/CalendarContext";
 import { projectId } from "../utils/supabase/info";
 import { useCalendarEventsByDate, type CalendarEvent } from "../hooks/useCalendarEvents";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Calendar as CalendarIcon,
-  Clock,
-  AlertCircle,
-  Repeat,
-  Circle,
-  ZoomOut,
-  MapPin,
-} from "lucide-react";
+// Icons migrated to Icon component
+import { Icon } from "./Icon";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
@@ -127,7 +118,7 @@ function DraggableMonthTask({
           className="flex-shrink-0 w-3 h-3 hover:opacity-80 transition-opacity mt-0.5"
           aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
         >
-          <Circle
+          <Icon name="circle"
             className={cn(
               "w-3 h-3 transition-colors",
               task.status === "done"
@@ -138,10 +129,10 @@ function DraggableMonthTask({
         </button>
         <div className="flex items-start gap-0.5 flex-1 min-w-0">
           {task.priority === "urgent" && (
-            <AlertCircle className="w-2.5 h-2.5 text-red-600 flex-shrink-0 mt-0.5" />
+            <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-600 flex-shrink-0 mt-0.5" />
           )}
           {task.recurrence && task.recurrence.type !== "none" && (
-            <Repeat className="w-2.5 h-2.5 text-primary flex-shrink-0 mt-0.5" />
+            <Icon name="repeat" size={ICON_SIZE_XS} weight="duotone" className="text-primary flex-shrink-0 mt-0.5" />
           )}
           <div className="flex-1 min-w-0">
             <p className={cn(
@@ -154,7 +145,7 @@ function DraggableMonthTask({
             </p>
             {task.scheduledDate && (
               <div className="flex items-center gap-0.5 text-muted-foreground mt-0.5">
-                <Clock className="w-2 h-2 flex-shrink-0" />
+                <Icon name="clock" size={8} className="flex-shrink-0" />
                 <span className="text-[9px] leading-none">
                   {new Date(
                     task.scheduledDate,
@@ -283,13 +274,13 @@ function MonthCalendarEvent({ event }: { event: CalendarEventData }) {
       title={`${event.title}${event.location ? ` - ${event.location}` : ''}`}
     >
       <div className="flex items-start gap-1">
-        <CalendarIcon className={cn("w-2.5 h-2.5 flex-shrink-0 mt-0.5", colors.icon)} />
+        <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className={cn("flex-shrink-0 mt-0.5", colors.icon)} />
         <div className="flex-1 min-w-0">
           <p className={cn("truncate font-medium leading-tight text-[11px]", colors.text)}>
             {event.title}
           </p>
           <div className="flex items-center gap-0.5 mt-0.5">
-            <Clock className={cn("w-2 h-2 flex-shrink-0", colors.icon)} />
+            <Icon name="clock" size={8} className={cn("flex-shrink-0", colors.icon)} />
             <span className={cn("text-[9px] leading-none", colors.muted)}>
               {startTime}
             </span>
@@ -771,7 +762,7 @@ export function MonthCalendarView({
                 className="rounded-full text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
                 title="Zoom out to normal view"
               >
-                <ZoomOut className="w-3.5 h-3.5" />
+                <Icon name="zoom-out" size={14} />
                 Zoom Out
               </Button>
             )}
@@ -782,7 +773,7 @@ export function MonthCalendarView({
                 onClick={goToPreviousMonth}
                 className="h-8 w-8 rounded-full"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <Icon name="chevron-left" size={16} />
               </Button>
               <Button
                 variant="ghost"
@@ -790,7 +781,7 @@ export function MonthCalendarView({
                 onClick={goToNextMonth}
                 className="h-8 w-8 rounded-full"
               >
-                <ChevronRight className="w-4 h-4" />
+                <Icon name="chevron-right" size={16} />
               </Button>
             </div>
           </div>
