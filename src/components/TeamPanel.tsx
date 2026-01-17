@@ -411,7 +411,7 @@ export function TeamPanel() {
             borderColor: COLOR_TEXT_BLACK
           }}
         >
-          <Clock style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
+          <Icon name="clock" size={TEAM_PANEL_ICON_SIZE_SMALL} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
           {expiration?.isExpired ? "Expired" : "Pending"}
         </Badge>
       );

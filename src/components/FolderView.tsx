@@ -496,7 +496,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                             )}
                             {task.estimatedTime && (
                               <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
+                                <Icon name="clock" size={ICON_SIZE_XS} />
                                 <span>{task.estimatedTime}m</span>
                               </div>
                             )}

@@ -31,7 +31,7 @@ import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
-import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM } from "../lib/layout-constants";
+import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG } from "../lib/layout-constants";
 import type { Task } from "../types";
 
 interface MonthCalendarViewProps {
@@ -740,7 +740,7 @@ export function MonthCalendarView({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <CalendarIcon className="w-5 h-5 text-primary" />
+            <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary" weight="duotone" />
             <h2 className="text-lg font-semibold">
               {monthName}
             </h2>

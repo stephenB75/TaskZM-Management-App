@@ -146,6 +146,7 @@ import {
   SETTINGS_PANEL_TIMEOUT_DELAY_MS,
   COMPONENT_DIMENSIONS,
   ICON_SIZE_XS,
+  ICON_SIZE_LG,
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
@@ -1841,7 +1842,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Clock className="w-5 h-5 text-primary" />
+              <Icon name="clock" size={ICON_SIZE_LG} className="text-primary" />
               <span>Date, Time & Theme</span>
             </div>
           </AccordionTrigger>
@@ -2982,7 +2983,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
                 <div className="p-2.5 bg-muted/50 rounded-lg border border-border/50">
                   <div className="flex items-start gap-2">
-                    <Clock className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className={`${SETTINGS_PANEL_TEXT_SIZES.versionInfo} uppercase tracking-wide text-muted-foreground/80 mb-0.5`}>Last Database Sync</p>
                       <p className="text-xs font-medium">

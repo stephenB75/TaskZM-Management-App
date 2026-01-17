@@ -13,6 +13,7 @@ import {
 import { Icon } from "./Icon";
 import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
 import { UI_UPGRADE_PROMPT_COLORS } from "../lib/ui-colors";
+import { ICON_SIZE_MD } from "../lib/layout-constants";
 
 interface UpgradePromptProps {
   open: boolean;
@@ -227,7 +228,7 @@ export function UpgradePrompt({
             onClick={handleUpgrade}
             className={`${UI_UPGRADE_PROMPT_COLORS.accentClass} ${UI_UPGRADE_PROMPT_COLORS.accentHoverClass} text-gray-800 dark:text-white`}
           >
-            <Sparkles className="w-4 h-4 mr-2" />
+            <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="mr-2" />
             {SUBSCRIPTION_UI_TEXT.upgradePrompt.upgradeToPro}
           </AlertDialogAction>
         </AlertDialogFooter>

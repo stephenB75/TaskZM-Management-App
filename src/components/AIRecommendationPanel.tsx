@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
 import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
@@ -746,7 +746,7 @@ export function AIRecommendationPanel({
                                 <span className="text-foreground/30">
                                   •
                                 </span>
-                                <Clock className="w-3 h-3 text-foreground/50" />
+                                <Icon name="clock" size={ICON_SIZE_XS} className="text-foreground/50" />
                                 <span className="text-foreground/70">
                                   {task.estimatedTime} min
                                 </span>
@@ -798,7 +798,7 @@ export function AIRecommendationPanel({
               onClick={confirmScheduling}
               className={cn("rounded-full", UI_INBOX_GRADIENTS.button.className, UI_INBOX_GRADIENTS.button.hover.className)}
             >
-              <Check className="w-4 h-4 mr-2" />
+              <Icon name="check" size={ICON_SIZE_MD} className="mr-2" />
               Schedule {schedulePlan.length} Task
               {schedulePlan.length === 1 ? "" : "s"}
             </Button>

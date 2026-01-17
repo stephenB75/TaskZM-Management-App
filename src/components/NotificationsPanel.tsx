@@ -374,7 +374,7 @@ export function NotificationsPanel() {
       case 'task-overdue':
         return <AlertCircle className="w-4 h-4 text-red-500" />;
       case 'task-due-soon':
-        return <Clock className="w-4 h-4 text-orange-500" />;
+        return <Icon name="clock" size={ICON_SIZE_XS} className="text-orange-500" />;
       case 'pomodoro-complete':
       case 'pomodoro-break':
         return <Timer className="w-4 h-4 text-purple-500" />;

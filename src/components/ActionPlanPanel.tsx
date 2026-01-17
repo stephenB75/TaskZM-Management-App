@@ -163,7 +163,7 @@ export function ActionPlanPanel({
                       <span className="text-sm font-medium text-foreground">{step.action}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3" />
+                      <Icon name="clock" size={ICON_SIZE_XS} />
                       <span>{formatTime(step.estimatedMinutes)}</span>
                       {step.dependencies && step.dependencies.length > 0 && (
                         <span className="text-xs">• Depends on step {step.dependencies[0]}</span>

@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +58,7 @@ export function AIScheduleResultDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center">
-              <Check className="w-5 h-5 text-primary" />
+              <Icon name="check" size={ICON_SIZE_LG} className="text-primary" />
             </div>
             <span>Tasks Scheduled Successfully!</span>
           </DialogTitle>
@@ -144,7 +144,7 @@ export function AIScheduleResultDialog({
                               <span className="text-foreground/30">
                                 •
                               </span>
-                              <Clock className="w-3 h-3 text-foreground/50" />
+                              <Icon name="clock" size={ICON_SIZE_XS} className="text-foreground/50" />
                               <span className="text-foreground/70">
                                 {task.estimatedTime} min
                               </span>

@@ -67,7 +67,7 @@ import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
-import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import type {
   Task,
   TaskPriority,
@@ -197,7 +197,7 @@ function FixedMiniCalendar({
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           )}
         >
-          <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
+          <Icon name="calendar" size={14} className="mr-1.5" weight="duotone" />
           Scheduled Date
         </Button>
         <Button
@@ -305,7 +305,7 @@ function FixedMiniCalendar({
       {activeDate && (
         <div className="mt-3 pt-3 border-t border-primary/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+            <Icon name="calendar" size={14} className="text-primary" weight="duotone" />
             <span className="text-xs font-medium text-foreground">
               {activeDate.toLocaleDateString('en-US', {
                 weekday: 'short',
@@ -500,7 +500,7 @@ function SingleDateMiniCalendar({
       {selectedDate && (
         <div className="mt-3 pt-3 border-t border-primary/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+            <Icon name="calendar" size={14} className="text-primary" weight="duotone" />
             <span className="text-xs font-medium text-foreground">
               {selectedDate.toLocaleDateString('en-US', {
                 weekday: 'short',
@@ -1860,7 +1860,7 @@ export function TaskDialog({
                 <span className="sm:hidden">Basic</span>
               </TabsTrigger>
               <TabsTrigger value="scheduling" className="text-xs sm:text-sm">
-                <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                <Icon name="calendar" size={16} className="mr-1" weight="duotone" />
                 <span className="hidden sm:inline">Schedule</span>
                 <span className="sm:hidden">Time</span>
               </TabsTrigger>
@@ -2133,7 +2133,7 @@ export function TaskDialog({
                           {/* Show estimated time if available */}
                           {breakdown.estimatedMinutes > 0 && (
                             <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                              <Clock className="w-3.5 h-3.5 text-primary" />
+                              <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary" />
                               <span className="text-xs font-medium text-foreground">
                                 {breakdown.estimatedHours}h {breakdown.estimatedMinutes % 60}m
                               </span>
@@ -2318,7 +2318,7 @@ export function TaskDialog({
                     {/* Scheduled Date & Time */}
                     <div className="space-y-3">
                       <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                        <CalendarIcon className="w-4 h-4 text-primary" />
+                        <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" weight="duotone" />
                         Scheduled Date & Time
                       </Label>
                       {scheduledDate && (
@@ -2338,7 +2338,7 @@ export function TaskDialog({
                         <div className="mt-2">
                           <div className="flex items-center justify-between mb-2">
                             <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                              <Icon name="clock" size={ICON_SIZE_XS} />
                               Scheduled Time (Optional)
                             </Label>
                             {(scheduledHours || scheduledMinutes) && (
@@ -2643,7 +2643,7 @@ export function TaskDialog({
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-semibold flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-primary" />
+                        <Icon name="clock" size={ICON_SIZE_XS} className="text-primary" />
                         Estimated Time
                       </Label>
                       <div className="text-sm font-medium text-primary">

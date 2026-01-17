@@ -389,15 +389,15 @@ export function AppleCalDAVSetupDialog({
                 <p className="text-sm font-medium">What happens next:</p>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   <li className="flex items-center gap-2">
-                    <Check className="w-3 h-3 text-green-500" />
+                    <Icon name="check" size={ICON_SIZE_XS} className="text-green-500" />
                     Events appear in your calendar view with a pastel iCloud badge
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-3 h-3 text-green-500" />
+                    <Icon name="check" size={ICON_SIZE_XS} className="text-green-500" />
                     Events are read-only (changes sync from iCloud only)
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-3 h-3 text-green-500" />
+                    <Icon name="check" size={ICON_SIZE_XS} className="text-green-500" />
                     Sync runs automatically to keep events up to date
                   </li>
                 </ul>
@@ -458,7 +458,7 @@ export function AppleCalDAVSetupDialog({
 
           {step === 3 && (
             <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700">
-              <Check className="w-4 h-4 mr-2" />
+              <Icon name="check" size={ICON_SIZE_MD} className="mr-2" />
               Done
             </Button>
           )}
