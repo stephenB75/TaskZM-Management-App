@@ -1137,11 +1137,11 @@ export const DraggableTaskCard = React.forwardRef<
                         color: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.text,
                       }}
                     >
-                      <ListChecks 
-                        className="flex-shrink-0" 
+                      <Icon 
+                        name="list-checks"
+                        size={TASK_CARD_DROPDOWN.dimensions.icon.small}
+                        className="flex-shrink-0"
                         style={{ 
-                          width: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`, 
-                          height: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`,
                           marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
                         }} 
                       />

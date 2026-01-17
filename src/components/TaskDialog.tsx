@@ -2846,7 +2846,7 @@ export function TaskDialog({
                       <span className="text-xs font-bold text-primary">4</span>
                     </div>
                     <Label className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <ListChecks className="w-4 h-4 text-primary" />
+                      <Icon name="list-checks" size={ICON_SIZE_MD} className="text-primary" />
                       Create Subtask
                     </Label>
                   </div>
