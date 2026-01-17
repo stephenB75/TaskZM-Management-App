@@ -4,6 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
+import { ICON_SIZE_XS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import { TASK_CARD_ICON_SIZES } from "../lib/task-card-constants";
 import { Badge } from "./ui/badge";
 import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags, getDateString } from "../lib/utils";
@@ -596,14 +597,16 @@ export function DraggableTodayAgendaTask({
                 onPointerDown={(e) => e.stopPropagation()}
                 className={cn("flex-shrink-0 hover:opacity-80 transition-opacity", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")}
               >
-                <Circle
+                <Icon
+                  name="circle"
+                  size={isMobile ? ICON_SIZE_SM : ICON_SIZE_MD}
                   className={cn(
                     "transition-colors",
-                    isMobile ? "w-3.5 h-3.5" : "w-4 h-4",
                     task.status === "done"
                       ? "text-primary fill-primary"
                       : "text-gray-300 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300",
                   )}
+                  weight={task.status === "done" ? "fill" : "regular"}
                 />
               </button>
             </div>
@@ -611,7 +614,7 @@ export function DraggableTodayAgendaTask({
             {/* Row 2: H3 Title (Bold) */}
             <div className={cn("flex items-start mt-1", isMobile ? "gap-1 px-1 mb-1" : "gap-1.5 px-1 mb-1")}>
               {task.recurrence && task.recurrence.type !== "none" && (
-                <Repeat className={cn("text-primary flex-shrink-0 mt-0.5", isMobile ? "w-3 h-3" : "w-3.5 h-3.5")} />
+                <Icon name="repeat" size={isMobile ? ICON_SIZE_XS : ICON_SIZE_SM} className="text-primary flex-shrink-0 mt-0.5" />
               )}
               <h3
                 className={cn(

@@ -2916,7 +2916,7 @@ export function TaskDialog({
                 <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Repeat className="w-4 h-4 text-primary" />
+                      <Icon name="repeat" size={ICON_SIZE_MD} className="text-primary" />
                       <Label className="text-sm font-semibold">Repeat Task</Label>
                       {!hasFeature('recurringTasks') && (
                         <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
