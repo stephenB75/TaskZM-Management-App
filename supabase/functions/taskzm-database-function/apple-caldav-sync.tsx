@@ -969,8 +969,15 @@ function parseVEvent(
           if (totalOffsetMinutes === 0) return 'UTC';
           
           // For other offsets, try to use user's timezone or default
-          console.warn(`Unmapped GMT offset ${cleanTzid}, using default timezone`);
-          return currentUserTimezone || DEFAULT_TIMEZONE;
+          // Log warning but ensure we return a valid IANA timezone
+          console.warn(`Unmapped GMT offset ${cleanTzid} (${totalOffsetMinutes} minutes), using default timezone`);
+          const fallback = currentUserTimezone || DEFAULT_TIMEZONE;
+          // Ensure fallback is valid IANA format
+          if (fallback.includes('/') || fallback === 'UTC') {
+            return fallback;
+          }
+          // If fallback is also invalid, use UTC
+          return 'UTC';
         }
         
         // Handle other common abbreviations (EST, EDT, PST, etc.)
@@ -994,7 +1001,13 @@ function parseVEvent(
         
         // If we can't normalize it, use default timezone
         console.warn(`Unknown timezone format ${cleanTzid}, using default timezone`);
-        return currentUserTimezone || DEFAULT_TIMEZONE;
+        const fallback = currentUserTimezone || DEFAULT_TIMEZONE;
+        // Ensure fallback is valid IANA format
+        if (fallback.includes('/') || fallback === 'UTC') {
+          return fallback;
+        }
+        // If fallback is also invalid, use UTC
+        return 'UTC';
       };
       
       // Helper function to convert local time in a timezone to UTC
@@ -1029,8 +1042,15 @@ function parseVEvent(
         } catch (e) {
           // Invalid timezone - use default and log warning
           const errorMsg = e instanceof Error ? e.message : String(e);
-          console.warn(`Invalid timezone ${targetTzid} (normalized to ${normalizedTzid}), using default: ${errorMsg}`);
-          validTzid = currentUserTimezone || DEFAULT_TIMEZONE;
+          console.warn(`Failed to convert timezone ${targetTzid}: ${errorMsg}`);
+          const fallback = currentUserTimezone || DEFAULT_TIMEZONE;
+          // Ensure fallback is valid IANA format
+          if (fallback.includes('/') || fallback === 'UTC') {
+            validTzid = fallback;
+          } else {
+            // If fallback is also invalid, use UTC
+            validTzid = 'UTC';
+          }
           // Validate the fallback timezone too
           try {
             new Intl.DateTimeFormat('en-US', { timeZone: validTzid });
