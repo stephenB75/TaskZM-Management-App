@@ -140,7 +140,7 @@ export function AwardCelebration() {
   };
 
   const showAwardToast = (award: any) => {
-    const Icon = getCategoryIcon(award.category);
+    const AwardIconComponent = getCategoryIcon(award.category);
     const color = getRarityColor(award.rarity);
 
     toast.custom(
@@ -169,7 +169,7 @@ export function AwardCelebration() {
                   backgroundColor: `${color}15`,
                 }}
               >
-                <Icon className="w-5 h-5" style={{ color }} />
+                <AwardIconComponent className="w-5 h-5" style={{ color }} />
               </div>
 
               {/* Text content */}

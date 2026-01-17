@@ -152,7 +152,7 @@ function MetricCard({
   title,
   value,
   subtitle,
-  icon: Icon,
+  icon: IconComponent,
   color,
   trend,
 }: {
@@ -169,7 +169,7 @@ function MetricCard({
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg" style={{ backgroundColor: getColorWithOpacity(color, 0.1) }}>
-            <Icon className="w-4 h-4" style={{ color }} />
+            <IconComponent className="w-4 h-4" style={{ color }} />
           </div>
           {trend && (
             <div className="text-xs font-medium" style={{ color: trend.value >= 0 ? COLOR_SUCCESS : COLOR_ERROR }}>
