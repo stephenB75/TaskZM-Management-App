@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, SETTINGS_PANEL_ICON_SIZE_SMALL } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 import { cn } from "../lib/utils";
@@ -128,11 +128,11 @@ export function PomodoroTimer({
     const iconSize = isMobile ? "w-1.5 h-1.5" : "w-3.5 h-3.5";
     switch (timerState.mode) {
       case "work":
-        return <Timer className={iconSize} />;
+        return <Icon name="timer" size={ICON_SIZE_SM} />;
       case "shortBreak":
-        return <Coffee className={iconSize} />;
+        return <Icon name="coffee" size={ICON_SIZE_SM} />;
       case "longBreak":
-        return <Coffee className={iconSize} />;
+        return <Icon name="coffee" size={ICON_SIZE_SM} />;
     }
   };
 
@@ -180,7 +180,7 @@ export function PomodoroTimer({
                   toggleTimer();
                 }}
               >
-                <Pause className={cn(isMobile ? "w-1.5 h-1.5" : "w-3 h-3")} />
+                <Icon name="pause" size={isMobile ? 6 : 12} />
               </Button>
               <Button
                 size="icon"
@@ -193,7 +193,7 @@ export function PomodoroTimer({
                   handleStopTimer();
                 }}
               >
-                <Square className={cn(isMobile ? "w-1.5 h-1.5" : "w-3 h-3")} />
+                <Icon name="square" size={isMobile ? 6 : 12} />
               </Button>
             </motion.div>
           ) : (
@@ -220,7 +220,7 @@ export function PomodoroTimer({
                   toggleTimer();
                 }}
               >
-                <Play className={cn(isMobile ? "w-1.5 h-1.5" : "w-3 h-3")} />
+                <Icon name="play" size={isMobile ? 6 : 12} />
               </Button>
               {timerState.sessionsCompleted > 0 && (
                 <span className={cn(
@@ -252,7 +252,7 @@ export function PomodoroTimer({
         </div>
         {timerState.sessionsCompleted > 0 && (
           <div className="flex items-center gap-1 text-xs text-[#50C878] dark:text-[#5AC888]">
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <Icon name="check-circle" size={SETTINGS_PANEL_ICON_SIZE_SMALL} />
             <span>{timerState.sessionsCompleted} 🍅</span>
           </div>
         )}
@@ -286,12 +286,12 @@ export function PomodoroTimer({
         >
           {timerState.isRunning ? (
             <>
-              <Pause className="w-4 h-4 mr-1" />
+              <Icon name="pause" size={ICON_SIZE_XS} className="mr-1" />
               Pause
             </>
           ) : (
             <>
-              <Play className="w-4 h-4 mr-1" />
+              <Icon name="play" size={ICON_SIZE_XS} className="mr-1" />
               {timerState.mode === "work"
                 ? "Start Focus"
                 : "Start Break"}
@@ -311,7 +311,7 @@ export function PomodoroTimer({
             className="rounded-full"
             onClick={handleStopTimer}
           >
-            <Square className="w-4 h-4 mr-1" />
+            <Icon name="square" size={ICON_SIZE_XS} className="mr-1" />
             Reset
           </Button>
         )}

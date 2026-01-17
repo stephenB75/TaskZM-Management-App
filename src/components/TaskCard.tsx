@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
+import { ICON_SIZE_XS } from '../lib/layout-constants';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
