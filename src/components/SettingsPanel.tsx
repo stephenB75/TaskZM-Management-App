@@ -1514,7 +1514,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Tag className="w-5 h-5 text-primary" />
+              <Icon name="tag" size={ICON_SIZE_LG} className="text-primary" />
               <span>Tags Management</span>
             </div>
           </AccordionTrigger>

@@ -1325,7 +1325,6 @@ export async function syncCalendarsToDatabase(
             // Preserve recurrence metadata
             rrule: event.rrule || null,
             recurrence_base_id: event.recurrenceBaseId || null,
-            is_recurring: event.isRecurring || false,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
@@ -1360,11 +1359,10 @@ export async function syncCalendarsToDatabase(
             external_updated_at: event.lastModified,
             is_readonly: true,
             // Store recurrence metadata
-            // For base recurring events: rrule is set, recurrence_base_id is null, is_recurring is true
+            // For base recurring events: rrule is set, recurrence_base_id is null
             // Since we're not expanding during sync, all events are base events
             rrule: event.rrule || null,
             recurrence_base_id: null, // Always null for base events (we're not storing instances)
-            is_recurring: event.isRecurring || false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });

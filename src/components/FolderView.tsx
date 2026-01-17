@@ -511,7 +511,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                             )}
                             {task.tags && task.tags.length > 0 && (
                               <div className="flex items-center gap-1">
-                                <Tag className="w-3 h-3" />
+                                <Icon name="tag" size={ICON_SIZE_XS} />
                                 <span>{task.tags.slice(0, 2).join(", ")}</span>
                                 {task.tags.length > 2 && (
                                   <span>+{task.tags.length - 2}</span>

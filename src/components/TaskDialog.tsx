@@ -67,7 +67,7 @@ import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
-import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM } from "../lib/layout-constants";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import type {
   Task,
   TaskPriority,
@@ -2746,7 +2746,7 @@ export function TaskDialog({
                         <span className="text-xs font-bold text-primary">3</span>
                       </div>
                       <Label className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-primary" />
+                      <Icon name="tag" size={ICON_SIZE_MD} className="text-primary" />
                       Assign Tags
                       </Label>
                     </div>
@@ -2777,7 +2777,7 @@ export function TaskDialog({
                             .map((tag) => (
                               <SelectItem key={tag} value={tag}>
                               <div className="flex items-center gap-2">
-                                  <Tag className="w-3 h-3 text-primary" />
+                                  <Icon name="tag" size={ICON_SIZE_XS} className="text-primary" />
                                   <span>{tag}</span>
                                 </div>
                               </SelectItem>
@@ -2829,7 +2829,7 @@ export function TaskDialog({
                           onClick={() => removeTag(tag)}
                             >
                               <div className="flex items-center gap-1.5">
-                            <Tag className="w-3 h-3 text-primary" />
+                            <Icon name="tag" size={ICON_SIZE_XS} className="text-primary" />
                             <span>{tag}</span>
                                 <X className="w-3 h-3 ml-1" />
                               </div>

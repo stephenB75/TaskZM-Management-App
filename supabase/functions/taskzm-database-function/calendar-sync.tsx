@@ -1046,7 +1046,7 @@ function generateRecurringOccurrences(
         // Include recurrence metadata (will be undefined for non-recurring events)
         rrule: baseEvent.rrule,
         recurrenceBaseId: baseEvent.recurrence_base_id,
-        isRecurring: baseEvent.is_recurring || false,
+        isRecurring: !!(baseEvent.rrule && !baseEvent.recurrence_base_id),
       }];
     }
     return [];
@@ -1250,7 +1250,7 @@ async function getAppleEventsFromDatabase(
 
     for (const event of events || []) {
       // If this is a base recurring event (has RRULE and no recurrence_base_id)
-      if (event.is_recurring && event.rrule && !event.recurrence_base_id) {
+      if (event.rrule && !event.recurrence_base_id) {
         // Only process each base event once
         if (processedBaseEvents.has(event.external_id)) {
           continue;
@@ -1281,7 +1281,7 @@ async function getAppleEventsFromDatabase(
             // Include recurrence metadata
             rrule: event.rrule,
             recurrenceBaseId: event.recurrence_base_id,
-            isRecurring: event.is_recurring || false,
+            isRecurring: !!(event.rrule && !event.recurrence_base_id),
           });
         }
       }
@@ -1332,7 +1332,7 @@ async function getGoogleEventsFromDatabase(
 
     for (const event of events || []) {
       // If this is a base recurring event (has RRULE and no recurrence_base_id)
-      if (event.is_recurring && event.rrule && !event.recurrence_base_id) {
+      if (event.rrule && !event.recurrence_base_id) {
         // Only process each base event once
         if (processedBaseEvents.has(event.external_id)) {
           continue;
@@ -1363,7 +1363,7 @@ async function getGoogleEventsFromDatabase(
             // Include recurrence metadata
             rrule: event.rrule,
             recurrenceBaseId: event.recurrence_base_id,
-            isRecurring: event.is_recurring || false,
+            isRecurring: !!(event.rrule && !event.recurrence_base_id),
           });
         }
       }
@@ -1414,7 +1414,7 @@ async function getOutlookEventsFromDatabase(
 
     for (const event of events || []) {
       // If this is a base recurring event (has RRULE and no recurrence_base_id)
-      if (event.is_recurring && event.rrule && !event.recurrence_base_id) {
+      if (event.rrule && !event.recurrence_base_id) {
         // Only process each base event once
         if (processedBaseEvents.has(event.external_id)) {
           continue;
@@ -1445,7 +1445,7 @@ async function getOutlookEventsFromDatabase(
             // Include recurrence metadata
             rrule: event.rrule,
             recurrenceBaseId: event.recurrence_base_id,
-            isRecurring: event.is_recurring || false,
+            isRecurring: !!(event.rrule && !event.recurrence_base_id),
           });
         }
       }
