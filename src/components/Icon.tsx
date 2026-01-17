@@ -107,6 +107,8 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'bar-chart': 'ChartBar',
   'bar-chart-3': 'ChartBar',
   'pie-chart': 'ChartPie',
+  'grid': 'GridFour',
+  'dashboard': 'GridFour',
   'trending-up': 'TrendUp',
   'activity': 'Activity',
   'file-text': 'FileText',
@@ -158,6 +160,11 @@ const DUOTONE_ICONS = new Set([
   'calendar-blank',
   'check-circle',
   'checkmark-circle',
+  'grid',
+  'dashboard',
+  'inbox',
+  'archive',
+  'bar-chart',
 ]);
 
 export function Icon({

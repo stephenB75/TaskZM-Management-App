@@ -1,16 +1,6 @@
 import React from "react";
-import {
-  LayoutDashboard,
-  Inbox,
-  Settings,
-  Archive,
-  CalendarDays,
-  BarChart3,
-  Users,
-  Lock,
-  Folder,
-  Bell,
-} from "lucide-react";
+import { Lock } from "lucide-react";
+import { Icon } from "./Icon";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
 import {
@@ -76,46 +66,46 @@ export function AppSidebar({
     {
       id: "dashboard",
       label: "Dashboard",
-      icon: LayoutDashboard,
+      iconName: "grid",
     },
     {
       id: "notifications",
       label: "Notifications",
-      icon: Bell,
+      iconName: "bell",
       badge: badgeCount,
     },
     { 
       id: "today", 
       label: "Today Agenda", 
-      icon: CalendarDays,
+      iconName: "calendar",
       badge: upcomingAndDueNowCount > 0 ? upcomingAndDueNowCount : undefined,
     },
     {
       id: "inbox",
       label: "Inbox",
-      icon: Inbox,
+      iconName: "inbox",
       badge: unscheduledCount,
     },
     {
       id: "folders",
       label: "Folders",
-      icon: Folder,
+      iconName: "folder",
     },
     {
       id: "team",
       label: "Team",
-      icon: Users,
+      iconName: "users",
       badge: teamNotificationCount,
       pro: !hasFeature("teamFeatures"),
     },
     {
       id: "analytics",
       label: "Analytics",
-      icon: BarChart3,
+      iconName: "bar-chart",
       pro: !hasFeature("analytics"),
     },
-    { id: "archive", label: "Archive", icon: Archive },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "archive", label: "Archive", iconName: "archive" },
+    { id: "settings", label: "Settings", iconName: "settings" },
   ];
 
   const iconNavContent = (
@@ -126,7 +116,6 @@ export function AppSidebar({
       >
         {menuItems
           .map((item) => {
-            const SidebarIcon = item.icon;
             return (
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
@@ -145,7 +134,12 @@ export function AppSidebar({
                       whileTap={{ scale: 0.95 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     >
-                      <SidebarIcon className="w-5 h-5" />
+                      <Icon 
+                        name={item.iconName} 
+                        size={20} 
+                        weight={currentView === item.id ? "duotone" : "regular"}
+                        className={currentView === item.id ? "text-primary" : "text-muted-foreground"}
+                      />
                       {item.pro && (
                         <Lock className="w-3 h-3 absolute top-1 right-1 text-[#D4C5F9]" />
                       )}
@@ -201,7 +195,6 @@ export function AppSidebar({
         {menuItems
           .filter((item) => !('desktopOnly' in item && item.desktopOnly)) // Mobile sidebar excludes desktop-only items
           .map((item) => {
-            const SidebarIcon = item.icon;
             return (
               <Button
                 key={item.id}
@@ -218,7 +211,12 @@ export function AppSidebar({
                   onOpenChange?.(false);
                 }}
               >
-                <SidebarIcon className="w-4 h-4 mr-2" />
+                <Icon 
+                  name={item.iconName} 
+                  size={16} 
+                  weight={currentView === item.id ? "duotone" : "regular"}
+                  className="mr-2"
+                />
                 {item.label}
                 {item.pro && (
                   <Badge

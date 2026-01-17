@@ -41,6 +41,7 @@ import { cn, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getInitials } from
 import { useIsMobile } from "./ui/use-mobile";
 import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
+import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import {
   AlertDialog,
   AlertDialogAction,
