@@ -5157,8 +5157,8 @@ app.post("/taskzm-database-function/team/:workspaceId/invitations/decline", asyn
 // ============================================================================
 // IMPORTANT: These routes must be defined BEFORE the catch-all route
 
-// Get all awards for the current user
-app.get("/taskzm-database-function/user/awards", async (c) => {
+// Get all awards handler
+const getUserAwardsHandler = async (c: any) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -5189,10 +5189,10 @@ app.get("/taskzm-database-function/user/awards", async (c) => {
     console.error('Error in get user awards:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
-});
+};
 
-// Save multiple awards (upsert)
-app.post("/taskzm-database-function/user/awards", async (c) => {
+// Save multiple awards handler
+const saveUserAwardsHandler = async (c: any) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -5232,10 +5232,10 @@ app.post("/taskzm-database-function/user/awards", async (c) => {
     console.error('Error in save user awards:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
-});
+};
 
-// Save a single award (upsert)
-app.post("/taskzm-database-function/user/awards/single", async (c) => {
+// Save a single award handler
+const saveUserAwardHandler = async (c: any) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -5269,7 +5269,16 @@ app.post("/taskzm-database-function/user/awards/single", async (c) => {
     console.error('Error in save user award:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
-});
+};
+
+// Register awards routes both with and without prefix for compatibility
+// IMPORTANT: Register routes BEFORE the catch-all route
+app.get("/taskzm-database-function/user/awards", getUserAwardsHandler);
+app.get("/user/awards", getUserAwardsHandler);
+app.post("/taskzm-database-function/user/awards", saveUserAwardsHandler);
+app.post("/user/awards", saveUserAwardsHandler);
+app.post("/taskzm-database-function/user/awards/single", saveUserAwardHandler);
+app.post("/user/awards/single", saveUserAwardHandler);
 
 // ============================================================================
 // CATCH-ALL ROUTE (must be last)
