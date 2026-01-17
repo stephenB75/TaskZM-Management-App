@@ -41,6 +41,7 @@ import {
 } from './ui/alert-dialog';
 import { useMobileLayout } from '../hooks/useMobileLayout';
 import { toast } from 'sonner';
+import { Icon } from './Icon';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS, AI_DAILY_HOUR_OPTIONS, AI_DAILY_HOUR_LABELS } from '../lib/ai-config';
 import taskzmLogoBlack from '../assets/Taskzm_Logo_BLK-removebg.png';  // Black logo for about section

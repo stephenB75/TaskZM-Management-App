@@ -32,32 +32,48 @@ export function useMobileLayout(): boolean {
   });
 
   useEffect(() => {
+    let resizeTimeoutId: NodeJS.Timeout;
+    const RESIZE_DEBOUNCE_MS = 150; // Debounce resize to reduce forced reflows
+
     const updateLayout = () => {
-      const width = window.innerWidth;
-      // Mobile phones: always use mobile layout
-      if (width < VIEWPORT_BREAKPOINTS.mobile) {
-        setShouldUseMobileLayout(true);
-        return;
+      // Use requestAnimationFrame to batch layout reads
+      requestAnimationFrame(() => {
+        const width = window.innerWidth;
+        // Mobile phones: always use mobile layout
+        if (width < VIEWPORT_BREAKPOINTS.mobile) {
+          setShouldUseMobileLayout(true);
+          return;
+        }
+        // Tablets/iPad: use mobile layout in both portrait and landscape
+        if (width >= VIEWPORT_BREAKPOINTS.mobile && width < VIEWPORT_BREAKPOINTS.tablet) {
+          setShouldUseMobileLayout(true);
+          return;
+        }
+        // Laptops, small monitors, and desktop: use desktop layout
+        setShouldUseMobileLayout(false);
+      });
+    };
+
+    const debouncedUpdateLayout = () => {
+      if (resizeTimeoutId) {
+        clearTimeout(resizeTimeoutId);
       }
-      // Tablets/iPad: use mobile layout in both portrait and landscape
-      if (width >= VIEWPORT_BREAKPOINTS.mobile && width < VIEWPORT_BREAKPOINTS.tablet) {
-        setShouldUseMobileLayout(true);
-        return;
-      }
-      // Laptops, small monitors, and desktop: use desktop layout
-      setShouldUseMobileLayout(false);
+      resizeTimeoutId = setTimeout(updateLayout, RESIZE_DEBOUNCE_MS);
     };
 
     // Initial check
     updateLayout();
 
-    // Listen for resize and orientation changes
-    window.addEventListener('resize', updateLayout);
+    // Listen for resize and orientation changes with debouncing
+    window.addEventListener('resize', debouncedUpdateLayout, { passive: true });
     window.addEventListener('orientationchange', updateLayout);
 
     return () => {
-      window.removeEventListener('resize', updateLayout);
+      window.removeEventListener('resize', debouncedUpdateLayout);
       window.removeEventListener('orientationchange', updateLayout);
+      if (resizeTimeoutId) {
+        clearTimeout(resizeTimeoutId);
+      }
     };
   }, [orientation]); // Re-check when orientation changes
 

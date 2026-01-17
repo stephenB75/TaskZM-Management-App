@@ -453,19 +453,38 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', controllerChangeHandler, { capture: true, passive: false });
     
     // Additional safeguard: Override window.location.reload to prevent automatic reloads
-    const originalReload = window.location.reload;
+    // Use Object.defineProperty instead of direct assignment (location.reload is read-only)
+    const originalReload = window.location.reload.bind(window.location);
     let reloadOverrideActive = true;
-    (window.location as any).reload = function(forcedReload?: boolean) {
-      // Only allow reload if explicitly called by user action (not automatic)
-      if (!preventReloadFlag || forcedReload === true) {
-        // User-initiated reload - allow it
-        originalReload.call(window.location, forcedReload);
-      } else {
-        // Automatic reload attempt - block it
-        console.debug('[Service Worker] Blocked automatic page reload - update will apply on next manual refresh');
-        preventReloadFlag = true; // Keep flag set to prevent future automatic reloads
-      }
-    };
+    try {
+      Object.defineProperty(window.location, 'reload', {
+        value: function(forcedReload?: boolean) {
+          // Only allow reload if explicitly called by user action (not automatic)
+          if (!preventReloadFlag || forcedReload === true) {
+            // User-initiated reload - allow it
+            originalReload(forcedReload);
+          } else {
+            // Automatic reload attempt - block it
+            console.debug('[Service Worker] Blocked automatic page reload - update will apply on next manual refresh');
+            preventReloadFlag = true; // Keep flag set to prevent future automatic reloads
+          }
+        },
+        writable: false,
+        configurable: true,
+      });
+    } catch (error) {
+      // If defineProperty fails (some browsers), fall back to storing original and intercepting calls
+      console.debug('[Service Worker] Could not override location.reload, using fallback method');
+      (window as any).__originalLocationReload = originalReload;
+      (window as any).__locationReloadOverride = function(forcedReload?: boolean) {
+        if (!preventReloadFlag || forcedReload === true) {
+          originalReload(forcedReload);
+        } else {
+          console.debug('[Service Worker] Blocked automatic page reload - update will apply on next manual refresh');
+          preventReloadFlag = true;
+        }
+      };
+    }
     
     // Additional safeguard: Listen for messages from service worker
     // If service worker tries to activate, tell it to wait

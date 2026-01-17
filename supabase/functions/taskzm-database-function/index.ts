@@ -5152,24 +5152,10 @@ app.post("/taskzm-database-function/team/:workspaceId/invitations/decline", asyn
   }
 });
 
-// Catch-all route for debugging 404 errors
-app.all('*', async (c) => {
-  const path = new URL(c.req.url).pathname;
-  console.log('Unmatched route requested:', {
-    method: c.req.method,
-    path,
-    url: c.req.url,
-  });
-  return c.json({ 
-    error: 'Route not found',
-    method: c.req.method,
-    path,
-  }, 404);
-});
-
 // ============================================================================
 // USER AWARDS ENDPOINTS
 // ============================================================================
+// IMPORTANT: These routes must be defined BEFORE the catch-all route
 
 // Get all awards for the current user
 app.get("/taskzm-database-function/user/awards", async (c) => {
@@ -5283,6 +5269,25 @@ app.post("/taskzm-database-function/user/awards/single", async (c) => {
     console.error('Error in save user award:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
+});
+
+// ============================================================================
+// CATCH-ALL ROUTE (must be last)
+// ============================================================================
+// Catch-all route for debugging 404 errors
+// IMPORTANT: This must be defined AFTER all other routes
+app.all('*', async (c) => {
+  const path = new URL(c.req.url).pathname;
+  console.log('Unmatched route requested:', {
+    method: c.req.method,
+    path,
+    url: c.req.url,
+  });
+  return c.json({ 
+    error: 'Route not found',
+    method: c.req.method,
+    path,
+  }, 404);
 });
 
 Deno.serve(app.fetch);

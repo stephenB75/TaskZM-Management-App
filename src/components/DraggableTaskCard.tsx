@@ -107,27 +107,31 @@ export const DraggableTaskCard = React.forwardRef<
         const element = cardRef.current;
         if (!element) return;
         
-        let parent = element.parentElement;
-        while (parent) {
-          const style = window.getComputedStyle(parent);
-          const transform = style.transform;
-          if (transform && transform !== 'none') {
-            const matrix = transform.match(/matrix\(([^)]+)\)/);
-            if (matrix) {
-              const values = matrix[1].split(',').map(v => parseFloat(v.trim()));
-              if (values.length >= 4) {
-                // Extract scale from matrix (first value is scaleX)
-                const scale = values[0];
-                if (scale !== 1 && scale > 0) {
-                  setZoomScale(scale);
-                  return;
+        // Use requestAnimationFrame to batch layout reads and avoid forced reflows
+        requestAnimationFrame(() => {
+          let parent = element.parentElement;
+          while (parent) {
+            // Batch getComputedStyle reads
+            const style = window.getComputedStyle(parent);
+            const transform = style.transform;
+            if (transform && transform !== 'none') {
+              const matrix = transform.match(/matrix\(([^)]+)\)/);
+              if (matrix) {
+                const values = matrix[1].split(',').map(v => parseFloat(v.trim()));
+                if (values.length >= 4) {
+                  // Extract scale from matrix (first value is scaleX)
+                  const scale = values[0];
+                  if (scale !== 1 && scale > 0) {
+                    setZoomScale(scale);
+                    return;
+                  }
                 }
               }
             }
+            parent = parent.parentElement;
           }
-          parent = parent.parentElement;
-        }
-        setZoomScale(1);
+          setZoomScale(1);
+        });
       };
       
       checkZoom();

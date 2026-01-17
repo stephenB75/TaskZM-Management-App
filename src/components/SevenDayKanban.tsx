@@ -345,22 +345,21 @@ export function SevenDayKanban({
           const maxColumnsToCheck = 14; // 14 days max
           const columnsToCheck = Array.from(columnElements).slice(0, maxColumnsToCheck);
           
-          // Batch all getBoundingClientRect and scrollHeight reads
+          // OPTIMIZED: Batch all layout reads in a single pass to minimize forced reflows
+          // Read all layout properties first, then process
           const measurements: Array<{ height: number; scrollHeight: number }> = [];
-          for (const col of columnsToCheck) {
-            if (col instanceof HTMLElement) {
-              // Use a single read per element
-              const rect = col.getBoundingClientRect();
-              measurements.push({
-                height: rect.height,
-                scrollHeight: col.scrollHeight,
-              });
-            }
-          }
+          
+          // Single batch read - all getBoundingClientRect calls happen together
+          const rects = columnsToCheck
+            .filter((col): col is HTMLElement => col instanceof HTMLElement)
+            .map(col => ({
+              rect: col.getBoundingClientRect(),
+              scrollHeight: col.scrollHeight,
+            }));
           
           // Process measurements after all reads are complete
-          for (const { height, scrollHeight } of measurements) {
-            const columnHeight = Math.max(height, scrollHeight);
+          for (const { rect, scrollHeight } of rects) {
+            const columnHeight = Math.max(rect.height, scrollHeight);
             maxColumnHeight = Math.max(maxColumnHeight, columnHeight);
           }
           

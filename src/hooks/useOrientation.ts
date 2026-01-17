@@ -13,28 +13,16 @@ export function useOrientation(): Orientation {
   });
 
   useEffect(() => {
-    const updateOrientation = () => {
-      setOrientation(
-        window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
-      );
-    };
-
-    // Initial check
-    updateOrientation();
-
-    // Listen for resize events (works for both mobile orientation changes and desktop window resizing)
-    window.addEventListener('resize', updateOrientation);
-
-    // Listen for orientation change events (mobile devices)
-    window.addEventListener('orientationchange', updateOrientation);
-
-    // Use matchMedia for more reliable orientation detection
+    // Use matchMedia for orientation detection (avoids forced reflows from reading window dimensions)
     const mediaQuery = window.matchMedia('(orientation: portrait)');
     const handleMediaChange = (e: MediaQueryListEvent) => {
       setOrientation(e.matches ? 'portrait' : 'landscape');
     };
 
-    // Modern browsers
+    // Set initial orientation from media query (avoids reading window dimensions)
+    setOrientation(mediaQuery.matches ? 'portrait' : 'landscape');
+
+    // Modern browsers - use matchMedia instead of resize events to avoid forced reflows
     if (mediaQuery.addEventListener) {
       mediaQuery.addEventListener('change', handleMediaChange);
     } else {
@@ -42,13 +30,43 @@ export function useOrientation(): Orientation {
       mediaQuery.addListener(handleMediaChange);
     }
 
+    // Fallback: Only use resize/orientationchange if matchMedia is not available
+    // This is rare, but provides compatibility
+    let resizeTimeoutId: NodeJS.Timeout;
+    const RESIZE_DEBOUNCE_MS = 150;
+    
+    const updateOrientationFallback = () => {
+      if (resizeTimeoutId) {
+        clearTimeout(resizeTimeoutId);
+      }
+      resizeTimeoutId = setTimeout(() => {
+        // Use requestAnimationFrame to batch layout reads
+        requestAnimationFrame(() => {
+          setOrientation(
+            window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
+          );
+        });
+      }, RESIZE_DEBOUNCE_MS);
+    };
+
+    // Only add fallback listeners if matchMedia is not fully supported
+    if (!mediaQuery.addEventListener && !mediaQuery.addListener) {
+      window.addEventListener('resize', updateOrientationFallback, { passive: true });
+      window.addEventListener('orientationchange', updateOrientationFallback);
+    }
+
     return () => {
-      window.removeEventListener('resize', updateOrientation);
-      window.removeEventListener('orientationchange', updateOrientation);
       if (mediaQuery.removeEventListener) {
         mediaQuery.removeEventListener('change', handleMediaChange);
-      } else {
+      } else if (mediaQuery.removeListener) {
         mediaQuery.removeListener(handleMediaChange);
+      }
+      if (!mediaQuery.addEventListener && !mediaQuery.addListener) {
+        window.removeEventListener('resize', updateOrientationFallback);
+        window.removeEventListener('orientationchange', updateOrientationFallback);
+      }
+      if (resizeTimeoutId) {
+        clearTimeout(resizeTimeoutId);
       }
     };
   }, []);

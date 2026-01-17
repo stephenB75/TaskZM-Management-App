@@ -534,14 +534,37 @@ export function DashboardView({
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop);
   useEffect(() => {
+    let resizeTimeoutId: NodeJS.Timeout;
+    const RESIZE_DEBOUNCE_MS = 150; // Debounce resize to reduce forced reflows
+
     const checkScreenSize = () => {
-      const width = window.innerWidth;
-      setIsSmallScreen(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
-      setScreenWidth(width);
+      // Use requestAnimationFrame to batch layout reads
+      requestAnimationFrame(() => {
+        const width = window.innerWidth;
+        setIsSmallScreen(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
+        setScreenWidth(width);
+      });
     };
+
+    const debouncedCheckScreenSize = () => {
+      if (resizeTimeoutId) {
+        clearTimeout(resizeTimeoutId);
+      }
+      resizeTimeoutId = setTimeout(checkScreenSize, RESIZE_DEBOUNCE_MS);
+    };
+
+    // Initial check
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
+
+    // Listen for resize with debouncing
+    window.addEventListener('resize', debouncedCheckScreenSize, { passive: true });
+    
+    return () => {
+      window.removeEventListener('resize', debouncedCheckScreenSize);
+      if (resizeTimeoutId) {
+        clearTimeout(resizeTimeoutId);
+      }
+    };
   }, []);
 
   // Calculate progressive button scale based on screen width
