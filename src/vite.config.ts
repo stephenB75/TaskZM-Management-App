@@ -17,11 +17,19 @@ export default defineConfig(({ mode }) => {
   return {
     root: __dirname, // Set root to src/ directory (where index.html is)
     envDir: envDir, // Look for .env files in project root (parent of src/)
-    plugins: [react()],
+    plugins: [
+      react({
+        // Ensure React is properly handled for all dependencies
+        jsxRuntime: 'automatic',
+      }),
+    ],
   base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './'),
+      // Ensure React is available to all dependencies
+      'react': path.resolve(__dirname, '../node_modules/react'),
+      'react-dom': path.resolve(__dirname, '../node_modules/react-dom'),
       // Resolve versioned package imports
       'sonner': 'sonner',
       'lucide-react@0.487.0': 'lucide-react',
@@ -73,17 +81,29 @@ export default defineConfig(({ mode }) => {
     outDir: 'dist',
     sourcemap: false,
     assetsDir: 'assets',
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          motion: ['motion'],
-          ui: [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-          ],
+        manualChunks(id) {
+          // Ensure React and React-DOM are in the same chunk
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor';
+          }
+          // Phosphor icons should be in vendor chunk to share React
+          if (id.includes('phosphor-react')) {
+            return 'vendor';
+          }
+          // Motion library
+          if (id.includes('node_modules/motion')) {
+            return 'motion';
+          }
+          // UI libraries
+          if (id.includes('@radix-ui')) {
+            return 'ui';
+          }
         },
       },
     },

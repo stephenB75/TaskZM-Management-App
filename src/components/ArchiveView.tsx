@@ -276,7 +276,7 @@ export function ArchiveView() {
 
   return (
     <div 
-      className={cn("flex flex-col bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB] dark:from-gray-950 dark:via-gray-900 dark:to-gray-900", isMobile ? 'min-h-full' : 'h-full')}
+      className={cn("flex flex-col", UI_INBOX_GRADIENTS.main.className, "dark:from-gray-950 dark:via-gray-900 dark:to-gray-900", isMobile ? 'min-h-full' : 'h-full')}
     >
       <AppHeader
         title="Archive"
@@ -401,7 +401,7 @@ export function ArchiveView() {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex flex-col items-center justify-center py-16 text-center"
                       >
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center mb-6 shadow-lg">
+                        <div className={cn("w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg", UI_INBOX_GRADIENTS.emptyState.className)}>
                           <Archive className="w-12 h-12 text-primary" />
                         </div>
                         <h3 className="text-xl mb-2">
@@ -590,7 +590,7 @@ export function ArchiveView() {
                       animate={{ opacity: 1, y: 0 }}
                       className="flex flex-col items-center justify-center py-16 text-center"
                     >
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center mb-6 shadow-lg">
+                      <div className={cn("w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg", UI_INBOX_GRADIENTS.emptyState.className)}>
                         <Archive className="w-12 h-12 text-primary" />
                       </div>
                       <h3 className="text-xl mb-2">

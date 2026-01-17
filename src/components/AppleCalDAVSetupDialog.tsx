@@ -23,6 +23,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Icon } from './Icon';
+import { ICON_SIZE_MD } from '../lib/layout-constants';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { projectId } from '../utils/supabase/info';
@@ -323,7 +324,7 @@ export function AppleCalDAVSetupDialog({
                   onClick={handleDiscoverCalendars}
                   disabled={isLoading}
                 >
-                  <Icon name="refresh-cw" size={16} className={`mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                  <Icon name="refresh-cw" size={ICON_SIZE_MD} className={`mr-1 ${isLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
               </div>

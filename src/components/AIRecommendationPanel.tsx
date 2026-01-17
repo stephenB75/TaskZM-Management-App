@@ -12,6 +12,7 @@ import {
   CalendarRange,
 } from "lucide-react";
 import { Icon } from "./Icon";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
@@ -63,6 +64,7 @@ import {
 } from "./ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
+import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import type { SchedulePlan, ScheduleResult } from "../hooks/useAIScheduler";
 import type { Task } from "../types";
 
@@ -546,7 +548,7 @@ export function AIRecommendationPanel({
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Icon name="refresh-cw" size={20} className="text-primary" />
+              <Icon name="refresh-cw" size={ICON_SIZE_LG} className="text-primary" />
               Reschedule {rescheduleType === 'day' ? 'Day' : rescheduleType === 'week' ? 'Week' : 'Month'}
             </DialogTitle>
             <DialogDescription>
@@ -646,12 +648,12 @@ export function AIRecommendationPanel({
             >
               {isScheduling ? (
                 <>
-                  <Icon name="refresh-cw" size={16} className="mr-2 animate-spin" />
+                  <Icon name="refresh-cw" size={ICON_SIZE_MD} className="mr-2 animate-spin" />
                   Rescheduling...
                 </>
               ) : (
                 <>
-                  <Icon name="refresh-cw" size={16} className="mr-2" />
+                  <Icon name="refresh-cw" size={ICON_SIZE_MD} className="mr-2" />
                   Reschedule
                 </>
               )}
@@ -689,7 +691,7 @@ export function AIRecommendationPanel({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Card className="p-4 bg-gradient-to-br from-[#C9E4F7]/20 to-[#B8E6D5]/20">
+                    <Card className={cn("p-4", UI_INBOX_GRADIENTS.card.className)}>
                       <div className="flex items-start gap-3">
                         <div className="flex-1">
                           <div className="flex items-start justify-between gap-2 mb-2">
@@ -804,7 +806,7 @@ export function AIRecommendationPanel({
             </Button>
             <Button
               onClick={confirmScheduling}
-              className="rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] hover:from-[#C9E4F7] hover:to-[#E6D5F0]"
+              className={cn("rounded-full", UI_INBOX_GRADIENTS.button.className, UI_INBOX_GRADIENTS.button.hover.className)}
             >
               <Check className="w-4 h-4 mr-2" />
               Schedule {schedulePlan.length} Task
@@ -831,7 +833,7 @@ export function AIRecommendationPanel({
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6"
               >
-                <Card className="p-4 border-2 border-primary/20 bg-gradient-to-br from-[#C9E4F7]/30 to-[#B8E6D5]/30">
+                <Card className={cn("p-4 border-2 border-primary/20", UI_INBOX_GRADIENTS.card.className)}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 rounded-lg bg-primary/10">
                       <Brain className="w-5 h-5 text-primary" />
@@ -920,7 +922,7 @@ export function AIRecommendationPanel({
                     {/* Reschedule Options - Always show when AI scheduling is enabled */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 mb-1">
-                        <Icon name="refresh-cw" size={16} className="text-primary/70" />
+                        <Icon name="refresh-cw" size={ICON_SIZE_MD} className="text-primary/70" />
                         <span className="text-xs font-medium text-muted-foreground">Reschedule Tasks</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -935,7 +937,7 @@ export function AIRecommendationPanel({
                           className="rounded-full text-xs"
                           disabled={isScheduling}
                         >
-                          <Icon name="refresh-cw" size={14} className="mr-1.5" />
+                          <Icon name="refresh-cw" size={ICON_SIZE_SM} className="mr-1.5" />
                           Day
                         </Button>
                         <Button
@@ -1007,7 +1009,7 @@ export function AIRecommendationPanel({
 
         {/* AI Scheduler Info */}
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-          <div className="w-20 h-20 mb-6 rounded-full bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center">
+          <div className={cn("w-20 h-20 mb-6 rounded-full flex items-center justify-center", UI_INBOX_GRADIENTS.emptyState.className)}>
             <Brain className="w-10 h-10 text-primary" />
           </div>
           <h3 className="font-semibold text-lg mb-2">

@@ -150,6 +150,7 @@ import {
   SETTINGS_PANEL_TOAST_DURATION_MS,
   SETTINGS_PANEL_TIMEOUT_DELAY_MS,
   COMPONENT_DIMENSIONS,
+  ICON_SIZE_XS,
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
@@ -667,7 +668,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     <Label className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.currentPlan.label}</Label>
                     {isSubscriptionLoading && (
-                      <Icon name="refresh-cw" size={parseInt(SETTINGS_PANEL_ICON_SIZE_SMALL.replace(/[^0-9]/g, ''), 10) || 12} className="text-muted-foreground animate-spin" />
+                      <Icon name="refresh-cw" size={parseInt(SETTINGS_PANEL_ICON_SIZE_SMALL.replace(/[^0-9]/g, ''), 10) || ICON_SIZE_XS} className="text-muted-foreground animate-spin" />
                     )}
                   </div>
                   <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
@@ -1032,7 +1033,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         }}
                         disabled={isSubscriptionLoading}
                       >
-                        <Icon name="refresh-cw" size={parseInt(SETTINGS_PANEL_ICON_SIZE_SMALL.replace(/[^0-9]/g, ''), 10) || 12} className={isSubscriptionLoading ? 'animate-spin' : ''} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                        <Icon name="refresh-cw" size={parseInt(SETTINGS_PANEL_ICON_SIZE_SMALL.replace(/[^0-9]/g, ''), 10) || ICON_SIZE_XS} className={isSubscriptionLoading ? 'animate-spin' : ''} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                         {SUBSCRIPTION_UI_TEXT.settings.refresh}
                       </Button>
 
@@ -2993,7 +2994,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     {isSyncing && (
-                      <Icon name="refresh-cw" size={12} className="text-primary animate-spin" />
+                      <Icon name="refresh-cw" size={ICON_SIZE_XS} className="text-primary animate-spin" />
                     )}
                     <Badge 
                       variant="secondary" 
