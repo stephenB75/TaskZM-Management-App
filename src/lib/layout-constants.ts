@@ -40,6 +40,11 @@ export const HEADER_BUTTON_PADDING_X_SMALL = '0.25rem'; // px-1 = 0.25rem (4px) 
 export const HEADER_BUTTON_PADDING_X_DESKTOP = '0.375rem'; // px-1.5 = 0.375rem (6px) - horizontal padding for buttons on desktop (reduced from 0.5rem)
 export const HEADER_BUTTON_PADDING_Y_SMALL = '0.125rem'; // py-0.5 = 0.125rem (2px) - vertical padding for buttons on small screens (reduced for pill shape)
 export const HEADER_BUTTON_PADDING_Y_DESKTOP = '0.1875rem'; // py-0.75 = 0.1875rem (3px) - vertical padding for buttons on desktop (reduced for pill shape)
+// Pill-shaped button padding (wider horizontal, reduced vertical for pill shape)
+export const HEADER_BUTTON_PILL_PADDING_X_SMALL = '0.5rem'; // px-2 = 0.5rem (8px) - horizontal padding for pill-shaped buttons on small screens
+export const HEADER_BUTTON_PILL_PADDING_X_DESKTOP = '0.75rem'; // px-3 = 0.75rem (12px) - horizontal padding for pill-shaped buttons on desktop
+export const HEADER_BUTTON_LINE_HEIGHT = 1.2; // Line height for button text alignment
+export const HEADER_TEXT_MARGIN_NONE = '0'; // No margin for text elements
 export const HEADER_BUTTON_BORDER_RADIUS = '9999px'; // Fully rounded pill shape
 export const HEADER_BUTTON_TEXT_SIZE_SMALL = '0.625rem'; // ~text-xs = 0.625rem (10px) - text size for buttons on small screens (reduced from 0.6875rem)
 export const HEADER_BUTTON_TEXT_SIZE_DESKTOP = '0.6875rem'; // ~text-xs = 0.6875rem (11px) - text size for buttons on desktop (reduced from 0.75rem)

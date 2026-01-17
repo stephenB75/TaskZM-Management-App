@@ -71,10 +71,11 @@ import {
   HEADER_BUTTON_SCALE_DESKTOP,
   HEADER_BUTTON_TEXT_SIZE_SMALL,
   HEADER_BUTTON_TEXT_SIZE_DESKTOP,
-  HEADER_BUTTON_PADDING_X_SMALL,
-  HEADER_BUTTON_PADDING_X_DESKTOP,
   HEADER_BUTTON_PADDING_Y_SMALL,
   HEADER_BUTTON_PADDING_Y_DESKTOP,
+  HEADER_BUTTON_PILL_PADDING_X_SMALL,
+  HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
+  HEADER_BUTTON_LINE_HEIGHT,
   HEADER_BUTTON_BORDER_RADIUS,
   HEADER_ICON_SIZE_BUTTON_SMALL,
   HEADER_ICON_SIZE_BUTTON_DESKTOP,
@@ -84,6 +85,7 @@ import {
   HEADER_TITLE_SIZE_SMALL_SCREEN,
   HEADER_DESCRIPTION_SIZE,
   HEADER_DESCRIPTION_SIZE_SMALL_SCREEN,
+  HEADER_TEXT_MARGIN_NONE,
   TOAST_DURATION_SHORT_MS,
   TOAST_DURATION_MEDIUM_MS,
 } from "../lib/layout-constants";
@@ -1203,42 +1205,35 @@ export function DashboardView({
               flexBasis: 'auto', // Use natural width
             }}
           >
-            {/* View Mode Toggle with text above - Desktop Only (not mobile/tablet) */}
+            {/* View Mode Toggle with text inline - Desktop Only (not mobile/tablet) */}
             {!shouldUseMobileLayout && (
               <div 
-                className="flex flex-col items-start"
+                className="flex items-center"
                 style={{ 
-                  gap: HEADER_GAP_XSMALL,
+                  gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL,
                 }}
               >
-                {/* Text above toggle - aligned with left side of button */}
-                <div 
-                  className="flex items-center"
-                  style={{
-                    gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL,
-                    justifyContent: 'flex-start',
+                {/* Dashboard text - aligned with toggle */}
+                <h2 
+                  className="font-semibold text-foreground uppercase tracking-wide"
+                  style={{ 
+                    fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
+                    lineHeight: HEADER_BUTTON_LINE_HEIGHT,
+                    margin: HEADER_TEXT_MARGIN_NONE,
                   }}
                 >
-                  <h2 
-                    className="font-semibold text-foreground uppercase tracking-wide"
-                    style={{ 
-                      fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    Dashboard
-                  </h2>
-                  <p 
-                    className="text-muted-foreground"
-                    style={{ 
-                      fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
-                      marginTop: 0,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {viewMode === "week" ? "Week View" : "Month View"}
-                  </p>
-                </div>
+                  Dashboard
+                </h2>
+                <p 
+                  className="text-muted-foreground"
+                  style={{ 
+                    fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
+                    margin: HEADER_TEXT_MARGIN_NONE,
+                    lineHeight: HEADER_BUTTON_LINE_HEIGHT,
+                  }}
+                >
+                  {viewMode === "week" ? "Week View" : "Month View"}
+                </p>
                 {/* Toggle button */}
                 <div 
                   className={cn(
@@ -1322,12 +1317,13 @@ export function DashboardView({
                 )}
                 style={{
                   fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
-                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PADDING_X_SMALL : HEADER_BUTTON_PADDING_X_DESKTOP,
-                  paddingRight: isSmallScreen ? HEADER_BUTTON_PADDING_X_SMALL : HEADER_BUTTON_PADDING_X_DESKTOP,
+                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
+                  paddingRight: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
                   paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   height: 'auto',
-                  minWidth: 'auto',
+                  minHeight: 'auto',
+                  lineHeight: HEADER_BUTTON_LINE_HEIGHT,
                   borderRadius: HEADER_BUTTON_BORDER_RADIUS, // Pill shape
                   transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
                 }}
@@ -1372,12 +1368,13 @@ export function DashboardView({
                 )}
                 style={{
                   fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
-                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PADDING_X_SMALL : HEADER_BUTTON_PADDING_X_DESKTOP,
-                  paddingRight: isSmallScreen ? HEADER_BUTTON_PADDING_X_SMALL : HEADER_BUTTON_PADDING_X_DESKTOP,
+                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
+                  paddingRight: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
                   paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
                   height: 'auto',
-                  minWidth: 'auto',
+                  minHeight: 'auto',
+                  lineHeight: HEADER_BUTTON_LINE_HEIGHT,
                   borderRadius: HEADER_BUTTON_BORDER_RADIUS, // Pill shape
                   transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
                 }}
