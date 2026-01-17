@@ -431,7 +431,7 @@ export function AppleCalDAVSetupDialog({
               ) : (
                 <>
                   Connect
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <Icon name="arrow-right" size={ICON_SIZE_MD} className="ml-2" />
                 </>
               )}
             </Button>
@@ -450,7 +450,7 @@ export function AppleCalDAVSetupDialog({
               ) : (
                 <>
                   Import Calendars
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <Icon name="arrow-right" size={ICON_SIZE_MD} className="ml-2" />
                 </>
               )}
             </Button>

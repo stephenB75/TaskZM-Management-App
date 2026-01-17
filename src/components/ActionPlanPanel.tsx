@@ -141,7 +141,7 @@ export function ActionPlanPanel({
       {actionPlan && actionPlan.steps.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <ArrowRight className="w-4 h-4" />
+            <Icon name="arrow-right" size={ICON_SIZE_MD} />
             Action Plan
           </h4>
           <ScrollArea className="max-h-48">
