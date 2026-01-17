@@ -67,7 +67,7 @@ import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
-import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM } from "../lib/layout-constants";
 import type {
   Task,
   TaskPriority,
@@ -1865,7 +1865,7 @@ export function TaskDialog({
                 <span className="sm:hidden">Time</span>
               </TabsTrigger>
               <TabsTrigger value="organization" className="text-xs sm:text-sm">
-                <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                <Icon name="settings" size={ICON_SIZE_SM} className="mr-1" />
                 <span className="hidden sm:inline">Organize & Advanced</span>
                 <span className="sm:hidden">More</span>
               </TabsTrigger>

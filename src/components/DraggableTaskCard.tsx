@@ -1176,18 +1176,14 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
               {isDropdownOpen ? (
-                <ChevronUp 
-                  style={{ 
-                    width: `${TASK_CARD_DROPDOWN.dimensions.icon.medium}px`, 
-                    height: `${TASK_CARD_DROPDOWN.dimensions.icon.medium}px`,
-                  }} 
+                <Icon 
+                  name="chevron-up" 
+                  size={TASK_CARD_DROPDOWN.dimensions.icon.medium} 
                 />
               ) : (
-                <ChevronDown 
-                  style={{ 
-                    width: `${TASK_CARD_DROPDOWN.dimensions.icon.medium}px`, 
-                    height: `${TASK_CARD_DROPDOWN.dimensions.icon.medium}px`,
-                  }} 
+                <Icon 
+                  name="chevron-down" 
+                  size={TASK_CARD_DROPDOWN.dimensions.icon.medium} 
                 />
               )}
             </button>
