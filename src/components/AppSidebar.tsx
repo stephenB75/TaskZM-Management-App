@@ -141,7 +141,7 @@ export function AppSidebar({
                         className={currentView === item.id ? "text-primary" : "text-muted-foreground"}
                       />
                       {item.pro && (
-                        <Lock className="w-3 h-3 absolute top-1 right-1 text-[#D4C5F9]" />
+                        <Icon name="lock" size={12} className="absolute top-1 right-1" style={{ color: '#D4C5F9' }} />
                       )}
                     </motion.button>
                     {item.badge !== undefined &&

@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Moon, Sun, Monitor, User, LogOut, Calendar, Tag, Sparkles, 
-  Bell, Clock, RotateCcw, Briefcase, CreditCard, Info, Trophy, Award, Lock, Compass,
-  Target, CheckCircle, Shield, Zap, Crown, Star, Flame, TrendingUp, Activity, Timer, Brain,
-  BatteryCharging, Sunrise, Moon as MoonIcon, Calendar as CalendarIcon, Sparkles as SparklesIcon,
-  BarChart3, Users, Check, X, Trash2
-} from 'lucide-react';
+// Icons migrated to Icon component
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
@@ -460,7 +454,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               }}
               onClick={handleStartTour}
             >
-              <Compass style={{ width: SETTINGS_PANEL_START_TOUR_ICON_SIZE, height: SETTINGS_PANEL_START_TOUR_ICON_SIZE }} />
+              <Icon name="compass" size={SETTINGS_PANEL_START_TOUR_ICON_SIZE} weight="duotone" />
               Start Tour
             </Button>
           ) : null
@@ -589,7 +583,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   onClick={handleSignOut} 
                   className="w-full"
                 >
-                  <LogOut style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                  <Icon name="log-out" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                   Sign Out
                 </Button>
                 <Button 
@@ -598,7 +592,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   onClick={() => setShowDeleteAccountDialog(true)} 
                   className="w-full border-destructive/50"
                 >
-                  <Trash2 style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                  <Icon name="trash-2" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                   Delete Account
                 </Button>
               </div>
@@ -646,11 +640,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE }} className="text-primary" />
+              <Icon name="credit-card" size={SETTINGS_PANEL_ICON_SIZE_LARGE} weight="duotone" className="text-primary" />
               <span>{SUBSCRIPTION_UI_TEXT.settings.sectionTitle}</span>
               {subscription.tier === 'pro' && (
                 <Badge className={`${UI_SETTINGS_BADGE_COLORS.primaryClass} text-gray-800 ${UI_SETTINGS_BADGE_COLORS.primaryBorderClass}`} style={{ marginLeft: SETTINGS_PANEL_MARGIN_LEFT_SMALL }}>
-                  <Sparkles style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
+                  <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
                   {SUBSCRIPTION_UI_TEXT.settings.proBadge}
                 </Badge>
               )}
@@ -727,22 +721,22 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div className="grid" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
                   {/* Unlimited Tasks - Available for all */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-                    <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                    <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.unlimitedTasks}</span>
                   </div>
 
                   {/* Custom Tags - Available for all */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-                    <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                    <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.customTags}</span>
                   </div>
 
                   {/* AI Scheduler - PRO only */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.aiScheduler ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                      <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`${features.aiScheduler ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.aiScheduler}
@@ -760,9 +754,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Task Hours - PRO only */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.taskHours ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                      <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`${features.taskHours ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.taskHours}
@@ -777,9 +771,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Analytics - PRO only */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.analytics ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                      <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`${features.analytics ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.analytics}
@@ -800,9 +794,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Pomodoro Timer - PRO only */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.pomodoroTimer ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                      <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`${features.pomodoroTimer ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.pomodoroTimer}
@@ -817,9 +811,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Team Features - PRO only */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.teamFeatures ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                      <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`${features.teamFeatures ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.teamCollaboration}
@@ -834,9 +828,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Calendar Sync - PRO only */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.calendarSync ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                      <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`${features.calendarSync ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.calendarSync}
@@ -857,9 +851,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Recurring Tasks - PRO (Monthly with limit, Yearly unlimited) */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.recurringTasks ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                      <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`${features.recurringTasks ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.recurringTasks}
@@ -880,9 +874,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Task Rollover - PRO only */}
                   <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                     {features.taskRollover ? (
-                      <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                     ) : (
-                      <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                      <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                     )}
                     <span className={`${features.taskRollover ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                       {SUBSCRIPTION_UI_TEXT.settings.features.autoTaskRollover}
@@ -904,9 +898,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {/* Task Templates - PRO YEARLY only */}
                       <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                         {features.taskTemplates ? (
-                          <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                          <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
-                          <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                          <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                         )}
                         <span className={`${features.taskTemplates ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                           {SUBSCRIPTION_UI_TEXT.settings.features.taskTemplates}
@@ -921,9 +915,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {/* Task Dependencies - PRO YEARLY only */}
                       <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                         {features.taskDependencies ? (
-                          <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                          <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
-                          <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                          <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                         )}
                         <span className={`${features.taskDependencies ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                           {SUBSCRIPTION_UI_TEXT.settings.features.taskDependencies}
@@ -938,9 +932,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {/* Multiple Workspaces - PRO YEARLY only */}
                       <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                         {features.multipleWorkspaces ? (
-                          <Check style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                          <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
                         ) : (
-                          <X style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
+                          <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                         )}
                         <span className={`${features.multipleWorkspaces ? '' : 'text-muted-foreground/60'} min-w-0 flex-1 break-words`} style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                           {SUBSCRIPTION_UI_TEXT.settings.features.multipleWorkspaces}
@@ -2524,7 +2518,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {awards.filter(a => a.category === 'completion').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
                         const progress = getAwardProgress(award.id);
-                        const IconComponent = getAwardIcon(award.icon);
+                        // Icon name is already in correct format for Icon component
                         
                         return (
                           <div 
@@ -2545,14 +2539,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   : 'bg-muted/50 group-hover:bg-muted'
                                 }
                               `}>
-                                <IconComponent className={`w-5 h-5 ${isEarned ? 'text-white' : 'text-muted-foreground'}`} />
+                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "duotone" : "regular"} className={isEarned ? 'text-white' : 'text-muted-foreground'} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-1 mb-1">
                                   <div className={`text-sm font-medium ${isEarned ? 'text-blue-700 dark:text-blue-300' : ''}`}>
                                     {award.name}
                                   </div>
-                                  {isEarned && <Award className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
+                                  {isEarned && <Icon name="award" size={14} weight="duotone" className="text-blue-500 flex-shrink-0" />}
                                   {!isEarned && <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -2608,7 +2602,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {awards.filter(a => a.category === 'streak').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
                         const progress = getAwardProgress(award.id);
-                        const IconComponent = getAwardIcon(award.icon);
+                        // Icon name is already in correct format for Icon component
                         
                         return (
                           <div 
@@ -2629,15 +2623,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   : 'bg-muted/50 group-hover:bg-muted'
                                 }
                               `}>
-                                <IconComponent className={`w-5 h-5 ${isEarned ? 'text-white' : 'text-muted-foreground'}`} />
+                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "duotone" : "regular"} className={isEarned ? 'text-white' : 'text-muted-foreground'} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-1 mb-1">
                                   <div className={`text-sm font-medium ${isEarned ? 'text-orange-700 dark:text-orange-300' : ''}`}>
                                     {award.name}
                                   </div>
-                                  {isEarned && <Award className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />}
-                                  {!isEarned && <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />}
+                                  {isEarned && <Icon name="award" size={14} weight="duotone" className="text-orange-500 flex-shrink-0" />}
+                                  {!isEarned && <Icon name="lock" size={14} className="text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {award.description}
@@ -2692,7 +2686,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {awards.filter(a => a.category === 'focus').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
                         const progress = getAwardProgress(award.id);
-                        const IconComponent = getAwardIcon(award.icon);
+                        // Icon name is already in correct format for Icon component
                         
                         return (
                           <div 
@@ -2713,15 +2707,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   : 'bg-muted/50 group-hover:bg-muted'
                                 }
                               `}>
-                                <IconComponent className={`w-5 h-5 ${isEarned ? 'text-white' : 'text-muted-foreground'}`} />
+                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "duotone" : "regular"} className={isEarned ? 'text-white' : 'text-muted-foreground'} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-1 mb-1">
                                   <div className={`text-sm font-medium ${isEarned ? 'text-purple-700 dark:text-purple-300' : ''}`}>
                                     {award.name}
                                   </div>
-                                  {isEarned && <Award className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />}
-                                  {!isEarned && <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />}
+                                  {isEarned && <Icon name="award" size={14} weight="duotone" className="text-purple-500 flex-shrink-0" />}
+                                  {!isEarned && <Icon name="lock" size={14} className="text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {award.description}
@@ -2778,7 +2772,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       {awards.filter(a => a.category === 'special' || a.category === 'speed').map(award => {
                         const isEarned = earnedAwards.some(ea => ea.awardId === award.id);
-                        const IconComponent = getAwardIcon(award.icon);
+                        // Icon name is already in correct format for Icon component
                         
                         return (
                           <div 
@@ -2799,15 +2793,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   : 'bg-muted/50 group-hover:bg-muted'
                                 }
                               `}>
-                                <IconComponent className={`w-5 h-5 ${isEarned ? 'text-white' : 'text-muted-foreground'}`} />
+                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "duotone" : "regular"} className={isEarned ? 'text-white' : 'text-muted-foreground'} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-1 mb-1">
                                   <div className={`text-sm font-medium ${isEarned ? 'text-pink-700 dark:text-pink-300' : ''}`}>
                                     {award.name}
                                   </div>
-                                  {isEarned && <Award className="w-3.5 h-3.5 text-pink-500 flex-shrink-0" />}
-                                  {!isEarned && <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />}
+                                  {isEarned && <Icon name="award" size={14} weight="duotone" className="text-pink-500 flex-shrink-0" />}
+                                  {!isEarned && <Icon name="lock" size={14} className="text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {award.description}
@@ -2837,7 +2831,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Compass className="w-5 h-5 text-primary" />
+              <Icon name="compass" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" className="text-primary" />
               <span>App Tour</span>
               {!hasSeenTour && (
                 <Badge className="bg-accent/50 text-foreground border-accent/50 ml-2">
@@ -2861,7 +2855,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             
             <div className="bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/5 dark:to-accent/5 border border-primary/20 dark:border-primary/10 rounded-lg" style={{ padding: SETTINGS_PANEL_PADDING_LARGE, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
               <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM, marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                <Compass className="w-5 h-5 text-primary flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
+                <Icon name="compass" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" className="text-primary flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                 <div>
                   <p className="text-sm text-foreground" style={{ marginBottom: SETTINGS_PANEL_SPACING_XSMALL }}>Interactive Walkthrough</p>
                   <p className="text-xs text-muted-foreground">
@@ -2877,7 +2871,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 className="w-full bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 text-primary-foreground border border-primary/20 shadow-sm"
                 onClick={handleStartTour}
               >
-                <Compass className="w-4 h-4" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                <Icon name="compass" size={ICON_SIZE_XS} weight="duotone" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                 {hasSeenTour ? 'Restart Tour' : 'Start Tour'}
               </Button>
             </div>

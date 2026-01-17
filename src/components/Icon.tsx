@@ -165,6 +165,14 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'log-out': 'SignOut',
   'alert-triangle': 'Warning',
   'folder-plus': 'FolderPlus',
+  'external-link': 'ArrowSquareOut',
+  'briefcase': 'Briefcase',
+  'compass': 'Compass',
+  'battery-charging': 'BatteryCharging',
+  'sunrise': 'Sunrise',
+  'moon': 'Moon',
+  'sun': 'Sun',
+  'monitor': 'Monitor',
 };
 
 // Icons that should use duotone by default for better visual appeal
