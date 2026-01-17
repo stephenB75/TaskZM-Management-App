@@ -214,3 +214,6 @@ export function Icon({
 
   return <IconComponent {...iconProps} />;
 }
+
+// Default export for compatibility
+export default Icon;
