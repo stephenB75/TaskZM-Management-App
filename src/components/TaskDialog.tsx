@@ -18,9 +18,9 @@ import {
   ListChecks,
   Copy,
   Folder,
-  RefreshCw,
   Sparkles,
 } from "lucide-react";
+import { Icon } from "./Icon";
 import {
   Dialog,
   DialogContent,
@@ -2027,11 +2027,9 @@ export function TaskDialog({
                             }}
                             title="Refresh/Regenerate description (replaces current)"
                           >
-                            <RefreshCw 
-                              style={{ 
-                                width: COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize, 
-                                height: COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize 
-                              }}
+                            <Icon 
+                              name="refresh-cw"
+                              size={COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize}
                             />
                             <span className="hidden sm:inline">Refresh</span>
                           </Button>

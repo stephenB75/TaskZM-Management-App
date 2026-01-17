@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Moon, Sun, Monitor, User, LogOut, Calendar, Tag, Sparkles, 
-  Bell, Clock, RotateCcw, Briefcase, CreditCard, Info, RefreshCw, Trophy, Award, Lock, Compass,
+  Bell, Clock, RotateCcw, Briefcase, CreditCard, Info, Trophy, Award, Lock, Compass,
   Target, CheckCircle, Shield, Zap, Crown, Star, Flame, TrendingUp, Activity, Timer, Brain,
   BatteryCharging, Sunrise, Moon as MoonIcon, Calendar as CalendarIcon, Sparkles as SparklesIcon,
   BarChart3, Users, Check, X, Trash2
@@ -667,7 +667,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                     <Label className="text-sm">{SUBSCRIPTION_UI_TEXT.settings.currentPlan.label}</Label>
                     {isSubscriptionLoading && (
-                      <RefreshCw style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL }} className="text-muted-foreground animate-spin" />
+                      <Icon name="refresh-cw" size={parseInt(SETTINGS_PANEL_ICON_SIZE_SMALL.replace(/[^0-9]/g, ''), 10) || 12} className="text-muted-foreground animate-spin" />
                     )}
                   </div>
                   <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
@@ -1032,7 +1032,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         }}
                         disabled={isSubscriptionLoading}
                       >
-                        <RefreshCw className={isSubscriptionLoading ? 'animate-spin' : ''} style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                        <Icon name="refresh-cw" size={parseInt(SETTINGS_PANEL_ICON_SIZE_SMALL.replace(/[^0-9]/g, ''), 10) || 12} className={isSubscriptionLoading ? 'animate-spin' : ''} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                         {SUBSCRIPTION_UI_TEXT.settings.refresh}
                       </Button>
 
@@ -2993,7 +2993,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     {isSyncing && (
-                      <RefreshCw className="w-3 h-3 text-primary animate-spin" />
+                      <Icon name="refresh-cw" size={12} className="text-primary animate-spin" />
                     )}
                     <Badge 
                       variant="secondary" 

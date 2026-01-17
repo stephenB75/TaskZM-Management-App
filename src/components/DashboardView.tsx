@@ -1832,7 +1832,7 @@ export function DashboardView({
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-primary" />
+              <Icon name="refresh-cw" size={ICON_SIZE_LG} className="text-primary" />
               AI Re-schedule Tasks
             </DialogTitle>
             <DialogDescription>
@@ -1989,7 +1989,7 @@ export function DashboardView({
               disabled={!rescheduleType || (!rescheduleDate && rescheduleDates.length === 0) || isRescheduling}
               className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
             >
-              <RefreshCw className={cn("w-4 h-4 mr-2", isRescheduling && "animate-spin")} />
+              <Icon name="refresh-cw" size={ICON_SIZE_MD} className={cn("mr-2", isRescheduling && "animate-spin")} />
               {isRescheduling ? "Rescheduling..." : rescheduleDates.length > 1 ? `Reschedule ${rescheduleDates.length} Days` : "Reschedule"}
             </Button>
           </DialogFooter>

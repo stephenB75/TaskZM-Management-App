@@ -12,7 +12,19 @@ import {
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { AppHeader } from "./AppHeader";
-import { HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
+import { 
+  HEADER_MOBILE_SAFE_AREA_SPACER, 
+  VIEWPORT_BREAKPOINTS, 
+  NAV_BAR_BOTTOM_PADDING_MOBILE, 
+  MOBILE_PADDING_BOTTOM,
+  ARCHIVE_CHECKBOX_SIZE,
+  ARCHIVE_CHECKMARK_CONTAINER_SIZE,
+  ARCHIVE_CHECKMARK_ICON_SIZE,
+  ARCHIVE_TITLE_TEXT_SIZE,
+  ARCHIVE_ASSIGNEE_TEXT_SIZE,
+  ARCHIVE_ASSIGNEE_AVATAR_SIZE,
+  ARCHIVE_ASSIGNEE_INITIALS_SIZE,
+} from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card } from "./ui/card";
@@ -445,15 +457,36 @@ export function ArchiveView() {
                                 }}
                                 onClick={(e) => e.stopPropagation()}
                                 className="mt-0.5"
+                                style={{ 
+                                  width: ARCHIVE_CHECKBOX_SIZE, 
+                                  height: ARCHIVE_CHECKBOX_SIZE,
+                                  minWidth: ARCHIVE_CHECKBOX_SIZE,
+                                  minHeight: ARCHIVE_CHECKBOX_SIZE,
+                                }}
                               />
                               {/* Checkmark Icon */}
-                              <div className="w-7 h-7 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                                <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              <div 
+                                className="rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0"
+                                style={{ 
+                                  width: ARCHIVE_CHECKMARK_CONTAINER_SIZE, 
+                                  height: ARCHIVE_CHECKMARK_CONTAINER_SIZE 
+                                }}
+                              >
+                                <Check 
+                                  className="text-green-600 dark:text-green-400" 
+                                  style={{ 
+                                    width: ARCHIVE_CHECKMARK_ICON_SIZE, 
+                                    height: ARCHIVE_CHECKMARK_ICON_SIZE 
+                                  }}
+                                />
                               </div>
 
                               {/* Task Content */}
                               <div className="flex-1 min-w-0">
-                                <h3 className="text-sm line-through opacity-70 mb-0.5 line-clamp-2">
+                                <h3 
+                                  className="line-through opacity-70 mb-0.5 line-clamp-2"
+                                  style={{ fontSize: ARCHIVE_TITLE_TEXT_SIZE }}
+                                >
                                   {task.title}
                                 </h3>
 
@@ -478,10 +511,20 @@ export function ArchiveView() {
                                               key={userId}
                                               className="flex items-center gap-1"
                                             >
-                                              <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60 flex items-center justify-center text-[7px] font-semibold">
+                                              <div 
+                                              className="rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60 flex items-center justify-center font-semibold"
+                                              style={{ 
+                                                width: ARCHIVE_ASSIGNEE_AVATAR_SIZE, 
+                                                height: ARCHIVE_ASSIGNEE_AVATAR_SIZE,
+                                                fontSize: ARCHIVE_ASSIGNEE_INITIALS_SIZE,
+                                              }}
+                                            >
                                                 {initials}
                                               </div>
-                                              <span className="text-[10px] text-gray-600 opacity-60 font-semibold">
+                                              <span 
+                                                className="text-gray-600 opacity-60 font-semibold"
+                                                style={{ fontSize: ARCHIVE_ASSIGNEE_TEXT_SIZE }}
+                                              >
                                                 {member.name}
                                               </span>
                                             </div>
@@ -489,7 +532,10 @@ export function ArchiveView() {
                                         })}
                                       {task.assignedTo.length >
                                         3 && (
-                                        <span className="text-[10px] text-gray-500 opacity-60">
+                                        <span 
+                                          className="text-gray-500 opacity-60"
+                                          style={{ fontSize: ARCHIVE_ASSIGNEE_TEXT_SIZE }}
+                                        >
                                           +
                                           {task.assignedTo
                                             .length - 3}
@@ -600,15 +646,36 @@ export function ArchiveView() {
                               }}
                               onClick={(e) => e.stopPropagation()}
                               className="mt-0.5"
+                              style={{ 
+                                width: ARCHIVE_CHECKBOX_SIZE, 
+                                height: ARCHIVE_CHECKBOX_SIZE,
+                                minWidth: ARCHIVE_CHECKBOX_SIZE,
+                                minHeight: ARCHIVE_CHECKBOX_SIZE,
+                              }}
                             />
                             {/* Checkmark Icon */}
-                            <div className="w-7 h-7 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <div 
+                              className="rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0"
+                              style={{ 
+                                width: ARCHIVE_CHECKMARK_CONTAINER_SIZE, 
+                                height: ARCHIVE_CHECKMARK_CONTAINER_SIZE 
+                              }}
+                            >
+                              <Check 
+                                className="text-green-600 dark:text-green-400" 
+                                style={{ 
+                                  width: ARCHIVE_CHECKMARK_ICON_SIZE, 
+                                  height: ARCHIVE_CHECKMARK_ICON_SIZE 
+                                }}
+                              />
                             </div>
 
                             {/* Task Content */}
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm line-through opacity-70 mb-0.5 line-clamp-2">
+                              <h3 
+                                className="line-through opacity-70 mb-0.5 line-clamp-2"
+                                style={{ fontSize: ARCHIVE_TITLE_TEXT_SIZE }}
+                              >
                                 {task.title}
                               </h3>
 
@@ -633,18 +700,31 @@ export function ArchiveView() {
                                             key={userId}
                                             className="flex items-center gap-1"
                                           >
-                                            <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60 flex items-center justify-center text-[7px] font-semibold">
-                                              {initials}
-                                            </div>
-                                            <span className="text-[10px] text-gray-600 opacity-60 font-semibold">
-                                              {member.name}
-                                            </span>
+                                            <div 
+                                              className="rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60 flex items-center justify-center font-semibold"
+                                              style={{ 
+                                                width: ARCHIVE_ASSIGNEE_AVATAR_SIZE, 
+                                                height: ARCHIVE_ASSIGNEE_AVATAR_SIZE,
+                                                fontSize: ARCHIVE_ASSIGNEE_INITIALS_SIZE,
+                                              }}
+                                            >
+                                                {initials}
+                                              </div>
+                                              <span 
+                                                className="text-gray-600 opacity-60 font-semibold"
+                                                style={{ fontSize: ARCHIVE_ASSIGNEE_TEXT_SIZE }}
+                                              >
+                                                {member.name}
+                                              </span>
                                           </div>
                                         );
                                       })}
                                     {task.assignedTo.length >
                                       3 && (
-                                      <span className="text-[10px] text-gray-500 opacity-60">
+                                      <span 
+                                        className="text-gray-500 opacity-60"
+                                        style={{ fontSize: ARCHIVE_ASSIGNEE_TEXT_SIZE }}
+                                      >
                                         +
                                         {task.assignedTo
                                           .length - 3}

@@ -424,7 +424,16 @@ export const EMPTY_STATE_PADDING_X = '1rem'; // px-4 = 1rem (16px)
 // Inbox checkbox size for mobile/tablet layout
 export const INBOX_CHECKBOX_SIZE_MOBILE = '4px'; // w-1 h-1 = 4px - compact checkbox for mobile/tablet
 // Inbox card shadow for mobile/tablet layout
-export const INBOX_CARD_SHADOW_MOBILE = '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'; // Custom shadow for better mobile blending
+export const INBOX_CARD_SHADOW_MOBILE = '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)';
+
+// Archive Panel Sizes
+export const ARCHIVE_CHECKBOX_SIZE = '12px'; // w-3 h-3 = 12px - compact checkbox for archive panel
+export const ARCHIVE_CHECKMARK_CONTAINER_SIZE = '1.25rem'; // w-5 h-5 = 1.25rem (20px) - checkmark icon container
+export const ARCHIVE_CHECKMARK_ICON_SIZE = '0.75rem'; // w-3 h-3 = 0.75rem (12px) - checkmark icon
+export const ARCHIVE_TITLE_TEXT_SIZE = '0.8125rem'; // text-[13px] = 0.8125rem (13px) - task title text size
+export const ARCHIVE_ASSIGNEE_TEXT_SIZE = '0.625rem'; // text-[10px] = 0.625rem (10px) - assignee name text size
+export const ARCHIVE_ASSIGNEE_AVATAR_SIZE = '0.875rem'; // w-3.5 h-3.5 = 0.875rem (14px) - assignee avatar size
+export const ARCHIVE_ASSIGNEE_INITIALS_SIZE = '0.4375rem'; // text-[7px] = 0.4375rem (7px) - assignee initials text size // Custom shadow for better mobile blending
 
 // Workspace constants (for workspace creation, loading, and management)
 export const WORKSPACE_MAX_RETRIES = 3; // Maximum number of retry attempts for workspace loading

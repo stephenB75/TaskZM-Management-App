@@ -8,10 +8,10 @@ import {
   Calendar,
   X,
   Check,
-  RefreshCw,
   CalendarDays,
   CalendarRange,
 } from "lucide-react";
+import { Icon } from "./Icon";
 import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
@@ -546,7 +546,7 @@ export function AIRecommendationPanel({
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-primary" />
+              <Icon name="refresh-cw" size={20} className="text-primary" />
               Reschedule {rescheduleType === 'day' ? 'Day' : rescheduleType === 'week' ? 'Week' : 'Month'}
             </DialogTitle>
             <DialogDescription>
@@ -646,12 +646,12 @@ export function AIRecommendationPanel({
             >
               {isScheduling ? (
                 <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  <Icon name="refresh-cw" size={16} className="mr-2 animate-spin" />
                   Rescheduling...
                 </>
               ) : (
                 <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <Icon name="refresh-cw" size={16} className="mr-2" />
                   Reschedule
                 </>
               )}
@@ -920,7 +920,7 @@ export function AIRecommendationPanel({
                     {/* Reschedule Options - Always show when AI scheduling is enabled */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 mb-1">
-                        <RefreshCw className="w-4 h-4 text-primary/70" />
+                        <Icon name="refresh-cw" size={16} className="text-primary/70" />
                         <span className="text-xs font-medium text-muted-foreground">Reschedule Tasks</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -935,7 +935,7 @@ export function AIRecommendationPanel({
                           className="rounded-full text-xs"
                           disabled={isScheduling}
                         >
-                          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                          <Icon name="refresh-cw" size={14} className="mr-1.5" />
                           Day
                         </Button>
                         <Button

@@ -20,9 +20,9 @@ import {
   Calendar,
   ArrowRight,
   AlertCircle,
-  RefreshCw,
   CheckCircle2,
 } from 'lucide-react';
+import { Icon } from './Icon';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { projectId } from '../utils/supabase/info';
@@ -323,7 +323,7 @@ export function AppleCalDAVSetupDialog({
                   onClick={handleDiscoverCalendars}
                   disabled={isLoading}
                 >
-                  <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                  <Icon name="refresh-cw" size={16} className={`mr-1 ${isLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
               </div>

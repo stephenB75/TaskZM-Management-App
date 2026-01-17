@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Cloud, CloudOff, RefreshCw, Menu, ArrowLeft } from "lucide-react";
+import { Cloud, CloudOff, Menu, ArrowLeft } from "lucide-react";
+import { Icon } from "./Icon";
 import { motion } from "motion/react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
