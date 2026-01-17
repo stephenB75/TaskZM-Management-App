@@ -23,6 +23,17 @@ export default defineConfig(({ mode }) => {
         jsxRuntime: 'automatic',
       }),
     ],
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'phosphor-react'],
+      esbuildOptions: {
+        // Ensure React is available to all dependencies
+        define: {
+          global: 'globalThis',
+        },
+      },
+      // Force pre-bundling of phosphor-react with React
+      force: true,
+    },
   base: '/',
   resolve: {
     alias: {
@@ -104,6 +115,15 @@ export default defineConfig(({ mode }) => {
           if (id.includes('@radix-ui')) {
             return 'ui';
           }
+          // Default: let Vite handle other chunks
+          return undefined;
+        },
+        // Ensure proper chunk loading order
+        chunkFileNames: (chunkInfo) => {
+          if (chunkInfo.name === 'vendor') {
+            return 'assets/vendor-[hash].js';
+          }
+          return 'assets/[name]-[hash].js';
         },
       },
     },

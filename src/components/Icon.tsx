@@ -9,6 +9,11 @@ import * as PhosphorIcons from 'phosphor-react';
 import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY } from '../lib/color-theme';
 import { ICON_SIZE_XL } from '../lib/layout-constants';
 
+// Ensure React is available globally for phosphor-react
+if (typeof window !== 'undefined' && !(window as any).React) {
+  (window as any).React = React;
+}
+
 const DEFAULT_ICON_SIZE = ICON_SIZE_XL;
 
 export type IconWeight = 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
@@ -45,7 +50,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'edit': 'Pencil',
   'folder': 'Folder',
   'folder-plus': 'FolderPlus',
-  'inbox': 'Inbox',
+  'inbox': 'ArchiveBox',
   'archive': 'Archive',
   'search': 'MagnifyingGlass',
   'filter': 'Funnel',
@@ -89,7 +94,6 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'square': 'Square',
   'loader': 'Spinner',
   'loader2': 'Spinner',
-  'refresh-cw': 'ArrowClockwise',
   'mail': 'Envelope',
   'lock': 'Lock',
   'eye': 'Eye',
@@ -110,7 +114,6 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'forward': 'ArrowRight',
   'arrow-right': 'ArrowRight',
   'calendar-range': 'CalendarBlank',
-  'calendar-as': 'Calendar',
   'sparkle': 'Sparkle',
   'sparkling': 'Sparkle',
   'sticky-note': 'Note',
@@ -135,7 +138,6 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'external-link': 'ArrowSquareOut',
   'check-circle-2': 'CheckCircle',
   'rotate-ccw': 'ArrowCounterClockwise',
-  'calendar-as': 'Calendar',
 };
 
 // Icons that should use duotone by default for better visual appeal
