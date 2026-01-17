@@ -1113,7 +1113,7 @@ export function TodayAgendaView({
                   isOver && "ring-2 ring-primary/50 scale-105"
                 )}
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Icon name="plus" size={ICON_SIZE_MD} className="mr-2" />
                 {TODAY_AGENDA_TEXT.emptyState.addTask}
               </Button>
             </div>

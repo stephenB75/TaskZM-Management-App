@@ -2785,7 +2785,7 @@ export function TaskDialog({
                         ) : null}
                         <SelectItem value="new">
                           <div className="flex items-center gap-2">
-                            <Plus className="w-3 h-3 text-primary" />
+                            <Icon name="plus" size={ICON_SIZE_XS} className="text-primary" />
                             <span>Create new tag</span>
                               </div>
                             </SelectItem>
@@ -2814,7 +2814,7 @@ export function TaskDialog({
                       size="icon"
                       className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 w-10"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Icon name="plus" size={ICON_SIZE_MD} />
                     </Button>
                   </div>
 
@@ -2868,7 +2868,7 @@ export function TaskDialog({
                       size="icon"
                       className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 w-10"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Icon name="plus" size={ICON_SIZE_MD} />
                     </Button>
                   </div>
                   {subtasks.length > 0 && (

@@ -259,7 +259,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
             className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
             size="sm"
           >
-            <Plus className="w-4 h-4 mr-2" />
+                  <Icon name="plus" size={ICON_SIZE_MD} className="mr-2" />
             <span className="hidden sm:inline">Add Task</span>
             <span className="sm:hidden">Add</span>
           </Button>
@@ -377,7 +377,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                   size="sm"
                   className="mt-4"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Icon name="plus" size={ICON_SIZE_MD} className="mr-2" />
                   Add your first task
                 </Button>
               )}
