@@ -1045,8 +1045,8 @@ function generateRecurringOccurrences(
         calendarColor: baseEvent.calendar_color,
         // Include recurrence metadata (will be undefined for non-recurring events)
         rrule: baseEvent.rrule,
-        recurrenceBaseId: baseEvent.recurrence_base_id,
-        isRecurring: !!(baseEvent.rrule && !baseEvent.recurrence_base_id),
+        recurrenceBaseId: undefined, // Not storing instances, so no base ID
+        isRecurring: !!baseEvent.rrule,
       }];
     }
     return [];
@@ -1249,8 +1249,8 @@ async function getAppleEventsFromDatabase(
     const endDateObj = new Date(endDate);
 
     for (const event of events || []) {
-      // If this is a base recurring event (has RRULE and no recurrence_base_id)
-      if (event.rrule && !event.recurrence_base_id) {
+      // If this is a base recurring event (has RRULE)
+      if (event.rrule) {
         // Only process each base event once
         if (processedBaseEvents.has(event.external_id)) {
           continue;
@@ -1264,7 +1264,7 @@ async function getAppleEventsFromDatabase(
           endDateObj
         );
         result.push(...occurrences);
-      } else if (!event.recurrence_base_id) {
+      } else {
         // Regular non-recurring event - only include if within date range
         const eventStart = new Date(event.start_time);
         if (eventStart >= startDateObj && eventStart <= endDateObj) {
@@ -1280,8 +1280,8 @@ async function getAppleEventsFromDatabase(
             calendarColor: event.calendar_color,
             // Include recurrence metadata
             rrule: event.rrule,
-            recurrenceBaseId: event.recurrence_base_id,
-            isRecurring: !!(event.rrule && !event.recurrence_base_id),
+            recurrenceBaseId: undefined, // Not storing instances, so no base ID
+            isRecurring: !!event.rrule,
           });
         }
       }
@@ -1331,8 +1331,8 @@ async function getGoogleEventsFromDatabase(
     const endDateObj = new Date(endDate);
 
     for (const event of events || []) {
-      // If this is a base recurring event (has RRULE and no recurrence_base_id)
-      if (event.rrule && !event.recurrence_base_id) {
+      // If this is a base recurring event (has RRULE)
+      if (event.rrule) {
         // Only process each base event once
         if (processedBaseEvents.has(event.external_id)) {
           continue;
@@ -1346,7 +1346,7 @@ async function getGoogleEventsFromDatabase(
           endDateObj
         );
         result.push(...occurrences);
-      } else if (!event.recurrence_base_id) {
+      } else {
         // Regular non-recurring event - only include if within date range
         const eventStart = new Date(event.start_time);
         if (eventStart >= startDateObj && eventStart <= endDateObj) {
@@ -1362,8 +1362,8 @@ async function getGoogleEventsFromDatabase(
             calendarColor: event.calendar_color,
             // Include recurrence metadata
             rrule: event.rrule,
-            recurrenceBaseId: event.recurrence_base_id,
-            isRecurring: !!(event.rrule && !event.recurrence_base_id),
+            recurrenceBaseId: undefined, // Not storing instances, so no base ID
+            isRecurring: !!event.rrule,
           });
         }
       }
@@ -1413,8 +1413,8 @@ async function getOutlookEventsFromDatabase(
     const endDateObj = new Date(endDate);
 
     for (const event of events || []) {
-      // If this is a base recurring event (has RRULE and no recurrence_base_id)
-      if (event.rrule && !event.recurrence_base_id) {
+      // If this is a base recurring event (has RRULE)
+      if (event.rrule) {
         // Only process each base event once
         if (processedBaseEvents.has(event.external_id)) {
           continue;
@@ -1428,7 +1428,7 @@ async function getOutlookEventsFromDatabase(
           endDateObj
         );
         result.push(...occurrences);
-      } else if (!event.recurrence_base_id) {
+      } else {
         // Regular non-recurring event - only include if within date range
         const eventStart = new Date(event.start_time);
         if (eventStart >= startDateObj && eventStart <= endDateObj) {
@@ -1444,8 +1444,8 @@ async function getOutlookEventsFromDatabase(
             calendarColor: event.calendar_color,
             // Include recurrence metadata
             rrule: event.rrule,
-            recurrenceBaseId: event.recurrence_base_id,
-            isRecurring: !!(event.rrule && !event.recurrence_base_id),
+            recurrenceBaseId: undefined, // Not storing instances, so no base ID
+            isRecurring: !!event.rrule,
           });
         }
       }

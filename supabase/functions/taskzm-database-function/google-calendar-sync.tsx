@@ -189,7 +189,6 @@ export async function syncGoogleCalendarsToDatabase(
             external_updated_at: event.start, // Use start time as updated_at since Google doesn't provide lastModified
             // Preserve recurrence metadata
             rrule: event.rrule || null,
-            recurrence_base_id: event.recurrenceBaseId || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
@@ -223,9 +222,8 @@ export async function syncGoogleCalendarsToDatabase(
             external_updated_at: event.start, // Use start time as updated_at
             is_readonly: true,
             // Store recurrence metadata
-            // For base recurring events: rrule is set, recurrence_base_id is null
+            // For base recurring events: rrule is set
             rrule: event.rrule || null,
-            recurrence_base_id: null, // Always null for base events
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });
