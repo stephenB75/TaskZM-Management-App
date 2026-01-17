@@ -5166,6 +5166,8 @@ const getUserAwardsHandler = async (c: any) => {
     }
 
     const supabase = getSupabaseClient();
+    
+    // Check if table exists by attempting to query it
     const { data: awards, error } = await supabase
       .from('user_awards')
       .select('award_id, earned_at, progress')
@@ -5174,7 +5176,12 @@ const getUserAwardsHandler = async (c: any) => {
 
     if (error) {
       console.error('Error fetching user awards:', error);
-      return c.json({ error: 'Failed to fetch awards' }, 500);
+      // If table doesn't exist, return empty array instead of error
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        console.warn('user_awards table does not exist, returning empty array');
+        return c.json({ awards: [] });
+      }
+      return c.json({ error: `Failed to fetch awards: ${error.message}`, code: error.code }, 500);
     }
 
     // Transform to match UserAward interface
@@ -5206,6 +5213,7 @@ const saveUserAwardsHandler = async (c: any) => {
 
     const supabase = getSupabaseClient();
     let saved = 0;
+    const errors: string[] = [];
 
     // Upsert each award
     for (const award of awards) {
@@ -5223,11 +5231,23 @@ const saveUserAwardsHandler = async (c: any) => {
       if (!error) {
         saved++;
       } else {
+        const errorMsg = error.code === '42P01' || error.message?.includes('does not exist')
+          ? 'user_awards table does not exist'
+          : error.message;
         console.error(`Error saving award ${award.awardId}:`, error);
+        errors.push(`Award ${award.awardId}: ${errorMsg}`);
       }
     }
 
-    return c.json({ success: true, saved });
+    // If table doesn't exist, return error
+    if (errors.length > 0 && errors.some(e => e.includes('does not exist'))) {
+      return c.json({ 
+        error: 'user_awards table does not exist. Please create the table in Supabase.',
+        saved: 0 
+      }, 500);
+    }
+
+    return c.json({ success: true, saved, errors: errors.length > 0 ? errors : undefined });
   } catch (error) {
     console.error('Error in save user awards:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
@@ -5261,7 +5281,14 @@ const saveUserAwardHandler = async (c: any) => {
 
     if (error) {
       console.error('Error saving award:', error);
-      return c.json({ error: 'Failed to save award' }, 500);
+      // Check if table doesn't exist
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return c.json({ 
+          error: 'user_awards table does not exist. Please create the table in Supabase.',
+          code: error.code 
+        }, 500);
+      }
+      return c.json({ error: `Failed to save award: ${error.message}`, code: error.code }, 500);
     }
 
     return c.json({ success: true });
