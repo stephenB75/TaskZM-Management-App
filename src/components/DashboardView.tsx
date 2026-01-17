@@ -3,17 +3,7 @@ import { motion } from "motion/react";
 import { TodayAgendaView } from "./TodayAgendaView";
 import { SevenDayKanban } from "./SevenDayKanban";
 import { MonthCalendarView } from "./MonthCalendarView";
-import {
-  Sparkles,
-  Calendar,
-  CalendarDays,
-  Clock,
-  Target,
-  Brain,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-} from "lucide-react";
+import { Icon } from "./Icon";
 import {
   END_OF_DAY_HOUR,
   END_OF_DAY_MINUTE,
@@ -86,9 +76,14 @@ import {
   HEADER_DESCRIPTION_SIZE,
   HEADER_DESCRIPTION_SIZE_SMALL_SCREEN,
   HEADER_TEXT_MARGIN_NONE,
+  ICON_SIZE_XS,
+  ICON_SIZE_SM,
+  ICON_SIZE_MD,
+  ICON_SIZE_LG,
   TOAST_DURATION_SHORT_MS,
   TOAST_DURATION_MEDIUM_MS,
 } from "../lib/layout-constants";
+import { UI_GRADIENT_COLORS, UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 import { KANBAN_ANIMATION } from "../lib/kanban-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
@@ -352,7 +347,7 @@ function RescheduleMiniCalendar({
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           )}
         >
-          <Calendar className="w-3.5 h-3.5 mr-1.5" />
+          <Icon name="calendar" size={ICON_SIZE_SM} className="mr-1.5" />
           Days
         </Button>
         <Button
@@ -373,7 +368,7 @@ function RescheduleMiniCalendar({
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           )}
         >
-          <CalendarDays className="w-3.5 h-3.5 mr-1.5" />
+          <Icon name="calendar-days" size={ICON_SIZE_SM} className="mr-1.5" />
           Week
         </Button>
         <Button
@@ -394,7 +389,7 @@ function RescheduleMiniCalendar({
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           )}
         >
-          <CalendarDays className="w-3.5 h-3.5 mr-1.5" />
+          <Icon name="calendar-days" size={ICON_SIZE_SM} className="mr-1.5" />
           Month
         </Button>
       </div>
@@ -408,7 +403,7 @@ function RescheduleMiniCalendar({
           onClick={goToPreviousMonth}
           className="h-7 w-7"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <Icon name="chevron-left" size={ICON_SIZE_MD} />
         </Button>
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-foreground">{monthName}</span>
@@ -429,7 +424,7 @@ function RescheduleMiniCalendar({
           onClick={goToNextMonth}
           className="h-7 w-7"
         >
-          <ChevronRight className="h-4 w-4" />
+          <Icon name="chevron-right" size={ICON_SIZE_MD} />
         </Button>
       </div>
 
@@ -484,7 +479,7 @@ function RescheduleMiniCalendar({
       {(rescheduleDate || (rescheduleType === "day" && selectedDates.length > 0)) && (
         <div className="mt-3 pt-3 border-t border-primary/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calendar className="h-3.5 w-3.5 text-primary" />
+            <Icon name="calendar" size={ICON_SIZE_SM} className="text-primary" />
             <span className="text-xs font-medium text-foreground">
               {getDisplayDate()}
             </span>
@@ -1189,7 +1184,7 @@ export function DashboardView({
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className={cn("h-full flex flex-col", UI_GRADIENT_COLORS.dialog.className, "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950")}>
       {/* Header - Using AppHeader for consistency */}
       <AppHeader
         title="Dashboard"
@@ -1248,9 +1243,10 @@ export function DashboardView({
                   )}
                   style={{ transform: `scale(${buttonScale})` }}
                 >
-              <Calendar
+              <Icon
+                name="calendar"
+                size={TOGGLE_SWITCH_DIMENSIONS.icon.size}
                 className={cn(
-                  TOGGLE_SWITCH_DIMENSIONS.icon.sizeClass,
                   "transition-colors",
                   viewMode === "week"
                     ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
@@ -1287,9 +1283,10 @@ export function DashboardView({
               >
                 Month
               </span>
-              <CalendarDays
+              <Icon
+                name="calendar-days"
+                size={TOGGLE_SWITCH_DIMENSIONS.icon.size}
                 className={cn(
-                  TOGGLE_SWITCH_DIMENSIONS.icon.sizeClass,
                   "transition-colors",
                   viewMode === "month"
                     ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
@@ -1312,7 +1309,7 @@ export function DashboardView({
                 size="sm"
                 onClick={handleScheduleUnscheduledTasks}
                 className={cn(
-                  "bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40 hover:from-[#C9E4F7] hover:to-[#E6D5F0] dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all",
+                  cn(UI_INBOX_GRADIENTS.button.className, "dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40", UI_INBOX_GRADIENTS.button.hover.className, "dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all"),
                   !isSmallScreen && "whitespace-nowrap"
                 )}
                 style={{
@@ -1329,11 +1326,11 @@ export function DashboardView({
                 }}
                 data-tour="ai-scheduler"
               >
-                <Sparkles 
+                <Icon 
+                  name="sparkles"
+                  size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
                   className="text-primary dark:text-primary-foreground flex-shrink-0"
                   style={{
-                    width: isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP,
-                    height: isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP,
                     marginRight: isSmallScreen ? HEADER_ICON_MARGIN_SMALL : HEADER_ICON_MARGIN_DESKTOP,
                   }}
                 />
@@ -1381,14 +1378,14 @@ export function DashboardView({
                 disabled={isRescheduling}
                 data-tour="re-schedule"
               >
-                <RefreshCw 
+                <Icon 
+                  name="refresh-cw"
+                  size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
                   className={cn(
                     "text-primary dark:text-primary-foreground",
                     isRescheduling && "animate-spin"
                   )}
                   style={{
-                    width: isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP,
-                    height: isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP,
                     marginRight: isSmallScreen ? HEADER_ICON_MARGIN_SMALL : HEADER_ICON_MARGIN_DESKTOP,
                   }}
                 />
@@ -1482,7 +1479,7 @@ export function DashboardView({
                         className={cn(
                       "flex flex-col items-center justify-center py-2 rounded-lg transition-all relative",
                           isSelected
-                            ? "bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-md border-2 border-primary/30"
+                            ? cn(UI_INBOX_GRADIENTS.emptyState.className, "text-primary shadow-md border-2 border-primary/30")
                         : isToday
                         ? "bg-primary/10 text-primary border border-primary/20"
                             : "bg-white/50 dark:bg-card/50 hover:bg-white dark:hover:bg-card border border-transparent",
@@ -1626,13 +1623,13 @@ export function DashboardView({
       <Sheet open={aiPanelOpen} onOpenChange={onAiPanelChange}>
         <SheetContent
           side="right"
-          className="w-full sm:w-[360px] md:w-[400px] bg-gradient-to-b from-white to-[#F9F7FD] dark:from-gray-900 dark:to-gray-800"
+          className={cn("w-full sm:w-[360px] md:w-[400px] bg-gradient-to-b from-white", `to-[${UI_GRADIENT_COLORS.dialog.via}]`, "dark:from-gray-900 dark:to-gray-800")}
           data-tour="ai-recommendations-panel"
         >
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7]">
-                <Sparkles className="w-5 h-5 text-primary" />
+              <div className={cn("p-2 rounded-lg", UI_INBOX_GRADIENTS.emptyState.className)}>
+                <Icon name="sparkles" size={ICON_SIZE_LG} className="text-primary" />
               </div>
               AI Recommendations
             </SheetTitle>
@@ -1654,7 +1651,7 @@ export function DashboardView({
         <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
+              <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary" />
               Review AI Scheduling Plan
             </DialogTitle>
             <DialogDescription>
@@ -1675,7 +1672,7 @@ export function DashboardView({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Card className="p-4 bg-gradient-to-br from-[#C9E4F7]/20 to-[#B8E6D5]/20">
+                    <Card className={cn("p-4", UI_INBOX_GRADIENTS.card.className)}>
                       <div className="flex items-start gap-3">
                         <div className="flex-1">
                           <div className="flex items-start justify-between gap-2 mb-2">
@@ -1735,7 +1732,7 @@ export function DashboardView({
                           {/* AI Reasoning */}
                           {reason && (
                             <div className="mb-2 flex items-start gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/10">
-                              <Brain className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+                              <Icon name="brain" size={ICON_SIZE_XS} className="text-primary mt-0.5 flex-shrink-0" />
                               <span className="text-xs text-primary/80 italic">
                                 {reason}
                               </span>
@@ -1744,7 +1741,7 @@ export function DashboardView({
 
                           <div className="flex items-center gap-2 text-xs flex-wrap">
                             <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-primary" />
+                              <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" />
                               <span className="text-foreground/70">
                                 {formatScheduleDate(
                                   scheduledDate,
@@ -1756,7 +1753,7 @@ export function DashboardView({
                                 <span className="text-foreground/30">
                                   •
                                 </span>
-                                <Clock className="w-3 h-3 text-foreground/50" />
+                                <Icon name="clock" size={ICON_SIZE_XS} className="text-foreground/50" />
                                 <span className="text-foreground/70">
                                   {task.estimatedTime} min
                                 </span>
@@ -1767,7 +1764,7 @@ export function DashboardView({
                                 <span className="text-foreground/30">
                                   •
                                 </span>
-                                <Target className="w-3 h-3 text-foreground/50" />
+                                <Icon name="target" size={ICON_SIZE_XS} className="text-foreground/50" />
                                 <span className="text-foreground/70">
                                   Due{" "}
                                   {new Date(
@@ -1804,7 +1801,7 @@ export function DashboardView({
               onClick={confirmScheduling}
               className="rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Icon name="sparkles" size={ICON_SIZE_MD} className="mr-2" />
               Confirm Schedule
             </Button>
           </DialogFooter>
