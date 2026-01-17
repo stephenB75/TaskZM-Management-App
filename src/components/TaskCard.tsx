@@ -58,7 +58,7 @@ export function TaskCard({
       case 'in-progress':
         return <Icon name="clock" size={ICON_SIZE_XS} className="text-blue-600" />;
       case 'on-hold':
-        return <AlertCircle className="w-4 h-4 text-yellow-600" />;
+        return <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-yellow-600" />;
       default:
         return <Circle className="w-4 h-4 text-gray-400" />;
     }

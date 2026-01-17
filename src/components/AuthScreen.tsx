@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -822,16 +822,16 @@ export function AuthScreen() {
                           <div className="absolute right-3 top-1/2 -translate-y-1/2">
                             {signUpEmail && (
                               emailError ? (
-                                <AlertCircle className="w-4 h-4 text-red-500" />
+                                <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-500" />
                               ) : (
-                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <Icon name="check-circle" size={ICON_SIZE_XS} className="text-green-500" />
                               )
                             )}
                           </div>
                         </div>
                         {emailError && (
                           <p className="text-[11px] sm:text-xs text-red-500 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
+                            <Icon name="alert-circle" size={ICON_SIZE_XS} />
                             {emailError}
                           </p>
                         )}
@@ -951,7 +951,7 @@ export function AuthScreen() {
                               </>
                             ) : (
                               <>
-                                <AlertCircle className="w-3 h-3" />
+                                <Icon name="alert-circle" size={ICON_SIZE_XS} />
                                 {AUTH_UI_TEXT.validation.passwordsNoMatch}
                               </>
                             )}

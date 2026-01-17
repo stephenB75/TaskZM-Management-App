@@ -63,6 +63,7 @@ import {
   SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
   SETTINGS_PANEL_ICON_SIZE_SMALL,
   SETTINGS_PANEL_ICON_SIZE_MEDIUM,
+  ICON_SIZE_SM,
   SETTINGS_PANEL_GAP_SMALL,
   SETTINGS_PANEL_GAP_XSMALL,
   SETTINGS_PANEL_SPACING_XSMALL,
@@ -1221,7 +1222,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center min-w-0 flex-1" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
-              <Bell className="text-primary flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM }} />
+              <Icon name="bell" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-primary flex-shrink-0" />
               <span className="text-sm md:text-base truncate">Notifications</span>
               {badgeCount > 0 && (
                 <Badge variant="destructive" className="ml-auto flex-shrink-0 text-xs">
@@ -1274,7 +1275,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   }}
                   disabled={permission === 'denied'}
                 >
-                  <Bell className="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+                  <Icon name="bell" size={ICON_SIZE_SM} className="mr-1.5 md:mr-2" />
                   <span className="truncate">
                     {permission === 'denied' 
                       ? NOTIFICATION_PANEL_TEXT.permission.blocked

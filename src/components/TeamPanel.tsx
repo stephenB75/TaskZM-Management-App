@@ -789,7 +789,7 @@ export function TeamPanel() {
                       }}
                       className="cursor-pointer"
                     >
-                      <Bell style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      <Icon name="bell" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Accept Invite (Demo)
                     </DropdownMenuItem>
                     <DropdownMenuItem

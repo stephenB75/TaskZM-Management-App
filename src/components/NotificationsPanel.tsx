@@ -372,24 +372,24 @@ export function NotificationsPanel() {
   const getNotificationIcon = (type: NotificationItem['type']) => {
     switch (type) {
       case 'task-overdue':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-500" />;
       case 'task-due-soon':
         return <Icon name="clock" size={ICON_SIZE_XS} className="text-orange-500" />;
       case 'pomodoro-complete':
       case 'pomodoro-break':
-        return <Timer className="w-4 h-4 text-purple-500" />;
+        return <Icon name="timer" size={ICON_SIZE_XS} className="text-purple-500" />;
       case 'award-earned':
         return <AwardIcon className="w-4 h-4 text-yellow-500" />;
       case 'toast-success':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+        return <Icon name="check-circle" size={ICON_SIZE_XS} className="text-green-500" />;
       case 'toast-error':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-500" />;
       case 'toast-warning':
-        return <AlertCircle className="w-4 h-4 text-orange-500" />;
+        return <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-orange-500" />;
       case 'toast-info':
-        return <Bell className="w-4 h-4 text-blue-500" />;
+        return <Icon name="bell" size={ICON_SIZE_XS} className="text-blue-500" />;
       default:
-        return <Bell className="w-4 h-4 text-primary" />;
+        return <Icon name="bell" size={ICON_SIZE_XS} className="text-primary" />;
     }
   };
 
@@ -426,7 +426,7 @@ export function NotificationsPanel() {
             className="flex"
             disabled={unreadCount === 0}
           >
-            <CheckCircle2 className="w-4 h-4 mr-2" />
+            <Icon name="check-circle" size={ICON_SIZE_XS} className="mr-2" />
             <span className="hidden sm:inline">{NOTIFICATION_PANEL_TEXT.markAllRead}</span>
             <span className="sm:hidden">{NOTIFICATION_PANEL_TEXT.markRead}</span>
           </Button>
@@ -464,7 +464,7 @@ export function NotificationsPanel() {
             {filteredNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Bell className="w-8 h-8 text-primary/40" />
+                  <Icon name="bell" size={ICON_SIZE_2XL} className="text-primary/40" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-2">
                   {filterType === "all"
@@ -545,7 +545,7 @@ export function NotificationsPanel() {
               {filteredNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Bell className="w-8 h-8 text-primary/40" />
+                    <Icon name="bell" size={ICON_SIZE_2XL} className="text-primary/40" />
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
                     {filterType === "all"

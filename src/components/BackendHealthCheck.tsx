@@ -13,7 +13,7 @@ import {
 import { Badge } from "./ui/badge";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 
 interface HealthStatus {
@@ -174,7 +174,7 @@ export function BackendHealthCheck() {
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
               )}
               {anyError && (
-                <AlertCircle className="h-5 w-5 text-red-500" />
+                <Icon name="alert-circle" size={ICON_SIZE_LG} className="text-red-500" />
               )}
             </CardTitle>
             <CardDescription>
