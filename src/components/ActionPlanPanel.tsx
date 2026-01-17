@@ -9,7 +9,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { ICON_SIZE_SM, ICON_SIZE_MD } from '../lib/layout-constants';
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from '../lib/layout-constants';
 import type { ActionPlan, ActionPlanStep } from '../lib/action-plan-generator';
 import type { DescriptionAnalysis } from '../lib/description-analyzer';
 import type { Domain } from '../lib/domain-terminology';
@@ -110,7 +110,7 @@ export function ActionPlanPanel({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
+          <Icon name="sparkles" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
           <h3 className="font-semibold text-foreground">AI Task Breakdown</h3>
         </div>
         <Badge

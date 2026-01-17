@@ -677,7 +677,7 @@ export function PricingDialog({
                         <h3 className={`text-base md:text-lg font-semibold ${UI_PRICING_GRADIENT_COLORS.text.className}`}>
                           {monthlyOffering.title}
                         </h3>
-                        <Sparkles className={`w-2.5 h-2.5 md:w-3 md:h-3 ${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
+                        <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" className={`${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
                       </div>
                       <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground line-clamp-1`}>
                         {formatDescription(monthlyOffering.description)}
@@ -736,7 +736,7 @@ export function PricingDialog({
                     SUBSCRIPTION_UI_TEXT.planCards.monthly.button.switch
                   ) : (
                     <span className="flex items-center justify-center gap-1.5">
-                      <Sparkles className="w-2.5 h-2.5" />
+                      <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" />
                       <span>{SUBSCRIPTION_UI_TEXT.planCards.monthly.button.upgrade}</span>
                     </span>
                   )}
@@ -792,7 +792,7 @@ export function PricingDialog({
                       <h3 className="text-base md:text-lg font-semibold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
                         {yearlyOffering.title}
                       </h3>
-                      <Sparkles className={`w-2.5 h-2.5 md:w-3 md:h-3 ${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
+                      <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" className={`${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
                     </div>
                     <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-1">
                       {formatDescription(yearlyOffering.description)}
@@ -865,7 +865,7 @@ export function PricingDialog({
                     SUBSCRIPTION_UI_TEXT.planCards.yearly.button.switch
                   ) : (
                     <span className="flex items-center justify-center gap-1.5">
-                      <Sparkles className="w-2.5 h-2.5" />
+                      <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" />
                       <span>{SUBSCRIPTION_UI_TEXT.planCards.yearly.button.upgrade}</span>
                     </span>
                   )}

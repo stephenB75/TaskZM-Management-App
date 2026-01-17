@@ -14,7 +14,7 @@ import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { ICON_SIZE_MD } from '../lib/layout-constants';
+import { ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG } from '../lib/layout-constants';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { projectId } from '../utils/supabase/info';
@@ -219,7 +219,7 @@ export function AppleCalDAVSetupDialog({
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Icon name="calendar" size={20} weight="duotone" />
+            <Icon name="calendar" size={ICON_SIZE_LG} weight="duotone" />
             Connect Apple Calendar
           </DialogTitle>
           <DialogDescription>
@@ -239,7 +239,7 @@ export function AppleCalDAVSetupDialog({
                     : 'bg-muted text-muted-foreground'
                 }`}
               >
-                {step > s ? <Icon name="check" size={16} /> : s}
+                {step > s ? <Icon name="check" size={ICON_SIZE_MD} /> : s}
               </div>
             ))}
           </div>
@@ -249,11 +249,11 @@ export function AppleCalDAVSetupDialog({
             <div className="space-y-4">
               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Icon name="info" size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <Icon name="info" size={ICON_SIZE_MD} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-blue-800 dark:text-blue-300">
                     <p className="font-semibold mb-2">How to get an App-Specific Password:</p>
                     <ol className="list-decimal list-inside space-y-1 ml-2">
-                      <li>Go to <button type="button" onClick={handleOpenAppleID} className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">appleid.apple.com</button> <Icon name="external-link" size={12} className="inline ml-1" /></li>
+                      <li>Go to <button type="button" onClick={handleOpenAppleID} className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">appleid.apple.com</button> <Icon name="external-link" size={ICON_SIZE_XS} className="inline ml-1" /></li>
                       <li>Sign in with your Apple ID</li>
                       <li>Navigate to <strong>Sign-In and Security</strong> → <strong>App-Specific Passwords</strong></li>
                       <li>Click <strong>"Generate Password"</strong></li>

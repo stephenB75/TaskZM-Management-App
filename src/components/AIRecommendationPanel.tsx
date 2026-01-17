@@ -901,7 +901,7 @@ export function AIRecommendationPanel({
                           className="w-full rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
                           size="default"
                         >
-                          <Sparkles className="w-4 h-4 mr-2" />
+                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="mr-2" />
                           {aiSettings.priorityBasedScheduling
                             ? "Schedule by Priority"
                             : "Schedule Tasks"}
@@ -979,7 +979,7 @@ export function AIRecommendationPanel({
               >
                 <Card className="p-4 border border-muted bg-muted/30">
                   <div className="flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 text-muted-foreground" />
+                    <Icon name="sparkles" size={ICON_SIZE_LG} weight="duotone" className="text-muted-foreground" />
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground">
                         AI scheduling is disabled. Enable it in

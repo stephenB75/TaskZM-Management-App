@@ -10,7 +10,7 @@ import {
 import { Button } from './ui/button';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { ICON_SIZE_SM, ICON_SIZE_MD } from '../lib/layout-constants';
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from '../lib/layout-constants';
 import { DEMO_ACCOUNT_CONFIG } from '../lib/auth-constants';
 
 interface DemoAccountDisclaimerProps {
@@ -54,7 +54,7 @@ export function DemoAccountDisclaimer({
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <div className="p-2 rounded-lg bg-primary/10 dark:bg-primary/20">
-              <Sparkles className="w-5 h-5 text-primary" />
+              <Icon name="sparkles" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
             </div>
             <DialogTitle className="text-xl font-semibold">
               Demo Account Active

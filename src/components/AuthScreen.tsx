@@ -499,7 +499,7 @@ export function AuthScreen() {
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.05 }}
               >
-                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
+                <Icon name="sparkles" size={ICON_SIZE_SM} weight="duotone" className="text-primary" />
                 <span className="text-[9px] sm:text-[10px] font-medium text-gray-700 dark:text-foreground">
                   {AUTH_UI_TEXT.neurodivergentBadge}
                 </span>
@@ -766,7 +766,7 @@ export function AuthScreen() {
                         } as React.CSSProperties}
                         disabled={isLoading}
                       >
-                        <Sparkles className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <Icon name="sparkles" size={ICON_SIZE_SM} weight="duotone" className="mr-2" />
                         {AUTH_UI_TEXT.demo.button}
                       </Button>
                     </motion.form>
@@ -1039,8 +1039,11 @@ export function AuthScreen() {
                         } as React.CSSProperties}
                       >
                         <span className="inline-flex items-center gap-1 flex-wrap justify-center">
-                          <Sparkles 
-                            className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" 
+                          <Icon 
+                            name="sparkles" 
+                            size={ICON_SIZE_MD} 
+                            weight="duotone" 
+                            className="flex-shrink-0" 
                             style={{ color: AUTH_COLORS.primary } as React.CSSProperties}
                           />
                           <span>Free forever • Pro features available • No credit card required</span>

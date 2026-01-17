@@ -179,7 +179,7 @@ export function AIScheduleResultDialog({
 
         <div className="flex items-center justify-between pt-4 border-t">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Sparkles className="w-4 h-4 text-primary" />
+            <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
             <span>Tasks distributed intelligently</span>
           </div>
           <Button

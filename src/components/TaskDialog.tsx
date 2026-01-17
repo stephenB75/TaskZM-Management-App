@@ -2082,11 +2082,10 @@ export function TaskDialog({
                           }}
                           title="Generate new description (appends to existing)"
                         >
-                          <Sparkles 
-                            style={{ 
-                              width: COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize, 
-                              height: COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize 
-                            }}
+                          <Icon 
+                            name="sparkles" 
+                            size={COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize} 
+                            weight="duotone"
                           />
                           <span className="hidden sm:inline">AI Generate</span>
                         </Button>
@@ -2110,7 +2109,7 @@ export function TaskDialog({
                   <div className="bg-white dark:bg-card rounded-lg p-3 border-2 border-primary/30 shadow-sm">
                     {isBreakdownLoading ? (
                       <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <Sparkles className="w-4 h-4 animate-pulse" />
+                        <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse" />
                         <span>Analyzing task...</span>
                       </div>
                     ) : breakdownError ? (
@@ -2120,7 +2119,7 @@ export function TaskDialog({
                     ) : breakdown ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-primary" />
+                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
                           <span className="font-semibold text-foreground">AI Analysis</span>
                         </div>
                         <div className="flex flex-wrap items-center gap-3 text-sm">

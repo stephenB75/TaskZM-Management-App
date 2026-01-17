@@ -243,29 +243,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
     };
   }, [user?.id, handlePricingUpdate]);
 
-  // Helper function to get icon component from icon name
-  const getAwardIcon = (iconName: string) => {
-    const iconMap: Record<string, any> = {
-      'target': Target,
-      'check-circle': CheckCircle,
-      'shield': Shield,
-      'zap': Zap,
-      'crown': Crown,
-      'star': Star,
-      'trophy': Trophy,
-      'flame': Flame,
-      'trending-up': TrendingUp,
-      'activity': Activity,
-      'award': Award,
-      'timer': Timer,
-      'brain': Brain,
-      'battery-charging': BatteryCharging,
-      'sunrise': Sunrise,
-      'moon': MoonIcon,
-      'calendar': CalendarIcon,
-      'sparkles': SparklesIcon,
-    };
-    return iconMap[iconName] || Target;
+  // Helper function to get icon name (icons now use Icon component)
+  const getAwardIconName = (iconName: string): string => {
+    // Icon names are already in the correct format for Icon component
+    return iconName;
   };
 
   // Check if user has seen tour on mount and when storage changes
@@ -955,7 +936,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <Separator />
                   <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
                     <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
-                      <Sparkles className={`${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass} flex-shrink-0`} style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
+                      <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_LARGE} weight="duotone" className={`${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass} flex-shrink-0`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                       <div>
                         <p className="mb-1" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.upgradeToPro}</p>
                         <p className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
@@ -968,7 +949,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       className={`w-full ${UI_SETTINGS_BADGE_COLORS.primaryClass} ${UI_SETTINGS_BADGE_COLORS.primaryHoverClass} text-gray-800`}
                       onClick={() => setShowPricingDialog(true)}
                     >
-                      <Sparkles style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                      <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} weight="duotone" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                       {SUBSCRIPTION_UI_TEXT.settings.viewPlans}
                     </Button>
                   </div>
@@ -1120,7 +1101,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     onClick={() => setShowPricingDialog(true)}
                     className={`${UI_SETTINGS_BADGE_COLORS.primaryClass} ${UI_SETTINGS_BADGE_COLORS.primaryHoverClass} w-full`}
                   >
-                    <Sparkles className="mr-1.5" style={{ width: SETTINGS_PANEL_ICON_SIZE_SMALL, height: SETTINGS_PANEL_ICON_SIZE_SMALL, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
+                    <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" className="mr-1.5" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
                     {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
                   </Button>
                 </div>
@@ -1632,7 +1613,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Sparkles className="w-5 h-5 text-primary" />
+              <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" className="text-primary" />
               <span>AI Scheduling</span>
               {!features.aiScheduler && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
@@ -2546,7 +2527,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   <div className={`text-sm font-medium ${isEarned ? 'text-blue-700 dark:text-blue-300' : ''}`}>
                                     {award.name}
                                   </div>
-                                  {isEarned && <Icon name="award" size={14} weight="duotone" className="text-blue-500 flex-shrink-0" />}
+                                  {isEarned && <Icon name="award" size={ICON_SIZE_SM} weight="duotone" className="text-blue-500 flex-shrink-0" />}
                                   {!isEarned && <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -2631,7 +2612,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                     {award.name}
                                   </div>
                                   {isEarned && <Icon name="award" size={14} weight="duotone" className="text-orange-500 flex-shrink-0" />}
-                                  {!isEarned && <Icon name="lock" size={14} className="text-muted-foreground/50 flex-shrink-0" />}
+                                  {!isEarned && <Icon name="lock" size={ICON_SIZE_SM} className="text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {award.description}
@@ -2715,7 +2696,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                     {award.name}
                                   </div>
                                   {isEarned && <Icon name="award" size={14} weight="duotone" className="text-purple-500 flex-shrink-0" />}
-                                  {!isEarned && <Icon name="lock" size={14} className="text-muted-foreground/50 flex-shrink-0" />}
+                                  {!isEarned && <Icon name="lock" size={ICON_SIZE_SM} className="text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {award.description}
@@ -2748,7 +2729,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                        <SparklesIcon className="w-4 h-4 text-white" />
+                        <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" className="text-white" />
                       </div>
                       <div className="flex-1 text-left">
                         <h4 className="text-sm font-semibold">Special Achievements</h4>
@@ -2801,7 +2782,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                     {award.name}
                                   </div>
                                   {isEarned && <Icon name="award" size={14} weight="duotone" className="text-pink-500 flex-shrink-0" />}
-                                  {!isEarned && <Icon name="lock" size={14} className="text-muted-foreground/50 flex-shrink-0" />}
+                                  {!isEarned && <Icon name="lock" size={ICON_SIZE_SM} className="text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {award.description}
