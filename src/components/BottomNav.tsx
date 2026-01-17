@@ -167,7 +167,7 @@ export function BottomNav({
         }}
       >
         {navItems.map((item) => {
-          const Icon = item.icon;
+          const NavIcon = item.icon;
           return (
             <button
               key={item.id}
@@ -223,7 +223,7 @@ export function BottomNav({
                     }}
                   />
                 )}
-                <Icon 
+                <NavIcon 
                   className="relative z-10" 
                   style={{ width: NAV_BAR_ICON_SIZE, height: NAV_BAR_ICON_SIZE }}
                 />

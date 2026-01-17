@@ -171,7 +171,7 @@ export function UpgradePrompt({
   feature,
 }: UpgradePromptProps) {
   const config = featureConfig[feature];
-  const Icon = config.icon;
+  const UpgradeIcon = config.icon;
 
   const handleUpgrade = () => {
     onOpenChange(false);
@@ -184,7 +184,7 @@ export function UpgradePrompt({
         <AlertDialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className={`w-10 h-10 rounded-full ${UI_UPGRADE_PROMPT_COLORS.accentBgOpacity20} flex items-center justify-center`}>
-              <Icon className={`w-5 h-5 ${UI_UPGRADE_PROMPT_COLORS.accentTextClass}`} />
+              <UpgradeIcon className={`w-5 h-5 ${UI_UPGRADE_PROMPT_COLORS.accentTextClass}`} />
             </div>
             <AlertDialogTitle>
               {SUBSCRIPTION_UI_TEXT.upgradePrompt.unlock(config.title)}
