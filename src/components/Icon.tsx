@@ -74,6 +74,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'trash-2': 'Trash',
   'link': 'Link',
   'link-2': 'Link',
+  'external-link': 'ArrowSquareOut',
   'copy': 'Copy',
   'download': 'Download',
   'upload': 'Upload',
