@@ -714,6 +714,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                     name="folder"
                     size={FOLDER_PANEL_EMPTY_STATE_ICON_SIZE}
                     className="mx-auto text-primary/50"
+                    style={{ 
                       marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
                     }} 
                   />

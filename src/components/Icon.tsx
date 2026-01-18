@@ -36,6 +36,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'calendar': 'Calendar',
   'calendar-days': 'CalendarBlank',
   'calendar-blank': 'CalendarBlank',
+  'calendar-range': 'Calendar',
   'clock': 'Clock',
   'settings': 'Gear',
   'check': 'Check',

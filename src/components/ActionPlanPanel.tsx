@@ -206,7 +206,7 @@ export function ActionPlanPanel({
           <ul className="space-y-1">
             {descriptionAnalysis.suggestions.map((suggestion, index) => (
               <li key={index} className="text-xs text-muted-foreground flex items-start gap-2">
-                <CheckCircle2 className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                <Icon name="check-circle" size={ICON_SIZE_XS} className="mt-0.5 flex-shrink-0" />
                 <span>{suggestion}</span>
               </li>
             ))}

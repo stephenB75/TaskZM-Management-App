@@ -751,7 +751,7 @@ export function ArchiveView() {
                                 }
                                 title="Delete permanently"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Icon name="trash-2" size={ICON_SIZE_MD} />
                               </Button>
                             </div>
                           </div>

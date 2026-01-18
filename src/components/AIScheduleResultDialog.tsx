@@ -132,7 +132,7 @@ export function AIScheduleResultDialog({
 
                         <div className="flex items-center gap-2 text-xs flex-wrap">
                           <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-primary" />
+                            <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className="text-primary" />
                             <span className="text-foreground/70 font-medium">
                               {formatScheduleDate(
                                 scheduledDate,

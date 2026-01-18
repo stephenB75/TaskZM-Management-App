@@ -379,7 +379,7 @@ export function NotificationsPanel() {
       case 'pomodoro-break':
         return <Icon name="timer" size={ICON_SIZE_XS} className="text-purple-500" />;
       case 'award-earned':
-        return <AwardIcon className="w-4 h-4 text-yellow-500" />;
+        return <Icon name="award" size={ICON_SIZE_MD} className="text-yellow-500" />;
       case 'toast-success':
         return <Icon name="check-circle" size={ICON_SIZE_XS} className="text-green-500" />;
       case 'toast-error':

@@ -556,7 +556,7 @@ export function AIRecommendationPanel({
                     variant="outline"
                     className="w-full justify-start text-left font-normal"
                   >
-                    <Calendar className="mr-2 h-4 w-4" />
+                    <Icon name="calendar" size={ICON_SIZE_MD} weight="duotone" className="mr-2" />
                     {selectedDate ? (
                       rescheduleType === 'month' ? (
                         selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -660,7 +660,7 @@ export function AIRecommendationPanel({
         <DialogContent className="max-w-2xl max-h-[80vh]" data-tour="ai-schedule-preview-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
+              <Icon name="calendar" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
               Review AI Scheduling Plan
             </DialogTitle>
             <DialogDescription>
@@ -734,7 +734,7 @@ export function AIRecommendationPanel({
 
                           <div className="flex items-center gap-2 text-xs flex-wrap">
                             <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-primary" />
+                              <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className="text-primary" />
                               <span className="text-foreground/70">
                                 {formatScheduleDate(
                                   scheduledDate,
@@ -791,7 +791,7 @@ export function AIRecommendationPanel({
               }}
               className="rounded-full"
             >
-              <X className="w-4 h-4 mr-2" />
+              <Icon name="x" size={ICON_SIZE_MD} className="mr-2" />
               Cancel
             </Button>
             <Button
@@ -874,7 +874,7 @@ export function AIRecommendationPanel({
                                   size="sm"
                                   className="h-8 text-xs flex-1"
                                 >
-                                  <Calendar className="w-3 h-3 mr-1" />
+                                  <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className="mr-1" />
                                   {suggestionDate?.toLocaleDateString('en-US', {
                                     month: suggestionPeriod === 'month' ? 'long' : 'short',
                                     day: suggestionPeriod !== 'month' ? 'numeric' : undefined,
@@ -941,7 +941,7 @@ export function AIRecommendationPanel({
                           className="rounded-full text-xs"
                           disabled={isScheduling}
                         >
-                          <CalendarDays className="w-3.5 h-3.5 mr-1.5" />
+                          <Icon name="calendar-days" size={ICON_SIZE_SM} weight="duotone" className="mr-1.5" />
                           Week
                         </Button>
                         <Button
@@ -955,7 +955,7 @@ export function AIRecommendationPanel({
                           className="rounded-full text-xs"
                           disabled={isScheduling}
                         >
-                          <CalendarRange className="w-3.5 h-3.5 mr-1.5" />
+                          <Icon name="calendar-range" size={ICON_SIZE_SM} weight="duotone" className="mr-1.5" />
                           Month
                         </Button>
                       </div>

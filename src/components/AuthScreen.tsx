@@ -946,7 +946,7 @@ export function AuthScreen() {
                           }`}>
                             {passwordsMatch ? (
                               <>
-                                <CheckCircle className="w-3 h-3" />
+                                <Icon name="check-circle" size={ICON_SIZE_XS} />
                                 {AUTH_UI_TEXT.validation.passwordsNoMatch.replace('do not match', 'match')}
                               </>
                             ) : (

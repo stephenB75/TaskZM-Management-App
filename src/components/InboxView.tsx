@@ -650,10 +650,11 @@ export function InboxView() {
                   }}
                   size="sm"
                 >
-                  <Calendar 
+                  <Icon 
+                    name="calendar"
+                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
+                    weight="duotone"
                     style={{
-                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
                       marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
@@ -688,10 +689,10 @@ export function InboxView() {
                   }}
                   size="sm"
                 >
-                  <Trash2 
+                  <Icon 
+                    name="trash-2"
+                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
                     style={{
-                      width: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
-                      height: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop,
                       marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
@@ -915,10 +916,13 @@ export function InboxView() {
                 TOGGLE_SWITCH_COLORS.card.border.light,
               )}>
                 <div className={cn("flex items-center", TOGGLE_SWITCH_SPACING.container.gapClass)}>
-                  <Calendar className={cn(
-                    TOGGLE_SWITCH_DIMENSIONS.icon.sizeClass,
-                    TOGGLE_SWITCH_COLORS.text.active.light
-                  )} />
+                  <Icon 
+                    name="calendar"
+                    size={ICON_SIZE_MD}
+                    weight="duotone"
+                    className={cn(
+                      TOGGLE_SWITCH_COLORS.text.active.light
+                    )} />
                   <Label htmlFor="show-scheduled" className={cn(
                     TOGGLE_SWITCH_TEXT_SIZES.label.medium,
                     "font-medium cursor-pointer"
@@ -1171,7 +1175,7 @@ export function InboxView() {
                                 <div className="flex items-center gap-2 text-xs flex-wrap">
                                   {task.dueDate && (
                                     <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                                      <Calendar className="w-3 h-3" />
+                                      <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" />
                                       <span>
                                         Due{" "}
                                         {new Date(
@@ -1458,7 +1462,7 @@ export function InboxView() {
                               <div className="flex items-center gap-2 text-xs flex-wrap">
                                 {task.dueDate && (
                                   <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                                    <Calendar className="w-3 h-3" />
+                                    <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" />
                                     <span>
                                       Due{" "}
                                       {new Date(

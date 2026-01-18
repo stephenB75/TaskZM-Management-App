@@ -631,11 +631,12 @@ export function TeamPanel() {
               {/* Expiration Date */}
               {member.inviteStatus === "pending" && member.expiresAt && (
                 <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-                  <Calendar 
+                  <Icon 
+                    name="calendar" 
+                    size={TEAM_PANEL_ICON_SIZE_SMALL}
+                    weight="duotone"
                     className="flex-shrink-0"
                     style={{ 
-                      width: TEAM_PANEL_ICON_SIZE_SMALL, 
-                      height: TEAM_PANEL_ICON_SIZE_SMALL,
                       color: formatExpirationDate(member.expiresAt)?.isExpired 
                         ? COLOR_STATUS_EXPIRED_RED 
                         : COLOR_STATUS_PENDING_AMBER
@@ -1014,7 +1015,7 @@ export function TeamPanel() {
               className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
               size="sm"
             >
-              <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+              <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
               <span className="hidden sm:inline">Add Member</span>
               <span className="sm:hidden">Add</span>
             </Button>
