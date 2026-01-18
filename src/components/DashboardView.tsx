@@ -1434,7 +1434,7 @@ export function DashboardView({
                 disabled={mobileWeekOffset === 0}
                 className="h-8 w-8 flex-shrink-0 rounded-full"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <Icon name="chevron-left" size={ICON_SIZE_MD} />
               </Button>
 
               <div className="flex-1 text-center">
@@ -1451,7 +1451,7 @@ export function DashboardView({
                 onClick={() => handleWeekChange("next")}
                 className="h-8 w-8 flex-shrink-0 rounded-full"
               >
-                <ChevronRight className="w-4 h-4" />
+                <Icon name="chevron-right" size={ICON_SIZE_MD} />
               </Button>
             </div>
 

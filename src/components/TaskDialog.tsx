@@ -226,7 +226,7 @@ function FixedMiniCalendar({
           onClick={goToPreviousMonth}
           className="h-7 w-7"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <Icon name="chevron-left" size={ICON_SIZE_MD} />
         </Button>
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-foreground">{monthName}</span>
@@ -247,7 +247,7 @@ function FixedMiniCalendar({
           onClick={goToNextMonth}
           className="h-7 w-7"
         >
-          <ChevronRight className="h-4 w-4" />
+          <Icon name="chevron-right" size={ICON_SIZE_MD} />
         </Button>
       </div>
 
@@ -428,7 +428,7 @@ function SingleDateMiniCalendar({
           onClick={goToPreviousMonth}
           className="h-7 w-7"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <Icon name="chevron-left" size={ICON_SIZE_MD} />
         </Button>
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-foreground">{monthName}</span>
@@ -449,7 +449,7 @@ function SingleDateMiniCalendar({
           onClick={goToNextMonth}
           className="h-7 w-7"
         >
-          <ChevronRight className="h-4 w-4" />
+          <Icon name="chevron-right" size={ICON_SIZE_MD} />
         </Button>
       </div>
 
