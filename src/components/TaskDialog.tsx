@@ -3125,7 +3125,7 @@ export function TaskDialog({
                 {/* Task Dependencies - Pro Yearly Feature */}
                 <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <Link2 className="w-4 h-4 text-primary" />
+                    <Icon name="link-2" size={ICON_SIZE_MD} className="text-primary" />
                     <Label className="text-sm font-semibold">Dependencies</Label>
                     {!hasFeature('taskDependencies') && (
                       <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
@@ -3197,8 +3197,8 @@ export function TaskDialog({
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <Link2 className={cn(
-                                      "w-3 h-3 flex-shrink-0",
+                                    <Icon name="link-2" size={ICON_SIZE_XS} className={cn(
+                                      "flex-shrink-0",
                                       isComplete ? "text-green-600 dark:text-green-400" : "text-primary"
                                     )} />
                                     <span

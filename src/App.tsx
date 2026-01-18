@@ -14,7 +14,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
 import { TaskProvider, useTasks } from './contexts/TaskContext';
 import { LoadingProvider, useLoading } from './contexts/LoadingContext';
-import { LoadingProvider, useLoading } from './contexts/LoadingContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { AIProvider, useAI } from './contexts/AIContext';
