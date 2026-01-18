@@ -376,7 +376,7 @@ export function RichTextEditor({
           onClick={() => formatText('bold')}
           title="Bold (Ctrl+B)"
         >
-          <Bold className="w-4 h-4" />
+          <Icon name="bold" size={16} />
         </Button>
         <Button
           type="button"
@@ -389,7 +389,7 @@ export function RichTextEditor({
           onClick={() => formatText('italic')}
           title="Italic (Ctrl+I)"
         >
-          <Italic className="w-4 h-4" />
+          <Icon name="italic" size={16} />
         </Button>
         <Button
           type="button"
@@ -402,7 +402,7 @@ export function RichTextEditor({
           onClick={() => formatText('underline')}
           title="Underline (Ctrl+U)"
         >
-          <Underline className="w-4 h-4" />
+          <Icon name="underline" size={16} />
         </Button>
         <Button
           type="button"
@@ -415,7 +415,7 @@ export function RichTextEditor({
           onClick={() => formatText('strikethrough')}
           title="Strikethrough"
         >
-          <Strikethrough className="w-4 h-4" />
+          <Icon name="strikethrough" size={16} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -428,7 +428,7 @@ export function RichTextEditor({
           onClick={() => formatText('highlight')}
           title="Highlight"
         >
-          <Highlighter className="w-4 h-4" />
+          <Icon name="highlighter" size={16} />
         </Button>
         <Button
           type="button"
@@ -438,7 +438,7 @@ export function RichTextEditor({
           onClick={() => formatText('code')}
           title="Code"
         >
-          <Code className="w-4 h-4" />
+          <Icon name="code" size={16} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -454,7 +454,7 @@ export function RichTextEditor({
           onClick={() => formatText('bullet')}
           title="Bullet List"
         >
-          <List className="w-4 h-4" />
+          <Icon name="list" size={16} />
         </Button>
         <Button
           type="button"
@@ -467,7 +467,7 @@ export function RichTextEditor({
           onClick={() => formatText('numbered')}
           title="Numbered List"
         >
-          <ListOrdered className="w-4 h-4" />
+          <Icon name="list-ordered" size={16} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -483,7 +483,7 @@ export function RichTextEditor({
           onClick={() => formatText('alignLeft')}
           title="Align Left"
         >
-          <AlignLeft className="w-4 h-4" />
+          <Icon name="align-left" size={16} />
         </Button>
         <Button
           type="button"
@@ -496,7 +496,7 @@ export function RichTextEditor({
           onClick={() => formatText('alignCenter')}
           title="Align Center"
         >
-          <AlignCenter className="w-4 h-4" />
+          <Icon name="align-center" size={16} />
         </Button>
         <Button
           type="button"
@@ -509,7 +509,7 @@ export function RichTextEditor({
           onClick={() => formatText('alignRight')}
           title="Align Right"
         >
-          <AlignRight className="w-4 h-4" />
+          <Icon name="align-right" size={16} />
         </Button>
         <Button
           type="button"
@@ -522,7 +522,7 @@ export function RichTextEditor({
           onClick={() => formatText('alignJustify')}
           title="Justify"
         >
-          <AlignJustify className="w-4 h-4" />
+          <Icon name="align-justify" size={16} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -535,7 +535,7 @@ export function RichTextEditor({
           onClick={() => formatText('paragraph')}
           title="Paragraph (Press Enter for new paragraph)"
         >
-          <Pilcrow className="w-4 h-4" />
+          <Icon name="pilcrow" size={16} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -548,7 +548,7 @@ export function RichTextEditor({
           onClick={() => formatText('outdent')}
           title="Decrease Indent"
         >
-          <Outdent className="w-4 h-4" />
+          <Icon name="outdent" size={16} />
         </Button>
         <Button
           type="button"
@@ -558,7 +558,7 @@ export function RichTextEditor({
           onClick={() => formatText('indent')}
           title="Increase Indent"
         >
-          <Indent className="w-4 h-4" />
+          <Icon name="indent" size={16} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         

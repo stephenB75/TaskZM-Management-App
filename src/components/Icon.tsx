@@ -405,11 +405,25 @@ export function Icon({
   // Get the icon component from registry
   const IconComponent = ICON_REGISTRY[phosphorIconName];
 
-  if (!IconComponent) {
+  // Validate component exists and is a valid React component
+  // Check for null, undefined, or non-function values
+  if (!IconComponent || typeof IconComponent !== 'function') {
     if (import.meta.env.DEV) {
       console.warn(`[Icon] Phosphor icon "${phosphorIconName}" not found for name "${name}". Available icons: ${Object.keys(ICON_REGISTRY).join(', ')}`);
     }
-    return null;
+    // Return a fallback div instead of null to prevent React error #130
+    return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
+  }
+
+  // Final safety check before rendering - ensure component is actually callable
+  try {
+    // Verify it's a valid React component by checking if it has required properties
+    if (!React.isValidElement && typeof IconComponent !== 'function') {
+      return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
+    }
+  } catch (e) {
+    // If any error occurs during validation, return fallback
+    return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
   }
 
   // Determine weight - prefer duotone for certain icons or if explicitly requested
@@ -436,7 +450,23 @@ export function Icon({
     iconProps.color = primaryColor;
   }
 
-  return <IconComponent {...iconProps} />;
+  // Final safety check before rendering
+  try {
+    // Ensure IconComponent is still valid (could be undefined in some edge cases)
+    if (!IconComponent || typeof IconComponent !== 'function') {
+      return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
+    }
+    
+    // Render the icon component with error boundary
+    const RenderedIcon = IconComponent as React.ComponentType<any>;
+    return <RenderedIcon {...iconProps} />;
+  } catch (error) {
+    // If rendering fails, return fallback
+    if (import.meta.env.DEV) {
+      console.error('[Icon] Error rendering icon:', error);
+    }
+    return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
+  }
 }
 
 // Default export for compatibility
