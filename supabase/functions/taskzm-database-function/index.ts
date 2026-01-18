@@ -5167,7 +5167,7 @@ const getUserAwardsHandler = async (c: any) => {
 
     const supabase = getSupabaseClient();
     
-    // Check if table exists by attempting to query it
+    // Attempt to query the table
     const { data: awards, error } = await supabase
       .from('user_awards')
       .select('award_id, earned_at, progress')
@@ -5176,12 +5176,24 @@ const getUserAwardsHandler = async (c: any) => {
 
     if (error) {
       console.error('Error fetching user awards:', error);
-      // If table doesn't exist, return empty array instead of error
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      
+      // Handle table not found errors - return empty array instead of 500
+      const errorCode = (error as any)?.code || '';
+      const errorMessage = error.message || '';
+      
+      if (errorCode === '42P01' || 
+          errorCode === 'PGRST116' || 
+          errorMessage.includes('does not exist') ||
+          errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
         console.warn('user_awards table does not exist, returning empty array');
         return c.json({ awards: [] });
       }
-      return c.json({ error: `Failed to fetch awards: ${error.message}`, code: error.code }, 500);
+      
+      // For other errors, return 500 with error details
+      return c.json({ 
+        error: `Failed to fetch awards: ${errorMessage}`,
+        code: errorCode 
+      }, 500);
     }
 
     // Transform to match UserAward interface
@@ -5194,7 +5206,19 @@ const getUserAwardsHandler = async (c: any) => {
     return c.json({ awards: userAwards });
   } catch (error) {
     console.error('Error in get user awards:', error);
-    return c.json({ error: getErrorMessage(error) }, 500);
+    const errorMessage = getErrorMessage(error);
+    const errorCode = (error as any)?.code || '';
+    
+    // If it's a table not found error, return empty array
+    if (errorCode === '42P01' || 
+        errorCode === 'PGRST116' ||
+        errorMessage.includes('does not exist') || 
+        errorMessage.includes('relation')) {
+      console.warn('user_awards table does not exist, returning empty array');
+      return c.json({ awards: [] });
+    }
+    
+    return c.json({ error: errorMessage }, 500);
   }
 };
 

@@ -590,12 +590,12 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
         }}
       >
         <div className="relative">
-          <Search 
+          <Icon 
+            name="search"
+            size={FOLDER_PANEL_ICON_SIZE_SMALL}
             className="absolute top-1/2 -translate-y-1/2 text-primary/70" 
             style={{ 
-              left: FOLDER_PANEL_SEARCH_ICON_LEFT,
-              width: FOLDER_PANEL_ICON_SIZE_SMALL,
-              height: FOLDER_PANEL_ICON_SIZE_SMALL
+              left: FOLDER_PANEL_SEARCH_ICON_LEFT
             }} 
           />
           <Input

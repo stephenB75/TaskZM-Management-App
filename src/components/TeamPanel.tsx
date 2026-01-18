@@ -1035,12 +1035,12 @@ export function TeamPanel() {
         }}
       >
         <div className="relative">
-          <Search 
+          <Icon 
+            name="search"
+            size={TEAM_PANEL_SEARCH_ICON_SIZE}
             className="absolute top-1/2 -translate-y-1/2 text-muted-foreground" 
             style={{ 
-              left: PANEL_SEARCH_ICON_POSITION_LEFT,
-              width: TEAM_PANEL_SEARCH_ICON_SIZE, 
-              height: TEAM_PANEL_SEARCH_ICON_SIZE 
+              left: PANEL_SEARCH_ICON_POSITION_LEFT
             }} 
           />
           <Input
