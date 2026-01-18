@@ -395,11 +395,16 @@ export function Icon({
   useDuotone = false,
 }: IconProps) {
   // Early return with fallback if name is invalid
+  // Always return a valid React element, never null or undefined
   if (!name || typeof name !== 'string') {
     const sizeNum = typeof size === 'string'
       ? parseInt(size.replace(/[^0-9]/g, ''), 10) || DEFAULT_ICON_SIZE
       : size;
-    return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
+    // Use React.createElement to ensure we always get a valid element
+    return React.createElement('div', {
+      style: { display: 'inline-block', width: sizeNum, height: sizeNum },
+      'aria-hidden': 'true'
+    });
   }
 
   const sizeNum = typeof size === 'string'
@@ -422,16 +427,17 @@ export function Icon({
     }
     // Return a fallback div instead of null to prevent React error #130
     // Make it slightly visible in dev mode for debugging
-    return <div 
-      style={{ 
+    // Use React.createElement to ensure we always get a valid element
+    return React.createElement('div', {
+      style: { 
         display: 'inline-block', 
         width: sizeNum, 
         height: sizeNum,
         ...(import.meta.env.DEV ? { backgroundColor: 'rgba(255,0,0,0.1)', border: '1px dashed red' } : {})
-      }} 
-      aria-hidden="true" 
-      title={import.meta.env.DEV ? `Missing icon: ${name}` : undefined}
-    />;
+      },
+      'aria-hidden': 'true',
+      title: import.meta.env.DEV ? `Missing icon: ${name}` : undefined
+    });
   }
 
   // Determine weight - prefer duotone for certain icons or if explicitly requested
@@ -472,26 +478,46 @@ export function Icon({
   }
 
   // Render the icon component - we've already validated it exists
-  // Use JSX for better compatibility and performance
+  // Use React.createElement for better error handling and to ensure we always get a valid element
   try {
-    const RenderedIcon = IconComponent as React.ComponentType<any>;
-    return <RenderedIcon {...iconProps} />;
-  } catch (error) {
-    // Fallback if rendering fails
-    if (import.meta.env.DEV) {
-      console.error('[Icon] Error rendering icon component:', error, { name, phosphorIconName, IconComponent });
+    // Double-check that IconComponent is still valid (defensive programming)
+    if (!IconComponent || typeof IconComponent !== 'function') {
+      throw new Error(`Icon component "${phosphorIconName}" is not a valid function`);
     }
-    return <div 
-      style={{ 
+    
+    // Use React.createElement instead of JSX to have better control and error handling
+    const renderedElement = React.createElement(IconComponent, iconProps);
+    
+    // Ensure we have a valid React element (not null or undefined)
+    // React elements are objects, so null/undefined check is sufficient
+    if (renderedElement == null) {
+      throw new Error(`Icon component "${phosphorIconName}" returned null or undefined`);
+    }
+    
+    return renderedElement;
+  } catch (error) {
+    // Fallback if rendering fails - always return a valid React element
+    if (import.meta.env.DEV) {
+      console.error('[Icon] Error rendering icon component:', error, { 
+        name, 
+        phosphorIconName, 
+        IconComponent,
+        iconProps,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+    }
+    // Always return a valid React element to prevent React error #130
+    return React.createElement('div', {
+      style: { 
         display: 'inline-block', 
         width: sizeNum, 
         height: sizeNum,
         backgroundColor: 'rgba(255,0,0,0.1)',
         border: '1px dashed red'
-      }} 
-      aria-hidden="true" 
-      title={`Icon render error: ${name}`}
-    />;
+      },
+      'aria-hidden': 'true',
+      title: `Icon render error: ${name}`
+    });
   }
 }
 

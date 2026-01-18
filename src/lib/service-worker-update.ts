@@ -123,7 +123,8 @@ function checkForUpdates() {
   if (!document.hidden) {
     // Page is visible - update last visible time and skip update check
     lastVisibleTime = Date.now();
-    console.debug('[Service Worker] Skipping update check (page is visible)');
+    // Suppress this debug message - it's expected behavior
+    // console.debug('[Service Worker] Skipping update check (page is visible)');
     return;
   }
   
@@ -145,7 +146,8 @@ function checkForUpdates() {
   } else {
     // Page hasn't been hidden long enough - skip update check
     // This prevents checks during brief tab switches or accidental visibility changes
-    console.debug(`[Service Worker] Skipping update check (page hidden for only ${Math.round(hiddenDuration / 1000)}s, need ${Math.round(MIN_HIDDEN_TIME / 1000)}s)`);
+    // Suppress this debug message - it's expected behavior
+    // console.debug(`[Service Worker] Skipping update check (page hidden for only ${Math.round(hiddenDuration / 1000)}s, need ${Math.round(MIN_HIDDEN_TIME / 1000)}s)`);
   }
 }
 

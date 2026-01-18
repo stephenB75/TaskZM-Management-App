@@ -30,17 +30,21 @@ if (typeof window !== 'undefined') {
       return;
     }
     // Suppress preload warnings from extensions (Rokt, shopping extensions, etc.) and missing font files
-    if (message.includes('was preloaded using link preload but not used') ||
-        message.includes('rokt-icons.woff') ||
-        message.includes('apps.rokt.com') ||
-        message.includes('inter-var.woff2') ||
-        message.includes('taskzm-logo.png') ||
-        fullMessage.includes('rokt-icons.woff') ||
-        fullMessage.includes('apps.rokt.com') ||
-        fullMessage.includes('rokt.com') ||
-        fullMessage.includes('inter-var.woff2') ||
-        fullMessage.includes('taskzm-logo.png')) {
-      console.debug('Suppressed extension/font/logo preload warning', args);
+    // Check both the first argument and the full message string
+    const lowerMessage = message.toLowerCase();
+    const lowerFullMessage = fullMessage.toLowerCase();
+    if (lowerMessage.includes('was preloaded using link preload but not used') ||
+        lowerMessage.includes('rokt-icons.woff') ||
+        lowerMessage.includes('apps.rokt.com') ||
+        lowerMessage.includes('inter-var.woff2') ||
+        lowerMessage.includes('taskzm-logo.png') ||
+        lowerFullMessage.includes('rokt-icons.woff') ||
+        lowerFullMessage.includes('apps.rokt.com') ||
+        lowerFullMessage.includes('rokt.com') ||
+        lowerFullMessage.includes('inter-var.woff2') ||
+        lowerFullMessage.includes('taskzm-logo.png') ||
+        lowerFullMessage.includes('the resource') && (lowerFullMessage.includes('rokt') || lowerFullMessage.includes('apps.rokt.com'))) {
+      // Completely suppress - these are from browser extensions, not our app
       return;
     }
     // Suppress performance violation warnings from browser extensions and app animations
@@ -476,7 +480,8 @@ if ('serviceWorker' in navigator) {
       });
     } catch (error) {
       // If defineProperty fails (some browsers), fall back to storing original and intercepting calls
-      console.debug('[Service Worker] Could not override location.reload, using fallback method');
+      // Suppress this debug message - fallback method works fine
+      // console.debug('[Service Worker] Could not override location.reload, using fallback method');
       (window as any).__originalLocationReload = originalReload;
       (window as any).__locationReloadOverride = function(forcedReload?: boolean) {
         if (!preventReloadFlag || forcedReload === true) {
