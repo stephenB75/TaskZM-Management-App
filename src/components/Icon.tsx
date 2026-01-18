@@ -490,14 +490,10 @@ export function Icon({
       iconProps.secondaryColor = secondaryColor || secondary;
     }
   } else {
-    // Regular icons - only set color if explicitly provided
-    // Otherwise let CSS classes handle it via currentColor inheritance
-    if (color) {
-      iconProps.color = color;
-    } else {
-      // Don't set color prop - let CSS classes control it
-      // Phosphor icons will inherit currentColor from parent
-    }
+    // Regular icons - ensure they always have a visible color
+    // Use explicit color if provided, otherwise use currentColor to inherit from CSS classes
+    // This ensures icons are always visible even if parent doesn't have explicit color
+    iconProps.color = color || 'currentColor';
   }
 
   // Render the icon component - we've already validated it exists
