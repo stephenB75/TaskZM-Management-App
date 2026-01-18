@@ -1378,8 +1378,6 @@ export async function syncCalendarsToDatabase(
             location: event.location,
             calendar_color: event.calendarColor,
             external_updated_at: event.lastModified,
-            // Preserve recurrence metadata
-            rrule: event.rrule || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
@@ -1413,10 +1411,6 @@ export async function syncCalendarsToDatabase(
             calendar_color: event.calendarColor,
             external_updated_at: event.lastModified,
             is_readonly: true,
-            // Store recurrence metadata
-            // For base recurring events: rrule is set
-            // Since we're not expanding during sync, all events are base events
-            rrule: event.rrule || null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });

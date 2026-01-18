@@ -187,8 +187,6 @@ export async function syncGoogleCalendarsToDatabase(
             location: event.location,
             calendar_color: event.calendarColor,
             external_updated_at: event.start, // Use start time as updated_at since Google doesn't provide lastModified
-            // Preserve recurrence metadata
-            rrule: event.rrule || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
@@ -221,9 +219,6 @@ export async function syncGoogleCalendarsToDatabase(
             calendar_color: event.calendarColor,
             external_updated_at: event.start, // Use start time as updated_at
             is_readonly: true,
-            // Store recurrence metadata
-            // For base recurring events: rrule is set
-            rrule: event.rrule || null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });

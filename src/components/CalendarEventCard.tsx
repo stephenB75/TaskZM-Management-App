@@ -1,5 +1,6 @@
 import React from 'react';
 // Icons migrated to Icon component - already using Icon
+import { Icon } from './Icon';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 
