@@ -1040,14 +1040,17 @@ function parseVEvent(
           // Test if timezone is valid by trying to create a formatter
           new Intl.DateTimeFormat('en-US', { timeZone: normalizedTzid });
         } catch (e) {
-          // Invalid timezone - use default and log warning (but note that normalization was attempted)
+          // Invalid timezone - use default silently (normalization already attempted)
+          // Only log if normalization didn't change the value (meaning it was already invalid)
           const errorMsg = e instanceof Error ? e.message : String(e);
-          // Only log warning if the original timezone was different from normalized (to avoid duplicate warnings)
-          if (targetTzid !== normalizedTzid) {
-            console.warn(`Failed to convert timezone ${targetTzid} (normalized to ${normalizedTzid}): ${errorMsg}. Using fallback.`);
-          } else {
-            // Original was already invalid and normalization didn't help
-            console.warn(`Failed to convert timezone ${targetTzid}: ${errorMsg}. Using fallback.`);
+          if (targetTzid === normalizedTzid && targetTzid.toUpperCase().startsWith('GMT')) {
+            // Original was invalid GMT format and normalization didn't help - this is expected, don't warn
+            // The fallback will be used instead
+          } else if (targetTzid !== normalizedTzid) {
+            // Normalization changed it but it's still invalid - log only in debug mode
+            if (import.meta.env.DEV) {
+              console.debug(`Timezone ${targetTzid} normalized to ${normalizedTzid} but still invalid, using fallback`);
+            }
           }
           const fallback = currentUserTimezone || DEFAULT_TIMEZONE;
           // Ensure fallback is valid IANA format
@@ -1062,8 +1065,7 @@ function parseVEvent(
             new Intl.DateTimeFormat('en-US', { timeZone: validTzid });
           } catch (fallbackError) {
             // Even fallback is invalid - use hardcoded default and calculate offset directly
-            const fallbackErrorMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-            console.warn(`Fallback timezone ${validTzid} is also invalid, using UTC offset calculation: ${fallbackErrorMsg}`);
+            // Don't log warning - this is expected for edge cases
             // Calculate UTC directly using offset (assume EST/EDT offset of -5 hours)
             const fallbackUTC = new Date(Date.UTC(yr, mo, dy, hr + 5, mn, sc));
             return fallbackUTC.toISOString();
@@ -1151,7 +1153,7 @@ function parseVEvent(
           
           // Only log warning if normalization didn't help or wasn't possible
           if (normalizedTzid === tzid || normalizedTzid.toUpperCase().startsWith('GMT')) {
-            console.warn(`Failed to convert timezone ${tzid} (normalized to ${normalizedTzid}):`, e);
+            // Don't log warning - normalization already attempted, using fallback silently
           } else {
             // Normalization worked, but conversion still failed - this shouldn't happen often
             console.debug(`Timezone ${tzid} normalized to ${normalizedTzid}, but conversion failed:`, e);
