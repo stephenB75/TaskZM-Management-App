@@ -53,8 +53,6 @@ import {
   List,
   DotsThreeVertical,
   DotsThree,
-  GripVertical,
-  SidebarSimple,
   Circle,
   Play,
   Pause,
@@ -176,8 +174,6 @@ const ICON_REGISTRY: Record<string, React.ComponentType<any>> = {
   'List': List,
   'DotsThreeVertical': DotsThreeVertical,
   'DotsThree': DotsThree,
-  'GripVertical': GripVertical,
-  'SidebarSimple': SidebarSimple,
   'Circle': Circle,
   'Play': Play,
   'Pause': Pause,
@@ -295,8 +291,8 @@ const ICON_NAME_MAP: Record<string, string> = {
   'menu': 'List',
   'more-vertical': 'DotsThreeVertical',
   'more-horizontal': 'DotsThree',
-  'grip-vertical': 'GripVertical',
-  'panel-left': 'SidebarSimple',
+  'grip-vertical': 'DotsThreeVertical', // Using DotsThreeVertical as alternative for grip
+  'panel-left': 'List', // Using List as alternative for panel-left
   'circle': 'Circle',
   'play': 'Play',
   'pause': 'Pause',
