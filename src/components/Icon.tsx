@@ -417,10 +417,21 @@ export function Icon({
   // Check for null, undefined, or non-function values
   if (!IconComponent || typeof IconComponent !== 'function') {
     if (import.meta.env.DEV) {
-      console.warn(`[Icon] Phosphor icon "${phosphorIconName}" not found for name "${name}". Available icons: ${Object.keys(ICON_REGISTRY).join(', ')}`);
+      console.warn(`[Icon] Phosphor icon "${phosphorIconName}" not found for name "${name}". Available icons: ${Object.keys(ICON_REGISTRY).slice(0, 10).join(', ')}...`);
+      console.warn(`[Icon] Registry lookup: name="${name}", mapped to="${phosphorIconName}", found=${!!IconComponent}, type=${typeof IconComponent}`);
     }
     // Return a fallback div instead of null to prevent React error #130
-    return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
+    // Make it slightly visible in dev mode for debugging
+    return <div 
+      style={{ 
+        display: 'inline-block', 
+        width: sizeNum, 
+        height: sizeNum,
+        ...(import.meta.env.DEV ? { backgroundColor: 'rgba(255,0,0,0.1)', border: '1px dashed red' } : {})
+      }} 
+      aria-hidden="true" 
+      title={import.meta.env.DEV ? `Missing icon: ${name}` : undefined}
+    />;
   }
 
   // Determine weight - prefer duotone for certain icons or if explicitly requested
@@ -447,22 +458,10 @@ export function Icon({
     iconProps.color = primaryColor;
   }
 
-  // Final safety check before rendering - ensure we always return a valid React element
-  try {
-    // Double-check IconComponent is valid
-    if (!IconComponent || typeof IconComponent !== 'function' || IconComponent === null || IconComponent === undefined) {
-      return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
-    }
-    
-    // Create element with React.createElement to ensure it's always valid
-    return React.createElement(IconComponent as React.ComponentType<any>, iconProps);
-  } catch (error) {
-    // If anything fails, return fallback element
-    if (import.meta.env.DEV) {
-      console.error('[Icon] Error rendering icon:', error, { name, phosphorIconName, IconComponent });
-    }
-    return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
-  }
+  // Render the icon component - we've already validated it exists
+  // Use JSX for better compatibility and performance
+  const RenderedIcon = IconComponent as React.ComponentType<any>;
+  return <RenderedIcon {...iconProps} />;
 }
 
 // Default export for compatibility
