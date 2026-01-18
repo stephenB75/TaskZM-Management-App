@@ -3,23 +3,6 @@
  * Centralized configuration for subscription features, pricing, and UI text
  */
 
-import {
-  Check,
-  Sparkles,
-  Zap,
-  BarChart3,
-  Calendar,
-  Tag,
-  RotateCcw,
-  Timer,
-  Users,
-  Repeat,
-  FileText,
-  Link,
-  FolderTree,
-  Crown,
-} from "lucide-react";
-
 // Default pricing
 export const DEFAULT_MONTHLY_PRICE = "$3.99";
 export const DEFAULT_YEARLY_PRICE = "$39.99";
@@ -264,7 +247,7 @@ export const SUBSCRIPTION_UI_TEXT = {
 
 // Feature definitions
 export interface FeatureDefinition {
-  icon: typeof Check;
+  icon: string; // Icon name for use with Icon component
   text: string;
   included: boolean;
   highlight?: boolean;
@@ -272,70 +255,70 @@ export interface FeatureDefinition {
 }
 
 export const FREE_TIER_FEATURES: FeatureDefinition[] = [
-  { icon: Check, text: "Unlimited tasks", included: true },
+  { icon: "check", text: "Unlimited tasks", included: true },
   {
-    icon: Calendar,
+    icon: "calendar",
     text: "7-Day Kanban & Month View",
     included: true,
   },
   {
-    icon: Tag,
+    icon: "tag",
     text: "Custom Tags & Organization",
     included: true,
   },
   {
-    icon: Sparkles,
+    icon: "sparkles",
     text: "Limited AI Scheduler (3 suggestions/week)",
     included: true,
     highlight: true,
   },
   {
-    icon: Timer,
+    icon: "timer",
     text: "Basic Pomodoro Timer",
     included: true,
   },
 ];
 
 export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
-  { icon: Check, text: "Everything in Free", included: true, isHeader: true },
+  { icon: "check", text: "Everything in Free", included: true, isHeader: true },
   {
-    icon: Sparkles,
+    icon: "sparkles",
     text: "Unlimited AI Scheduler",
     included: true,
     highlight: true,
   },
   {
-    icon: Calendar,
+    icon: "calendar",
     text: "Calendar Sync (1 calendar connection)",
     included: true,
     highlight: true,
   },
   {
-    icon: Zap,
+    icon: "zap",
     text: "Task Hours & Time Tracking",
     included: true,
     highlight: true,
   },
   {
-    icon: RotateCcw,
+    icon: "rotate-ccw",
     text: "Auto Task Rollover",
     included: true,
     highlight: true,
   },
   {
-    icon: Timer,
+    icon: "timer",
     text: "Advanced Pomodoro (history, stats, custom intervals)",
     included: true,
     highlight: true,
   },
   {
-    icon: BarChart3,
+    icon: "bar-chart",
     text: "Analytics Dashboard (30-day history)",
     included: true,
     highlight: true,
   },
   {
-    icon: Repeat,
+    icon: "repeat",
     text: "Recurring Tasks (up to 5 active recurring tasks)",
     included: true,
     highlight: true,
@@ -343,51 +326,51 @@ export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
 ];
 
 export const PRO_YEARLY_FEATURES: FeatureDefinition[] = [
-  { icon: Check, text: "Everything in Pro Monthly", included: true, isHeader: true },
+  { icon: "check", text: "Everything in Pro Monthly", included: true, isHeader: true },
   {
-    icon: Repeat,
+    icon: "repeat",
     text: "Unlimited Recurring Tasks (remove 5-task limit)",
     included: true,
     highlight: true,
   },
   {
-    icon: Calendar,
+    icon: "calendar",
     text: "Unlimited Calendar Connections (remove 1-calendar limit)",
     included: true,
     highlight: true,
   },
   {
-    icon: Users,
+    icon: "users",
     text: "Team Collaboration (unlimited members, role-based access)",
     included: true,
     highlight: true,
   },
   {
-    icon: BarChart3,
+    icon: "bar-chart",
     text: "Unlimited Analytics History (lifetime data retention)",
     included: true,
     highlight: true,
   },
   {
-    icon: FileText,
+    icon: "file-text",
     text: "Task Templates (save and reuse task patterns)",
     included: true,
     highlight: true,
   },
   {
-    icon: Link,
+    icon: "link",
     text: "Task Dependencies (link related tasks, project workflows)",
     included: true,
     highlight: true,
   },
   {
-    icon: FolderTree,
+    icon: "folder-tree",
     text: "Multiple Workspaces (organize by department/project)",
     included: true,
     highlight: true,
   },
   {
-    icon: Crown,
+    icon: "crown",
     text: "Priority Support & Early Access to New Features",
     included: true,
     highlight: true,

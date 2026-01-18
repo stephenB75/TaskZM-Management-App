@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { XIcon } from "lucide-react";
+import { Icon } from "../Icon";
 
 import { cn } from "./utils";
 import { UI_GRADIENT_COLORS } from "../../lib/ui-colors";
@@ -78,7 +78,9 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Close 
         className="ring-offset-background focus:ring-ring absolute rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none text-foreground/70 hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 flex items-center justify-center p-0 w-6 h-6 top-2 right-2 sm:w-8 sm:h-8 sm:top-4 sm:right-4"
       >
-        <XIcon 
+        <Icon 
+          name="x" 
+          size={14}
           className="w-3.5 h-3.5 sm:w-4 sm:h-4" 
         />
         <span className="sr-only">Close</span>

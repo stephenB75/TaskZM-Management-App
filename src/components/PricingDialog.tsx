@@ -614,7 +614,7 @@ export function PricingDialog({
                 {freeTierFeatures.map((feature, index) => (
                   <li key={index} className="flex items-start gap-1.5 group">
                     <div className={`flex-shrink-0 w-3.5 h-3.5 rounded-full ${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentDarkClass} flex items-center justify-center mt-0.5`}>
-                      <feature.icon className="w-2 h-2 text-gray-800 dark:text-foreground" />
+                      <Icon name={feature.icon} size={8} className="w-2 h-2 text-gray-800 dark:text-foreground" />
                     </div>
                     <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground leading-snug`}>
                       {feature.text}
@@ -703,10 +703,14 @@ export function PricingDialog({
                           ? UI_PRICING_GRADIENT_COLORS.primaryBr.className
                           : `${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentDarkClass}`
                       )}>
-                        <feature.icon className={cn(
-                          "w-1.5 h-1.5",
-                          feature.highlight ? "text-white" : "text-gray-800 dark:text-foreground"
-                        )} />
+                        <Icon 
+                          name={feature.icon} 
+                          size={6} 
+                          className={cn(
+                            "w-1.5 h-1.5",
+                            feature.highlight ? "text-white" : "text-gray-800 dark:text-foreground"
+                          )} 
+                        />
                       </div>
                       <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground leading-snug`}>
                         {feature.text}
@@ -835,7 +839,7 @@ export function PricingDialog({
                         "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5",
                         "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
                       )}>
-                        <feature.icon className="w-1.5 h-1.5 text-white" />
+                        <Icon name={feature.icon} size={6} className="w-1.5 h-1.5 text-white" />
                       </div>
                       <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground font-medium leading-snug`}>
                         {feature.text}
