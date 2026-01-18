@@ -126,6 +126,7 @@ export interface IconProps {
 }
 
 // Icon registry - maps icon names to actual Phosphor icon components
+// Using React.ComponentType<any> because Phosphor icons have varying prop types
 const ICON_REGISTRY: Record<string, React.ComponentType<any>> = {
   // Common icons
   'Sparkle': Sparkle,
@@ -421,8 +422,12 @@ export function Icon({
     : size;
 
   // Get Phosphor icon name
-  const phosphorIconName = ICON_NAME_MAP[name.toLowerCase()] || 
-    name.charAt(0).toUpperCase() + name.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+  // Handle edge cases: empty string, whitespace-only, or invalid characters
+  const normalizedName = name.trim().toLowerCase();
+  const phosphorIconName = normalizedName 
+    ? (ICON_NAME_MAP[normalizedName] || 
+       normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase()))
+    : 'Circle'; // Fallback to Circle for empty/invalid names
 
   // Get the icon component from registry
   const IconComponent = ICON_REGISTRY[phosphorIconName];
@@ -458,8 +463,16 @@ export function Icon({
   // Only set color prop if explicitly provided, otherwise let CSS classes handle it
   const secondary = secondaryColor || (iconWeight === 'duotone' ? COLOR_PRIMARY_LIGHT : undefined);
 
-  // Build props
-  const iconProps: any = {
+  // Build props for Phosphor icon component
+  // Using any type because Phosphor icons accept varying prop types
+  const iconProps: {
+    size: number;
+    weight: IconWeight;
+    className?: string;
+    style?: React.CSSProperties;
+    color?: string;
+    secondaryColor?: string;
+  } = {
     size: sizeNum,
     weight: iconWeight,
     className,
