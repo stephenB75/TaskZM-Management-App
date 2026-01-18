@@ -76,6 +76,8 @@
     "build": "vite build",
     "screenshots": "playwright test --config=playwright.config.ts",
     "deploy-functions": "./scripts/deploy-functions.sh",
-    "generate-icons": "node scripts/generate-icons-with-padding.js"
+    "generate-icons": "node scripts/generate-icons-with-padding.js",
+    "check-keys": "node scripts/check-supabase-keys.cjs",
+    "check-user-awards": "node scripts/check-user-awards-table.cjs"
   }
 }

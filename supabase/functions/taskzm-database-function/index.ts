@@ -5168,26 +5168,41 @@ const getUserAwardsHandler = async (c: any) => {
     const supabase = getSupabaseClient();
     
     // Attempt to query the table
-    const { data: awards, error } = await supabase
-      .from('user_awards')
-      .select('award_id, earned_at, progress')
-      .eq('user_id', userId)
-      .order('earned_at', { ascending: false });
+    let awards = null;
+    let queryError = null;
+    
+    try {
+      const result = await supabase
+        .from('user_awards')
+        .select('award_id, earned_at, progress')
+        .eq('user_id', userId)
+        .order('earned_at', { ascending: false });
+      
+      awards = result.data;
+      queryError = result.error;
+    } catch (queryException) {
+      // Catch any exceptions thrown during the query
+      queryError = queryException as any;
+      console.error('Exception during user_awards query:', queryException);
+    }
 
-    if (error) {
-      console.error('Error fetching user awards:', error);
+    if (queryError) {
+      console.error('Error fetching user awards:', queryError);
       
       // Handle table not found errors - return empty array instead of 500
-      const errorCode = (error as any)?.code || '';
-      const errorMessage = error.message || '';
+      const errorCode = (queryError as any)?.code || (queryError as any)?.error_code || '';
+      const errorMessage = (queryError as any)?.message || String(queryError) || '';
       
       // PGRST205 = table not found, 42P01 = relation does not exist, PGRST116 = schema not found
-      if (errorCode === '42P01' || 
-          errorCode === 'PGRST116' || 
-          errorCode === 'PGRST205' ||
-          errorMessage.includes('does not exist') ||
-          errorMessage.includes('Could not find the table') ||
-          (errorMessage.includes('relation') && errorMessage.includes('does not exist'))) {
+      const isTableNotFound = 
+        errorCode === '42P01' || 
+        errorCode === 'PGRST116' || 
+        errorCode === 'PGRST205' ||
+        errorMessage.includes('does not exist') ||
+        errorMessage.includes('Could not find the table') ||
+        errorMessage.includes('relation') && errorMessage.includes('does not exist');
+      
+      if (isTableNotFound) {
         console.warn('user_awards table does not exist, returning empty array');
         return c.json({ awards: [] });
       }
@@ -5213,9 +5228,12 @@ const getUserAwardsHandler = async (c: any) => {
     const errorCode = (error as any)?.code || '';
     
     // If it's a table not found error, return empty array
+    // PGRST205 = table not found, 42P01 = relation does not exist, PGRST116 = schema not found
     if (errorCode === '42P01' || 
         errorCode === 'PGRST116' ||
+        errorCode === 'PGRST205' ||
         errorMessage.includes('does not exist') || 
+        errorMessage.includes('Could not find the table') ||
         errorMessage.includes('relation')) {
       console.warn('user_awards table does not exist, returning empty array');
       return c.json({ awards: [] });
@@ -5315,13 +5333,19 @@ const saveUserAwardHandler = async (c: any) => {
     if (error) {
       console.error('Error saving award:', error);
       // Check if table doesn't exist
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      const errorCode = error.code || '';
+      const errorMessage = error.message || '';
+      if (errorCode === '42P01' || 
+          errorCode === 'PGRST116' ||
+          errorCode === 'PGRST205' ||
+          errorMessage.includes('does not exist') ||
+          errorMessage.includes('Could not find the table')) {
         return c.json({ 
           error: 'user_awards table does not exist. Please create the table in Supabase.',
-          code: error.code 
+          code: errorCode 
         }, 500);
       }
-      return c.json({ error: `Failed to save award: ${error.message}`, code: error.code }, 500);
+      return c.json({ error: `Failed to save award: ${errorMessage}`, code: errorCode }, 500);
     }
 
     return c.json({ success: true });
