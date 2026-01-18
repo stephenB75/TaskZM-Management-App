@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
 import { toast } from './lib/toast-wrapper';
 import {
