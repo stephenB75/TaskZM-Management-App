@@ -1285,7 +1285,7 @@ export function AuthScreen() {
                   required
                   className="pr-10"
                 />
-                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Icon name="mail" size={ICON_SIZE_MD} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
               </div>
             </div>
             <div className="flex gap-2 justify-end">

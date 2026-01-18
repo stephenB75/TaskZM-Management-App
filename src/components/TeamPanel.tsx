@@ -617,7 +617,7 @@ export function TeamPanel() {
               
               {/* Email */}
               <div className="flex items-center text-muted-foreground" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-                <Mail className="flex-shrink-0" style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL }} />
+                <Icon name="mail" size={TEAM_PANEL_ICON_SIZE_SMALL} className="flex-shrink-0" />
                 <span className="truncate">
                   {member.email}
                 </span>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from '../lib/layout-constants';
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_3XL } from '../lib/layout-constants';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -170,7 +170,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center justify-center mb-4">
-            <Mail className="w-12 h-12 text-primary" />
+            <Icon name="mail" size={ICON_SIZE_3XL} className="text-primary" />
           </div>
           <CardTitle className="text-center">You've Been Invited!</CardTitle>
           <CardDescription className="text-center">
