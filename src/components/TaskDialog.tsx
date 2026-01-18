@@ -2209,7 +2209,7 @@ export function TaskDialog({
                 {folders.length > 0 && (
                   <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                     <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                      <Folder className="w-4 h-4 text-primary" />
+                      <Icon name="folder" size={ICON_SIZE_MD} className="text-primary" />
                       Folder
                     </Label>
                     <Select
@@ -2831,7 +2831,7 @@ export function TaskDialog({
                               <div className="flex items-center gap-1.5">
                             <Icon name="tag" size={ICON_SIZE_XS} className="text-primary" />
                             <span>{tag}</span>
-                                <X className="w-3 h-3 ml-1" />
+                                <Icon name="x" size={ICON_SIZE_XS} className="ml-1" />
                               </div>
                             </Badge>
                       ))}
@@ -2901,7 +2901,7 @@ export function TaskDialog({
                               onClick={() => removeSubtask(subtask.id)}
                               className="h-7 w-7 p-0 flex-shrink-0"
                             >
-                              <X className="w-4 h-4" />
+                              <Icon name="x" size={ICON_SIZE_MD} />
                             </Button>
                           </div>
                         );
@@ -3242,7 +3242,7 @@ export function TaskDialog({
                                   onClick={() => removeDependency(depId)}
                                   className="h-7 w-7 p-0 flex-shrink-0"
                                 >
-                                  <X className="w-4 h-4" />
+                                  <Icon name="x" size={ICON_SIZE_MD} />
                                 </Button>
                               </div>
                             );
@@ -3334,7 +3334,7 @@ export function TaskDialog({
                                   {getInitials(member.name)}
                                 </div>
                                 <span>{member.name}</span>
-                                <X className="w-3 h-3 ml-1" />
+                                <Icon name="x" size={ICON_SIZE_XS} className="ml-1" />
                               </div>
                             </Badge>
                           );
@@ -3406,7 +3406,7 @@ export function TaskDialog({
                     onClick={() => setShowDeleteConfirm(true)}
                     className="gap-1.5 sm:gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 text-sm font-medium"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Icon name="trash-2" size={ICON_SIZE_MD} />
                     <span className="hidden sm:inline">Delete</span>
                     <span className="sm:hidden">Del</span>
                   </Button>

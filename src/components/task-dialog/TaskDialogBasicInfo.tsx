@@ -129,7 +129,7 @@ export const TaskDialogBasicInfo = React.memo(function TaskDialogBasicInfo({
       {folders.length > 0 && (
         <div className="space-y-2">
           <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2">
-            <Folder className="w-4 h-4 text-primary" />
+            <Icon name="folder" size={ICON_SIZE_SM} className="text-primary" />
             Folder
           </Label>
           <Select value={folderId || "none"} onValueChange={handleFolderChange}>

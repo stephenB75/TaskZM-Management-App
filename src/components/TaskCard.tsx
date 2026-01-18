@@ -54,7 +54,7 @@ export function TaskCard({
   const getStatusIcon = () => {
     switch (task.status) {
       case 'done':
-        return <CheckCircle2 className="w-4 h-4 text-green-600" />;
+        return <Icon name="check-circle" size={ICON_SIZE_MD} className="text-green-600" />;
       case 'in-progress':
         return <Icon name="clock" size={ICON_SIZE_XS} className="text-blue-600" />;
       case 'on-hold':
@@ -325,7 +325,7 @@ export function TaskCard({
                 !isHovered && 'opacity-0'
               )}
             >
-              <MoreVertical className="w-4 h-4" />
+              <Icon name="more-vertical" size={ICON_SIZE_MD} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

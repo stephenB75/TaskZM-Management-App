@@ -527,7 +527,7 @@ export function NotificationsPanel() {
                                   clearNotification(notification.id);
                                 }}
                               >
-                                <X className="w-3 h-3" />
+                                <Icon name="x" size={ICON_SIZE_XS} />
                               </Button>
                             </div>
                           </div>
@@ -608,7 +608,7 @@ export function NotificationsPanel() {
                                     clearNotification(notification.id);
                                   }}
                                 >
-                                  <X className="w-3 h-3" />
+                                  <Icon name="x" size={ICON_SIZE_XS} />
                                 </Button>
                               </div>
                             </div>

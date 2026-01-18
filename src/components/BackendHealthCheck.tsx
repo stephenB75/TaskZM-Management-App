@@ -130,10 +130,10 @@ export function BackendHealthCheck() {
         );
       case "connected":
         return (
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <Icon name="check-circle" size={ICON_SIZE_MD} className="text-green-500" />
         );
       case "error":
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <Icon name="x-circle" size={ICON_SIZE_MD} className="text-red-500" />;
     }
   };
 
@@ -171,7 +171,7 @@ export function BackendHealthCheck() {
             <CardTitle className="flex items-center gap-2">
               Backend Health Check
               {allConnected && (
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <Icon name="check-circle" size={ICON_SIZE_LG} className="text-green-500" />
               )}
               {anyError && (
                 <Icon name="alert-circle" size={ICON_SIZE_LG} className="text-red-500" />

@@ -144,7 +144,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex items-center justify-center mb-4">
-              <XCircle className="w-12 h-12 text-destructive" />
+              <Icon name="x-circle" size={ICON_SIZE_3XL} className="text-destructive" />
             </div>
             <CardTitle className="text-center">Invalid Invitation</CardTitle>
             <CardDescription className="text-center">
@@ -246,7 +246,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
+                      <Icon name="check-circle" size={ICON_SIZE_MD} className="mr-2" />
                       Accept Invitation
                     </>
                   )}

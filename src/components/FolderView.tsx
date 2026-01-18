@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL } from "../lib/layout-constants";
 import { motion } from "motion/react";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
@@ -176,7 +176,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
   const getStatusIcon = (status: Task["status"]) => {
     switch (status) {
       case "done":
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+        return <Icon name="check-circle" size={ICON_SIZE_MD} className="text-green-500" />;
       case "in-progress":
         return <PlayCircle className="w-4 h-4 text-blue-500" />;
       case "on-hold":
@@ -244,7 +244,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: `${folder.color || "#3b82f6"}20` }}
             >
-              <Folder className="w-5 h-5" style={{ color: folder.color || "#3b82f6" }} />
+              <Icon name="folder" size={ICON_SIZE_LG} style={{ color: folder.color || "#3b82f6" }} />
             </div>
             <span>{folder.name || "Unnamed Folder"}</span>
           </div>
@@ -364,7 +364,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
         <div className="p-4 space-y-3 pb-safe md:pb-4">
           {sortedTasks.length === 0 ? (
             <div className="text-center py-12">
-              <Folder className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+              <Icon name="folder" size={ICON_SIZE_3XL} className="mx-auto mb-3 text-muted-foreground opacity-50" />
               <p className="text-sm text-muted-foreground mb-1">
                 {searchQuery || filterPriority !== "all" || filterStatus !== "all"
                   ? "No tasks match your filters"
@@ -490,7 +490,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                           <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
                             {task.dueDate && (
                               <div className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
+                                <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" />
                                 <span>{formatDate(task.dueDate)}</span>
                               </div>
                             )}

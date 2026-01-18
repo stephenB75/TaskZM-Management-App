@@ -35,7 +35,7 @@ import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { Icon } from "./Icon";
-import { EMPTY_STATE_ICON_SIZE_LARGE, ICON_SIZE_MD } from "../lib/layout-constants";
+import { EMPTY_STATE_ICON_SIZE_LARGE, ICON_SIZE_MD, ICON_SIZE_XS } from "../lib/layout-constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -301,7 +301,7 @@ export function ArchiveView() {
                 className="rounded-full px-2.5 sm:px-3"
                 size="sm"
               >
-                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                <Icon name="trash-2" size={ICON_SIZE_MD} className="sm:mr-2" />
                 <span className="hidden sm:inline">
                   Delete ({selectedTaskIds.size})
                 </span>
@@ -354,7 +354,7 @@ export function ArchiveView() {
                 onValueChange={setFilterDate}
               >
                 <SelectTrigger className="w-full h-10 bg-white dark:bg-card">
-                  <Calendar className="w-4 h-4 mr-2" />
+                  <Icon name="calendar" size={ICON_SIZE_MD} weight="duotone" className="mr-2" />
                   <SelectValue placeholder="Time" />
                 </SelectTrigger>
                 <SelectContent>
@@ -562,7 +562,7 @@ export function ArchiveView() {
                                   }
                                   title="Delete permanently"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Icon name="trash-2" size={ICON_SIZE_MD} />
                                 </Button>
                               </div>
                             </div>

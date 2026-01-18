@@ -327,9 +327,10 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                     backgroundColor: getColorWithOpacity(folder.color || COLOR_FOLDER_DEFAULT, 0.08),
                   }}
                 >
-                  <Folder
-                    style={{ 
-                      width: FOLDER_PANEL_FOLDER_ICON_INNER_SIZE,
+                  <Icon
+                    name="folder"
+                    size={FOLDER_PANEL_FOLDER_ICON_INNER_SIZE}
+                    style={{
                       height: FOLDER_PANEL_FOLDER_ICON_INNER_SIZE,
                       color: folder.color || COLOR_FOLDER_DEFAULT
                     }}
@@ -385,7 +386,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       }}
                       aria-label="Folder options"
                     >
-                      <MoreVertical style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL }} />
+                      <Icon name="more-vertical" size={FOLDER_PANEL_ICON_SIZE_SMALL} />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
@@ -407,7 +408,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       }}
                       className="cursor-pointer"
                     >
-                      <Folder style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
+                      <Icon name="folder" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                       Open Folder
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -419,7 +420,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       }}
                       className="cursor-pointer"
                     >
-                      <Edit2 style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
+                      <Icon name="edit-2" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -431,7 +432,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       }}
                       className="text-destructive focus:text-destructive cursor-pointer"
                     >
-                      <Trash2 style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
+                      <Icon name="trash-2" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -501,7 +502,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 }}
                 aria-label="Open folder"
               >
-                <ChevronRight style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL }} />
+                <Icon name="chevron-right" size={FOLDER_PANEL_ICON_SIZE_SMALL} />
               </Button>
             </div>
           </CardContent>
@@ -570,7 +571,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
             className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
             size="sm"
           >
-            <FolderPlus className="w-4 h-4 mr-2" />
+            <Icon name="folder-plus" size={ICON_SIZE_MD} className="mr-2" />
             <span className="hidden sm:inline">Add Folder</span>
             <span className="sm:hidden">Add</span>
           </Button>
@@ -615,7 +616,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               }}
               onClick={() => setSearchQuery("")}
             >
-              <X style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL }} />
+              <Icon name="x" size={FOLDER_PANEL_ICON_SIZE_SMALL} />
             </Button>
           )}
         </div>
@@ -643,11 +644,11 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
               }}
             >
-              <Folder 
-                className="mx-auto text-primary/50" 
+              <Icon 
+                name="folder"
+                size={FOLDER_PANEL_EMPTY_STATE_ICON_SIZE}
+                className="mx-auto text-primary/50"
                 style={{ 
-                  width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
-                  height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
                   marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
                 }} 
               />
@@ -665,7 +666,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                   size="sm"
                   style={{ marginTop: PANEL_PADDING }}
                 >
-                  <FolderPlus style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
+                  <Icon name="folder-plus" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                   Create Your First Folder
                 </Button>
               )}
@@ -709,11 +710,10 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                     paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
                   }}
                 >
-                  <Folder 
-                    className="mx-auto text-primary/50" 
-                    style={{ 
-                      width: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
-                      height: FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
+                  <Icon 
+                    name="folder"
+                    size={FOLDER_PANEL_EMPTY_STATE_ICON_SIZE}
+                    className="mx-auto text-primary/50"
                       marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
                     }} 
                   />
@@ -731,7 +731,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       size="sm"
                       style={{ marginTop: PANEL_PADDING }}
                     >
-                      <FolderPlus style={{ width: FOLDER_PANEL_ICON_SIZE_SMALL, height: FOLDER_PANEL_ICON_SIZE_SMALL, marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
+                      <Icon name="folder-plus" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
                       Create Your First Folder
                     </Button>
                   )}
