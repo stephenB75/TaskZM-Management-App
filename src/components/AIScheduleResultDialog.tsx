@@ -123,7 +123,7 @@ export function AIScheduleResultDialog({
                         {/* AI Reasoning */}
                         {reason && (
                           <div className="mb-2 flex items-start gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/10">
-                            <Brain className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+                            <Icon name="brain" size={ICON_SIZE_XS} weight="duotone" className="text-primary mt-0.5 flex-shrink-0" />
                             <span className="text-xs text-primary/80 italic">
                               {reason}
                             </span>
@@ -155,7 +155,7 @@ export function AIScheduleResultDialog({
                               <span className="text-foreground/30">
                                 •
                               </span>
-                              <Target className="w-3 h-3 text-foreground/50" />
+                              <Icon name="target" size={ICON_SIZE_XS} weight="duotone" className="text-foreground/50" />
                               <span className="text-foreground/70">
                                 Due{" "}
                                 {new Date(

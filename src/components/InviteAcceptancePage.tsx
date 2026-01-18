@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_3XL } from '../lib/layout-constants';
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_2XL, ICON_SIZE_3XL } from '../lib/layout-constants';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -129,7 +129,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <Icon name="loader-2" size={ICON_SIZE_2XL} className="animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Validating invitation...</p>
             </div>
           </CardContent>
@@ -241,7 +241,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
                 >
                   {isAccepting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Icon name="loader-2" size={ICON_SIZE_MD} className="mr-2 animate-spin" />
                       Accepting...
                     </>
                   ) : (

@@ -466,7 +466,7 @@ export function AIRecommendationPanel({
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-500" />
+              <Icon name="clock" size={ICON_SIZE_LG} className="text-orange-500" />
               Daily Limit Exceeded - Consultation Required
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
@@ -725,7 +725,7 @@ export function AIRecommendationPanel({
                           {/* AI Reasoning */}
                           {reason && (
                             <div className="mb-2 flex items-start gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/10">
-                              <Brain className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+                              <Icon name="brain" size={ICON_SIZE_XS} weight="duotone" className="text-primary mt-0.5 flex-shrink-0" />
                               <span className="text-xs text-primary/80 italic">
                                 {reason}
                               </span>
@@ -757,7 +757,7 @@ export function AIRecommendationPanel({
                                 <span className="text-foreground/30">
                                   •
                                 </span>
-                                <Target className="w-3 h-3 text-foreground/50" />
+                                <Icon name="target" size={ICON_SIZE_XS} weight="duotone" className="text-foreground/50" />
                                 <span className="text-foreground/70">
                                   Due{" "}
                                   {new Date(
@@ -826,7 +826,7 @@ export function AIRecommendationPanel({
                 <Card className={cn("p-4 border-2 border-primary/20", UI_INBOX_GRADIENTS.card.className)}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 rounded-lg bg-primary/10">
-                      <Brain className="w-5 h-5 text-primary" />
+                      <Icon name="brain" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-sm">
@@ -1000,7 +1000,7 @@ export function AIRecommendationPanel({
         {/* AI Scheduler Info */}
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
           <div className={cn("w-20 h-20 mb-6 rounded-full flex items-center justify-center", UI_INBOX_GRADIENTS.emptyState.className)}>
-            <Brain className="w-10 h-10 text-primary" />
+            <Icon name="brain" size={ICON_SIZE_3XL} weight="duotone" className="text-primary" />
           </div>
           <h3 className="font-semibold text-lg mb-2">
             AI Smart Scheduler

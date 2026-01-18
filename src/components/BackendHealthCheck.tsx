@@ -126,7 +126,7 @@ export function BackendHealthCheck() {
     switch (state) {
       case "checking":
         return (
-          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+          <Icon name="loader-2" size={ICON_SIZE_MD} className="animate-spin text-blue-500" />
         );
       case "connected":
         return (

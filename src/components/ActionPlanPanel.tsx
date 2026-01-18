@@ -85,7 +85,7 @@ export function ActionPlanPanel({
     return (
       <Card className={cn('p-4 border-2 border-primary/30', className)}>
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Icon name="loader-2" size={ICON_SIZE_MD} className="animate-spin" />
           <span className="text-sm">Analyzing task breakdown...</span>
         </div>
       </Card>

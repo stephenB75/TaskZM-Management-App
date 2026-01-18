@@ -819,7 +819,7 @@ export function InboxView() {
                         size="sm"
                         disabled={!quickAddTitle.trim()}
                       >
-                        <Icon name="plus" size={16} />
+                        <Icon name="plus" size={ICON_SIZE_MD} />
                       </Button>
                     </div>
                   </Card>
@@ -1497,7 +1497,7 @@ export function InboxView() {
                                           •
                                         </span>
                                       )}
-                                      <Tag className="w-3 h-3 text-muted-foreground" />
+                                      <Icon name="tag" size={ICON_SIZE_XS} className="text-muted-foreground" />
                                       <span className="text-muted-foreground">
                                         {task.tags
                                           .slice(0, 2)

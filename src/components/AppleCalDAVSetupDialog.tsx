@@ -14,7 +14,7 @@ import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG } from '../lib/layout-constants';
+import { ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_3XL } from '../lib/layout-constants';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { projectId } from '../utils/supabase/info';
@@ -294,7 +294,7 @@ export function AppleCalDAVSetupDialog({
               {error && (
                 <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Icon name="alert-circle" size={16} className="text-red-600 dark:text-red-400" />
+                    <Icon name="alert-circle" size={ICON_SIZE_MD} className="text-red-600 dark:text-red-400" />
                     <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
                   </div>
                 </div>
@@ -366,7 +366,7 @@ export function AppleCalDAVSetupDialog({
               {error && (
                 <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Icon name="alert-circle" size={16} className="text-red-600 dark:text-red-400" />
+                    <Icon name="alert-circle" size={ICON_SIZE_MD} className="text-red-600 dark:text-red-400" />
                     <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
                   </div>
                 </div>
@@ -425,7 +425,7 @@ export function AppleCalDAVSetupDialog({
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Icon name="loader-2" size={ICON_SIZE_MD} className="mr-2 animate-spin" />
                   Connecting...
                 </>
               ) : (
@@ -444,7 +444,7 @@ export function AppleCalDAVSetupDialog({
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Icon name="loader-2" size={ICON_SIZE_MD} className="mr-2 animate-spin" />
                   Syncing...
                 </>
               ) : (

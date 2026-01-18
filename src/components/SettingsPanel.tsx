@@ -2531,7 +2531,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                     {award.name}
                                   </div>
                                   {isEarned && <Icon name="award" size={ICON_SIZE_SM} weight="duotone" className="text-blue-500 flex-shrink-0" />}
-                                  {!isEarned && <Lock className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />}
+                                  {!isEarned && <Icon name="lock" size={ICON_SIZE_SM} className="text-muted-foreground/50 flex-shrink-0" />}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {award.description}

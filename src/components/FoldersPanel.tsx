@@ -868,7 +868,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Icon name="loader-2" size={ICON_SIZE_MD} className="mr-2 animate-spin" />
                   Deleting...
                 </>
               ) : (

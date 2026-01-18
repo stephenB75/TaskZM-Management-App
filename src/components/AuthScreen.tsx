@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -1262,8 +1262,9 @@ export function AuthScreen() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Lock 
-                className="w-5 h-5" 
+              <Icon 
+                name="lock"
+                size={ICON_SIZE_LG}
                 style={{ color: AUTH_COLORS.primary } as React.CSSProperties}
               />
               {AUTH_UI_TEXT.forgotPassword.title}

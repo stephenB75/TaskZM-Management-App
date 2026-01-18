@@ -1471,7 +1471,7 @@ export function TeamPanel() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} className="animate-spin" />
+                  <Icon name="loader-2" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} className="animate-spin" />
                   Inviting...
                 </>
               ) : (
