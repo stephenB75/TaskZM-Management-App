@@ -394,6 +394,14 @@ export function Icon({
   secondaryColor,
   useDuotone = false,
 }: IconProps) {
+  // Early return with fallback if name is invalid
+  if (!name || typeof name !== 'string') {
+    const sizeNum = typeof size === 'string'
+      ? parseInt(size.replace(/[^0-9]/g, ''), 10) || DEFAULT_ICON_SIZE
+      : size;
+    return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
+  }
+
   const sizeNum = typeof size === 'string'
     ? parseInt(size.replace(/[^0-9]/g, ''), 10) || DEFAULT_ICON_SIZE
     : size;
@@ -412,17 +420,6 @@ export function Icon({
       console.warn(`[Icon] Phosphor icon "${phosphorIconName}" not found for name "${name}". Available icons: ${Object.keys(ICON_REGISTRY).join(', ')}`);
     }
     // Return a fallback div instead of null to prevent React error #130
-    return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
-  }
-
-  // Final safety check before rendering - ensure component is actually callable
-  try {
-    // Verify it's a valid React component by checking if it has required properties
-    if (!React.isValidElement && typeof IconComponent !== 'function') {
-      return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
-    }
-  } catch (e) {
-    // If any error occurs during validation, return fallback
     return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
   }
 
@@ -450,20 +447,19 @@ export function Icon({
     iconProps.color = primaryColor;
   }
 
-  // Final safety check before rendering
+  // Final safety check before rendering - ensure we always return a valid React element
   try {
-    // Ensure IconComponent is still valid (could be undefined in some edge cases)
-    if (!IconComponent || typeof IconComponent !== 'function') {
+    // Double-check IconComponent is valid
+    if (!IconComponent || typeof IconComponent !== 'function' || IconComponent === null || IconComponent === undefined) {
       return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
     }
     
-    // Render the icon component with error boundary
-    const RenderedIcon = IconComponent as React.ComponentType<any>;
-    return <RenderedIcon {...iconProps} />;
+    // Create element with React.createElement to ensure it's always valid
+    return React.createElement(IconComponent as React.ComponentType<any>, iconProps);
   } catch (error) {
-    // If rendering fails, return fallback
+    // If anything fails, return fallback element
     if (import.meta.env.DEV) {
-      console.error('[Icon] Error rendering icon:', error);
+      console.error('[Icon] Error rendering icon:', error, { name, phosphorIconName, IconComponent });
     }
     return <div style={{ display: 'inline-block', width: sizeNum, height: sizeNum }} aria-hidden="true" />;
   }
