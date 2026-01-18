@@ -5181,10 +5181,13 @@ const getUserAwardsHandler = async (c: any) => {
       const errorCode = (error as any)?.code || '';
       const errorMessage = error.message || '';
       
+      // PGRST205 = table not found, 42P01 = relation does not exist, PGRST116 = schema not found
       if (errorCode === '42P01' || 
           errorCode === 'PGRST116' || 
+          errorCode === 'PGRST205' ||
           errorMessage.includes('does not exist') ||
-          errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
+          errorMessage.includes('Could not find the table') ||
+          (errorMessage.includes('relation') && errorMessage.includes('does not exist'))) {
         console.warn('user_awards table does not exist, returning empty array');
         return c.json({ awards: [] });
       }
@@ -5255,9 +5258,15 @@ const saveUserAwardsHandler = async (c: any) => {
       if (!error) {
         saved++;
       } else {
-        const errorMsg = error.code === '42P01' || error.message?.includes('does not exist')
+        const errorCode = error.code || '';
+        const errorMessage = error.message || '';
+        const errorMsg = (errorCode === '42P01' || 
+                         errorCode === 'PGRST116' || 
+                         errorCode === 'PGRST205' ||
+                         errorMessage.includes('does not exist') ||
+                         errorMessage.includes('Could not find the table'))
           ? 'user_awards table does not exist'
-          : error.message;
+          : errorMessage;
         console.error(`Error saving award ${award.awardId}:`, error);
         errors.push(`Award ${award.awardId}: ${errorMsg}`);
       }
