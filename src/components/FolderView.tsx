@@ -178,11 +178,11 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
       case "done":
         return <Icon name="check-circle" size={ICON_SIZE_MD} className="text-green-500" />;
       case "in-progress":
-        return <PlayCircle className="w-4 h-4 text-blue-500" />;
+        return <Icon name="play-circle" size={ICON_SIZE_MD} className="text-blue-500" />;
       case "on-hold":
-        return <Pause className="w-4 h-4 text-amber-500" />;
+        return <Icon name="pause" size={ICON_SIZE_MD} className="text-amber-500" />;
       default:
-        return <Circle className="w-4 h-4 text-gray-400" />;
+        return <Icon name="circle" size={ICON_SIZE_MD} className="text-gray-400" />;
     }
   };
 

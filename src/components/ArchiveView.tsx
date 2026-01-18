@@ -551,7 +551,7 @@ export function ArchiveView() {
                                   }
                                   title="Restore task"
                                 >
-                                  <RotateCcw className="w-4 h-4" />
+                                  <Icon name="rotate-ccw" size={ICON_SIZE_MD} />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -740,7 +740,7 @@ export function ArchiveView() {
                                 }
                                 title="Restore task"
                               >
-                                <RotateCcw className="w-4 h-4" />
+                                <Icon name="rotate-ccw" size={ICON_SIZE_MD} />
                               </Button>
                               <Button
                                 variant="ghost"

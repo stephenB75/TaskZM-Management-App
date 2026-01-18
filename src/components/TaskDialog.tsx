@@ -2693,7 +2693,7 @@ export function TaskDialog({
                   {scheduledDate && (
                     <div className="space-y-2 sm:space-y-3">
                       <Label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5" />
+                        <Icon name="globe" size={ICON_SIZE_XS} />
                         Timezone
                       </Label>
                       <Select

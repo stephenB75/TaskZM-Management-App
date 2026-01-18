@@ -1773,11 +1773,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 className="flex items-start"
                 style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }} // Increased from SMALL to MEDIUM
               >
-                <Info 
+                <Icon 
+                  name="info"
+                  size={SETTINGS_PANEL_ICON_SIZE_MEDIUM}
                   className="text-primary flex-shrink-0" 
                   style={{ 
-                    width: SETTINGS_PANEL_ICON_SIZE_MEDIUM,
-                    height: SETTINGS_PANEL_ICON_SIZE_MEDIUM,
                     marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, // Increased from XSMALL to EXTRA_SMALL
                   }}
                 />

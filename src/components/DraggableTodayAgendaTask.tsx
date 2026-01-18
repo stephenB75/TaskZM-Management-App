@@ -569,7 +569,7 @@ export function DraggableTodayAgendaTask({
                         background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
                       }}
                     >
-                      <Timer className={cn("animate-spin", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                      <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin" />
                       <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                     </div>
                   </div>
@@ -578,8 +578,9 @@ export function DraggableTodayAgendaTask({
                 {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
                 {task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <Timer 
-                      className={cn(isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} 
+                    <Icon 
+                      name="timer"
+                      size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop}
                       style={{ color: TASK_CARD_THEME_COLORS.primary }}
                     />
                     <span 
@@ -788,7 +789,7 @@ export function DraggableTodayAgendaTask({
                         background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
                       }}
                     >
-                      <Timer className={cn("animate-spin flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                      <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin flex-shrink-0" />
                       <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                     </div>
                   </div>
@@ -797,8 +798,10 @@ export function DraggableTodayAgendaTask({
                 {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top) */}
                 {task.estimatedTime && task.estimatedTime >= 45 && task.actualTime && task.actualTime > 0 && !(hasFeature("pomodoroTimer") && timerState.isRunning) && (
                   <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
-                    <Timer 
-                      className={cn("flex-shrink-0", isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} 
+                    <Icon 
+                      name="timer"
+                      size={isMobile ? ICON_SIZE_XS : ICON_SIZE_SM}
+                      className="flex-shrink-0"
                       style={{ color: TASK_CARD_THEME_COLORS.primary }}
                     />
                     <span 

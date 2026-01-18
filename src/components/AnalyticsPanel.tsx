@@ -1194,9 +1194,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               className="h-8 w-8"
               title="Download PDF Report"
             >
-              <Download 
-                className={cn("w-4 h-4", isGeneratingPDF && "animate-spin")}
-                style={{ width: ANALYTICS_PDF_BUTTON.iconSize, height: ANALYTICS_PDF_BUTTON.iconSize }}
+              <Icon 
+                name="download"
+                size={ANALYTICS_PDF_BUTTON.iconSize}
+                className={cn(isGeneratingPDF && "animate-spin")}
               />
             </Button>
             <Button

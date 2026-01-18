@@ -60,7 +60,7 @@ export function TaskCard({
       case 'on-hold':
         return <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-yellow-600" />;
       default:
-        return <Circle className="w-4 h-4 text-gray-400" />;
+        return <Icon name="circle" size={ICON_SIZE_MD} className="text-gray-400" />;
     }
   };
 
