@@ -439,7 +439,7 @@ export function Icon({
   const iconWeight: IconWeight = weight || (shouldUseDuotone ? 'duotone' : 'regular');
 
   // Set colors for duotone
-  const primaryColor = color || COLOR_PRIMARY;
+  // Only set color prop if explicitly provided, otherwise let CSS classes handle it
   const secondary = secondaryColor || (iconWeight === 'duotone' ? COLOR_PRIMARY_LIGHT : undefined);
 
   // Build props
@@ -450,18 +450,44 @@ export function Icon({
     style: { ...style },
   };
 
-  // Add colors based on weight
-  if (iconWeight === 'duotone' && secondary) {
-    iconProps.color = primaryColor;
+  // Add colors based on weight - only set if color is explicitly provided
+  // Otherwise, let CSS classes (like text-primary, text-muted-foreground) handle the color
+  if (color) {
+    if (iconWeight === 'duotone' && secondary) {
+      iconProps.color = color;
+      iconProps.secondaryColor = secondary;
+    } else {
+      iconProps.color = color;
+    }
+  } else if (iconWeight === 'duotone' && secondary) {
+    // For duotone without explicit color, use theme colors but allow CSS override
+    iconProps.color = COLOR_PRIMARY;
     iconProps.secondaryColor = secondary;
-  } else {
-    iconProps.color = primaryColor;
   }
+  // If no color and not duotone, don't set color prop - let CSS handle it
 
   // Render the icon component - we've already validated it exists
   // Use JSX for better compatibility and performance
-  const RenderedIcon = IconComponent as React.ComponentType<any>;
-  return <RenderedIcon {...iconProps} />;
+  try {
+    const RenderedIcon = IconComponent as React.ComponentType<any>;
+    return <RenderedIcon {...iconProps} />;
+  } catch (error) {
+    // Fallback if rendering fails
+    if (import.meta.env.DEV) {
+      console.error('[Icon] Error rendering icon component:', error, { name, phosphorIconName, IconComponent });
+    }
+    return <div 
+      style={{ 
+        display: 'inline-block', 
+        width: sizeNum, 
+        height: sizeNum,
+        backgroundColor: 'rgba(255,0,0,0.1)',
+        border: '1px dashed red'
+      }} 
+      aria-hidden="true" 
+      title={`Icon render error: ${name}`}
+    />;
+  }
 }
 
 // Default export for compatibility

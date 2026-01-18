@@ -43,7 +43,8 @@
     <!-- Icons will be set by DocumentHead.tsx to ensure proper app icon is used -->
     
     <!-- Preload critical resources for faster loading -->
-    <link rel="preload" as="image" href="/taskzm-logo.png" />
+    <!-- Logo prefetch for splash screen (not preload since it's not immediately visible) -->
+    <link rel="prefetch" as="image" href="/taskzm-logo.png" />
     <!-- Preconnect to Google Fonts for faster font loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

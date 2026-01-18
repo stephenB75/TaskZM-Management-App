@@ -34,11 +34,13 @@ if (typeof window !== 'undefined') {
         message.includes('rokt-icons.woff') ||
         message.includes('apps.rokt.com') ||
         message.includes('inter-var.woff2') ||
+        message.includes('taskzm-logo.png') ||
         fullMessage.includes('rokt-icons.woff') ||
         fullMessage.includes('apps.rokt.com') ||
         fullMessage.includes('rokt.com') ||
-        fullMessage.includes('inter-var.woff2')) {
-      console.debug('Suppressed extension/font preload warning', args);
+        fullMessage.includes('inter-var.woff2') ||
+        fullMessage.includes('taskzm-logo.png')) {
+      console.debug('Suppressed extension/font/logo preload warning', args);
       return;
     }
     // Suppress performance violation warnings from browser extensions and app animations
