@@ -450,21 +450,26 @@ export function Icon({
     style: { ...style },
   };
 
-  // Add colors based on weight - only set if color is explicitly provided
-  // Otherwise, let CSS classes (like text-primary, text-muted-foreground) handle the color
-  if (color) {
-    if (iconWeight === 'duotone' && secondary) {
-      iconProps.color = color;
-      iconProps.secondaryColor = secondary;
-    } else {
-      iconProps.color = color;
+  // Add colors based on weight
+  // For duotone icons, we need both primary and secondary colors
+  // For regular icons, only set color if explicitly provided
+  if (iconWeight === 'duotone') {
+    // Duotone requires both colors - use provided or theme defaults
+    // If no color provided, use currentColor to inherit from CSS classes
+    iconProps.color = color || 'currentColor';
+    if (secondary) {
+      iconProps.secondaryColor = secondaryColor || secondary;
     }
-  } else if (iconWeight === 'duotone' && secondary) {
-    // For duotone without explicit color, use theme colors but allow CSS override
-    iconProps.color = COLOR_PRIMARY;
-    iconProps.secondaryColor = secondary;
+  } else {
+    // Regular icons - only set color if explicitly provided
+    // Otherwise let CSS classes handle it via currentColor inheritance
+    if (color) {
+      iconProps.color = color;
+    } else {
+      // Don't set color prop - let CSS classes control it
+      // Phosphor icons will inherit currentColor from parent
+    }
   }
-  // If no color and not duotone, don't set color prop - let CSS handle it
 
   // Render the icon component - we've already validated it exists
   // Use JSX for better compatibility and performance
