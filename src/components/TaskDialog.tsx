@@ -3275,7 +3275,7 @@ export function TaskDialog({
                 {teamMembers.length > 0 && (
                   <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary" />
+                      <Icon name="users" size={ICON_SIZE_MD} className="text-primary" />
                       <Label className="text-sm font-semibold">Assign To</Label>
                     </div>
                     <p className="text-xs text-muted-foreground">

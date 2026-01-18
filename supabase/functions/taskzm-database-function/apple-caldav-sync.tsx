@@ -1040,9 +1040,15 @@ function parseVEvent(
           // Test if timezone is valid by trying to create a formatter
           new Intl.DateTimeFormat('en-US', { timeZone: normalizedTzid });
         } catch (e) {
-          // Invalid timezone - use default and log warning
+          // Invalid timezone - use default and log warning (but note that normalization was attempted)
           const errorMsg = e instanceof Error ? e.message : String(e);
-          console.warn(`Failed to convert timezone ${targetTzid}: ${errorMsg}`);
+          // Only log warning if the original timezone was different from normalized (to avoid duplicate warnings)
+          if (targetTzid !== normalizedTzid) {
+            console.warn(`Failed to convert timezone ${targetTzid} (normalized to ${normalizedTzid}): ${errorMsg}. Using fallback.`);
+          } else {
+            // Original was already invalid and normalization didn't help
+            console.warn(`Failed to convert timezone ${targetTzid}: ${errorMsg}. Using fallback.`);
+          }
           const fallback = currentUserTimezone || DEFAULT_TIMEZONE;
           // Ensure fallback is valid IANA format
           if (fallback.includes('/') || fallback === 'UTC') {
@@ -1119,7 +1125,37 @@ function parseVEvent(
           
           return convertToUTC(tzid, yearNum, monthNum, dayNum, hourNum, minuteNum, secondNum);
         } catch (e) {
-          console.warn(`Failed to convert timezone ${tzid}:`, e);
+          // Normalize timezone before logging error to show what was attempted
+          let normalizedTzid = tzid;
+          try {
+            // Try to normalize if it's a GMT offset format
+            const gmtMatch = tzid.match(/^GMT([+-])(\d{2})(\d{2})$/i);
+            if (gmtMatch) {
+              const sign = gmtMatch[1];
+              const hours = parseInt(gmtMatch[2], 10);
+              const minutes = parseInt(gmtMatch[3], 10);
+              const totalOffsetMinutes = (sign === '+' ? 1 : -1) * (hours * 60 + minutes);
+              
+              // Map common offsets to IANA timezones
+              if (totalOffsetMinutes === -300 || totalOffsetMinutes === -240) normalizedTzid = 'America/New_York';
+              else if (totalOffsetMinutes === -360) normalizedTzid = 'America/Chicago';
+              else if (totalOffsetMinutes === -420) normalizedTzid = 'America/Denver';
+              else if (totalOffsetMinutes === -480) normalizedTzid = 'America/Los_Angeles';
+              else if (totalOffsetMinutes === 0) normalizedTzid = 'UTC';
+              else normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
+            }
+          } catch (normalizeErr) {
+            // Normalization failed, use default
+            normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
+          }
+          
+          // Only log warning if normalization didn't help or wasn't possible
+          if (normalizedTzid === tzid || normalizedTzid.toUpperCase().startsWith('GMT')) {
+            console.warn(`Failed to convert timezone ${tzid} (normalized to ${normalizedTzid}):`, e);
+          } else {
+            // Normalization worked, but conversion still failed - this shouldn't happen often
+            console.debug(`Timezone ${tzid} normalized to ${normalizedTzid}, but conversion failed:`, e);
+          }
           return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
         }
       }

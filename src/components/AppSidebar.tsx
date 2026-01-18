@@ -137,7 +137,7 @@ export function AppSidebar({
                       <Icon 
                         name={item.iconName} 
                         size={20} 
-                        weight={currentView === item.id ? "duotone" : "regular"}
+                        weight={currentView === item.id ? "fill" : "duotone"}
                         className={currentView === item.id ? "text-primary" : "text-muted-foreground"}
                       />
                       {item.pro && (
@@ -214,7 +214,7 @@ export function AppSidebar({
                 <Icon 
                   name={item.iconName} 
                   size={16} 
-                  weight={currentView === item.id ? "duotone" : "regular"}
+                  weight={currentView === item.id ? "fill" : "duotone"}
                   className="mr-2"
                 />
                 {item.label}

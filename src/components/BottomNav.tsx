@@ -221,7 +221,7 @@ export function BottomNav({
                 <Icon 
                   name={item.iconName}
                   size={NAV_BAR_ICON_SIZE}
-                  weight={item.active ? "duotone" : "regular"}
+                  weight={item.active ? "fill" : "duotone"}
                   className="relative z-10" 
                 />
                 {item.badge !== undefined && item.badge > 0 && (
