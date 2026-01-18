@@ -35,6 +35,7 @@ if (typeof window !== 'undefined') {
     const lowerMessage = message.toLowerCase();
     const lowerFullMessage = fullMessage.toLowerCase();
     if (lowerMessage.includes('was preloaded using link preload but not used') ||
+        lowerMessage.includes('preloaded using link preload') ||
         lowerMessage.includes('rokt-icons.woff') ||
         lowerMessage.includes('apps.rokt.com') ||
         lowerMessage.includes('inter-var.woff2') ||
@@ -44,7 +45,9 @@ if (typeof window !== 'undefined') {
         lowerFullMessage.includes('rokt.com') ||
         lowerFullMessage.includes('inter-var.woff2') ||
         lowerFullMessage.includes('taskzm-logo.png') ||
-        lowerFullMessage.includes('the resource') && (lowerFullMessage.includes('rokt') || lowerFullMessage.includes('apps.rokt.com'))) {
+        (lowerFullMessage.includes('the resource') && (lowerFullMessage.includes('rokt') || lowerFullMessage.includes('apps.rokt.com'))) ||
+        (lowerFullMessage.includes('preload') && (lowerFullMessage.includes('rokt') || lowerFullMessage.includes('apps.rokt.com'))) ||
+        (lowerFullMessage.includes('not used within a few seconds') && lowerFullMessage.includes('rokt'))) {
       // Completely suppress - these are from browser extensions, not our app
       return;
     }
@@ -90,8 +93,8 @@ if (typeof window !== 'undefined') {
       return;
     }
     
-    // Suppress browser extension errors
-    if (fullMessage.includes('chrome-extension://') || 
+    // Suppress browser extension errors - check more aggressively
+    const isExtensionFile = fullMessage.includes('chrome-extension://') || 
         fullMessage.includes('content.js') || 
         fullMessage.includes('background.js') ||
         fullMessage.includes('serviceWorker.js') ||
@@ -100,7 +103,11 @@ if (typeof window !== 'undefined') {
         fullMessage.includes('contentScript.bundle.js') ||
         fullMessage.includes('web-client-content-script') ||
         fullMessage.includes('web-client-content-script.js') ||
+        fullMessage.includes('userReportLinkedCandidate');
+    
+    if (isExtensionFile ||
         fullMessage.includes('ERR_FILE_NOT_FOUND') ||
+        fullMessage.includes('net::ERR_FILE_NOT_FOUND') ||
         fullMessage.includes('userReportLinkedCandidate') ||
         fullMessage.includes('checkoutUrls') ||
         fullMessage.includes('No tab with id') ||
@@ -111,11 +118,7 @@ if (typeof window !== 'undefined') {
           fullMessage.includes('checkoutUrls') ||
           fullMessage.includes('reading \'length\'') ||
           fullMessage.includes('reading \'checkoutUrls\'') ||
-          fullMessage.includes('background.js') ||
-          fullMessage.includes('content.js') ||
-          fullMessage.includes('serviceWorker.js') ||
-          fullMessage.includes('service-worker.js') ||
-          fullMessage.includes('chrome-extension://')
+          isExtensionFile
         )) ||
         (fullMessage.includes('MutationObserver') && (
           fullMessage.includes('Failed to execute') ||
@@ -128,8 +131,9 @@ if (typeof window !== 'undefined') {
         fullMessage.includes('asynchronous response') ||
         fullMessage.includes('message channel closed') ||
         fullMessage.includes('A listener indicated an asynchronous response') ||
+        fullMessage.includes('listener indicated an asynchronous response by returning true') ||
         (fullMessage.includes('Error checking mobile size') && fullMessage.includes('ReferenceError'))) {
-      console.debug('Suppressed browser extension error', args);
+      // Completely silent - these are browser extension errors, not app errors
       return;
     }
     
@@ -150,10 +154,13 @@ if (typeof window !== 'undefined') {
     if (event.message) {
       const message = event.message.toString();
       const filename = event.filename?.toString() || '';
+      const target = (event.target as any)?.src || (event.target as any)?.href || '';
+      const fullContext = `${message} ${filename} ${target}`.toLowerCase();
       
       // Suppress Chrome extension errors
       // Check for checkoutUrls error early (can appear in message or as TypeError)
       const hasCheckoutUrlsError = message.includes('checkoutUrls') || 
+          fullContext.includes('checkouturls') ||
           (event.error && (
             (typeof event.error === 'object' && (
               event.error?.message?.includes?.('checkoutUrls') ||
@@ -162,31 +169,8 @@ if (typeof window !== 'undefined') {
             ))
           ));
       
-      if (hasCheckoutUrlsError ||
-          message.includes('message channel closed before a response was received') ||
-          message.includes('listener indicated an asynchronous response') ||
-          message.includes('asynchronous response by returning true') ||
-          message.includes('ERR_FILE_NOT_FOUND') ||
-          message.includes('No tab with id') ||
-          message.includes('Frame with ID') ||
-          message.includes('was removed') ||
-          (message.includes('Cannot read properties of undefined') && (
-            message.includes('length') ||
-            message.includes('checkoutUrls') ||
-            filename.includes('background.js') ||
-            filename.includes('content.js') ||
-            filename.includes('serviceWorker.js') ||
-            filename.includes('service-worker.js') ||
-            filename.includes('chrome-extension://')
-          )) ||
-          (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
-          (message.includes('observe') && message.includes('MutationObserver')) ||
-          (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
-          (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
-          (message.includes('not of type "Node"') && message.includes('MutationObserver')) ||
-          (message.includes('Failed to execute \'observe\' on \'MutationObserver\'')) ||
-          (message.includes('Failed to execute "observe" on "MutationObserver"')) ||
-          filename.includes('chrome-extension://') ||
+      // Check for extension-related errors more broadly
+      const isExtensionError = filename.includes('chrome-extension://') ||
           filename.includes('moz-extension://') ||
           filename.includes('safari-extension://') ||
           filename.includes('contentScript.bundle.js') ||
@@ -196,8 +180,37 @@ if (typeof window !== 'undefined') {
           filename.includes('service-worker.js') ||
           filename.includes('web-client-content-script.js') ||
           filename.includes('web-client-content-script') ||
-          filename.includes('userReportLinkedCandidate.json')) {
+          filename.includes('userReportLinkedCandidate') ||
+          target.includes('chrome-extension://') ||
+          target.includes('userReportLinkedCandidate') ||
+          fullContext.includes('chrome-extension://') ||
+          fullContext.includes('contentscript') ||
+          fullContext.includes('userreportlinkedcandidate');
+      
+      if (hasCheckoutUrlsError ||
+          isExtensionError ||
+          message.includes('message channel closed before a response was received') ||
+          message.includes('listener indicated an asynchronous response') ||
+          message.includes('asynchronous response by returning true') ||
+          message.includes('ERR_FILE_NOT_FOUND') ||
+          message.includes('net::ERR_FILE_NOT_FOUND') ||
+          message.includes('No tab with id') ||
+          message.includes('Frame with ID') ||
+          message.includes('was removed') ||
+          (message.includes('Cannot read properties of undefined') && (
+            message.includes('length') ||
+            message.includes('checkoutUrls') ||
+            isExtensionError
+          )) ||
+          (message.includes('Failed to execute') && message.includes('MutationObserver')) ||
+          (message.includes('observe') && message.includes('MutationObserver')) ||
+          (message.includes('parameter 1 is not of type') && message.includes('MutationObserver')) ||
+          (message.includes('not of type \'Node\'') && message.includes('MutationObserver')) ||
+          (message.includes('not of type "Node"') && message.includes('MutationObserver')) ||
+          (message.includes('Failed to execute \'observe\' on \'MutationObserver\'')) ||
+          (message.includes('Failed to execute "observe" on "MutationObserver"'))) {
         event.preventDefault();
+        event.stopPropagation();
         // Completely silent - these are browser extension errors, not app errors
         return false;
       }
@@ -394,6 +407,36 @@ if (typeof window !== 'undefined') {
       }
     }
   });
+  
+  // Suppress network errors from browser extensions
+  // These appear as failed resource loads, not console errors
+  const originalFetch = window.fetch;
+  window.fetch = async function(...args) {
+    try {
+      const response = await originalFetch.apply(this, args);
+      return response;
+    } catch (error: any) {
+      // Suppress network errors from browser extensions
+      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url || '';
+      const errorMessage = error?.message || String(error) || '';
+      
+      if (url.includes('chrome-extension://') ||
+          url.includes('userReportLinkedCandidate') ||
+          url.includes('moz-extension://') ||
+          url.includes('safari-extension://') ||
+          errorMessage.includes('chrome-extension://') ||
+          errorMessage.includes('userReportLinkedCandidate')) {
+        // Silently suppress - these are extension errors, not app errors
+        // Return a rejected promise that won't be logged
+        return Promise.reject(new Error('Extension network error (suppressed)'));
+      }
+      throw error;
+    }
+  };
+  
+  // Also suppress network errors that appear in the console from failed resource loads
+  // These are logged by the browser itself, so we intercept them via error events
+  // (already handled above in window.addEventListener('error'))
 }
 
 // Capacitor
