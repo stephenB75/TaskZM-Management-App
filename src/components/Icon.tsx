@@ -497,16 +497,24 @@ export function Icon({
   }
 
   // Render the icon component - we've already validated it exists
-  // Use JSX for proper rendering with Phosphor icons
+  // Use React.createElement for safer rendering that prevents React error #130
   try {
     // Double-check that IconComponent is still valid (defensive programming)
     if (!IconComponent || typeof IconComponent !== 'function') {
       throw new Error(`Icon component "${phosphorIconName}" is not a valid function`);
     }
     
-    // Use JSX for proper rendering - Phosphor icons work better with JSX
-    const IconElement = IconComponent;
-    return <IconElement {...iconProps} />;
+    // Use React.createElement for safer rendering - ensures we always get a valid element
+    // This prevents React error #130 (Element type is invalid)
+    const renderedIcon = React.createElement(IconComponent, iconProps);
+    
+    // Validate that we got a valid React element (not null or undefined)
+    // This prevents React error #130
+    if (renderedIcon == null || typeof renderedIcon !== 'object' || !('type' in renderedIcon)) {
+      throw new Error(`Icon component "${phosphorIconName}" returned invalid element: ${renderedIcon}`);
+    }
+    
+    return renderedIcon;
   } catch (error) {
     // Fallback if rendering fails - always return a valid React element
     if (import.meta.env.DEV) {
