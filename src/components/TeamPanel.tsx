@@ -563,12 +563,10 @@ export function TeamPanel() {
           <div className="flex items-start" style={{ gap: PANEL_GAP_LARGE }}>
             {/* User Icon on the left */}
             <div className="relative flex-shrink-0">
-              <User 
+              <Icon 
+                name="user"
+                size={TEAM_PANEL_AVATAR_SIZE}
                 className="text-foreground" 
-                style={{ 
-                  width: TEAM_PANEL_AVATAR_SIZE, 
-                  height: TEAM_PANEL_AVATAR_SIZE 
-                }} 
               />
               {member.hasUnreadNotification &&
                 member.inviteStatus === "accepted" && (
@@ -1088,11 +1086,11 @@ export function TeamPanel() {
                 paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
               }}
             >
-              <Users 
+              <Icon 
+                name="users"
+                size={TEAM_PANEL_EMPTY_STATE_ICON_SIZE}
                 className="mx-auto text-muted-foreground opacity-50" 
                 style={{ 
-                  width: TEAM_PANEL_EMPTY_STATE_ICON_SIZE, 
-                  height: TEAM_PANEL_EMPTY_STATE_ICON_SIZE,
                   marginBottom: TEAM_PANEL_MARGIN_BOTTOM_LARGE
                 }} 
               />
@@ -1176,11 +1174,11 @@ export function TeamPanel() {
                     paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
                   }}
                 >
-                  <Users 
+                  <Icon 
+                    name="users"
+                    size={TEAM_PANEL_EMPTY_STATE_ICON_SIZE}
                     className="mx-auto text-muted-foreground opacity-50" 
                     style={{ 
-                      width: TEAM_PANEL_EMPTY_STATE_ICON_SIZE, 
-                      height: TEAM_PANEL_EMPTY_STATE_ICON_SIZE,
                       marginBottom: TEAM_PANEL_MARGIN_BOTTOM_LARGE
                     }} 
                   />
