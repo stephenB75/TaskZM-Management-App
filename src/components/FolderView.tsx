@@ -314,7 +314,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
       <div className="px-4 py-3 border-b bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0 relative z-10">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Icon name="search" size={ICON_SIZE_MD} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search tasks..."
               value={searchQuery}
@@ -328,7 +328,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
               onValueChange={setFilterPriority}
             >
               <SelectTrigger className="w-full sm:w-[140px]">
-                <Filter className="w-4 h-4 mr-2" />
+                <Icon name="filter" size={ICON_SIZE_MD} className="mr-2" />
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>

@@ -440,7 +440,7 @@ export function NotificationsPanel() {
           <div className="flex items-center gap-3">
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-full sm:w-[180px] h-10 bg-white dark:bg-card">
-                <Filter className="w-4 h-4 mr-2" />
+                <Icon name="filter" size={ICON_SIZE_MD} className="mr-2" />
                 <SelectValue placeholder={NOTIFICATION_PANEL_TEXT.filters.placeholder} />
               </SelectTrigger>
               <SelectContent>

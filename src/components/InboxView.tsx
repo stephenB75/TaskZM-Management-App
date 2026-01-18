@@ -854,7 +854,7 @@ export function InboxView() {
             {/* Filters */}
             <div className="flex flex-col gap-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Icon name="search" size={ICON_SIZE_MD} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
                   placeholder="Search tasks..."
                   value={searchQuery}
@@ -870,7 +870,7 @@ export function InboxView() {
                 onValueChange={setFilterPriority}
               >
                 <SelectTrigger className="w-full bg-white dark:bg-card">
-                  <Filter className="w-4 h-4 mr-2" />
+                  <Icon name="filter" size={ICON_SIZE_MD} className="mr-2" />
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -889,7 +889,7 @@ export function InboxView() {
                 onValueChange={setFilterStatus}
               >
                 <SelectTrigger className="w-full bg-white dark:bg-card">
-                  <Filter className="w-4 h-4 mr-2" />
+                  <Icon name="filter" size={ICON_SIZE_MD} className="mr-2" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>

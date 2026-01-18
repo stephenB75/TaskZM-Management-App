@@ -35,7 +35,7 @@ import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { Icon } from "./Icon";
-import { EMPTY_STATE_ICON_SIZE_LARGE } from "../lib/layout-constants";
+import { EMPTY_STATE_ICON_SIZE_LARGE, ICON_SIZE_MD } from "../lib/layout-constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -320,7 +320,7 @@ export function ArchiveView() {
         <div className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex flex-col gap-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Icon name="search" size={ICON_SIZE_MD} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search completed tasks..."
                 value={searchQuery}
@@ -335,7 +335,7 @@ export function ArchiveView() {
                 onValueChange={setFilterPriority}
               >
                 <SelectTrigger className="w-full h-10 bg-white dark:bg-card">
-                  <Filter className="w-4 h-4 mr-2" />
+                  <Icon name="filter" size={ICON_SIZE_MD} className="mr-2" />
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
