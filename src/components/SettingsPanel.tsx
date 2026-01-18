@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // Icons migrated to Icon component
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -18,6 +18,7 @@ import { useCalendar } from '../contexts/CalendarContext';
 import type { SubscriptionTier } from '../types';
 import { useAwards } from '../contexts/AwardContext';
 import { useNotifications } from '../contexts/NotificationContext';
+import { logger } from '../lib/logger';
 import { PricingDialog } from './PricingDialog';
 import { PrivacyPolicyDialog } from './PrivacyPolicyDialog';
 import { TermsOfServiceDialog } from './TermsOfServiceDialog';
@@ -237,7 +238,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        console.warn('SettingsPanel pricing fetch failed:', error);
+        logger.warn('SettingsPanel pricing fetch failed:', error);
       }
     }
     fetchPricing();
@@ -252,6 +253,31 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
     return iconName;
   };
 
+  // Memoize award counts to avoid recalculating on every render
+  const awardCounts = useMemo(() => {
+    const completionAwards = awards.filter(a => a.category === 'completion');
+    const streakAwards = awards.filter(a => a.category === 'streak');
+    const focusAwards = awards.filter(a => a.category === 'focus');
+    
+    // Create a map for faster lookups
+    const awardMap = new Map(awards.map(a => [a.id, a]));
+    
+    return {
+      completion: {
+        earned: earnedAwards.filter(ea => awardMap.get(ea.awardId)?.category === 'completion').length,
+        total: completionAwards.length,
+      },
+      streak: {
+        earned: earnedAwards.filter(ea => awardMap.get(ea.awardId)?.category === 'streak').length,
+        total: streakAwards.length,
+      },
+      focus: {
+        earned: earnedAwards.filter(ea => awardMap.get(ea.awardId)?.category === 'focus').length,
+        total: focusAwards.length,
+      },
+    };
+  }, [awards, earnedAwards]);
+
   // Check if user has seen tour on mount and when storage changes
   useEffect(() => {
     const checkTourStatus = () => {
@@ -259,7 +285,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         const tourCompleted = window?.localStorage?.getItem('taskzm_tour_completed');
         setHasSeenTour(tourCompleted === 'true');
       } catch (error) {
-        console.warn('Unable to access localStorage for tour status:', error);
+        logger.warn('Unable to access localStorage for tour status:', error);
         setHasSeenTour(false);
       }
     };
@@ -325,7 +351,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       // Redirect to home/login page
       window.location.href = '/';
     } catch (error) {
-      console.error('Error deleting account:', error);
+      logger.error('Error deleting account:', error);
       toast.error('Failed to delete account', {
         description: error instanceof Error ? error.message : 'Please try again or contact support.',
       });
@@ -402,13 +428,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
   const handleStartTour = () => {
     if (onStartTour) {
-      console.log('🎯 Tour manually triggered from Settings Panel');
+      logger.debug('🎯 Tour manually triggered from Settings Panel');
       onStartTour();
       toast.info('Starting app tour...', {
         description: 'Let us show you around TaskZM!'
       });
     } else {
-      console.warn('⚠️ onStartTour prop not provided to SettingsPanel');
+        logger.warn('⚠️ onStartTour prop not provided to SettingsPanel');
       toast.error('Unable to start tour', {
         description: 'Tour functionality is not available. Please refresh the page.'
       });
@@ -1137,7 +1163,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           // No need to show toast here - connect/disconnect functions handle it
                         } catch (error) {
                           // Error handling is done in connect/disconnect functions
-                          console.error('Calendar toggle error:', error);
+                          logger.error('Calendar toggle error:', error);
                         }
                       }}
                     />
@@ -2487,7 +2513,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <p className="text-xs text-muted-foreground">Track your task achievements</p>
                       </div>
                       <Badge variant="secondary" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} ${UI_AWARD_BADGE_COLORS.blue.light} ${UI_AWARD_BADGE_COLORS.blue.text}`}>
-                        {earnedAwards.filter(ea => awards.find(a => a.id === ea.awardId)?.category === 'completion').length}/{awards.filter(a => a.category === 'completion').length}
+                        {awardCounts.completion.earned}/{awardCounts.completion.total}
                       </Badge>
                     </div>
                   </AccordionTrigger>
@@ -2571,7 +2597,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <p className="text-xs text-muted-foreground">Build consistency habits</p>
                       </div>
                       <Badge variant="secondary" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} ${UI_AWARD_BADGE_COLORS.orange.light} ${UI_AWARD_BADGE_COLORS.orange.text}`}>
-                        {earnedAwards.filter(ea => awards.find(a => a.id === ea.awardId)?.category === 'streak').length}/{awards.filter(a => a.category === 'streak').length}
+                        {awardCounts.streak.earned}/{awardCounts.streak.total}
                       </Badge>
                     </div>
                   </AccordionTrigger>
@@ -2655,7 +2681,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <p className="text-xs text-muted-foreground">Deep work achievements</p>
                       </div>
                       <Badge variant="secondary" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} ${UI_AWARD_BADGE_COLORS.purple.light} ${UI_AWARD_BADGE_COLORS.purple.text}`}>
-                        {earnedAwards.filter(ea => awards.find(a => a.id === ea.awardId)?.category === 'focus').length}/{awards.filter(a => a.category === 'focus').length}
+                        {awardCounts.focus.earned}/{awardCounts.focus.total}
                       </Badge>
                     </div>
                   </AccordionTrigger>

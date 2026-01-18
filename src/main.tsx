@@ -4,6 +4,7 @@ import App from './App';
 import './styles/globals.css';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { logger } from './lib/logger';
+import { COLOR_BACKGROUND_LIGHT } from './lib/color-theme';
 
 // Suppress browser extension errors that are not from our code
 if (typeof window !== 'undefined') {
@@ -569,7 +570,7 @@ if (isNative) {
   // NATIVE PLATFORM (iOS/Android)
   // Set status bar style
   StatusBar.setStyle({ style: Style.Light }).catch(console.error);                                                                
-  StatusBar.setBackgroundColor({ color: '#F5F3FF' }).catch(console.error);
+  StatusBar.setBackgroundColor({ color: COLOR_BACKGROUND_LIGHT }).catch(console.error);
   
   // Hide Capacitor native splash screen after app loads
   setTimeout(() => {

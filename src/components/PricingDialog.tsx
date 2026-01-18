@@ -13,6 +13,7 @@ import { Icon } from "./Icon";
 import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAuth } from "../contexts/AuthContext";
+import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY, COLOR_PASTEL_MINT } from "../lib/color-theme";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import { getPlatform } from "../lib/platform";
@@ -248,7 +249,7 @@ export function PricingDialog({
       });
     }
     if (yearlyOffering) {
-      console.log('✅ Yearly offering from RevenueCat:', {
+      logger.debug('✅ Yearly offering from RevenueCat:', {
         priceString: yearlyOffering.priceString,
         title: yearlyOffering.title,
         source: 'RevenueCat (dynamic)',
@@ -260,7 +261,7 @@ export function PricingDialog({
   React.useEffect(() => {
     if (yearlyOffering) {
       const yearlyPriceNum = parseFloat(yearlyOffering.priceString.replace(/[^0-9.]/g, ''));
-      console.log('💰 Yearly subscription from RevenueCat (UI):', {
+      logger.debug('💰 Yearly subscription from RevenueCat (UI):', {
         title: yearlyOffering.title,
         priceString: yearlyOffering.priceString,
         description: yearlyOffering.description,
@@ -272,7 +273,7 @@ export function PricingDialog({
       
       // Warn if yearly price seems incorrect (too low or invalid)
       if (isNaN(yearlyPriceNum) || yearlyPriceNum <= 0 || yearlyPriceNum < 10) {
-        console.warn('⚠️ Yearly subscription price may be incorrect:', {
+        logger.warn('⚠️ Yearly subscription price may be incorrect:', {
           priceString: yearlyOffering.priceString,
           numericValue: yearlyPriceNum,
           note: 'Price seems unusually low. Verify RevenueCat configuration.',
@@ -281,7 +282,7 @@ export function PricingDialog({
     }
     
     if (monthlyOffering) {
-      console.log('💰 Monthly subscription from RevenueCat (UI):', {
+      logger.debug('💰 Monthly subscription from RevenueCat (UI):', {
         title: monthlyOffering.title,
         priceString: monthlyOffering.priceString,
         description: monthlyOffering.description,
@@ -308,7 +309,7 @@ export function PricingDialog({
         priceStr === 'null' ||
         priceStr.includes('NaN') ||
         isNaN(parseFloat(priceStr.replace(/[^0-9.]/g, '')))) {
-      console.warn('⚠️ Invalid price string detected:', price);
+      logger.warn('⚠️ Invalid price string detected:', price);
       return '—';
     }
     return priceStr;
@@ -346,7 +347,7 @@ export function PricingDialog({
       
       // If we don't have valid prices, return 0
       if (yearlyEquivalent === 0 || yearlyPrice === 0) {
-        console.warn('⚠️ Cannot calculate savings: invalid prices', {
+        logger.warn('⚠️ Cannot calculate savings: invalid prices', {
           monthly: monthlyOffering.priceString,
           yearly: yearlyOffering.priceString,
           monthlyParsed: monthlyPrice,
@@ -793,7 +794,7 @@ export function PricingDialog({
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0 pr-6">
                     <div className="flex items-center gap-1 mb-0.5">
-                      <h3 className="text-base md:text-lg font-semibold bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9] bg-clip-text text-transparent">
+                      <h3 className="text-base md:text-lg font-semibold bg-gradient-to-r" style={{ backgroundImage: `linear-gradient(to right, ${COLOR_PRIMARY}, ${COLOR_PRIMARY_LIGHT})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                         {yearlyOffering.title}
                       </h3>
                       <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" className={`${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
@@ -836,9 +837,8 @@ export function PricingDialog({
                   {yearlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
                     <li key={`yearly-${index}`} className="flex items-start gap-1.5">
                       <div className={cn(
-                        "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5",
-                        "bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]"
-                      )}>
+                        "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5"
+                      )} style={{ backgroundImage: `linear-gradient(to bottom right, ${COLOR_PRIMARY}, ${COLOR_PRIMARY_LIGHT})` }}>
                         <Icon name={feature.icon} size={6} className="w-1.5 h-1.5 text-white" />
                       </div>
                       <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground font-medium leading-snug`}>
@@ -893,10 +893,10 @@ export function PricingDialog({
           </div>
 
           <div className="mt-2 md:mt-3">
-            <div className="p-2 md:p-2.5 bg-gradient-to-r from-[#E6D5F0]/40 via-[#C9E4F7]/40 to-[#B8E6D5]/40 dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60 rounded-lg border border-[#9B87E8]/30 shadow-md backdrop-blur-sm">
+            <div className="p-2 md:p-2.5 rounded-lg border shadow-md backdrop-blur-sm dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60" style={{ backgroundImage: `linear-gradient(to right, ${COLOR_PASTEL_LAVENDER}66, ${COLOR_PASTEL_SKY}66, ${COLOR_PASTEL_MINT}66)`, borderColor: `${COLOR_PRIMARY}4D` }}>
               <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-gray-700 dark:text-foreground leading-snug`}>
                 {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
-                <span className="font-medium text-[#9B87E8]">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
+                <span className="font-medium" style={{ color: COLOR_PRIMARY }}>{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
                 {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
               </p>
             </div>
