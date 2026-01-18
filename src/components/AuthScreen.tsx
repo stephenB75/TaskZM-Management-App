@@ -661,9 +661,9 @@ export function AuthScreen() {
                             aria-label={showSignInPassword ? "Hide password" : "Show password"}
                           >
                             {showSignInPassword ? (
-                              <EyeOff className="w-4 h-4" />
+                              <Icon name="eye-off" size={ICON_SIZE_MD} />
                             ) : (
-                              <Eye className="w-4 h-4" />
+                              <Icon name="eye" size={ICON_SIZE_MD} />
                             )}
                           </button>
                         </div>
@@ -858,9 +858,9 @@ export function AuthScreen() {
                             aria-label={showSignUpPassword ? "Hide password" : "Show password"}
                           >
                             {showSignUpPassword ? (
-                              <EyeOff className="w-4 h-4" />
+                              <Icon name="eye-off" size={ICON_SIZE_MD} />
                             ) : (
-                              <Eye className="w-4 h-4" />
+                              <Icon name="eye" size={ICON_SIZE_MD} />
                             )}
                           </button>
                         </div>
@@ -934,9 +934,9 @@ export function AuthScreen() {
                             aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                           >
                             {showConfirmPassword ? (
-                              <EyeOff className="w-4 h-4" />
+                              <Icon name="eye-off" size={ICON_SIZE_MD} />
                             ) : (
-                              <Eye className="w-4 h-4" />
+                              <Icon name="eye" size={ICON_SIZE_MD} />
                             )}
                           </button>
                         </div>

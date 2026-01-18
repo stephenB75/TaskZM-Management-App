@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { ICON_SIZE_SM, ICON_SIZE_MD } from '../lib/layout-constants';
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from '../lib/layout-constants';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -113,11 +113,11 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin':
-        return <ShieldCheck className="w-5 h-5" />;
+        return <Icon name="shield-check" size={ICON_SIZE_LG} />;
       case 'member':
-        return <Shield className="w-5 h-5" />;
+        return <Icon name="shield" size={ICON_SIZE_LG} />;
       case 'viewer':
-        return <Eye className="w-5 h-5" />;
+        return <Icon name="eye" size={ICON_SIZE_LG} />;
       default:
         return null;
     }

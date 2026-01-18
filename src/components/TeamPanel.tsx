@@ -319,7 +319,7 @@ export function TeamPanel() {
       case "member":
         return <Shield style={{ width: iconSize, height: iconSize }} />;
       case "viewer":
-        return <Eye style={{ width: iconSize, height: iconSize }} />;
+        return <Icon name="eye" size={iconSize} />;
       default:
         return null;
     }
@@ -843,7 +843,7 @@ export function TeamPanel() {
                       disabled={member.role === "viewer"}
                       className="cursor-pointer"
                     >
-                      <Eye style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Make Viewer
                     </DropdownMenuItem>
                     <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
@@ -1322,7 +1322,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="viewer">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Eye style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
+                      <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Viewer</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1440,7 +1440,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="viewer">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Eye style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
+                      <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Viewer</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
