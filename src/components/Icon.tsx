@@ -98,6 +98,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'loader': 'Spinner',
   'loader2': 'Spinner',
   'mail': 'Envelope',
+  'send': 'PaperPlaneTilt',
   'lock': 'Lock',
   'eye': 'Eye',
   'eye-off': 'EyeSlash',

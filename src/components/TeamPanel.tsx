@@ -315,9 +315,9 @@ export function TeamPanel() {
     const iconSize = TEAM_PANEL_ICON_SIZE_MEDIUM;
     switch (role) {
       case "admin":
-        return <ShieldCheck style={{ width: iconSize, height: iconSize }} />;
+        return <Icon name="shield-check" size={iconSize} />;
       case "member":
-        return <Shield style={{ width: iconSize, height: iconSize }} />;
+        return <Icon name="shield" size={iconSize} />;
       case "viewer":
         return <Icon name="eye" size={iconSize} />;
       default:
@@ -427,7 +427,7 @@ export function TeamPanel() {
             borderColor: COLOR_TEXT_BLACK
           }}
         >
-          <XCircle style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
+          <Icon name="x-circle" size={TEAM_PANEL_ICON_SIZE_SMALL} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
           Declined
         </Badge>
       );
@@ -750,7 +750,7 @@ export function TeamPanel() {
                       }}
                       data-slot={PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT}
                     >
-                      <MoreVertical style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
+                      <Icon name="more-vertical" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
@@ -774,7 +774,7 @@ export function TeamPanel() {
                           }}
                           className="cursor-pointer"
                         >
-                          <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                          <Icon name="paper-plane-tilt" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                           Resend Invitation
                         </DropdownMenuItem>
                     <DropdownMenuItem
@@ -801,7 +801,7 @@ export function TeamPanel() {
                       }}
                       className="text-destructive focus:text-destructive cursor-pointer"
                     >
-                      <XCircle style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      <Icon name="x-circle" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Decline Invitation
                     </DropdownMenuItem>
                     <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
@@ -817,7 +817,7 @@ export function TeamPanel() {
                       disabled={member.role === "admin"}
                       className="cursor-pointer"
                     >
-                      <ShieldCheck style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      <Icon name="shield-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Make Admin
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -830,7 +830,7 @@ export function TeamPanel() {
                       disabled={member.role === "member"}
                       className="cursor-pointer"
                     >
-                      <Shield style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Make Member
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -857,7 +857,7 @@ export function TeamPanel() {
                       className="text-destructive focus:text-destructive cursor-pointer"
                       disabled={isCurrentUser}
                     >
-                      <Trash2 style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      <Icon name="trash-2" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Remove
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -1005,7 +1005,7 @@ export function TeamPanel() {
                 size="sm"
                 className="hidden sm:flex"
               >
-                <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                 Bulk Invite
               </Button>
             )}
@@ -1060,7 +1060,7 @@ export function TeamPanel() {
               }}
               onClick={() => setSearchQuery("")}
             >
-              <X style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
+              <Icon name="x" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
             </Button>
           )}
         </div>
@@ -1121,7 +1121,7 @@ export function TeamPanel() {
                     size="sm"
                     style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
                   >
-                    <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                    <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                     Add your first member
                   </Button>
                 </>
@@ -1209,7 +1209,7 @@ export function TeamPanel() {
                         size="sm"
                         style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
                       >
-                        <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                        <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                         Add your first member
                       </Button>
                     </>
@@ -1300,7 +1300,7 @@ export function TeamPanel() {
                 <SelectContent>
                   <SelectItem value="admin">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <ShieldCheck style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
+                      <Icon name="shield-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Admin</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1311,7 +1311,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="member">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Shield style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
+                      <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Member</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1346,7 +1346,7 @@ export function TeamPanel() {
               }}
               style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}
             >
-              <UserPlus style={{ width: TEAM_PANEL_ICON_SIZE_SMALL, height: TEAM_PANEL_ICON_SIZE_SMALL, marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
+              <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_SMALL} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
               Bulk Invite
             </Button>
             <div className="flex" style={{ gap: PANEL_GAP_MEDIUM }}>
@@ -1418,7 +1418,7 @@ export function TeamPanel() {
                 <SelectContent>
                   <SelectItem value="admin">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <ShieldCheck style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
+                      <Icon name="shield-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Admin</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1429,7 +1429,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="member">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Shield style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM }} />
+                      <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Member</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1475,7 +1475,7 @@ export function TeamPanel() {
                 </>
               ) : (
                 <>
-                  <Send style={{ width: TEAM_PANEL_ICON_SIZE_MEDIUM, height: TEAM_PANEL_ICON_SIZE_MEDIUM, marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                  <Icon name="paper-plane-tilt" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                   Send Invitations
                 </>
               )}

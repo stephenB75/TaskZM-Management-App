@@ -64,6 +64,7 @@ import {
   SETTINGS_PANEL_ICON_SIZE_SMALL,
   SETTINGS_PANEL_ICON_SIZE_MEDIUM,
   ICON_SIZE_SM,
+  ICON_SIZE_MD,
   SETTINGS_PANEL_GAP_SMALL,
   SETTINGS_PANEL_GAP_XSMALL,
   SETTINGS_PANEL_SPACING_XSMALL,
@@ -965,7 +966,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {subscription.cancelAtPeriodEnd && (
                     <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg" style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
                       <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
-                        <Info className="text-amber-600 dark:text-amber-400 flex-shrink-0" style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
+                        <Icon name="info" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-amber-600 dark:text-amber-400 flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                         <div>
                           <p className="font-medium text-amber-800 dark:text-amber-200" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
                             {SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelled.title}
@@ -988,7 +989,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         setShowPricingDialog(true);
                       }}
                     >
-                      <CreditCard style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                      <Icon name="credit-card" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                       {(subscription.tier as SubscriptionTier) === 'free' ? SUBSCRIPTION_UI_TEXT.settings.upgradeToPro : SUBSCRIPTION_UI_TEXT.settings.manageSubscription}
                     </Button>
 
@@ -1066,7 +1067,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Calendar className="text-primary" style={{ width: SETTINGS_PANEL_ICON_SIZE_LARGE, height: SETTINGS_PANEL_ICON_SIZE_LARGE }} />
+              <Icon name="calendar" size={SETTINGS_PANEL_ICON_SIZE_LARGE} weight="duotone" className="text-primary" />
               <span>Calendar Integration</span>
               {!features.calendarSync && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
@@ -1089,7 +1090,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </p>
                 <div className={`border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5`} style={{ padding: SETTINGS_PANEL_PADDING_LARGE }}>
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                    <Lock className={`w-4 h-4 ${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass}`} />
+                    <Icon name="lock" size={ICON_SIZE_MD} className={`${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass}`} />
                     <span className="text-sm">Pro Feature</span>
                   </div>
                 <p className="text-xs text-muted-foreground" style={{ marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
@@ -1194,7 +1195,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 }}
                 disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.apple)}
               >
-                <Calendar className="mr-2" style={{ width: SETTINGS_PANEL_ICON_SIZE_MEDIUM, height: SETTINGS_PANEL_ICON_SIZE_MEDIUM, marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                <Icon name="calendar" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} weight="duotone" className="mr-2" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                 {isCalendarSyncing ? 'Syncing...' : 'Sync All Tasks'}
               </Button>
               
@@ -1916,7 +1917,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-3 py-1">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Monitor className="w-4 h-4" />
+                        <Icon name="monitor" size={ICON_SIZE_MD} />
                         <Label htmlFor="system-theme-toggle" className="text-sm cursor-pointer">Use System Theme</Label>
                       </div>
                       <Switch 
@@ -1938,7 +1939,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between gap-3 py-1">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <Moon className="w-4 h-4" />
+                          <Icon name="moon" size={ICON_SIZE_MD} />
                           <Label htmlFor="dark-mode-toggle" className="text-sm cursor-pointer">Dark Mode</Label>
                         </div>
                         <Switch 
@@ -1978,7 +1979,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <RotateCcw className="w-5 h-5 text-primary" />
+              <Icon name="rotate-ccw" size={ICON_SIZE_LG} className="text-primary" />
               <span>Task Rollover</span>
               {!features.taskRollover && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
@@ -2074,7 +2075,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Briefcase className="w-5 h-5 text-primary" />
+              <Icon name="briefcase" size={ICON_SIZE_LG} className="text-primary" />
               <span>Task Category Hours</span>
               {!features.taskHours && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
@@ -2401,7 +2402,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/10">
                 <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <Icon name="info" size={ICON_SIZE_MD} className="text-primary mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-muted-foreground">
                     <p className="mb-1">
                       <strong className="text-foreground">How it works:</strong>
@@ -2435,7 +2436,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Trophy className="w-5 h-5 text-primary" />
+              <Icon name="trophy" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
               <span>Awards & Achievements</span>
               <Badge variant="secondary" className="ml-auto bg-muted text-muted-foreground text-xs">
                 {earnedAwards.length}/{awards.length}
@@ -2479,7 +2480,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
-                        <Target className="w-4 h-4 text-white" />
+                        <Icon name="target" size={ICON_SIZE_MD} weight="duotone" className="text-white" />
                       </div>
                       <div className="flex-1 text-left">
                         <h4 className="text-sm font-semibold">Completion Milestones</h4>
@@ -2563,7 +2564,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                        <TrendingUp className="w-4 h-4 text-white" />
+                        <Icon name="trending-up" size={ICON_SIZE_MD} weight="duotone" className="text-white" />
                       </div>
                       <div className="flex-1 text-left">
                         <h4 className="text-sm font-semibold">Streak Champions</h4>
@@ -2647,7 +2648,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
-                        <Timer className="w-4 h-4 text-white" />
+                        <Icon name="timer" size={ICON_SIZE_MD} weight="duotone" className="text-white" />
                       </div>
                       <div className="flex-1 text-left">
                         <h4 className="text-sm font-semibold">Focus Masters</h4>
@@ -2876,7 +2877,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
             <div className="bg-primary/5 rounded-lg border border-primary/10" style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM }}>
               <div className="flex items-start" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                <Info className="w-4 h-4 text-primary flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
+                <Icon name="info" size={ICON_SIZE_MD} className="text-primary flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                 <div className="text-xs text-muted-foreground">
                   <p>
                     The tour takes about 2-3 minutes and can be skipped or paused at any time. 
@@ -2900,7 +2901,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Info className="w-5 h-5 text-primary" />
+              <Icon name="info" size={ICON_SIZE_LG} className="text-primary" />
               <span>About</span>
             </div>
           </AccordionTrigger>
@@ -3017,7 +3018,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
                 <div className="p-2.5 bg-primary/5 rounded-lg border border-primary/10">
                   <div className="flex items-start gap-2">
-                    <Info className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                    <Icon name="info" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary mt-0.5 flex-shrink-0" />
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.versionInfo} text-muted-foreground leading-relaxed`}>
                       Your tasks, projects, and settings are automatically synced to the cloud in the background. All changes are saved instantly and synchronized across your devices.
                     </p>
