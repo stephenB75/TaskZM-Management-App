@@ -26,14 +26,14 @@ export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGH
 // Header-specific constants
 export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px)
 export const HEADER_PADDING_Y_MOBILE = '1rem'; // py-4 = 1rem (16px)
-export const HEADER_PADDING_X_DESKTOP = '1.5rem'; // px-6 = 1.5rem (24px)
+export const HEADER_PADDING_X_DESKTOP = '1rem'; // px-4 = 1rem (16px) - reduced from 1.5rem to minimize gap from screen border
 export const HEADER_PADDING_Y_DESKTOP = '0.5rem'; // py-2 = 0.5rem (8px)
 export const HEADER_ICON_SIZE_SMALL = '1rem'; // w-4 h-4 = 1rem (16px)
 export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
 export const HEADER_BUTTON_SIZE_SMALL_SCREEN = '1.75rem'; // h-7 w-7 = 1.75rem (28px) - for laptops and small screens
 export const HEADER_ICON_SIZE_SMALL_SCREEN = '0.875rem'; // w-3.5 h-3.5 = 0.875rem (14px) - for laptops and small screens
-export const HEADER_ICON_SIZE_BUTTON_SMALL = '0.8125rem'; // 0.625rem * 1.3 = 0.8125rem (13px) - for button icons on small screens (increased by 30%)
-export const HEADER_ICON_SIZE_BUTTON_DESKTOP = '0.975rem'; // 0.75rem * 1.3 = 0.975rem (15.6px) - for button icons on desktop (increased by 30%)
+export const HEADER_ICON_SIZE_BUTTON_SMALL = '1rem'; // 1rem (16px) - for button icons on small screens (increased for better visibility)
+export const HEADER_ICON_SIZE_BUTTON_DESKTOP = '1.25rem'; // 1.25rem (20px) - for button icons on desktop (increased for better visibility)
 // Common icon sizes (numeric values for Phosphor Icons)
 export const ICON_SIZE_XS = 12; // Extra small icons
 export const ICON_SIZE_SM = 14; // Small icons
