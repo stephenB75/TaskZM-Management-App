@@ -23,6 +23,7 @@ import {
 } from "./ui/select";
 import { cn } from "../lib/utils";
 import { UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
+import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, HEADER_GAP_SMALL, HEADER_BUTTON_SIZE } from "../lib/layout-constants";
 import {
   Tooltip,
@@ -512,7 +513,8 @@ export function NotificationsPanel() {
                       <Icon 
                         name="trash-2" 
                         size={ICON_SIZE_MD} 
-                        className="flex-shrink-0 text-white"
+                        className="flex-shrink-0"
+                        style={{ color: COLOR_TEXT_WHITE }}
                       />
                     </Button>
                   </TooltipTrigger>

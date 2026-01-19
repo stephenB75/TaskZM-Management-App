@@ -2720,7 +2720,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   : 'bg-muted/50 group-hover:bg-muted'
                                 }
                               `}>
-                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "fill" : "duotone"} className={isEarned ? 'text-white' : 'text-muted-foreground'} />
+                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "fill" : "duotone"} className={isEarned ? '' : 'text-muted-foreground'} style={isEarned ? { color: COLOR_TEXT_WHITE } : {}} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-1 mb-1">
@@ -2804,7 +2804,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   : 'bg-muted/50 group-hover:bg-muted'
                                 }
                               `}>
-                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "fill" : "duotone"} className={isEarned ? 'text-white' : 'text-muted-foreground'} />
+                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "fill" : "duotone"} className={isEarned ? '' : 'text-muted-foreground'} style={isEarned ? { color: COLOR_TEXT_WHITE } : {}} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-1 mb-1">
@@ -2888,7 +2888,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   : 'bg-muted/50 group-hover:bg-muted'
                                 }
                               `}>
-                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "fill" : "duotone"} className={isEarned ? 'text-white' : 'text-muted-foreground'} />
+                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "fill" : "duotone"} className={isEarned ? '' : 'text-muted-foreground'} style={isEarned ? { color: COLOR_TEXT_WHITE } : {}} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-1 mb-1">
@@ -2974,7 +2974,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   : 'bg-muted/50 group-hover:bg-muted'
                                 }
                               `}>
-                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "fill" : "duotone"} className={isEarned ? 'text-white' : 'text-muted-foreground'} />
+                                <Icon name={getAwardIconName(award.icon)} size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight={isEarned ? "fill" : "duotone"} className={isEarned ? '' : 'text-muted-foreground'} style={isEarned ? { color: COLOR_TEXT_WHITE } : {}} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-1 mb-1">

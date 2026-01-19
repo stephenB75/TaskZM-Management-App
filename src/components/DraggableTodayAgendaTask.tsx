@@ -48,6 +48,7 @@ import {
   TASK_CARD_ADDITIONAL_FONT_SIZES,
 } from "../lib/task-card-constants";
 import { Z_INDEX } from "../lib/layout-constants";
+import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 
 interface DraggableTodayAgendaTaskProps {
@@ -784,11 +785,12 @@ export function DraggableTodayAgendaTask({
                   )}>
                     <div 
                       className={cn(
-                        "flex items-center rounded-full px-1.5 py-0.5 text-white whitespace-nowrap",
+                        "flex items-center rounded-full px-1.5 py-0.5 whitespace-nowrap",
                         isMobile ? "gap-0.5 text-[9px]" : "gap-1 text-[11px]"
                       )}
                       style={{
                         background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
+                        color: COLOR_TEXT_WHITE,
                       }}
                     >
                       <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin flex-shrink-0" />

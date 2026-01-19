@@ -1352,7 +1352,7 @@ export function AuthScreen() {
                   backgroundSize: 'cover',
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'center',
-                  color: 'white',
+                  color: AUTH_COLORS.buttonText,
                   padding: '0.5rem 1rem',
                   display: 'flex',
                   alignItems: 'center',

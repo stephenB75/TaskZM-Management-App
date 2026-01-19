@@ -56,7 +56,7 @@ import {
 } from "../lib/task-card-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
-import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT } from "../lib/color-theme";
+import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT, COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
@@ -676,14 +676,15 @@ export const DraggableTaskCard = React.forwardRef<
                 <div className="flex items-center animate-pulse flex-shrink-0">
                   <div 
                     className={cn(
-                      "flex items-center rounded-full text-white",
+                      "flex items-center rounded-full",
                       isMobile ? TASK_CARD_BADGE_SIZES.tracking.mobile : TASK_CARD_BADGE_SIZES.tracking.desktop
                     )}
                     style={{
                       background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
+                      color: COLOR_TEXT_WHITE,
                     }}
                   >
-                    <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin" weight="duotone" />
+                    <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin" weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                     <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                   </div>
                 </div>
@@ -970,11 +971,12 @@ export const DraggableTaskCard = React.forwardRef<
                     )}>
                       <div 
                         className={cn(
-                          "flex items-center rounded-full px-1.5 py-0.5 text-white whitespace-nowrap",
+                          "flex items-center rounded-full px-1.5 py-0.5 whitespace-nowrap",
                           isMobile ? `gap-0.5 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile}` : `gap-1 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop}`
                         )}
                         style={{
                           background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
+                          color: COLOR_TEXT_WHITE,
                         }}
                       >
                         <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin flex-shrink-0" />
