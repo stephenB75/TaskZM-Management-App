@@ -1008,21 +1008,15 @@ export function InboxView() {
                           paddingRight: EMPTY_STATE_PADDING_X,
                         }}
                       >
-                        <div 
-                          className={`rounded-full ${UI_INBOX_GRADIENTS.emptyState.className} flex items-center justify-center shadow-lg`}
+                        <Icon 
+                          name="inbox" 
+                          size={ICON_SIZE_3XL} 
+                          weight="duotone"
+                          className="text-primary"
                           style={{
-                            width: EMPTY_STATE_ICON_SIZE_LARGE,
-                            height: EMPTY_STATE_ICON_SIZE_LARGE,
                             marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
                           }}
-                        >
-                          <Icon 
-                            name="inbox" 
-                            size={EMPTY_STATE_ICON_INNER_SIZE} 
-                            weight="duotone"
-                            className="text-primary" 
-                          />
-                        </div>
+                        />
                         <h3 
                           className="text-xl"
                           style={{
@@ -1041,16 +1035,6 @@ export function InboxView() {
                             ? "No tasks match your current filters."
                             : "All tasks are scheduled. Add new tasks or adjust your filters."}
                         </p>
-                        <Button
-                          onClick={() => {
-                            setSelectedTask(undefined);
-                            setIsTaskDialogOpen(true);
-                          }}
-                          className="rounded-full"
-                        >
-                          <Icon name="plus" size={ICON_SIZE_MD} className="mr-2" />
-                          Add First Task
-                        </Button>
                       </motion.div>
                     ) : (
                       sortedTasks.map((task, index) => (
@@ -1292,21 +1276,15 @@ export function InboxView() {
                         paddingRight: EMPTY_STATE_PADDING_X,
                       }}
                     >
-                      <div 
-                        className={`rounded-full ${UI_INBOX_GRADIENTS.emptyState.className} flex items-center justify-center shadow-lg`}
+                      <Icon 
+                        name="inbox" 
+                        size={ICON_SIZE_3XL} 
+                        weight="duotone"
+                        className="text-primary"
                         style={{
-                          width: EMPTY_STATE_ICON_SIZE_LARGE,
-                          height: EMPTY_STATE_ICON_SIZE_LARGE,
                           marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
                         }}
-                      >
-                        <Icon 
-                          name="inbox" 
-                          size={EMPTY_STATE_ICON_INNER_SIZE} 
-                          weight="duotone"
-                          className="text-primary" 
-                        />
-                      </div>
+                      />
                       <h3 
                         className="text-xl"
                         style={{
@@ -1325,16 +1303,6 @@ export function InboxView() {
                           ? "No tasks match your current filters."
                           : "All tasks are scheduled. Add new tasks or adjust your filters."}
                       </p>
-                      <Button
-                        onClick={() => {
-                          setSelectedTask(undefined);
-                          setIsTaskDialogOpen(true);
-                        }}
-                        className="rounded-full"
-                      >
-                        <Icon name="plus" size={ICON_SIZE_MD} className="mr-2" />
-                        Add First Task
-                      </Button>
                     </motion.div>
                   ) : (
                     sortedTasks.map((task, index) => (
