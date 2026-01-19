@@ -594,7 +594,7 @@ export function RichTextEditor({
           onClick={() => formatText('clear')}
           title="Clear Formatting"
         >
-          <Eraser className="w-4 h-4" />
+          <Icon name="eraser" size={16} />
         </Button>
       </div>
 
