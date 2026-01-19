@@ -1089,6 +1089,7 @@ export function TeamPanel() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ paddingLeft: PANEL_SEARCH_INPUT_PADDING_LEFT }}
+            className="bg-white dark:bg-card text-foreground"
           />
           {searchQuery && (
             <Button
@@ -1325,6 +1326,7 @@ export function TeamPanel() {
                   setNewMemberEmail(e.target.value)
                 }
                 placeholder="john@example.com"
+                className="bg-white dark:bg-card text-foreground"
               />
             </div>
 
