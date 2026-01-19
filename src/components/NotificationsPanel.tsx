@@ -23,7 +23,13 @@ import {
 } from "./ui/select";
 import { cn } from "../lib/utils";
 import { UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
-import { HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
+import { HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, HEADER_GAP_SMALL, HEADER_BUTTON_SIZE } from "../lib/layout-constants";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import type { Task } from "../types";
 import {
@@ -464,34 +470,57 @@ export function NotificationsPanel() {
         hideDesktopLogo
         actions={
           selectedNotificationIds.size > 0 ? (
-            <div className="flex items-center gap-1.5">
-              <Button
-                onClick={handleSelectAll}
-                variant="outline"
-                className="rounded-full px-2.5 sm:px-3"
-                size="sm"
-              >
-                <span className="hidden sm:inline">
-                  {selectedNotificationIds.size === filteredNotifications.length ? "Deselect All" : "Select All"}
-                </span>
-                <span className="sm:hidden">
-                  {selectedNotificationIds.size === filteredNotifications.length ? "Deselect" : "Select All"}
-                </span>
-              </Button>
-              <Button
-                onClick={clearSelectedNotifications}
-                variant="destructive"
-                className="rounded-full px-2.5 sm:px-3"
-                size="sm"
-              >
-                <Icon name="trash-2" size={ICON_SIZE_MD} className="sm:mr-2" />
-                <span className="hidden sm:inline">
-                  Clear ({selectedNotificationIds.size})
-                </span>
-                <span className="sm:hidden">
-                  {selectedNotificationIds.size}
-                </span>
-              </Button>
+            <div className="flex items-center" style={{ gap: HEADER_GAP_SMALL }}>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleSelectAll}
+                      variant="outline"
+                      size="icon"
+                      className="flex-shrink-0"
+                      style={{ 
+                        height: HEADER_BUTTON_SIZE, 
+                        width: HEADER_BUTTON_SIZE 
+                      }}
+                    >
+                      <Icon 
+                        name="check-square"
+                        size={ICON_SIZE_MD}
+                        className="text-primary dark:text-primary-foreground flex-shrink-0"
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{selectedNotificationIds.size === filteredNotifications.length ? "Deselect All" : "Select All"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={clearSelectedNotifications}
+                      variant="destructive"
+                      size="icon"
+                      className="flex-shrink-0"
+                      style={{ 
+                        height: HEADER_BUTTON_SIZE, 
+                        width: HEADER_BUTTON_SIZE 
+                      }}
+                    >
+                      <Icon 
+                        name="trash-2" 
+                        size={ICON_SIZE_MD} 
+                        className="flex-shrink-0"
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Clear ({selectedNotificationIds.size})</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           ) : (
             <Button
