@@ -72,9 +72,6 @@ export function NotificationsPanel() {
     localStorage.setItem(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, JSON.stringify(Array.from(dismissedNotifications)));
   }, [dismissedNotifications]);
 
-  // Generate notifications from tasks
-  useEffect(() => {
-
   // Track last seen Pomodoro session counts to detect new completions
   const [lastSeenSessions, setLastSeenSessions] = useState<Record<string, number>>(
     () => JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.lastSeenPomodoroSessions) || '{}')
