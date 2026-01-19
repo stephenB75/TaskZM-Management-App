@@ -39,6 +39,12 @@ import { useOrientation } from "../hooks/useOrientation";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 // Trash2 icon migrated to Icon component
 import {
   AlertDialog,
@@ -739,75 +745,85 @@ export function InboxView() {
               </>
             ) : (
               <>
-                <div
-                  onClick={unscheduledTasks.length === 0 ? undefined : handleScheduleAll}
-                  className={cn(
-                    "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80 whitespace-nowrap",
-                    unscheduledTasks.length === 0 && "opacity-50 cursor-not-allowed"
-                  )}
-                  title="Schedule All"
-                  role="button"
-                  tabIndex={unscheduledTasks.length === 0 ? -1 : 0}
-                  onKeyDown={(e) => {
-                    if (unscheduledTasks.length === 0) return;
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleScheduleAll();
-                    }
-                  }}
-                >
-                  <Icon 
-                    name="head-circuit"
-                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
-                    weight="duotone"
-                    className="text-primary dark:text-primary-foreground flex-shrink-0"
-                    style={{
-                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
-                    }}
-                  />
-                  <span className="text-foreground dark:text-gray-100">
-                    Schedule All
-                  </span>
-                </div>
-                <div
-                  onClick={() => {
-                    if (!permissions.canCreateTask) {
-                      toast.error('Permission Denied', {
-                        description: 'Viewer role does not have permission to create tasks. Please contact an admin.',
-                      });
-                      return;
-                    }
-                    setSelectedTask(undefined);
-                    setIsTaskDialogOpen(true);
-                  }}
-                  className={cn(
-                    "hidden sm:flex cursor-pointer items-center flex-shrink-0 transition-opacity hover:opacity-80 whitespace-nowrap",
-                    !permissions.canCreateTask && "opacity-50 cursor-not-allowed"
-                  )}
-                  title="New Task"
-                  role="button"
-                  tabIndex={!permissions.canCreateTask ? -1 : 0}
-                  onKeyDown={(e) => {
-                    if (!permissions.canCreateTask) return;
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedTask(undefined);
-                      setIsTaskDialogOpen(true);
-                    }
-                  }}
-                >
-                  <Icon 
-                    name="check-square"
-                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
-                    className="text-primary dark:text-primary-foreground flex-shrink-0"
-                    style={{
-                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
-                    }}
-                  />
-                  <span className="text-foreground dark:text-gray-100">
-                    New Task
-                  </span>
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        onClick={unscheduledTasks.length === 0 ? undefined : handleScheduleAll}
+                        className={cn(
+                          "cursor-pointer flex flex-col items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
+                          unscheduledTasks.length === 0 && "opacity-50 cursor-not-allowed"
+                        )}
+                        role="button"
+                        tabIndex={unscheduledTasks.length === 0 ? -1 : 0}
+                        onKeyDown={(e) => {
+                          if (unscheduledTasks.length === 0) return;
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleScheduleAll();
+                          }
+                        }}
+                      >
+                        <Icon 
+                          name="head-circuit"
+                          size={ICON_SIZE_LG}
+                          weight="duotone"
+                          className="text-primary dark:text-primary-foreground flex-shrink-0"
+                        />
+                        <span className="text-[10px] text-foreground dark:text-gray-100 mt-0.5">
+                          Schedule All
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Schedule All</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        onClick={() => {
+                          if (!permissions.canCreateTask) {
+                            toast.error('Permission Denied', {
+                              description: 'Viewer role does not have permission to create tasks. Please contact an admin.',
+                            });
+                            return;
+                          }
+                          setSelectedTask(undefined);
+                          setIsTaskDialogOpen(true);
+                        }}
+                        className={cn(
+                          "hidden sm:flex cursor-pointer flex-col items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
+                          !permissions.canCreateTask && "opacity-50 cursor-not-allowed"
+                        )}
+                        role="button"
+                        tabIndex={!permissions.canCreateTask ? -1 : 0}
+                        onKeyDown={(e) => {
+                          if (!permissions.canCreateTask) return;
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedTask(undefined);
+                            setIsTaskDialogOpen(true);
+                          }
+                        }}
+                      >
+                        <Icon 
+                          name="check-square"
+                          size={ICON_SIZE_LG}
+                          className="text-primary dark:text-primary-foreground flex-shrink-0"
+                        />
+                        <span className="text-[10px] text-foreground dark:text-gray-100 mt-0.5">
+                          New Task
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>New Task</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </>
             )}
           </div>
