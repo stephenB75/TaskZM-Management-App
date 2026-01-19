@@ -108,6 +108,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   
   const { updateActivity } = useDemoActivity(); // Track demo user activity
   const [tasks, setTasks] = useState<Task[]>([]);
+  const tasksRef = useRef<Task[]>([]); // Ref to access current tasks without causing dependency issues
   const [projects, setProjects] = useState<Project[]>([
     {
       id: DEFAULT_PROJECT_ID,
@@ -179,6 +180,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     syncIntervalRef.current = syncInterval;
   }, [syncInterval]);
+
+  // Keep tasksRef in sync with tasks state (for comparison in syncWithServer)
+  useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
 
   // Optimistic loading: Load from localStorage immediately, then sync with server in background
   useEffect(() => {
@@ -1275,7 +1281,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
         // Server is source of truth - only update state if data actually changed
         // This prevents unnecessary re-renders that feel like refreshes
-        const currentTasks = tasks; // Get current tasks from closure
+        const currentTasks = tasksRef.current; // Get current tasks from ref (avoids dependency issues)
         const tasksChanged = !areTasksEqual(currentTasks, serverTasks);
         
         if (tasksChanged) {
