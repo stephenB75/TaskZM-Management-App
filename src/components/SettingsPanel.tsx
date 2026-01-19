@@ -540,38 +540,82 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
-              {/* Profile Card */}
+              {/* Profile Card - Redesigned */}
               <div 
-                className="rounded-2xl border border-border/40 bg-muted/30 dark:bg-card/50 flex flex-col items-center w-full"
-                style={{ 
-                  padding: SETTINGS_PANEL_PADDING_LARGE,
-                  gap: SETTINGS_PANEL_SPACING_LARGE
-                }}
+                className="relative w-full bg-white dark:bg-card rounded-xl shadow-sm border border-border/40 overflow-hidden"
               >
-                <div 
-                  className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center text-primary font-semibold shadow-inner flex-shrink-0"
-                  style={{ 
-                    width: SETTINGS_PANEL_AVATAR_SIZE, 
-                    height: SETTINGS_PANEL_AVATAR_SIZE,
-                    fontSize: SETTINGS_PANEL_AVATAR_FONT_SIZE
-                  }}
-                >
-                  {getInitials(user?.name)}
+                {/* Blue Header Banner */}
+                <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: '100px' }}>
                 </div>
-                <div className="flex-1 min-w-0 text-center w-full" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
-                    <div className="text-base font-semibold text-foreground truncate">{user?.name || '—'}</div>
-                    <div className="text-sm text-muted-foreground truncate break-all">{user?.email || '—'}</div>
+
+                {/* Profile Picture - Overlapping Banner */}
+                <div className="relative px-4 -mt-14">
+                  <div className="relative flex-shrink-0 inline-block">
+                    <div 
+                      className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg"
+                      style={{ 
+                        width: '96px',
+                        height: '96px',
+                        fontSize: '32px'
+                      }}
+                    >
+                      {getInitials(user?.name)}
+                    </div>
                   </div>
-                  <div className={`flex flex-wrap justify-center ${SETTINGS_PANEL_TEXT_SIZES.small}`} style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                </div>
+
+                {/* Content Section */}
+                <div className="px-4 pb-4 pt-2">
+                  {/* Name with Verification Badge */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-xl text-foreground">
+                      {user?.name || '—'}
+                    </h3>
+                    {subscription.tier === 'pro' && (
+                      <Icon 
+                        name="sparkles" 
+                        size={20} 
+                        className="text-primary flex-shrink-0" 
+                        weight="duotone"
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Username/Email */}
+                  <div className="flex items-center text-muted-foreground text-sm mb-3">
+                    <span className="truncate">@{user?.email?.split('@')[0] || 'user'}</span>
+                  </div>
+
+                  {/* Subscription Badge */}
+                  <div className="flex items-center flex-wrap gap-2 mb-3">
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap">
                       {subscription.tier === 'pro' ? 'Pro Member' : 'Free Member'}
                     </Badge>
                     {subscription.status && (
                       <Badge variant="outline" className="text-muted-foreground border-muted whitespace-nowrap">
-                        Status: {subscription.status}
+                        {subscription.status}
                       </Badge>
                     )}
+                  </div>
+
+                  {/* Stats Section - Following/Followers Style */}
+                  <div className="flex items-center gap-4 text-sm text-foreground border-t pt-3 mt-3">
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold">{subscription.tier === 'pro' ? 'Pro' : 'Free'}</span>
+                      <span className="text-muted-foreground">Plan</span>
+                    </div>
+                    {subscription.tier === 'pro' && subscription.billingPeriod && (
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold capitalize">{subscription.billingPeriod}</span>
+                        <span className="text-muted-foreground">Billing</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Email Link */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
+                    <Icon name="mail" size={14} className="flex-shrink-0" />
+                    <span className="truncate">{user?.email || '—'}</span>
                   </div>
                 </div>
               </div>

@@ -41,7 +41,7 @@ import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { toast } from "sonner";
-import { cn } from "../lib/utils";
+import { cn, getInitials } from "../lib/utils";
 import type { User } from "../types";
 import {
   PANEL_PADDING,
@@ -530,7 +530,7 @@ export function TeamPanel() {
 
     return (
       <div 
-        className="relative w-full"
+        className="relative w-full bg-white dark:bg-card rounded-xl shadow-sm border border-border/40 overflow-hidden"
         onClick={(e) => {
           // Don't trigger card click if clicking on dropdown area or if dropdown is open
           const target = e.target as HTMLElement;
@@ -560,182 +560,283 @@ export function TeamPanel() {
             </div>
           )}
         
-        {/* Content container */}
-        <div
-          className="relative w-full"
-          style={{
-            padding: TEAM_PANEL_CARD_PADDING,
-          }}
-        >
-          <div className="flex items-start" style={{ gap: PANEL_GAP_LARGE }}>
-            {/* User Icon on the left */}
-            <div className="relative flex-shrink-0">
-              <Icon 
-                name="user"
-                size={TEAM_PANEL_AVATAR_SIZE}
-                className="text-foreground" 
-              />
-              {member.hasUnreadNotification &&
-                member.inviteStatus === "accepted" && (
-                  <div 
-                    className="absolute bg-primary rounded-full border-background" 
-                    style={{ 
-                      width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                      height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                      borderWidth: TEAM_PANEL_NOTIFICATION_DOT_BORDER_WIDTH,
-                      borderStyle: 'solid',
-                      bottom: TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
-                      right: TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET
-                    }} 
-                  />
-                )}
-            </div>
-
-            {/* Info Section */}
-            <div className="flex-1 min-w-0">
-              {/* Name and Role inline */}
-              <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-                <h3 className="font-semibold" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}>
-                  {member.name}
-                  {isCurrentUser && (
-                    <span className="font-normal text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
-                      (You)
-                    </span>
-                  )}
-                </h3>
-                <Badge
-                  variant={getRoleBadgeVariant(member.role)}
+        {/* Blue Header Banner */}
+        <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: '80px' }}>
+          {/* Action Button in Header (top right) */}
+          <div 
+            className="absolute top-3 right-3"
+            style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenu
+              open={dropdownOpen}
+              onOpenChange={setDropdownOpen}
+              modal={false}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="flex-shrink-0 hover:bg-white/20 text-white"
                   style={{ 
-                    fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                    paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                    paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                    paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                    paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
+                    height: TEAM_PANEL_BUTTON_SIZE, 
+                    width: TEAM_PANEL_BUTTON_SIZE 
                   }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  data-slot={PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT}
                 >
-                  {getRoleIcon(member.role)}
-                  <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
-                    {member.role}
-                  </span>
-                </Badge>
-              </div>
-              
-              {/* Email */}
-              <div className="flex items-center text-muted-foreground" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-                <Icon name="mail" size={TEAM_PANEL_ICON_SIZE_SMALL} className="flex-shrink-0" />
-                <span className="truncate">
-                  {member.email}
-                </span>
-              </div>
-
-              {/* Badging above email */}
-              <div className="flex items-center flex-wrap" style={{ gap: PANEL_GAP_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-                {getInviteStatusBadge(member)}
-              </div>
-
-              {/* Expiration Date */}
-              {member.inviteStatus === "pending" && member.expiresAt && (
-                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-                  <Icon 
-                    name="calendar" 
-                    size={TEAM_PANEL_ICON_SIZE_SMALL}
-                    weight="duotone"
-                    className="flex-shrink-0"
-                    style={{ 
-                      color: formatExpirationDate(member.expiresAt)?.isExpired 
-                        ? COLOR_STATUS_EXPIRED_RED 
-                        : COLOR_STATUS_PENDING_AMBER
-                    }} 
-                  />
-                  <span 
-                    className="font-medium"
-                    style={{
-                      color: formatExpirationDate(member.expiresAt)?.isExpired 
-                        ? COLOR_STATUS_EXPIRED_RED 
-                        : COLOR_STATUS_PENDING_AMBER
-                    }}
-                  >
-                    {formatExpirationDate(member.expiresAt)?.text}
-                  </span>
-                </div>
-              )}
-
-              {/* Task Stats */}
-              {stats.total > 0 && (
-                <div className="flex items-center flex-wrap border-t" style={{ gap: PANEL_GAP_SMALL, marginTop: TEAM_PANEL_MARGIN_TOP_SMALL, paddingTop: TEAM_PANEL_MARGIN_TOP_SMALL }}>
-                  <Badge 
-                    variant="outline" 
-                    style={{ 
-                      fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                      paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                      paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                      paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                      paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
-                    }}
-                  >
-                    {stats.total} {stats.total === 1 ? "task" : "tasks"}
-                  </Badge>
-                  {stats.completed > 0 && (
-                    <Badge 
-                      variant="outline" 
-                      style={{ 
-                        fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                        paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                        paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                        paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                        paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
-                        color: COLOR_TASK_COMPLETED_GREEN,
-                        borderColor: getColorWithOpacity(COLOR_TASK_COMPLETED_GREEN, 0.3),
-                        backgroundColor: getColorWithOpacity(COLOR_TASK_COMPLETED_GREEN, 0.1)
+                  <Icon name="more-vertical" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="end"
+                style={{ 
+                  zIndex: TEAM_PANEL_DROPDOWN_Z_INDEX,
+                  width: TEAM_PANEL_DROPDOWN_WIDTH
+                }}
+                onCloseAutoFocus={(e) => {
+                  e.preventDefault();
+                }}
+              >
+                {member.inviteStatus === "pending" && (
+                  <>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setDropdownOpen(false);
+                        setTimeout(() => {
+                          onResendInvitation(member);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
+                      className="cursor-pointer"
                     >
-                      {stats.completed} done
-                    </Badge>
-                  )}
-                  {stats.inProgress > 0 && (
-                    <Badge 
-                      variant="outline" 
-                      style={{ 
-                        fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                        paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                        paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                        paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                        paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
-                        color: COLOR_TASK_IN_PROGRESS_AMBER,
-                        borderColor: getColorWithOpacity(COLOR_TASK_IN_PROGRESS_AMBER, 0.3),
-                        backgroundColor: getColorWithOpacity(COLOR_TASK_IN_PROGRESS_AMBER, 0.1)
-                      }}
-                    >
-                      {stats.inProgress} active
-                    </Badge>
-                  )}
-                  {stats.todo > 0 && (
-                    <Badge 
-                      variant="outline" 
-                      style={{ 
-                        fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                        paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                        paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                        paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                        paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
-                        color: COLOR_TASK_TODO_BLUE,
-                        borderColor: getColorWithOpacity(COLOR_TASK_TODO_BLUE, 0.3),
-                        backgroundColor: getColorWithOpacity(COLOR_TASK_TODO_BLUE, 0.1)
-                      }}
-                    >
-                      {stats.todo} todo
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </div>
+                      <Icon name="paper-plane-tilt" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      Resend Invitation
+                    </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setDropdownOpen(false);
+                    setTimeout(() => {
+                      acceptInvitation(member.id);
+                      toast.success(
+                        `${member.name} accepted the invitation!`,
+                      );
+                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                  }}
+                  className="cursor-pointer"
+                >
+                  <Icon name="bell" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                  Accept Invite (Demo)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setDropdownOpen(false);
+                    setTimeout(() => {
+                      onDeclineInvitation(member);
+                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                  }}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <Icon name="x-circle" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                  Decline Invitation
+                </DropdownMenuItem>
+                <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
+                  </>
+                )}
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setDropdownOpen(false);
+                    setTimeout(() => {
+                      onUpdateRole(member, "admin");
+                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                  }}
+                  disabled={member.role === "admin"}
+                  className="cursor-pointer"
+                >
+                  <Icon name="shield-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                  Make Admin
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setDropdownOpen(false);
+                    setTimeout(() => {
+                      onUpdateRole(member, "member");
+                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                  }}
+                  disabled={member.role === "member"}
+                  className="cursor-pointer"
+                >
+                  <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                  Make Member
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setDropdownOpen(false);
+                    setTimeout(() => {
+                      onUpdateRole(member, "viewer");
+                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                  }}
+                  disabled={member.role === "viewer"}
+                  className="cursor-pointer"
+                >
+                  <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                  Make Viewer
+                </DropdownMenuItem>
+                <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setDropdownOpen(false);
+                    setTimeout(() => {
+                      onRemoveMember(member);
+                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                  }}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                  disabled={isCurrentUser}
+                >
+                  <Icon name="trash-2" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                  Remove
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
-            {/* Actions Menu */}
+        {/* Profile Picture - Overlapping Banner */}
+        <div className="relative px-4 -mt-10">
+          <div className="relative flex-shrink-0 inline-block">
             <div 
-              className="relative"
-              style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
+              className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg"
+              style={{ 
+                width: '80px',
+                height: '80px',
+                fontSize: '24px'
+              }}
+            >
+              {getInitials(member.name)}
+            </div>
+            {member.hasUnreadNotification &&
+              member.inviteStatus === "accepted" && (
+                <div 
+                  className="absolute bg-primary rounded-full border-2 border-white dark:border-card" 
+                  style={{ 
+                    width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                    height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                    bottom: '2px',
+                    right: '2px'
+                  }} 
+                />
+              )}
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="px-4 pb-4 pt-2">
+          {/* Name with Verification Badge */}
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-bold text-lg text-foreground">
+              {member.name}
+              {isCurrentUser && (
+                <span className="font-normal text-muted-foreground text-sm ml-1">
+                  (You)
+                </span>
+              )}
+            </h3>
+            {member.role === 'admin' && (
+              <Icon 
+                name="shield-check" 
+                size={18} 
+                className="text-primary flex-shrink-0" 
+                weight="duotone"
+              />
+            )}
+          </div>
+          
+          {/* Username/Email */}
+          <div className="flex items-center text-muted-foreground text-sm mb-3">
+            <span className="truncate">@{member.email.split('@')[0]}</span>
+          </div>
+
+          {/* Role Badge and Invite Status */}
+          <div className="flex items-center flex-wrap gap-2 mb-3">
+            <Badge
+              variant={getRoleBadgeVariant(member.role)}
+              style={{ 
+                fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
+              }}
+            >
+              {getRoleIcon(member.role)}
+              <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
+                {member.role}
+              </span>
+            </Badge>
+            {getInviteStatusBadge(member)}
+          </div>
+
+          {/* Expiration Date */}
+          {member.inviteStatus === "pending" && member.expiresAt && (
+            <div className="flex items-center gap-2 text-sm mb-3">
+              <Icon 
+                name="calendar" 
+                size={TEAM_PANEL_ICON_SIZE_SMALL}
+                weight="duotone"
+                className="flex-shrink-0"
+                style={{ 
+                  color: formatExpirationDate(member.expiresAt)?.isExpired 
+                    ? COLOR_STATUS_EXPIRED_RED 
+                    : COLOR_STATUS_PENDING_AMBER
+                }} 
+              />
+              <span 
+                className="font-medium"
+                style={{
+                  color: formatExpirationDate(member.expiresAt)?.isExpired 
+                    ? COLOR_STATUS_EXPIRED_RED 
+                    : COLOR_STATUS_PENDING_AMBER
+                }}
+              >
+                {formatExpirationDate(member.expiresAt)?.text}
+              </span>
+            </div>
+          )}
+
+          {/* Task Stats - Following/Followers Style */}
+          {stats.total > 0 && (
+            <div className="flex items-center gap-4 text-sm text-foreground border-t pt-3 mt-3">
+              <div className="flex items-center gap-1">
+                <span className="font-bold">{stats.todo}</span>
+                <span className="text-muted-foreground">Todo</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-bold">{stats.inProgress}</span>
+                <span className="text-muted-foreground">Active</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="font-bold">{stats.completed}</span>
+                <span className="text-muted-foreground">Done</span>
+              </div>
+            </div>
+          )}
+
+          {/* Email Link */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
+            <Icon name="mail" size={14} className="flex-shrink-0" />
+            <a 
+              href={`mailto:${member.email}`}
+              className="truncate hover:text-primary transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
+              {member.email}
+            </a>
+          </div>
+        </div>
+      </div>
+    );
                 <DropdownMenu
                   open={dropdownOpen}
                   onOpenChange={setDropdownOpen}
