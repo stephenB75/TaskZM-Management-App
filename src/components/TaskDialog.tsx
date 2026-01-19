@@ -3406,7 +3406,7 @@ export function TaskDialog({
                     onClick={() => setShowDeleteConfirm(true)}
                     className="gap-1.5 sm:gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 text-sm font-medium"
                   >
-                    <Icon name="trash-2" size={ICON_SIZE_MD} />
+                    <Icon name="trash-2" size={ICON_SIZE_MD} className="text-white" />
                     <span className="hidden sm:inline">Delete</span>
                     <span className="sm:hidden">Del</span>
                   </Button>

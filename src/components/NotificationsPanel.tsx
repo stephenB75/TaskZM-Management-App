@@ -512,7 +512,7 @@ export function NotificationsPanel() {
                       <Icon 
                         name="trash-2" 
                         size={ICON_SIZE_MD} 
-                        className="flex-shrink-0"
+                        className="flex-shrink-0 text-white"
                       />
                     </Button>
                   </TooltipTrigger>
